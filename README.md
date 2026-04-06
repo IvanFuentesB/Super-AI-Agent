@@ -14,7 +14,8 @@ This repo is the core workspace for building a controllable AI system that produ
 - environment and capability detection for `python`, `git`, and `gh`
 - repeatable runtime checker
 - internship, CV, LinkedIn, outreach, showcase, and portfolio scaffold generation
-- local deterministic browser control playground with Playwright smoke checks
+- local deterministic browser playground with headless and visible Playwright demos
+- local dashboard MVP for capability checks, GitHub status, scaffold generation, and browser demo triggers
 
 ## Scaffold-Only Or Research State
 
@@ -35,6 +36,7 @@ This repo already demonstrates a few concrete recruiter-friendly angles:
 - internship application pack generation
 - structured personal-ops and career-ops scaffolding
 - durable context and checker-driven runtime discipline
+- a visible local browser demo and dashboard control surface
 
 ## Repo Structure
 
@@ -54,6 +56,7 @@ This repo already demonstrates a few concrete recruiter-friendly angles:
 ## Next Milestones
 
 - Test the browser playground manually
+- Test the local dashboard manually
 - Decide between Playwright-first and browser-use-first for the next executor layer
 - Prepare one internship-facing live demo
 - Evaluate Windows-Use, Windows-MCP, official Claude Code, and OpenClaw for selective extraction value

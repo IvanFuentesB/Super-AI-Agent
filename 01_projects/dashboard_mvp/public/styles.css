@@ -1,0 +1,157 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background: #f4f6fb;
+  color: #182033;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 2rem;
+  background: #182033;
+  color: #f5f7fb;
+}
+
+.eyebrow {
+  margin: 0 0 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.75rem;
+  color: #9bb0d9;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.intro {
+  max-width: 50rem;
+  margin: 0.75rem 0 0;
+  color: #d2dbef;
+}
+
+.header-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 15rem;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  padding: 1.5rem;
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid #d8deed;
+  border-radius: 14px;
+  padding: 1rem;
+  box-shadow: 0 12px 30px rgba(24, 32, 51, 0.06);
+}
+
+.card h2 {
+  margin-top: 0;
+}
+
+.stacked-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.stacked-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-weight: 600;
+}
+
+input,
+textarea,
+button {
+  font: inherit;
+}
+
+input,
+textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #bcc8e0;
+  border-radius: 10px;
+  background: #fbfcff;
+}
+
+button {
+  padding: 0.8rem 1rem;
+  border: none;
+  border-radius: 10px;
+  background: #1858c8;
+  color: #ffffff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #0f47a7;
+}
+
+pre,
+code {
+  font-family: "Cascadia Code", "Consolas", monospace;
+}
+
+pre {
+  margin: 1rem 0 0;
+  padding: 0.85rem;
+  min-height: 7rem;
+  border-radius: 10px;
+  background: #0f1728;
+  color: #e7edf9;
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+
+.artifacts-card {
+  grid-column: 1 / -1;
+}
+
+.artifact-list {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.artifact-item {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.85rem;
+  border-radius: 10px;
+  background: #eef3ff;
+  border: 1px solid #d4ddf3;
+}
+
+.artifact-item span,
+.artifact-item code {
+  color: #43506d;
+  font-size: 0.92rem;
+}
+
+@media (max-width: 760px) {
+  .page-header {
+    flex-direction: column;
+  }
+
+  .header-actions {
+    min-width: 0;
+  }
+}

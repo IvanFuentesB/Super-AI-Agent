@@ -5,6 +5,7 @@
   "description": "Local deterministic Playwright browser playground for Super-AI-Agent.",
   "scripts": {
     "smoke": "node scripts/smoke_click_demo.js",
+    "smoke:visible": "node scripts/smoke_click_demo.js --visible",
     "install-browsers": "playwright install chromium"
   },
   "dependencies": {
