@@ -121,6 +121,10 @@ $expectedFiles = @(
     '01_projects/runtime_mvp/src/super_ai_agent/cli.py',
     '01_projects/runtime_mvp/runtime_data/.gitkeep',
     '04_docs/runtime_mvp.md',
+    '04_docs/career_ops_fit.md',
+    '04_docs/browser_executor_research.md',
+    '04_docs/skills_in_codex.md',
+    '04_docs/internship_ops_plan.md',
     '04_docs/runtime_environment.md',
     '04_docs/tool_capability_matrix.md',
     '04_docs/gh_path_and_auth.md',
@@ -141,10 +145,13 @@ $expectedFiles = @(
     '04_docs/licensing_strategy.md',
     '04_docs/truth_council_architecture.md',
     '04_docs/browser_app_control_architecture.md',
+    '08_research/career_ops_extraction_map.md',
+    '08_research/repo_intake_matrix.md',
     '07_templates/inbox_triage_runbook.md',
     '07_templates/linkedin_update_pack.md',
     '07_templates/cv_update_pack.md',
     '07_templates/outreach_draft.md',
+    '07_templates/internship_application_pack.md',
     '07_templates/github_issue_draft.md',
     '07_templates/github_pr_draft.md',
     '11_exports/github/.gitkeep',
@@ -154,6 +161,7 @@ $expectedFiles = @(
     '23_configs/github_action_policy.example.json',
     '23_configs/github_smoke_policy.example.json',
     '23_configs/tool_detection_policy.example.json',
+    '23_configs/repo_manifest.example.json',
     '23_configs/provider_profiles.example.json',
     '23_configs/council_policy.example.json',
     '23_configs/personal_workflow_catalog.example.json',
@@ -363,6 +371,11 @@ $outreachDraftOk = $outreachDraftResult.ExitCode -eq 0
 Write-Check -Name 'CLI scaffold-outreach-draft' -Passed $outreachDraftOk -Detail (($outreachDraftResult.Output | Out-String).Trim())
 if (-not $outreachDraftOk) { $failed++ }
 
+$internshipPackResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('scaffold-internship-pack', '--target-role', 'Applied AI Internship', '--company', 'Example Labs', '--job-source', 'https://example.com/jobs/applied-ai-intern', '--fit-summary', 'Strong fit for execution, documentation, and AI workflow work.')
+$internshipPackOk = $internshipPackResult.ExitCode -eq 0
+Write-Check -Name 'CLI scaffold-internship-pack' -Passed $internshipPackOk -Detail (($internshipPackResult.Output | Out-String).Trim())
+if (-not $internshipPackOk) { $failed++ }
+
 $enqueueResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('enqueue', '--title', 'checker task', '--description', 'runtime check', '--risk', 'ask')
 $enqueueOk = $enqueueResult.ExitCode -eq 0
 Write-Check -Name 'CLI enqueue' -Passed $enqueueOk -Detail (($enqueueResult.Output | Out-String).Trim())
@@ -421,7 +434,8 @@ $artifactPaths = @(
     '11_exports/personal_ops/primary-inbox-inbox-triage-pack.md',
     '11_exports/personal_ops/main-profile-linkedin-update-pack.md',
     '11_exports/personal_ops/ai-automation-lead-cv-update-pack.md',
-    '11_exports/personal_ops/partner-contact-outreach-draft.md'
+    '11_exports/personal_ops/partner-contact-outreach-draft.md',
+    '11_exports/personal_ops/example-labs-applied-ai-internship-internship-application-pack.md'
 )
 
 $artifactsOk = $true

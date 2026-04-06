@@ -194,3 +194,47 @@ def scaffold_outreach_draft(recipient_label: str, purpose: str, notes: str = "")
             "- review before any send action",
         ],
     )
+
+
+def scaffold_internship_application_pack(
+    target_role: str,
+    company: str,
+    job_source: str,
+    fit_summary: str,
+) -> Path:
+    filename = f"{_slugify(company)}-{_slugify(target_role)}-internship-application-pack.md"
+    return _write_pack(
+        filename,
+        [
+            "# Internship Application Pack",
+            "",
+            "## Target Role",
+            target_role,
+            "",
+            "## Company",
+            company,
+            "",
+            "## Job Link / Source",
+            job_source,
+            "",
+            "## Why It Fits",
+            fit_summary,
+            "",
+            "## CV Changes Needed",
+            "- tailor summary and project emphasis",
+            "",
+            "## LinkedIn / Profile Changes Needed",
+            "- align headline, featured work, and profile framing",
+            "",
+            "## Portfolio / Case-Study Assets Needed",
+            "- identify the most relevant proof or case study",
+            "",
+            "## Approval Points",
+            "- review assets before sharing externally",
+            "- submit application only after human review",
+            "- send follow-up messages only after approval",
+            "",
+            "## Next Step",
+            "- review the pack before any external action",
+        ],
+    )

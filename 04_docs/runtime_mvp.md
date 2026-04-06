@@ -10,7 +10,7 @@ This MVP moves the repo from documentation-only setup into a small real runtime 
 - approval-aware task states can be persisted
 - durable handoff files can be turned into a snapshot artifact
 - the runtime can be validated with a repeatable checker
-- council, workflow, report, truth-plan, publishability, personal-ops, integration-adapter, GitHub write-action, environment-detection, and remote smoke-test scaffolding can be exercised locally
+- council, workflow, report, truth-plan, publishability, personal-ops, integration-adapter, GitHub write-action, environment-detection, remote smoke-test, and internship-pack scaffolding can be exercised locally
 
 ## Current Boundaries
 
@@ -23,6 +23,9 @@ This MVP moves the repo from documentation-only setup into a small real runtime 
 - remote GitHub write actions depend on `gh` presence and auth
 - environment detection and capability summary now exist
 - default checker behavior remains non-mutating even when remote smoke actions are possible
+- personal-ops now includes internship application pack scaffolding
+- browser executor remains research-only
+- `career-ops` is intake/reference material only
 - mail and Notion are planning-only
 - no real browser or app execution
 - no remote auth layer

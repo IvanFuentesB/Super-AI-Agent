@@ -53,6 +53,24 @@
       "outputs": ["update plan", "page map", "review checklist"],
       "approval_points": ["connecting live Notion integration", "writing to workspace"],
       "notes": "No real Notion adapter yet."
+    },
+    {
+      "workflow_id": "internship_application_pack",
+      "title": "Internship Application Pack",
+      "purpose": "Prepare a structured application pack for an internship or junior-role opportunity.",
+      "inputs": ["target role", "company", "job link or source", "fit summary"],
+      "outputs": ["fit note", "CV changes list", "profile changes list", "asset checklist"],
+      "approval_points": ["sharing assets externally", "submitting an application", "sending follow-up messages"],
+      "notes": "Legitimate review and preparation only."
+    },
+    {
+      "workflow_id": "portfolio_case_study_pack",
+      "title": "Portfolio Case Study Pack",
+      "purpose": "Prepare a case-study outline and asset plan for portfolio or GitHub presentation work.",
+      "inputs": ["project summary", "target audience", "evidence", "desired angle"],
+      "outputs": ["case-study outline", "proof checklist", "export or publishing plan"],
+      "approval_points": ["publishing publicly", "sharing externally", "updating live profile or portfolio assets"],
+      "notes": "Preparation and drafting only."
     }
   ]
 }

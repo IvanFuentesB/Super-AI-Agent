@@ -21,24 +21,25 @@
 - [x] GitHub write-action layer exists
 - [x] Environment hardening and capability detection exist
 - [x] GitHub remote smoke-test layer exists
+- [x] Internship ops and career-ops intake layer exists
 
 ## Current Control Layer
 - Continue for local context/rules
 - Codex for execution and Git workflow
 
 ## Current Branch
-- feat/github-remote-smoke-tests
+- feat/career-ops-and-browser-research
 
 ## Current Phase
-- GitHub remote smoke-test layer
+- internship ops and browser research
 
 ## Next Milestones
-- optionally run one explicit live smoke issue test
-- refine the safe GitHub remote action flow
-- deepen mail and inbox planning
+- choose the browser-control path
+- evaluate career-ops extraction ideas
+- optionally use the Playwright skill in Codex
 - plan the live Notion adapter carefully
-- keep LinkedIn planning-only for now
-- research browser and app execution
+- deepen mail and inbox planning later
+- keep browser and app execution for a later implementation step
 - strengthen auth and access control
 
 ## Known Constraints
@@ -52,6 +53,7 @@
 - no live mail or LinkedIn adapters yet
 - no live Notion writes yet
 - live remote GitHub mutation is possible in this environment, so approval discipline remains critical
+- browser and app execution are still research-only
 
 ## Last Reviewed
 - 2026-04-06

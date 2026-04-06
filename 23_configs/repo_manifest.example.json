@@ -79,6 +79,46 @@
       "purpose": "Reference repo for future adapter and tool-server intake.",
       "next_action": "Inspect relevant servers selectively instead of adopting wholesale.",
       "notes": "Evaluation clone only. No live integration is implemented."
+    },
+    {
+      "repo_id": "career_ops",
+      "source": "santifer/career-ops",
+      "local_path": "21_repos/third_party/career-ops",
+      "category": "career_ops",
+      "track_in_core": false,
+      "purpose": "Reference repo for internship and job-search operating patterns, scoring, and tracking.",
+      "next_action": "Extract scoring, tracker, and human-review ideas without inheriting the full stack.",
+      "notes": "Evaluation clone only. No live integration is implemented."
+    },
+    {
+      "repo_id": "cv_santiago",
+      "source": "santifer/cv-santiago",
+      "local_path": "21_repos/third_party/cv-santiago",
+      "category": "portfolio_site",
+      "track_in_core": false,
+      "purpose": "Reference repo for portfolio, case-study, and proof-oriented asset design.",
+      "next_action": "Inspect case-study structure and portfolio packaging only.",
+      "notes": "Evaluation clone only. No live integration is implemented."
+    },
+    {
+      "repo_id": "browser_use_examples",
+      "source": "browser-use/browser-use-examples",
+      "local_path": "21_repos/third_party/browser-use-examples",
+      "category": "browser_examples",
+      "track_in_core": false,
+      "purpose": "Reference repo for concrete Browser Use example patterns.",
+      "next_action": "Inspect the simplest browser flows before broader browser executor decisions.",
+      "notes": "Evaluation clone only. No live integration is implemented."
+    },
+    {
+      "repo_id": "openhands_cli",
+      "source": "OpenHands/OpenHands-CLI",
+      "local_path": "21_repos/third_party/openhands-cli",
+      "category": "agent_cli",
+      "track_in_core": false,
+      "purpose": "Reference repo for approval, confirmation, and headless agent CLI patterns.",
+      "next_action": "Inspect confirmation modes and headless workflow ideas only.",
+      "notes": "Evaluation clone only. No live integration is implemented."
     }
   ]
 }

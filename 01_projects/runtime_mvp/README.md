@@ -4,7 +4,7 @@ Small execution-focused runtime sandbox for Super-AI-Agent.
 
 ## What This Is
 
-This MVP is a file-backed Python runtime that can manage approval-aware lifecycle state, generate handoff snapshots from `14_context`, and expose lightweight council, workflow, report, truth, publishability, personal-ops, integration-adapter, GitHub action, environment-detection, and remote smoke-test utilities.
+This MVP is a file-backed Python runtime that can manage approval-aware lifecycle state, generate handoff snapshots from `14_context`, and expose lightweight council, workflow, report, truth, publishability, personal-ops, integration-adapter, GitHub action, environment-detection, remote smoke-test, and internship-pack utilities.
 
 ## What It Proves
 
@@ -13,7 +13,7 @@ This MVP is a file-backed Python runtime that can manage approval-aware lifecycl
 - task state can persist in JSON files
 - durable handoff files can be turned into a runtime snapshot
 - the runtime can be checked with a repeatable script
-- provider, workflow, report, truth-plan, publishability, personal-ops, integration-adapter, GitHub draft/action, and remote smoke-test utilities can be exercised locally
+- provider, workflow, report, truth-plan, publishability, personal-ops, integration-adapter, GitHub draft/action, remote smoke-test, and internship-pack utilities can be exercised locally
 
 ## What It Does Not Do Yet
 
@@ -29,10 +29,14 @@ This MVP is a file-backed Python runtime that can manage approval-aware lifecycl
 - no destructive GitHub actions
 - no live mail adapter
 - no live LinkedIn adapter
+- internship and job-search personal-ops scaffolding exists
+- `career-ops` is cloned as reference material only
+- browser executor research now exists
 - no real external execution
 - no real remote auth layer
 - no autonomous background loop
 - no live Notion writes
+- browser and app execution are still not implemented
 - future outbound actions should stay approval-gated
 
 ## CLI Commands
@@ -76,6 +80,7 @@ This MVP is a file-backed Python runtime that can manage approval-aware lifecycl
 - `scaffold-linkedin-pack`
 - `scaffold-cv-pack`
 - `scaffold-outreach-draft`
+- `scaffold-internship-pack`
 - `snapshot`
 
 ## Runtime Data
