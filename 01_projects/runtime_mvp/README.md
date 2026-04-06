@@ -4,7 +4,7 @@ Small execution-focused runtime sandbox for Super-AI-Agent.
 
 ## What This Is
 
-This MVP is a file-backed Python runtime that can manage approval-aware lifecycle state, generate handoff snapshots from `14_context`, and expose lightweight council, workflow, report, truth, publishability, personal-ops, integration-adapter, GitHub action, environment-detection, remote smoke-test, and internship-pack utilities.
+This MVP is a file-backed Python runtime that manages approval-aware lifecycle state, generates handoff snapshots from `14_context`, and exposes lightweight workflow, GitHub, personal-ops, showcase, and diagnostic utilities.
 
 ## What It Proves
 
@@ -13,7 +13,7 @@ This MVP is a file-backed Python runtime that can manage approval-aware lifecycl
 - task state can persist in JSON files
 - durable handoff files can be turned into a runtime snapshot
 - the runtime can be checked with a repeatable script
-- provider, workflow, report, truth-plan, publishability, personal-ops, integration-adapter, GitHub draft/action, remote smoke-test, and internship-pack utilities can be exercised locally
+- provider, workflow, report, truth-plan, publishability, personal-ops, GitHub draft/action, remote smoke-test, internship-pack, and showcase utilities can be exercised locally
 
 ## What It Does Not Do Yet
 
@@ -30,7 +30,9 @@ This MVP is a file-backed Python runtime that can manage approval-aware lifecycl
 - no live mail adapter
 - no live LinkedIn adapter
 - internship and job-search personal-ops scaffolding exists
+- showcase and portfolio page scaffolding exists
 - `career-ops` is cloned as reference material only
+- official Claude Code and OpenClaw are cloned as intake and reference material only
 - browser executor research now exists
 - no real external execution
 - no real remote auth layer
@@ -81,6 +83,8 @@ This MVP is a file-backed Python runtime that can manage approval-aware lifecycl
 - `scaffold-cv-pack`
 - `scaffold-outreach-draft`
 - `scaffold-internship-pack`
+- `scaffold-showcase-case-study`
+- `scaffold-portfolio-project-page`
 - `snapshot`
 
 ## Runtime Data

@@ -119,6 +119,36 @@
       "purpose": "Reference repo for approval, confirmation, and headless agent CLI patterns.",
       "next_action": "Inspect confirmation modes and headless workflow ideas only.",
       "notes": "Evaluation clone only. No live integration is implemented."
+    },
+    {
+      "repo_id": "claude_code_official",
+      "source": "anthropics/claude-code",
+      "local_path": "21_repos/third_party/claude-code-official",
+      "category": "official_agent_cli",
+      "track_in_core": false,
+      "purpose": "Official reference repo for Claude Code operator workflow, plugins, and supported documentation.",
+      "next_action": "Inspect plugin layout and operator workflow ideas only.",
+      "notes": "Evaluation clone only. No live integration is implemented."
+    },
+    {
+      "repo_id": "openclaw",
+      "source": "openclaw/openclaw",
+      "local_path": "21_repos/third_party/openclaw",
+      "category": "control_plane_reference",
+      "track_in_core": false,
+      "purpose": "Reference repo for broader control-plane, onboarding, channel, and browser concepts.",
+      "next_action": "Extract only a few grounded control-boundary ideas later.",
+      "notes": "Evaluation clone only. No live integration is implemented."
+    },
+    {
+      "repo_id": "awesome_claude_code",
+      "source": "hesreallyhim/awesome-claude-code",
+      "local_path": "21_repos/third_party/awesome-claude-code",
+      "category": "curated_resource_index",
+      "track_in_core": false,
+      "purpose": "Reference repo for discovering skills, hooks, slash commands, tooling, and official Claude Code resources.",
+      "next_action": "Use it as a discovery list for selective future intake only.",
+      "notes": "Evaluation clone only. No live integration is implemented."
     }
   ]
 }
