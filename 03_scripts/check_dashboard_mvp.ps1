@@ -98,6 +98,7 @@ $browserArtifactPath = Join-Path $repoRoot '01_projects\browser_playground\artif
 
 $expectedFiles = @(
     '04_docs/local_dashboard_mvp.md',
+    '04_docs/operator_mode_plan.md',
     '04_docs/browser_control_playground.md',
     '01_projects/dashboard_mvp/README.md',
     '01_projects/dashboard_mvp/package.json',
@@ -191,14 +192,19 @@ try {
         throw 'Dashboard server failed to start.'
     }
 
+    $operatorStatus = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/operator-status" -Method Get -TimeoutSec 30
+    $operatorOk = $operatorStatus.ok -and $operatorStatus.localOnly -and $operatorStatus.liveNow.Count -gt 0
+    Write-Check -Name 'Operator status endpoint' -Passed $operatorOk -Detail ($(if ($operatorOk) { 'operator mode status returned and is local-only' } else { 'operator mode status missing or not local-only' }))
+    if (-not $operatorOk) { $failed++ }
+
     $capability = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/capability-summary" -Method Get -TimeoutSec 30
-    $capabilityOk = $capability.ok -and $capability.stdout
-    Write-Check -Name 'Capability endpoint' -Passed $capabilityOk -Detail ($(if ($capabilityOk) { 'capability summary returned' } else { 'capability summary missing output' }))
+    $capabilityOk = $capability.ok -and $capability.localOnly -and $capability.summary.availableCount -ge 0
+    Write-Check -Name 'Capability endpoint' -Passed $capabilityOk -Detail ($(if ($capabilityOk) { $capability.summary.headline } else { 'capability summary missing structured output' }))
     if (-not $capabilityOk) { $failed++ }
 
-    $githubStatus = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/github-status" -Method Get -TimeoutSec 30
-    $githubOk = $githubStatus.ok -and $githubStatus.stdout
-    Write-Check -Name 'GitHub status endpoint' -Passed $githubOk -Detail ($(if ($githubOk) { 'github status returned' } else { 'github status missing output' }))
+    $githubStatus = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/github-updates" -Method Get -TimeoutSec 30
+    $githubOk = $githubStatus.ok -and $githubStatus.localOnly -and $githubStatus.summary.branch
+    Write-Check -Name 'GitHub updates endpoint' -Passed $githubOk -Detail ($(if ($githubOk) { $githubStatus.summary.headline } else { 'GitHub updates missing structured output' }))
     if (-not $githubOk) { $failed++ }
 
     $internshipPayload = @{
@@ -208,23 +214,25 @@ try {
         fitSummary = 'Checker-created internship pack for the local dashboard MVP.'
     } | ConvertTo-Json
     $internship = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/scaffold/internship" -Method Post -ContentType 'application/json' -Body $internshipPayload -TimeoutSec 30
-    $internshipPath = $null
-    if ($internship.stdout -match 'personal_ops_path:\s*(.+)$') {
-        $internshipPath = $matches[1].Trim()
-    }
+    $internshipPath = $internship.summary.outputPath
     $internshipOk = $internship.ok -and $internshipPath -and (Test-Path -LiteralPath $internshipPath -PathType Leaf)
     Write-Check -Name 'Internship scaffold endpoint' -Passed $internshipOk -Detail ($(if ($internshipOk) { $internshipPath } else { 'internship scaffold was not created' }))
     if (-not $internshipOk) { $failed++ }
 
     $browserSmoke = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/browser/smoke" -Method Post -ContentType 'application/json' -Body '{}' -TimeoutSec 90
     $browserSmokeOk = $browserSmoke.ok -and (Test-Path -LiteralPath $browserArtifactPath -PathType Leaf)
-    Write-Check -Name 'Browser smoke endpoint' -Passed $browserSmokeOk -Detail ($(if ($browserSmokeOk) { $browserArtifactPath } else { 'browser smoke artifact missing' }))
+    Write-Check -Name 'Browser smoke endpoint' -Passed $browserSmokeOk -Detail ($(if ($browserSmokeOk) { $browserSmoke.summary.headline } else { 'browser smoke artifact missing' }))
     if (-not $browserSmokeOk) { $failed++ }
 
     $visibleCheck = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/browser/visible" -Method Post -ContentType 'application/json' -Body (@{ checkOnly = $true } | ConvertTo-Json) -TimeoutSec 30
     $visibleCheckOk = $visibleCheck.ok
     Write-Check -Name 'Visible demo endpoint' -Passed $visibleCheckOk -Detail ($(if ($visibleCheckOk) { 'visible endpoint responded in check-only mode' } else { 'visible endpoint failed' }))
     if (-not $visibleCheckOk) { $failed++ }
+
+    $recentActions = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/recent-actions" -Method Get -TimeoutSec 30
+    $recentActionsOk = $recentActions.ok -and $recentActions.localOnly -and $recentActions.actions.Count -gt 0
+    Write-Check -Name 'Recent actions endpoint' -Passed $recentActionsOk -Detail ($(if ($recentActionsOk) { 'recent actions log returned entries' } else { 'recent actions log missing entries' }))
+    if (-not $recentActionsOk) { $failed++ }
 }
 finally {
     Remove-GeneratedFile -Path $browserArtifactPath

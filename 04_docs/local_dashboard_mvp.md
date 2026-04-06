@@ -2,31 +2,34 @@
 
 ## Purpose
 
-Give the user a visible local control surface so progress is easy to watch and trigger, not just inspect through scripts and checkers.
+Give the user a visible local control surface that feels understandable and useful, not like a cluttered dev page.
 
 ## What It Can Do Now
 
-- show the current runtime capability summary
-- show GitHub status from the existing adapter
+- show a clearer operator-mode summary
+- show GitHub updates in a simpler read-only panel
+- distinguish live now vs scaffold-only vs not implemented yet
 - generate internship, showcase, and portfolio scaffolds
 - trigger the browser smoke demo
 - trigger the visible browser demo
-- list recent artifacts from personal ops, GitHub drafts, and browser outputs
+- list recent artifacts and recent actions
 
 ## What It Does Not Do Yet
 
 - no approval queue UI
-- no task timeline or live logs
+- no full task timeline
 - no browser executor loop
 - no native Windows app control
 - no remote control surface
 
-## Why Local-Only First
+## Current UX Goal
 
-- it keeps the control boundary easy to inspect
-- it avoids exposing secrets or remote actions through an immature UI
-- it gives the user an immediate way to see what the system can already do
+- less clutter
+- clearer operator-console structure
+- better GitHub visibility
+- better browser demo clarity
+- easier to understand what is live versus scaffold-only
 
 ## Likely Next GUI Step
 
-Add a stronger local operator console with action history, explicit approval prompts, and a clearer path from planned actions to executed actions.
+Add a stronger local operator console with approval prompts, richer action history, and a tighter path from visible demos to a real executor boundary.
