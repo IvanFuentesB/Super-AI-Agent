@@ -6,6 +6,14 @@ import sys
 from datetime import datetime, timezone
 
 from .council import build_council_plan
+from .github_actions import (
+    create_branch_with_approval,
+    create_issue_with_approval,
+    create_pr_with_approval,
+    scaffold_issue_draft,
+    scaffold_pr_draft,
+)
+from .github_adapter import diagnose_gh_environment
 from .github_adapter import get_current_branch as get_github_branch
 from .github_adapter import get_recent_commits, get_remote_info, get_repo_status_summary
 from .handoff import build_handoff_snapshot
@@ -88,6 +96,7 @@ def _build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("list-integrations")
     subparsers.add_parser("github-status")
     subparsers.add_parser("publish-check-core")
+    subparsers.add_parser("github-gh-diagnose")
 
     enqueue_parser = subparsers.add_parser("enqueue")
     enqueue_parser.add_argument("--title", required=True)
@@ -131,6 +140,36 @@ def _build_parser() -> argparse.ArgumentParser:
     notion_plan_parser = subparsers.add_parser("notion-plan")
     notion_plan_parser.add_argument("--page-label", required=True)
     notion_plan_parser.add_argument("--objective", required=True)
+
+    github_issue_draft_parser = subparsers.add_parser("github-issue-draft")
+    github_issue_draft_parser.add_argument("--title", required=True)
+    github_issue_draft_parser.add_argument("--objective", required=True)
+    github_issue_draft_parser.add_argument("--context", required=True)
+    github_issue_draft_parser.add_argument("--body", required=True)
+    github_issue_draft_parser.add_argument("--labels", default="")
+
+    github_pr_draft_parser = subparsers.add_parser("github-pr-draft")
+    github_pr_draft_parser.add_argument("--title", required=True)
+    github_pr_draft_parser.add_argument("--objective", required=True)
+    github_pr_draft_parser.add_argument("--source-branch", required=True)
+    github_pr_draft_parser.add_argument("--target-branch", required=True)
+    github_pr_draft_parser.add_argument("--summary", required=True)
+    github_pr_draft_parser.add_argument("--risk-notes", default="")
+
+    github_create_branch_parser = subparsers.add_parser("github-create-branch")
+    github_create_branch_parser.add_argument("--branch-name", required=True)
+    github_create_branch_parser.add_argument("--approve", required=True, choices=["yes", "no"])
+
+    github_create_issue_parser = subparsers.add_parser("github-create-issue")
+    github_create_issue_parser.add_argument("--title", required=True)
+    github_create_issue_parser.add_argument("--body", required=True)
+    github_create_issue_parser.add_argument("--approve", required=True, choices=["yes", "no"])
+
+    github_create_pr_parser = subparsers.add_parser("github-create-pr")
+    github_create_pr_parser.add_argument("--title", required=True)
+    github_create_pr_parser.add_argument("--body", required=True)
+    github_create_pr_parser.add_argument("--base-branch", default="main")
+    github_create_pr_parser.add_argument("--approve", required=True, choices=["yes", "no"])
 
     scaffold_report_parser = subparsers.add_parser("scaffold-report")
     scaffold_report_parser.add_argument("--title", required=True)
@@ -303,6 +342,26 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"- {commit.commit_hash} {commit.subject}")
             return 0
 
+        if args.command == "github-gh-diagnose":
+            diagnostics = diagnose_gh_environment()
+            print(f"gh_available: {'yes' if diagnostics.gh_available else 'no'}")
+            print(f"gh_path: {diagnostics.gh_path or 'none'}")
+            print(f"version: {diagnostics.version or 'unknown'}")
+            print(f"auth_known: {'yes' if diagnostics.auth_known else 'no'}")
+            if diagnostics.gh_authenticated is None:
+                print("gh_authenticated: unknown")
+            else:
+                print(f"gh_authenticated: {'yes' if diagnostics.gh_authenticated else 'no'}")
+            if diagnostics.where_results:
+                print("where_results:")
+                for item in diagnostics.where_results:
+                    print(f"- {item}")
+            if diagnostics.notes:
+                print("notes:")
+                for item in diagnostics.notes:
+                    print(f"- {item}")
+            return 0
+
         if args.command == "council-plan":
             plan = build_council_plan(
                 goal_type=args.goal_type,
@@ -401,6 +460,56 @@ def main(argv: list[str] | None = None) -> int:
             print("approval_points:")
             for item in plan.approval_points:
                 print(f"- {item}")
+            return 0
+
+        if args.command == "github-issue-draft":
+            output_path = scaffold_issue_draft(
+                title=args.title,
+                objective=args.objective,
+                context=args.context,
+                body=args.body,
+                labels=args.labels,
+            )
+            print(f"github_draft_path: {output_path}")
+            return 0
+
+        if args.command == "github-pr-draft":
+            output_path = scaffold_pr_draft(
+                title=args.title,
+                objective=args.objective,
+                source_branch=args.source_branch,
+                target_branch=args.target_branch,
+                summary=args.summary,
+                risk_notes=args.risk_notes,
+            )
+            print(f"github_draft_path: {output_path}")
+            return 0
+
+        if args.command == "github-create-branch":
+            result = create_branch_with_approval(
+                branch_name=args.branch_name,
+                approved=args.approve == "yes",
+            )
+            print(result)
+            return 0
+
+        if args.command == "github-create-issue":
+            result = create_issue_with_approval(
+                title=args.title,
+                body=args.body,
+                approved=args.approve == "yes",
+            )
+            print(result)
+            return 0
+
+        if args.command == "github-create-pr":
+            result = create_pr_with_approval(
+                title=args.title,
+                body=args.body,
+                base_branch=args.base_branch,
+                approved=args.approve == "yes",
+            )
+            print(result)
             return 0
 
         if args.command == "scaffold-report":

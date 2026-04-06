@@ -23,6 +23,8 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Provider adapter roadmap now exists
 - Integration adapter foundation now exists
 - GitHub live read-only adapter now exists
+- GitHub draft generation now exists
+- Approval-gated local branch, remote issue, and remote PR actions now exist
 - Mail and Notion planning adapters now exist
 - Scoped core publishability scan now exists
 - Remote access and auth plan now exists
@@ -32,6 +34,7 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - No live external provider APIs yet
 - No real browser or app execution yet
 - No remote auth layer yet
+- Remote GitHub issue and PR execution still depends on gh, which is unavailable in this shell today
 - No live mail sending adapter yet
 - No live LinkedIn posting or edit adapter yet
 - No live Notion writes yet
@@ -39,7 +42,8 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Claw Code remains temporary reference, not foundation
 
 ## Immediate Focus
-- Extend GitHub support with approval-gated write actions later
+- Standardize gh availability for explicit GitHub remote actions
+- Refine safe GitHub write behavior without adding destructive actions
 - Deepen mail and Notion planning without enabling unsafe actions
 - Keep LinkedIn planning-only until approval and adapter boundaries are clearer
 - Strengthen auth, access control, and publishability without bloating the core
@@ -47,3 +51,4 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 ## Current Risk / Constraint
 - Continue session context still fills quickly
 - Python works through a resolved local interpreter, but not via a clean python PATH yet
+- gh is not currently available on PATH in this execution environment

@@ -47,11 +47,49 @@ function Invoke-ModuleCommand {
     }
     $pythonList = '[' + ($escapedArgs -join ', ') + ']'
     $runtimeSrcEscaped = $runtimeSrc.Replace('\', '\\').Replace("'", "\\'")
-    $code = "import sys; sys.path.insert(0, r'$runtimeSrcEscaped'); from super_ai_agent.cli import main; raise SystemExit(main($pythonList))"
-    $output = & $PythonPath -c $code 2>&1
+    $scriptPath = [System.IO.Path]::ChangeExtension([System.IO.Path]::GetTempFileName(), '.py')
+    $code = @"
+import sys
+sys.path.insert(0, r'$runtimeSrcEscaped')
+from super_ai_agent.cli import main
+raise SystemExit(main($pythonList))
+"@
+
+    $stdoutPath = [System.IO.Path]::GetTempFileName()
+    $stderrPath = [System.IO.Path]::GetTempFileName()
+
+    try {
+        Set-Content -LiteralPath $scriptPath -Value $code -Encoding UTF8
+        $process = Start-Process `
+            -FilePath $PythonPath `
+            -ArgumentList $scriptPath `
+            -NoNewWindow `
+            -PassThru `
+            -Wait `
+            -RedirectStandardOutput $stdoutPath `
+            -RedirectStandardError $stderrPath
+
+        $outputParts = @()
+        if (Test-Path -LiteralPath $stdoutPath) {
+            $stdoutText = Get-Content -Raw -LiteralPath $stdoutPath
+            if (-not [string]::IsNullOrWhiteSpace($stdoutText)) {
+                $outputParts += $stdoutText.TrimEnd()
+            }
+        }
+        if (Test-Path -LiteralPath $stderrPath) {
+            $stderrText = Get-Content -Raw -LiteralPath $stderrPath
+            if (-not [string]::IsNullOrWhiteSpace($stderrText)) {
+                $outputParts += $stderrText.TrimEnd()
+            }
+        }
+    }
+    finally {
+        Remove-Item -LiteralPath $scriptPath, $stdoutPath, $stderrPath -Force -ErrorAction SilentlyContinue
+    }
+
     return @{
-        ExitCode = $LASTEXITCODE
-        Output = $output
+        ExitCode = $process.ExitCode
+        Output = ($outputParts -join [Environment]::NewLine)
     }
 }
 
@@ -65,6 +103,7 @@ $expectedFiles = @(
     '01_projects/runtime_mvp/src/super_ai_agent/__init__.py',
     '01_projects/runtime_mvp/src/super_ai_agent/integrations.py',
     '01_projects/runtime_mvp/src/super_ai_agent/github_adapter.py',
+    '01_projects/runtime_mvp/src/super_ai_agent/github_actions.py',
     '01_projects/runtime_mvp/src/super_ai_agent/mail_adapter.py',
     '01_projects/runtime_mvp/src/super_ai_agent/notion_adapter.py',
     '01_projects/runtime_mvp/src/super_ai_agent/models.py',
@@ -83,6 +122,8 @@ $expectedFiles = @(
     '04_docs/runtime_mvp.md',
     '04_docs/integration_adapter_architecture.md',
     '04_docs/github_adapter.md',
+    '04_docs/github_write_actions.md',
+    '04_docs/github_approval_flow.md',
     '04_docs/mail_adapter_plan.md',
     '04_docs/notion_adapter_plan.md',
     '04_docs/publishability_scope.md',
@@ -99,9 +140,13 @@ $expectedFiles = @(
     '07_templates/linkedin_update_pack.md',
     '07_templates/cv_update_pack.md',
     '07_templates/outreach_draft.md',
+    '07_templates/github_issue_draft.md',
+    '07_templates/github_pr_draft.md',
+    '11_exports/github/.gitkeep',
     '11_exports/personal_ops/.gitkeep',
     '23_configs/integration_policy.example.json',
     '23_configs/publish_scope.example.json',
+    '23_configs/github_action_policy.example.json',
     '23_configs/provider_profiles.example.json',
     '23_configs/council_policy.example.json',
     '23_configs/personal_workflow_catalog.example.json',
@@ -191,6 +236,39 @@ $githubStatusResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
 $githubStatusOk = $githubStatusResult.ExitCode -eq 0
 Write-Check -Name 'CLI github-status' -Passed $githubStatusOk -Detail (($githubStatusResult.Output | Out-String).Trim())
 if (-not $githubStatusOk) { $failed++ }
+
+$ghDiagnoseResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('github-gh-diagnose')
+$ghDiagnoseOk = $ghDiagnoseResult.ExitCode -eq 0
+Write-Check -Name 'CLI github-gh-diagnose' -Passed $ghDiagnoseOk -Detail (($ghDiagnoseResult.Output | Out-String).Trim())
+if (-not $ghDiagnoseOk) { $failed++ }
+
+$githubIssueDraftResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('github-issue-draft', '--title', 'Checker GitHub Issue', '--objective', 'Validate issue draft generation', '--context', 'Runtime checker', '--body', 'Draft issue body for checker.', '--labels', 'runtime,checker')
+$githubIssueDraftOk = $githubIssueDraftResult.ExitCode -eq 0
+Write-Check -Name 'CLI github-issue-draft' -Passed $githubIssueDraftOk -Detail (($githubIssueDraftResult.Output | Out-String).Trim())
+if (-not $githubIssueDraftOk) { $failed++ }
+
+$githubPrDraftResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('github-pr-draft', '--title', 'Checker GitHub PR', '--objective', 'Validate PR draft generation', '--source-branch', 'feat/checker-source', '--target-branch', 'main', '--summary', 'Draft PR summary for checker.', '--risk-notes', 'No remote mutation should occur.')
+$githubPrDraftOk = $githubPrDraftResult.ExitCode -eq 0
+Write-Check -Name 'CLI github-pr-draft' -Passed $githubPrDraftOk -Detail (($githubPrDraftResult.Output | Out-String).Trim())
+if (-not $githubPrDraftOk) { $failed++ }
+
+$githubCreateBranchResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('github-create-branch', '--branch-name', 'feat/checker-branch', '--approve', 'no')
+$githubCreateBranchRefused = $githubCreateBranchResult.ExitCode -ne 0 -and (($githubCreateBranchResult.Output | Out-String) -match 'Approval required')
+Write-Check -Name 'CLI github-create-branch approve=no refusal' -Passed $githubCreateBranchRefused -Detail (($githubCreateBranchResult.Output | Out-String).Trim())
+if (-not $githubCreateBranchRefused) { $failed++ }
+
+$githubCreateIssueResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('github-create-issue', '--title', 'Checker remote issue', '--body', 'This should refuse without approval.', '--approve', 'no')
+$githubCreateIssueRefused = $githubCreateIssueResult.ExitCode -ne 0 -and (($githubCreateIssueResult.Output | Out-String) -match 'Approval required')
+Write-Check -Name 'CLI github-create-issue approve=no refusal' -Passed $githubCreateIssueRefused -Detail (($githubCreateIssueResult.Output | Out-String).Trim())
+if (-not $githubCreateIssueRefused) { $failed++ }
+
+$githubCreatePrResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('github-create-pr', '--title', 'Checker remote pr', '--body', 'This should refuse without approval.', '--base-branch', 'main', '--approve', 'no')
+$githubCreatePrRefused = $githubCreatePrResult.ExitCode -ne 0 -and (($githubCreatePrResult.Output | Out-String) -match 'Approval required')
+Write-Check -Name 'CLI github-create-pr approve=no refusal' -Passed $githubCreatePrRefused -Detail (($githubCreatePrResult.Output | Out-String).Trim())
+if (-not $githubCreatePrRefused) { $failed++ }
+
+$ghAvailableForRemote = (($ghDiagnoseResult.Output | Out-String) -match 'gh_available:\s+yes')
+Write-Check -Name 'Remote GitHub write test policy' -Passed $true -Detail ($(if ($ghAvailableForRemote) { 'SKIPPED: gh is available but checker does not create live remote issues or PRs.' } else { 'SKIPPED: gh is unavailable, so live remote issue/PR tests were not attempted.' }))
 
 $mailPlanResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('mail-plan', '--account-label', 'Primary Inbox', '--goal', 'Prepare a triage plan')
 $mailPlanOk = $mailPlanResult.ExitCode -eq 0
@@ -285,6 +363,8 @@ $artifactPaths = @(
     '01_projects/runtime_mvp/runtime_data/approvals.json',
     '01_projects/runtime_mvp/runtime_data/handoff_snapshot.md',
     '11_exports/reports/checker-council-report.md',
+    '11_exports/github/checker-github-issue-issue-draft.md',
+    '11_exports/github/checker-github-pr-pr-draft.md',
     '11_exports/personal_ops/primary-inbox-inbox-triage-pack.md',
     '11_exports/personal_ops/main-profile-linkedin-update-pack.md',
     '11_exports/personal_ops/ai-automation-lead-cv-update-pack.md',
