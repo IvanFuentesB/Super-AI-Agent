@@ -7,6 +7,7 @@ from .github_adapter import create_local_branch, create_remote_issue, create_rem
 from .storage import _ensure_directory, _write_text, get_project_root
 
 GITHUB_EXPORTS_DIR = get_project_root().parents[1] / "11_exports" / "github"
+SMOKE_TEST_PREFIX = "[SMOKE TEST]"
 
 
 def _slugify(value: str) -> str:
@@ -109,6 +110,14 @@ def approve_required_or_raise(approved: bool, action_label: str) -> None:
         raise ValueError(f"Approval required for {action_label}. Re-run with --approve yes.")
 
 
+def _require_smoke_test_title(title: str) -> None:
+    if not title.strip().startswith(SMOKE_TEST_PREFIX):
+        raise ValueError(
+            f"Smoke-test titles must start with {SMOKE_TEST_PREFIX}. "
+            "Use an obvious test prefix before any live remote mutation."
+        )
+
+
 def create_branch_with_approval(branch_name: str, approved: bool) -> str:
     approve_required_or_raise(approved, "local branch creation")
     return create_local_branch(branch_name)
@@ -121,4 +130,16 @@ def create_issue_with_approval(title: str, body: str, approved: bool) -> str:
 
 def create_pr_with_approval(title: str, body: str, base_branch: str, approved: bool) -> str:
     approve_required_or_raise(approved, "remote PR creation")
+    return create_remote_pr(title, body, base_branch=base_branch)
+
+
+def create_smoke_issue_with_approval(title: str, body: str, labels: str, approved: bool) -> str:
+    approve_required_or_raise(approved, "remote smoke issue creation")
+    _require_smoke_test_title(title)
+    return create_remote_issue(title, body, labels=labels)
+
+
+def create_smoke_pr_with_approval(title: str, body: str, base_branch: str, approved: bool) -> str:
+    approve_required_or_raise(approved, "remote smoke PR creation")
+    _require_smoke_test_title(title)
     return create_remote_pr(title, body, base_branch=base_branch)

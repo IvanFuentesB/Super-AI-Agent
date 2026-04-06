@@ -20,20 +20,21 @@
 - [x] Integration adapter foundation exists
 - [x] GitHub write-action layer exists
 - [x] Environment hardening and capability detection exist
+- [x] GitHub remote smoke-test layer exists
 
 ## Current Control Layer
 - Continue for local context/rules
 - Codex for execution and Git workflow
 
 ## Current Branch
-- feat/environment-hardening
+- feat/github-remote-smoke-tests
 
 ## Current Phase
-- environment hardening and capability detection
+- GitHub remote smoke-test layer
 
 ## Next Milestones
-- standardize gh availability and auth
-- add GitHub remote smoke testing once auth is ready
+- optionally run one explicit live smoke issue test
+- refine the safe GitHub remote action flow
 - deepen mail and inbox planning
 - plan the live Notion adapter carefully
 - keep LinkedIn planning-only for now
@@ -44,14 +45,13 @@
 - Continue context fills quickly
 - memory must stay compact
 - avoid bloated or messy setup
-- Python is available through a resolved local interpreter, not a clean python PATH
 - no live provider integrations yet
 - no real browser or app execution yet
 - no remote auth layer yet
 - third-party repos are intake material only, not core project code
 - no live mail or LinkedIn adapters yet
 - no live Notion writes yet
-- gh is not PATH-visible in this execution environment, but a fallback binary was found and is unauthenticated
+- live remote GitHub mutation is possible in this environment, so approval discipline remains critical
 
 ## Last Reviewed
 - 2026-04-06

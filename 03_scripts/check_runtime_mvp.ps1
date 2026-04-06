@@ -128,6 +128,7 @@ $expectedFiles = @(
     '04_docs/github_adapter.md',
     '04_docs/github_write_actions.md',
     '04_docs/github_approval_flow.md',
+    '04_docs/github_remote_smoke_tests.md',
     '04_docs/mail_adapter_plan.md',
     '04_docs/notion_adapter_plan.md',
     '04_docs/publishability_scope.md',
@@ -151,6 +152,7 @@ $expectedFiles = @(
     '23_configs/integration_policy.example.json',
     '23_configs/publish_scope.example.json',
     '23_configs/github_action_policy.example.json',
+    '23_configs/github_smoke_policy.example.json',
     '23_configs/tool_detection_policy.example.json',
     '23_configs/provider_profiles.example.json',
     '23_configs/council_policy.example.json',
@@ -214,6 +216,15 @@ if (-not $ghAuthStatusOk) { $failed++ }
 $ghAuthModeKnown = (($ghAuthStatusResult.Output | Out-String) -match 'status:\s+(checked|skipped|unknown)')
 Write-Check -Name 'gh auth status is clearly classified' -Passed $ghAuthModeKnown -Detail ($(if ($ghAuthModeKnown) { 'gh auth status output is readable.' } else { 'gh auth status output is unclear.' }))
 if (-not $ghAuthModeKnown) { $failed++ }
+
+$githubRemoteCapabilityResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('github-remote-capability')
+$githubRemoteCapabilityOk = $githubRemoteCapabilityResult.ExitCode -eq 0
+Write-Check -Name 'CLI github-remote-capability' -Passed $githubRemoteCapabilityOk -Detail (($githubRemoteCapabilityResult.Output | Out-String).Trim())
+if (-not $githubRemoteCapabilityOk) { $failed++ }
+
+$ghRemoteCapabilityClear = (($githubRemoteCapabilityResult.Output | Out-String) -match 'remote_write_possible:\s+(yes|no)')
+Write-Check -Name 'Remote capability is clearly classified' -Passed $ghRemoteCapabilityClear -Detail ($(if ($ghRemoteCapabilityClear) { 'remote capability output is readable.' } else { 'remote capability output is unclear.' }))
+if (-not $ghRemoteCapabilityClear) { $failed++ }
 
 $providersResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('list-providers')
 $providersOk = $providersResult.ExitCode -eq 0
@@ -299,8 +310,18 @@ $githubCreatePrRefused = $githubCreatePrResult.ExitCode -ne 0 -and (($githubCrea
 Write-Check -Name 'CLI github-create-pr approve=no refusal' -Passed $githubCreatePrRefused -Detail (($githubCreatePrResult.Output | Out-String).Trim())
 if (-not $githubCreatePrRefused) { $failed++ }
 
-$ghAvailableForRemote = (($ghDiagnoseResult.Output | Out-String) -match 'gh_available:\s+yes')
-Write-Check -Name 'Remote GitHub write test policy' -Passed $true -Detail ($(if ($ghAvailableForRemote) { 'SKIPPED: gh is available but checker does not create live remote issues or PRs.' } else { 'SKIPPED: gh is unavailable, so live remote issue/PR tests were not attempted.' }))
+$githubSmokeIssueResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('github-smoke-issue', '--title', '[SMOKE TEST] Checker smoke issue', '--body', 'This should refuse without approval.', '--labels', 'smoke-test', '--approve', 'no')
+$githubSmokeIssueRefused = $githubSmokeIssueResult.ExitCode -ne 0 -and (($githubSmokeIssueResult.Output | Out-String) -match 'Approval required')
+Write-Check -Name 'CLI github-smoke-issue approve=no refusal' -Passed $githubSmokeIssueRefused -Detail (($githubSmokeIssueResult.Output | Out-String).Trim())
+if (-not $githubSmokeIssueRefused) { $failed++ }
+
+$githubSmokePrResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('github-smoke-pr', '--title', '[SMOKE TEST] Checker smoke pr', '--body', 'This should refuse without approval.', '--base-branch', 'main', '--approve', 'no')
+$githubSmokePrRefused = $githubSmokePrResult.ExitCode -ne 0 -and (($githubSmokePrResult.Output | Out-String) -match 'Approval required')
+Write-Check -Name 'CLI github-smoke-pr approve=no refusal' -Passed $githubSmokePrRefused -Detail (($githubSmokePrResult.Output | Out-String).Trim())
+if (-not $githubSmokePrRefused) { $failed++ }
+
+$remoteSmokePossible = (($githubRemoteCapabilityResult.Output | Out-String) -match 'remote_write_possible:\s+yes')
+Write-Check -Name 'Remote GitHub smoke test policy' -Passed $true -Detail ($(if ($remoteSmokePossible) { 'SKIPPED: remote smoke actions are possible, but checker stays non-mutating by default.' } else { 'SKIPPED: remote smoke actions are not ready in this environment.' }))
 
 $mailPlanResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('mail-plan', '--account-label', 'Primary Inbox', '--goal', 'Prepare a triage plan')
 $mailPlanOk = $mailPlanResult.ExitCode -eq 0

@@ -46,6 +46,17 @@ class GhEnvironmentDiagnostics:
     notes: list[str]
 
 
+@dataclass
+class GitHubRemoteCapability:
+    repo_root: str
+    branch: str
+    origin_url: str | None
+    gh_available: bool
+    gh_authenticated: bool | None
+    remote_actions_possible: bool
+    blocking_issue: str | None
+
+
 def _run_git(args: list[str]) -> subprocess.CompletedProcess[str]:
     git_command = find_git_command()
     if not git_command:
@@ -83,6 +94,11 @@ def is_gh_available() -> bool:
     return find_gh_command() is not None
 
 
+def is_gh_authenticated() -> bool:
+    diagnostics = diagnose_gh_environment()
+    return bool(diagnostics.gh_available and diagnostics.gh_authenticated)
+
+
 def diagnose_gh_environment() -> GhEnvironmentDiagnostics:
     gh_tool = diagnose_environment().gh
     where_results: list[str] = []
@@ -115,6 +131,19 @@ def diagnose_gh_environment() -> GhEnvironmentDiagnostics:
         gh_authenticated=gh_tool.authenticated,
         notes=notes,
     )
+
+
+def _require_gh_ready() -> str:
+    diagnostics = diagnose_gh_environment()
+    if not diagnostics.gh_available or not diagnostics.gh_path:
+        raise ValueError("gh is not available. Remote GitHub actions cannot run in this environment.")
+    if diagnostics.auth_known and diagnostics.gh_authenticated is False:
+        raise ValueError("gh is available but not authenticated. Remote GitHub actions are blocked.")
+    if diagnostics.auth_known and diagnostics.gh_authenticated is None:
+        raise ValueError("gh authentication status is unknown. Remote GitHub actions are blocked.")
+    if not diagnostics.auth_known:
+        raise ValueError("gh authentication status could not be verified. Remote GitHub actions are blocked.")
+    return diagnostics.gh_path
 
 
 def get_current_branch() -> str:
@@ -186,6 +215,31 @@ def get_remote_info() -> RemoteInfo:
     )
 
 
+def get_remote_capability() -> GitHubRemoteCapability:
+    summary = get_repo_status_summary()
+    remote = get_remote_info()
+
+    blocking_issue = None
+    if not remote.origin_url:
+        blocking_issue = "origin remote is not configured."
+    elif not remote.gh_available:
+        blocking_issue = "gh is not available in the runtime environment."
+    elif remote.gh_authenticated is False:
+        blocking_issue = "gh is available but not authenticated."
+    elif remote.gh_authenticated is None:
+        blocking_issue = "gh authentication status is unknown."
+
+    return GitHubRemoteCapability(
+        repo_root=summary.repo_root,
+        branch=summary.branch,
+        origin_url=remote.origin_url,
+        gh_available=remote.gh_available,
+        gh_authenticated=remote.gh_authenticated,
+        remote_actions_possible=blocking_issue is None,
+        blocking_issue=blocking_issue,
+    )
+
+
 def create_local_branch(branch_name: str) -> str:
     _ensure_repo()
     branch_name = branch_name.strip()
@@ -199,12 +253,16 @@ def create_local_branch(branch_name: str) -> str:
     return f"created local branch: {branch_name}"
 
 
-def create_remote_issue(title: str, body: str) -> str:
+def create_remote_issue(title: str, body: str, labels: str = "") -> str:
     _ensure_repo()
-    if not is_gh_available():
-        raise ValueError("gh is not available. Remote issue creation cannot run in this environment.")
+    _require_gh_ready()
 
-    result = _run_gh(["issue", "create", "--title", title, "--body", body])
+    command = ["issue", "create", "--title", title, "--body", body]
+    cleaned_labels = ",".join(item.strip() for item in labels.split(",") if item.strip())
+    if cleaned_labels:
+        command.extend(["--label", cleaned_labels])
+
+    result = _run_gh(command)
     if result.returncode != 0:
         message = result.stderr.strip() or result.stdout.strip() or "Unable to create remote issue."
         raise ValueError(message)
@@ -213,8 +271,7 @@ def create_remote_issue(title: str, body: str) -> str:
 
 def create_remote_pr(title: str, body: str, base_branch: str = "main") -> str:
     _ensure_repo()
-    if not is_gh_available():
-        raise ValueError("gh is not available. Remote PR creation cannot run in this environment.")
+    _require_gh_ready()
 
     current_branch = get_current_branch()
     result = _run_gh(

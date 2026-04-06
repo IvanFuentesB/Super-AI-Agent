@@ -4,7 +4,7 @@ Small execution-focused runtime sandbox for Super-AI-Agent.
 
 ## What This Is
 
-This MVP is a file-backed Python runtime that can manage approval-aware lifecycle state, generate handoff snapshots from `14_context`, and expose lightweight council, workflow, report, truth, publishability, personal-ops, integration-adapter, GitHub action, and environment-detection utilities.
+This MVP is a file-backed Python runtime that can manage approval-aware lifecycle state, generate handoff snapshots from `14_context`, and expose lightweight council, workflow, report, truth, publishability, personal-ops, integration-adapter, GitHub action, environment-detection, and remote smoke-test utilities.
 
 ## What It Proves
 
@@ -13,7 +13,7 @@ This MVP is a file-backed Python runtime that can manage approval-aware lifecycl
 - task state can persist in JSON files
 - durable handoff files can be turned into a runtime snapshot
 - the runtime can be checked with a repeatable script
-- provider, workflow, report, truth-plan, publishability, personal-ops, integration-adapter, and GitHub draft/action utilities can be exercised locally
+- provider, workflow, report, truth-plan, publishability, personal-ops, integration-adapter, GitHub draft/action, and remote smoke-test utilities can be exercised locally
 
 ## What It Does Not Do Yet
 
@@ -22,7 +22,9 @@ This MVP is a file-backed Python runtime that can manage approval-aware lifecycl
 - GitHub live read-only adapter exists
 - GitHub draft generation exists
 - approval-gated branch, issue, and PR actions exist
-- remote issue and PR creation depend on `gh`
+- remote smoke-test issue and PR actions exist
+- remote GitHub issue and PR creation depend on runtime-detected `gh` presence and auth
+- in the intended environment, authenticated `gh` makes remote smoke actions possible with explicit approval
 - environment hardening and capability detection exist
 - no destructive GitHub actions
 - no live mail adapter
@@ -55,6 +57,7 @@ This MVP is a file-backed Python runtime that can manage approval-aware lifecycl
 - `list-integrations`
 - `github-status`
 - `github-gh-diagnose`
+- `github-remote-capability`
 - `env-diagnose`
 - `gh-auth-status`
 - `capability-matrix`
@@ -63,6 +66,8 @@ This MVP is a file-backed Python runtime that can manage approval-aware lifecycl
 - `github-create-branch`
 - `github-create-issue`
 - `github-create-pr`
+- `github-smoke-issue`
+- `github-smoke-pr`
 - `mail-plan`
 - `notion-plan`
 - `list-personal-workflows`
@@ -84,3 +89,5 @@ Run:
 ```powershell
 powershell.exe -ExecutionPolicy Bypass -File 03_scripts/check_runtime_mvp.ps1
 ```
+
+The checker stays non-mutating by default, even when remote GitHub smoke actions are possible.
