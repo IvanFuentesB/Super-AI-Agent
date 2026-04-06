@@ -1,8 +1,9 @@
 # Next Actions
 
-- Build a real provider adapter layer
-- Research browser and app execution safely
-- Strengthen access control and approval flow
+- Start provider adapters in the planned order
+- Evaluate the intake repos one by one
+- Research browser and app executor design safely
+- Strengthen auth and access control
 - Harden publishability before any public release
-- Evaluate routing truthfulness and usefulness
 - Expand Notion and GitHub workflows later
+- Run routing and truth evals later

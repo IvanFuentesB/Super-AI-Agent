@@ -1,0 +1,84 @@
+{
+  "repos": [
+    {
+      "repo_id": "browser_use",
+      "source": "browser-use/browser-use",
+      "local_path": "21_repos/third_party/browser-use",
+      "category": "browser_automation",
+      "track_in_core": false,
+      "purpose": "Reference repo for owned-account browser workflow research.",
+      "next_action": "Inspect Windows fit and approval-gated execution patterns.",
+      "notes": "Evaluation clone only. No live integration is implemented."
+    },
+    {
+      "repo_id": "browser_use_web_ui",
+      "source": "browser-use/web-ui",
+      "local_path": "21_repos/third_party/browser-use-web-ui",
+      "category": "browser_ui",
+      "track_in_core": false,
+      "purpose": "Reference repo for a future local dashboard or operator surface.",
+      "next_action": "Inspect operator workflow ideas without adopting the full stack.",
+      "notes": "Evaluation clone only. No live integration is implemented."
+    },
+    {
+      "repo_id": "stagehand",
+      "source": "browserbase/stagehand",
+      "local_path": "21_repos/third_party/stagehand",
+      "category": "browser_control",
+      "track_in_core": false,
+      "purpose": "Reference repo for browser executor and observation-loop design.",
+      "next_action": "Inspect browser action model and safety fit.",
+      "notes": "Evaluation clone only. No live integration is implemented."
+    },
+    {
+      "repo_id": "openhands",
+      "source": "OpenHands/OpenHands",
+      "local_path": "21_repos/third_party/openhands",
+      "category": "agent_harness",
+      "track_in_core": false,
+      "purpose": "Reference repo for multi-step agent harness patterns.",
+      "next_action": "Inspect architecture and runtime boundaries only.",
+      "notes": "Evaluation clone only. No live integration is implemented."
+    },
+    {
+      "repo_id": "aider",
+      "source": "aider-ai/aider",
+      "local_path": "21_repos/third_party/aider",
+      "category": "coding_assistant",
+      "track_in_core": false,
+      "purpose": "Reference repo for Git-aware coding workflow patterns.",
+      "next_action": "Inspect commit workflow and safe editing patterns.",
+      "notes": "Evaluation clone only. No live integration is implemented."
+    },
+    {
+      "repo_id": "n8n",
+      "source": "n8n-io/n8n",
+      "local_path": "21_repos/third_party/n8n",
+      "category": "workflow_orchestration",
+      "track_in_core": false,
+      "purpose": "Reference repo for external workflow orchestration ideas.",
+      "next_action": "Inspect conceptual fit before considering any bridge.",
+      "notes": "Evaluation clone only. No live integration is implemented."
+    },
+    {
+      "repo_id": "logto",
+      "source": "logto-io/logto",
+      "local_path": "21_repos/third_party/logto",
+      "category": "auth_identity",
+      "track_in_core": false,
+      "purpose": "Reference repo for approved-user auth and identity modeling.",
+      "next_action": "Inspect role and auth concepts only.",
+      "notes": "Evaluation clone only. No live integration is implemented."
+    },
+    {
+      "repo_id": "mcp_servers",
+      "source": "modelcontextprotocol/servers",
+      "local_path": "21_repos/third_party/mcp-servers",
+      "category": "integration_servers",
+      "track_in_core": false,
+      "purpose": "Reference repo for future adapter and tool-server intake.",
+      "next_action": "Inspect relevant servers selectively instead of adopting wholesale.",
+      "notes": "Evaluation clone only. No live integration is implemented."
+    }
+  ]
+}
