@@ -1,0 +1,25 @@
+{
+  "detect_python": true,
+  "detect_git": true,
+  "detect_gh": true,
+  "python_common_windows_paths": [
+    "%LocalAppData%\\Programs\\Python\\Python313\\python.exe",
+    "%LocalAppData%\\Programs\\Python\\Python312\\python.exe",
+    "C:\\Program Files\\KiCad\\9.0\\bin\\python.exe",
+    "C:\\Program Files\\SOLIDWORKS Corp\\SOLIDWORKS\\Simulation\\Topology\\tools\\smapy\\python\\python.exe"
+  ],
+  "git_common_windows_paths": [
+    "%ProgramFiles%\\Git\\cmd\\git.exe",
+    "%ProgramFiles%\\Git\\bin\\git.exe",
+    "%ProgramFiles(x86)%\\Git\\cmd\\git.exe"
+  ],
+  "gh_common_windows_paths": [
+    "%ProgramFiles%\\GitHub CLI\\gh.exe",
+    "%ProgramFiles(x86)%\\GitHub CLI\\gh.exe",
+    "%LocalAppData%\\Programs\\GitHub CLI\\gh.exe",
+    "%USERPROFILE%\\scoop\\apps\\gh\\current\\bin\\gh.exe"
+  ],
+  "allow_per_process_tool_resolution": true,
+  "allow_global_path_mutation": false,
+  "notes": "Example policy only. Prefer PATH first, then explicit fallback detection without changing global machine state."
+}

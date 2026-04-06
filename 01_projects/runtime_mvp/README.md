@@ -4,7 +4,7 @@ Small execution-focused runtime sandbox for Super-AI-Agent.
 
 ## What This Is
 
-This MVP is a file-backed Python runtime that can manage approval-aware lifecycle state, generate handoff snapshots from `14_context`, and expose lightweight council, workflow, report, truth, publishability, personal-ops, integration-adapter, and GitHub action utilities.
+This MVP is a file-backed Python runtime that can manage approval-aware lifecycle state, generate handoff snapshots from `14_context`, and expose lightweight council, workflow, report, truth, publishability, personal-ops, integration-adapter, GitHub action, and environment-detection utilities.
 
 ## What It Proves
 
@@ -23,6 +23,7 @@ This MVP is a file-backed Python runtime that can manage approval-aware lifecycl
 - GitHub draft generation exists
 - approval-gated branch, issue, and PR actions exist
 - remote issue and PR creation depend on `gh`
+- environment hardening and capability detection exist
 - no destructive GitHub actions
 - no live mail adapter
 - no live LinkedIn adapter
@@ -54,6 +55,9 @@ This MVP is a file-backed Python runtime that can manage approval-aware lifecycl
 - `list-integrations`
 - `github-status`
 - `github-gh-diagnose`
+- `env-diagnose`
+- `gh-auth-status`
+- `capability-matrix`
 - `github-issue-draft`
 - `github-pr-draft`
 - `github-create-branch`
