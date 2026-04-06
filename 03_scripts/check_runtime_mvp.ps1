@@ -67,6 +67,7 @@ $expectedFiles = @(
     '01_projects/runtime_mvp/src/super_ai_agent/storage.py',
     '01_projects/runtime_mvp/src/super_ai_agent/queue.py',
     '01_projects/runtime_mvp/src/super_ai_agent/handoff.py',
+    '01_projects/runtime_mvp/src/super_ai_agent/personal_ops.py',
     '01_projects/runtime_mvp/src/super_ai_agent/providers.py',
     '01_projects/runtime_mvp/src/super_ai_agent/council.py',
     '01_projects/runtime_mvp/src/super_ai_agent/truth_council.py',
@@ -76,13 +77,24 @@ $expectedFiles = @(
     '01_projects/runtime_mvp/src/super_ai_agent/cli.py',
     '01_projects/runtime_mvp/runtime_data/.gitkeep',
     '04_docs/runtime_mvp.md',
+    '04_docs/personal_ops_architecture.md',
+    '04_docs/owned_account_workflows.md',
+    '04_docs/mail_linkedin_cv_pipeline.md',
+    '04_docs/integration_priority_matrix.md',
     '04_docs/access_control_architecture.md',
     '04_docs/publishability_checklist.md',
     '04_docs/licensing_strategy.md',
     '04_docs/truth_council_architecture.md',
     '04_docs/browser_app_control_architecture.md',
+    '07_templates/inbox_triage_runbook.md',
+    '07_templates/linkedin_update_pack.md',
+    '07_templates/cv_update_pack.md',
+    '07_templates/outreach_draft.md',
+    '11_exports/personal_ops/.gitkeep',
     '23_configs/provider_profiles.example.json',
     '23_configs/council_policy.example.json',
+    '23_configs/personal_workflow_catalog.example.json',
+    '23_configs/owned_account_policy.example.json',
     '23_configs/workflow_catalog.example.json',
     '23_configs/publish_policy.example.json',
     '23_configs/truth_council_policy.example.json'
@@ -150,6 +162,36 @@ $publishCheckOk = $publishCheckResult.ExitCode -eq 0
 Write-Check -Name 'CLI publish-check' -Passed $publishCheckOk -Detail (($publishCheckResult.Output | Out-String).Trim())
 if (-not $publishCheckOk) { $failed++ }
 
+$listPersonalWorkflowsResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('list-personal-workflows')
+$listPersonalWorkflowsOk = $listPersonalWorkflowsResult.ExitCode -eq 0
+Write-Check -Name 'CLI list-personal-workflows' -Passed $listPersonalWorkflowsOk -Detail (($listPersonalWorkflowsResult.Output | Out-String).Trim())
+if (-not $listPersonalWorkflowsOk) { $failed++ }
+
+$showPersonalWorkflowResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('show-personal-workflow', '--workflow-id', 'inbox_triage_pack')
+$showPersonalWorkflowOk = $showPersonalWorkflowResult.ExitCode -eq 0
+Write-Check -Name 'CLI show-personal-workflow' -Passed $showPersonalWorkflowOk -Detail (($showPersonalWorkflowResult.Output | Out-String).Trim())
+if (-not $showPersonalWorkflowOk) { $failed++ }
+
+$inboxPackResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('scaffold-inbox-triage', '--account-label', 'Primary Inbox', '--goal', 'Prepare a daily triage pack')
+$inboxPackOk = $inboxPackResult.ExitCode -eq 0
+Write-Check -Name 'CLI scaffold-inbox-triage' -Passed $inboxPackOk -Detail (($inboxPackResult.Output | Out-String).Trim())
+if (-not $inboxPackOk) { $failed++ }
+
+$linkedinPackResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('scaffold-linkedin-pack', '--profile-label', 'Main Profile', '--target-role', 'AI Automation Lead', '--focus', 'execution systems')
+$linkedinPackOk = $linkedinPackResult.ExitCode -eq 0
+Write-Check -Name 'CLI scaffold-linkedin-pack' -Passed $linkedinPackOk -Detail (($linkedinPackResult.Output | Out-String).Trim())
+if (-not $linkedinPackOk) { $failed++ }
+
+$cvPackResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('scaffold-cv-pack', '--target-role', 'AI Automation Lead', '--summary', 'Execution-first operator focused on controllable AI systems.')
+$cvPackOk = $cvPackResult.ExitCode -eq 0
+Write-Check -Name 'CLI scaffold-cv-pack' -Passed $cvPackOk -Detail (($cvPackResult.Output | Out-String).Trim())
+if (-not $cvPackOk) { $failed++ }
+
+$outreachDraftResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('scaffold-outreach-draft', '--recipient-label', 'Partner Contact', '--purpose', 'Prepare a reviewed partnership note', '--notes', 'Keep it direct and legitimate.')
+$outreachDraftOk = $outreachDraftResult.ExitCode -eq 0
+Write-Check -Name 'CLI scaffold-outreach-draft' -Passed $outreachDraftOk -Detail (($outreachDraftResult.Output | Out-String).Trim())
+if (-not $outreachDraftOk) { $failed++ }
+
 $enqueueResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('enqueue', '--title', 'checker task', '--description', 'runtime check', '--risk', 'ask')
 $enqueueOk = $enqueueResult.ExitCode -eq 0
 Write-Check -Name 'CLI enqueue' -Passed $enqueueOk -Detail (($enqueueResult.Output | Out-String).Trim())
@@ -202,7 +244,11 @@ $artifactPaths = @(
     '01_projects/runtime_mvp/runtime_data/tasks.json',
     '01_projects/runtime_mvp/runtime_data/approvals.json',
     '01_projects/runtime_mvp/runtime_data/handoff_snapshot.md',
-    '11_exports/reports/checker-council-report.md'
+    '11_exports/reports/checker-council-report.md',
+    '11_exports/personal_ops/primary-inbox-inbox-triage-pack.md',
+    '11_exports/personal_ops/main-profile-linkedin-update-pack.md',
+    '11_exports/personal_ops/ai-automation-lead-cv-update-pack.md',
+    '11_exports/personal_ops/partner-contact-outreach-draft.md'
 )
 
 $artifactsOk = $true

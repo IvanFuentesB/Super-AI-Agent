@@ -1,0 +1,11 @@
+{
+  "scope": "owned_account_only",
+  "allow_planning": true,
+  "allow_draft_generation": true,
+  "require_approval_for_send": true,
+  "require_approval_for_publish": true,
+  "require_approval_for_profile_edits": true,
+  "forbid_spam_behavior": true,
+  "forbid_fake_identity_behavior": true,
+  "notes": "Example owned-account policy only. No live adapters or outbound execution are implemented."
+}

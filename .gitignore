@@ -59,6 +59,10 @@ Thumbs.db
 # Generated reports
 11_exports/reports/*.md
 
+# Personal ops generated exports
+11_exports/personal_ops/*.md
+!11_exports/personal_ops/.gitkeep
+
 # Third-party intake clones
 21_repos/third_party/*
 !21_repos/third_party/.gitkeep
