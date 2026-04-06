@@ -1,8 +1,10 @@
 # Next Actions
 
-- Test the browser playground manually
+- Test the local dashboard manually
+- Improve the local dashboard UX
 - Decide between Playwright-first and browser-use-first for the next executor layer
+- Browser and app executor implementation later
+- Notion live groundwork later
+- Mail deeper adapter design later
 - Evaluate Windows-Use and Windows-MCP
-- Plan live Notion groundwork later
-- Keep browser and app executor implementation for later
 - Strengthen auth and access control

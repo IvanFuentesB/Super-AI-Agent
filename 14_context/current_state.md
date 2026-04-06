@@ -45,8 +45,12 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Browser executor research docs now exist
 - Browser control playground now exists
 - Playwright-based local smoke test now exists
+- Browser playground now has a visible headed demo mode
+- Local dashboard MVP now exists
+- Dashboard can trigger safe local scaffold generation
+- Dashboard can trigger local browser demos
 - No live external provider APIs yet
-- No real browser or app execution beyond the local playground yet
+- No real browser or app executor beyond the local playground yet
 - No remote auth layer yet
 - Remote GitHub issue and PR execution still depends on gh presence and auth
 - No live mail sending adapter yet
@@ -58,9 +62,9 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Claw Code remains temporary reference, not foundation
 
 ## Immediate Focus
-- Test the browser playground manually
+- Test the local dashboard manually
+- Improve the local dashboard UX
 - Decide between Playwright-first and browser-use-first for the next executor layer
-- Evaluate Windows-Use and Windows-MCP carefully
 - Prepare one internship-facing live demo from the current runtime outputs
 - Keep GitHub remote actions explicit and approval-gated
 - Keep browser and app execution beyond the local playground in research until the control boundary is clearer
@@ -69,5 +73,5 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Continue session context still fills quickly
 - Runtime behavior still depends on the actual shell seeing the expected tool/auth state
 - Live remote GitHub mutation is now possible, so approval discipline matters more than before
-- Browser and app execution are still mostly research-only, so intake ideas cannot be turned into live workflows yet
+- Browser and app execution are still mostly research-only, even though the local dashboard and visible demo now make the current step easier to inspect
 - Third-party intake repos are valuable comparison material, but most of their surface area is still too heavy to adopt directly

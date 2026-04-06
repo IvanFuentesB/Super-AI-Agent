@@ -76,9 +76,27 @@ function Resolve-CommandPath {
     return $null
 }
 
+function Remove-GeneratedFile {
+    param(
+        [string]$Path
+    )
+
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+        return
+    }
+
+    try {
+        Remove-Item -LiteralPath $Path -Force -ErrorAction Stop
+    }
+    catch {
+        cmd /c del /f /q "$Path" | Out-Null
+    }
+}
+
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $projectRoot = Join-Path $repoRoot '01_projects\browser_playground'
 $artifactPath = Join-Path $projectRoot 'artifacts\smoke-click.png'
+$scriptPath = Join-Path $projectRoot 'scripts\smoke_click_demo.js'
 
 $expectedFiles = @(
     '04_docs/browser_control_playground.md',
@@ -151,9 +169,7 @@ else {
     Write-Check -Name 'Playwright browser install' -Passed $true -Detail $browserPath
 }
 
-if (Test-Path -LiteralPath $artifactPath -PathType Leaf) {
-    Remove-Item -LiteralPath $artifactPath -Force
-}
+Remove-GeneratedFile -Path $artifactPath
 
 $smokeResult = Invoke-CommandCapture -FilePath $npmPath -Arguments @('run', 'smoke') -WorkingDirectory $projectRoot
 $smokeOk = $smokeResult.ExitCode -eq 0
@@ -163,6 +179,28 @@ if (-not $smokeOk) { $failed++ }
 $artifactOk = Test-Path -LiteralPath $artifactPath -PathType Leaf
 Write-Check -Name 'Screenshot exists' -Passed $artifactOk -Detail $artifactPath
 if (-not $artifactOk) { $failed++ }
+
+$packageJsonText = Get-Content -Raw -LiteralPath (Join-Path $projectRoot 'package.json')
+$visibleScriptDeclared = $packageJsonText -match '"smoke:visible"'
+Write-Check -Name 'Visible mode script declared' -Passed $visibleScriptDeclared -Detail 'package.json includes smoke:visible'
+if (-not $visibleScriptDeclared) { $failed++ }
+
+$visibleCheckResult = Invoke-CommandCapture -FilePath $nodePath -Arguments @($scriptPath, '--visible', '--check-only') -WorkingDirectory $projectRoot
+$visibleCheckOk = $visibleCheckResult.ExitCode -eq 0
+Write-Check -Name 'Visible mode command' -Passed $visibleCheckOk -Detail (($visibleCheckResult.Output | Out-String).Trim())
+if (-not $visibleCheckOk) { $failed++ }
+
+if ($env:BROWSER_PLAYGROUND_RUN_VISIBLE -eq '1') {
+    $visibleRunResult = Invoke-CommandCapture -FilePath $nodePath -Arguments @($scriptPath, '--visible') -WorkingDirectory $projectRoot
+    $visibleRunOk = $visibleRunResult.ExitCode -eq 0
+    Write-Check -Name 'Visible mode execution' -Passed $visibleRunOk -Detail (($visibleRunResult.Output | Out-String).Trim())
+    if (-not $visibleRunOk) { $failed++ }
+}
+else {
+    Write-Check -Name 'Visible mode execution' -Passed $true -Detail 'skipped by default; set BROWSER_PLAYGROUND_RUN_VISIBLE=1 to watch the headed demo'
+}
+
+Remove-GeneratedFile -Path $artifactPath
 
 Write-Host ''
 if ($failed -eq 0) {

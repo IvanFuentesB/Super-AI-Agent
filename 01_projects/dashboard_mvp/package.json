@@ -1,0 +1,11 @@
+{
+  "name": "super-ai-agent-dashboard-mvp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local dashboard MVP for Super-AI-Agent.",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "check": "node server.js --check"
+  }
+}

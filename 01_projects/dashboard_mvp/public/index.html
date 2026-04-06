@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Super-AI-Agent Dashboard MVP</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="page-header">
+      <div>
+        <p class="eyebrow">Local Control Surface</p>
+        <h1>Super-AI-Agent Dashboard MVP</h1>
+        <p class="intro">
+          Trigger safe local demos, inspect current capability output, and generate
+          personal-ops scaffolds from one local page.
+        </p>
+      </div>
+      <div class="header-actions">
+        <button id="refresh-capabilities" type="button">Refresh Capability Summary</button>
+        <button id="refresh-github" type="button">Refresh GitHub Status</button>
+        <button id="refresh-artifacts" type="button">Refresh Recent Artifacts</button>
+      </div>
+    </header>
+
+    <main class="dashboard-grid">
+      <section class="card">
+        <h2>Capability Summary</h2>
+        <p>Current runtime capability matrix from the existing Python CLI.</p>
+        <pre id="capability-output">Waiting for refresh...</pre>
+      </section>
+
+      <section class="card">
+        <h2>GitHub Status</h2>
+        <p>Read-only GitHub adapter output for the current repo state.</p>
+        <pre id="github-output">Waiting for refresh...</pre>
+      </section>
+
+      <section class="card">
+        <h2>Internship Pack</h2>
+        <form id="internship-form" class="stacked-form">
+          <label>
+            Target Role
+            <input name="targetRole" value="Applied AI Intern" required />
+          </label>
+          <label>
+            Company
+            <input name="company" value="Example Labs" required />
+          </label>
+          <label>
+            Job Source
+            <input name="jobSource" value="Local dashboard demo" required />
+          </label>
+          <label>
+            Fit Summary
+            <textarea name="fitSummary" rows="4" required>Execution-first AI tooling, GitHub control, and browser demo work make this a strong internship showcase.</textarea>
+          </label>
+          <button type="submit">Generate Internship Pack</button>
+        </form>
+        <pre id="internship-output">No action yet.</pre>
+      </section>
+
+      <section class="card">
+        <h2>Showcase Case Study</h2>
+        <form id="showcase-form" class="stacked-form">
+          <label>
+            Project Name
+            <input name="projectName" value="Super-AI-Agent" required />
+          </label>
+          <label>
+            Objective
+            <textarea name="objective" rows="3" required>Show a controllable execution-first AI framework with visible browser automation and reviewable scaffold generation.</textarea>
+          </label>
+          <label>
+            Highlights
+            <textarea name="highlights" rows="4" required>Approval-gated GitHub actions, local dashboard controls, deterministic browser demos, and durable context handoff.</textarea>
+          </label>
+          <button type="submit">Generate Showcase Case Study</button>
+        </form>
+        <pre id="showcase-output">No action yet.</pre>
+      </section>
+
+      <section class="card">
+        <h2>Portfolio Project Page</h2>
+        <form id="portfolio-form" class="stacked-form">
+          <label>
+            Project Name
+            <input name="projectName" value="Super-AI-Agent" required />
+          </label>
+          <label>
+            Summary
+            <textarea name="summary" rows="3" required>Execution-first AI operating framework with visible local demos and approval-aware automation scaffolding.</textarea>
+          </label>
+          <label>
+            Stack
+            <input name="stack" value="Python, PowerShell, Node.js, Playwright, GitHub CLI" required />
+          </label>
+          <button type="submit">Generate Portfolio Page</button>
+        </form>
+        <pre id="portfolio-output">No action yet.</pre>
+      </section>
+
+      <section class="card">
+        <h2>Browser Smoke Demo</h2>
+        <p>Runs the fast headless check and produces a screenshot artifact.</p>
+        <button id="run-browser-smoke" type="button">Run Browser Smoke Demo</button>
+        <pre id="browser-smoke-output">No action yet.</pre>
+      </section>
+
+      <section class="card">
+        <h2>Browser Visible Demo</h2>
+        <p>Opens the browser window briefly with a slow visible click on the local demo page.</p>
+        <button id="run-browser-visible" type="button">Run Visible Browser Demo</button>
+        <pre id="browser-visible-output">No action yet.</pre>
+      </section>
+
+      <section class="card artifacts-card">
+        <h2>Recent Artifacts</h2>
+        <p>Latest files from personal ops, GitHub draft exports, and browser playground outputs.</p>
+        <div id="artifacts-output" class="artifact-list">Waiting for refresh...</div>
+      </section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
