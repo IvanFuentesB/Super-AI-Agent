@@ -1,36 +1,47 @@
 # Super-AI-Agent
 
-Local-first, approval-gated AI agent framework with durable memory, context handoff, logging, rollback, and future multi-model orchestration.
+Execution-first AI operating framework for legitimate business workflows, documentation, GitHub and project operations, internship and job-search ops, owned-account workflows, and later browser or app control plus multi-model orchestration.
 
-## Current Purpose
+## Current Summary
 
-This repo is the foundation workspace for building a modular personal and business agent system with local-first operation where practical, approval gates before risky actions, compact durable memory, context handoff for long chats, logging and rollback, and future multi-model routing across local and cloud models.
+This repo is the core workspace for building a controllable AI system that produces reviewable outputs, keeps risky actions explicit, and grows from a small checked runtime instead of a vague pile of prompts and notes.
 
-## Current Stack
+## Live Capabilities
 
-- Windows
-- Ollama
-- Gemma local
-- Continue as the current local control layer
-- Codex as the execution layer
-- Git + GitHub
-- Notion not integrated yet
+- approval-aware runtime with file-backed task state
+- durable context and handoff snapshots from `14_context`
+- GitHub read-only inspection plus approval-gated draft and write-action commands
+- environment and capability detection for `python`, `git`, and `gh`
+- repeatable runtime checker
+- internship, CV, LinkedIn, outreach, showcase, and portfolio scaffold generation
 
-## Current Status
+## Scaffold-Only Or Research State
 
-- Workspace initialized
-- Continue config works
-- Workspace rules are active
-- Handoff files exist under `14_context`
-- Private GitHub repo exists
-- Claw Code is only a temporary reference
+- mail and Notion adapters are planning-only
+- browser and app execution are still research-only
+- multi-model routing remains planning and policy scaffolding
+- remote GitHub smoke tests are explicit and available, but the default checker remains non-mutating
+
+## Reference Intake Role
+
+`21_repos/third_party` is an intake lane for external repos used as comparison and extraction material only. Those repos help evaluate patterns from tools like career-ops, official Claude Code, OpenClaw, Browser Use, Stagehand, OpenHands, and related ecosystems without merging vendor code into this core repo.
+
+## Internship And Showcase Relevance
+
+This repo already demonstrates a few concrete recruiter-friendly angles:
+
+- GitHub workflow control with explicit approvals
+- internship application pack generation
+- structured personal-ops and career-ops scaffolding
+- durable context and checker-driven runtime discipline
 
 ## Repo Structure
 
 - `13_prompts`: reusable prompts, including handoff prompts
 - `14_context`: durable project state, decisions, open questions, and handoff files
+- `01_projects/runtime_mvp`: small checked runtime and CLI
 - `20_agents`: agent templates, shared patterns, and future agent-specific memory
-- `21_repos`: repo references, core repos, and later external evaluations
+- `21_repos`: reference intake and later external evaluations
 - `23_configs`: local configuration files and setup state
 
 ## Working Method
@@ -39,10 +50,10 @@ This repo is the foundation workspace for building a modular personal and busine
 - Keep changes small and reversible
 - Require approval for risky actions
 
-## Next Priorities
+## Next Milestones
 
-- Refine Continue workflow
-- Define approval system
-- Improve memory architecture
-- Evaluate future model routing
-- Add Notion later
+- Choose one browser-control path
+- Prepare one internship-facing live demo
+- Evaluate official Claude Code and OpenClaw for selective extraction value
+- Plan live Notion groundwork later
+- Keep outbound and remote actions approval-gated

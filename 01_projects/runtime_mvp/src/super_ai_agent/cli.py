@@ -31,6 +31,8 @@ from .personal_ops import (
     scaffold_internship_application_pack,
     scaffold_linkedin_pack,
     scaffold_outreach_draft,
+    scaffold_portfolio_project_page,
+    scaffold_showcase_case_study,
 )
 from .publishability import scan_publishability
 from .providers import list_provider_profiles
@@ -219,6 +221,16 @@ def _build_parser() -> argparse.ArgumentParser:
     internship_pack_parser.add_argument("--company", required=True)
     internship_pack_parser.add_argument("--job-source", required=True)
     internship_pack_parser.add_argument("--fit-summary", required=True)
+
+    showcase_case_study_parser = subparsers.add_parser("scaffold-showcase-case-study")
+    showcase_case_study_parser.add_argument("--project-name", required=True)
+    showcase_case_study_parser.add_argument("--objective", required=True)
+    showcase_case_study_parser.add_argument("--highlights", required=True)
+
+    portfolio_project_page_parser = subparsers.add_parser("scaffold-portfolio-project-page")
+    portfolio_project_page_parser.add_argument("--project-name", required=True)
+    portfolio_project_page_parser.add_argument("--summary", required=True)
+    portfolio_project_page_parser.add_argument("--stack", required=True)
 
     truth_plan_parser = subparsers.add_parser("truth-plan")
     truth_plan_parser.add_argument("--question", required=True)
@@ -689,6 +701,24 @@ def main(argv: list[str] | None = None) -> int:
                 company=args.company,
                 job_source=args.job_source,
                 fit_summary=args.fit_summary,
+            )
+            print(f"personal_ops_path: {output_path}")
+            return 0
+
+        if args.command == "scaffold-showcase-case-study":
+            output_path = scaffold_showcase_case_study(
+                project_name=args.project_name,
+                objective=args.objective,
+                highlights=args.highlights,
+            )
+            print(f"personal_ops_path: {output_path}")
+            return 0
+
+        if args.command == "scaffold-portfolio-project-page":
+            output_path = scaffold_portfolio_project_page(
+                project_name=args.project_name,
+                summary=args.summary,
+                stack=args.stack,
             )
             print(f"personal_ops_path: {output_path}")
             return 0

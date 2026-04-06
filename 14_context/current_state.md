@@ -21,6 +21,7 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Curated repo intake area exists under 21_repos/third_party
 - First-wave third-party repos are cloned locally for evaluation only
 - Career-ops and related reference repos are now cloned locally for evaluation
+- Official Claude Code and OpenClaw are now cloned locally for evaluation and reference
 - Provider adapter roadmap now exists
 - Integration adapter foundation now exists
 - GitHub live read-only adapter now exists
@@ -39,6 +40,7 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Owned-account personal-ops scaffolding now exists
 - Mail, LinkedIn, CV, and outreach workflow packs now exist as scaffolds
 - Internship application pack scaffolding now exists
+- Showcase case-study and portfolio page scaffolding now exist
 - Browser executor research docs now exist
 - No live external provider APIs yet
 - No real browser or app execution yet
@@ -52,10 +54,10 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Claw Code remains temporary reference, not foundation
 
 ## Immediate Focus
-- Choose the next browser-control path
-- Evaluate which career-ops ideas should move into the personal-ops layer
+- Choose one browser-control path
+- Evaluate official Claude Code, OpenClaw, and career-ops extraction value carefully
+- Prepare one internship-facing live demo from the current runtime outputs
 - Keep GitHub remote actions explicit and approval-gated
-- Plan Notion and mail deeper without enabling unsafe actions
 - Keep browser and app execution in research until the control boundary is clearer
 
 ## Current Risk / Constraint
@@ -63,3 +65,4 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Runtime behavior still depends on the actual shell seeing the expected tool/auth state
 - Live remote GitHub mutation is now possible, so approval discipline matters more than before
 - Browser and app execution are still research-only, so intake ideas cannot be turned into live workflows yet
+- Third-party intake repos are valuable comparison material, but most of their surface area is still too heavy to adopt directly

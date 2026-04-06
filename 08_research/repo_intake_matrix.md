@@ -107,3 +107,30 @@
 - likely role: runtime-pattern reference for execution modes and approval UX
 - risk/cost notes: larger agent runtime assumptions and Python tooling overhead are outside the current core scope
 - next action: inspect CLI confirmation and headless workflow design only
+
+## anthropics/claude-code
+
+- local clone path: `21_repos/third_party/claude-code-official`
+- category: official coding-agent CLI
+- why it matters: cleaner reference for terminal UX, plugin layout, install paths, and supported documentation than dubious claw snapshots
+- likely role: official reference for command, plugin, and operator-surface ideas
+- risk/cost notes: vendor-specific workflow assumptions and provider coupling should not leak into core design
+- next action: inspect plugin and operator patterns only, not vendor-specific execution assumptions
+
+## openclaw/openclaw
+
+- local clone path: `21_repos/third_party/openclaw`
+- category: broad personal assistant control plane
+- why it matters: useful comparison point for gateway, browser, channel, and permission concepts
+- likely role: reference for later control-plane and browser-executor thinking, not a near-term dependency
+- risk/cost notes: much broader scope than this repo, WSL2-oriented Windows setup, and a heavy multi-channel surface
+- next action: extract only a few control-boundary and onboarding ideas, keep the rest as reference-only
+
+## hesreallyhim/awesome-claude-code
+
+- local clone path: `21_repos/third_party/awesome-claude-code`
+- category: curated resource index
+- why it matters: useful discovery map for skills, hooks, slash commands, tooling, and official docs
+- likely role: curated reference list for selective future intake
+- risk/cost notes: list quality varies and the repo license limits modified redistribution, so it should stay a pointer source only
+- next action: use it to discover patterns and official references, not as a core dependency

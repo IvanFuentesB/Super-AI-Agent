@@ -238,3 +238,79 @@ def scaffold_internship_application_pack(
             "- review the pack before any external action",
         ],
     )
+
+
+def scaffold_showcase_case_study(project_name: str, objective: str, highlights: str) -> Path:
+    filename = f"{_slugify(project_name)}-showcase-case-study.md"
+    return _write_pack(
+        filename,
+        [
+            "# Project Showcase Case Study",
+            "",
+            "## Project Objective",
+            objective,
+            "",
+            "## Starting Point",
+            "Execution-first AI operating framework foundation with runtime, GitHub workflow, and personal-ops scaffolding.",
+            "",
+            "## Architecture Summary",
+            "Compact file-backed runtime with approval-aware workflow layers, durable handoff context, and reference-only repo intake.",
+            "",
+            "## Major Capabilities",
+            f"- {highlights}",
+            "- approval-aware runtime and GitHub workflow utilities",
+            "- internship and personal-ops scaffold generation",
+            "",
+            "## What Is Live vs Scaffold-Only",
+            "- live: runtime CLI, checker, GitHub read-only and approval-gated command surface",
+            "- scaffold-only: many downstream integrations and showcase publishing outputs",
+            "",
+            "## Risks / Limits",
+            "- browser and app execution are not implemented yet",
+            "- third-party repos remain reference-only",
+            "",
+            "## Internship Relevance",
+            "Shows practical AI workflow design, explicit approval control, and inspectable runtime behavior.",
+            "",
+            "## Next Step",
+            "- prepare one short live demo and tighten recruiter-facing outputs",
+        ],
+    )
+
+
+def scaffold_portfolio_project_page(project_name: str, summary: str, stack: str) -> Path:
+    filename = f"{_slugify(project_name)}-portfolio-project-page.md"
+    return _write_pack(
+        filename,
+        [
+            "# Portfolio Project Page",
+            "",
+            "## Project Summary",
+            summary,
+            "",
+            "## Problem",
+            "AI workflow systems often look impressive in docs but are hard to inspect or control in practice.",
+            "",
+            "## Solution",
+            f"{project_name} uses a small execution-first runtime with approval-aware workflow layers and reviewable outputs.",
+            "",
+            "## Stack",
+            stack,
+            "",
+            "## Notable Capabilities",
+            "- approval-aware task and GitHub workflow scaffolding",
+            "- durable handoff and context files",
+            "- personal-ops and showcase artifact generation",
+            "",
+            "## Screenshots / Demo Ideas",
+            "- runtime checker pass",
+            "- GitHub capability output",
+            "- internship or showcase pack generation",
+            "",
+            "## Lessons",
+            "- start with controllable outputs before deeper automation",
+            "",
+            "## Next Milestone",
+            "- choose one browser-control path and one tighter live demo",
+        ],
+    )

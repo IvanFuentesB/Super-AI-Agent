@@ -22,21 +22,23 @@
 - [x] Environment hardening and capability detection exist
 - [x] GitHub remote smoke-test layer exists
 - [x] Internship ops and career-ops intake layer exists
+- [x] Showcase scaffolding and final reference repo intake exist
 
 ## Current Control Layer
 - Continue for local context/rules
 - Codex for execution and Git workflow
 
 ## Current Branch
-- feat/career-ops-and-browser-research
+- feat/showcase-and-extra-intake
 
 ## Current Phase
-- internship ops and browser research
+- showcase scaffolding and final intake expansion
 
 ## Next Milestones
 - choose the browser-control path
-- evaluate career-ops extraction ideas
+- evaluate official Claude Code, OpenClaw, and career-ops extraction ideas
 - optionally use the Playwright skill in Codex
+- prepare one internship-facing live demo
 - plan the live Notion adapter carefully
 - deepen mail and inbox planning later
 - keep browser and app execution for a later implementation step
@@ -56,4 +58,4 @@
 - browser and app execution are still research-only
 
 ## Last Reviewed
-- 2026-04-06
+- 2026-04-07

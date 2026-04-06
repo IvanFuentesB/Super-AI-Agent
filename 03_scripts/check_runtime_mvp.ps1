@@ -121,6 +121,9 @@ $expectedFiles = @(
     '01_projects/runtime_mvp/src/super_ai_agent/cli.py',
     '01_projects/runtime_mvp/runtime_data/.gitkeep',
     '04_docs/runtime_mvp.md',
+    '04_docs/showcase_plan.md',
+    '04_docs/internship_showcase_strategy.md',
+    '04_docs/claude_openclaw_fit.md',
     '04_docs/career_ops_fit.md',
     '04_docs/browser_executor_research.md',
     '04_docs/skills_in_codex.md',
@@ -152,6 +155,8 @@ $expectedFiles = @(
     '07_templates/cv_update_pack.md',
     '07_templates/outreach_draft.md',
     '07_templates/internship_application_pack.md',
+    '07_templates/project_showcase_case_study.md',
+    '07_templates/portfolio_project_page.md',
     '07_templates/github_issue_draft.md',
     '07_templates/github_pr_draft.md',
     '11_exports/github/.gitkeep',
@@ -376,6 +381,16 @@ $internshipPackOk = $internshipPackResult.ExitCode -eq 0
 Write-Check -Name 'CLI scaffold-internship-pack' -Passed $internshipPackOk -Detail (($internshipPackResult.Output | Out-String).Trim())
 if (-not $internshipPackOk) { $failed++ }
 
+$showcaseCaseStudyResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('scaffold-showcase-case-study', '--project-name', 'Super AI Agent', '--objective', 'Show the strongest current execution-first workflow demo.', '--highlights', 'GitHub control, internship packs, and durable context.')
+$showcaseCaseStudyOk = $showcaseCaseStudyResult.ExitCode -eq 0
+Write-Check -Name 'CLI scaffold-showcase-case-study' -Passed $showcaseCaseStudyOk -Detail (($showcaseCaseStudyResult.Output | Out-String).Trim())
+if (-not $showcaseCaseStudyOk) { $failed++ }
+
+$portfolioProjectPageResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('scaffold-portfolio-project-page', '--project-name', 'Super AI Agent', '--summary', 'Execution-first AI operating framework with controllable outputs.', '--stack', 'Python standard library, PowerShell, Git, GitHub, Continue, Codex')
+$portfolioProjectPageOk = $portfolioProjectPageResult.ExitCode -eq 0
+Write-Check -Name 'CLI scaffold-portfolio-project-page' -Passed $portfolioProjectPageOk -Detail (($portfolioProjectPageResult.Output | Out-String).Trim())
+if (-not $portfolioProjectPageOk) { $failed++ }
+
 $enqueueResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('enqueue', '--title', 'checker task', '--description', 'runtime check', '--risk', 'ask')
 $enqueueOk = $enqueueResult.ExitCode -eq 0
 Write-Check -Name 'CLI enqueue' -Passed $enqueueOk -Detail (($enqueueResult.Output | Out-String).Trim())
@@ -435,7 +450,9 @@ $artifactPaths = @(
     '11_exports/personal_ops/main-profile-linkedin-update-pack.md',
     '11_exports/personal_ops/ai-automation-lead-cv-update-pack.md',
     '11_exports/personal_ops/partner-contact-outreach-draft.md',
-    '11_exports/personal_ops/example-labs-applied-ai-internship-internship-application-pack.md'
+    '11_exports/personal_ops/example-labs-applied-ai-internship-internship-application-pack.md',
+    '11_exports/personal_ops/super-ai-agent-showcase-case-study.md',
+    '11_exports/personal_ops/super-ai-agent-portfolio-project-page.md'
 )
 
 $artifactsOk = $true

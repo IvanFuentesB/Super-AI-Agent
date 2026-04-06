@@ -71,6 +71,24 @@
       "outputs": ["case-study outline", "proof checklist", "export or publishing plan"],
       "approval_points": ["publishing publicly", "sharing externally", "updating live profile or portfolio assets"],
       "notes": "Preparation and drafting only."
+    },
+    {
+      "workflow_id": "showcase_case_study_pack",
+      "title": "Showcase Case Study Pack",
+      "purpose": "Generate a polished showcase case-study scaffold for internship, recruiter, or portfolio review.",
+      "inputs": ["project name", "objective", "highlights"],
+      "outputs": ["case-study draft", "live vs scaffold notes", "next-step framing"],
+      "approval_points": ["publishing publicly", "sharing externally", "claiming capabilities that are not verified"],
+      "notes": "Keep claims grounded in what is live."
+    },
+    {
+      "workflow_id": "portfolio_project_page_pack",
+      "title": "Portfolio Project Page Pack",
+      "purpose": "Generate a portfolio project page scaffold from a project summary and stack overview.",
+      "inputs": ["project name", "summary", "stack"],
+      "outputs": ["project page draft", "demo ideas", "next milestone framing"],
+      "approval_points": ["publishing publicly", "sharing externally", "adding screenshots or demos"],
+      "notes": "Scaffold only. Human review should confirm accuracy."
     }
   ]
 }
