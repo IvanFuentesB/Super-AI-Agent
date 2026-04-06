@@ -134,3 +134,48 @@
 - likely role: curated reference list for selective future intake
 - risk/cost notes: list quality varies and the repo license limits modified redistribution, so it should stay a pointer source only
 - next action: use it to discover patterns and official references, not as a core dependency
+
+## CursorTouch/Windows-Use
+
+- local clone path: `21_repos/third_party/windows-use`
+- category: Windows GUI control agent
+- why it matters: direct reference for Windows accessibility-tree control and agent-style desktop automation
+- likely role: later Windows GUI executor reference after browser control is stable
+- risk/cost notes: broad action surface, model-driven behavior, and higher OS-level risk than a local browser playground
+- next action: inspect its tool boundaries and keep it as later-stage reference material
+
+## CursorTouch/Windows-MCP
+
+- local clone path: `21_repos/third_party/windows-mcp`
+- category: Windows MCP bridge
+- why it matters: useful reference for a more structured Windows control path than full agent autonomy
+- likely role: likely Windows app-control bridge candidate later
+- risk/cost notes: Windows-specific setup, Python and MCP surface, and wider mutation capability than this batch should allow
+- next action: inspect app-control and state-capture boundaries only
+
+## openinterpreter/open-interpreter
+
+- local clone path: `21_repos/third_party/open-interpreter`
+- category: local code and system control agent
+- why it matters: useful reference for approval, local execution, and computer-control framing
+- likely role: comparison material for broader local execution patterns
+- risk/cost notes: much broader local system scope than needed for the first safe browser step
+- next action: extract only approval and execution-surface ideas
+
+## coasty-ai/open-computer-use
+
+- local clone path: `21_repos/third_party/open-computer-use`
+- category: open computer-use platform
+- why it matters: useful reference for browser, terminal, desktop, and planner layering
+- likely role: later comparison point for broader executor architecture
+- risk/cost notes: heavier product scope, live-site examples, and larger dependency stack than this repo should adopt now
+- next action: inspect architecture ideas only and keep it out of core
+
+## microsoft/playwright
+
+- local clone path: `21_repos/third_party/playwright-official`
+- category: browser automation framework
+- why it matters: strongest deterministic foundation for the first real local browser-control step
+- likely role: immediate browser playground dependency and longer-term browser control base
+- risk/cost notes: browser automation still needs approval boundaries before live-site use
+- next action: use it for a local deterministic playground before any broader executor work
