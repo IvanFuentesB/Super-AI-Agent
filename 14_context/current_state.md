@@ -17,14 +17,16 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Continue local config is working
 - Continue workspace rules are being picked up
 - Durable handoff files now exist
+- Runtime MVP sandbox exists under 01_projects/runtime_mvp
+- Runtime MVP checker has passed on feat/runtime-mvp
 - Notion integration not set up
 - Claw Code kept as temporary reference, not foundation
 
 ## Immediate Focus
-- Keep the handoff context compact and reliable
-- Tighten the minimal Continue workspace workflow
-- Make future steps small and reversible
+- Deepen the approval workflow from skeleton to usable policy
+- Decide queue semantics and add wait or resume behavior
+- Keep runtime steps small, inspectable, and reversible
 
 ## Current Risk / Constraint
 - Continue session context still fills quickly
-- Git identity and workflow should be kept clean before more commits
+- Python works through a resolved local interpreter, but not via a clean python PATH yet

@@ -50,3 +50,8 @@ browser-data/
 # OS noise
 .DS_Store
 Thumbs.db
+
+# Runtime MVP artifacts
+01_projects/runtime_mvp/runtime_data/*.json
+01_projects/runtime_mvp/runtime_data/*.md
+!01_projects/runtime_mvp/runtime_data/.gitkeep
