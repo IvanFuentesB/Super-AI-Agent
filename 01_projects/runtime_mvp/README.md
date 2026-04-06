@@ -4,7 +4,7 @@ Small execution-focused runtime sandbox for Super-AI-Agent.
 
 ## What This Is
 
-This MVP is a file-backed Python runtime that can manage approval-aware lifecycle state, generate handoff snapshots from `14_context`, and expose lightweight council, workflow, report, truth, publishability, and personal-ops scaffolding utilities.
+This MVP is a file-backed Python runtime that can manage approval-aware lifecycle state, generate handoff snapshots from `14_context`, and expose lightweight council, workflow, report, truth, publishability, personal-ops, and integration-adapter utilities.
 
 ## What It Proves
 
@@ -13,18 +13,19 @@ This MVP is a file-backed Python runtime that can manage approval-aware lifecycl
 - task state can persist in JSON files
 - durable handoff files can be turned into a runtime snapshot
 - the runtime can be checked with a repeatable script
-- provider, workflow, report, truth-plan, publishability, and personal-ops utilities can be exercised locally
+- provider, workflow, report, truth-plan, publishability, personal-ops, and integration-adapter utilities can be exercised locally
 
 ## What It Does Not Do Yet
 
 - no live provider integrations
 - no browser or app executor
+- GitHub adapter is live read-only only
 - no live mail adapter
 - no live LinkedIn adapter
 - no real external execution
 - no real remote auth layer
 - no autonomous background loop
-- no real Notion adapter
+- no live Notion writes
 - future outbound actions should stay approval-gated
 
 ## CLI Commands
@@ -45,6 +46,11 @@ This MVP is a file-backed Python runtime that can manage approval-aware lifecycl
 - `scaffold-report`
 - `truth-plan`
 - `publish-check`
+- `publish-check-core`
+- `list-integrations`
+- `github-status`
+- `mail-plan`
+- `notion-plan`
 - `list-personal-workflows`
 - `show-personal-workflow`
 - `scaffold-inbox-triage`

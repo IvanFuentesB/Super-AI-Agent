@@ -1,0 +1,19 @@
+{
+  "github": {
+    "live_read_allowed": true,
+    "live_write_requires_approval": true
+  },
+  "mail": {
+    "planning_only": true,
+    "send_requires_approval": true
+  },
+  "notion": {
+    "planning_only": true,
+    "write_requires_approval": true
+  },
+  "linkedin": {
+    "planning_only": true,
+    "publish_requires_approval": true
+  },
+  "notes": "Example integration policy only. No live mail, Notion, or LinkedIn writes are implemented."
+}

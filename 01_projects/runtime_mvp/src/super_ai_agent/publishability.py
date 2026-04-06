@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -7,6 +8,7 @@ from pathlib import Path
 from .storage import get_project_root
 
 REPO_ROOT = get_project_root().parents[1]
+SCOPE_CONFIG_PATH = REPO_ROOT / "23_configs" / "publish_scope.example.json"
 IGNORED_DIR_NAMES = {".git", "__pycache__", ".venv", "venv", "node_modules"}
 TEXT_SUFFIXES = {".md", ".txt", ".json", ".yaml", ".yml", ".toml", ".py", ".ps1", ".cfg", ".ini"}
 SECRET_PATTERNS = {
@@ -15,6 +17,13 @@ SECRET_PATTERNS = {
     "aws_access_key": re.compile(r"AKIA[0-9A-Z]{16}"),
     "private_key_header": re.compile(r"BEGIN (?:RSA )?PRIVATE KEY"),
 }
+
+
+@dataclass
+class PublishabilityScope:
+    include_paths: list[str]
+    exclude_paths: list[str]
+    notes: str
 
 
 @dataclass
@@ -40,6 +49,16 @@ class PublishabilityReport:
         return counts
 
 
+def load_publish_scope() -> PublishabilityScope:
+    with SCOPE_CONFIG_PATH.open("r", encoding="utf-8") as handle:
+        payload = json.load(handle)
+    return PublishabilityScope(
+        include_paths=list(payload.get("include_paths", [])),
+        exclude_paths=list(payload.get("exclude_paths", [])),
+        notes=str(payload.get("notes", "")),
+    )
+
+
 def _relative_path(path: Path) -> str:
     return path.relative_to(REPO_ROOT).as_posix()
 
@@ -54,12 +73,30 @@ def _is_report_export(relative_path: str) -> bool:
     return relative_path.startswith("11_exports/reports/") and relative_path.endswith(".md")
 
 
-def _iter_repo_files() -> list[Path]:
+def _matches_scope_path(relative_path: str, scope_paths: list[str]) -> bool:
+    for item in scope_paths:
+        normalized = item.strip().replace("\\", "/").rstrip("/")
+        if not normalized:
+            continue
+        if relative_path == normalized or relative_path.startswith(f"{normalized}/"):
+            return True
+    return False
+
+
+def _iter_repo_files(
+    include_paths: list[str] | None = None,
+    exclude_paths: list[str] | None = None,
+) -> list[Path]:
     files: list[Path] = []
     for path in REPO_ROOT.rglob("*"):
         if not path.is_file():
             continue
         if any(part in IGNORED_DIR_NAMES for part in path.parts):
+            continue
+        relative_path = _relative_path(path)
+        if include_paths and not _matches_scope_path(relative_path, include_paths):
+            continue
+        if exclude_paths and _matches_scope_path(relative_path, exclude_paths):
             continue
         files.append(path)
     return files
@@ -87,9 +124,22 @@ def _scan_secret_like_content(path: Path, findings: list[PublishabilityFinding])
             break
 
 
-def scan_publishability() -> PublishabilityReport:
+def scan_publishability(
+    *,
+    core_only: bool = True,
+    include_paths: list[str] | None = None,
+    exclude_paths: list[str] | None = None,
+) -> PublishabilityReport:
+    scoped_include = include_paths
+    scoped_exclude = exclude_paths
+
+    if core_only and include_paths is None and exclude_paths is None:
+        scope = load_publish_scope()
+        scoped_include = scope.include_paths
+        scoped_exclude = scope.exclude_paths
+
     findings: list[PublishabilityFinding] = []
-    files = _iter_repo_files()
+    files = _iter_repo_files(include_paths=scoped_include, exclude_paths=scoped_exclude)
 
     for path in files:
         relative_path = _relative_path(path)
