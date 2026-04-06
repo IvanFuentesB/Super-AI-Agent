@@ -1,33 +1,48 @@
-# AI_Managed_Only
+# Super-AI-Agent
 
-This folder is the canonical and only permanent source of truth for the `ai_sandbox` workspace.
+Local-first, approval-gated AI agent framework with durable memory, context handoff, logging, rollback, and future multi-model orchestration.
 
-Current status on 2026-04-05:
+## Current Purpose
 
-- This workspace has been organized and documented.
-- No major tools were installed in this pass.
-- No registry, OneDrive, browser-profile, or machine PATH changes were made.
-- `C:\Users\ai_sandbox\Documents\AI_Managed_Only` is the only permanent workspace root.
-- `C:\Users\ai_sandbox\AI_Workspace` is temporary only.
-- The only known repo currently outside this root is the temporary Claw Code checkout at `C:\Users\ai_sandbox\AI_Workspace\21_repos\core\claw-code`.
+This repo is the foundation workspace for building a modular personal and business agent system with local-first operation where practical, approval gates before risky actions, compact durable memory, context handoff for long chats, logging and rollback, and future multi-model routing across local and cloud models.
 
-Core locations:
+## Current Stack
 
-- `04_docs/audits/` - current-state audits
-- `04_docs/plans/` - GitHub, Notion, assistant-stack, and next-step plans
-- `04_docs/repo_evaluations/` - deeper repo-specific notes
-- `05_logs/` - audit, install, and benchmark logs
-- `12_setup/` - setup planning, migration prep, rollback notes
-- `16_notion/` - local-first notes prepared for later Notion sync
-- `21_repos/` - future repo home under this workspace
-- `23_configs/` - sanitized config exports and recreated configs
+- Windows
+- Ollama
+- Gemma local
+- Continue as the current local control layer
+- Codex as the execution layer
+- Git + GitHub
+- Notion not integrated yet
 
-Start here:
+## Current Status
 
-- `04_docs/audits/sandbox-audit-summary.md`
-- `04_docs/audits/machine-capability-summary.md`
-- `04_docs/audits/repo-classification-summary.md`
-- `04_docs/audits/extension-audit-summary.md`
-- `04_docs/audits/toolchain-status-summary.md`
-- `04_docs/plans/assistant-stack-options.md`
-- `04_docs/plans/prioritized-next-actions.md`
+- Workspace initialized
+- Continue config works
+- Workspace rules are active
+- Handoff files exist under `14_context`
+- Private GitHub repo exists
+- Claw Code is only a temporary reference
+
+## Repo Structure
+
+- `13_prompts`: reusable prompts, including handoff prompts
+- `14_context`: durable project state, decisions, open questions, and handoff files
+- `20_agents`: agent templates, shared patterns, and future agent-specific memory
+- `21_repos`: repo references, core repos, and later external evaluations
+- `23_configs`: local configuration files and setup state
+
+## Working Method
+
+- Use summarized context files instead of relying on long chats
+- Keep changes small and reversible
+- Require approval for risky actions
+
+## Next Priorities
+
+- Refine Continue workflow
+- Define approval system
+- Improve memory architecture
+- Evaluate future model routing
+- Add Notion later

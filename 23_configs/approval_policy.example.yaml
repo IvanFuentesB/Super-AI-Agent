@@ -1,0 +1,35 @@
+version: 1
+default_mode: ask_first
+
+levels:
+  safe:
+    description: Read-only or low-risk actions
+  ask:
+    description: Normal write or execution actions that require approval
+  high_risk:
+    description: Destructive, secret-related, or wide-scope actions
+
+allowed_without_approval:
+  - read_files
+  - list_files
+  - search_workspace
+  - summarize_context
+  - propose_plan
+
+approval_required:
+  - create_file
+  - edit_file
+  - multi_file_change
+  - run_shell_command
+  - install_package
+  - git_commit
+  - git_push
+  - connect_integration
+
+high_risk:
+  - delete_many_files
+  - modify_secrets
+  - rewrite_large_sections
+  - remote_account_automation
+
+fallback_rule: when_uncertain_ask
