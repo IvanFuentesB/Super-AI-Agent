@@ -1,0 +1,58 @@
+{
+  "workflows": [
+    {
+      "workflow_id": "inbox_triage_pack",
+      "title": "Inbox Triage Pack",
+      "purpose": "Turn inbox context into a reviewable triage and draft response pack.",
+      "inputs": ["account label", "inbox goal", "mail context"],
+      "outputs": ["triage summary", "priority list", "draft response notes"],
+      "approval_points": ["sending responses", "changing live mailbox state"],
+      "notes": "Owned-account planning only."
+    },
+    {
+      "workflow_id": "linkedin_update_pack",
+      "title": "LinkedIn Update Pack",
+      "purpose": "Prepare profile and content update scaffolds for owned LinkedIn accounts.",
+      "inputs": ["profile label", "target role", "focus"],
+      "outputs": ["headline draft", "about draft", "content angles"],
+      "approval_points": ["editing profile text", "publishing posts"],
+      "notes": "No mass outreach or deceptive behavior."
+    },
+    {
+      "workflow_id": "cv_update_pack",
+      "title": "CV Update Pack",
+      "purpose": "Prepare a CV revision pack for a target role.",
+      "inputs": ["target role", "summary", "current experience context"],
+      "outputs": ["summary draft", "revision checklist", "project highlights"],
+      "approval_points": ["exporting final resume", "sharing externally"],
+      "notes": "Planning and drafting only."
+    },
+    {
+      "workflow_id": "outreach_draft_pack",
+      "title": "Outreach Draft Pack",
+      "purpose": "Prepare a reviewable outbound message draft for a legitimate owned-account workflow.",
+      "inputs": ["recipient label", "purpose", "notes"],
+      "outputs": ["draft message", "tone notes", "next-step note"],
+      "approval_points": ["sending messages", "publishing externally"],
+      "notes": "No spam or deceptive outreach."
+    },
+    {
+      "workflow_id": "github_profile_refresh_pack",
+      "title": "GitHub Profile Refresh Pack",
+      "purpose": "Plan updates for GitHub profile and project presentation.",
+      "inputs": ["profile goals", "repo list", "positioning notes"],
+      "outputs": ["profile update plan", "repo priorities", "draft summary"],
+      "approval_points": ["publishing profile changes", "repo visibility changes"],
+      "notes": "Planning only."
+    },
+    {
+      "workflow_id": "notion_update_plan",
+      "title": "Notion Update Plan",
+      "purpose": "Plan a structured Notion update without touching the live workspace yet.",
+      "inputs": ["workspace goals", "content notes", "desired structure"],
+      "outputs": ["update plan", "page map", "review checklist"],
+      "approval_points": ["connecting live Notion integration", "writing to workspace"],
+      "notes": "No real Notion adapter yet."
+    }
+  ]
+}

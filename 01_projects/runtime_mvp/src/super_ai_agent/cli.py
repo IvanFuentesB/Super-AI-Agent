@@ -7,6 +7,14 @@ from datetime import datetime, timezone
 
 from .council import build_council_plan
 from .handoff import build_handoff_snapshot
+from .personal_ops import (
+    get_personal_workflow,
+    list_personal_workflows,
+    scaffold_cv_pack,
+    scaffold_inbox_triage_pack,
+    scaffold_linkedin_pack,
+    scaffold_outreach_draft,
+)
 from .publishability import scan_publishability
 from .providers import list_provider_profiles
 from .queue import approve_task, enqueue_task, get_status_summary, list_tasks, reject_task
@@ -71,6 +79,7 @@ def _build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("list-providers")
     subparsers.add_parser("list-workflows")
     subparsers.add_parser("publish-check")
+    subparsers.add_parser("list-personal-workflows")
 
     enqueue_parser = subparsers.add_parser("enqueue")
     enqueue_parser.add_argument("--title", required=True)
@@ -104,10 +113,31 @@ def _build_parser() -> argparse.ArgumentParser:
     show_workflow_parser = subparsers.add_parser("show-workflow")
     show_workflow_parser.add_argument("--workflow-id", required=True)
 
+    show_personal_workflow_parser = subparsers.add_parser("show-personal-workflow")
+    show_personal_workflow_parser.add_argument("--workflow-id", required=True)
+
     scaffold_report_parser = subparsers.add_parser("scaffold-report")
     scaffold_report_parser.add_argument("--title", required=True)
     scaffold_report_parser.add_argument("--workflow-id", required=True)
     scaffold_report_parser.add_argument("--summary", required=True)
+
+    inbox_triage_parser = subparsers.add_parser("scaffold-inbox-triage")
+    inbox_triage_parser.add_argument("--account-label", required=True)
+    inbox_triage_parser.add_argument("--goal", required=True)
+
+    linkedin_pack_parser = subparsers.add_parser("scaffold-linkedin-pack")
+    linkedin_pack_parser.add_argument("--profile-label", required=True)
+    linkedin_pack_parser.add_argument("--target-role", required=True)
+    linkedin_pack_parser.add_argument("--focus", required=True)
+
+    cv_pack_parser = subparsers.add_parser("scaffold-cv-pack")
+    cv_pack_parser.add_argument("--target-role", required=True)
+    cv_pack_parser.add_argument("--summary", required=True)
+
+    outreach_draft_parser = subparsers.add_parser("scaffold-outreach-draft")
+    outreach_draft_parser.add_argument("--recipient-label", required=True)
+    outreach_draft_parser.add_argument("--purpose", required=True)
+    outreach_draft_parser.add_argument("--notes", default="")
 
     truth_plan_parser = subparsers.add_parser("truth-plan")
     truth_plan_parser.add_argument("--question", required=True)
@@ -254,8 +284,30 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"{workflow.workflow_id} | {workflow.title}")
             return 0
 
+        if args.command == "list-personal-workflows":
+            for workflow in list_personal_workflows():
+                print(f"{workflow.workflow_id} | {workflow.title}")
+            return 0
+
         if args.command == "show-workflow":
             workflow = get_workflow(args.workflow_id)
+            print(f"workflow_id: {workflow.workflow_id}")
+            print(f"title: {workflow.title}")
+            print(f"purpose: {workflow.purpose}")
+            print("inputs:")
+            for item in workflow.inputs:
+                print(f"- {item}")
+            print("outputs:")
+            for item in workflow.outputs:
+                print(f"- {item}")
+            print("approval_points:")
+            for item in workflow.approval_points:
+                print(f"- {item}")
+            print(f"notes: {workflow.notes}")
+            return 0
+
+        if args.command == "show-personal-workflow":
+            workflow = get_personal_workflow(args.workflow_id)
             print(f"workflow_id: {workflow.workflow_id}")
             print(f"title: {workflow.title}")
             print(f"purpose: {workflow.purpose}")
@@ -279,6 +331,40 @@ def main(argv: list[str] | None = None) -> int:
                 summary=args.summary,
             )
             print(f"report_path: {output_path}")
+            return 0
+
+        if args.command == "scaffold-inbox-triage":
+            output_path = scaffold_inbox_triage_pack(
+                account_label=args.account_label,
+                goal=args.goal,
+            )
+            print(f"personal_ops_path: {output_path}")
+            return 0
+
+        if args.command == "scaffold-linkedin-pack":
+            output_path = scaffold_linkedin_pack(
+                profile_label=args.profile_label,
+                target_role=args.target_role,
+                focus=args.focus,
+            )
+            print(f"personal_ops_path: {output_path}")
+            return 0
+
+        if args.command == "scaffold-cv-pack":
+            output_path = scaffold_cv_pack(
+                target_role=args.target_role,
+                summary=args.summary,
+            )
+            print(f"personal_ops_path: {output_path}")
+            return 0
+
+        if args.command == "scaffold-outreach-draft":
+            output_path = scaffold_outreach_draft(
+                recipient_label=args.recipient_label,
+                purpose=args.purpose,
+                notes=args.notes,
+            )
+            print(f"personal_ops_path: {output_path}")
             return 0
 
         if args.command == "truth-plan":

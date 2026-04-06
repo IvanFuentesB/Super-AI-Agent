@@ -16,25 +16,26 @@
 - [x] Publishability and access-control foundation exists
 - [x] Curated repo intake layer exists
 - [x] Provider adapter roadmap exists
+- [x] Personal-ops scaffolding exists
 
 ## Current Control Layer
 - Continue for local context/rules
 - Codex for execution and Git workflow
 
 ## Current Branch
-- feat/repo-intake-and-adapter-roadmap
+- feat/personal-ops-foundation
 
 ## Current Phase
-- curated repo intake and provider adapter roadmap
+- owned-account personal ops foundation
 
 ## Next Milestones
 - start provider adapters in planned order
-- evaluate intake repos one by one
-- research browser and app execution
-- deepen auth and access control
-- harden publishability before any public release
+- deepen GitHub workflow support
+- plan the mail and inbox adapter layer
+- plan the Notion integration layer
+- plan the LinkedIn integration layer
+- strengthen auth and access control
 - evaluate routing truthfulness and usefulness
-- expand Notion and GitHub workflows later
 
 ## Known Constraints
 - Continue context fills quickly
@@ -45,6 +46,7 @@
 - no real browser or app execution yet
 - no remote auth layer yet
 - third-party repos are intake material only, not core project code
+- no live mail or LinkedIn adapters yet
 
 ## Last Reviewed
 - 2026-04-06
