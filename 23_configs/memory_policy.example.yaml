@@ -1,0 +1,31 @@
+version: 1
+
+principles:
+  - compact_over_raw
+  - scoped_memory
+  - summarize_before_store
+  - handoff_for_resets
+  - archive_stale_state
+
+layers:
+  workspace:
+    path: 14_context
+    purpose: stable shared project memory
+  project:
+    path_pattern: 01_projects/<project_name>/memory
+    purpose: project-specific memory
+  agent:
+    path_pattern: 20_agents/<agent_name>/memory
+    purpose: specialized agent memory
+  automation:
+    path_pattern: 02_automation/<automation_name>/memory
+    purpose: automation-specific memory
+
+workspace_files:
+  - current_state.md
+  - next_actions.md
+  - decisions.md
+  - open_questions.md
+  - recent_failures.md
+
+default_rule: update_summary_files_before_long_reset
