@@ -71,3 +71,39 @@
 - likely role: adapter intake library and comparison set
 - risk/cost notes: breadth is high, quality and fit vary by server
 - next action: inspect server patterns selectively instead of treating the repo as one unit
+
+## santifer/career-ops
+
+- local clone path: `21_repos/third_party/career-ops`
+- category: career and internship ops system
+- why it matters: strong reference for fit scoring, tailored CV generation, tracking, and human-in-the-loop career workflows
+- likely role: reference for internship and job-search operating patterns, not core runtime code
+- risk/cost notes: Claude-specific assumptions, Playwright-heavy flows, and direct application patterns should not be copied blindly
+- next action: extract scoring, tracker, and review ideas without inheriting the whole stack
+
+## santifer/cv-santiago
+
+- local clone path: `21_repos/third_party/cv-santiago`
+- category: portfolio and case-study site
+- why it matters: useful reference for portfolio packaging, case-study structure, and proof-oriented career assets
+- likely role: reference for later portfolio and case-study output design
+- risk/cost notes: production web stack and live AI surface are much heavier than the current runtime MVP
+- next action: inspect case-study structure and portfolio asset presentation only
+
+## browser-use/browser-use-examples
+
+- local clone path: `21_repos/third_party/browser-use-examples`
+- category: browser automation examples
+- why it matters: shows concrete Browser Use patterns beyond the core framework repo
+- likely role: example library for future browser executor experiments
+- risk/cost notes: examples vary in scope and may assume external services or cloud flows
+- next action: inspect the simplest agent and scraper examples first
+
+## OpenHands/OpenHands-CLI
+
+- local clone path: `21_repos/third_party/openhands-cli`
+- category: agent runtime CLI
+- why it matters: useful reference for confirmation modes, headless runs, and terminal agent UX
+- likely role: runtime-pattern reference for execution modes and approval UX
+- risk/cost notes: larger agent runtime assumptions and Python tooling overhead are outside the current core scope
+- next action: inspect CLI confirmation and headless workflow design only

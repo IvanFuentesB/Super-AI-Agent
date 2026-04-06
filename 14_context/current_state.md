@@ -20,6 +20,7 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Runtime includes planning-only truth and publishability utilities
 - Curated repo intake area exists under 21_repos/third_party
 - First-wave third-party repos are cloned locally for evaluation only
+- Career-ops and related reference repos are now cloned locally for evaluation
 - Provider adapter roadmap now exists
 - Integration adapter foundation now exists
 - GitHub live read-only adapter now exists
@@ -37,6 +38,8 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Public repo split strategy now exists
 - Owned-account personal-ops scaffolding now exists
 - Mail, LinkedIn, CV, and outreach workflow packs now exist as scaffolds
+- Internship application pack scaffolding now exists
+- Browser executor research docs now exist
 - No live external provider APIs yet
 - No real browser or app execution yet
 - No remote auth layer yet
@@ -45,16 +48,18 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - No live LinkedIn posting or edit adapter yet
 - No live Notion writes yet
 - Future outbound actions still require approval
+- Third-party repos remain reference-only, not core project code
 - Claw Code remains temporary reference, not foundation
 
 ## Immediate Focus
-- Decide whether to run one explicit live smoke issue test
-- Refine the safe GitHub remote action flow without adding hidden mutation
-- Deepen mail and Notion planning without enabling unsafe actions
-- Keep LinkedIn planning-only until approval and adapter boundaries are clearer
-- Strengthen auth, access control, and publishability without bloating the core
+- Choose the next browser-control path
+- Evaluate which career-ops ideas should move into the personal-ops layer
+- Keep GitHub remote actions explicit and approval-gated
+- Plan Notion and mail deeper without enabling unsafe actions
+- Keep browser and app execution in research until the control boundary is clearer
 
 ## Current Risk / Constraint
 - Continue session context still fills quickly
 - Runtime behavior still depends on the actual shell seeing the expected tool/auth state
 - Live remote GitHub mutation is now possible, so approval discipline matters more than before
+- Browser and app execution are still research-only, so intake ideas cannot be turned into live workflows yet

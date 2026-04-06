@@ -28,6 +28,7 @@ from .personal_ops import (
     list_personal_workflows,
     scaffold_cv_pack,
     scaffold_inbox_triage_pack,
+    scaffold_internship_application_pack,
     scaffold_linkedin_pack,
     scaffold_outreach_draft,
 )
@@ -212,6 +213,12 @@ def _build_parser() -> argparse.ArgumentParser:
     outreach_draft_parser.add_argument("--recipient-label", required=True)
     outreach_draft_parser.add_argument("--purpose", required=True)
     outreach_draft_parser.add_argument("--notes", default="")
+
+    internship_pack_parser = subparsers.add_parser("scaffold-internship-pack")
+    internship_pack_parser.add_argument("--target-role", required=True)
+    internship_pack_parser.add_argument("--company", required=True)
+    internship_pack_parser.add_argument("--job-source", required=True)
+    internship_pack_parser.add_argument("--fit-summary", required=True)
 
     truth_plan_parser = subparsers.add_parser("truth-plan")
     truth_plan_parser.add_argument("--question", required=True)
@@ -672,6 +679,16 @@ def main(argv: list[str] | None = None) -> int:
                 recipient_label=args.recipient_label,
                 purpose=args.purpose,
                 notes=args.notes,
+            )
+            print(f"personal_ops_path: {output_path}")
+            return 0
+
+        if args.command == "scaffold-internship-pack":
+            output_path = scaffold_internship_application_pack(
+                target_role=args.target_role,
+                company=args.company,
+                job_source=args.job_source,
+                fit_summary=args.fit_summary,
             )
             print(f"personal_ops_path: {output_path}")
             return 0
