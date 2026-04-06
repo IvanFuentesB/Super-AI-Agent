@@ -11,10 +11,12 @@ from .github_actions import (
     create_branch_with_approval,
     create_issue_with_approval,
     create_pr_with_approval,
+    create_smoke_issue_with_approval,
+    create_smoke_pr_with_approval,
     scaffold_issue_draft,
     scaffold_pr_draft,
 )
-from .github_adapter import diagnose_gh_environment
+from .github_adapter import diagnose_gh_environment, get_remote_capability
 from .github_adapter import get_current_branch as get_github_branch
 from .github_adapter import get_recent_commits, get_remote_info, get_repo_status_summary
 from .handoff import build_handoff_snapshot
@@ -98,6 +100,7 @@ def _build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("github-status")
     subparsers.add_parser("publish-check-core")
     subparsers.add_parser("github-gh-diagnose")
+    subparsers.add_parser("github-remote-capability")
     subparsers.add_parser("env-diagnose")
     subparsers.add_parser("gh-auth-status")
     subparsers.add_parser("capability-matrix")
@@ -174,6 +177,18 @@ def _build_parser() -> argparse.ArgumentParser:
     github_create_pr_parser.add_argument("--body", required=True)
     github_create_pr_parser.add_argument("--base-branch", default="main")
     github_create_pr_parser.add_argument("--approve", required=True, choices=["yes", "no"])
+
+    github_smoke_issue_parser = subparsers.add_parser("github-smoke-issue")
+    github_smoke_issue_parser.add_argument("--title", required=True)
+    github_smoke_issue_parser.add_argument("--body", required=True)
+    github_smoke_issue_parser.add_argument("--labels", default="")
+    github_smoke_issue_parser.add_argument("--approve", required=True, choices=["yes", "no"])
+
+    github_smoke_pr_parser = subparsers.add_parser("github-smoke-pr")
+    github_smoke_pr_parser.add_argument("--title", required=True)
+    github_smoke_pr_parser.add_argument("--body", required=True)
+    github_smoke_pr_parser.add_argument("--base-branch", default="main")
+    github_smoke_pr_parser.add_argument("--approve", required=True, choices=["yes", "no"])
 
     scaffold_report_parser = subparsers.add_parser("scaffold-report")
     scaffold_report_parser.add_argument("--title", required=True)
@@ -430,6 +445,23 @@ def main(argv: list[str] | None = None) -> int:
                     print(f"- {item}")
             return 0
 
+        if args.command == "github-remote-capability":
+            capability = get_remote_capability()
+            print(f"repo_root: {capability.repo_root}")
+            print(f"branch: {capability.branch}")
+            print(f"origin_url: {capability.origin_url or 'none'}")
+            print(f"gh_available: {'yes' if capability.gh_available else 'no'}")
+            if capability.gh_authenticated is None:
+                print("gh_authenticated: unknown")
+            else:
+                print(f"gh_authenticated: {'yes' if capability.gh_authenticated else 'no'}")
+            print(
+                f"remote_write_possible: "
+                f"{'yes' if capability.remote_actions_possible else 'no'}"
+            )
+            print(f"blocking_issue: {capability.blocking_issue or 'none'}")
+            return 0
+
         if args.command == "council-plan":
             plan = build_council_plan(
                 goal_type=args.goal_type,
@@ -572,6 +604,26 @@ def main(argv: list[str] | None = None) -> int:
 
         if args.command == "github-create-pr":
             result = create_pr_with_approval(
+                title=args.title,
+                body=args.body,
+                base_branch=args.base_branch,
+                approved=args.approve == "yes",
+            )
+            print(result)
+            return 0
+
+        if args.command == "github-smoke-issue":
+            result = create_smoke_issue_with_approval(
+                title=args.title,
+                body=args.body,
+                labels=args.labels,
+                approved=args.approve == "yes",
+            )
+            print(result)
+            return 0
+
+        if args.command == "github-smoke-pr":
+            result = create_smoke_pr_with_approval(
                 title=args.title,
                 body=args.body,
                 base_branch=args.base_branch,

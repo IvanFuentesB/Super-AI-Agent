@@ -10,7 +10,7 @@ This MVP moves the repo from documentation-only setup into a small real runtime 
 - approval-aware task states can be persisted
 - durable handoff files can be turned into a snapshot artifact
 - the runtime can be validated with a repeatable checker
-- council, workflow, report, truth-plan, publishability, personal-ops, integration-adapter, GitHub write-action, and environment-detection scaffolding can be exercised locally
+- council, workflow, report, truth-plan, publishability, personal-ops, integration-adapter, GitHub write-action, environment-detection, and remote smoke-test scaffolding can be exercised locally
 
 ## Current Boundaries
 
@@ -18,9 +18,11 @@ This MVP moves the repo from documentation-only setup into a small real runtime 
 - standard library only
 - GitHub live read-only support exists
 - GitHub write-action scaffolding now exists and is approval-gated
-- remote GitHub write actions depend on `gh`
+- remote GitHub smoke-test support now exists
+- remote GitHub write actions remain explicit and approval-gated
+- remote GitHub write actions depend on `gh` presence and auth
 - environment detection and capability summary now exist
-- `gh` path and auth remain a gating factor for remote GitHub actions
+- default checker behavior remains non-mutating even when remote smoke actions are possible
 - mail and Notion are planning-only
 - no real browser or app execution
 - no remote auth layer
@@ -40,8 +42,7 @@ Small scope keeps the behavior readable, testable, and reversible before deeper 
 
 - add a real provider adapter layer
 - deepen owned-account workflow scaffolding
-- standardize tool detection and `gh` availability further
-- add safe GitHub remote smoke testing once `gh` is visible and authenticated
+- refine safe GitHub remote smoke testing now that `gh` can be diagnosed directly
 - deepen approval and access control
 - research browser and app execution safely
 - add publishability hardening

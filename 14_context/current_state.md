@@ -27,6 +27,10 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Approval-gated local branch, remote issue, and remote PR actions now exist
 - Environment detection now exists
 - Capability summary now exists
+- gh is available on PATH and authenticated in the current runtime environment
+- Remote GitHub smoke-test capability now exists
+- Explicit approval is still required before any live remote GitHub mutation
+- Default checker behavior remains non-mutating even though remote smoke actions are possible
 - Mail and Notion planning adapters now exist
 - Scoped core publishability scan now exists
 - Remote access and auth plan now exists
@@ -36,7 +40,6 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - No live external provider APIs yet
 - No real browser or app execution yet
 - No remote auth layer yet
-- gh is now diagnosed explicitly and is available through a fallback path, but not authenticated
 - Remote GitHub issue and PR execution still depends on gh presence and auth
 - No live mail sending adapter yet
 - No live LinkedIn posting or edit adapter yet
@@ -45,13 +48,13 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Claw Code remains temporary reference, not foundation
 
 ## Immediate Focus
-- Standardize gh availability and auth for explicit GitHub remote actions
-- Prepare safe GitHub remote smoke tests once gh auth exists
+- Decide whether to run one explicit live smoke issue test
+- Refine the safe GitHub remote action flow without adding hidden mutation
 - Deepen mail and Notion planning without enabling unsafe actions
 - Keep LinkedIn planning-only until approval and adapter boundaries are clearer
 - Strengthen auth, access control, and publishability without bloating the core
 
 ## Current Risk / Constraint
 - Continue session context still fills quickly
-- Python works through a resolved local interpreter, but not via a clean python PATH yet
-- gh is not PATH-visible in this execution environment even though a fallback binary was found
+- Runtime behavior still depends on the actual shell seeing the expected tool/auth state
+- Live remote GitHub mutation is now possible, so approval discipline matters more than before

@@ -1,0 +1,8 @@
+{
+  "allow_remote_smoke_issue": true,
+  "allow_remote_smoke_pr": false,
+  "require_explicit_approval": true,
+  "require_test_prefix": true,
+  "default_issue_title_prefix": "[SMOKE TEST]",
+  "notes": "Default checker behavior should remain non-mutating. Live smoke tests should be run manually and cleaned up afterward."
+}
