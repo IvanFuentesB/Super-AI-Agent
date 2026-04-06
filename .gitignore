@@ -1,0 +1,52 @@
+# Secrets
+.env
+.env.*
+!.env.example
+*.secret
+*.secrets
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Node / JS
+node_modules/
+dist/
+build/
+coverage/
+
+# Logs and temp artifacts
+*.log
+tmp/
+temp/
+.cache/
+05_logs/runtime/
+05_logs/tmp/
+
+# Model and binary artifacts
+*.gguf
+*.bin
+*.safetensors
+*.onnx
+19_models/cache/
+19_models/tmp/
+
+# Browser / test artifacts
+playwright-report/
+test-results/
+browser-data/
+
+# OS noise
+.DS_Store
+Thumbs.db
