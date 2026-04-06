@@ -6,6 +6,7 @@ import sys
 from datetime import datetime, timezone
 
 from .council import build_council_plan
+from .environment import build_capability_summary, diagnose_environment
 from .github_actions import (
     create_branch_with_approval,
     create_issue_with_approval,
@@ -97,6 +98,9 @@ def _build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("github-status")
     subparsers.add_parser("publish-check-core")
     subparsers.add_parser("github-gh-diagnose")
+    subparsers.add_parser("env-diagnose")
+    subparsers.add_parser("gh-auth-status")
+    subparsers.add_parser("capability-matrix")
 
     enqueue_parser = subparsers.add_parser("enqueue")
     enqueue_parser.add_argument("--title", required=True)
@@ -215,6 +219,68 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     try:
+        if args.command == "env-diagnose":
+            diagnosis = diagnose_environment()
+            for label, tool in (
+                ("python", diagnosis.python),
+                ("git", diagnosis.git),
+                ("gh", diagnosis.gh),
+            ):
+                print(f"{label}_found: {'yes' if tool.found else 'no'}")
+                print(f"{label}_source: {tool.source}")
+                print(f"{label}_path_visible: {'yes' if tool.path_visible else 'no'}")
+                print(f"{label}_path: {tool.resolved_path or 'none'}")
+                print(f"{label}_version: {tool.version or 'unknown'}")
+                if label == "gh":
+                    print(f"{label}_auth_known: {'yes' if tool.auth_known else 'no'}")
+                    if tool.authenticated is None:
+                        print(f"{label}_authenticated: unknown")
+                    else:
+                        print(f"{label}_authenticated: {'yes' if tool.authenticated else 'no'}")
+                if tool.notes:
+                    print(f"{label}_notes:")
+                    for item in tool.notes:
+                        print(f"- {item}")
+            print("capabilities:")
+            for capability in build_capability_summary(diagnosis):
+                block = capability.blocking_issue or "none"
+                print(
+                    f"- {capability.capability_id} | {capability.state} | "
+                    f"requires: {', '.join(capability.required_tools) or 'none'} | block: {block}"
+                )
+            return 0
+
+        if args.command == "gh-auth-status":
+            diagnostics = diagnose_gh_environment()
+            print(f"gh_available: {'yes' if diagnostics.gh_available else 'no'}")
+            print(f"gh_source: {diagnostics.source}")
+            print(f"gh_path_visible: {'yes' if diagnostics.path_visible else 'no'}")
+            print(f"gh_path: {diagnostics.gh_path or 'none'}")
+            print(f"gh_version: {diagnostics.version or 'unknown'}")
+            if not diagnostics.gh_available:
+                print("status: skipped")
+                print("reason: gh is missing in the current runtime environment")
+            elif diagnostics.auth_known:
+                print("status: checked")
+                print(f"gh_authenticated: {'yes' if diagnostics.gh_authenticated else 'no'}")
+            else:
+                print("status: unknown")
+                print("gh_authenticated: unknown")
+            if diagnostics.notes:
+                print("notes:")
+                for item in diagnostics.notes:
+                    print(f"- {item}")
+            return 0
+
+        if args.command == "capability-matrix":
+            for capability in build_capability_summary():
+                block = capability.blocking_issue or "none"
+                print(
+                    f"{capability.capability_id} | {capability.state} | "
+                    f"requires: {', '.join(capability.required_tools) or 'none'} | block: {block}"
+                )
+            return 0
+
         if args.command == "init-data":
             runtime_dir = ensure_runtime_files()
             print(f"runtime_data: {runtime_dir}")
@@ -346,6 +412,8 @@ def main(argv: list[str] | None = None) -> int:
             diagnostics = diagnose_gh_environment()
             print(f"gh_available: {'yes' if diagnostics.gh_available else 'no'}")
             print(f"gh_path: {diagnostics.gh_path or 'none'}")
+            print(f"source: {diagnostics.source}")
+            print(f"path_visible: {'yes' if diagnostics.path_visible else 'no'}")
             print(f"version: {diagnostics.version or 'unknown'}")
             print(f"auth_known: {'yes' if diagnostics.auth_known else 'no'}")
             if diagnostics.gh_authenticated is None:

@@ -4,6 +4,7 @@ import shutil
 import subprocess
 from dataclasses import dataclass
 
+from .environment import diagnose_environment, find_gh_command, find_git_command
 from .storage import get_project_root
 
 WORKSPACE_ROOT = get_project_root().parents[1]
@@ -36,6 +37,8 @@ class RemoteInfo:
 class GhEnvironmentDiagnostics:
     gh_available: bool
     gh_path: str | None
+    source: str
+    path_visible: bool
     where_results: list[str]
     version: str | None
     auth_known: bool
@@ -44,25 +47,29 @@ class GhEnvironmentDiagnostics:
 
 
 def _run_git(args: list[str]) -> subprocess.CompletedProcess[str]:
-    result = subprocess.run(
-        ["git", *args],
+    git_command = find_git_command()
+    if not git_command:
+        raise ValueError("git is not available on PATH or fallback paths.")
+    return subprocess.run(
+        [git_command, *args],
         cwd=WORKSPACE_ROOT,
         capture_output=True,
         text=True,
         check=False,
     )
-    return result
 
 
 def _run_gh(args: list[str]) -> subprocess.CompletedProcess[str]:
-    result = subprocess.run(
-        ["gh", *args],
+    gh_command = find_gh_command()
+    if not gh_command:
+        raise ValueError("gh is not available on PATH or fallback paths.")
+    return subprocess.run(
+        [gh_command, *args],
         cwd=WORKSPACE_ROOT,
         capture_output=True,
         text=True,
         check=False,
     )
-    return result
 
 
 def _ensure_repo() -> None:
@@ -73,16 +80,13 @@ def _ensure_repo() -> None:
 
 
 def is_gh_available() -> bool:
-    return shutil.which("gh") is not None
+    return find_gh_command() is not None
 
 
 def diagnose_gh_environment() -> GhEnvironmentDiagnostics:
-    gh_path = shutil.which("gh")
+    gh_tool = diagnose_environment().gh
     where_results: list[str] = []
-    notes: list[str] = []
-    version: str | None = None
-    auth_known = False
-    gh_authenticated: bool | None = None
+    notes = list(gh_tool.notes)
 
     where_path = shutil.which("where.exe")
     if where_path:
@@ -95,42 +99,20 @@ def diagnose_gh_environment() -> GhEnvironmentDiagnostics:
         )
         if where_result.returncode == 0:
             where_results = [line.strip() for line in where_result.stdout.splitlines() if line.strip()]
-        elif where_result.stderr.strip():
-            notes.append(where_result.stderr.strip())
-
-    if not gh_path:
-        notes.append("gh is not installed or not available on PATH.")
-        return GhEnvironmentDiagnostics(
-            gh_available=False,
-            gh_path=None,
-            where_results=where_results,
-            version=None,
-            auth_known=False,
-            gh_authenticated=None,
-            notes=notes,
-        )
-
-    version_result = _run_gh(["--version"])
-    if version_result.returncode == 0:
-        version = version_result.stdout.splitlines()[0].strip() if version_result.stdout.strip() else "unknown"
-    else:
-        notes.append(version_result.stderr.strip() or "Unable to read gh version.")
-
-    auth_result = _run_gh(["auth", "status"])
-    auth_known = True
-    gh_authenticated = auth_result.returncode == 0
-    if auth_result.stdout.strip():
-        notes.append(auth_result.stdout.strip())
-    elif auth_result.stderr.strip():
-        notes.append(auth_result.stderr.strip())
+        else:
+            where_note = where_result.stdout.strip() or where_result.stderr.strip()
+            if where_note:
+                notes.append(where_note)
 
     return GhEnvironmentDiagnostics(
-        gh_available=True,
-        gh_path=gh_path,
+        gh_available=gh_tool.found,
+        gh_path=gh_tool.resolved_path,
+        source=gh_tool.source,
+        path_visible=gh_tool.path_visible,
         where_results=where_results,
-        version=version,
-        auth_known=auth_known,
-        gh_authenticated=gh_authenticated,
+        version=gh_tool.version,
+        auth_known=gh_tool.auth_known,
+        gh_authenticated=gh_tool.authenticated,
         notes=notes,
     )
 
@@ -195,15 +177,12 @@ def get_remote_info() -> RemoteInfo:
     _ensure_repo()
     origin_result = _run_git(["remote", "get-url", "origin"])
     origin_url = origin_result.stdout.strip() if origin_result.returncode == 0 else None
+    diagnostics = diagnose_gh_environment()
 
-    if not is_gh_available():
-        return RemoteInfo(origin_url=origin_url, gh_available=False, gh_authenticated=None)
-
-    gh_result = _run_gh(["auth", "status"])
     return RemoteInfo(
         origin_url=origin_url,
-        gh_available=True,
-        gh_authenticated=gh_result.returncode == 0,
+        gh_available=diagnostics.gh_available,
+        gh_authenticated=diagnostics.gh_authenticated,
     )
 
 

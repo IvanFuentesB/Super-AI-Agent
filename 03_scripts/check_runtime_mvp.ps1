@@ -101,6 +101,7 @@ $expectedFiles = @(
     '01_projects/runtime_mvp/README.md',
     '01_projects/runtime_mvp/pyproject.toml',
     '01_projects/runtime_mvp/src/super_ai_agent/__init__.py',
+    '01_projects/runtime_mvp/src/super_ai_agent/environment.py',
     '01_projects/runtime_mvp/src/super_ai_agent/integrations.py',
     '01_projects/runtime_mvp/src/super_ai_agent/github_adapter.py',
     '01_projects/runtime_mvp/src/super_ai_agent/github_actions.py',
@@ -120,6 +121,9 @@ $expectedFiles = @(
     '01_projects/runtime_mvp/src/super_ai_agent/cli.py',
     '01_projects/runtime_mvp/runtime_data/.gitkeep',
     '04_docs/runtime_mvp.md',
+    '04_docs/runtime_environment.md',
+    '04_docs/tool_capability_matrix.md',
+    '04_docs/gh_path_and_auth.md',
     '04_docs/integration_adapter_architecture.md',
     '04_docs/github_adapter.md',
     '04_docs/github_write_actions.md',
@@ -147,6 +151,7 @@ $expectedFiles = @(
     '23_configs/integration_policy.example.json',
     '23_configs/publish_scope.example.json',
     '23_configs/github_action_policy.example.json',
+    '23_configs/tool_detection_policy.example.json',
     '23_configs/provider_profiles.example.json',
     '23_configs/council_policy.example.json',
     '23_configs/personal_workflow_catalog.example.json',
@@ -182,6 +187,33 @@ $initResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('init-da
 $initOk = $initResult.ExitCode -eq 0
 Write-Check -Name 'CLI init-data' -Passed $initOk -Detail (($initResult.Output | Out-String).Trim())
 if (-not $initOk) { $failed++ }
+
+$envDiagnoseResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('env-diagnose')
+$envDiagnoseOk = $envDiagnoseResult.ExitCode -eq 0
+Write-Check -Name 'CLI env-diagnose' -Passed $envDiagnoseOk -Detail (($envDiagnoseResult.Output | Out-String).Trim())
+if (-not $envDiagnoseOk) { $failed++ }
+
+$ghModeKnown = (($envDiagnoseResult.Output | Out-String) -match 'gh_source:\s+(path|fallback|missing|disabled)')
+Write-Check -Name 'Environment diagnosis reports gh source' -Passed $ghModeKnown -Detail ($(if ($ghModeKnown) { 'gh source was reported clearly.' } else { 'gh source was not reported clearly.' }))
+if (-not $ghModeKnown) { $failed++ }
+
+$ghPathModeKnown = (($envDiagnoseResult.Output | Out-String) -match 'gh_path_visible:\s+(yes|no)')
+Write-Check -Name 'Environment diagnosis reports gh PATH visibility' -Passed $ghPathModeKnown -Detail ($(if ($ghPathModeKnown) { 'gh PATH visibility was reported clearly.' } else { 'gh PATH visibility was not reported clearly.' }))
+if (-not $ghPathModeKnown) { $failed++ }
+
+$capabilityMatrixResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('capability-matrix')
+$capabilityMatrixOk = $capabilityMatrixResult.ExitCode -eq 0
+Write-Check -Name 'CLI capability-matrix' -Passed $capabilityMatrixOk -Detail (($capabilityMatrixResult.Output | Out-String).Trim())
+if (-not $capabilityMatrixOk) { $failed++ }
+
+$ghAuthStatusResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('gh-auth-status')
+$ghAuthStatusOk = $ghAuthStatusResult.ExitCode -eq 0
+Write-Check -Name 'CLI gh-auth-status' -Passed $ghAuthStatusOk -Detail (($ghAuthStatusResult.Output | Out-String).Trim())
+if (-not $ghAuthStatusOk) { $failed++ }
+
+$ghAuthModeKnown = (($ghAuthStatusResult.Output | Out-String) -match 'status:\s+(checked|skipped|unknown)')
+Write-Check -Name 'gh auth status is clearly classified' -Passed $ghAuthModeKnown -Detail ($(if ($ghAuthModeKnown) { 'gh auth status output is readable.' } else { 'gh auth status output is unclear.' }))
+if (-not $ghAuthModeKnown) { $failed++ }
 
 $providersResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('list-providers')
 $providersOk = $providersResult.ExitCode -eq 0

@@ -25,6 +25,8 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - GitHub live read-only adapter now exists
 - GitHub draft generation now exists
 - Approval-gated local branch, remote issue, and remote PR actions now exist
+- Environment detection now exists
+- Capability summary now exists
 - Mail and Notion planning adapters now exist
 - Scoped core publishability scan now exists
 - Remote access and auth plan now exists
@@ -34,7 +36,8 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - No live external provider APIs yet
 - No real browser or app execution yet
 - No remote auth layer yet
-- Remote GitHub issue and PR execution still depends on gh, which is unavailable in this shell today
+- gh is now diagnosed explicitly and is available through a fallback path, but not authenticated
+- Remote GitHub issue and PR execution still depends on gh presence and auth
 - No live mail sending adapter yet
 - No live LinkedIn posting or edit adapter yet
 - No live Notion writes yet
@@ -42,8 +45,8 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Claw Code remains temporary reference, not foundation
 
 ## Immediate Focus
-- Standardize gh availability for explicit GitHub remote actions
-- Refine safe GitHub write behavior without adding destructive actions
+- Standardize gh availability and auth for explicit GitHub remote actions
+- Prepare safe GitHub remote smoke tests once gh auth exists
 - Deepen mail and Notion planning without enabling unsafe actions
 - Keep LinkedIn planning-only until approval and adapter boundaries are clearer
 - Strengthen auth, access control, and publishability without bloating the core
@@ -51,4 +54,4 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 ## Current Risk / Constraint
 - Continue session context still fills quickly
 - Python works through a resolved local interpreter, but not via a clean python PATH yet
-- gh is not currently available on PATH in this execution environment
+- gh is not PATH-visible in this execution environment even though a fallback binary was found
