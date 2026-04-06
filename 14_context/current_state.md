@@ -16,16 +16,19 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Durable handoff files exist in 14_context
 - Runtime MVP exists with approval-aware lifecycle support
 - Council, workflow, and report scaffolding now exist
-- No live provider integrations yet
-- No browser or app control yet
+- Truth-council scaffolding and publishability/access-control docs now exist
+- Runtime includes planning-only truth and publishability utilities
+- No live external provider APIs yet
+- No real browser or app execution yet
+- No remote auth layer yet
 - No real Notion integration yet
 - Claw Code remains temporary reference, not foundation
 
 ## Immediate Focus
-- Build a real integration abstraction
-- Research browser and app control options
-- Deepen the approval workflow
-- Refine execution semantics without bloating the runtime
+- Build a real provider adapter layer
+- Research browser and app execution safely
+- Strengthen access control and approval flow
+- Harden publishability checks without bloating the runtime
 
 ## Current Risk / Constraint
 - Continue session context still fills quickly

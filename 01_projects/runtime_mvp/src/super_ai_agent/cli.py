@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 
 from .council import build_council_plan
 from .handoff import build_handoff_snapshot
+from .publishability import scan_publishability
 from .providers import list_provider_profiles
 from .queue import approve_task, enqueue_task, get_status_summary, list_tasks, reject_task
 from .report_builder import build_report_scaffold
@@ -19,6 +20,7 @@ from .storage import (
     read_tasks,
     write_tasks,
 )
+from .truth_council import build_truth_council_result
 from .workflow_catalog import get_workflow, list_workflows
 
 
@@ -68,6 +70,7 @@ def _build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("snapshot")
     subparsers.add_parser("list-providers")
     subparsers.add_parser("list-workflows")
+    subparsers.add_parser("publish-check")
 
     enqueue_parser = subparsers.add_parser("enqueue")
     enqueue_parser.add_argument("--title", required=True)
@@ -105,6 +108,15 @@ def _build_parser() -> argparse.ArgumentParser:
     scaffold_report_parser.add_argument("--title", required=True)
     scaffold_report_parser.add_argument("--workflow-id", required=True)
     scaffold_report_parser.add_argument("--summary", required=True)
+
+    truth_plan_parser = subparsers.add_parser("truth-plan")
+    truth_plan_parser.add_argument("--question", required=True)
+    truth_plan_parser.add_argument("--proposer", required=True)
+    truth_plan_parser.add_argument("--challenger", required=True)
+    truth_plan_parser.add_argument("--evidence", required=True)
+    truth_plan_parser.add_argument("--evidence-quality", default="medium")
+    truth_plan_parser.add_argument("--disagreement", default="medium")
+    truth_plan_parser.add_argument("--source-count", default=1, type=int)
 
     return parser
 
@@ -267,6 +279,45 @@ def main(argv: list[str] | None = None) -> int:
                 summary=args.summary,
             )
             print(f"report_path: {output_path}")
+            return 0
+
+        if args.command == "truth-plan":
+            result = build_truth_council_result(
+                question=args.question,
+                proposer_summary=args.proposer,
+                challenger_summary=args.challenger,
+                evidence_summary=args.evidence,
+                evidence_quality=args.evidence_quality,
+                disagreement_level=args.disagreement,
+                source_count=args.source_count,
+            )
+            print(f"question: {result.question}")
+            print(f"lead_answer: {result.lead_answer}")
+            print(f"dissent: {result.dissent}")
+            print(f"consensus_level: {result.consensus_level}")
+            print(f"confidence_score: {result.confidence_score}")
+            print(f"evidence_quality_notes: {result.evidence_quality_notes}")
+            if result.notes:
+                print("notes:")
+                for note in result.notes:
+                    print(f"- {note}")
+            return 0
+
+        if args.command == "publish-check":
+            report = scan_publishability()
+            print(f"scanned_files: {report.scanned_files}")
+            print(f"finding_count: {report.finding_count}")
+            counts = report.category_counts()
+            if counts:
+                print("categories:")
+                for category in sorted(counts):
+                    print(f"- {category}: {counts[category]}")
+            if report.findings:
+                print("findings:")
+                for finding in report.findings:
+                    print(f"- [{finding.category}] {finding.path} :: {finding.detail}")
+            else:
+                print("findings: none")
             return 0
 
         if args.command == "snapshot":

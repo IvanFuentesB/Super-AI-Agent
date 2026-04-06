@@ -1,8 +1,8 @@
 # Next Actions
 
-- Build a real integration abstraction
-- Research browser and app control
-- Deepen the approval workflow
-- Refine execution semantics
-- Refine model routing later
+- Build a real provider adapter layer
+- Research browser and app execution safely
+- Strengthen access control and approval flow
+- Harden publishability before any public release
+- Evaluate routing truthfulness and usefulness
 - Expand Notion and GitHub workflows later
