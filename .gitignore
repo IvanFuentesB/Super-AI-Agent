@@ -63,6 +63,10 @@ Thumbs.db
 11_exports/personal_ops/*.md
 !11_exports/personal_ops/.gitkeep
 
+# GitHub generated exports
+11_exports/github/*.md
+!11_exports/github/.gitkeep
+
 # Third-party intake clones
 21_repos/third_party/*
 !21_repos/third_party/.gitkeep

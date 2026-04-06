@@ -1,0 +1,9 @@
+{
+  "read_only_allowed": true,
+  "local_draft_allowed": true,
+  "local_branch_requires_approval": true,
+  "remote_issue_requires_approval": true,
+  "remote_pr_requires_approval": true,
+  "destructive_actions_forbidden": true,
+  "notes": "Example policy only. Remote GitHub mutation must remain explicit, approval-gated, and non-destructive."
+}

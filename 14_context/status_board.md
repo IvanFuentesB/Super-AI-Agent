@@ -18,25 +18,26 @@
 - [x] Provider adapter roadmap exists
 - [x] Personal-ops scaffolding exists
 - [x] Integration adapter foundation exists
+- [x] GitHub write-action layer exists
 
 ## Current Control Layer
 - Continue for local context/rules
 - Codex for execution and Git workflow
 
 ## Current Branch
-- feat/integration-adapter-foundation
+- feat/github-write-actions
 
 ## Current Phase
-- integration adapter foundation
+- GitHub write-action foundation
 
 ## Next Milestones
-- add GitHub write actions behind approval gates
+- standardize gh availability
+- refine safe GitHub remote actions
 - deepen mail and inbox planning
 - plan the live Notion adapter carefully
 - keep LinkedIn planning-only for now
 - research browser and app execution
 - strengthen auth and access control
-- evaluate routing truthfulness and usefulness
 
 ## Known Constraints
 - Continue context fills quickly
@@ -49,6 +50,7 @@
 - third-party repos are intake material only, not core project code
 - no live mail or LinkedIn adapters yet
 - no live Notion writes yet
+- gh is not currently available on PATH in this execution environment
 
 ## Last Reviewed
 - 2026-04-06

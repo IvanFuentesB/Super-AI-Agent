@@ -4,7 +4,7 @@ Small execution-focused runtime sandbox for Super-AI-Agent.
 
 ## What This Is
 
-This MVP is a file-backed Python runtime that can manage approval-aware lifecycle state, generate handoff snapshots from `14_context`, and expose lightweight council, workflow, report, truth, publishability, personal-ops, and integration-adapter utilities.
+This MVP is a file-backed Python runtime that can manage approval-aware lifecycle state, generate handoff snapshots from `14_context`, and expose lightweight council, workflow, report, truth, publishability, personal-ops, integration-adapter, and GitHub action utilities.
 
 ## What It Proves
 
@@ -13,13 +13,17 @@ This MVP is a file-backed Python runtime that can manage approval-aware lifecycl
 - task state can persist in JSON files
 - durable handoff files can be turned into a runtime snapshot
 - the runtime can be checked with a repeatable script
-- provider, workflow, report, truth-plan, publishability, personal-ops, and integration-adapter utilities can be exercised locally
+- provider, workflow, report, truth-plan, publishability, personal-ops, integration-adapter, and GitHub draft/action utilities can be exercised locally
 
 ## What It Does Not Do Yet
 
 - no live provider integrations
 - no browser or app executor
-- GitHub adapter is live read-only only
+- GitHub live read-only adapter exists
+- GitHub draft generation exists
+- approval-gated branch, issue, and PR actions exist
+- remote issue and PR creation depend on `gh`
+- no destructive GitHub actions
 - no live mail adapter
 - no live LinkedIn adapter
 - no real external execution
@@ -49,6 +53,12 @@ This MVP is a file-backed Python runtime that can manage approval-aware lifecycl
 - `publish-check-core`
 - `list-integrations`
 - `github-status`
+- `github-gh-diagnose`
+- `github-issue-draft`
+- `github-pr-draft`
+- `github-create-branch`
+- `github-create-issue`
+- `github-create-pr`
 - `mail-plan`
 - `notion-plan`
 - `list-personal-workflows`
