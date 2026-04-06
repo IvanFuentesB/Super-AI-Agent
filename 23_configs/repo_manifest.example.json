@@ -149,6 +149,56 @@
       "purpose": "Reference repo for discovering skills, hooks, slash commands, tooling, and official Claude Code resources.",
       "next_action": "Use it as a discovery list for selective future intake only.",
       "notes": "Evaluation clone only. No live integration is implemented."
+    },
+    {
+      "repo_id": "windows_use",
+      "source": "CursorTouch/Windows-Use",
+      "local_path": "21_repos/third_party/windows-use",
+      "category": "windows_gui_control",
+      "track_in_core": false,
+      "purpose": "Reference repo for later Windows accessibility-layer control and desktop automation research.",
+      "next_action": "Inspect tool boundaries and keep it as later-stage reference material.",
+      "notes": "Evaluation clone only. No live integration is implemented."
+    },
+    {
+      "repo_id": "windows_mcp",
+      "source": "CursorTouch/Windows-MCP",
+      "local_path": "21_repos/third_party/windows-mcp",
+      "category": "windows_mcp_bridge",
+      "track_in_core": false,
+      "purpose": "Reference repo for a more structured Windows control bridge via MCP.",
+      "next_action": "Inspect app-control and state-capture boundaries only.",
+      "notes": "Evaluation clone only. No live integration is implemented."
+    },
+    {
+      "repo_id": "open_interpreter",
+      "source": "openinterpreter/open-interpreter",
+      "local_path": "21_repos/third_party/open-interpreter",
+      "category": "local_execution_agent",
+      "track_in_core": false,
+      "purpose": "Reference repo for approval, local execution, and broader computer-control patterns.",
+      "next_action": "Extract only approval and execution-surface ideas.",
+      "notes": "Evaluation clone only. No live integration is implemented."
+    },
+    {
+      "repo_id": "open_computer_use",
+      "source": "coasty-ai/open-computer-use",
+      "local_path": "21_repos/third_party/open-computer-use",
+      "category": "computer_use_platform",
+      "track_in_core": false,
+      "purpose": "Reference repo for broader browser, terminal, desktop, and planner layering.",
+      "next_action": "Inspect architecture ideas only and keep it out of core.",
+      "notes": "Evaluation clone only. No live integration is implemented."
+    },
+    {
+      "repo_id": "playwright_official",
+      "source": "microsoft/playwright",
+      "local_path": "21_repos/third_party/playwright-official",
+      "category": "browser_automation_framework",
+      "track_in_core": false,
+      "purpose": "Reference repo and dependency source for deterministic local browser-control work.",
+      "next_action": "Use it for a local deterministic playground before broader executor work.",
+      "notes": "Evaluation clone only. No live integration is implemented."
     }
   ]
 }

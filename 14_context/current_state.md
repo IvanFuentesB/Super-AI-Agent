@@ -22,6 +22,7 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - First-wave third-party repos are cloned locally for evaluation only
 - Career-ops and related reference repos are now cloned locally for evaluation
 - Official Claude Code and OpenClaw are now cloned locally for evaluation and reference
+- Windows-Use, Windows-MCP, Open Interpreter, Open Computer Use, and official Playwright are now cloned locally for evaluation and reference
 - Provider adapter roadmap now exists
 - Integration adapter foundation now exists
 - GitHub live read-only adapter now exists
@@ -42,8 +43,10 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Internship application pack scaffolding now exists
 - Showcase case-study and portfolio page scaffolding now exist
 - Browser executor research docs now exist
+- Browser control playground now exists
+- Playwright-based local smoke test now exists
 - No live external provider APIs yet
-- No real browser or app execution yet
+- No real browser or app execution beyond the local playground yet
 - No remote auth layer yet
 - Remote GitHub issue and PR execution still depends on gh presence and auth
 - No live mail sending adapter yet
@@ -51,18 +54,20 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - No live Notion writes yet
 - Future outbound actions still require approval
 - Third-party repos remain reference-only, not core project code
+- Leak or extraction repos remain excluded from the core foundation
 - Claw Code remains temporary reference, not foundation
 
 ## Immediate Focus
-- Choose one browser-control path
-- Evaluate official Claude Code, OpenClaw, and career-ops extraction value carefully
+- Test the browser playground manually
+- Decide between Playwright-first and browser-use-first for the next executor layer
+- Evaluate Windows-Use and Windows-MCP carefully
 - Prepare one internship-facing live demo from the current runtime outputs
 - Keep GitHub remote actions explicit and approval-gated
-- Keep browser and app execution in research until the control boundary is clearer
+- Keep browser and app execution beyond the local playground in research until the control boundary is clearer
 
 ## Current Risk / Constraint
 - Continue session context still fills quickly
 - Runtime behavior still depends on the actual shell seeing the expected tool/auth state
 - Live remote GitHub mutation is now possible, so approval discipline matters more than before
-- Browser and app execution are still research-only, so intake ideas cannot be turned into live workflows yet
+- Browser and app execution are still mostly research-only, so intake ideas cannot be turned into live workflows yet
 - Third-party intake repos are valuable comparison material, but most of their surface area is still too heavy to adopt directly

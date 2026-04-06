@@ -23,24 +23,25 @@
 - [x] GitHub remote smoke-test layer exists
 - [x] Internship ops and career-ops intake layer exists
 - [x] Showcase scaffolding and final reference repo intake exist
+- [x] Browser control playground exists
 
 ## Current Control Layer
 - Continue for local context/rules
 - Codex for execution and Git workflow
 
 ## Current Branch
-- feat/showcase-and-extra-intake
+- feat/browser-control-playground
 
 ## Current Phase
-- showcase scaffolding and final intake expansion
+- browser control playground and windows control research
 
 ## Next Milestones
-- choose the browser-control path
-- evaluate official Claude Code, OpenClaw, and career-ops extraction ideas
+- test the browser playground manually
+- decide between Playwright-first and browser-use-first for the next executor layer
+- evaluate Windows-Use and Windows-MCP
 - optionally use the Playwright skill in Codex
 - prepare one internship-facing live demo
 - plan the live Notion adapter carefully
-- deepen mail and inbox planning later
 - keep browser and app execution for a later implementation step
 - strengthen auth and access control
 
@@ -55,7 +56,7 @@
 - no live mail or LinkedIn adapters yet
 - no live Notion writes yet
 - live remote GitHub mutation is possible in this environment, so approval discipline remains critical
-- browser and app execution are still research-only
+- browser and app execution beyond the local playground are still research-only
 
 ## Last Reviewed
 - 2026-04-07

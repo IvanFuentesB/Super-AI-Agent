@@ -1,0 +1,13 @@
+{
+  "name": "super-ai-agent-browser-playground",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local deterministic Playwright browser playground for Super-AI-Agent.",
+  "scripts": {
+    "smoke": "node scripts/smoke_click_demo.js",
+    "install-browsers": "playwright install chromium"
+  },
+  "dependencies": {
+    "playwright": "1.59.1"
+  }
+}

@@ -14,17 +14,18 @@ This repo is the core workspace for building a controllable AI system that produ
 - environment and capability detection for `python`, `git`, and `gh`
 - repeatable runtime checker
 - internship, CV, LinkedIn, outreach, showcase, and portfolio scaffold generation
+- local deterministic browser control playground with Playwright smoke checks
 
 ## Scaffold-Only Or Research State
 
 - mail and Notion adapters are planning-only
-- browser and app execution are still research-only
+- full browser and app execution are still not implemented
 - multi-model routing remains planning and policy scaffolding
 - remote GitHub smoke tests are explicit and available, but the default checker remains non-mutating
 
 ## Reference Intake Role
 
-`21_repos/third_party` is an intake lane for external repos used as comparison and extraction material only. Those repos help evaluate patterns from tools like career-ops, official Claude Code, OpenClaw, Browser Use, Stagehand, OpenHands, and related ecosystems without merging vendor code into this core repo.
+`21_repos/third_party` is an intake lane for external repos used as comparison and extraction material only. Those repos help evaluate patterns from tools like career-ops, official Claude Code, OpenClaw, Playwright, Windows-Use, Windows-MCP, Open Interpreter, Open Computer Use, Browser Use, Stagehand, OpenHands, and related ecosystems without merging vendor code into this core repo.
 
 ## Internship And Showcase Relevance
 
@@ -52,8 +53,9 @@ This repo already demonstrates a few concrete recruiter-friendly angles:
 
 ## Next Milestones
 
-- Choose one browser-control path
+- Test the browser playground manually
+- Decide between Playwright-first and browser-use-first for the next executor layer
 - Prepare one internship-facing live demo
-- Evaluate official Claude Code and OpenClaw for selective extraction value
+- Evaluate Windows-Use, Windows-MCP, official Claude Code, and OpenClaw for selective extraction value
 - Plan live Notion groundwork later
 - Keep outbound and remote actions approval-gated
