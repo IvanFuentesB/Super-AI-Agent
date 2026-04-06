@@ -58,7 +58,6 @@ function Invoke-ModuleCommand {
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $runtimeRoot = Join-Path $repoRoot '01_projects\runtime_mvp'
 $runtimeSrc = Join-Path $runtimeRoot 'src'
-$runtimeData = Join-Path $runtimeRoot 'runtime_data'
 
 $expectedFiles = @(
     '01_projects/runtime_mvp/README.md',
@@ -68,9 +67,16 @@ $expectedFiles = @(
     '01_projects/runtime_mvp/src/super_ai_agent/storage.py',
     '01_projects/runtime_mvp/src/super_ai_agent/queue.py',
     '01_projects/runtime_mvp/src/super_ai_agent/handoff.py',
+    '01_projects/runtime_mvp/src/super_ai_agent/providers.py',
+    '01_projects/runtime_mvp/src/super_ai_agent/council.py',
+    '01_projects/runtime_mvp/src/super_ai_agent/workflow_catalog.py',
+    '01_projects/runtime_mvp/src/super_ai_agent/report_builder.py',
     '01_projects/runtime_mvp/src/super_ai_agent/cli.py',
     '01_projects/runtime_mvp/runtime_data/.gitkeep',
-    '04_docs/runtime_mvp.md'
+    '04_docs/runtime_mvp.md',
+    '23_configs/provider_profiles.example.json',
+    '23_configs/council_policy.example.json',
+    '23_configs/workflow_catalog.example.json'
 )
 
 $failed = 0
@@ -95,43 +101,89 @@ if (-not $pythonOk) {
     exit 1
 }
 
-$oldPythonPath = $env:PYTHONPATH
-$env:PYTHONPATH = if ([string]::IsNullOrWhiteSpace($oldPythonPath)) { $runtimeSrc } else { "$runtimeSrc;$oldPythonPath" }
+$initResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('init-data')
+$initOk = $initResult.ExitCode -eq 0
+Write-Check -Name 'CLI init-data' -Passed $initOk -Detail (($initResult.Output | Out-String).Trim())
+if (-not $initOk) { $failed++ }
 
-try {
-    $initResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('init-data')
-    $initOk = $initResult.ExitCode -eq 0
-    Write-Check -Name 'CLI init-data' -Passed $initOk -Detail (($initResult.Output | Out-String).Trim())
-    if (-not $initOk) { $failed++ }
+$providersResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('list-providers')
+$providersOk = $providersResult.ExitCode -eq 0
+Write-Check -Name 'CLI list-providers' -Passed $providersOk -Detail (($providersResult.Output | Out-String).Trim())
+if (-not $providersOk) { $failed++ }
 
-    $enqueueResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('enqueue', '--title', 'checker task', '--description', 'runtime check', '--risk', 'ask')
-    $enqueueOk = $enqueueResult.ExitCode -eq 0
-    Write-Check -Name 'CLI enqueue' -Passed $enqueueOk -Detail (($enqueueResult.Output | Out-String).Trim())
-    if (-not $enqueueOk) { $failed++ }
+$councilResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('council-plan', '--goal-type', 'planning', '--privacy', 'balanced', '--speed', 'balanced', '--require-reviewer')
+$councilOk = $councilResult.ExitCode -eq 0
+Write-Check -Name 'CLI council-plan' -Passed $councilOk -Detail (($councilResult.Output | Out-String).Trim())
+if (-not $councilOk) { $failed++ }
 
-    $listResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('list')
-    $listOk = $listResult.ExitCode -eq 0
-    Write-Check -Name 'CLI list' -Passed $listOk -Detail (($listResult.Output | Out-String).Trim())
-    if (-not $listOk) { $failed++ }
+$listWorkflowsResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('list-workflows')
+$listWorkflowsOk = $listWorkflowsResult.ExitCode -eq 0
+Write-Check -Name 'CLI list-workflows' -Passed $listWorkflowsOk -Detail (($listWorkflowsResult.Output | Out-String).Trim())
+if (-not $listWorkflowsOk) { $failed++ }
 
-    $statusResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('status')
-    $statusOk = $statusResult.ExitCode -eq 0
-    Write-Check -Name 'CLI status' -Passed $statusOk -Detail (($statusResult.Output | Out-String).Trim())
-    if (-not $statusOk) { $failed++ }
+$showWorkflowResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('show-workflow', '--workflow-id', 'report_pack')
+$showWorkflowOk = $showWorkflowResult.ExitCode -eq 0
+Write-Check -Name 'CLI show-workflow' -Passed $showWorkflowOk -Detail (($showWorkflowResult.Output | Out-String).Trim())
+if (-not $showWorkflowOk) { $failed++ }
 
-    $snapshotResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('snapshot')
-    $snapshotOk = $snapshotResult.ExitCode -eq 0
-    Write-Check -Name 'CLI snapshot' -Passed $snapshotOk -Detail (($snapshotResult.Output | Out-String).Trim())
-    if (-not $snapshotOk) { $failed++ }
+$reportResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('scaffold-report', '--title', 'Checker Council Report', '--workflow-id', 'report_pack', '--summary', 'Runtime checker scaffold.')
+$reportOk = $reportResult.ExitCode -eq 0
+Write-Check -Name 'CLI scaffold-report' -Passed $reportOk -Detail (($reportResult.Output | Out-String).Trim())
+if (-not $reportOk) { $failed++ }
+
+$enqueueResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('enqueue', '--title', 'checker task', '--description', 'runtime check', '--risk', 'ask')
+$enqueueOk = $enqueueResult.ExitCode -eq 0
+Write-Check -Name 'CLI enqueue' -Passed $enqueueOk -Detail (($enqueueResult.Output | Out-String).Trim())
+if (-not $enqueueOk) { $failed++ }
+
+$taskIdMatch = [regex]::Match(($enqueueResult.Output | Out-String), 'task_id:\s*(\S+)')
+$taskId = if ($taskIdMatch.Success) { $taskIdMatch.Groups[1].Value } else { $null }
+$taskIdOk = -not [string]::IsNullOrWhiteSpace($taskId)
+Write-Check -Name 'Task id parsed' -Passed $taskIdOk -Detail ($(if ($taskIdOk) { $taskId } else { 'missing task id from enqueue output' }))
+if (-not $taskIdOk) { $failed++ }
+
+if ($taskIdOk) {
+    $approveResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve', '--task-id', $taskId, '--note', 'checker approval')
+    $approveOk = $approveResult.ExitCode -eq 0
+    Write-Check -Name 'CLI approve' -Passed $approveOk -Detail (($approveResult.Output | Out-String).Trim())
+    if (-not $approveOk) { $failed++ }
+
+    $waitResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('wait', '--task-id', $taskId)
+    $waitOk = $waitResult.ExitCode -eq 0
+    Write-Check -Name 'CLI wait' -Passed $waitOk -Detail (($waitResult.Output | Out-String).Trim())
+    if (-not $waitOk) { $failed++ }
+
+    $resumeResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('resume', '--task-id', $taskId)
+    $resumeOk = $resumeResult.ExitCode -eq 0
+    Write-Check -Name 'CLI resume' -Passed $resumeOk -Detail (($resumeResult.Output | Out-String).Trim())
+    if (-not $resumeOk) { $failed++ }
+
+    $runOnceResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('run-once', '--task-id', $taskId)
+    $runOnceOk = $runOnceResult.ExitCode -eq 0
+    Write-Check -Name 'CLI run-once' -Passed $runOnceOk -Detail (($runOnceResult.Output | Out-String).Trim())
+    if (-not $runOnceOk) { $failed++ }
 }
-finally {
-    $env:PYTHONPATH = $oldPythonPath
-}
+
+$listResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('list')
+$listOk = $listResult.ExitCode -eq 0
+Write-Check -Name 'CLI list' -Passed $listOk -Detail (($listResult.Output | Out-String).Trim())
+if (-not $listOk) { $failed++ }
+
+$statusResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('status')
+$statusOk = $statusResult.ExitCode -eq 0
+Write-Check -Name 'CLI status' -Passed $statusOk -Detail (($statusResult.Output | Out-String).Trim())
+if (-not $statusOk) { $failed++ }
+
+$snapshotResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('snapshot')
+$snapshotOk = $snapshotResult.ExitCode -eq 0
+Write-Check -Name 'CLI snapshot' -Passed $snapshotOk -Detail (($snapshotResult.Output | Out-String).Trim())
+if (-not $snapshotOk) { $failed++ }
 
 $artifactPaths = @(
     '01_projects/runtime_mvp/runtime_data/tasks.json',
     '01_projects/runtime_mvp/runtime_data/approvals.json',
-    '01_projects/runtime_mvp/runtime_data/handoff_snapshot.md'
+    '01_projects/runtime_mvp/runtime_data/handoff_snapshot.md',
+    '11_exports/reports/checker-council-report.md'
 )
 
 $artifactsOk = $true

@@ -1,0 +1,43 @@
+{
+  "default_strategy": "lead-reviewer-with-local-fallback",
+  "local_fallback_provider": "gemma_local",
+  "routing_examples": {
+    "coding": {
+      "lead_provider": "chatgpt",
+      "reviewer_provider": "claude"
+    },
+    "planning": {
+      "lead_provider": "claude",
+      "reviewer_provider": "chatgpt"
+    },
+    "structured_docs": {
+      "lead_provider": "claude",
+      "reviewer_provider": "gemini"
+    },
+    "research_synthesis": {
+      "lead_provider": "gemini",
+      "reviewer_provider": "chatgpt"
+    },
+    "content_ideation": {
+      "lead_provider": "chatgpt",
+      "reviewer_provider": "claude"
+    }
+  },
+  "prefer_local_when": [
+    "privacy is strict",
+    "fast local drafting is enough",
+    "connectivity is limited"
+  ],
+  "prefer_cloud_when": [
+    "cross-domain planning is needed",
+    "review quality matters",
+    "larger synthesis tasks are involved"
+  ],
+  "use_reviewer_when": [
+    "external-facing deliverables",
+    "important decisions",
+    "code or policy changes"
+  ],
+  "approval_needed_for_external_actions": true,
+  "notes": "Example planning policy only. No provider API calls or live routing are implemented."
+}

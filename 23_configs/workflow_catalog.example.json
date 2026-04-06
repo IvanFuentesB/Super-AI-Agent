@@ -1,0 +1,58 @@
+{
+  "workflows": [
+    {
+      "workflow_id": "report_pack",
+      "title": "Report Pack",
+      "purpose": "Turn source material into a structured report set.",
+      "inputs": ["notes", "repo findings", "source documents"],
+      "outputs": ["report draft", "summary", "handoff note"],
+      "approval_points": ["publish externally", "share outside the workspace"],
+      "notes": "Useful for documentation and business reporting."
+    },
+    {
+      "workflow_id": "business_experiment",
+      "title": "Business Experiment",
+      "purpose": "Turn an idea into a small experiment plan and asset list.",
+      "inputs": ["idea", "constraints", "target outcome"],
+      "outputs": ["experiment plan", "asset checklist", "decision note"],
+      "approval_points": ["external launch", "spend or account changes"],
+      "notes": "Legitimate experimentation only."
+    },
+    {
+      "workflow_id": "video_to_runbook",
+      "title": "Video To Runbook",
+      "purpose": "Convert a lecture, guide, or demo into a practical runbook.",
+      "inputs": ["video notes", "transcript", "goals"],
+      "outputs": ["runbook", "checklist", "handoff summary"],
+      "approval_points": ["publishing or distributing outputs"],
+      "notes": "Good for turning tutorials into reusable process docs."
+    },
+    {
+      "workflow_id": "linkedin_cv_asset_update",
+      "title": "LinkedIn / CV Asset Update",
+      "purpose": "Maintain owned professional assets with consistent source notes.",
+      "inputs": ["existing profile", "new achievements", "target positioning"],
+      "outputs": ["draft bullet points", "profile update plan", "review checklist"],
+      "approval_points": ["publishing profile changes"],
+      "notes": "Owned-account workflow only."
+    },
+    {
+      "workflow_id": "owned_account_content_pipeline",
+      "title": "Owned Account Content Pipeline",
+      "purpose": "Plan and package legitimate content ops for owned accounts.",
+      "inputs": ["source ideas", "brand notes", "posting goals"],
+      "outputs": ["content plan", "draft assets", "runbook"],
+      "approval_points": ["posting externally", "account changes"],
+      "notes": "No spam or deceptive identity automation."
+    },
+    {
+      "workflow_id": "repo_review_pack",
+      "title": "Repo Review Pack",
+      "purpose": "Turn a codebase or repo into findings, next steps, and structured notes.",
+      "inputs": ["repo path", "goals", "known issues"],
+      "outputs": ["review notes", "next actions", "report scaffold"],
+      "approval_points": ["commits", "pushes", "external publication"],
+      "notes": "Useful for GitHub and project organization work."
+    }
+  ]
+}

@@ -10,27 +10,28 @@ This MVP moves the repo from documentation-only setup into a small real runtime 
 - approval-aware task states can be persisted
 - durable handoff files can be turned into a snapshot artifact
 - the runtime can be validated with a repeatable checker
+- council, workflow, and report scaffolding can be exercised locally
 
 ## Current Boundaries
 
 - file-backed JSON only
 - standard library only
-- no worker loop
-- no integrations
-- no model execution
+- no live provider integrations
+- no browser or app control
+- no real external execution
 
 ## Long-Term Relation
 
-This is the smallest inspectable base for a future agent runtime, not the full long-term system.
+This is the smallest inspectable base for a future execution-first control system, not the full long-term system.
 
 ## Why It Is Intentionally Small
 
-Small scope keeps the behavior readable, testable, and reversible before more automation or routing layers are added.
+Small scope keeps the behavior readable, testable, and reversible before deeper integration or routing layers are added.
 
 ## What Should Come After This MVP
 
 - deepen approval workflow
-- decide queue semantics
-- add wait and resume behavior
+- add real integration abstractions
+- refine queue and execution semantics
 - evaluate model routing later
 - add integrations later

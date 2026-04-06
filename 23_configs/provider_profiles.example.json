@@ -1,0 +1,48 @@
+{
+  "providers": [
+    {
+      "provider_id": "chatgpt",
+      "display_name": "ChatGPT",
+      "role_strengths": ["execution", "coding", "structured_output"],
+      "good_for": ["coding tasks", "workflow breakdowns", "report drafting"],
+      "weak_for": ["strict local-only work"],
+      "privacy_mode": "cloud",
+      "speed_bias": "balanced",
+      "cost_bias": "medium",
+      "notes": "Example planning profile only. No live integration is implemented."
+    },
+    {
+      "provider_id": "claude",
+      "display_name": "Claude",
+      "role_strengths": ["planning", "review", "writing"],
+      "good_for": ["planning", "review passes", "structured documents"],
+      "weak_for": ["strict local-only work"],
+      "privacy_mode": "cloud",
+      "speed_bias": "balanced",
+      "cost_bias": "medium_high",
+      "notes": "Example planning profile only. No live integration is implemented."
+    },
+    {
+      "provider_id": "gemini",
+      "display_name": "Gemini",
+      "role_strengths": ["research_synthesis", "analysis", "document_structuring"],
+      "good_for": ["research synthesis", "document planning", "idea expansion"],
+      "weak_for": ["strict local-only work"],
+      "privacy_mode": "cloud",
+      "speed_bias": "balanced",
+      "cost_bias": "medium",
+      "notes": "Example planning profile only. No live integration is implemented."
+    },
+    {
+      "provider_id": "gemma_local",
+      "display_name": "Gemma Local",
+      "role_strengths": ["local_fallback", "privacy_sensitive_drafts", "fast_local_iteration"],
+      "good_for": ["local drafts", "privacy-sensitive notes", "fallback execution planning"],
+      "weak_for": ["heavy cross-domain synthesis", "deep review workloads"],
+      "privacy_mode": "local",
+      "speed_bias": "fast",
+      "cost_bias": "low",
+      "notes": "Example local profile. No live provider routing is implemented."
+    }
+  ]
+}

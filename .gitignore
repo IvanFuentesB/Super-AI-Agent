@@ -55,3 +55,6 @@ Thumbs.db
 01_projects/runtime_mvp/runtime_data/*.json
 01_projects/runtime_mvp/runtime_data/*.md
 !01_projects/runtime_mvp/runtime_data/.gitkeep
+
+# Generated reports
+11_exports/reports/*.md

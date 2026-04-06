@@ -1,10 +1,10 @@
 # Runtime MVP
 
-Small local-first runtime sandbox for Super-AI-Agent.
+Small execution-focused runtime sandbox for Super-AI-Agent.
 
 ## What This Is
 
-This MVP is a file-backed Python runtime that can create tasks, hold approval-aware task state, and generate a handoff snapshot from `14_context`.
+This MVP is a file-backed Python runtime that can create tasks, hold approval-aware task state, generate a handoff snapshot from `14_context`, and expose lightweight council/workflow/report planning utilities.
 
 ## What It Proves
 
@@ -13,14 +13,15 @@ This MVP is a file-backed Python runtime that can create tasks, hold approval-aw
 - task state can persist in JSON files
 - durable handoff files can be turned into a runtime snapshot
 - the runtime can be checked with a repeatable script
+- provider, workflow, and report planning utilities can be exercised locally
 
 ## What It Does Not Do Yet
 
-- no worker loop
-- no wait or resume behavior
-- no model routing
-- no external integrations
-- no background automation
+- no live provider integrations
+- no browser or app control
+- no real external execution
+- no autonomous background loop
+- no real Notion integration
 
 ## CLI Commands
 
@@ -30,6 +31,14 @@ This MVP is a file-backed Python runtime that can create tasks, hold approval-aw
 - `list`
 - `approve`
 - `reject`
+- `wait`
+- `resume`
+- `run-once`
+- `list-providers`
+- `council-plan`
+- `list-workflows`
+- `show-workflow`
+- `scaffold-report`
 - `snapshot`
 
 ## Runtime Data
