@@ -6,7 +6,12 @@ import sys
 from datetime import datetime, timezone
 
 from .council import build_council_plan
+from .github_adapter import get_current_branch as get_github_branch
+from .github_adapter import get_recent_commits, get_remote_info, get_repo_status_summary
 from .handoff import build_handoff_snapshot
+from .integrations import list_supported_integrations
+from .mail_adapter import build_inbox_triage_plan
+from .notion_adapter import build_notion_update_plan
 from .personal_ops import (
     get_personal_workflow,
     list_personal_workflows,
@@ -80,6 +85,9 @@ def _build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("list-workflows")
     subparsers.add_parser("publish-check")
     subparsers.add_parser("list-personal-workflows")
+    subparsers.add_parser("list-integrations")
+    subparsers.add_parser("github-status")
+    subparsers.add_parser("publish-check-core")
 
     enqueue_parser = subparsers.add_parser("enqueue")
     enqueue_parser.add_argument("--title", required=True)
@@ -115,6 +123,14 @@ def _build_parser() -> argparse.ArgumentParser:
 
     show_personal_workflow_parser = subparsers.add_parser("show-personal-workflow")
     show_personal_workflow_parser.add_argument("--workflow-id", required=True)
+
+    mail_plan_parser = subparsers.add_parser("mail-plan")
+    mail_plan_parser.add_argument("--account-label", required=True)
+    mail_plan_parser.add_argument("--goal", required=True)
+
+    notion_plan_parser = subparsers.add_parser("notion-plan")
+    notion_plan_parser.add_argument("--page-label", required=True)
+    notion_plan_parser.add_argument("--objective", required=True)
 
     scaffold_report_parser = subparsers.add_parser("scaffold-report")
     scaffold_report_parser.add_argument("--title", required=True)
@@ -261,6 +277,32 @@ def main(argv: list[str] | None = None) -> int:
                 )
             return 0
 
+        if args.command == "list-integrations":
+            for integration in list_supported_integrations():
+                print(f"{integration.integration_id} | {integration.mode} | {integration.summary}")
+            return 0
+
+        if args.command == "github-status":
+            summary = get_repo_status_summary()
+            remote = get_remote_info()
+            commits = get_recent_commits()
+            print(f"repo_root: {summary.repo_root}")
+            print(f"branch: {get_github_branch()}")
+            print(f"clean: {'yes' if summary.is_clean else 'no'}")
+            print(f"staged_changes: {summary.staged_changes}")
+            print(f"unstaged_changes: {summary.unstaged_changes}")
+            print(f"untracked_changes: {summary.untracked_changes}")
+            print(f"origin_url: {remote.origin_url or 'none'}")
+            print(f"gh_available: {'yes' if remote.gh_available else 'no'}")
+            if remote.gh_authenticated is None:
+                print("gh_authenticated: unknown")
+            else:
+                print(f"gh_authenticated: {'yes' if remote.gh_authenticated else 'no'}")
+            print("recent_commits:")
+            for commit in commits:
+                print(f"- {commit.commit_hash} {commit.subject}")
+            return 0
+
         if args.command == "council-plan":
             plan = build_council_plan(
                 goal_type=args.goal_type,
@@ -321,6 +363,44 @@ def main(argv: list[str] | None = None) -> int:
             for item in workflow.approval_points:
                 print(f"- {item}")
             print(f"notes: {workflow.notes}")
+            return 0
+
+        if args.command == "mail-plan":
+            plan = build_inbox_triage_plan(
+                account_label=args.account_label,
+                goal=args.goal,
+            )
+            print(f"account_label: {plan.account_label}")
+            print(f"objective: {plan.objective}")
+            print(f"mode: {plan.mode}")
+            print("steps:")
+            for item in plan.steps:
+                print(f"- {item}")
+            print("outputs:")
+            for item in plan.outputs:
+                print(f"- {item}")
+            print("approval_points:")
+            for item in plan.approval_points:
+                print(f"- {item}")
+            return 0
+
+        if args.command == "notion-plan":
+            plan = build_notion_update_plan(
+                page_label=args.page_label,
+                objective=args.objective,
+            )
+            print(f"page_label: {plan.page_label}")
+            print(f"objective: {plan.objective}")
+            print(f"mode: {plan.mode}")
+            print("steps:")
+            for item in plan.steps:
+                print(f"- {item}")
+            print("outputs:")
+            for item in plan.outputs:
+                print(f"- {item}")
+            print("approval_points:")
+            for item in plan.approval_points:
+                print(f"- {item}")
             return 0
 
         if args.command == "scaffold-report":
@@ -391,6 +471,23 @@ def main(argv: list[str] | None = None) -> int:
 
         if args.command == "publish-check":
             report = scan_publishability()
+            print(f"scanned_files: {report.scanned_files}")
+            print(f"finding_count: {report.finding_count}")
+            counts = report.category_counts()
+            if counts:
+                print("categories:")
+                for category in sorted(counts):
+                    print(f"- {category}: {counts[category]}")
+            if report.findings:
+                print("findings:")
+                for finding in report.findings:
+                    print(f"- [{finding.category}] {finding.path} :: {finding.detail}")
+            else:
+                print("findings: none")
+            return 0
+
+        if args.command == "publish-check-core":
+            report = scan_publishability(core_only=True)
             print(f"scanned_files: {report.scanned_files}")
             print(f"finding_count: {report.finding_count}")
             counts = report.category_counts()

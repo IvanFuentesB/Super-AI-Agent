@@ -10,13 +10,14 @@ This MVP moves the repo from documentation-only setup into a small real runtime 
 - approval-aware task states can be persisted
 - durable handoff files can be turned into a snapshot artifact
 - the runtime can be validated with a repeatable checker
-- council, workflow, report, truth-plan, publishability, and personal-ops scaffolding can be exercised locally
+- council, workflow, report, truth-plan, publishability, personal-ops, and integration-adapter scaffolding can be exercised locally
 
 ## Current Boundaries
 
 - file-backed JSON only
 - standard library only
-- no live provider integrations
+- GitHub live read-only support exists
+- mail and Notion are planning-only
 - no real browser or app execution
 - no remote auth layer
 - no real external execution
@@ -35,6 +36,7 @@ Small scope keeps the behavior readable, testable, and reversible before deeper 
 
 - add a real provider adapter layer
 - deepen owned-account workflow scaffolding
+- expand GitHub read support into approval-gated write actions
 - deepen approval and access control
 - research browser and app execution safely
 - add publishability hardening

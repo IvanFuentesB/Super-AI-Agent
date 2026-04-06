@@ -63,6 +63,10 @@ $expectedFiles = @(
     '01_projects/runtime_mvp/README.md',
     '01_projects/runtime_mvp/pyproject.toml',
     '01_projects/runtime_mvp/src/super_ai_agent/__init__.py',
+    '01_projects/runtime_mvp/src/super_ai_agent/integrations.py',
+    '01_projects/runtime_mvp/src/super_ai_agent/github_adapter.py',
+    '01_projects/runtime_mvp/src/super_ai_agent/mail_adapter.py',
+    '01_projects/runtime_mvp/src/super_ai_agent/notion_adapter.py',
     '01_projects/runtime_mvp/src/super_ai_agent/models.py',
     '01_projects/runtime_mvp/src/super_ai_agent/storage.py',
     '01_projects/runtime_mvp/src/super_ai_agent/queue.py',
@@ -77,6 +81,11 @@ $expectedFiles = @(
     '01_projects/runtime_mvp/src/super_ai_agent/cli.py',
     '01_projects/runtime_mvp/runtime_data/.gitkeep',
     '04_docs/runtime_mvp.md',
+    '04_docs/integration_adapter_architecture.md',
+    '04_docs/github_adapter.md',
+    '04_docs/mail_adapter_plan.md',
+    '04_docs/notion_adapter_plan.md',
+    '04_docs/publishability_scope.md',
     '04_docs/personal_ops_architecture.md',
     '04_docs/owned_account_workflows.md',
     '04_docs/mail_linkedin_cv_pipeline.md',
@@ -91,6 +100,8 @@ $expectedFiles = @(
     '07_templates/cv_update_pack.md',
     '07_templates/outreach_draft.md',
     '11_exports/personal_ops/.gitkeep',
+    '23_configs/integration_policy.example.json',
+    '23_configs/publish_scope.example.json',
     '23_configs/provider_profiles.example.json',
     '23_configs/council_policy.example.json',
     '23_configs/personal_workflow_catalog.example.json',
@@ -161,6 +172,35 @@ $publishCheckResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
 $publishCheckOk = $publishCheckResult.ExitCode -eq 0
 Write-Check -Name 'CLI publish-check' -Passed $publishCheckOk -Detail (($publishCheckResult.Output | Out-String).Trim())
 if (-not $publishCheckOk) { $failed++ }
+
+$publishCheckCoreResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('publish-check-core')
+$publishCheckCoreOk = $publishCheckCoreResult.ExitCode -eq 0
+Write-Check -Name 'CLI publish-check-core' -Passed $publishCheckCoreOk -Detail (($publishCheckCoreResult.Output | Out-String).Trim())
+if (-not $publishCheckCoreOk) { $failed++ }
+
+$coreScanClean = (($publishCheckCoreResult.Output | Out-String) -notmatch '21_repos/third_party')
+Write-Check -Name 'Core publish scan excludes third-party intake' -Passed $coreScanClean -Detail ($(if ($coreScanClean) { 'no third-party intake paths found in scoped scan output' } else { 'scoped scan still reported third-party intake paths' }))
+if (-not $coreScanClean) { $failed++ }
+
+$listIntegrationsResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('list-integrations')
+$listIntegrationsOk = $listIntegrationsResult.ExitCode -eq 0
+Write-Check -Name 'CLI list-integrations' -Passed $listIntegrationsOk -Detail (($listIntegrationsResult.Output | Out-String).Trim())
+if (-not $listIntegrationsOk) { $failed++ }
+
+$githubStatusResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('github-status')
+$githubStatusOk = $githubStatusResult.ExitCode -eq 0
+Write-Check -Name 'CLI github-status' -Passed $githubStatusOk -Detail (($githubStatusResult.Output | Out-String).Trim())
+if (-not $githubStatusOk) { $failed++ }
+
+$mailPlanResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('mail-plan', '--account-label', 'Primary Inbox', '--goal', 'Prepare a triage plan')
+$mailPlanOk = $mailPlanResult.ExitCode -eq 0
+Write-Check -Name 'CLI mail-plan' -Passed $mailPlanOk -Detail (($mailPlanResult.Output | Out-String).Trim())
+if (-not $mailPlanOk) { $failed++ }
+
+$notionPlanResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('notion-plan', '--page-label', 'Operations Hub', '--objective', 'Plan a workspace update')
+$notionPlanOk = $notionPlanResult.ExitCode -eq 0
+Write-Check -Name 'CLI notion-plan' -Passed $notionPlanOk -Detail (($notionPlanResult.Output | Out-String).Trim())
+if (-not $notionPlanOk) { $failed++ }
 
 $listPersonalWorkflowsResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('list-personal-workflows')
 $listPersonalWorkflowsOk = $listPersonalWorkflowsResult.ExitCode -eq 0

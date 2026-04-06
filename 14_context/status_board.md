@@ -17,23 +17,24 @@
 - [x] Curated repo intake layer exists
 - [x] Provider adapter roadmap exists
 - [x] Personal-ops scaffolding exists
+- [x] Integration adapter foundation exists
 
 ## Current Control Layer
 - Continue for local context/rules
 - Codex for execution and Git workflow
 
 ## Current Branch
-- feat/personal-ops-foundation
+- feat/integration-adapter-foundation
 
 ## Current Phase
-- owned-account personal ops foundation
+- integration adapter foundation
 
 ## Next Milestones
-- start provider adapters in planned order
-- deepen GitHub workflow support
-- plan the mail and inbox adapter layer
-- plan the Notion integration layer
-- plan the LinkedIn integration layer
+- add GitHub write actions behind approval gates
+- deepen mail and inbox planning
+- plan the live Notion adapter carefully
+- keep LinkedIn planning-only for now
+- research browser and app execution
 - strengthen auth and access control
 - evaluate routing truthfulness and usefulness
 
@@ -47,6 +48,7 @@
 - no remote auth layer yet
 - third-party repos are intake material only, not core project code
 - no live mail or LinkedIn adapters yet
+- no live Notion writes yet
 
 ## Last Reviewed
 - 2026-04-06

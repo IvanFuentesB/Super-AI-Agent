@@ -1,0 +1,23 @@
+{
+  "include_paths": [
+    "01_projects/runtime_mvp",
+    "03_scripts",
+    "04_docs",
+    "07_templates",
+    "12_setup",
+    "13_prompts",
+    "14_context",
+    "15_admin_notes",
+    "17_integrations",
+    "20_agents",
+    "23_configs",
+    "README.md",
+    ".gitignore"
+  ],
+  "exclude_paths": [
+    "21_repos/third_party",
+    "11_exports",
+    "01_projects/runtime_mvp/runtime_data"
+  ],
+  "notes": "Example scoped publishability config for first-party release review."
+}
