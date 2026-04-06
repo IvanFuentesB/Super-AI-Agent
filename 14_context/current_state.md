@@ -18,6 +18,11 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Council, workflow, and report scaffolding now exist
 - Truth-council scaffolding and publishability/access-control docs now exist
 - Runtime includes planning-only truth and publishability utilities
+- Curated repo intake area exists under 21_repos/third_party
+- First-wave third-party repos are cloned locally for evaluation only
+- Provider adapter roadmap now exists
+- Remote access and auth plan now exists
+- Public repo split strategy now exists
 - No live external provider APIs yet
 - No real browser or app execution yet
 - No remote auth layer yet
@@ -25,10 +30,10 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Claw Code remains temporary reference, not foundation
 
 ## Immediate Focus
-- Build a real provider adapter layer
+- Start provider adapters in a deliberate order
+- Evaluate the first-wave intake repos one by one
 - Research browser and app execution safely
-- Strengthen access control and approval flow
-- Harden publishability checks without bloating the runtime
+- Strengthen auth, access control, and publishability without bloating the core
 
 ## Current Risk / Constraint
 - Continue session context still fills quickly
