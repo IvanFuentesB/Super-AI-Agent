@@ -69,14 +69,23 @@ $expectedFiles = @(
     '01_projects/runtime_mvp/src/super_ai_agent/handoff.py',
     '01_projects/runtime_mvp/src/super_ai_agent/providers.py',
     '01_projects/runtime_mvp/src/super_ai_agent/council.py',
+    '01_projects/runtime_mvp/src/super_ai_agent/truth_council.py',
+    '01_projects/runtime_mvp/src/super_ai_agent/publishability.py',
     '01_projects/runtime_mvp/src/super_ai_agent/workflow_catalog.py',
     '01_projects/runtime_mvp/src/super_ai_agent/report_builder.py',
     '01_projects/runtime_mvp/src/super_ai_agent/cli.py',
     '01_projects/runtime_mvp/runtime_data/.gitkeep',
     '04_docs/runtime_mvp.md',
+    '04_docs/access_control_architecture.md',
+    '04_docs/publishability_checklist.md',
+    '04_docs/licensing_strategy.md',
+    '04_docs/truth_council_architecture.md',
+    '04_docs/browser_app_control_architecture.md',
     '23_configs/provider_profiles.example.json',
     '23_configs/council_policy.example.json',
-    '23_configs/workflow_catalog.example.json'
+    '23_configs/workflow_catalog.example.json',
+    '23_configs/publish_policy.example.json',
+    '23_configs/truth_council_policy.example.json'
 )
 
 $failed = 0
@@ -130,6 +139,16 @@ $reportResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('scaff
 $reportOk = $reportResult.ExitCode -eq 0
 Write-Check -Name 'CLI scaffold-report' -Passed $reportOk -Detail (($reportResult.Output | Out-String).Trim())
 if (-not $reportOk) { $failed++ }
+
+$truthPlanResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('truth-plan', '--question', 'Should this stay planning-only?', '--proposer', 'Keep external execution gated.', '--challenger', 'Planning alone may be too passive.', '--evidence', 'Current runtime has no live integrations.', '--evidence-quality', 'medium', '--disagreement', 'medium', '--source-count', '2')
+$truthPlanOk = $truthPlanResult.ExitCode -eq 0
+Write-Check -Name 'CLI truth-plan' -Passed $truthPlanOk -Detail (($truthPlanResult.Output | Out-String).Trim())
+if (-not $truthPlanOk) { $failed++ }
+
+$publishCheckResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('publish-check')
+$publishCheckOk = $publishCheckResult.ExitCode -eq 0
+Write-Check -Name 'CLI publish-check' -Passed $publishCheckOk -Detail (($publishCheckResult.Output | Out-String).Trim())
+if (-not $publishCheckOk) { $failed++ }
 
 $enqueueResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('enqueue', '--title', 'checker task', '--description', 'runtime check', '--risk', 'ask')
 $enqueueOk = $enqueueResult.ExitCode -eq 0

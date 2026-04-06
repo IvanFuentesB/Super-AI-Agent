@@ -1,0 +1,17 @@
+{
+  "default_roles": [
+    "proposer",
+    "challenger",
+    "evidence_collector",
+    "adjudicator"
+  ],
+  "require_challenger": true,
+  "require_evidence_pass": true,
+  "require_dissent_output": true,
+  "confidence_bands": {
+    "low": "Evidence is thin, contested, or incomplete.",
+    "medium": "Evidence is usable but still has meaningful uncertainty.",
+    "high": "Evidence is strong, source coverage is decent, and objections are limited."
+  },
+  "notes": "Example truth-council policy only. No live provider orchestration is implemented."
+}

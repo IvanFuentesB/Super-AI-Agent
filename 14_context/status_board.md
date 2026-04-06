@@ -12,23 +12,25 @@
 - [x] Runtime MVP sandbox exists
 - [x] Runtime MVP checker passed
 - [x] Council, workflow, and report scaffolding exist
+- [x] Truth-council scaffolding exists
+- [x] Publishability and access-control foundation exists
 
 ## Current Control Layer
 - Continue for local context/rules
 - Codex for execution and Git workflow
 
 ## Current Branch
-- feat/council-control-foundation
+- feat/security-publishability-truth-council
 
 ## Current Phase
-- council control foundation and workflow scaffolding
+- security, publishability, and truth-council foundation
 
 ## Next Milestones
-- build a real integration abstraction
-- research browser and app control
-- deepen the approval workflow
-- refine execution semantics
-- refine model routing later
+- build a real provider adapter layer
+- research browser and app execution
+- deepen approval and access control
+- harden publishability before any public release
+- evaluate routing truthfulness and usefulness
 - expand Notion and GitHub workflows later
 
 ## Known Constraints
@@ -37,7 +39,8 @@
 - avoid bloated or messy setup
 - Python is available through a resolved local interpreter, not a clean python PATH
 - no live provider integrations yet
-- no browser or app control yet
+- no real browser or app execution yet
+- no remote auth layer yet
 
 ## Last Reviewed
 - 2026-04-06

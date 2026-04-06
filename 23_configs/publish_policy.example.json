@@ -1,0 +1,32 @@
+{
+  "forbidden_public_paths": [
+    "01_projects/runtime_mvp/runtime_data",
+    "05_logs",
+    "11_exports",
+    "17_integrations"
+  ],
+  "forbidden_file_patterns": [
+    ".env",
+    ".env.*",
+    "*.pem",
+    "*.key",
+    "*.p12",
+    "*.pfx"
+  ],
+  "secret_like_patterns": [
+    "ghp_",
+    "sk-",
+    "BEGIN PRIVATE KEY",
+    "BEGIN RSA PRIVATE KEY",
+    "AKIA"
+  ],
+  "review_required_before_public": [
+    "secrets review",
+    "runtime data review",
+    "logs review",
+    "generated exports review",
+    "dependency and license review",
+    "final visibility review"
+  ],
+  "notes": "Example publishability policy only. Review manually before making any repo public."
+}
