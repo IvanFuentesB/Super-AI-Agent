@@ -1,3 +1,9 @@
+const uiState = {
+  serverActions: [],
+  localActions: [],
+  nextLocalActionId: 1,
+};
+
 function escapeHtml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -14,30 +20,110 @@ async function requestJson(url, options = {}) {
     },
     ...options,
   });
+
   const data = await response.json();
   if (!response.ok) {
     throw new Error(data.error || data.stderr || `Request failed with ${response.status}`);
   }
+
   return data;
 }
 
 function setText(id, value) {
-  document.getElementById(id).textContent = value;
+  const element = document.getElementById(id);
+  if (element) {
+    element.textContent = value;
+  }
 }
 
 function renderRaw(id, payload) {
-  document.getElementById(id).textContent = JSON.stringify(payload, null, 2);
+  const element = document.getElementById(id);
+  if (element) {
+    element.textContent = JSON.stringify(payload, null, 2);
+  }
+}
+
+function formatTimeStamp(value) {
+  if (!value) {
+    return "just now";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return String(value);
+  }
+
+  return date.toLocaleString();
+}
+
+function localTimeStamp() {
+  return new Date().toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
+
+function createLocalAction(label, summary) {
+  const action = {
+    id: `local-${uiState.nextLocalActionId++}`,
+    label,
+    status: "pending",
+    summary,
+    occurredAt: localTimeStamp(),
+    source: "console",
+  };
+
+  uiState.localActions = [action, ...uiState.localActions].slice(0, 8);
+  renderRecentActionsPanel();
+  return action.id;
+}
+
+function updateLocalAction(actionId, status, summary) {
+  uiState.localActions = uiState.localActions.map((action) =>
+    action.id === actionId
+      ? {
+          ...action,
+          status,
+          summary,
+          occurredAt: localTimeStamp(),
+        }
+      : action,
+  );
+  renderRecentActionsPanel();
+}
+
+function normalizeState(status) {
+  if (!status) {
+    return "neutral";
+  }
+
+  const value = String(status).toLowerCase();
+  if (["ok", "success", "available", "ready"].includes(value)) {
+    return "success";
+  }
+  if (["blocked", "error", "fail", "failed"].includes(value)) {
+    return "error";
+  }
+  if (["pending", "loading", "running"].includes(value)) {
+    return "loading";
+  }
+  return "neutral";
 }
 
 function renderStatusList(id, items) {
   const element = document.getElementById(id);
+  if (!element) {
+    return;
+  }
+
   element.innerHTML = (items || [])
     .map((item) => `<li>${escapeHtml(item)}</li>`)
     .join("");
 }
 
 function renderOperatorStatus(payload) {
-  setText("operator-headline", payload.headline || "Operator mode status loaded.");
+  setText("operator-headline", payload.headline || "Operator status loaded.");
   setText("operator-next-step", payload.nextStep || "No next step reported.");
   renderStatusList("live-now-list", payload.liveNow);
   renderStatusList("scaffold-only-list", payload.scaffoldOnly);
@@ -46,30 +132,42 @@ function renderOperatorStatus(payload) {
 
 function renderCapabilitySummary(payload) {
   const summary = payload.summary || {};
+  const availableCount = summary.availableCount ?? 0;
+  const blockedCount = summary.blockedCount ?? 0;
+
   setText("capability-headline", summary.headline || "Capability summary unavailable.");
-  setText(
-    "capability-counts",
-    `${summary.availableCount ?? 0} available / ${summary.blockedCount ?? 0} blocked`,
-  );
-  setText("capability-available-count", String(summary.availableCount ?? 0));
-  setText("capability-blocked-count", String(summary.blockedCount ?? 0));
+  setText("capability-counts", `${availableCount} available / ${blockedCount} blocked`);
+  setText("capability-available-count", String(availableCount));
+  setText("capability-blocked-count", String(blockedCount));
 
   const capabilityList = document.getElementById("capability-list");
   const items = summary.capabilities || [];
+  if (!capabilityList) {
+    return;
+  }
+
   if (items.length === 0) {
-    capabilityList.innerHTML = "<p>No capability data returned.</p>";
+    capabilityList.innerHTML = "<p class=\"empty-state\">No capability data returned.</p>";
   } else {
     capabilityList.innerHTML = items
-      .map((item) => `
-        <article class="capability-item">
-          <div class="capability-topline">
-            <strong>${escapeHtml(item.capabilityId)}</strong>
-            <span class="state-pill state-${escapeHtml(item.state)}">${escapeHtml(item.state)}</span>
-          </div>
-          <p>Requires: ${escapeHtml(item.requiredTools)}</p>
-          <p>Block: ${escapeHtml(item.blockingIssue)}</p>
-        </article>
-      `)
+      .map((item) => {
+        const state = normalizeState(item.state);
+        const blockText =
+          item.blockingIssue && item.blockingIssue !== "none"
+            ? `Block: ${escapeHtml(item.blockingIssue)}`
+            : "Block: none";
+
+        return `
+          <article class="capability-item">
+            <div class="capability-topline">
+              <strong>${escapeHtml(item.capabilityId)}</strong>
+              <span class="state-pill state-${state}">${escapeHtml(item.state || state)}</span>
+            </div>
+            <p>Requires: ${escapeHtml(item.requiredTools || "n/a")}</p>
+            <p>${blockText}</p>
+          </article>
+        `;
+      })
       .join("");
   }
 
@@ -78,27 +176,42 @@ function renderCapabilitySummary(payload) {
 
 function renderGithubUpdates(payload) {
   const summary = payload.summary || {};
-  setText("github-headline", summary.headline || "GitHub updates unavailable.");
+  const clean = summary.clean ? "clean" : "changes present";
+  const remoteWrite = summary.remoteWritePossible ? "ready" : "blocked";
+  const auth = summary.ghAuthenticated || "unknown";
+  const blockedReason = summary.blockingIssue && summary.blockingIssue !== "none" ? summary.blockingIssue : "none";
+
+  setText("github-headline", summary.headline || "GitHub summary unavailable.");
   setText(
     "github-quick-note",
     summary.remoteWritePossible
-      ? "Remote smoke-test capability is currently available."
-      : `Remote write blocked: ${summary.blockingIssue || "unknown reason"}`,
+      ? "Read-only status is live, and approved remote smoke actions are possible."
+      : `Read-only status is live. Remote write is blocked: ${blockedReason}.`,
   );
   setText("github-branch", summary.branch || "-");
-  setText("github-clean", summary.clean ? "clean" : "changes present");
-  setText("github-remote-write", summary.remoteWritePossible ? "ready" : "blocked");
-  setText("github-auth", summary.ghAuthenticated || "unknown");
-  setText(
-    "github-summary",
-    `Origin: ${summary.originUrl || "none"} | staged ${summary.stagedChanges ?? 0}, unstaged ${summary.unstagedChanges ?? 0}, untracked ${summary.untrackedChanges ?? 0}`,
-  );
+  setText("github-clean", clean);
+  setText("github-remote-write", remoteWrite);
+  setText("github-auth", auth);
+
+  const summaryText = [
+    `Origin: ${summary.originUrl || "none"}`,
+    summary.clean ? "working tree clean" : "local changes present",
+    `staged ${summary.stagedChanges ?? 0}`,
+    `unstaged ${summary.unstagedChanges ?? 0}`,
+    `untracked ${summary.untrackedChanges ?? 0}`,
+  ].join(" | ");
+  const summaryElement = document.getElementById("github-summary");
+  if (summaryElement) {
+    summaryElement.textContent = summaryText;
+  }
 
   const commitsElement = document.getElementById("github-commits");
   const commits = summary.recentCommits || [];
-  commitsElement.innerHTML = commits.length
-    ? commits.map((item) => `<li>${escapeHtml(item)}</li>`).join("")
-    : "<li>No commits reported.</li>";
+  if (commitsElement) {
+    commitsElement.innerHTML = commits.length
+      ? commits.map((item) => `<li>${escapeHtml(item)}</li>`).join("")
+      : "<li>No commits reported.</li>";
+  }
 
   renderRaw("github-raw", payload);
 }
@@ -106,8 +219,12 @@ function renderGithubUpdates(payload) {
 function renderArtifacts(payload) {
   const container = document.getElementById("artifacts-output");
   const artifacts = payload.artifacts || [];
+  if (!container) {
+    return;
+  }
+
   if (artifacts.length === 0) {
-    container.innerHTML = "<p>No recent artifacts found.</p>";
+    container.innerHTML = "<p class=\"empty-state\">No recent artifacts found.</p>";
     return;
   }
 
@@ -116,48 +233,84 @@ function renderArtifacts(payload) {
       <article class="artifact-item">
         <div class="artifact-topline">
           <strong>${escapeHtml(artifact.name)}</strong>
-          <span>${escapeHtml(artifact.group)}</span>
+          <span class="artifact-group">${escapeHtml(artifact.group)}</span>
         </div>
-        <code>${escapeHtml(artifact.path)}</code>
-        <span>${escapeHtml(artifact.modifiedAt)}</span>
+        <code class="artifact-path">${escapeHtml(artifact.path)}</code>
+        <span class="artifact-meta">${escapeHtml(artifact.modifiedAt)}</span>
       </article>
     `)
     .join("");
 }
 
 function renderRecentActions(payload) {
+  uiState.serverActions = payload.actions || [];
+  renderRecentActionsPanel();
+}
+
+function renderRecentActionsPanel() {
   const container = document.getElementById("recent-actions-output");
-  const actions = payload.actions || [];
+  if (!container) {
+    return;
+  }
+
+  const actions = [...uiState.localActions, ...uiState.serverActions].slice(0, 10);
   if (actions.length === 0) {
-    container.innerHTML = "<p>No recent actions yet.</p>";
+    container.innerHTML = "<p class=\"empty-state\">No recent actions yet.</p>";
     return;
   }
 
   container.innerHTML = actions
-    .map((action) => `
-      <article class="log-item">
-        <div class="log-topline">
-          <strong>${escapeHtml(action.label)}</strong>
-          <span class="state-pill state-${escapeHtml(action.status)}">${escapeHtml(action.status)}</span>
-        </div>
-        <p>${escapeHtml(action.summary || "No summary.")}</p>
-        <small>${escapeHtml(action.occurredAt || "")}</small>
-      </article>
-    `)
+    .map((action) => {
+      const state = normalizeState(action.status);
+      return `
+        <article class="log-item">
+          <div class="log-topline">
+            <strong>${escapeHtml(action.label || "Action")}</strong>
+            <span class="state-pill state-${state}">${escapeHtml(action.status || state)}</span>
+          </div>
+          <p>${escapeHtml(action.summary || "No summary.")}</p>
+          <small>${escapeHtml(formatTimeStamp(action.occurredAt))}</small>
+        </article>
+      `;
+    })
     .join("");
 }
 
-function renderActionSummary(targetId, payload) {
+function setResultPanel(targetId, state, headline, detail = "") {
   const element = document.getElementById(targetId);
-  const summary = payload.summary || {};
-  const outputPath = summary.outputPath || summary.screenshotPath;
+  if (!element) {
+    return;
+  }
+
+  const normalizedState = normalizeState(state);
+  const detailMarkup = detail ? `<p>${escapeHtml(detail)}</p>` : "";
+  element.className = `result-panel is-${normalizedState}`;
   element.innerHTML = `
     <div class="result-topline">
-      <strong>${escapeHtml(summary.headline || "Action complete.")}</strong>
-      <span class="state-pill state-${payload.ok ? "available" : "error"}">${payload.ok ? "ok" : "error"}</span>
+      <strong>${escapeHtml(headline)}</strong>
+      <span class="state-pill state-${normalizedState}">${escapeHtml(normalizedState)}</span>
     </div>
-    ${outputPath ? `<p>${escapeHtml(outputPath)}</p>` : ""}
+    ${detailMarkup}
   `;
+}
+
+function withButtonState(button, busyLabel, task) {
+  if (!button) {
+    return task();
+  }
+
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.textContent = busyLabel;
+  button.classList.add("is-busy");
+
+  return Promise.resolve()
+    .then(task)
+    .finally(() => {
+      button.disabled = false;
+      button.textContent = originalText;
+      button.classList.remove("is-busy");
+    });
 }
 
 async function refreshOperatorStatus() {
@@ -199,146 +352,242 @@ function serializeForm(formId) {
   return Object.fromEntries(new FormData(document.getElementById(formId)).entries());
 }
 
-async function runScaffold(formId, endpoint, summaryId, rawId) {
-  const payload = serializeForm(formId);
-  renderActionSummary(summaryId, {
-    ok: true,
-    summary: { headline: "Running action..." },
-  });
+function getFormButton(formId) {
+  return document.querySelector(`#${formId} button[type="submit"]`);
+}
+
+async function runRefresh(button, label, busyLabel, refreshFn, onError) {
+  const actionId = createLocalAction(label, "Running local refresh.");
+  try {
+    await withButtonState(button, busyLabel, refreshFn);
+    updateLocalAction(actionId, "success", `${label} finished successfully.`);
+    await refreshRecentActions();
+  } catch (error) {
+    updateLocalAction(actionId, "error", error.message);
+    if (typeof onError === "function") {
+      onError(error);
+    }
+  }
+}
+
+async function runScaffold(formId, endpoint, summaryId, rawId, actionLabel, button) {
+  const actionId = createLocalAction(actionLabel, "Generating local scaffold.");
+  setResultPanel(summaryId, "loading", "Running action...", "Generating a local markdown artifact.");
 
   try {
-    const result = await requestJson(endpoint, {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
-    renderActionSummary(summaryId, result);
+    const payload = serializeForm(formId);
+    const result = await withButtonState(button, "Working...", () =>
+      requestJson(endpoint, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    );
+    const outputPath = result.summary?.outputPath || "Artifact created.";
+    setResultPanel(summaryId, "success", result.summary?.headline || "Action complete.", outputPath);
     renderRaw(rawId, result);
+    updateLocalAction(actionId, "success", result.summary?.headline || "Scaffold created.");
     await Promise.all([refreshArtifacts(), refreshRecentActions()]);
     return result;
   } catch (error) {
-    renderActionSummary(summaryId, {
-      ok: false,
-      summary: { headline: error.message },
-    });
+    setResultPanel(summaryId, "error", "Action failed.", error.message);
     renderRaw(rawId, { error: error.message });
+    updateLocalAction(actionId, "error", error.message);
     await refreshRecentActions();
     return null;
   }
 }
 
-async function runBrowserAction(endpoint, summaryId, rawId, payload = {}) {
-  renderActionSummary(summaryId, {
-    ok: true,
-    summary: { headline: "Running browser action..." },
-  });
+async function runBrowserAction(endpoint, summaryId, rawId, actionLabel, button, payload = {}) {
+  const actionId = createLocalAction(actionLabel, "Running browser action.");
+  setResultPanel(summaryId, "loading", "Running browser action...", "The local browser demo is starting now.");
 
   try {
-    const result = await requestJson(endpoint, {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
-    renderActionSummary(summaryId, result);
+    const result = await withButtonState(button, "Working...", () =>
+      requestJson(endpoint, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    );
+    const detail = result.summary?.screenshotPath || result.summary?.outputPath || result.summary?.mode || "";
+    setResultPanel(summaryId, "success", result.summary?.headline || "Browser action complete.", detail);
     renderRaw(rawId, result);
+    updateLocalAction(actionId, "success", result.summary?.headline || "Browser action completed.");
     await Promise.all([refreshArtifacts(), refreshRecentActions()]);
     return result;
   } catch (error) {
-    renderActionSummary(summaryId, {
-      ok: false,
-      summary: { headline: error.message },
-    });
+    setResultPanel(summaryId, "error", "Browser action failed.", error.message);
     renderRaw(rawId, { error: error.message });
+    updateLocalAction(actionId, "error", error.message);
     await refreshRecentActions();
     return null;
   }
 }
 
-document.getElementById("refresh-console").addEventListener("click", async () => {
-  try {
-    await refreshConsole();
-  } catch (error) {
-    setText("operator-headline", "Console refresh failed.");
-    setText("operator-next-step", error.message);
-  }
+document.getElementById("refresh-console").addEventListener("click", async (event) => {
+  await runRefresh(
+    event.currentTarget,
+    "Refresh console status",
+    "Refreshing...",
+    refreshConsole,
+    (error) => {
+      setText("operator-headline", "Console refresh failed.");
+      setText("operator-next-step", error.message);
+    },
+  );
 });
 
-document.getElementById("refresh-github").addEventListener("click", async () => {
-  try {
-    await Promise.all([refreshGithubUpdates(), refreshRecentActions()]);
-  } catch (error) {
-    setText("github-headline", "GitHub refresh failed.");
-    setText("github-quick-note", error.message);
-  }
+document.getElementById("refresh-github").addEventListener("click", async (event) => {
+  await runRefresh(
+    event.currentTarget,
+    "Refresh GitHub summary",
+    "Refreshing...",
+    () => Promise.all([refreshGithubUpdates(), refreshRecentActions()]),
+    (error) => {
+      setText("github-headline", "GitHub refresh failed.");
+      setText("github-quick-note", error.message);
+    },
+  );
 });
 
-document.getElementById("refresh-artifacts").addEventListener("click", async () => {
-  try {
-    await Promise.all([refreshArtifacts(), refreshRecentActions()]);
-  } catch (error) {
-    renderArtifacts({
-      artifacts: [{ name: "error", path: error.message, group: "system", modifiedAt: "" }],
-    });
-  }
+document.getElementById("refresh-artifacts").addEventListener("click", async (event) => {
+  await runRefresh(
+    event.currentTarget,
+    "Refresh recent artifacts",
+    "Refreshing...",
+    () => Promise.all([refreshArtifacts(), refreshRecentActions()]),
+    () => {
+      renderArtifacts({
+        artifacts: [{ name: "error", path: "Artifact refresh failed.", group: "system", modifiedAt: localTimeStamp() }],
+      });
+    },
+  );
 });
 
-document.getElementById("refresh-github-panel").addEventListener("click", async () => {
-  try {
-    await Promise.all([refreshGithubUpdates(), refreshRecentActions()]);
-  } catch (error) {
-    setText("github-headline", "GitHub panel refresh failed.");
-    setText("github-quick-note", error.message);
-  }
+document.getElementById("refresh-github-panel").addEventListener("click", async (event) => {
+  await runRefresh(
+    event.currentTarget,
+    "Refresh GitHub panel",
+    "Refreshing...",
+    () => Promise.all([refreshGithubUpdates(), refreshRecentActions()]),
+    (error) => {
+      setText("github-headline", "GitHub panel refresh failed.");
+      setText("github-quick-note", error.message);
+    },
+  );
 });
 
-document.getElementById("refresh-capabilities-panel").addEventListener("click", async () => {
-  try {
-    await Promise.all([refreshCapabilities(), refreshRecentActions()]);
-  } catch (error) {
-    setText("capability-headline", "Capability refresh failed.");
-    setText("capability-counts", error.message);
-  }
+document.getElementById("refresh-capabilities-panel").addEventListener("click", async (event) => {
+  await runRefresh(
+    event.currentTarget,
+    "Refresh capability summary",
+    "Refreshing...",
+    () => Promise.all([refreshCapabilities(), refreshRecentActions()]),
+    (error) => {
+      setText("capability-headline", "Capability refresh failed.");
+      setText("capability-counts", error.message);
+    },
+  );
 });
 
 document.getElementById("internship-form").addEventListener("submit", async (event) => {
   event.preventDefault();
-  await runScaffold("internship-form", "/api/scaffold/internship", "internship-summary", "internship-raw");
+  await runScaffold(
+    "internship-form",
+    "/api/scaffold/internship",
+    "internship-summary",
+    "internship-raw",
+    "Generate internship pack",
+    event.submitter || getFormButton("internship-form"),
+  );
 });
 
 document.getElementById("showcase-form").addEventListener("submit", async (event) => {
   event.preventDefault();
-  await runScaffold("showcase-form", "/api/scaffold/showcase", "showcase-summary", "showcase-raw");
+  await runScaffold(
+    "showcase-form",
+    "/api/scaffold/showcase",
+    "showcase-summary",
+    "showcase-raw",
+    "Generate showcase case study",
+    event.submitter || getFormButton("showcase-form"),
+  );
 });
 
 document.getElementById("portfolio-form").addEventListener("submit", async (event) => {
   event.preventDefault();
-  await runScaffold("portfolio-form", "/api/scaffold/portfolio", "portfolio-summary", "portfolio-raw");
+  await runScaffold(
+    "portfolio-form",
+    "/api/scaffold/portfolio",
+    "portfolio-summary",
+    "portfolio-raw",
+    "Generate portfolio project page",
+    event.submitter || getFormButton("portfolio-form"),
+  );
 });
 
-document.getElementById("run-browser-smoke").addEventListener("click", async () => {
-  await runBrowserAction("/api/browser/smoke", "browser-smoke-summary", "browser-smoke-raw");
+document.getElementById("run-browser-smoke").addEventListener("click", async (event) => {
+  await runBrowserAction(
+    "/api/browser/smoke",
+    "browser-smoke-summary",
+    "browser-smoke-raw",
+    "Run headless browser demo",
+    event.currentTarget,
+  );
 });
 
-document.getElementById("run-browser-visible").addEventListener("click", async () => {
-  await runBrowserAction("/api/browser/visible", "browser-visible-summary", "browser-visible-raw");
+document.getElementById("run-browser-visible").addEventListener("click", async (event) => {
+  await runBrowserAction(
+    "/api/browser/visible",
+    "browser-visible-summary",
+    "browser-visible-raw",
+    "Run visible browser demo",
+    event.currentTarget,
+  );
 });
 
-document.getElementById("quick-internship").addEventListener("click", async () => {
-  await runScaffold("internship-form", "/api/scaffold/internship", "internship-summary", "internship-raw");
+document.getElementById("quick-internship").addEventListener("click", async (event) => {
+  await runScaffold(
+    "internship-form",
+    "/api/scaffold/internship",
+    "internship-summary",
+    "internship-raw",
+    "Generate internship pack",
+    event.currentTarget,
+  );
 });
 
-document.getElementById("quick-showcase").addEventListener("click", async () => {
-  await runScaffold("showcase-form", "/api/scaffold/showcase", "showcase-summary", "showcase-raw");
+document.getElementById("quick-showcase").addEventListener("click", async (event) => {
+  await runScaffold(
+    "showcase-form",
+    "/api/scaffold/showcase",
+    "showcase-summary",
+    "showcase-raw",
+    "Generate showcase case study",
+    event.currentTarget,
+  );
 });
 
-document.getElementById("quick-portfolio").addEventListener("click", async () => {
-  await runScaffold("portfolio-form", "/api/scaffold/portfolio", "portfolio-summary", "portfolio-raw");
+document.getElementById("quick-browser-smoke").addEventListener("click", async (event) => {
+  await runBrowserAction(
+    "/api/browser/smoke",
+    "browser-smoke-summary",
+    "browser-smoke-raw",
+    "Run headless browser demo",
+    event.currentTarget,
+  );
 });
 
-document.getElementById("quick-browser-smoke").addEventListener("click", async () => {
-  await runBrowserAction("/api/browser/smoke", "browser-smoke-summary", "browser-smoke-raw");
+document.getElementById("quick-browser-visible").addEventListener("click", async (event) => {
+  await runBrowserAction(
+    "/api/browser/visible",
+    "browser-visible-summary",
+    "browser-visible-raw",
+    "Run visible browser demo",
+    event.currentTarget,
+  );
 });
 
-document.getElementById("quick-browser-visible").addEventListener("click", async () => {
-  await runBrowserAction("/api/browser/visible", "browser-visible-summary", "browser-visible-raw");
+refreshConsole().catch((error) => {
+  setText("operator-headline", "Console load failed.");
+  setText("operator-next-step", error.message);
 });
-
-Promise.allSettled([refreshConsole()]);

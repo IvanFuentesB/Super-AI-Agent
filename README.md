@@ -15,7 +15,7 @@ This repo is the core workspace for building a controllable AI system that produ
 - repeatable runtime checker
 - internship, CV, LinkedIn, outreach, showcase, and portfolio scaffold generation
 - local deterministic browser playground with headless and visible Playwright demos
-- local operator-console dashboard for capability checks, GitHub updates, scaffold generation, and browser demo triggers
+- polished local operator-console dashboard for capability checks, clearer GitHub updates, scaffold generation, and browser demo triggers
 
 ## Scaffold-Only Or Research State
 
@@ -41,7 +41,7 @@ This repo already demonstrates a few concrete recruiter-friendly angles:
 ## What You Can Do Right Now
 
 - open the local operator console and inspect capability plus GitHub status
-- run the browser smoke demo or visible browser demo
+- run the browser smoke demo or visible browser demo from the console
 - generate internship, showcase, and portfolio markdown outputs
 - review recent artifacts from one local control surface
 
@@ -64,6 +64,7 @@ This repo already demonstrates a few concrete recruiter-friendly angles:
 
 - Test the browser playground manually
 - Test the local dashboard manually
+- Keep improving the local operator console UX without pretending a full desktop executor already exists
 - Decide between Playwright-first and browser-use-first for the next executor layer
 - Prepare one internship-facing live demo
 - Evaluate Windows-Use, Windows-MCP, official Claude Code, and OpenClaw for selective extraction value

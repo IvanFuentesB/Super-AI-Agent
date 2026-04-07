@@ -47,7 +47,7 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Playwright-based local smoke test now exists
 - Browser playground now has a visible headed demo mode
 - Local operator-console-style dashboard now exists
-- Dashboard now presents clearer operator-mode status, GitHub updates, recent actions, and recent artifacts
+- Dashboard now has a cleaner Operator Console V3 UX with clearer action feedback, less clutter, and less visually dominant raw details
 - Dashboard can trigger safe local scaffold generation
 - Dashboard can trigger local browser demos
 - GitHub status and scaffold generation are accessible through the dashboard
@@ -64,7 +64,7 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Claw Code remains temporary reference, not foundation
 
 ## Immediate Focus
-- Test dashboard v2 manually
+- Manually test operator console v3
 - Decide between Playwright-first and browser-use-first for the next executor layer
 - Begin desktop or app control research with a small playground later
 - Prepare one internship-facing live demo from the current runtime outputs

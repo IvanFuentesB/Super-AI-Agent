@@ -1,6 +1,6 @@
 # Dashboard MVP
 
-Local operator-console-style app for triggering the current safe demos and scaffold actions from a clearer GUI.
+Local operator-console-style app for triggering the current safe demos and scaffold actions from a cleaner, less cluttered GUI.
 
 ## What It Does
 
@@ -10,6 +10,8 @@ Local operator-console-style app for triggering the current safe demos and scaff
 - triggers the browser smoke demo
 - triggers the visible browser demo
 - lists recent artifacts and recent actions
+- keeps raw details hidden by default where they are useful but secondary
+- gives clearer loading, success, and error feedback after actions run
 
 ## How To Run
 
