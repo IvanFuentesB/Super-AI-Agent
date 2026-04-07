@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import json
+import os
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
@@ -9,6 +10,7 @@ from pathlib import Path
 from .models import ApprovalRecord, ApprovalRequest, SupervisorState, Task
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+WORKSPACE_ROOT = PROJECT_ROOT.parents[1].resolve()
 RUNTIME_DATA_DIR = PROJECT_ROOT / "runtime_data"
 TASKS_PATH = RUNTIME_DATA_DIR / "tasks.json"
 APPROVALS_PATH = RUNTIME_DATA_DIR / "approvals.json"
@@ -18,6 +20,17 @@ SUPERVISOR_STATE_PATH = RUNTIME_DATA_DIR / "supervisor_state.json"
 
 def get_project_root() -> Path:
     return PROJECT_ROOT
+
+
+def get_workspace_root() -> Path:
+    return WORKSPACE_ROOT
+
+
+def get_allowed_workspace_root() -> Path:
+    configured = os.environ.get("SUPER_AGENT_ALLOWED_ROOT", "").strip()
+    if configured:
+        return Path(configured).expanduser().resolve(strict=False)
+    return WORKSPACE_ROOT
 
 
 def _now() -> str:

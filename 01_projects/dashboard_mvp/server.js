@@ -400,11 +400,15 @@ function parseApprovalRequestLine(line) {
     actionType: labeled.action || "Approval request",
     target: labeled.target || labeled.task || "none",
     shortDescription: labeled.description || "none",
+    workspaceScope: labeled.workspace || "no_path_detected",
+    workspacePolicy: labeled.policy || "allowed",
     adminRequired: labeled.admin || "unknown",
     detail: [
       labeled.action ? `action=${labeled.action}` : "",
       labeled.target ? `target=${labeled.target}` : "",
       labeled.description ? `description=${labeled.description}` : "",
+      labeled.workspace ? `workspace=${labeled.workspace}` : "",
+      labeled.policy ? `policy=${labeled.policy}` : "",
       labeled.admin ? `admin=${labeled.admin}` : "",
     ].filter(Boolean).join(" | "),
   };
@@ -429,10 +433,23 @@ function parseTaskStatusLine(line) {
     .map((item) => item.trim())
     .filter(Boolean);
 
+  const labeled = {};
+  for (const part of parts.slice(2)) {
+    const separatorIndex = part.indexOf("=");
+    if (separatorIndex === -1) {
+      continue;
+    }
+    const key = part.slice(0, separatorIndex).trim();
+    const value = part.slice(separatorIndex + 1).trim();
+    labeled[key] = value;
+  }
+
   return {
     taskId: parts[0] || "",
     status: parts[1] || "unknown",
-    detail: parts.slice(2).join(" | ") || "",
+    workspaceScope: labeled.workspace || "no_path_detected",
+    workspacePolicy: labeled.policy || "allowed",
+    detail: labeled.detail || parts.slice(2).join(" | ") || "",
   };
 }
 
@@ -466,10 +483,15 @@ function parseApprovalDetail(stdout) {
     updatedAt: parsed.values.updated_at || "",
     source: parsed.values.source || "manual",
     scope: parsed.values.scope || "none",
+    workspaceScope: parsed.values.workspace_scope || "no_path_detected",
+    workspacePolicy: parsed.values.workspace_policy || "allowed",
+    workspaceReason: parsed.values.workspace_reason || "none",
+    allowedWorkspaceRoot: parsed.values.allowed_workspace_root || "unknown",
     requiresAdmin: parsed.values.requires_admin === "yes",
     reason: parsed.values.reason || "none",
     rollbackPlan: parsed.values.rollback_plan || "none",
     humanNote: parsed.values.human_note || "none",
+    targetPaths: (parsed.listSections.target_paths || []).filter((item) => item !== "none"),
     decisionHistory: history,
     headline: `${parsed.values.action_label || "Approval request"} (${parsed.values.status || "unknown"})`,
   };
@@ -508,6 +530,7 @@ function parseSupervisorStatus(stdout) {
     notificationTitle: parsed.values.notification_title || "Supervisor status",
     lastEvent: parsed.values.last_event || "none",
     updatedAt: parsed.values.updated_at || "",
+    allowedWorkspaceRoot: parsed.values.allowed_workspace_root || "unknown",
     pendingApprovals,
     humanNeededTasks,
     waitingTasks,
@@ -1084,7 +1107,11 @@ async function handleApiRequest(request, response, requestUrl) {
       defer: "Approval deferred.",
     };
     const summaryHeadline = ok
-      ? headlineMap[decision]
+      ? (
+          decision === "approve" && approvalPayload.summary?.workspacePolicy === "blocked_by_workspace_policy"
+            ? "Approval recorded, but workspace policy still blocks execution."
+            : headlineMap[decision]
+        )
       : (raw.stderr || raw.stdout || "Approval decision failed.");
 
     pushAction({

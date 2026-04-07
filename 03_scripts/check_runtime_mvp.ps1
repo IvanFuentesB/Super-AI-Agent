@@ -513,6 +513,21 @@ foreach ($scenario in $approvalDecisionScenarios) {
     if (-not $postDecisionStatusOk) { $failed++ }
 }
 
+$insideScopePath = Join-Path $repoRoot '11_exports\personal_ops\inside-scope-check.txt'
+$insideScopeResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'enqueue',
+    '--title', 'checker in-scope path task',
+    '--description', "Review $insideScopePath before any action.",
+    '--risk', 'safe'
+)
+$insideScopeOk = $insideScopeResult.ExitCode -eq 0 -and `
+    (($insideScopeResult.Output | Out-String) -match 'status:\s+queued') -and `
+    (($insideScopeResult.Output | Out-String) -match 'approval_state:\s+not_required') -and `
+    (($insideScopeResult.Output | Out-String) -match 'workspace_scope:\s+in_scope') -and `
+    (($insideScopeResult.Output | Out-String) -match 'workspace_policy:\s+allowed')
+Write-Check -Name 'In-scope workspace path stays normal local work' -Passed $insideScopeOk -Detail (($insideScopeResult.Output | Out-String).Trim())
+if (-not $insideScopeOk) { $failed++ }
+
 $externalPathGuardResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
     'enqueue',
     '--title', 'checker external path task',
@@ -531,9 +546,19 @@ if (-not $externalApprovalIdOk) { $failed++ }
 
 if ($externalApprovalIdOk) {
     $externalApprovalStatusResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approval-status', '--approval-id', $externalApprovalId)
-    $externalApprovalStatusOk = $externalApprovalStatusResult.ExitCode -eq 0 -and (($externalApprovalStatusResult.Output | Out-String) -match 'risk_level:\s+high_risk')
+    $externalApprovalStatusOk = $externalApprovalStatusResult.ExitCode -eq 0 -and `
+        (($externalApprovalStatusResult.Output | Out-String) -match 'risk_level:\s+high_risk') -and `
+        (($externalApprovalStatusResult.Output | Out-String) -match 'workspace_scope:\s+out_of_scope') -and `
+        (($externalApprovalStatusResult.Output | Out-String) -match 'workspace_policy:\s+blocked_by_workspace_policy')
     Write-Check -Name 'External path approval is marked high risk' -Passed $externalApprovalStatusOk -Detail (($externalApprovalStatusResult.Output | Out-String).Trim())
     if (-not $externalApprovalStatusOk) { $failed++ }
+
+    $externalApprovalDecisionResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $externalApprovalId, '--note', 'checker recorded the out-of-scope approval')
+    $externalApprovalDecisionOk = $externalApprovalDecisionResult.ExitCode -eq 0 -and `
+        (($externalApprovalDecisionResult.Output | Out-String) -match 'task_status:\s+blocked_human_needed') -and `
+        (($externalApprovalDecisionResult.Output | Out-String) -match 'workspace_policy:\s+blocked_by_workspace_policy')
+    Write-Check -Name 'Out-of-scope approval stays blocked by workspace policy' -Passed $externalApprovalDecisionOk -Detail (($externalApprovalDecisionResult.Output | Out-String).Trim())
+    if (-not $externalApprovalDecisionOk) { $failed++ }
 }
 
 $safeTaskResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('enqueue', '--title', 'checker safe task', '--description', 'supervisor and human-needed check', '--risk', 'safe')

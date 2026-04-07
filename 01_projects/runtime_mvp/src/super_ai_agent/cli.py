@@ -70,6 +70,7 @@ from .storage import (
     SUPERVISOR_STATE_PATH,
     TASKS_PATH,
     ensure_runtime_files,
+    get_allowed_workspace_root,
     get_runtime_data_dir,
     get_project_root,
     read_tasks,
@@ -103,6 +104,13 @@ def _approval_target(scope: str, task_id: str) -> str:
 
 
 def _short_description(text: str, limit: int = 120) -> str:
+    value = " ".join((text or "").split())
+    if len(value) <= limit:
+        return value or "none"
+    return f"{value[: limit - 3].rstrip()}..."
+
+
+def _workspace_reason(text: str, limit: int = 140) -> str:
     value = " ".join((text or "").split())
     if len(value) <= limit:
         return value or "none"
@@ -425,6 +433,10 @@ def main(argv: list[str] | None = None) -> int:
             print(f"task_id: {task.task_id}")
             print(f"status: {task.status}")
             print(f"approval_state: {task.approval_state}")
+            print(f"workspace_scope: {task.workspace_scope}")
+            print(f"workspace_policy: {task.workspace_policy}")
+            print(f"workspace_reason: {task.workspace_reason or 'none'}")
+            print(f"allowed_workspace_root: {get_allowed_workspace_root()}")
             if task.approval_request_id:
                 print(f"approval_request_id: {task.approval_request_id}")
             return 0
@@ -437,7 +449,8 @@ def main(argv: list[str] | None = None) -> int:
             for task in tasks:
                 print(
                     f"{task.task_id} | {task.status} | {task.risk_level} | "
-                    f"{task.approval_state} | {task.title}"
+                    f"{task.approval_state} | scope={task.workspace_scope} | "
+                    f"policy={task.workspace_policy} | {task.title}"
                 )
             return 0
 
@@ -455,7 +468,8 @@ def main(argv: list[str] | None = None) -> int:
                     f"- {request.approval_id} | {request.status} | "
                     f"risk={request.risk_level} | task={request.task_id} | "
                     f"action={request.action_label} | target={target} | "
-                    f"description={description} | admin="
+                    f"description={description} | workspace={request.workspace_scope} | "
+                    f"policy={request.workspace_policy} | admin="
                     f"{'yes' if request.requires_admin else 'no'}"
                 )
             return 0
@@ -473,10 +487,20 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"updated_at: {request.updated_at}")
                 print(f"source: {request.source}")
                 print(f"scope: {request.scope or 'none'}")
+                print(f"workspace_scope: {request.workspace_scope}")
+                print(f"workspace_policy: {request.workspace_policy}")
+                print(f"workspace_reason: {request.workspace_reason or 'none'}")
+                print(f"allowed_workspace_root: {get_allowed_workspace_root()}")
                 print(f"requires_admin: {'yes' if request.requires_admin else 'no'}")
                 print(f"reason: {request.reason}")
                 print(f"rollback_plan: {request.rollback_plan or 'none'}")
                 print(f"human_note: {request.human_note or 'none'}")
+                print("target_paths:")
+                if request.target_paths:
+                    for item in request.target_paths:
+                        print(f"- {item}")
+                else:
+                    print("- none")
                 print("decision_history:")
                 if history:
                     for record in history:
@@ -501,7 +525,8 @@ def main(argv: list[str] | None = None) -> int:
                     f"- {request.approval_id} | {request.status} | "
                     f"risk={request.risk_level} | task={request.task_id} | "
                     f"action={request.action_label} | target={target} | "
-                    f"description={description}"
+                    f"description={description} | workspace={request.workspace_scope} | "
+                    f"policy={request.workspace_policy}"
                 )
             return 0
 
@@ -516,6 +541,9 @@ def main(argv: list[str] | None = None) -> int:
             print(f"task_id: {task.task_id}")
             print(f"task_status: {task.status}")
             print(f"approval_state: {task.approval_state}")
+            print(f"workspace_scope: {request.workspace_scope}")
+            print(f"workspace_policy: {request.workspace_policy}")
+            print(f"workspace_reason: {request.workspace_reason or 'none'}")
             print(f"human_note: {request.human_note or 'none'}")
             return 0
 
@@ -530,6 +558,9 @@ def main(argv: list[str] | None = None) -> int:
             print(f"task_id: {task.task_id}")
             print(f"task_status: {task.status}")
             print(f"approval_state: {task.approval_state}")
+            print(f"workspace_scope: {request.workspace_scope}")
+            print(f"workspace_policy: {request.workspace_policy}")
+            print(f"workspace_reason: {request.workspace_reason or 'none'}")
             print(f"human_note: {request.human_note or 'none'}")
             return 0
 
@@ -544,6 +575,9 @@ def main(argv: list[str] | None = None) -> int:
             print(f"task_id: {task.task_id}")
             print(f"task_status: {task.status}")
             print(f"approval_state: {task.approval_state}")
+            print(f"workspace_scope: {request.workspace_scope}")
+            print(f"workspace_policy: {request.workspace_policy}")
+            print(f"workspace_reason: {request.workspace_reason or 'none'}")
             print(f"human_note: {request.human_note or 'none'}")
             return 0
 
@@ -563,6 +597,9 @@ def main(argv: list[str] | None = None) -> int:
             print(f"task_id: {request.task_id}")
             print(f"status: {request.status}")
             print(f"risk_level: {request.risk_level}")
+            print(f"workspace_scope: {request.workspace_scope}")
+            print(f"workspace_policy: {request.workspace_policy}")
+            print(f"workspace_reason: {request.workspace_reason or 'none'}")
             print(f"requires_admin: {'yes' if request.requires_admin else 'no'}")
             print(f"action_label: {request.action_label}")
             print(f"notification_mode: {notification.channel}")
@@ -634,6 +671,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"notification_title: {notification.title}")
             print(f"last_event: {state.last_event or 'none'}")
             print(f"updated_at: {state.updated_at}")
+            print(f"allowed_workspace_root: {get_allowed_workspace_root()}")
 
             pending_requests = list_pending_approvals()
             print("pending_approvals:")
@@ -645,7 +683,8 @@ def main(argv: list[str] | None = None) -> int:
                         f"- {request.approval_id} | {request.status} | "
                         f"risk={request.risk_level} | task={request.task_id} | "
                         f"action={request.action_label} | target={target} | "
-                        f"description={description} | admin="
+                        f"description={description} | workspace={request.workspace_scope} | "
+                        f"policy={request.workspace_policy} | admin="
                         f"{'yes' if request.requires_admin else 'no'}"
                     )
             else:
@@ -656,7 +695,11 @@ def main(argv: list[str] | None = None) -> int:
             if blocked_tasks:
                 for task in blocked_tasks:
                     detail = task.blocked_reason or task.waiting_for or task.title
-                    print(f"- {task.task_id} | {task.status} | {detail}")
+                    print(
+                        f"- {task.task_id} | {task.status} | "
+                        f"workspace={task.workspace_scope} | policy={task.workspace_policy} | "
+                        f"detail={_workspace_reason(detail)}"
+                    )
             else:
                 print("- none")
 
@@ -665,7 +708,11 @@ def main(argv: list[str] | None = None) -> int:
             if waiting_tasks:
                 for task in waiting_tasks:
                     detail = task.waiting_for or task.title
-                    print(f"- {task.task_id} | {task.status} | {detail}")
+                    print(
+                        f"- {task.task_id} | {task.status} | "
+                        f"workspace={task.workspace_scope} | policy={task.workspace_policy} | "
+                        f"detail={_workspace_reason(detail)}"
+                    )
             else:
                 print("- none")
             return 0

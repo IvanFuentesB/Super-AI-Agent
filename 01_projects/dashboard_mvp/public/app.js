@@ -333,6 +333,11 @@ function clearApprovalDetail(message) {
   setText("approval-detail-action-label", "-");
   setText("approval-detail-reason", "-");
   setText("approval-detail-scope", "-");
+  setText("approval-detail-target-paths", "-");
+  setText("approval-detail-workspace-scope", "-");
+  setText("approval-detail-workspace-policy", "-");
+  setText("approval-detail-workspace-reason", "-");
+  setText("approval-detail-allowed-root", "-");
   setText("approval-detail-rollback", "-");
   setText("approval-detail-admin", "-");
   setText("approval-detail-updated-at", "-");
@@ -354,6 +359,11 @@ function renderApprovalDetail(payload) {
   setText("approval-detail-action-label", summary.actionLabel || "-");
   setText("approval-detail-reason", summary.reason || "-");
   setText("approval-detail-scope", summary.scope || "none");
+  setText("approval-detail-target-paths", (summary.targetPaths || []).join(" | ") || "none");
+  setText("approval-detail-workspace-scope", summary.workspaceScope || "no_path_detected");
+  setText("approval-detail-workspace-policy", summary.workspacePolicy || "allowed");
+  setText("approval-detail-workspace-reason", summary.workspaceReason || "none");
+  setText("approval-detail-allowed-root", summary.allowedWorkspaceRoot || "unknown");
   setText("approval-detail-rollback", summary.rollbackPlan || "none");
   setText("approval-detail-admin", summary.requiresAdmin ? "yes" : "no");
   setText("approval-detail-updated-at", formatTimeStamp(summary.updatedAt));
@@ -406,6 +416,8 @@ function renderApprovalCards(containerId, items, emptyText, options = {}) {
             <p><span>Target</span><strong>${escapeHtml(item.target || item.taskId || "none")}</strong></p>
             <p><span>Risk</span><strong>${escapeHtml(item.riskLevel || "unknown")}</strong></p>
             <p><span>Task</span><strong>${escapeHtml(item.taskId || "none")}</strong></p>
+            <p><span>Workspace</span><strong>${escapeHtml(item.workspaceScope || "no_path_detected")}</strong></p>
+            <p><span>Policy</span><strong>${escapeHtml(item.workspacePolicy || "allowed")}</strong></p>
           </div>
           <p class="approval-description"><span>Description</span>${escapeHtml(item.shortDescription || item.detail || "No short description.")}</p>
           ${inspectButton}
@@ -418,11 +430,15 @@ function renderApprovalCards(containerId, items, emptyText, options = {}) {
 function renderSupervisorStatus(payload) {
   const summary = payload.summary || {};
   const statusLabel = (summary.status || "unknown").replaceAll("_", " ");
+  const workspaceBlocked = (summary.pendingApprovals || []).some((item) => item.workspacePolicy === "blocked_by_workspace_policy")
+    || (summary.humanNeededTasks || []).some((item) => item.workspacePolicy === "blocked_by_workspace_policy");
 
   setText("supervisor-headline", summary.headline || "Supervisor status unavailable.");
   setText(
     "supervisor-quick-note",
-    summary.pendingApprovalCount > 0
+    workspaceBlocked
+      ? "Some requests are blocked by workspace policy because they target paths outside the allowed workspace."
+      : summary.pendingApprovalCount > 0
       ? "Risky or uncertain work is paused until the human approves it."
       : summary.blockedHumanNeededCount > 0
         ? "Some tasks are blocked on a human reply or judgment call."

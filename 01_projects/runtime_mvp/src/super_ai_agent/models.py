@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 
 TASK_RISK_LEVELS = ("safe", "ask", "high_risk", "admin")
+WORKSPACE_SCOPES = ("no_path_detected", "in_scope", "out_of_scope")
+WORKSPACE_POLICIES = ("allowed", "blocked_by_workspace_policy")
 TASK_STATUSES = (
     "queued",
     "running",
@@ -34,6 +36,10 @@ class Task:
     requires_human: bool = False
     admin_required: bool = False
     last_note: str = ""
+    target_paths: list[str] = field(default_factory=list)
+    workspace_scope: str = "no_path_detected"
+    workspace_policy: str = "allowed"
+    workspace_reason: str = ""
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -57,6 +63,10 @@ class Task:
             requires_human=bool(data.get("requires_human", False)),
             admin_required=bool(data.get("admin_required", False)),
             last_note=data.get("last_note", ""),
+            target_paths=list(data.get("target_paths", [])),
+            workspace_scope=data.get("workspace_scope", "no_path_detected"),
+            workspace_policy=data.get("workspace_policy", "allowed"),
+            workspace_reason=data.get("workspace_reason", ""),
         )
 
 
@@ -75,6 +85,10 @@ class ApprovalRequest:
     requires_admin: bool = False
     rollback_plan: str = ""
     human_note: str = ""
+    target_paths: list[str] = field(default_factory=list)
+    workspace_scope: str = "no_path_detected"
+    workspace_policy: str = "allowed"
+    workspace_reason: str = ""
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -95,6 +109,10 @@ class ApprovalRequest:
             requires_admin=bool(data.get("requires_admin", False)),
             rollback_plan=data.get("rollback_plan", ""),
             human_note=data.get("human_note", ""),
+            target_paths=list(data.get("target_paths", [])),
+            workspace_scope=data.get("workspace_scope", "no_path_detected"),
+            workspace_policy=data.get("workspace_policy", "allowed"),
+            workspace_reason=data.get("workspace_reason", ""),
         )
 
 
