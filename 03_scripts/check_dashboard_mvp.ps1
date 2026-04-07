@@ -174,6 +174,7 @@ function Remove-GeneratedFile {
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $projectRoot = Join-Path $repoRoot '01_projects\dashboard_mvp'
 $browserArtifactPath = Join-Path $repoRoot '01_projects\browser_playground\artifacts\smoke-click.png'
+$desktopArtifactPath = Join-Path $repoRoot '05_logs\tmp\desktop\dashboard-desktop-check.png'
 $runtimeRoot = Join-Path $repoRoot '01_projects\runtime_mvp'
 $runtimeSrc = Join-Path $runtimeRoot 'src'
 
@@ -194,7 +195,8 @@ $expectedFiles = @(
     '01_projects/dashboard_mvp/public/styles.css',
     '01_projects/dashboard_mvp/artifacts/.gitkeep',
     '01_projects/desktop_playground/README.md',
-    '01_projects/desktop_playground/check_desktop_playground.ps1'
+    '01_projects/desktop_playground/check_desktop_playground.ps1',
+    '01_projects/desktop_playground/desktop_bridge_actions.ps1'
 )
 
 $failed = 0
@@ -631,6 +633,198 @@ try {
     Write-Check -Name 'Desktop bridge check endpoint' -Passed $desktopCheckOk -Detail ($(if ($desktopCheckOk) { $desktopCheck.summary.headline } else { 'desktop bridge check failed' }))
     if (-not $desktopCheckOk) { $failed++ }
 
+    $desktopListPayload = @{
+        actionType = 'list_windows'
+    } | ConvertTo-Json
+    $desktopListQueue = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/executor/queue" -Method Post -ContentType 'application/json' -Body $desktopListPayload -TimeoutSec 30
+    $desktopListQueueOk = $desktopListQueue.ok -and `
+        $desktopListQueue.localOnly -and `
+        $desktopListQueue.task.status -eq 'queued' -and `
+        $desktopListQueue.task.executorActionType -eq 'list_windows'
+    Write-Check -Name 'Desktop list_windows queue endpoint' -Passed $desktopListQueueOk -Detail ($(if ($desktopListQueueOk) { $desktopListQueue.summary.headline } else { 'desktop list_windows queue failed' }))
+    if (-not $desktopListQueueOk) { $failed++ }
+
+    $desktopListTaskId = $desktopListQueue.summary.taskId
+    $desktopListTaskIdOk = -not [string]::IsNullOrWhiteSpace($desktopListTaskId)
+    Write-Check -Name 'Desktop list_windows task id returned' -Passed $desktopListTaskIdOk -Detail ($(if ($desktopListTaskIdOk) { $desktopListTaskId } else { 'desktop list_windows task id missing' }))
+    if (-not $desktopListTaskIdOk) { $failed++ }
+
+    if ($desktopListTaskIdOk) {
+        $desktopListExecutePayload = @{
+            taskId = $desktopListTaskId
+            action = 'execute'
+        } | ConvertTo-Json
+        $desktopListExecute = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $desktopListExecutePayload -TimeoutSec 30
+        $desktopListExecuteOk = $desktopListExecute.ok -and `
+            $desktopListExecute.task.status -eq 'completed' -and `
+            $desktopListExecute.task.lastExecutionStatus -eq 'succeeded'
+        Write-Check -Name 'Desktop list_windows execution endpoint' -Passed $desktopListExecuteOk -Detail ($(if ($desktopListExecuteOk) { $desktopListExecute.summary.headline } else { 'desktop list_windows execute failed' }))
+        if (-not $desktopListExecuteOk) { $failed++ }
+    }
+
+    $desktopActivePayload = @{
+        actionType = 'get_active_window'
+    } | ConvertTo-Json
+    $desktopActiveQueue = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/executor/queue" -Method Post -ContentType 'application/json' -Body $desktopActivePayload -TimeoutSec 30
+    $desktopActiveQueueOk = $desktopActiveQueue.ok -and `
+        $desktopActiveQueue.localOnly -and `
+        $desktopActiveQueue.task.status -eq 'queued' -and `
+        $desktopActiveQueue.task.executorActionType -eq 'get_active_window'
+    Write-Check -Name 'Desktop get_active_window queue endpoint' -Passed $desktopActiveQueueOk -Detail ($(if ($desktopActiveQueueOk) { $desktopActiveQueue.summary.headline } else { 'desktop get_active_window queue failed' }))
+    if (-not $desktopActiveQueueOk) { $failed++ }
+
+    $desktopActiveTaskId = $desktopActiveQueue.summary.taskId
+    $desktopActiveTaskIdOk = -not [string]::IsNullOrWhiteSpace($desktopActiveTaskId)
+    Write-Check -Name 'Desktop get_active_window task id returned' -Passed $desktopActiveTaskIdOk -Detail ($(if ($desktopActiveTaskIdOk) { $desktopActiveTaskId } else { 'desktop get_active_window task id missing' }))
+    if (-not $desktopActiveTaskIdOk) { $failed++ }
+
+    if ($desktopActiveTaskIdOk) {
+        $desktopActiveExecutePayload = @{
+            taskId = $desktopActiveTaskId
+            action = 'execute'
+        } | ConvertTo-Json
+        $desktopActiveExecute = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $desktopActiveExecutePayload -TimeoutSec 30
+        $desktopActiveExecuteOk = $desktopActiveExecute.ok -and `
+            $desktopActiveExecute.task.status -eq 'completed' -and `
+            $desktopActiveExecute.task.lastExecutionStatus -eq 'succeeded'
+        Write-Check -Name 'Desktop get_active_window execution endpoint' -Passed $desktopActiveExecuteOk -Detail ($(if ($desktopActiveExecuteOk) { $desktopActiveExecute.summary.headline } else { 'desktop get_active_window execute failed' }))
+        if (-not $desktopActiveExecuteOk) { $failed++ }
+    }
+
+    $desktopOpenPayload = @{
+        actionType = 'open_allowed_app'
+        target = 'terminal'
+    } | ConvertTo-Json
+    $desktopOpenQueue = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/executor/queue" -Method Post -ContentType 'application/json' -Body $desktopOpenPayload -TimeoutSec 30
+    $desktopOpenQueueOk = $desktopOpenQueue.ok -and `
+        $desktopOpenQueue.localOnly -and `
+        $desktopOpenQueue.task.status -eq 'pending_approval' -and `
+        $desktopOpenQueue.task.executorActionType -eq 'open_allowed_app'
+    Write-Check -Name 'Desktop open_allowed_app queue endpoint' -Passed $desktopOpenQueueOk -Detail ($(if ($desktopOpenQueueOk) { $desktopOpenQueue.summary.headline } else { 'desktop open_allowed_app queue failed' }))
+    if (-not $desktopOpenQueueOk) { $failed++ }
+
+    $desktopOpenTaskId = $desktopOpenQueue.summary.taskId
+    $desktopOpenApprovalId = if ($null -ne $desktopOpenQueue.task) { $desktopOpenQueue.task.approvalRequestId } else { $null }
+    $desktopOpenIdsOk = (-not [string]::IsNullOrWhiteSpace($desktopOpenTaskId)) -and (-not [string]::IsNullOrWhiteSpace($desktopOpenApprovalId)) -and ($desktopOpenApprovalId -ne 'none')
+    Write-Check -Name 'Desktop open_allowed_app ids returned' -Passed $desktopOpenIdsOk -Detail ($(if ($desktopOpenIdsOk) { "$desktopOpenTaskId | $desktopOpenApprovalId" } else { 'desktop open_allowed_app ids missing' }))
+    if (-not $desktopOpenIdsOk) { $failed++ }
+
+    if ($desktopOpenIdsOk) {
+        $desktopOpenApprovePayload = @{
+            approvalId = $desktopOpenApprovalId
+            decision = 'approve'
+            note = 'dashboard checker approved open_allowed_app'
+        } | ConvertTo-Json
+        $desktopOpenApprove = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/approvals/decision" -Method Post -ContentType 'application/json' -Body $desktopOpenApprovePayload -TimeoutSec 30
+        $desktopOpenApproveOk = $desktopOpenApprove.ok -and $desktopOpenApprove.approval.status -eq 'approved'
+        Write-Check -Name 'Desktop open_allowed_app approval endpoint' -Passed $desktopOpenApproveOk -Detail ($(if ($desktopOpenApproveOk) { $desktopOpenApprove.summary.headline } else { 'desktop open_allowed_app approval failed' }))
+        if (-not $desktopOpenApproveOk) { $failed++ }
+
+        $desktopOpenExecutePayload = @{
+            taskId = $desktopOpenTaskId
+            action = 'execute'
+        } | ConvertTo-Json
+        $desktopOpenExecute = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $desktopOpenExecutePayload -TimeoutSec 30
+        $desktopOpenExecuteOk = $desktopOpenExecute.ok -and `
+            $desktopOpenExecute.task.status -eq 'completed' -and `
+            $desktopOpenExecute.task.lastExecutionStatus -eq 'succeeded'
+        Write-Check -Name 'Desktop open_allowed_app execution endpoint' -Passed $desktopOpenExecuteOk -Detail ($(if ($desktopOpenExecuteOk) { $desktopOpenExecute.summary.headline } else { 'desktop open_allowed_app execute failed' }))
+        if (-not $desktopOpenExecuteOk) { $failed++ }
+    }
+
+    Start-Sleep -Milliseconds 1200
+
+    $desktopFocusPayload = @{
+        actionType = 'focus_window'
+        target = 'terminal'
+    } | ConvertTo-Json
+    $desktopFocusQueue = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/executor/queue" -Method Post -ContentType 'application/json' -Body $desktopFocusPayload -TimeoutSec 30
+    $desktopFocusQueueOk = $desktopFocusQueue.ok -and `
+        $desktopFocusQueue.localOnly -and `
+        $desktopFocusQueue.task.status -eq 'pending_approval' -and `
+        $desktopFocusQueue.task.executorActionType -eq 'focus_window'
+    Write-Check -Name 'Desktop focus_window queue endpoint' -Passed $desktopFocusQueueOk -Detail ($(if ($desktopFocusQueueOk) { $desktopFocusQueue.summary.headline } else { 'desktop focus_window queue failed' }))
+    if (-not $desktopFocusQueueOk) { $failed++ }
+
+    $desktopFocusTaskId = $desktopFocusQueue.summary.taskId
+    $desktopFocusApprovalId = if ($null -ne $desktopFocusQueue.task) { $desktopFocusQueue.task.approvalRequestId } else { $null }
+    $desktopFocusIdsOk = (-not [string]::IsNullOrWhiteSpace($desktopFocusTaskId)) -and (-not [string]::IsNullOrWhiteSpace($desktopFocusApprovalId)) -and ($desktopFocusApprovalId -ne 'none')
+    Write-Check -Name 'Desktop focus_window ids returned' -Passed $desktopFocusIdsOk -Detail ($(if ($desktopFocusIdsOk) { "$desktopFocusTaskId | $desktopFocusApprovalId" } else { 'desktop focus_window ids missing' }))
+    if (-not $desktopFocusIdsOk) { $failed++ }
+
+    if ($desktopFocusIdsOk) {
+        $desktopFocusApprovePayload = @{
+            approvalId = $desktopFocusApprovalId
+            decision = 'approve'
+            note = 'dashboard checker approved focus_window'
+        } | ConvertTo-Json
+        $desktopFocusApprove = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/approvals/decision" -Method Post -ContentType 'application/json' -Body $desktopFocusApprovePayload -TimeoutSec 30
+        $desktopFocusApproveOk = $desktopFocusApprove.ok -and $desktopFocusApprove.approval.status -eq 'approved'
+        Write-Check -Name 'Desktop focus_window approval endpoint' -Passed $desktopFocusApproveOk -Detail ($(if ($desktopFocusApproveOk) { $desktopFocusApprove.summary.headline } else { 'desktop focus_window approval failed' }))
+        if (-not $desktopFocusApproveOk) { $failed++ }
+
+        $desktopFocusExecutePayload = @{
+            taskId = $desktopFocusTaskId
+            action = 'execute'
+        } | ConvertTo-Json
+        $desktopFocusExecute = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $desktopFocusExecutePayload -TimeoutSec 30
+        $desktopFocusExecuteOk = $desktopFocusExecute.ok -and `
+            $desktopFocusExecute.task.status -eq 'completed' -and `
+            $desktopFocusExecute.task.lastExecutionStatus -eq 'succeeded'
+        Write-Check -Name 'Desktop focus_window execution endpoint' -Passed $desktopFocusExecuteOk -Detail ($(if ($desktopFocusExecuteOk) { $desktopFocusExecute.summary.headline } else { 'desktop focus_window execute failed' }))
+        if (-not $desktopFocusExecuteOk) { $failed++ }
+    }
+
+    Remove-GeneratedFile -Path $desktopArtifactPath
+    $desktopScreenshotPayload = @{
+        actionType = 'capture_desktop_screenshot'
+        target = '05_logs/tmp/desktop/dashboard-desktop-check.png'
+    } | ConvertTo-Json
+    $desktopScreenshotQueue = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/executor/queue" -Method Post -ContentType 'application/json' -Body $desktopScreenshotPayload -TimeoutSec 30
+    $desktopScreenshotQueueOk = $desktopScreenshotQueue.ok -and `
+        $desktopScreenshotQueue.localOnly -and `
+        $desktopScreenshotQueue.task.status -eq 'pending_approval' -and `
+        $desktopScreenshotQueue.task.executorActionType -eq 'capture_desktop_screenshot'
+    Write-Check -Name 'Desktop screenshot queue endpoint' -Passed $desktopScreenshotQueueOk -Detail ($(if ($desktopScreenshotQueueOk) { $desktopScreenshotQueue.summary.headline } else { 'desktop screenshot queue failed' }))
+    if (-not $desktopScreenshotQueueOk) { $failed++ }
+
+    $desktopScreenshotTaskId = $desktopScreenshotQueue.summary.taskId
+    $desktopScreenshotApprovalId = if ($null -ne $desktopScreenshotQueue.task) { $desktopScreenshotQueue.task.approvalRequestId } else { $null }
+    $desktopScreenshotIdsOk = (-not [string]::IsNullOrWhiteSpace($desktopScreenshotTaskId)) -and (-not [string]::IsNullOrWhiteSpace($desktopScreenshotApprovalId)) -and ($desktopScreenshotApprovalId -ne 'none')
+    Write-Check -Name 'Desktop screenshot ids returned' -Passed $desktopScreenshotIdsOk -Detail ($(if ($desktopScreenshotIdsOk) { "$desktopScreenshotTaskId | $desktopScreenshotApprovalId" } else { 'desktop screenshot ids missing' }))
+    if (-not $desktopScreenshotIdsOk) { $failed++ }
+
+    if ($desktopScreenshotIdsOk) {
+        $desktopScreenshotApprovePayload = @{
+            approvalId = $desktopScreenshotApprovalId
+            decision = 'approve'
+            note = 'dashboard checker approved desktop screenshot'
+        } | ConvertTo-Json
+        $desktopScreenshotApprove = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/approvals/decision" -Method Post -ContentType 'application/json' -Body $desktopScreenshotApprovePayload -TimeoutSec 30
+        $desktopScreenshotApproveOk = $desktopScreenshotApprove.ok -and $desktopScreenshotApprove.approval.status -eq 'approved'
+        Write-Check -Name 'Desktop screenshot approval endpoint' -Passed $desktopScreenshotApproveOk -Detail ($(if ($desktopScreenshotApproveOk) { $desktopScreenshotApprove.summary.headline } else { 'desktop screenshot approval failed' }))
+        if (-not $desktopScreenshotApproveOk) { $failed++ }
+
+        $desktopScreenshotExecutePayload = @{
+            taskId = $desktopScreenshotTaskId
+            action = 'execute'
+        } | ConvertTo-Json
+        $desktopScreenshotExecute = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $desktopScreenshotExecutePayload -TimeoutSec 30
+        $desktopScreenshotExecuteOk = $desktopScreenshotExecute.ok -and `
+            $desktopScreenshotExecute.task.status -eq 'completed' -and `
+            $desktopScreenshotExecute.task.lastExecutionStatus -eq 'succeeded' -and `
+            (Test-Path -LiteralPath $desktopArtifactPath -PathType Leaf)
+        Write-Check -Name 'Desktop screenshot execution endpoint' -Passed $desktopScreenshotExecuteOk -Detail ($(if ($desktopScreenshotExecuteOk) { $desktopScreenshotExecute.summary.headline } else { 'desktop screenshot execute failed' }))
+        if (-not $desktopScreenshotExecuteOk) { $failed++ }
+
+        $desktopScreenshotDetail = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/item?taskId=$desktopScreenshotTaskId" -Method Get -TimeoutSec 30
+        $desktopScreenshotDetailOk = $desktopScreenshotDetail.ok -and `
+            $desktopScreenshotDetail.summary.lastExecutionStatus -eq 'succeeded' -and `
+            $desktopScreenshotDetail.summary.lastArtifactPath -eq $desktopArtifactPath
+        Write-Check -Name 'Desktop screenshot result persists in task detail' -Passed $desktopScreenshotDetailOk -Detail ($(if ($desktopScreenshotDetailOk) { $desktopScreenshotDetail.summary.lastArtifactPath } else { 'desktop screenshot result not persisted' }))
+        if (-not $desktopScreenshotDetailOk) { $failed++ }
+    }
+
     $recentActions = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/recent-actions" -Method Get -TimeoutSec 30
     $recentActionsOk = $recentActions.ok -and $recentActions.localOnly -and $recentActions.actions.Count -gt 0
     Write-Check -Name 'Recent actions endpoint' -Passed $recentActionsOk -Detail ($(if ($recentActionsOk) { 'recent actions log returned entries' } else { 'recent actions log missing entries' }))
@@ -638,6 +832,7 @@ try {
 }
 finally {
     Remove-GeneratedFile -Path $browserArtifactPath
+    Remove-GeneratedFile -Path $desktopArtifactPath
 
     if ($serverProcess -and -not $serverProcess.HasExited) {
         Stop-Process -Id $serverProcess.Id -Force -ErrorAction SilentlyContinue

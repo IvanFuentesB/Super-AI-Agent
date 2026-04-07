@@ -14,6 +14,11 @@ EXECUTOR_ACTION_TYPES = (
     "git_status",
     "git_diff",
     "run_checker",
+    "list_windows",
+    "get_active_window",
+    "focus_window",
+    "open_allowed_app",
+    "capture_desktop_screenshot",
 )
 EXECUTION_STATUSES = ("started", "succeeded", "failed")
 TASK_STATUSES = (

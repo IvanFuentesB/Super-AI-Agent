@@ -715,6 +715,7 @@ function getAllowedArtifactRoots() {
     path.join(repoRoot, "11_exports", "personal_ops"),
     path.join(repoRoot, "11_exports", "github"),
     path.join(repoRoot, "01_projects", "browser_playground", "artifacts"),
+    path.join(repoRoot, "05_logs", "tmp", "desktop"),
   ];
 }
 
@@ -887,6 +888,10 @@ function listRecentArtifacts() {
       path.join(repoRoot, "01_projects", "browser_playground", "artifacts"),
       "browser_playground",
     ),
+    ...listDirectoryArtifacts(
+      path.join(repoRoot, "05_logs", "tmp", "desktop"),
+      "desktop",
+    ),
   ];
 
   artifacts.sort((left, right) => right.modifiedAt.localeCompare(left.modifiedAt));
@@ -902,6 +907,7 @@ function buildOperatorStatus() {
       "GitHub read status and remote-capability visibility",
       "Internship, showcase, and portfolio scaffold generation",
       "Allowlisted repo-local executor tasks for safe checker, file, and git actions",
+      "Allowlisted desktop bridge tasks for listing windows, checking the active window, focusing allowed windows, opening allowed local apps, and capturing repo-local screenshots",
       "Artifact preview, open, and reveal from the dashboard",
       "Browser smoke demo and visible local browser demo",
       "Desktop bridge status and safe local desktop checks",
@@ -914,16 +920,16 @@ function buildOperatorStatus() {
       "GitHub remote write actions remain explicit and approval-gated",
       "Mail, Notion, and LinkedIn remain planning-only",
       "Personal ops packs are generated outputs, not live send or publish flows",
-      "Desktop bridge is a foundation layer, not a desktop executor",
+      "Desktop bridge actions are narrow, allowlisted, and operator-triggered",
       "Notifications are local dashboard summaries only",
     ],
     notImplementedYet: [
       "Full browser executor loop",
-      "Desktop or Windows app control",
-      "App switching, clicking, typing, or clipboard orchestration",
+      "Arbitrary desktop or Windows app control",
+      "General app switching, clicking, typing, or clipboard orchestration",
       "Live mail, Notion, and LinkedIn adapters",
     ],
-    nextStep: "Use the approval queue to resolve pending requests locally, then review the desktop bridge status before choosing the real executor path.",
+    nextStep: "Use the approval queue to resolve pending requests locally, then queue a narrow desktop action or repo-local action and run it manually from the selected task panel.",
   };
 }
 

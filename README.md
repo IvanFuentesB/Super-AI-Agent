@@ -18,13 +18,14 @@ This repo is the core workspace for building a controllable AI system that produ
 - polished local operator-console dashboard for capability checks, clearer GitHub updates, scaffold generation, browser demo triggers, and artifact preview/open/reveal actions
 - always-on supervisor foundation with explicit task states for waiting, pending approval, and human-needed work
 - local approval inbox foundation for risky or uncertain actions
-- desktop bridge foundation for safe local environment and launcher checks
+- safe local desktop bridge actions for allowlisted window listing, active-window detection, focusing allowed windows, opening allowed local apps, and repo-local desktop screenshots
 
 ## Scaffold-Only Or Research State
 
 - mail and Notion adapters are planning-only
 - notifications are local-dashboard-only summaries for now
-- full browser and app execution are still not implemented
+- arbitrary browser and app execution are still not implemented
+- arbitrary desktop click, type, clipboard, and general computer control are still not implemented
 - full autonomous executor is still not implemented
 - multi-model routing remains planning and policy scaffolding
 - remote GitHub smoke tests are explicit and available, but the default checker remains non-mutating
@@ -49,7 +50,8 @@ This repo already demonstrates a few concrete recruiter-friendly angles:
 - run the browser smoke demo or visible browser demo from the console
 - generate internship, showcase, and portfolio markdown outputs
 - preview, open, and reveal recent artifacts from one local control surface
-- inspect the desktop bridge foundation status before moving toward real app control
+- queue and run a small set of approval-aware desktop bridge actions from the console
+- inspect persisted desktop action results before moving toward broader app control
 
 ## Repo Structure
 
@@ -70,8 +72,9 @@ This repo already demonstrates a few concrete recruiter-friendly angles:
 
 - Test the browser playground manually
 - Test the local dashboard manually
-- Keep improving the local operator console UX without pretending a full desktop executor already exists
+- Keep improving the local operator console UX without pretending arbitrary desktop execution already exists
 - Decide between Playwright-first and browser-use-first for the next executor layer
+- Decide the next narrow desktop action to add without turning the bridge into generic computer control
 - Prepare one internship-facing live demo
 - Evaluate Windows-Use, Windows-MCP, official Claude Code, and OpenClaw for selective extraction value
 - Plan live Notion groundwork later

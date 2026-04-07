@@ -20,7 +20,7 @@
           <span class="console-badge">Local only</span>
           <span class="console-badge">Artifact preview</span>
           <span class="console-badge">Visible browser demo</span>
-          <span class="console-badge">Desktop bridge foundation</span>
+          <span class="console-badge">Desktop bridge actions</span>
         </div>
       </div>
     </header>
@@ -561,7 +561,7 @@ This file was queued through the safe repo-local executor.
           <div class="section-heading">
             <div>
               <h2>Desktop Bridge</h2>
-              <p>Safe local checks for the first desktop bridge foundation. This is not a desktop executor.</p>
+              <p>Safe local desktop-aware actions only. This is not full computer use or arbitrary desktop control.</p>
             </div>
             <button id="refresh-desktop-bridge" class="button-secondary" type="button">Refresh Desktop Status</button>
           </div>
@@ -593,6 +593,64 @@ This file was queued through the safe repo-local executor.
               <h3>Missing Now</h3>
               <ul id="desktop-missing-list" class="status-list"></ul>
             </article>
+          </div>
+          <div class="subsection">
+            <div class="subsection-heading">
+              <h3>Desktop Action Queue</h3>
+              <p>Queue one narrow desktop action at a time, inspect it, then run it manually when the task is in scope and approval-cleared.</p>
+            </div>
+            <div class="action-card-grid">
+              <article class="action-card">
+                <div class="card-heading">
+                  <h3>List Allowed Windows</h3>
+                  <p>Detect visible allowlisted windows such as VS Code, terminal, and the dashboard browser.</p>
+                </div>
+                <button id="queue-desktop-list-windows" class="button-secondary" type="button">Queue Window List</button>
+              </article>
+              <article class="action-card">
+                <div class="card-heading">
+                  <h3>Check Active Window</h3>
+                  <p>Read the current foreground window title and alias without changing desktop state.</p>
+                </div>
+                <button id="queue-desktop-active-window" class="button-secondary" type="button">Queue Active Window Check</button>
+              </article>
+              <article class="action-card">
+                <div class="card-heading">
+                  <h3>Focus Terminal</h3>
+                  <p>Approval-aware focus of an allowlisted terminal window only.</p>
+                </div>
+                <button id="queue-desktop-focus-terminal" type="button">Queue Focus Terminal</button>
+              </article>
+              <article class="action-card">
+                <div class="card-heading">
+                  <h3>Focus VS Code</h3>
+                  <p>Approval-aware focus of an allowlisted VS Code window only.</p>
+                </div>
+                <button id="queue-desktop-focus-vscode" type="button">Queue Focus VS Code</button>
+              </article>
+              <article class="action-card">
+                <div class="card-heading">
+                  <h3>Open Allowed Terminal</h3>
+                  <p>Approval-aware launch of Windows Terminal or a safe local terminal fallback if it is missing.</p>
+                </div>
+                <button id="queue-desktop-open-terminal" type="button">Queue Open Terminal</button>
+              </article>
+              <article class="action-card">
+                <div class="card-heading">
+                  <h3>Capture Desktop Screenshot</h3>
+                  <p>Approval-aware screenshot capture into a repo-local desktop artifact path.</p>
+                </div>
+                <button id="queue-desktop-screenshot" type="button">Queue Desktop Screenshot</button>
+              </article>
+            </div>
+            <div id="desktop-action-summary" class="result-panel" aria-live="polite">Ready to queue a safe local desktop action.</div>
+          </div>
+          <div class="subsection">
+            <div class="subsection-heading">
+              <h3>Desktop Action Tasks</h3>
+              <p>These are the queued desktop-aware tasks. Inspect one, then use the selected task panel to run it manually.</p>
+            </div>
+            <div id="desktop-task-list" class="approval-list">Waiting for desktop action list.</div>
           </div>
           <button id="run-desktop-bridge-check" type="button">Run Desktop Bridge Check</button>
           <div id="desktop-check-summary" class="result-panel" aria-live="polite">Ready to run the desktop bridge check.</div>

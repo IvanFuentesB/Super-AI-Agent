@@ -17,12 +17,59 @@ function Write-Check {
     Write-Host ("[{0}] {1}: {2}" -f $label, $Name, $Detail)
 }
 
+function Invoke-DesktopAction {
+    param(
+        [string]$Action,
+        [string]$Target = '',
+        [string]$ArtifactPath = ''
+    )
+
+    $arguments = @(
+        '-ExecutionPolicy', 'Bypass',
+        '-File', $desktopActionScript,
+        '-Action', $Action,
+        '-AllowedRoot', $allowedRoot
+    )
+
+    if (-not [string]::IsNullOrWhiteSpace($Target)) {
+        $arguments += @('-Target', $Target)
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($ArtifactPath)) {
+        $arguments += @('-ArtifactPath', $ArtifactPath)
+    }
+
+    $output = & powershell.exe @arguments 2>&1 | Out-String
+    return @{
+        ExitCode = $LASTEXITCODE
+        Output = ($output.Trim())
+    }
+}
+
+function Remove-GeneratedFile {
+    param(
+        [string]$Path
+    )
+
+    if (Test-Path -LiteralPath $Path -PathType Leaf) {
+        Remove-Item -LiteralPath $Path -Force -ErrorAction SilentlyContinue
+    }
+}
+
+$repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+$allowedRoot = $repoRoot
+$desktopActionScript = Join-Path $PSScriptRoot 'desktop_bridge_actions.ps1'
+$screenshotPath = Join-Path $repoRoot '05_logs\tmp\desktop\desktop-playground-check.png'
 $failed = 0
 $mode = if ($StatusOnly) { 'status' } else { 'check' }
 
 $powerShellVersion = $PSVersionTable.PSVersion.ToString()
 $powerShellAvailable = $true
 Write-Check -Name 'PowerShell environment' -Passed $powerShellAvailable -Detail $powerShellVersion
+
+$desktopActionScriptExists = Test-Path -LiteralPath $desktopActionScript -PathType Leaf
+Write-Check -Name 'Desktop action script exists' -Passed $desktopActionScriptExists -Detail ($(if ($desktopActionScriptExists) { $desktopActionScript } else { 'desktop bridge action script not found' }))
+if (-not $desktopActionScriptExists) { $failed++ }
 
 $explorerCommand = Get-Command explorer.exe -ErrorAction SilentlyContinue
 $explorerAvailable = $null -ne $explorerCommand
@@ -71,11 +118,83 @@ else {
     Write-Check -Name 'Local launcher capability' -Passed $true -Detail 'status-only mode skipped live launcher test'
 }
 
+$listWindowsOk = $false
+$activeWindowOk = $false
+$focusWindowOk = $StatusOnly
+$openAllowedAppOk = $StatusOnly
+$screenshotOk = $StatusOnly
+$unsupportedActionBlocked = $StatusOnly
+$listWindowsDetail = 'not run'
+$activeWindowDetail = 'not run'
+$focusWindowDetail = if ($StatusOnly) { 'status-only mode skipped live focus test' } else { 'not run' }
+$openAllowedAppDetail = if ($StatusOnly) { 'status-only mode skipped live app launch test' } else { 'not run' }
+$screenshotDetail = if ($StatusOnly) { 'status-only mode skipped live screenshot test' } else { 'not run' }
+$unsupportedDetail = if ($StatusOnly) { 'status-only mode skipped unsupported-target test' } else { 'not run' }
+
+if ($desktopActionScriptExists) {
+    $listWindowsResult = Invoke-DesktopAction -Action 'list_windows'
+    $listWindowsOk = $listWindowsResult.ExitCode -eq 0 -and `
+        $listWindowsResult.Output -match 'status:\s+succeeded' -and `
+        $listWindowsResult.Output -match 'headline:\s+Detected'
+    $listWindowsDetail = $listWindowsResult.Output
+    Write-Check -Name 'Desktop action list_windows' -Passed $listWindowsOk -Detail $listWindowsDetail
+    if (-not $listWindowsOk) { $failed++ }
+
+    $activeWindowResult = Invoke-DesktopAction -Action 'get_active_window'
+    $activeWindowOk = $activeWindowResult.ExitCode -eq 0 -and `
+        $activeWindowResult.Output -match 'status:\s+succeeded' -and `
+        $activeWindowResult.Output -match 'active_window_alias:\s+\S+'
+    $activeWindowDetail = $activeWindowResult.Output
+    Write-Check -Name 'Desktop action get_active_window' -Passed $activeWindowOk -Detail $activeWindowDetail
+    if (-not $activeWindowOk) { $failed++ }
+
+    if (-not $StatusOnly) {
+        $openAllowedAppResult = Invoke-DesktopAction -Action 'open_allowed_app' -Target 'terminal'
+        $openAllowedAppOk = $openAllowedAppResult.ExitCode -eq 0 -and `
+            $openAllowedAppResult.Output -match 'status:\s+succeeded' -and `
+            $openAllowedAppResult.Output -match 'command_path:\s+'
+        $openAllowedAppDetail = $openAllowedAppResult.Output
+        Write-Check -Name 'Desktop action open_allowed_app' -Passed $openAllowedAppOk -Detail $openAllowedAppDetail
+        if (-not $openAllowedAppOk) { $failed++ }
+
+        Start-Sleep -Milliseconds 1200
+
+        $focusWindowResult = Invoke-DesktopAction -Action 'focus_window' -Target 'terminal'
+        $focusWindowOk = $focusWindowResult.ExitCode -eq 0 -and `
+            $focusWindowResult.Output -match 'status:\s+succeeded' -and `
+            $focusWindowResult.Output -match 'focused_window_title:\s+'
+        $focusWindowDetail = $focusWindowResult.Output
+        Write-Check -Name 'Desktop action focus_window' -Passed $focusWindowOk -Detail $focusWindowDetail
+        if (-not $focusWindowOk) { $failed++ }
+
+        Remove-GeneratedFile -Path $screenshotPath
+        $screenshotResult = Invoke-DesktopAction -Action 'capture_desktop_screenshot' -ArtifactPath $screenshotPath
+        $screenshotOk = $screenshotResult.ExitCode -eq 0 -and `
+            $screenshotResult.Output -match 'status:\s+succeeded' -and `
+            (Test-Path -LiteralPath $screenshotPath -PathType Leaf)
+        $screenshotDetail = $screenshotResult.Output
+        Write-Check -Name 'Desktop action capture_desktop_screenshot' -Passed $screenshotOk -Detail $screenshotDetail
+        if (-not $screenshotOk) { $failed++ }
+
+        $unsupportedResult = Invoke-DesktopAction -Action 'focus_window' -Target 'not_allowed'
+        $unsupportedActionBlocked = $unsupportedResult.ExitCode -ne 0 -and `
+            $unsupportedResult.Output -match 'failure_reason:\s+Unsupported focus target'
+        $unsupportedDetail = $unsupportedResult.Output
+        Write-Check -Name 'Unsupported desktop target fails safely' -Passed $unsupportedActionBlocked -Detail $unsupportedDetail
+        if (-not $unsupportedActionBlocked) { $failed++ }
+    }
+}
+
 $headline = if ($failed -eq 0) {
-    'Desktop bridge foundation is available for safe local checks.'
+    if ($StatusOnly) {
+        'Desktop bridge status is available for safe local operator checks.'
+    }
+    else {
+        'Desktop bridge action checks passed for the current local operator environment.'
+    }
 }
 else {
-    'Desktop bridge foundation has failing prerequisites.'
+    'Desktop bridge action checks found one or more failures.'
 }
 
 Write-Output "mode: $mode"
@@ -87,19 +206,32 @@ Write-Output "process_visibility: $(if ($processVisibility) { 'yes' } else { 'no
 Write-Output "shell_command_capability: $(if ($shellCommandCapability) { 'yes' } else { 'no' })"
 Write-Output "launcher_capability: $(if ($StatusOnly) { 'not_run' } elseif ($launcherCapability) { 'yes' } else { 'no' })"
 Write-Output "desktop_control_implemented: no"
+Write-Output "list_windows_ok: $(if ($listWindowsOk) { 'yes' } else { 'no' })"
+Write-Output "active_window_ok: $(if ($activeWindowOk) { 'yes' } else { 'no' })"
+Write-Output "focus_window_ok: $(if ($focusWindowOk) { 'yes' } else { 'no' })"
+Write-Output "open_allowed_app_ok: $(if ($openAllowedAppOk) { 'yes' } else { 'no' })"
+Write-Output "capture_desktop_screenshot_ok: $(if ($screenshotOk) { 'yes' } else { 'no' })"
+Write-Output "unsupported_action_blocked: $(if ($unsupportedActionBlocked) { 'yes' } else { 'no' })"
+Write-Output "allowlisted_actions:"
+Write-Output "- list_windows"
+Write-Output "- get_active_window"
+Write-Output "- focus_window"
+Write-Output "- open_allowed_app"
+Write-Output "- capture_desktop_screenshot"
 Write-Output "available_now:"
-Write-Output "- PowerShell environment check"
-Write-Output "- Local process visibility"
-Write-Output "- Harmless shell command execution"
-if (-not $StatusOnly) {
-    Write-Output "- Harmless local launcher test"
-}
+Write-Output "- Allowlisted window discovery"
+Write-Output "- Foreground window detection"
+Write-Output "- Focus allowlisted windows with approval"
+Write-Output "- Open allowlisted local apps with approval"
+Write-Output "- Capture repo-local desktop screenshot artifacts with approval"
 Write-Output "missing_now:"
-Write-Output "- App switching"
-Write-Output "- Click and type control"
+Write-Output "- Arbitrary desktop or app control"
+Write-Output "- General click and type automation"
 Write-Output "- Copy paste orchestration"
-Write-Output "- Human approval wait loop"
 Write-Output "- Observation loop and audit log"
+Write-Output "- Background daemon behavior"
+
+Remove-GeneratedFile -Path $screenshotPath
 
 Write-Host ''
 if ($failed -eq 0) {
