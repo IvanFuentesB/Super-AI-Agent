@@ -2,6 +2,7 @@ const uiState = {
   serverActions: [],
   localActions: [],
   nextLocalActionId: 1,
+  selectedArtifactPath: "",
 };
 
 function escapeHtml(value) {
@@ -41,6 +42,24 @@ function renderRaw(id, payload) {
   if (element) {
     element.textContent = JSON.stringify(payload, null, 2);
   }
+}
+
+function normalizeState(status) {
+  if (!status) {
+    return "neutral";
+  }
+
+  const value = String(status).toLowerCase();
+  if (["ok", "success", "available", "ready", "yes"].includes(value)) {
+    return "success";
+  }
+  if (["blocked", "error", "fail", "failed", "no"].includes(value)) {
+    return "error";
+  }
+  if (["pending", "loading", "running", "not_run"].includes(value)) {
+    return "loading";
+  }
+  return "neutral";
 }
 
 function formatTimeStamp(value) {
@@ -93,22 +112,41 @@ function updateLocalAction(actionId, status, summary) {
   renderRecentActionsPanel();
 }
 
-function normalizeState(status) {
-  if (!status) {
-    return "neutral";
+function setResultPanel(targetId, state, headline, detail = "") {
+  const element = document.getElementById(targetId);
+  if (!element) {
+    return;
   }
 
-  const value = String(status).toLowerCase();
-  if (["ok", "success", "available", "ready"].includes(value)) {
-    return "success";
+  const normalizedState = normalizeState(state);
+  const detailMarkup = detail ? `<p>${escapeHtml(detail)}</p>` : "";
+  element.className = `result-panel is-${normalizedState}`;
+  element.innerHTML = `
+    <div class="result-topline">
+      <strong>${escapeHtml(headline)}</strong>
+      <span class="state-pill state-${normalizedState}">${escapeHtml(normalizedState)}</span>
+    </div>
+    ${detailMarkup}
+  `;
+}
+
+function withButtonState(button, busyLabel, task) {
+  if (!button) {
+    return task();
   }
-  if (["blocked", "error", "fail", "failed"].includes(value)) {
-    return "error";
-  }
-  if (["pending", "loading", "running"].includes(value)) {
-    return "loading";
-  }
-  return "neutral";
+
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.textContent = busyLabel;
+  button.classList.add("is-busy");
+
+  return Promise.resolve()
+    .then(task)
+    .finally(() => {
+      button.disabled = false;
+      button.textContent = originalText;
+      button.classList.remove("is-busy");
+    });
 }
 
 function renderStatusList(id, items) {
@@ -200,10 +238,7 @@ function renderGithubUpdates(payload) {
     `unstaged ${summary.unstagedChanges ?? 0}`,
     `untracked ${summary.untrackedChanges ?? 0}`,
   ].join(" | ");
-  const summaryElement = document.getElementById("github-summary");
-  if (summaryElement) {
-    summaryElement.textContent = summaryText;
-  }
+  setText("github-summary", summaryText);
 
   const commitsElement = document.getElementById("github-commits");
   const commits = summary.recentCommits || [];
@@ -214,6 +249,32 @@ function renderGithubUpdates(payload) {
   }
 
   renderRaw("github-raw", payload);
+}
+
+function renderDesktopBridge(payload) {
+  const summary = payload.summary || {};
+  setText("desktop-headline", summary.headline || "Desktop bridge summary unavailable.");
+  setText(
+    "desktop-quick-note",
+    summary.desktopControlImplemented
+      ? "Desktop control is reported as live."
+      : "Safe local checks are available, but real desktop control is still not implemented.",
+  );
+  setText("desktop-powershell", summary.powerShellAvailable ? "ready" : "missing");
+  setText("desktop-shell", summary.shellCommandCapability ? "ready" : "blocked");
+  setText(
+    "desktop-launcher",
+    summary.launcherCapability === "not_run"
+      ? "status only"
+      : summary.launcherCapability === "yes"
+        ? "ready"
+        : "blocked",
+  );
+  setText("desktop-control", summary.desktopControlImplemented ? "live" : "not yet");
+  setText("desktop-summary", summary.headline || "Desktop bridge status unavailable.");
+  renderStatusList("desktop-available-list", summary.availableNow);
+  renderStatusList("desktop-missing-list", summary.missingNow);
+  renderRaw("desktop-raw", payload);
 }
 
 function renderArtifacts(payload) {
@@ -229,16 +290,27 @@ function renderArtifacts(payload) {
   }
 
   container.innerHTML = artifacts
-    .map((artifact) => `
-      <article class="artifact-item">
-        <div class="artifact-topline">
-          <strong>${escapeHtml(artifact.name)}</strong>
-          <span class="artifact-group">${escapeHtml(artifact.group)}</span>
-        </div>
-        <code class="artifact-path">${escapeHtml(artifact.path)}</code>
-        <span class="artifact-meta">${escapeHtml(artifact.modifiedAt)}</span>
-      </article>
-    `)
+    .map((artifact) => {
+      const previewButton = artifact.previewable
+        ? `<button class="button-secondary artifact-action" type="button" data-artifact-action="preview" data-artifact-path="${escapeHtml(artifact.path)}">Preview</button>`
+        : `<button class="button-secondary artifact-action" type="button" disabled>Preview unavailable</button>`;
+
+      return `
+        <article class="artifact-item">
+          <div class="artifact-topline">
+            <strong>${escapeHtml(artifact.name)}</strong>
+            <span class="artifact-group">${escapeHtml(artifact.group)}</span>
+          </div>
+          <code class="artifact-path">${escapeHtml(artifact.path)}</code>
+          <span class="artifact-meta">${escapeHtml(artifact.modifiedAt)}</span>
+          <div class="artifact-actions">
+            ${previewButton}
+            <button class="button-secondary artifact-action" type="button" data-artifact-action="open" data-artifact-path="${escapeHtml(artifact.path)}">Open</button>
+            <button class="button-secondary artifact-action" type="button" data-artifact-action="reveal" data-artifact-path="${escapeHtml(artifact.path)}">Reveal</button>
+          </div>
+        </article>
+      `;
+    })
     .join("");
 }
 
@@ -253,7 +325,7 @@ function renderRecentActionsPanel() {
     return;
   }
 
-  const actions = [...uiState.localActions, ...uiState.serverActions].slice(0, 10);
+  const actions = [...uiState.localActions, ...uiState.serverActions].slice(0, 12);
   if (actions.length === 0) {
     container.innerHTML = "<p class=\"empty-state\">No recent actions yet.</p>";
     return;
@@ -276,41 +348,190 @@ function renderRecentActionsPanel() {
     .join("");
 }
 
-function setResultPanel(targetId, state, headline, detail = "") {
-  const element = document.getElementById(targetId);
-  if (!element) {
+function renderInlineMarkdown(text) {
+  return escapeHtml(text)
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*([^*]+)\*/g, "<em>$1</em>");
+}
+
+function renderMarkdownPreview(markdown) {
+  const lines = String(markdown || "").replace(/\r/g, "").split("\n");
+  const parts = [];
+  let paragraph = [];
+  let listItems = [];
+  let codeFence = [];
+  let inCodeFence = false;
+
+  function flushParagraph() {
+    if (paragraph.length > 0) {
+      parts.push(`<p>${renderInlineMarkdown(paragraph.join(" "))}</p>`);
+      paragraph = [];
+    }
+  }
+
+  function flushList() {
+    if (listItems.length > 0) {
+      parts.push(`<ul>${listItems.map((item) => `<li>${renderInlineMarkdown(item)}</li>`).join("")}</ul>`);
+      listItems = [];
+    }
+  }
+
+  function flushCodeFence() {
+    if (codeFence.length > 0) {
+      parts.push(`<pre>${escapeHtml(codeFence.join("\n"))}</pre>`);
+      codeFence = [];
+    }
+  }
+
+  for (const rawLine of lines) {
+    const line = rawLine.trimEnd();
+
+    if (line.startsWith("```")) {
+      flushParagraph();
+      flushList();
+      if (inCodeFence) {
+        flushCodeFence();
+        inCodeFence = false;
+      } else {
+        inCodeFence = true;
+      }
+      continue;
+    }
+
+    if (inCodeFence) {
+      codeFence.push(rawLine);
+      continue;
+    }
+
+    const trimmed = line.trim();
+    if (!trimmed) {
+      flushParagraph();
+      flushList();
+      continue;
+    }
+
+    const headingMatch = trimmed.match(/^(#{1,6})\s+(.*)$/);
+    if (headingMatch) {
+      flushParagraph();
+      flushList();
+      const level = Math.min(headingMatch[1].length, 6);
+      parts.push(`<h${level}>${renderInlineMarkdown(headingMatch[2])}</h${level}>`);
+      continue;
+    }
+
+    if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
+      flushParagraph();
+      listItems.push(trimmed.slice(2));
+      continue;
+    }
+
+    paragraph.push(trimmed);
+  }
+
+  flushParagraph();
+  flushList();
+  flushCodeFence();
+
+  return parts.join("") || "<p class=\"empty-state\">Preview is empty.</p>";
+}
+
+function renderArtifactPreview(preview) {
+  uiState.selectedArtifactPath = preview.path;
+  setText("artifact-preview-title", preview.name || "Artifact Preview");
+
+  const meta = [
+    preview.path || "unknown path",
+    preview.format || "text",
+    preview.truncated ? "preview truncated" : "full preview",
+  ].join(" | ");
+  setText("artifact-preview-meta", meta);
+
+  const body = document.getElementById("artifact-preview-body");
+  if (!body) {
     return;
   }
 
-  const normalizedState = normalizeState(state);
-  const detailMarkup = detail ? `<p>${escapeHtml(detail)}</p>` : "";
-  element.className = `result-panel is-${normalizedState}`;
-  element.innerHTML = `
-    <div class="result-topline">
-      <strong>${escapeHtml(headline)}</strong>
-      <span class="state-pill state-${normalizedState}">${escapeHtml(normalizedState)}</span>
-    </div>
-    ${detailMarkup}
-  `;
-}
-
-function withButtonState(button, busyLabel, task) {
-  if (!button) {
-    return task();
+  if (preview.format === "markdown") {
+    body.innerHTML = `<article class="artifact-preview-rendered">${renderMarkdownPreview(preview.content)}</article>`;
+    return;
   }
 
-  const originalText = button.textContent;
-  button.disabled = true;
-  button.textContent = busyLabel;
-  button.classList.add("is-busy");
+  body.innerHTML = `<pre class="preview-pre">${escapeHtml(preview.content || "")}</pre>`;
+}
 
-  return Promise.resolve()
-    .then(task)
-    .finally(() => {
-      button.disabled = false;
-      button.textContent = originalText;
-      button.classList.remove("is-busy");
-    });
+function clearArtifactPreview(message) {
+  setText("artifact-preview-title", "Artifact Preview");
+  setText("artifact-preview-meta", "Select Preview on an artifact to read it here.");
+  const body = document.getElementById("artifact-preview-body");
+  if (body) {
+    body.innerHTML = `<p class="empty-state">${escapeHtml(message)}</p>`;
+  }
+}
+
+async function previewArtifactPath(artifactPath, options = {}) {
+  const { silent = false, button = null } = options;
+  const actionId = silent ? null : createLocalAction("Preview artifact", `Loading preview for ${artifactPath}.`);
+  if (!silent) {
+    setResultPanel("artifact-preview-status", "loading", "Loading artifact preview...", artifactPath);
+  }
+
+  try {
+    const result = await withButtonState(button, "Working...", () =>
+      requestJson("/api/artifacts/preview", {
+        method: "POST",
+        body: JSON.stringify({ path: artifactPath }),
+      }),
+    );
+    renderArtifactPreview(result.preview);
+    setResultPanel("artifact-preview-status", "success", result.summary?.headline || "Preview loaded.", result.preview.path);
+    if (actionId) {
+      updateLocalAction(actionId, "success", result.summary?.headline || "Artifact preview loaded.");
+    }
+    await refreshRecentActions();
+    return result;
+  } catch (error) {
+    setResultPanel("artifact-preview-status", "error", "Artifact preview failed.", error.message);
+    if (actionId) {
+      updateLocalAction(actionId, "error", error.message);
+    }
+    if (!silent) {
+      await refreshRecentActions();
+    }
+    return null;
+  }
+}
+
+async function runArtifactFileAction(actionType, artifactPath, button) {
+  const labelMap = {
+    open: "Open artifact",
+    reveal: "Reveal artifact",
+  };
+  const endpointMap = {
+    open: "/api/artifacts/open",
+    reveal: "/api/artifacts/reveal",
+  };
+  const actionLabel = labelMap[actionType] || "Artifact action";
+  const actionId = createLocalAction(actionLabel, `${actionLabel} started.`);
+  setResultPanel("artifact-preview-status", "loading", `${actionLabel}...`, artifactPath);
+
+  try {
+    const result = await withButtonState(button, "Working...", () =>
+      requestJson(endpointMap[actionType], {
+        method: "POST",
+        body: JSON.stringify({ path: artifactPath }),
+      }),
+    );
+    setResultPanel("artifact-preview-status", "success", result.summary?.headline || `${actionLabel} complete.`, result.summary?.outputPath || artifactPath);
+    updateLocalAction(actionId, "success", result.summary?.headline || `${actionLabel} complete.`);
+    await refreshRecentActions();
+    return result;
+  } catch (error) {
+    setResultPanel("artifact-preview-status", "error", `${actionLabel} failed.`, error.message);
+    updateLocalAction(actionId, "error", error.message);
+    await refreshRecentActions();
+    return null;
+  }
 }
 
 async function refreshOperatorStatus() {
@@ -331,11 +552,32 @@ async function refreshGithubUpdates() {
 async function refreshArtifacts() {
   const payload = await requestJson("/api/artifacts");
   renderArtifacts(payload);
+
+  const artifacts = payload.artifacts || [];
+  if (artifacts.length === 0) {
+    clearArtifactPreview("No recent artifacts found.");
+    return payload;
+  }
+
+  const selectedArtifact = artifacts.find((artifact) => artifact.path === uiState.selectedArtifactPath);
+  const preferredArtifact = selectedArtifact || artifacts.find((artifact) => artifact.previewable);
+  if (preferredArtifact && preferredArtifact.previewable) {
+    await previewArtifactPath(preferredArtifact.path, { silent: true });
+  } else if (!uiState.selectedArtifactPath) {
+    clearArtifactPreview("Recent artifacts exist, but none are previewable yet.");
+  }
+
+  return payload;
 }
 
 async function refreshRecentActions() {
   const payload = await requestJson("/api/recent-actions");
   renderRecentActions(payload);
+}
+
+async function refreshDesktopBridgeStatus() {
+  const payload = await requestJson("/api/desktop-bridge/status");
+  renderDesktopBridge(payload);
 }
 
 async function refreshConsole() {
@@ -344,6 +586,7 @@ async function refreshConsole() {
     refreshCapabilities(),
     refreshGithubUpdates(),
     refreshArtifacts(),
+    refreshDesktopBridgeStatus(),
     refreshRecentActions(),
   ]);
 }
@@ -423,6 +666,30 @@ async function runBrowserAction(endpoint, summaryId, rawId, actionLabel, button,
   }
 }
 
+async function runDesktopBridgeCheck(button) {
+  const actionId = createLocalAction("Run desktop bridge check", "Running safe local desktop bridge check.");
+  setResultPanel("desktop-check-summary", "loading", "Running desktop bridge check...", "Checking safe local shell and launcher foundations.");
+
+  try {
+    const result = await withButtonState(button, "Working...", () =>
+      requestJson("/api/desktop-bridge/check", {
+        method: "POST",
+        body: "{}",
+      }),
+    );
+    renderDesktopBridge(result);
+    setResultPanel("desktop-check-summary", "success", result.summary?.headline || "Desktop bridge check completed.", result.summary?.mode || "check");
+    updateLocalAction(actionId, "success", result.summary?.headline || "Desktop bridge check completed.");
+    await refreshRecentActions();
+    return result;
+  } catch (error) {
+    setResultPanel("desktop-check-summary", "error", "Desktop bridge check failed.", error.message);
+    updateLocalAction(actionId, "error", error.message);
+    await refreshRecentActions();
+    return null;
+  }
+}
+
 document.getElementById("refresh-console").addEventListener("click", async (event) => {
   await runRefresh(
     event.currentTarget,
@@ -449,20 +716,6 @@ document.getElementById("refresh-github").addEventListener("click", async (event
   );
 });
 
-document.getElementById("refresh-artifacts").addEventListener("click", async (event) => {
-  await runRefresh(
-    event.currentTarget,
-    "Refresh recent artifacts",
-    "Refreshing...",
-    () => Promise.all([refreshArtifacts(), refreshRecentActions()]),
-    () => {
-      renderArtifacts({
-        artifacts: [{ name: "error", path: "Artifact refresh failed.", group: "system", modifiedAt: localTimeStamp() }],
-      });
-    },
-  );
-});
-
 document.getElementById("refresh-github-panel").addEventListener("click", async (event) => {
   await runRefresh(
     event.currentTarget,
@@ -485,6 +738,31 @@ document.getElementById("refresh-capabilities-panel").addEventListener("click", 
     (error) => {
       setText("capability-headline", "Capability refresh failed.");
       setText("capability-counts", error.message);
+    },
+  );
+});
+
+document.getElementById("refresh-desktop-bridge").addEventListener("click", async (event) => {
+  await runRefresh(
+    event.currentTarget,
+    "Refresh desktop bridge status",
+    "Refreshing...",
+    () => Promise.all([refreshDesktopBridgeStatus(), refreshRecentActions()]),
+    (error) => {
+      setText("desktop-headline", "Desktop bridge refresh failed.");
+      setText("desktop-quick-note", error.message);
+    },
+  );
+});
+
+document.getElementById("refresh-artifacts").addEventListener("click", async (event) => {
+  await runRefresh(
+    event.currentTarget,
+    "Refresh recent artifacts",
+    "Refreshing...",
+    () => Promise.all([refreshArtifacts(), refreshRecentActions()]),
+    () => {
+      clearArtifactPreview("Artifact refresh failed.");
     },
   );
 });
@@ -545,6 +823,10 @@ document.getElementById("run-browser-visible").addEventListener("click", async (
   );
 });
 
+document.getElementById("run-desktop-bridge-check").addEventListener("click", async (event) => {
+  await runDesktopBridgeCheck(event.currentTarget);
+});
+
 document.getElementById("quick-internship").addEventListener("click", async (event) => {
   await runScaffold(
     "internship-form",
@@ -567,6 +849,17 @@ document.getElementById("quick-showcase").addEventListener("click", async (event
   );
 });
 
+document.getElementById("quick-portfolio").addEventListener("click", async (event) => {
+  await runScaffold(
+    "portfolio-form",
+    "/api/scaffold/portfolio",
+    "portfolio-summary",
+    "portfolio-raw",
+    "Generate portfolio project page",
+    event.currentTarget,
+  );
+});
+
 document.getElementById("quick-browser-smoke").addEventListener("click", async (event) => {
   await runBrowserAction(
     "/api/browser/smoke",
@@ -585,6 +878,32 @@ document.getElementById("quick-browser-visible").addEventListener("click", async
     "Run visible browser demo",
     event.currentTarget,
   );
+});
+
+document.getElementById("quick-desktop-check").addEventListener("click", async (event) => {
+  await runDesktopBridgeCheck(event.currentTarget);
+});
+
+document.getElementById("artifacts-output").addEventListener("click", async (event) => {
+  const button = event.target.closest("button[data-artifact-action]");
+  if (!button) {
+    return;
+  }
+
+  const artifactAction = button.getAttribute("data-artifact-action");
+  const artifactPath = button.getAttribute("data-artifact-path");
+  if (!artifactPath) {
+    return;
+  }
+
+  if (artifactAction === "preview") {
+    await previewArtifactPath(artifactPath, { button });
+    return;
+  }
+
+  if (artifactAction === "open" || artifactAction === "reveal") {
+    await runArtifactFileAction(artifactAction, artifactPath, button);
+  }
 });
 
 refreshConsole().catch((error) => {

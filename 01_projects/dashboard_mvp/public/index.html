@@ -12,15 +12,15 @@
         <p class="eyebrow">Local Operator Console</p>
         <h1>Super-AI-Agent Operator Console</h1>
         <p class="hero-text">
-          A cleaner local control surface for the parts of the project that already work:
-          GitHub visibility, scaffold generation, and a visible browser demo. It stays
-          explicit about what is live, what is scaffold-only, and what still does not exist.
+          A local control surface for the parts of the project that already work:
+          GitHub visibility, scaffold generation, browser demos, usable artifact review,
+          and the first honest desktop bridge status layer.
         </p>
         <div class="hero-badges">
           <span class="console-badge">Local only</span>
+          <span class="console-badge">Artifact preview</span>
           <span class="console-badge">Visible browser demo</span>
-          <span class="console-badge">GitHub status live</span>
-          <span class="console-badge">Approval gates still required</span>
+          <span class="console-badge">Desktop bridge foundation</span>
         </div>
       </div>
     </header>
@@ -43,9 +43,9 @@
           <p id="github-quick-note">Waiting for GitHub summary.</p>
         </article>
         <article class="summary-card">
-          <span class="summary-label">Visible Control</span>
-          <strong>Local browser demo is available</strong>
-          <p>Run the visible demo to watch Chromium open, click, and pause briefly on the local test page.</p>
+          <span class="summary-label">Desktop Bridge</span>
+          <strong id="desktop-headline">Loading...</strong>
+          <p id="desktop-quick-note">Checking safe local desktop bridge status.</p>
         </article>
       </section>
 
@@ -53,23 +53,23 @@
         <div class="section-heading">
           <div>
             <h2>What Can I Do Now?</h2>
-            <p>These are the clearest live actions in the current console.</p>
+            <p>These are the clearest local actions in the current console.</p>
           </div>
         </div>
         <div class="quick-actions">
           <article class="quick-action-card">
             <h3>Refresh Console View</h3>
-            <p>Reload operator status, capabilities, GitHub updates, artifacts, and recent actions.</p>
+            <p>Reload operator status, capabilities, GitHub updates, artifacts, desktop bridge state, and recent actions.</p>
             <button id="refresh-console" class="button-secondary" type="button">Refresh Console Status</button>
           </article>
           <article class="quick-action-card">
-            <h3>Refresh GitHub Updates</h3>
+            <h3>Refresh GitHub Summary</h3>
             <p>Check branch status, working tree state, recent commits, and remote readiness.</p>
             <button id="refresh-github" class="button-secondary" type="button">Refresh GitHub Summary</button>
           </article>
           <article class="quick-action-card">
             <h3>Generate Internship Pack</h3>
-            <p>Create the current default internship application scaffold under personal ops exports.</p>
+            <p>Create the current default internship application scaffold.</p>
             <button id="quick-internship" type="button">Generate Internship Pack</button>
           </article>
           <article class="quick-action-card">
@@ -78,14 +78,24 @@
             <button id="quick-showcase" type="button">Generate Showcase Case Study</button>
           </article>
           <article class="quick-action-card">
+            <h3>Generate Portfolio Page</h3>
+            <p>Create a portfolio-ready project page scaffold for the current project state.</p>
+            <button id="quick-portfolio" type="button">Generate Portfolio Page</button>
+          </article>
+          <article class="quick-action-card">
             <h3>Run Browser Smoke Demo</h3>
-            <p>Run the fast headless check and save the local browser screenshot artifact.</p>
+            <p>Run the fast headless browser check and save the screenshot artifact.</p>
             <button id="quick-browser-smoke" type="button">Run Headless Browser Demo</button>
           </article>
           <article class="quick-action-card highlight-card">
             <h3>Run Visible Browser Demo</h3>
-            <p>Open a headed Chromium window with slower motion so the click is easy to watch.</p>
+            <p>Open the local headed browser demo so the click is visible.</p>
             <button id="quick-browser-visible" type="button">Run Visible Browser Demo</button>
+          </article>
+          <article class="quick-action-card">
+            <h3>Run Desktop Bridge Check</h3>
+            <p>Verify the safe local desktop foundation without pretending native control already exists.</p>
+            <button id="quick-desktop-check" class="button-secondary" type="button">Run Desktop Bridge Check</button>
           </article>
         </div>
       </section>
@@ -94,7 +104,7 @@
         <div class="section-heading">
           <div>
             <h2>Live Boundary</h2>
-            <p>Keep the current control boundary obvious: live now, scaffold-only, and not implemented yet.</p>
+            <p>Keep the control boundary obvious: live now, scaffold-only, and still not implemented.</p>
           </div>
         </div>
         <div class="status-columns">
@@ -192,8 +202,53 @@
         <section class="panel">
           <div class="section-heading">
             <div>
+              <h2>Desktop Bridge</h2>
+              <p>Safe local checks for the first desktop bridge foundation. This is not a desktop executor.</p>
+            </div>
+            <button id="refresh-desktop-bridge" class="button-secondary" type="button">Refresh Desktop Status</button>
+          </div>
+          <div class="metric-grid">
+            <article class="metric-card">
+              <span>PowerShell</span>
+              <strong id="desktop-powershell">-</strong>
+            </article>
+            <article class="metric-card">
+              <span>Shell Commands</span>
+              <strong id="desktop-shell">-</strong>
+            </article>
+            <article class="metric-card">
+              <span>Launcher Check</span>
+              <strong id="desktop-launcher">-</strong>
+            </article>
+            <article class="metric-card">
+              <span>Desktop Control</span>
+              <strong id="desktop-control">-</strong>
+            </article>
+          </div>
+          <div id="desktop-summary" class="summary-note">Waiting for desktop bridge status.</div>
+          <div class="desktop-bridge-columns">
+            <article class="status-card">
+              <h3>Available Now</h3>
+              <ul id="desktop-available-list" class="status-list"></ul>
+            </article>
+            <article class="status-card">
+              <h3>Missing Now</h3>
+              <ul id="desktop-missing-list" class="status-list"></ul>
+            </article>
+          </div>
+          <button id="run-desktop-bridge-check" type="button">Run Desktop Bridge Check</button>
+          <div id="desktop-check-summary" class="result-panel" aria-live="polite">Ready to run the desktop bridge check.</div>
+          <details class="details-block">
+            <summary>Show desktop bridge details</summary>
+            <pre id="desktop-raw">Waiting for refresh...</pre>
+          </details>
+        </section>
+
+        <section class="panel">
+          <div class="section-heading">
+            <div>
               <h2>Personal Ops</h2>
-              <p>Generate the current safe local markdown packs. Detailed inputs stay tucked away until you need them.</p>
+              <p>Generate the current safe local markdown packs. Inputs stay tucked away until you need them.</p>
             </div>
           </div>
           <div class="action-card-grid">
@@ -319,27 +374,37 @@
         </section>
       </section>
 
-      <section class="dual-panel-grid">
-        <section class="panel">
-          <div class="section-heading">
-            <div>
-              <h2>Recent Artifacts</h2>
-              <p>Latest outputs from personal ops, GitHub draft exports, and browser artifacts.</p>
-            </div>
-            <button id="refresh-artifacts" class="button-secondary" type="button">Refresh Artifacts</button>
+      <section class="panel">
+        <div class="section-heading">
+          <div>
+            <h2>Recent Artifacts</h2>
+            <p>Generated outputs should be usable here, not just visible as files in a folder.</p>
           </div>
+          <button id="refresh-artifacts" class="button-secondary" type="button">Refresh Artifacts</button>
+        </div>
+        <div class="artifact-shell">
           <div id="artifacts-output" class="artifact-list" aria-live="polite">Waiting for refresh...</div>
-        </section>
-
-        <section class="panel">
-          <div class="section-heading">
-            <div>
-              <h2>Recent Actions</h2>
-              <p>A simple local run log that makes the last few console actions easier to follow.</p>
+          <article class="artifact-preview-panel">
+            <div class="subsection-heading">
+              <h3 id="artifact-preview-title">Artifact Preview</h3>
+              <p id="artifact-preview-meta">Select Preview on an artifact to read it here.</p>
             </div>
+            <div id="artifact-preview-status" class="result-panel" aria-live="polite">Ready to preview, open, or reveal an artifact.</div>
+            <div id="artifact-preview-body" class="artifact-preview-body">
+              <p class="empty-state">No artifact preview loaded yet.</p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="section-heading">
+          <div>
+            <h2>Recent Actions</h2>
+            <p>A simple local run log that makes the last few console actions easier to follow.</p>
           </div>
-          <div id="recent-actions-output" class="action-log" aria-live="polite">Waiting for recent actions...</div>
-        </section>
+        </div>
+        <div id="recent-actions-output" class="action-log" aria-live="polite">Waiting for recent actions...</div>
       </section>
     </main>
 

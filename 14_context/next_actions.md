@@ -1,7 +1,7 @@
 # Next Actions
 
-- Manually test operator console v3
-- Decide the next executor path after the cleaner console pass
-- Begin a desktop or app control playground next
+- Test artifact UX manually from the operator console
+- Test the desktop bridge foundation manually
+- Choose the real desktop-control implementation path
 - Improve approval queue UI later
-- Notion live groundwork later
+- Build the executor layer later

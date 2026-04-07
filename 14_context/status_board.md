@@ -28,21 +28,22 @@
 - [x] Local dashboard MVP exists
 - [x] Operator console v2 exists
 - [x] Operator console v3 polish exists
+- [x] Artifact UX and desktop bridge foundation exist
 
 ## Current Control Layer
 - Continue for local context/rules
 - Codex for execution and Git workflow
 
 ## Current Branch
-- feat/operator-console-v3-ux-polish
+- feat/artifact-ux-and-desktop-bridge
 
 ## Current Phase
-- operator console v3 ux polish
+- artifact ux and desktop bridge foundation
 
 ## Next Milestones
-- manually test operator console v3
-- decide between Playwright-first and browser-use-first for the next executor layer
-- begin a desktop or app control playground
+- test artifact UX manually from the operator console
+- test the desktop bridge foundation manually
+- choose the real desktop-control implementation path
 - evaluate Windows-Use and Windows-MCP
 - optionally use the Playwright skill in Codex
 - prepare one internship-facing live demo
@@ -61,7 +62,7 @@
 - no live mail or LinkedIn adapters yet
 - no live Notion writes yet
 - live remote GitHub mutation is possible in this environment, so approval discipline remains critical
-- browser visible demo and operator console v3 exist, but browser and app execution beyond the local playground are still research-only
+- browser visible demo, artifact UX, and the desktop bridge foundation exist, but browser and app execution beyond the local playground are still research-only
 
 ## Last Reviewed
 - 2026-04-07

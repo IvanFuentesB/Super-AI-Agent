@@ -10,8 +10,22 @@ const publicRoot = path.join(dashboardRoot, "public");
 const browserProjectRoot = path.join(repoRoot, "01_projects", "browser_playground");
 const runtimeProjectRoot = path.join(repoRoot, "01_projects", "runtime_mvp");
 const runtimeSrcPath = path.join(runtimeProjectRoot, "src");
+const desktopPlaygroundRoot = path.join(repoRoot, "01_projects", "desktop_playground");
+const desktopCheckScriptPath = path.join(desktopPlaygroundRoot, "check_desktop_playground.ps1");
 const dashboardPort = Number.parseInt(process.env.PORT || "3210", 10);
 const maxRecentActions = 25;
+const previewableExtensions = new Set([
+  ".md",
+  ".markdown",
+  ".txt",
+  ".log",
+  ".json",
+  ".ps1",
+  ".py",
+  ".js",
+  ".css",
+  ".html",
+]);
 
 let actionCounter = 0;
 const recentActions = [];
@@ -68,6 +82,18 @@ function resolvePython() {
   );
 
   return resolveCommand(candidates, ["--version"]);
+}
+
+function resolvePowerShell() {
+  return resolveCommand(
+    [
+      { command: "powershell.exe", baseArgs: [], displayName: "powershell.exe" },
+      { command: "powershell", baseArgs: [], displayName: "powershell" },
+      { command: "pwsh.exe", baseArgs: [], displayName: "pwsh.exe" },
+      { command: "pwsh", baseArgs: [], displayName: "pwsh" },
+    ],
+    ["-NoProfile", "-Command", "$PSVersionTable.PSVersion.ToString()"],
+  );
 }
 
 function buildRuntimeEnv() {
@@ -193,6 +219,36 @@ async function runBrowserDemo(visible, checkOnly) {
   };
 }
 
+async function runDesktopBridgeCheck(statusOnly) {
+  const powerShell = resolvePowerShell();
+  if (!powerShell) {
+    return {
+      ok: false,
+      exitCode: 1,
+      stdout: "",
+      stderr: "PowerShell runtime not found for desktop bridge check.",
+      command: "powershell -ExecutionPolicy Bypass -File check_desktop_playground.ps1",
+      tool: "powershell",
+    };
+  }
+
+  const args = [...powerShell.baseArgs, "-ExecutionPolicy", "Bypass", "-File", desktopCheckScriptPath];
+  if (statusOnly) {
+    args.push("-StatusOnly");
+  }
+
+  const result = await runCommand(powerShell.command, args, {
+    cwd: desktopPlaygroundRoot,
+    env: process.env,
+    timeoutMs: 120000,
+  });
+
+  return {
+    ...result,
+    tool: powerShell.displayName,
+  };
+}
+
 function parseKeyValueBlock(stdout) {
   const values = {};
   const listSections = {};
@@ -302,6 +358,23 @@ function parseBrowserResult(stdout) {
   };
 }
 
+function parseDesktopBridge(stdout) {
+  const parsed = parseKeyValueBlock(stdout);
+  return {
+    mode: parsed.values.mode || "unknown",
+    headline: parsed.values.headline || "Desktop bridge status unavailable.",
+    powerShellAvailable: parsed.values.powershell_available === "yes",
+    powerShellVersion: parsed.values.powershell_version || "unknown",
+    explorerAvailable: parsed.values.explorer_available === "yes",
+    processVisibility: parsed.values.process_visibility === "yes",
+    shellCommandCapability: parsed.values.shell_command_capability === "yes",
+    launcherCapability: parsed.values.launcher_capability || "unknown",
+    desktopControlImplemented: parsed.values.desktop_control_implemented === "yes",
+    availableNow: parsed.listSections.available_now || [],
+    missingNow: parsed.listSections.missing_now || [],
+  };
+}
+
 function extractOutputPath(label, stdout) {
   const regex = new RegExp(`${label}:\\s*(.+)$`, "m");
   const match = stdout.match(regex);
@@ -310,6 +383,158 @@ function extractOutputPath(label, stdout) {
 
 function relativeRepoPath(absolutePath) {
   return path.relative(repoRoot, absolutePath).replace(/\\/g, "/");
+}
+
+function isPathInside(parentPath, childPath) {
+  const relative = path.relative(parentPath, childPath);
+  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+}
+
+function getAllowedArtifactRoots() {
+  return [
+    path.join(repoRoot, "11_exports", "personal_ops"),
+    path.join(repoRoot, "11_exports", "github"),
+    path.join(repoRoot, "01_projects", "browser_playground", "artifacts"),
+  ];
+}
+
+function resolveAllowedArtifactPath(targetPath) {
+  if (!targetPath || typeof targetPath !== "string") {
+    throw new Error("Missing artifact path.");
+  }
+
+  const normalizedInput = targetPath.replaceAll("/", path.sep);
+  const absolutePath = path.normalize(
+    path.isAbsolute(normalizedInput)
+      ? normalizedInput
+      : path.join(repoRoot, normalizedInput),
+  );
+
+  const isAllowed = getAllowedArtifactRoots().some((root) => isPathInside(root, absolutePath));
+  if (!isAllowed) {
+    throw new Error("Artifact path is outside the allowed dashboard roots.");
+  }
+
+  if (!fs.existsSync(absolutePath)) {
+    throw new Error("Artifact not found.");
+  }
+
+  if (!fs.statSync(absolutePath).isFile()) {
+    throw new Error("Artifact path is not a file.");
+  }
+
+  return absolutePath;
+}
+
+function getArtifactFormat(absolutePath) {
+  const extension = path.extname(absolutePath).toLowerCase();
+  if (extension === ".md" || extension === ".markdown") {
+    return "markdown";
+  }
+  if (extension === ".json") {
+    return "json";
+  }
+  return "text";
+}
+
+function isPreviewableArtifact(absolutePath) {
+  return previewableExtensions.has(path.extname(absolutePath).toLowerCase());
+}
+
+function buildArtifactPreview(targetPath) {
+  const absolutePath = resolveAllowedArtifactPath(targetPath);
+  if (!isPreviewableArtifact(absolutePath)) {
+    throw new Error("Artifact preview is limited to markdown and text-like files.");
+  }
+
+  const maxChars = 32000;
+  const stats = fs.statSync(absolutePath);
+  let content = fs.readFileSync(absolutePath, "utf8");
+  const truncated = content.length > maxChars;
+  if (truncated) {
+    content = `${content.slice(0, maxChars)}\n\n[preview truncated]`;
+  }
+
+  return {
+    name: path.basename(absolutePath),
+    path: relativeRepoPath(absolutePath),
+    format: getArtifactFormat(absolutePath),
+    previewable: true,
+    truncated,
+    size: stats.size,
+    modifiedAt: stats.mtime.toISOString(),
+    content,
+  };
+}
+
+async function openArtifact(targetPath) {
+  const absolutePath = resolveAllowedArtifactPath(targetPath);
+  const powerShell = resolvePowerShell();
+  if (!powerShell) {
+    return {
+      ok: false,
+      exitCode: 1,
+      stdout: "",
+      stderr: "PowerShell runtime not found for artifact open action.",
+      path: relativeRepoPath(absolutePath),
+    };
+  }
+
+  const result = await runCommand(
+    powerShell.command,
+    [
+      ...powerShell.baseArgs,
+      "-NoProfile",
+      "-Command",
+      "Start-Process -FilePath $args[0]",
+      absolutePath,
+    ],
+    {
+      cwd: repoRoot,
+      env: process.env,
+      timeoutMs: 30000,
+    },
+  );
+
+  return {
+    ...result,
+    path: relativeRepoPath(absolutePath),
+  };
+}
+
+async function revealArtifact(targetPath) {
+  const absolutePath = resolveAllowedArtifactPath(targetPath);
+  const powerShell = resolvePowerShell();
+  if (!powerShell) {
+    return {
+      ok: false,
+      exitCode: 1,
+      stdout: "",
+      stderr: "PowerShell runtime not found for artifact reveal action.",
+      path: relativeRepoPath(absolutePath),
+    };
+  }
+
+  const result = await runCommand(
+    powerShell.command,
+    [
+      ...powerShell.baseArgs,
+      "-NoProfile",
+      "-Command",
+      "Start-Process -FilePath explorer.exe -ArgumentList $args[0]",
+      `/select,${absolutePath}`,
+    ],
+    {
+      cwd: repoRoot,
+      env: process.env,
+      timeoutMs: 30000,
+    },
+  );
+
+  return {
+    ...result,
+    path: relativeRepoPath(absolutePath),
+  };
 }
 
 function listDirectoryArtifacts(absoluteDirPath, groupLabel) {
@@ -327,6 +552,7 @@ function listDirectoryArtifacts(absoluteDirPath, groupLabel) {
         group: groupLabel,
         name: entry.name,
         path: relativeRepoPath(absolutePath),
+        previewable: isPreviewableArtifact(absolutePath),
         size: stats.size,
         modifiedAt: stats.mtime.toISOString(),
       };
@@ -355,21 +581,25 @@ function buildOperatorStatus() {
       "Capability summary and environment-aware status",
       "GitHub read status and remote-capability visibility",
       "Internship, showcase, and portfolio scaffold generation",
+      "Artifact preview, open, and reveal from the dashboard",
       "Browser smoke demo and visible local browser demo",
+      "Desktop bridge status and safe local desktop checks",
       "Recent artifacts and recent-action log",
     ],
     scaffoldOnly: [
       "GitHub remote write actions remain explicit and approval-gated",
       "Mail, Notion, and LinkedIn remain planning-only",
       "Personal ops packs are generated outputs, not live send or publish flows",
+      "Desktop bridge is a foundation layer, not a desktop executor",
     ],
     notImplementedYet: [
       "Full browser executor loop",
       "Desktop or Windows app control",
+      "App switching, clicking, typing, or clipboard orchestration",
       "Approval queue UI",
       "Live mail, Notion, and LinkedIn adapters",
     ],
-    nextStep: "Use the dashboard as the visible local control surface, then choose the next executor path deliberately.",
+    nextStep: "Use the dashboard to review usable artifacts and inspect the desktop bridge status before choosing the real executor path.",
   };
 }
 
@@ -479,6 +709,16 @@ async function buildGithubUpdatesResponse() {
   };
 }
 
+async function buildDesktopBridgeResponse(statusOnly) {
+  const raw = await runDesktopBridgeCheck(statusOnly);
+  return {
+    ok: raw.ok,
+    summary: parseDesktopBridge(raw.stdout),
+    raw,
+    localOnly: true,
+  };
+}
+
 async function handleApiRequest(request, response, requestUrl) {
   if (request.method === "GET" && requestUrl.pathname === "/api/health") {
     sendJson(response, 200, {
@@ -533,12 +773,104 @@ async function handleApiRequest(request, response, requestUrl) {
   }
 
   if (request.method === "GET" && requestUrl.pathname === "/api/artifacts") {
-    const payload = {
+    sendJson(response, 200, {
       ok: true,
       localOnly: true,
       artifacts: listRecentArtifacts(),
-    };
-    sendJson(response, 200, payload);
+    });
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/api/artifacts/preview") {
+    const payload = await readJsonBody(request);
+    requireFields(payload, ["path"]);
+    const preview = buildArtifactPreview(String(payload.path));
+    pushAction({
+      actionType: "artifact",
+      label: "Previewed artifact",
+      status: "success",
+      summary: `Loaded preview for ${preview.name}.`,
+      outputPath: preview.path,
+    });
+    sendJson(response, 200, {
+      ok: true,
+      localOnly: true,
+      preview,
+      summary: {
+        headline: `Preview loaded for ${preview.name}.`,
+        outputPath: preview.path,
+      },
+    });
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/api/artifacts/open") {
+    const payload = await readJsonBody(request);
+    requireFields(payload, ["path"]);
+    const raw = await openArtifact(String(payload.path));
+    pushAction({
+      actionType: "artifact",
+      label: "Opened artifact",
+      status: raw.ok ? "success" : "error",
+      summary: raw.ok ? `Opened ${raw.path} in the default app.` : (raw.stderr || "Artifact open failed."),
+      outputPath: raw.path,
+    });
+    sendJson(response, raw.ok ? 200 : 500, {
+      ok: raw.ok,
+      localOnly: true,
+      summary: {
+        headline: raw.ok ? "Artifact opened in the default app." : "Artifact open failed.",
+        outputPath: raw.path,
+      },
+      raw,
+    });
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/api/artifacts/reveal") {
+    const payload = await readJsonBody(request);
+    requireFields(payload, ["path"]);
+    const raw = await revealArtifact(String(payload.path));
+    pushAction({
+      actionType: "artifact",
+      label: "Revealed artifact",
+      status: raw.ok ? "success" : "error",
+      summary: raw.ok ? `Revealed ${raw.path} in Explorer.` : (raw.stderr || "Artifact reveal failed."),
+      outputPath: raw.path,
+    });
+    sendJson(response, raw.ok ? 200 : 500, {
+      ok: raw.ok,
+      localOnly: true,
+      summary: {
+        headline: raw.ok ? "Artifact revealed in Explorer." : "Artifact reveal failed.",
+        outputPath: raw.path,
+      },
+      raw,
+    });
+    return;
+  }
+
+  if (request.method === "GET" && requestUrl.pathname === "/api/desktop-bridge/status") {
+    const payload = await buildDesktopBridgeResponse(true);
+    pushAction({
+      actionType: "desktop",
+      label: "Viewed desktop bridge status",
+      status: payload.ok ? "success" : "error",
+      summary: payload.summary.headline,
+    });
+    sendJson(response, payload.ok ? 200 : 500, payload);
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/api/desktop-bridge/check") {
+    const payload = await buildDesktopBridgeResponse(false);
+    pushAction({
+      actionType: "desktop",
+      label: "Ran desktop bridge check",
+      status: payload.ok ? "success" : "error",
+      summary: payload.summary.headline,
+    });
+    sendJson(response, payload.ok ? 200 : 500, payload);
     return;
   }
 
@@ -780,10 +1112,11 @@ async function handleRequest(request, response) {
 if (process.argv.includes("--check")) {
   const python = resolvePython();
   console.log("dashboard_check: ok");
-  console.log("mode: operator_console_v2");
+  console.log("mode: operator_console_v3");
   console.log("local_only: yes");
   console.log(`python: ${python ? python.displayName : "missing"}`);
   console.log(`browser_runner: ${process.execPath}`);
+  console.log(`desktop_bridge_script: ${desktopCheckScriptPath}`);
   process.exit(0);
 }
 
