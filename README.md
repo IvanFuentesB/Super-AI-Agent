@@ -16,12 +16,16 @@ This repo is the core workspace for building a controllable AI system that produ
 - internship, CV, LinkedIn, outreach, showcase, and portfolio scaffold generation
 - local deterministic browser playground with headless and visible Playwright demos
 - polished local operator-console dashboard for capability checks, clearer GitHub updates, scaffold generation, browser demo triggers, and artifact preview/open/reveal actions
+- always-on supervisor foundation with explicit task states for waiting, pending approval, and human-needed work
+- local approval inbox foundation for risky or uncertain actions
 - desktop bridge foundation for safe local environment and launcher checks
 
 ## Scaffold-Only Or Research State
 
 - mail and Notion adapters are planning-only
+- notifications are local-dashboard-only summaries for now
 - full browser and app execution are still not implemented
+- full autonomous executor is still not implemented
 - multi-model routing remains planning and policy scaffolding
 - remote GitHub smoke tests are explicit and available, but the default checker remains non-mutating
 

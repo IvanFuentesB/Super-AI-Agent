@@ -375,6 +375,97 @@ function parseDesktopBridge(stdout) {
   };
 }
 
+function parseApprovalRequestLine(line) {
+  const parts = String(line)
+    .split(" | ")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  return {
+    approvalId: parts[0] || "",
+    status: parts[1] || "unknown",
+    riskLevel: parts[2] || "unknown",
+    taskId: parts[3] || "",
+    detail: parts.slice(4).join(" | ") || "",
+  };
+}
+
+function parseTaskStatusLine(line) {
+  const parts = String(line)
+    .split(" | ")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  return {
+    taskId: parts[0] || "",
+    status: parts[1] || "unknown",
+    detail: parts.slice(2).join(" | ") || "",
+  };
+}
+
+function parseApprovalList(stdout) {
+  const parsed = parseKeyValueBlock(stdout);
+  const requests = (parsed.listSections.requests || [])
+    .filter((item) => item !== "none")
+    .map(parseApprovalRequestLine);
+  const count = Number.parseInt(parsed.values.count || String(requests.length), 10);
+
+  return {
+    count,
+    requests,
+    headline: count > 0 ? `${count} approval request(s) pending.` : "No pending approvals right now.",
+  };
+}
+
+function parseSupervisorStatus(stdout) {
+  const parsed = parseKeyValueBlock(stdout);
+  const pendingApprovals = (parsed.listSections.pending_approvals || [])
+    .filter((item) => item !== "none")
+    .map(parseApprovalRequestLine);
+  const humanNeededTasks = (parsed.listSections.human_needed_tasks || [])
+    .filter((item) => item !== "none")
+    .map(parseTaskStatusLine);
+  const waitingTasks = (parsed.listSections.waiting_tasks || [])
+    .filter((item) => item !== "none")
+    .map(parseTaskStatusLine);
+
+  const status = parsed.values.status || "unknown";
+  const pendingApprovalCount = Number.parseInt(parsed.values.pending_approval_count || "0", 10);
+  const blockedHumanNeededCount = Number.parseInt(parsed.values.blocked_human_needed_count || "0", 10);
+  const waitingCount = Number.parseInt(parsed.values.waiting_count || "0", 10);
+  const queuedCount = Number.parseInt(parsed.values.queued_count || "0", 10);
+  const runningCount = Number.parseInt(parsed.values.running_count || "0", 10);
+
+  return {
+    supervisorId: parsed.values.supervisor_id || "local-supervisor",
+    mode: parsed.values.mode || "local_only",
+    status,
+    activeTaskId: parsed.values.active_task_id || "none",
+    queuedCount,
+    runningCount,
+    waitingCount,
+    pendingApprovalCount,
+    blockedHumanNeededCount,
+    notificationMode: parsed.values.notification_mode || "dashboard",
+    notificationTitle: parsed.values.notification_title || "Supervisor status",
+    lastEvent: parsed.values.last_event || "none",
+    updatedAt: parsed.values.updated_at || "",
+    pendingApprovals,
+    humanNeededTasks,
+    waitingTasks,
+    headline:
+      pendingApprovalCount > 0
+        ? `${pendingApprovalCount} approval request(s) need review.`
+        : blockedHumanNeededCount > 0
+          ? `${blockedHumanNeededCount} task(s) are blocked on the human.`
+          : waitingCount > 0
+            ? `${waitingCount} task(s) are waiting to resume later.`
+            : queuedCount > 0 || runningCount > 0
+              ? "Supervisor is tracking local work without open approvals."
+              : "Supervisor is idle and ready.",
+  };
+}
+
 function extractOutputPath(label, stdout) {
   const regex = new RegExp(`${label}:\\s*(.+)$`, "m");
   const match = stdout.match(regex);
@@ -584,6 +675,7 @@ function buildOperatorStatus() {
       "Artifact preview, open, and reveal from the dashboard",
       "Browser smoke demo and visible local browser demo",
       "Desktop bridge status and safe local desktop checks",
+      "Supervisor status and approval inbox visibility",
       "Recent artifacts and recent-action log",
     ],
     scaffoldOnly: [
@@ -591,6 +683,7 @@ function buildOperatorStatus() {
       "Mail, Notion, and LinkedIn remain planning-only",
       "Personal ops packs are generated outputs, not live send or publish flows",
       "Desktop bridge is a foundation layer, not a desktop executor",
+      "Notifications are local dashboard summaries only",
     ],
     notImplementedYet: [
       "Full browser executor loop",
@@ -600,6 +693,36 @@ function buildOperatorStatus() {
       "Live mail, Notion, and LinkedIn adapters",
     ],
     nextStep: "Use the dashboard to review usable artifacts and inspect the desktop bridge status before choosing the real executor path.",
+  };
+}
+
+async function buildSupervisorResponse() {
+  const raw = await runRuntimeCli(["supervisor-status"]);
+  return {
+    ok: raw.ok,
+    summary: parseSupervisorStatus(raw.stdout),
+    raw,
+    localOnly: true,
+  };
+}
+
+async function buildPendingApprovalsResponse() {
+  const raw = await runRuntimeCli(["pending-approvals"]);
+  return {
+    ok: raw.ok,
+    summary: parseApprovalList(raw.stdout),
+    raw,
+    localOnly: true,
+  };
+}
+
+async function buildApprovalListResponse() {
+  const raw = await runRuntimeCli(["approval-status"]);
+  return {
+    ok: raw.ok,
+    summary: parseApprovalList(raw.stdout),
+    raw,
+    localOnly: true,
   };
 }
 
@@ -742,6 +865,42 @@ async function handleApiRequest(request, response, requestUrl) {
       summary: "Loaded the local operator-mode status summary.",
     });
     sendJson(response, 200, payload);
+    return;
+  }
+
+  if (request.method === "GET" && requestUrl.pathname === "/api/supervisor/status") {
+    const payload = await buildSupervisorResponse();
+    pushAction({
+      actionType: "supervisor",
+      label: "Viewed supervisor status",
+      status: payload.ok ? "success" : "error",
+      summary: payload.summary.headline,
+    });
+    sendJson(response, payload.ok ? 200 : 500, payload);
+    return;
+  }
+
+  if (request.method === "GET" && requestUrl.pathname === "/api/approvals/pending") {
+    const payload = await buildPendingApprovalsResponse();
+    pushAction({
+      actionType: "approval",
+      label: "Viewed pending approvals",
+      status: payload.ok ? "success" : "error",
+      summary: payload.summary.headline,
+    });
+    sendJson(response, payload.ok ? 200 : 500, payload);
+    return;
+  }
+
+  if (request.method === "GET" && requestUrl.pathname === "/api/approvals/list") {
+    const payload = await buildApprovalListResponse();
+    pushAction({
+      actionType: "approval",
+      label: "Viewed approval request list",
+      status: payload.ok ? "success" : "error",
+      summary: payload.summary.headline,
+    });
+    sendJson(response, payload.ok ? 200 : 500, payload);
     return;
   }
 

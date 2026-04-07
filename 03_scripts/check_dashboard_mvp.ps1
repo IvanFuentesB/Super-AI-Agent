@@ -102,6 +102,9 @@ $expectedFiles = @(
     '04_docs/browser_control_playground.md',
     '04_docs/artifact_ux_plan.md',
     '04_docs/desktop_bridge_foundation.md',
+    '04_docs/supervisor_foundation.md',
+    '04_docs/approval_inbox_plan.md',
+    '04_docs/notification_adapter_plan.md',
     '01_projects/dashboard_mvp/README.md',
     '01_projects/dashboard_mvp/package.json',
     '01_projects/dashboard_mvp/server.js',
@@ -200,6 +203,16 @@ try {
     $operatorOk = $operatorStatus.ok -and $operatorStatus.localOnly -and $operatorStatus.liveNow.Count -gt 0
     Write-Check -Name 'Operator status endpoint' -Passed $operatorOk -Detail ($(if ($operatorOk) { 'operator mode status returned and is local-only' } else { 'operator mode status missing or not local-only' }))
     if (-not $operatorOk) { $failed++ }
+
+    $supervisorStatus = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/supervisor/status" -Method Get -TimeoutSec 30
+    $supervisorStatusOk = $supervisorStatus.ok -and $supervisorStatus.localOnly -and $supervisorStatus.summary.status
+    Write-Check -Name 'Supervisor status endpoint' -Passed $supervisorStatusOk -Detail ($(if ($supervisorStatusOk) { $supervisorStatus.summary.headline } else { 'supervisor status missing structured output' }))
+    if (-not $supervisorStatusOk) { $failed++ }
+
+    $pendingApprovals = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/approvals/pending" -Method Get -TimeoutSec 30
+    $pendingApprovalsOk = $pendingApprovals.ok -and $pendingApprovals.localOnly -and $null -ne $pendingApprovals.summary.requests
+    Write-Check -Name 'Pending approvals endpoint' -Passed $pendingApprovalsOk -Detail ($(if ($pendingApprovalsOk) { $pendingApprovals.summary.headline } else { 'pending approvals missing structured output' }))
+    if (-not $pendingApprovalsOk) { $failed++ }
 
     $capability = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/capability-summary" -Method Get -TimeoutSec 30
     $capabilityOk = $capability.ok -and $capability.localOnly -and $capability.summary.availableCount -ge 0

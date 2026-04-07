@@ -277,6 +277,85 @@ function renderDesktopBridge(payload) {
   renderRaw("desktop-raw", payload);
 }
 
+function renderApprovalCards(containerId, items, emptyText) {
+  const container = document.getElementById(containerId);
+  if (!container) {
+    return;
+  }
+
+  if (!items || items.length === 0) {
+    container.innerHTML = `<p class="empty-state">${escapeHtml(emptyText)}</p>`;
+    return;
+  }
+
+  container.innerHTML = items
+    .map((item) => {
+      const status = normalizeState(item.status);
+      const primaryId = item.approvalId || item.taskId || "item";
+      const metaLine = [item.riskLevel, item.taskId, item.detail]
+        .filter(Boolean)
+        .join(" | ");
+
+      return `
+        <article class="approval-item">
+          <div class="approval-topline">
+            <strong>${escapeHtml(primaryId)}</strong>
+            <span class="state-pill state-${status}">${escapeHtml(item.status || status)}</span>
+          </div>
+          ${item.taskId && item.approvalId ? `<p>Task: ${escapeHtml(item.taskId)}</p>` : ""}
+          ${metaLine ? `<p>${escapeHtml(metaLine)}</p>` : ""}
+        </article>
+      `;
+    })
+    .join("");
+}
+
+function renderSupervisorStatus(payload) {
+  const summary = payload.summary || {};
+  const statusLabel = (summary.status || "unknown").replaceAll("_", " ");
+
+  setText("supervisor-headline", summary.headline || "Supervisor status unavailable.");
+  setText(
+    "supervisor-quick-note",
+    summary.pendingApprovalCount > 0
+      ? "Risky or uncertain work is paused until the human approves it."
+      : summary.blockedHumanNeededCount > 0
+        ? "Some tasks are blocked on a human reply or judgment call."
+        : "No open approvals right now. The supervisor is only tracking local state.",
+  );
+  setText("supervisor-status", statusLabel);
+  setText("supervisor-pending-count", String(summary.pendingApprovalCount ?? 0));
+  setText("supervisor-human-needed-count", String(summary.blockedHumanNeededCount ?? 0));
+  setText("supervisor-waiting-count", String(summary.waitingCount ?? 0));
+  setText("supervisor-summary", summary.headline || "Supervisor status unavailable.");
+
+  renderApprovalCards(
+    "pending-approvals-list",
+    summary.pendingApprovals || [],
+    "No pending approvals right now.",
+  );
+  renderApprovalCards(
+    "human-needed-list",
+    summary.humanNeededTasks || [],
+    "No human-needed tasks right now.",
+  );
+  renderApprovalCards(
+    "waiting-tasks-list",
+    summary.waitingTasks || [],
+    "No waiting tasks right now.",
+  );
+  renderRaw("supervisor-raw", payload);
+}
+
+function renderPendingApprovals(payload) {
+  const summary = payload.summary || {};
+  renderApprovalCards(
+    "pending-approvals-list",
+    summary.requests || [],
+    "No pending approvals right now.",
+  );
+}
+
 function renderArtifacts(payload) {
   const container = document.getElementById("artifacts-output");
   const artifacts = payload.artifacts || [];
@@ -549,6 +628,16 @@ async function refreshGithubUpdates() {
   renderGithubUpdates(payload);
 }
 
+async function refreshSupervisorStatus() {
+  const payload = await requestJson("/api/supervisor/status");
+  renderSupervisorStatus(payload);
+}
+
+async function refreshPendingApprovals() {
+  const payload = await requestJson("/api/approvals/pending");
+  renderPendingApprovals(payload);
+}
+
 async function refreshArtifacts() {
   const payload = await requestJson("/api/artifacts");
   renderArtifacts(payload);
@@ -585,6 +674,8 @@ async function refreshConsole() {
     refreshOperatorStatus(),
     refreshCapabilities(),
     refreshGithubUpdates(),
+    refreshSupervisorStatus(),
+    refreshPendingApprovals(),
     refreshArtifacts(),
     refreshDesktopBridgeStatus(),
     refreshRecentActions(),
@@ -725,6 +816,19 @@ document.getElementById("refresh-github-panel").addEventListener("click", async 
     (error) => {
       setText("github-headline", "GitHub panel refresh failed.");
       setText("github-quick-note", error.message);
+    },
+  );
+});
+
+document.getElementById("refresh-supervisor").addEventListener("click", async (event) => {
+  await runRefresh(
+    event.currentTarget,
+    "Refresh supervisor status",
+    "Refreshing...",
+    () => Promise.all([refreshSupervisorStatus(), refreshPendingApprovals(), refreshRecentActions()]),
+    (error) => {
+      setText("supervisor-headline", "Supervisor refresh failed.");
+      setText("supervisor-quick-note", error.message);
     },
   );
 });

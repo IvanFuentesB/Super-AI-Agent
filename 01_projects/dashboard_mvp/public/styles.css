@@ -361,6 +361,7 @@ textarea {
 }
 
 .capability-list,
+.approval-list,
 .artifact-list,
 .action-log {
   display: grid;
@@ -368,6 +369,7 @@ textarea {
 }
 
 .capability-item,
+.approval-item,
 .artifact-item,
 .log-item {
   padding: 0.95rem;
@@ -378,6 +380,7 @@ textarea {
 }
 
 .capability-topline,
+.approval-topline,
 .artifact-topline,
 .log-topline,
 .result-topline {
@@ -386,6 +389,13 @@ textarea {
   align-items: center;
   gap: 0.75rem;
   flex-wrap: wrap;
+}
+
+.approval-item p {
+  margin: 0.45rem 0 0;
+  color: var(--muted);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 .artifact-group {

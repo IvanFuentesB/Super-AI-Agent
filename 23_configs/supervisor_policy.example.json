@@ -1,0 +1,13 @@
+{
+  "allow_safe_local_actions": true,
+  "require_approval_for_remote_write": true,
+  "require_approval_for_uncertain_terminal": true,
+  "require_human_for_admin": true,
+  "allow_wait_resume": true,
+  "notification_mode": "local_dashboard",
+  "notes": [
+    "Local-only supervisor foundation.",
+    "Do not run admin or uncertain terminal actions silently.",
+    "External notification channels are not implemented in this example."
+  ]
+}

@@ -53,6 +53,10 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - GitHub status and scaffold generation are accessible through the dashboard
 - Artifact UX is improved and the dashboard can preview, open, and reveal generated artifacts
 - Desktop bridge foundation now exists with safe local status and checker support
+- Always-on supervisor foundation now exists
+- Approval inbox foundation now exists
+- Local-only notification abstraction now exists
+- Dashboard now exposes supervisor status, pending approvals, and human-needed task state
 - No live external provider APIs yet
 - No real browser or app executor beyond the local playground yet
 - No remote auth layer yet
@@ -60,17 +64,17 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - No live mail sending adapter yet
 - No live LinkedIn posting or edit adapter yet
 - No live Notion writes yet
+- No real external notification channels yet
 - Future outbound actions still require approval
 - Third-party repos remain reference-only, not core project code
 - Leak or extraction repos remain excluded from the core foundation
 - Claw Code remains temporary reference, not foundation
 
 ## Immediate Focus
-- Manually test operator console v3
-- Decide between Playwright-first and browser-use-first for the next executor layer
-- Begin desktop or app control research with a small playground later
-- Prepare one internship-facing live demo from the current runtime outputs
+- Test the supervisor and approval inbox manually from the dashboard
+- Decide the real desktop-control implementation path
 - Keep GitHub remote actions explicit and approval-gated
+- Prepare one internship-facing live demo from the current runtime outputs
 - Keep browser and app execution beyond the local playground in research until the control boundary is clearer
 
 ## Current Risk / Constraint
@@ -79,4 +83,5 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Live remote GitHub mutation is now possible, so approval discipline matters more than before
 - Browser and app execution are still mostly research-only, even though the operator console and visible demo now make the current step easier to inspect
 - Browser and app execution are still mostly research-only, even though the operator console now makes artifacts more usable and exposes the desktop bridge foundation
+- The supervisor and approval inbox are local-only foundations, not a full autonomous executor yet
 - Third-party intake repos are valuable comparison material, but most of their surface area is still too heavy to adopt directly
