@@ -29,20 +29,21 @@
 - [x] Operator console v2 exists
 - [x] Operator console v3 polish exists
 - [x] Artifact UX and desktop bridge foundation exist
+- [x] Supervisor and approval inbox foundation exist
 
 ## Current Control Layer
 - Continue for local context/rules
 - Codex for execution and Git workflow
 
 ## Current Branch
-- feat/artifact-ux-and-desktop-bridge
+- feat/supervisor-and-approval-inbox
 
 ## Current Phase
-- artifact ux and desktop bridge foundation
+- supervisor and approval inbox foundation
 
 ## Next Milestones
-- test artifact UX manually from the operator console
-- test the desktop bridge foundation manually
+- test the supervisor and approval inbox manually from the operator console
+- add a real notification channel later
 - choose the real desktop-control implementation path
 - evaluate Windows-Use and Windows-MCP
 - optionally use the Playwright skill in Codex
@@ -62,7 +63,7 @@
 - no live mail or LinkedIn adapters yet
 - no live Notion writes yet
 - live remote GitHub mutation is possible in this environment, so approval discipline remains critical
-- browser visible demo, artifact UX, and the desktop bridge foundation exist, but browser and app execution beyond the local playground are still research-only
+- browser visible demo, artifact UX, desktop bridge foundation, and supervisor inbox now exist, but browser and app execution beyond the local playground are still research-only
 
 ## Last Reviewed
 - 2026-04-07

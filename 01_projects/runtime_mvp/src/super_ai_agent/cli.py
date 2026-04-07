@@ -23,6 +23,11 @@ from .handoff import build_handoff_snapshot
 from .integrations import list_supported_integrations
 from .mail_adapter import build_inbox_triage_plan
 from .notion_adapter import build_notion_update_plan
+from .notification_adapter import (
+    build_approval_notification,
+    build_human_needed_notification,
+    build_supervisor_notification,
+)
 from .personal_ops import (
     get_personal_workflow,
     list_personal_workflows,
@@ -36,16 +41,34 @@ from .personal_ops import (
 )
 from .publishability import scan_publishability
 from .providers import list_provider_profiles
-from .queue import approve_task, enqueue_task, get_status_summary, list_tasks, reject_task
+from .queue import (
+    approve_task,
+    enqueue_task,
+    get_approval_request,
+    get_status_summary,
+    get_supervisor_state,
+    list_approval_requests,
+    list_blocked_tasks,
+    list_pending_approvals,
+    list_tasks,
+    list_waiting_tasks,
+    mark_task_human_needed,
+    reject_task,
+    request_task_approval,
+    resume_task,
+    run_task_once,
+    wait_task,
+)
 from .report_builder import build_report_scaffold
 from .storage import (
     APPROVALS_PATH,
+    APPROVAL_REQUESTS_PATH,
+    SUPERVISOR_STATE_PATH,
     TASKS_PATH,
     ensure_runtime_files,
     get_runtime_data_dir,
     get_project_root,
     read_tasks,
-    write_tasks,
 )
 from .truth_council import build_truth_council_result
 from .workflow_catalog import get_workflow, list_workflows
@@ -68,25 +91,6 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
-def _load_task_for_update(task_id: str):
-    tasks = read_tasks()
-    for task in tasks:
-        if task.task_id == task_id:
-            return tasks, task
-    raise ValueError(f"Task not found: {task_id}")
-
-
-def _set_task_status(task_id: str, expected_statuses: set[str], new_status: str):
-    tasks, task = _load_task_for_update(task_id)
-    if task.status not in expected_statuses:
-        allowed = ", ".join(sorted(expected_statuses))
-        raise ValueError(f"Task {task_id} must be in one of: {allowed}")
-    task.status = new_status
-    task.updated_at = _now()
-    write_tasks(tasks)
-    return task
-
-
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="super-agent")
     subparsers = parser.add_subparsers(dest="command")
@@ -107,11 +111,17 @@ def _build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("env-diagnose")
     subparsers.add_parser("gh-auth-status")
     subparsers.add_parser("capability-matrix")
+    subparsers.add_parser("pending-approvals")
+    subparsers.add_parser("supervisor-status")
 
     enqueue_parser = subparsers.add_parser("enqueue")
     enqueue_parser.add_argument("--title", required=True)
     enqueue_parser.add_argument("--description", required=True)
-    enqueue_parser.add_argument("--risk", required=True, choices=["safe", "ask", "high_risk"])
+    enqueue_parser.add_argument(
+        "--risk",
+        required=True,
+        choices=["safe", "ask", "high_risk", "admin"],
+    )
     enqueue_parser.add_argument("--source", default="manual")
 
     approve_parser = subparsers.add_parser("approve")
@@ -124,12 +134,41 @@ def _build_parser() -> argparse.ArgumentParser:
 
     wait_parser = subparsers.add_parser("wait")
     wait_parser.add_argument("--task-id", required=True)
+    wait_parser.add_argument(
+        "--reason",
+        default="waiting for human reply or external event",
+    )
 
     resume_parser = subparsers.add_parser("resume")
     resume_parser.add_argument("--task-id", required=True)
 
     run_once_parser = subparsers.add_parser("run-once")
     run_once_parser.add_argument("--task-id", required=True)
+
+    approval_status_parser = subparsers.add_parser("approval-status")
+    approval_status_parser.add_argument("--approval-id", default="")
+
+    request_approval_parser = subparsers.add_parser("request-approval")
+    request_approval_parser.add_argument("--task-id", required=True)
+    request_approval_parser.add_argument("--action-label", required=True)
+    request_approval_parser.add_argument("--reason", required=True)
+    request_approval_parser.add_argument(
+        "--risk-level",
+        default="ask",
+        choices=["safe", "ask", "high_risk", "admin"],
+    )
+    request_approval_parser.add_argument("--scope", default="runtime task execution")
+    request_approval_parser.add_argument(
+        "--requires-admin",
+        default="no",
+        choices=["yes", "no"],
+    )
+    request_approval_parser.add_argument("--rollback-plan", default="")
+    request_approval_parser.add_argument("--source", default="manual")
+
+    human_needed_parser = subparsers.add_parser("mark-human-needed")
+    human_needed_parser.add_argument("--task-id", required=True)
+    human_needed_parser.add_argument("--reason", required=True)
 
     council_parser = subparsers.add_parser("council-plan")
     council_parser.add_argument("--goal-type", required=True)
@@ -326,19 +365,23 @@ def main(argv: list[str] | None = None) -> int:
             tasks = list_tasks()
             branch = _get_current_branch()
             snapshot_exists = (get_runtime_data_dir() / "handoff_snapshot.md").exists()
-            waiting_count = sum(1 for task in tasks if task.status == "waiting")
-            completed_count = sum(1 for task in tasks if task.status == "completed")
             if branch:
                 print(f"branch: {branch}")
             print(f"runtime_data: {get_runtime_data_dir()}")
             print(f"tasks_total: {summary.total_tasks}")
             print(f"tasks_queued: {summary.queued_tasks}")
+            print(f"tasks_running: {summary.running_tasks}")
             print(f"tasks_pending_approval: {summary.pending_approval_tasks}")
-            print(f"tasks_waiting: {waiting_count}")
-            print(f"tasks_completed: {completed_count}")
+            print(f"tasks_waiting: {summary.waiting_tasks}")
+            print(f"tasks_blocked_human_needed: {summary.blocked_human_needed_tasks}")
+            print(f"tasks_completed: {summary.completed_tasks}")
             print(f"tasks_rejected: {summary.rejected_tasks}")
+            print(f"tasks_failed: {summary.failed_tasks}")
+            print(f"approval_requests_pending: {summary.pending_approval_requests}")
             print(f"tasks_file: {TASKS_PATH}")
             print(f"approvals_file: {APPROVALS_PATH}")
+            print(f"approval_requests_file: {APPROVAL_REQUESTS_PATH}")
+            print(f"supervisor_state_file: {SUPERVISOR_STATE_PATH}")
             print(f"handoff_snapshot_exists: {'yes' if snapshot_exists else 'no'}")
             return 0
 
@@ -352,6 +395,8 @@ def main(argv: list[str] | None = None) -> int:
             print(f"task_id: {task.task_id}")
             print(f"status: {task.status}")
             print(f"approval_state: {task.approval_state}")
+            if task.approval_request_id:
+                print(f"approval_request_id: {task.approval_request_id}")
             return 0
 
         if args.command == "list":
@@ -366,11 +411,80 @@ def main(argv: list[str] | None = None) -> int:
                 )
             return 0
 
+        if args.command == "pending-approvals":
+            requests = list_pending_approvals()
+            print(f"count: {len(requests)}")
+            if not requests:
+                print("requests: none")
+                return 0
+            print("requests:")
+            for request in requests:
+                print(
+                    f"- {request.approval_id} | {request.status} | {request.risk_level} | "
+                    f"{request.task_id} | admin_required="
+                    f"{'yes' if request.requires_admin else 'no'} | {request.action_label}"
+                )
+            return 0
+
+        if args.command == "approval-status":
+            if args.approval_id:
+                request = get_approval_request(args.approval_id)
+                print(f"approval_id: {request.approval_id}")
+                print(f"task_id: {request.task_id}")
+                print(f"status: {request.status}")
+                print(f"risk_level: {request.risk_level}")
+                print(f"action_label: {request.action_label}")
+                print(f"requested_at: {request.requested_at}")
+                print(f"updated_at: {request.updated_at}")
+                print(f"source: {request.source}")
+                print(f"scope: {request.scope or 'none'}")
+                print(f"requires_admin: {'yes' if request.requires_admin else 'no'}")
+                print(f"reason: {request.reason}")
+                print(f"rollback_plan: {request.rollback_plan or 'none'}")
+                print(f"human_note: {request.human_note or 'none'}")
+                return 0
+
+            requests = list_approval_requests()
+            print(f"count: {len(requests)}")
+            if not requests:
+                print("requests: none")
+                return 0
+            print("requests:")
+            for request in requests:
+                print(
+                    f"- {request.approval_id} | {request.status} | {request.risk_level} | "
+                    f"{request.task_id} | {request.action_label}"
+                )
+            return 0
+
+        if args.command == "request-approval":
+            request = request_task_approval(
+                task_id=args.task_id,
+                action_label=args.action_label,
+                reason=args.reason,
+                risk_level=args.risk_level,
+                source=args.source,
+                scope=args.scope,
+                rollback_plan=args.rollback_plan,
+                requires_admin=args.requires_admin == "yes",
+            )
+            notification = build_approval_notification(request)
+            print(f"approval_id: {request.approval_id}")
+            print(f"task_id: {request.task_id}")
+            print(f"status: {request.status}")
+            print(f"risk_level: {request.risk_level}")
+            print(f"requires_admin: {'yes' if request.requires_admin else 'no'}")
+            print(f"action_label: {request.action_label}")
+            print(f"notification_mode: {notification.channel}")
+            print(f"notification_title: {notification.title}")
+            return 0
+
         if args.command == "approve":
             task = approve_task(task_id=args.task_id, note=args.note)
             print(f"task_id: {task.task_id}")
             print(f"status: {task.status}")
             print(f"approval_state: {task.approval_state}")
+            print(f"approval_request_id: {task.approval_request_id or 'none'}")
             return 0
 
         if args.command == "reject":
@@ -378,34 +492,88 @@ def main(argv: list[str] | None = None) -> int:
             print(f"task_id: {task.task_id}")
             print(f"status: {task.status}")
             print(f"approval_state: {task.approval_state}")
+            print(f"approval_request_id: {task.approval_request_id or 'none'}")
             return 0
 
         if args.command == "wait":
-            task = _set_task_status(args.task_id, {"queued"}, "waiting")
+            task = wait_task(args.task_id, reason=args.reason)
             print(f"task_id: {task.task_id}")
             print(f"status: {task.status}")
             print(f"approval_state: {task.approval_state}")
+            print(f"waiting_for: {task.waiting_for}")
             return 0
 
         if args.command == "resume":
-            task = _set_task_status(args.task_id, {"waiting"}, "queued")
+            task = resume_task(args.task_id)
             print(f"task_id: {task.task_id}")
             print(f"status: {task.status}")
             print(f"approval_state: {task.approval_state}")
             return 0
 
         if args.command == "run-once":
-            tasks, task = _load_task_for_update(args.task_id)
-            if task.status != "queued":
-                raise ValueError(f"Task {task.task_id} must be queued before run-once.")
-            if task.approval_state not in {"approved", "not_required"}:
-                raise ValueError(f"Task {task.task_id} must be approved before run-once.")
-            task.status = "completed"
-            task.updated_at = _now()
-            write_tasks(tasks)
+            task = run_task_once(args.task_id)
             print(f"task_id: {task.task_id}")
             print(f"status: {task.status}")
             print(f"approval_state: {task.approval_state}")
+            return 0
+
+        if args.command == "mark-human-needed":
+            task = mark_task_human_needed(task_id=args.task_id, reason=args.reason)
+            notification = build_human_needed_notification(task)
+            print(f"task_id: {task.task_id}")
+            print(f"status: {task.status}")
+            print(f"waiting_for: {task.waiting_for}")
+            print(f"blocked_reason: {task.blocked_reason}")
+            print(f"notification_mode: {notification.channel}")
+            print(f"notification_title: {notification.title}")
+            return 0
+
+        if args.command == "supervisor-status":
+            state = get_supervisor_state()
+            notification = build_supervisor_notification(state)
+            print(f"supervisor_id: {state.supervisor_id}")
+            print(f"mode: {state.mode}")
+            print(f"status: {state.status}")
+            print(f"active_task_id: {state.active_task_id or 'none'}")
+            print(f"queued_count: {state.queued_count}")
+            print(f"running_count: {state.running_count}")
+            print(f"waiting_count: {state.waiting_count}")
+            print(f"pending_approval_count: {state.pending_approval_count}")
+            print(f"blocked_human_needed_count: {state.blocked_human_needed_count}")
+            print(f"notification_mode: {state.notification_mode}")
+            print(f"notification_title: {notification.title}")
+            print(f"last_event: {state.last_event or 'none'}")
+            print(f"updated_at: {state.updated_at}")
+
+            pending_requests = list_pending_approvals()
+            print("pending_approvals:")
+            if pending_requests:
+                for request in pending_requests:
+                    print(
+                        f"- {request.approval_id} | {request.status} | {request.risk_level} | "
+                        f"{request.task_id} | admin_required="
+                        f"{'yes' if request.requires_admin else 'no'} | {request.action_label}"
+                    )
+            else:
+                print("- none")
+
+            blocked_tasks = list_blocked_tasks()
+            print("human_needed_tasks:")
+            if blocked_tasks:
+                for task in blocked_tasks:
+                    detail = task.blocked_reason or task.waiting_for or task.title
+                    print(f"- {task.task_id} | {task.status} | {detail}")
+            else:
+                print("- none")
+
+            waiting_tasks = list_waiting_tasks()
+            print("waiting_tasks:")
+            if waiting_tasks:
+                for task in waiting_tasks:
+                    detail = task.waiting_for or task.title
+                    print(f"- {task.task_id} | {task.status} | {detail}")
+            else:
+                print("- none")
             return 0
 
         if args.command == "list-providers":

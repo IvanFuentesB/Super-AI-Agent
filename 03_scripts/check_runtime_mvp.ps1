@@ -110,6 +110,7 @@ $expectedFiles = @(
     '01_projects/runtime_mvp/src/super_ai_agent/models.py',
     '01_projects/runtime_mvp/src/super_ai_agent/storage.py',
     '01_projects/runtime_mvp/src/super_ai_agent/queue.py',
+    '01_projects/runtime_mvp/src/super_ai_agent/notification_adapter.py',
     '01_projects/runtime_mvp/src/super_ai_agent/handoff.py',
     '01_projects/runtime_mvp/src/super_ai_agent/personal_ops.py',
     '01_projects/runtime_mvp/src/super_ai_agent/providers.py',
@@ -136,6 +137,9 @@ $expectedFiles = @(
     '04_docs/github_write_actions.md',
     '04_docs/github_approval_flow.md',
     '04_docs/github_remote_smoke_tests.md',
+    '04_docs/supervisor_foundation.md',
+    '04_docs/approval_inbox_plan.md',
+    '04_docs/notification_adapter_plan.md',
     '04_docs/mail_adapter_plan.md',
     '04_docs/notion_adapter_plan.md',
     '04_docs/publishability_scope.md',
@@ -165,6 +169,7 @@ $expectedFiles = @(
     '23_configs/publish_scope.example.json',
     '23_configs/github_action_policy.example.json',
     '23_configs/github_smoke_policy.example.json',
+    '23_configs/supervisor_policy.example.json',
     '23_configs/tool_detection_policy.example.json',
     '23_configs/repo_manifest.example.json',
     '23_configs/provider_profiles.example.json',
@@ -403,6 +408,34 @@ Write-Check -Name 'Task id parsed' -Passed $taskIdOk -Detail ($(if ($taskIdOk) {
 if (-not $taskIdOk) { $failed++ }
 
 if ($taskIdOk) {
+    $pendingApprovalsResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('pending-approvals')
+    $pendingApprovalsOk = $pendingApprovalsResult.ExitCode -eq 0 -and (($pendingApprovalsResult.Output | Out-String) -match 'count:\s+\d+')
+    Write-Check -Name 'CLI pending-approvals' -Passed $pendingApprovalsOk -Detail (($pendingApprovalsResult.Output | Out-String).Trim())
+    if (-not $pendingApprovalsOk) { $failed++ }
+
+    $approvalIdMatch = [regex]::Match(($pendingApprovalsResult.Output | Out-String), 'approval-[A-Za-z0-9]+')
+    $approvalId = if ($approvalIdMatch.Success) { $approvalIdMatch.Value } else { $null }
+    $approvalIdOk = -not [string]::IsNullOrWhiteSpace($approvalId)
+    Write-Check -Name 'Approval id parsed' -Passed $approvalIdOk -Detail ($(if ($approvalIdOk) { $approvalId } else { 'missing approval id from pending approvals output' }))
+    if (-not $approvalIdOk) { $failed++ }
+
+    $supervisorStatusResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('supervisor-status')
+    $supervisorStatusOk = $supervisorStatusResult.ExitCode -eq 0 -and (($supervisorStatusResult.Output | Out-String) -match 'status:\s+\S+')
+    Write-Check -Name 'CLI supervisor-status' -Passed $supervisorStatusOk -Detail (($supervisorStatusResult.Output | Out-String).Trim())
+    if (-not $supervisorStatusOk) { $failed++ }
+
+    $approvalStatusListResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approval-status')
+    $approvalStatusListOk = $approvalStatusListResult.ExitCode -eq 0 -and (($approvalStatusListResult.Output | Out-String) -match 'count:\s+\d+')
+    Write-Check -Name 'CLI approval-status list' -Passed $approvalStatusListOk -Detail (($approvalStatusListResult.Output | Out-String).Trim())
+    if (-not $approvalStatusListOk) { $failed++ }
+
+    if ($approvalIdOk) {
+        $approvalStatusResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approval-status', '--approval-id', $approvalId)
+        $approvalStatusOk = $approvalStatusResult.ExitCode -eq 0 -and (($approvalStatusResult.Output | Out-String) -match 'status:\s+pending')
+        Write-Check -Name 'CLI approval-status single' -Passed $approvalStatusOk -Detail (($approvalStatusResult.Output | Out-String).Trim())
+        if (-not $approvalStatusOk) { $failed++ }
+    }
+
     $approveResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve', '--task-id', $taskId, '--note', 'checker approval')
     $approveOk = $approveResult.ExitCode -eq 0
     Write-Check -Name 'CLI approve' -Passed $approveOk -Detail (($approveResult.Output | Out-String).Trim())
@@ -424,6 +457,34 @@ if ($taskIdOk) {
     if (-not $runOnceOk) { $failed++ }
 }
 
+$safeTaskResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('enqueue', '--title', 'checker safe task', '--description', 'supervisor and human-needed check', '--risk', 'safe')
+$safeTaskOk = $safeTaskResult.ExitCode -eq 0
+Write-Check -Name 'CLI enqueue safe task' -Passed $safeTaskOk -Detail (($safeTaskResult.Output | Out-String).Trim())
+if (-not $safeTaskOk) { $failed++ }
+
+$safeTaskIdMatch = [regex]::Match(($safeTaskResult.Output | Out-String), 'task_id:\s*(\S+)')
+$safeTaskId = if ($safeTaskIdMatch.Success) { $safeTaskIdMatch.Groups[1].Value } else { $null }
+$safeTaskIdOk = -not [string]::IsNullOrWhiteSpace($safeTaskId)
+Write-Check -Name 'Safe task id parsed' -Passed $safeTaskIdOk -Detail ($(if ($safeTaskIdOk) { $safeTaskId } else { 'missing safe task id from enqueue output' }))
+if (-not $safeTaskIdOk) { $failed++ }
+
+if ($safeTaskIdOk) {
+    $requestApprovalResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('request-approval', '--task-id', $safeTaskId, '--action-label', 'Checker approval request', '--reason', 'Validate the structured approval inbox path.', '--risk-level', 'high_risk', '--scope', 'runtime checker', '--rollback-plan', 'Keep the task paused until approval is resolved.', '--requires-admin', 'no')
+    $requestApprovalOk = $requestApprovalResult.ExitCode -eq 0 -and (($requestApprovalResult.Output | Out-String) -match 'notification_mode:\s+local_dashboard')
+    Write-Check -Name 'CLI request-approval' -Passed $requestApprovalOk -Detail (($requestApprovalResult.Output | Out-String).Trim())
+    if (-not $requestApprovalOk) { $failed++ }
+
+    $humanNeededResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('mark-human-needed', '--task-id', $safeTaskId, '--reason', 'Checker needs a human confirmation before continuing.')
+    $humanNeededOk = $humanNeededResult.ExitCode -eq 0 -and (($humanNeededResult.Output | Out-String) -match 'status:\s+blocked_human_needed')
+    Write-Check -Name 'CLI mark-human-needed' -Passed $humanNeededOk -Detail (($humanNeededResult.Output | Out-String).Trim())
+    if (-not $humanNeededOk) { $failed++ }
+
+    $postHumanSupervisorResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('supervisor-status')
+    $postHumanSupervisorOk = $postHumanSupervisorResult.ExitCode -eq 0 -and (($postHumanSupervisorResult.Output | Out-String) -match 'human_needed_tasks:')
+    Write-Check -Name 'Supervisor reflects human-needed state' -Passed $postHumanSupervisorOk -Detail (($postHumanSupervisorResult.Output | Out-String).Trim())
+    if (-not $postHumanSupervisorOk) { $failed++ }
+}
+
 $listResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('list')
 $listOk = $listResult.ExitCode -eq 0
 Write-Check -Name 'CLI list' -Passed $listOk -Detail (($listResult.Output | Out-String).Trim())
@@ -442,6 +503,8 @@ if (-not $snapshotOk) { $failed++ }
 $artifactPaths = @(
     '01_projects/runtime_mvp/runtime_data/tasks.json',
     '01_projects/runtime_mvp/runtime_data/approvals.json',
+    '01_projects/runtime_mvp/runtime_data/approval_requests.json',
+    '01_projects/runtime_mvp/runtime_data/supervisor_state.json',
     '01_projects/runtime_mvp/runtime_data/handoff_snapshot.md',
     '11_exports/reports/checker-council-report.md',
     '11_exports/github/checker-github-issue-issue-draft.md',

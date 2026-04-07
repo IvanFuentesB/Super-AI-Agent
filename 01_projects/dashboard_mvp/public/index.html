@@ -43,6 +43,11 @@
           <p id="github-quick-note">Waiting for GitHub summary.</p>
         </article>
         <article class="summary-card">
+          <span class="summary-label">Supervisor</span>
+          <strong id="supervisor-headline">Loading...</strong>
+          <p id="supervisor-quick-note">Checking pending approvals and human-needed state.</p>
+        </article>
+        <article class="summary-card">
           <span class="summary-label">Desktop Bridge</span>
           <strong id="desktop-headline">Loading...</strong>
           <p id="desktop-quick-note">Checking safe local desktop bridge status.</p>
@@ -121,6 +126,59 @@
             <ul id="not-implemented-list" class="status-list"></ul>
           </article>
         </div>
+      </section>
+
+      <section class="panel">
+        <div class="section-heading">
+          <div>
+            <h2>Supervisor & Approval Inbox</h2>
+            <p>
+              This is the first local-only foundation for patient work: pause safely,
+              ask for approval, wait for the human, and resume later.
+            </p>
+          </div>
+          <button id="refresh-supervisor" class="button-secondary" type="button">Refresh Supervisor</button>
+        </div>
+        <div class="metric-grid">
+          <article class="metric-card">
+            <span>Supervisor Status</span>
+            <strong id="supervisor-status">-</strong>
+          </article>
+          <article class="metric-card">
+            <span>Pending Approvals</span>
+            <strong id="supervisor-pending-count">-</strong>
+          </article>
+          <article class="metric-card">
+            <span>Human Needed</span>
+            <strong id="supervisor-human-needed-count">-</strong>
+          </article>
+          <article class="metric-card">
+            <span>Waiting Tasks</span>
+            <strong id="supervisor-waiting-count">-</strong>
+          </article>
+        </div>
+        <div id="supervisor-summary" class="summary-note">Waiting for supervisor status.</div>
+        <div class="status-columns">
+          <article class="status-card">
+            <h3>Pending Approvals</h3>
+            <p>Risky or uncertain steps that must stop for the human before they continue.</p>
+            <div id="pending-approvals-list" class="approval-list">Waiting for supervisor status.</div>
+          </article>
+          <article class="status-card">
+            <h3>Human Needed / Blocked</h3>
+            <p>Tasks that are paused because the operator needs to answer, review, or decide something.</p>
+            <div id="human-needed-list" class="approval-list">Waiting for supervisor status.</div>
+          </article>
+          <article class="status-card">
+            <h3>Waiting To Resume</h3>
+            <p>Tasks that should stay patient until a reply or other external event arrives.</p>
+            <div id="waiting-tasks-list" class="approval-list">Waiting for supervisor status.</div>
+          </article>
+        </div>
+        <details class="details-block">
+          <summary>Show raw supervisor details</summary>
+          <pre id="supervisor-raw">Waiting for refresh...</pre>
+        </details>
       </section>
 
       <section class="content-grid">

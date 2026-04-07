@@ -1,7 +1,7 @@
 # Next Actions
 
-- Test artifact UX manually from the operator console
-- Test the desktop bridge foundation manually
+- Test the supervisor and approval inbox manually from the operator console
+- Add a real notification channel later
 - Choose the real desktop-control implementation path
-- Improve approval queue UI later
+- Refine the approval queue UI later
 - Build the executor layer later
