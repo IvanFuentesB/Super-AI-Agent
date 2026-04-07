@@ -298,6 +298,16 @@ button.is-busy {
   background: #dfeaff;
 }
 
+.button-danger {
+  background: #fff1f1;
+  color: var(--danger);
+  border: 1px solid #e8bcbc;
+}
+
+.button-danger:hover:not(:disabled) {
+  background: #fde4e4;
+}
+
 .quick-action-card {
   display: flex;
   flex-direction: column;
@@ -396,6 +406,117 @@ textarea {
   color: var(--muted);
   line-height: 1.5;
   overflow-wrap: anywhere;
+}
+
+.approval-summary-grid {
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+  margin-top: 0.75rem;
+}
+
+.approval-summary-grid p,
+.approval-description {
+  margin: 0;
+}
+
+.approval-summary-grid span,
+.approval-description span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.2rem;
+}
+
+.approval-summary-grid strong,
+.approval-description {
+  overflow-wrap: anywhere;
+}
+
+.approval-description {
+  margin-top: 0.75rem;
+}
+
+.approval-item.is-selected {
+  border-color: #b6c9ef;
+  background: #f3f7ff;
+}
+
+.approval-actions,
+.approval-decision-actions {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.85rem;
+}
+
+.approval-decision-actions {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+}
+
+.approval-detail-card {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.approval-detail-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+}
+
+.approval-detail-field {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.8rem;
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  background: var(--panel-soft);
+  min-width: 0;
+}
+
+.approval-detail-field span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.approval-detail-field strong {
+  overflow-wrap: anywhere;
+}
+
+.approval-detail-wide {
+  grid-column: span 2;
+}
+
+.approval-note-field {
+  display: grid;
+  gap: 0.35rem;
+  font-weight: 600;
+}
+
+.approval-history-list {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.approval-history-item {
+  padding: 0.9rem;
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  background: var(--panel-soft);
+}
+
+.approval-history-item p {
+  margin: 0.45rem 0 0;
+}
+
+.approval-history-item small {
+  display: block;
+  margin-top: 0.45rem;
+  color: var(--muted);
 }
 
 .artifact-group {
@@ -594,6 +715,12 @@ code {
 @media (max-width: 980px) {
   .artifact-shell {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .approval-detail-wide {
+    grid-column: auto;
   }
 }
 

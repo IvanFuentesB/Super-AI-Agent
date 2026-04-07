@@ -3,6 +3,7 @@ const uiState = {
   localActions: [],
   nextLocalActionId: 1,
   selectedArtifactPath: "",
+  selectedApprovalId: "",
 };
 
 function escapeHtml(value) {
@@ -34,6 +35,13 @@ function setText(id, value) {
   const element = document.getElementById(id);
   if (element) {
     element.textContent = value;
+  }
+}
+
+function setValue(id, value) {
+  const element = document.getElementById(id);
+  if (element) {
+    element.value = value;
   }
 }
 
@@ -136,6 +144,7 @@ function withButtonState(button, busyLabel, task) {
   }
 
   const originalText = button.textContent;
+  const originalDisabled = button.disabled;
   button.disabled = true;
   button.textContent = busyLabel;
   button.classList.add("is-busy");
@@ -143,7 +152,7 @@ function withButtonState(button, busyLabel, task) {
   return Promise.resolve()
     .then(task)
     .finally(() => {
-      button.disabled = false;
+      button.disabled = originalDisabled;
       button.textContent = originalText;
       button.classList.remove("is-busy");
     });
@@ -277,7 +286,85 @@ function renderDesktopBridge(payload) {
   renderRaw("desktop-raw", payload);
 }
 
-function renderApprovalCards(containerId, items, emptyText) {
+function setApprovalDecisionButtonsDisabled(disabled) {
+  ["approval-approve", "approval-deny", "approval-defer"].forEach((id) => {
+    const button = document.getElementById(id);
+    if (button) {
+      button.disabled = disabled;
+    }
+  });
+}
+
+function renderApprovalHistory(items) {
+  const element = document.getElementById("approval-history-list");
+  if (!element) {
+    return;
+  }
+
+  if (!items || items.length === 0) {
+    element.innerHTML = "<p class=\"empty-state\">No decision history yet for this approval.</p>";
+    return;
+  }
+
+  element.innerHTML = items
+    .map((item) => {
+      const state = normalizeState(item.decision);
+      const note = item.note && item.note !== "none" ? item.note : "No note recorded.";
+      return `
+        <article class="approval-history-item">
+          <div class="approval-topline">
+            <strong>${escapeHtml(item.decision)}</strong>
+            <span class="state-pill state-${state}">${escapeHtml(item.decision)}</span>
+          </div>
+          <p>${escapeHtml(note)}</p>
+          <small>${escapeHtml(formatTimeStamp(item.decidedAt))}</small>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+function clearApprovalDetail(message) {
+  uiState.selectedApprovalId = "";
+  setText("approval-detail-id", "-");
+  setText("approval-detail-status", "-");
+  setText("approval-detail-risk", "-");
+  setText("approval-detail-task-id", "-");
+  setText("approval-detail-action-label", "-");
+  setText("approval-detail-reason", "-");
+  setText("approval-detail-scope", "-");
+  setText("approval-detail-rollback", "-");
+  setText("approval-detail-admin", "-");
+  setText("approval-detail-updated-at", "-");
+  setText("approval-detail-summary", message);
+  setValue("approval-decision-note", "");
+  renderApprovalHistory([]);
+  renderRaw("approval-detail-raw", { message });
+  setResultPanel("approval-action-result", "neutral", "Approval action panel is idle.", "Select a pending approval to inspect it.");
+  setApprovalDecisionButtonsDisabled(true);
+}
+
+function renderApprovalDetail(payload) {
+  const summary = payload.summary || {};
+  uiState.selectedApprovalId = summary.approvalId || "";
+  setText("approval-detail-id", summary.approvalId || "-");
+  setText("approval-detail-status", summary.status || "-");
+  setText("approval-detail-risk", summary.riskLevel || "-");
+  setText("approval-detail-task-id", summary.taskId || "-");
+  setText("approval-detail-action-label", summary.actionLabel || "-");
+  setText("approval-detail-reason", summary.reason || "-");
+  setText("approval-detail-scope", summary.scope || "none");
+  setText("approval-detail-rollback", summary.rollbackPlan || "none");
+  setText("approval-detail-admin", summary.requiresAdmin ? "yes" : "no");
+  setText("approval-detail-updated-at", formatTimeStamp(summary.updatedAt));
+  setText("approval-detail-summary", summary.headline || "Approval details loaded.");
+  setValue("approval-decision-note", summary.humanNote && summary.humanNote !== "none" ? summary.humanNote : "");
+  renderApprovalHistory(summary.decisionHistory || []);
+  renderRaw("approval-detail-raw", payload);
+  setApprovalDecisionButtonsDisabled(!["pending", "deferred"].includes(String(summary.status || "").toLowerCase()));
+}
+
+function renderApprovalCards(containerId, items, emptyText, options = {}) {
   const container = document.getElementById(containerId);
   if (!container) {
     return;
@@ -292,18 +379,36 @@ function renderApprovalCards(containerId, items, emptyText) {
     .map((item) => {
       const status = normalizeState(item.status);
       const primaryId = item.approvalId || item.taskId || "item";
-      const metaLine = [item.riskLevel, item.taskId, item.detail]
-        .filter(Boolean)
-        .join(" | ");
+      const isSelected = options.inspectable && item.approvalId && item.approvalId === uiState.selectedApprovalId;
+      const inspectButton = options.inspectable && item.approvalId
+        ? `
+            <div class="approval-actions">
+              <button
+                class="button-secondary approval-action-button"
+                type="button"
+                data-approval-action="inspect"
+                data-approval-id="${escapeHtml(item.approvalId)}"
+              >
+                ${isSelected ? "Viewing Details" : "Inspect Approval"}
+              </button>
+            </div>
+          `
+        : "";
 
       return `
-        <article class="approval-item">
+        <article class="approval-item ${isSelected ? "is-selected" : ""}">
           <div class="approval-topline">
             <strong>${escapeHtml(primaryId)}</strong>
             <span class="state-pill state-${status}">${escapeHtml(item.status || status)}</span>
           </div>
-          ${item.taskId && item.approvalId ? `<p>Task: ${escapeHtml(item.taskId)}</p>` : ""}
-          ${metaLine ? `<p>${escapeHtml(metaLine)}</p>` : ""}
+          <div class="approval-summary-grid">
+            <p><span>Action</span><strong>${escapeHtml(item.actionType || item.detail || "Approval request")}</strong></p>
+            <p><span>Target</span><strong>${escapeHtml(item.target || item.taskId || "none")}</strong></p>
+            <p><span>Risk</span><strong>${escapeHtml(item.riskLevel || "unknown")}</strong></p>
+            <p><span>Task</span><strong>${escapeHtml(item.taskId || "none")}</strong></p>
+          </div>
+          <p class="approval-description"><span>Description</span>${escapeHtml(item.shortDescription || item.detail || "No short description.")}</p>
+          ${inspectButton}
         </article>
       `;
     })
@@ -333,6 +438,7 @@ function renderSupervisorStatus(payload) {
     "pending-approvals-list",
     summary.pendingApprovals || [],
     "No pending approvals right now.",
+    { inspectable: true },
   );
   renderApprovalCards(
     "human-needed-list",
@@ -353,6 +459,7 @@ function renderPendingApprovals(payload) {
     "pending-approvals-list",
     summary.requests || [],
     "No pending approvals right now.",
+    { inspectable: true },
   );
 }
 
@@ -631,11 +738,99 @@ async function refreshGithubUpdates() {
 async function refreshSupervisorStatus() {
   const payload = await requestJson("/api/supervisor/status");
   renderSupervisorStatus(payload);
+  const nextApprovalId =
+    uiState.selectedApprovalId || payload.summary?.pendingApprovals?.[0]?.approvalId || "";
+  if (nextApprovalId) {
+    await refreshApprovalDetail(nextApprovalId, { silent: true });
+  } else {
+    clearApprovalDetail("No approval item selected. Pending requests will appear here when they exist.");
+  }
 }
 
 async function refreshPendingApprovals() {
   const payload = await requestJson("/api/approvals/pending");
   renderPendingApprovals(payload);
+  const hasPendingApproval = (payload.summary?.requests || []).length > 0;
+  if (!hasPendingApproval && !uiState.selectedApprovalId) {
+    clearApprovalDetail("No pending approvals right now.");
+  }
+}
+
+async function refreshApprovalDetail(approvalId, options = {}) {
+  const { silent = false } = options;
+  if (!approvalId) {
+    clearApprovalDetail("No approval item selected.");
+    return null;
+  }
+
+  try {
+    const payload = await requestJson(`/api/approvals/item?approvalId=${encodeURIComponent(approvalId)}`);
+    renderApprovalDetail(payload);
+    if (!silent) {
+      setResultPanel("approval-action-result", "success", "Approval details loaded.", approvalId);
+    }
+    return payload;
+  } catch (error) {
+    clearApprovalDetail("Approval details could not be loaded.");
+    if (!silent) {
+      setResultPanel("approval-action-result", "error", "Approval detail lookup failed.", error.message);
+    }
+    return null;
+  }
+}
+
+async function submitApprovalDecision(decision, button) {
+  const approvalId = uiState.selectedApprovalId;
+  if (!approvalId) {
+    setResultPanel("approval-action-result", "error", "No approval selected.", "Pick a queue item first.");
+    return null;
+  }
+
+  const note = document.getElementById("approval-decision-note")?.value || "";
+  const actionLabelMap = {
+    approve: "Approve approval",
+    deny: "Deny approval",
+    defer: "Defer approval",
+  };
+  const actionId = createLocalAction(
+    actionLabelMap[decision] || "Update approval",
+    `Submitting ${decision} decision for ${approvalId}.`,
+  );
+  setResultPanel("approval-action-result", "loading", "Submitting approval decision...", `${decision} ${approvalId}`);
+
+  try {
+    const result = await withButtonState(button, "Working...", () =>
+      requestJson("/api/approvals/decision", {
+        method: "POST",
+        body: JSON.stringify({
+          approvalId,
+          decision,
+          note,
+        }),
+      }),
+    );
+
+    if (result.approval) {
+      renderApprovalDetail({
+        summary: result.approval,
+        raw: result.approvalRaw,
+      });
+    }
+    setResultPanel(
+      "approval-action-result",
+      "success",
+      result.summary?.headline || "Approval decision saved.",
+      result.summary?.approvalId || approvalId,
+    );
+    updateLocalAction(actionId, "success", result.summary?.headline || "Approval decision saved.");
+    await Promise.all([refreshSupervisorStatus(), refreshPendingApprovals(), refreshRecentActions()]);
+    return result;
+  } catch (error) {
+    setResultPanel("approval-action-result", "error", "Approval decision failed.", error.message);
+    updateLocalAction(actionId, "error", error.message);
+    await refreshRecentActions();
+    return null;
+  }
 }
 
 async function refreshArtifacts() {
@@ -1009,6 +1204,42 @@ document.getElementById("artifacts-output").addEventListener("click", async (eve
     await runArtifactFileAction(artifactAction, artifactPath, button);
   }
 });
+
+document.getElementById("pending-approvals-list").addEventListener("click", async (event) => {
+  const button = event.target.closest("button[data-approval-action='inspect']");
+  if (!button) {
+    return;
+  }
+
+  const approvalId = button.getAttribute("data-approval-id");
+  if (!approvalId) {
+    return;
+  }
+
+  const actionId = createLocalAction("Inspect approval", `Loading details for ${approvalId}.`);
+  setResultPanel("approval-action-result", "loading", "Loading approval details...", approvalId);
+  const result = await withButtonState(button, "Loading...", () => refreshApprovalDetail(approvalId));
+  if (result) {
+    updateLocalAction(actionId, "success", `Loaded approval details for ${approvalId}.`);
+  } else {
+    updateLocalAction(actionId, "error", `Approval detail lookup failed for ${approvalId}.`);
+  }
+  await refreshRecentActions();
+});
+
+document.getElementById("approval-approve").addEventListener("click", async (event) => {
+  await submitApprovalDecision("approve", event.currentTarget);
+});
+
+document.getElementById("approval-deny").addEventListener("click", async (event) => {
+  await submitApprovalDecision("deny", event.currentTarget);
+});
+
+document.getElementById("approval-defer").addEventListener("click", async (event) => {
+  await submitApprovalDecision("defer", event.currentTarget);
+});
+
+clearApprovalDetail("Select a pending approval to inspect it.");
 
 refreshConsole().catch((error) => {
   setText("operator-headline", "Console load failed.");
