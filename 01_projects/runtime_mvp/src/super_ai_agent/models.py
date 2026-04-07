@@ -5,6 +5,17 @@ from dataclasses import asdict, dataclass, field
 TASK_RISK_LEVELS = ("safe", "ask", "high_risk", "admin")
 WORKSPACE_SCOPES = ("no_path_detected", "in_scope", "out_of_scope")
 WORKSPACE_POLICIES = ("allowed", "blocked_by_workspace_policy")
+EXECUTOR_ACTION_TYPES = (
+    "read_file",
+    "write_file",
+    "append_file",
+    "create_artifact",
+    "list_directory",
+    "git_status",
+    "git_diff",
+    "run_checker",
+)
+EXECUTION_STATUSES = ("started", "succeeded", "failed")
 TASK_STATUSES = (
     "queued",
     "running",
@@ -40,6 +51,36 @@ class TaskEvent:
 
 
 @dataclass
+class TaskExecutionRecord:
+    action_type: str
+    target: str
+    started_at: str
+    status: str
+    success: bool
+    output_summary: str = ""
+    finished_at: str = ""
+    artifact_path: str = ""
+    actor: str = "system"
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "TaskExecutionRecord":
+        return cls(
+            action_type=data.get("action_type", ""),
+            target=data.get("target", ""),
+            started_at=data.get("started_at", ""),
+            status=data.get("status", "started"),
+            success=bool(data.get("success", False)),
+            output_summary=data.get("output_summary", ""),
+            finished_at=data.get("finished_at", ""),
+            artifact_path=data.get("artifact_path", ""),
+            actor=data.get("actor", "system"),
+        )
+
+
+@dataclass
 class Task:
     task_id: str
     title: str
@@ -61,7 +102,11 @@ class Task:
     workspace_scope: str = "no_path_detected"
     workspace_policy: str = "allowed"
     workspace_reason: str = ""
+    executor_action_type: str = ""
+    executor_target: str = ""
+    executor_payload: dict = field(default_factory=dict)
     history: list[TaskEvent] = field(default_factory=list)
+    execution_records: list[TaskExecutionRecord] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -89,9 +134,17 @@ class Task:
             workspace_scope=data.get("workspace_scope", "no_path_detected"),
             workspace_policy=data.get("workspace_policy", "allowed"),
             workspace_reason=data.get("workspace_reason", ""),
+            executor_action_type=data.get("executor_action_type", ""),
+            executor_target=data.get("executor_target", ""),
+            executor_payload=dict(data.get("executor_payload", {})),
             history=[
                 TaskEvent.from_dict(item)
                 for item in data.get("history", [])
+                if isinstance(item, dict)
+            ],
+            execution_records=[
+                TaskExecutionRecord.from_dict(item)
+                for item in data.get("execution_records", [])
                 if isinstance(item, dict)
             ],
         )

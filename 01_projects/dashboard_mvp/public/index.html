@@ -274,8 +274,8 @@
             <div id="ready-to-resume-list" class="approval-list">Waiting for supervisor status.</div>
           </article>
           <article class="status-card approval-detail-card">
-            <h3>Selected Task</h3>
-            <p>Inspect why the task stopped, see its timeline, and move it forward only when the state allows it.</p>
+            <h3>Selected Task / Executor Item</h3>
+            <p>Inspect why the task stopped or what allowlisted repo action it represents, then move it forward only when the state allows it.</p>
             <div id="task-detail-summary" class="summary-note">Select a stopped task to inspect it.</div>
             <div class="approval-detail-grid">
               <div class="approval-detail-field">
@@ -301,6 +301,14 @@
               <div class="approval-detail-field approval-detail-wide">
                 <span>Description</span>
                 <strong id="task-detail-description">-</strong>
+              </div>
+              <div class="approval-detail-field">
+                <span>Executor Action</span>
+                <strong id="task-detail-executor-action">-</strong>
+              </div>
+              <div class="approval-detail-field approval-detail-wide">
+                <span>Executor Target</span>
+                <strong id="task-detail-executor-target">-</strong>
               </div>
               <div class="approval-detail-field">
                 <span>Workspace Scope</span>
@@ -334,6 +342,18 @@
                 <span>Last Note</span>
                 <strong id="task-detail-last-note">-</strong>
               </div>
+              <div class="approval-detail-field">
+                <span>Last Execution Status</span>
+                <strong id="task-detail-last-execution-status">-</strong>
+              </div>
+              <div class="approval-detail-field approval-detail-wide">
+                <span>Last Execution Summary</span>
+                <strong id="task-detail-last-execution-summary">-</strong>
+              </div>
+              <div class="approval-detail-field approval-detail-wide">
+                <span>Artifact Path</span>
+                <strong id="task-detail-last-artifact-path">-</strong>
+              </div>
             </div>
             <label class="approval-note-field">
               Task note (optional)
@@ -343,6 +363,7 @@
               <button id="task-review" type="button" class="button-secondary">Mark Human Step Reviewed</button>
               <button id="task-resume" type="button">Resume Waiting Task</button>
               <button id="task-requeue" type="button" class="button-secondary">Re-Queue Task</button>
+              <button id="task-execute" type="button">Run Allowed Action</button>
             </div>
             <div id="task-action-result" class="result-panel" aria-live="polite">Ready to inspect a stopped task.</div>
             <div class="subsection approval-history-section">
@@ -352,6 +373,15 @@
               </div>
               <div id="task-history-list" class="approval-history-list">
                 <p class="empty-state">No task history loaded yet.</p>
+              </div>
+            </div>
+            <div class="subsection approval-history-section">
+              <div class="subsection-heading">
+                <h3>Execution Results</h3>
+                <p>Persisted output summaries for allowlisted executor runs, including failures when they happen.</p>
+              </div>
+              <div id="task-execution-history-list" class="approval-history-list">
+                <p class="empty-state">No executor result history loaded yet.</p>
               </div>
             </div>
             <details class="details-block">
@@ -404,6 +434,91 @@
           <details class="details-block">
             <summary>Show raw GitHub details</summary>
             <pre id="github-raw">Waiting for refresh...</pre>
+          </details>
+        </section>
+
+        <section class="panel">
+          <div class="section-heading">
+            <div>
+              <h2>Safe Repo Executor</h2>
+              <p>Queue and run a small allowlisted set of repo-local actions only. No arbitrary shell execution.</p>
+            </div>
+            <button id="refresh-executor-tasks" class="button-secondary" type="button">Refresh Executor Tasks</button>
+          </div>
+          <div class="action-card-grid">
+            <article class="action-card">
+              <div class="card-heading">
+                <h3>Runtime Checker</h3>
+                <p>Queue the runtime checker as an approval-aware local execution task.</p>
+              </div>
+              <button id="queue-runtime-checker" type="button">Queue Runtime Checker</button>
+            </article>
+            <article class="action-card">
+              <div class="card-heading">
+                <h3>Dashboard Checker</h3>
+                <p>Queue the dashboard checker as an approval-aware local execution task.</p>
+              </div>
+              <button id="queue-dashboard-checker" type="button">Queue Dashboard Checker</button>
+            </article>
+            <article class="action-card">
+              <div class="card-heading">
+                <h3>Git Status Summary</h3>
+                <p>Queue an in-scope read-only repo status check with no arbitrary command path.</p>
+              </div>
+              <button id="queue-git-status" class="button-secondary" type="button">Queue Git Status</button>
+            </article>
+            <article class="action-card">
+              <div class="card-heading">
+                <h3>Git Diff Summary</h3>
+                <p>Queue an in-scope read-only diff summary against the current repo state.</p>
+              </div>
+              <button id="queue-git-diff" class="button-secondary" type="button">Queue Git Diff Summary</button>
+            </article>
+            <article class="action-card">
+              <div class="card-heading">
+                <h3>File / Artifact Action</h3>
+                <p>Queue a repo-bound file action. Relative targets are resolved inside the allowed workspace root.</p>
+              </div>
+              <details class="details-block form-block" open>
+                <summary>Edit executor inputs</summary>
+                <form id="executor-form" class="stacked-form">
+                  <label>
+                    Action type
+                    <select name="actionType">
+                      <option value="read_file">read_file</option>
+                      <option value="write_file">write_file</option>
+                      <option value="append_file">append_file</option>
+                      <option value="create_artifact" selected>create_artifact</option>
+                      <option value="list_directory">list_directory</option>
+                    </select>
+                  </label>
+                  <label>
+                    Target path
+                    <input name="target" value="11_exports/personal_ops/executor-demo.md" required />
+                  </label>
+                  <label>
+                    Content (used for write, append, or create_artifact)
+                    <textarea name="content" rows="4"># Executor Demo
+
+This file was queued through the safe repo-local executor.
+</textarea>
+                  </label>
+                  <button type="submit">Queue File / Artifact Action</button>
+                </form>
+              </details>
+            </article>
+          </div>
+          <div id="executor-queue-summary" class="result-panel" aria-live="polite">Ready to queue a safe repo-local executor task.</div>
+          <div class="subsection">
+            <div class="subsection-heading">
+              <h3>Executor Task Queue</h3>
+              <p>Inspect one executor task, then run it only when the task is queued, in-scope, and approval-cleared.</p>
+            </div>
+            <div id="executor-task-list" class="approval-list">Waiting for executor task list.</div>
+          </div>
+          <details class="details-block">
+            <summary>Show raw executor task list</summary>
+            <pre id="executor-raw">Waiting for refresh...</pre>
           </details>
         </section>
 

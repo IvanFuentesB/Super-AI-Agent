@@ -450,6 +450,9 @@ function parseTaskStatusLine(line) {
     workspaceScope: labeled.workspace || "no_path_detected",
     workspacePolicy: labeled.policy || "allowed",
     approvalState: labeled.approval || "unknown",
+    actionType: labeled.action || "",
+    target: labeled.target || "",
+    lastSummary: labeled.last || "none",
     nextAction: labeled.next || "Review the task state.",
     detail: labeled.detail || parts.slice(2).join(" | ") || "",
   };
@@ -483,11 +486,41 @@ function parseTaskHistoryLine(line) {
   };
 }
 
+function parseExecutionHistoryLine(line) {
+  const parts = String(line)
+    .split(" | ")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  const labeled = {};
+  for (const part of parts.slice(1)) {
+    const separatorIndex = part.indexOf("=");
+    if (separatorIndex === -1) {
+      continue;
+    }
+    const key = part.slice(0, separatorIndex).trim();
+    const value = part.slice(separatorIndex + 1).trim();
+    labeled[key] = value;
+  }
+
+  return {
+    status: parts[0] || "unknown",
+    startedAt: labeled.started || "",
+    finishedAt: labeled.finished || "",
+    target: labeled.target || "none",
+    summary: labeled.summary || "none",
+    artifactPath: labeled.artifact || "none",
+  };
+}
+
 function parseTaskDetail(stdout) {
   const parsed = parseKeyValueBlock(stdout);
   const history = (parsed.listSections.history || [])
     .filter((item) => item !== "none")
     .map(parseTaskHistoryLine);
+  const executionHistory = (parsed.listSections.execution_history || [])
+    .filter((item) => item !== "none")
+    .map(parseExecutionHistoryLine);
 
   return {
     taskId: parsed.values.task_id || "",
@@ -498,6 +531,8 @@ function parseTaskDetail(stdout) {
     approvalState: parsed.values.approval_state || "unknown",
     approvalRequestId: parsed.values.approval_request_id || "none",
     source: parsed.values.source || "manual",
+    executorActionType: parsed.values.executor_action_type || "none",
+    executorTarget: parsed.values.executor_target || "none",
     workspaceScope: parsed.values.workspace_scope || "no_path_detected",
     workspacePolicy: parsed.values.workspace_policy || "allowed",
     workspaceReason: parsed.values.workspace_reason || "none",
@@ -510,9 +545,65 @@ function parseTaskDetail(stdout) {
     createdAt: parsed.values.created_at || "",
     updatedAt: parsed.values.updated_at || "",
     nextAction: parsed.values.next_action || "Review the task state.",
+    executionCount: Number.parseInt(parsed.values.execution_count || "0", 10),
+    lastExecutionStatus: parsed.values.last_execution_status || "not_run",
+    lastExecutionSummary: parsed.values.last_execution_summary || "none",
+    lastArtifactPath: parsed.values.last_artifact_path || "none",
     targetPaths: (parsed.listSections.target_paths || []).filter((item) => item !== "none"),
+    executionHistory,
     history,
     headline: `${parsed.values.title || "Task"} (${parsed.values.status || "unknown"})`,
+  };
+}
+
+function parseExecutorTaskLine(line) {
+  const parts = String(line)
+    .split(" | ")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  const labeled = {};
+  for (const part of parts.slice(2)) {
+    const separatorIndex = part.indexOf("=");
+    if (separatorIndex === -1) {
+      continue;
+    }
+    const key = part.slice(0, separatorIndex).trim();
+    const value = part.slice(separatorIndex + 1).trim();
+    labeled[key] = value;
+  }
+
+  return {
+    taskId: parts[0] || "",
+    status: parts[1] || "unknown",
+    actionType: labeled.action || "unknown",
+    target: labeled.target || "none",
+    approvalState: labeled.approval || "unknown",
+    workspaceScope: labeled.workspace || "no_path_detected",
+    workspacePolicy: labeled.policy || "allowed",
+    lastSummary: labeled.last || "not_run",
+    detail: [
+      labeled.action ? `action=${labeled.action}` : "",
+      labeled.target ? `target=${labeled.target}` : "",
+      labeled.approval ? `approval=${labeled.approval}` : "",
+      labeled.workspace ? `workspace=${labeled.workspace}` : "",
+      labeled.policy ? `policy=${labeled.policy}` : "",
+      labeled.last ? `last=${labeled.last}` : "",
+    ].filter(Boolean).join(" | "),
+  };
+}
+
+function parseExecutorTaskList(stdout) {
+  const parsed = parseKeyValueBlock(stdout);
+  const tasks = (parsed.listSections.tasks || [])
+    .filter((item) => item !== "none")
+    .map(parseExecutorTaskLine);
+  const count = Number.parseInt(parsed.values.count || String(tasks.length), 10);
+
+  return {
+    count,
+    tasks,
+    headline: count > 0 ? `${count} executor task(s) available.` : "No executor tasks queued yet.",
   };
 }
 
@@ -810,6 +901,7 @@ function buildOperatorStatus() {
       "Capability summary and environment-aware status",
       "GitHub read status and remote-capability visibility",
       "Internship, showcase, and portfolio scaffold generation",
+      "Allowlisted repo-local executor tasks for safe checker, file, and git actions",
       "Artifact preview, open, and reveal from the dashboard",
       "Browser smoke demo and visible local browser demo",
       "Desktop bridge status and safe local desktop checks",
@@ -870,6 +962,16 @@ async function buildTaskItemResponse(taskId) {
   return {
     ok: raw.ok,
     summary: raw.ok ? parseTaskDetail(raw.stdout) : null,
+    raw,
+    localOnly: true,
+  };
+}
+
+async function buildExecutorTasksResponse() {
+  const raw = await runRuntimeCli(["list-executor-tasks"]);
+  return {
+    ok: raw.ok,
+    summary: raw.ok ? parseExecutorTaskList(raw.stdout) : null,
     raw,
     localOnly: true,
   };
@@ -1101,6 +1203,20 @@ async function handleApiRequest(request, response, requestUrl) {
     return;
   }
 
+  if (request.method === "GET" && requestUrl.pathname === "/api/executor/tasks") {
+    const payload = await buildExecutorTasksResponse();
+    pushAction({
+      actionType: "executor",
+      label: "Viewed executor task list",
+      status: payload.ok ? "success" : "error",
+      summary: payload.ok && payload.summary
+        ? payload.summary.headline
+        : (payload.raw.stderr || "Executor task list failed."),
+    });
+    sendJson(response, payload.ok ? 200 : 500, payload);
+    return;
+  }
+
   if (request.method === "GET" && requestUrl.pathname === "/api/capability-summary") {
     const payload = await buildCapabilityResponse();
     pushAction({
@@ -1125,6 +1241,66 @@ async function handleApiRequest(request, response, requestUrl) {
       summary: payload.summary.headline,
     });
     sendJson(response, payload.ok ? 200 : 500, payload);
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/api/executor/queue") {
+    const payload = await readJsonBody(request);
+    requireFields(payload, ["actionType"]);
+
+    const cliArgs = [
+      "queue-executor-action",
+      "--action-type",
+      String(payload.actionType),
+    ];
+
+    if (payload.target) {
+      cliArgs.push("--target", String(payload.target));
+    }
+    if (payload.content) {
+      cliArgs.push("--content", String(payload.content));
+    }
+    cliArgs.push("--source", "dashboard");
+
+    const raw = await runRuntimeCli(cliArgs);
+    const taskId = extractOutputPath("task_id", raw.stdout) || "none";
+    const taskPayload = taskId !== "none" ? await buildTaskItemResponse(taskId) : { ok: false, summary: null, raw: { stdout: "", stderr: "Task id missing." } };
+    const executorPayload = await buildExecutorTasksResponse();
+    const supervisorPayload = await buildSupervisorResponse();
+    const ok = raw.ok && taskPayload.ok && executorPayload.ok && supervisorPayload.ok;
+
+    const summaryHeadline = ok
+      ? (
+          taskPayload.summary?.approvalState === "pending"
+            ? "Executor task queued and now waiting for approval."
+            : "Executor task queued."
+        )
+      : (raw.stderr || raw.stdout || "Executor task queue failed.");
+
+    pushAction({
+      actionType: "executor",
+      label: "Queued executor task",
+      status: ok ? "success" : "error",
+      summary: summaryHeadline,
+      outputPath: taskId,
+    });
+
+    sendJson(response, ok ? 200 : 500, {
+      ok,
+      localOnly: true,
+      summary: {
+        headline: summaryHeadline,
+        taskId,
+        status: taskPayload.summary?.status || "unknown",
+      },
+      task: taskPayload.summary,
+      taskRaw: taskPayload.raw,
+      executorTasks: executorPayload.summary,
+      supervisor: supervisorPayload.summary,
+      raw: {
+        queue: raw,
+      },
+    });
     return;
   }
 
@@ -1240,6 +1416,7 @@ async function handleApiRequest(request, response, requestUrl) {
       review: "review-task",
       resume: "resume",
       requeue: "requeue-task",
+      execute: "execute-task",
     };
     const command = commandMap[action];
     if (!command) {
@@ -1254,12 +1431,14 @@ async function handleApiRequest(request, response, requestUrl) {
     const raw = await runRuntimeCli(cliArgs);
     const taskPayload = await buildTaskItemResponse(taskId);
     const supervisorPayload = await buildSupervisorResponse();
-    const ok = raw.ok && taskPayload.ok && supervisorPayload.ok;
+    const executorPayload = await buildExecutorTasksResponse();
+    const ok = raw.ok && taskPayload.ok && supervisorPayload.ok && executorPayload.ok;
 
     const headlineMap = {
       review: "Task review recorded.",
       resume: "Waiting task resumed.",
       requeue: "Task re-queued.",
+      execute: "Allowlisted executor action completed.",
     };
     let summaryHeadline = headlineMap[action] || "Task action completed.";
     if (!ok) {
@@ -1292,6 +1471,7 @@ async function handleApiRequest(request, response, requestUrl) {
       task: taskPayload.summary,
       taskRaw: taskPayload.raw,
       supervisor: supervisorPayload.summary,
+      executorTasks: executorPayload.summary,
       raw: {
         action: raw,
       },

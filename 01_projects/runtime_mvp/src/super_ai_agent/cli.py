@@ -46,7 +46,9 @@ from .queue import (
     approve_task,
     defer_approval_request,
     deny_approval_request,
+    enqueue_executor_task,
     enqueue_task,
+    execute_task,
     get_approval_request,
     get_task,
     get_task_history,
@@ -56,6 +58,7 @@ from .queue import (
     list_approval_records,
     list_approval_requests,
     list_blocked_tasks,
+    list_executor_tasks,
     list_pending_approvals,
     list_ready_to_resume_tasks,
     list_tasks,
@@ -145,6 +148,7 @@ def _build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("capability-matrix")
     subparsers.add_parser("pending-approvals")
     subparsers.add_parser("supervisor-status")
+    subparsers.add_parser("list-executor-tasks")
 
     enqueue_parser = subparsers.add_parser("enqueue")
     enqueue_parser.add_argument("--title", required=True)
@@ -155,6 +159,25 @@ def _build_parser() -> argparse.ArgumentParser:
         choices=["safe", "ask", "high_risk", "admin"],
     )
     enqueue_parser.add_argument("--source", default="manual")
+
+    executor_parser = subparsers.add_parser("queue-executor-action")
+    executor_parser.add_argument(
+        "--action-type",
+        required=True,
+        choices=[
+            "read_file",
+            "write_file",
+            "append_file",
+            "create_artifact",
+            "list_directory",
+            "git_status",
+            "git_diff",
+            "run_checker",
+        ],
+    )
+    executor_parser.add_argument("--target", default="")
+    executor_parser.add_argument("--content", default="")
+    executor_parser.add_argument("--source", default="manual")
 
     approve_parser = subparsers.add_parser("approve")
     approve_parser.add_argument("--task-id", required=True)
@@ -176,6 +199,9 @@ def _build_parser() -> argparse.ArgumentParser:
 
     run_once_parser = subparsers.add_parser("run-once")
     run_once_parser.add_argument("--task-id", required=True)
+
+    execute_task_parser = subparsers.add_parser("execute-task")
+    execute_task_parser.add_argument("--task-id", required=True)
 
     task_status_parser = subparsers.add_parser("task-status")
     task_status_parser.add_argument("--task-id", required=True)
@@ -459,6 +485,26 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"approval_request_id: {task.approval_request_id}")
             return 0
 
+        if args.command == "queue-executor-action":
+            task = enqueue_executor_task(
+                action_type=args.action_type,
+                target=args.target,
+                content=args.content,
+                source=args.source,
+            )
+            print(f"task_id: {task.task_id}")
+            print(f"status: {task.status}")
+            print(f"approval_state: {task.approval_state}")
+            print(f"executor_action_type: {task.executor_action_type}")
+            print(f"executor_target: {task.executor_target or 'none'}")
+            print(f"workspace_scope: {task.workspace_scope}")
+            print(f"workspace_policy: {task.workspace_policy}")
+            print(f"workspace_reason: {task.workspace_reason or 'none'}")
+            print(f"allowed_workspace_root: {get_allowed_workspace_root()}")
+            if task.approval_request_id:
+                print(f"approval_request_id: {task.approval_request_id}")
+            return 0
+
         if args.command == "list":
             tasks = list_tasks()
             if not tasks:
@@ -473,9 +519,28 @@ def main(argv: list[str] | None = None) -> int:
                 )
             return 0
 
+        if args.command == "list-executor-tasks":
+            tasks = list_executor_tasks()
+            print(f"count: {len(tasks)}")
+            if not tasks:
+                print("tasks: none")
+                return 0
+            print("tasks:")
+            for task in tasks:
+                last_execution = task.execution_records[-1] if task.execution_records else None
+                last_summary = last_execution.output_summary if last_execution else "not_run"
+                print(
+                    f"- {task.task_id} | {task.status} | action={task.executor_action_type} | "
+                    f"target={task.executor_target or 'none'} | approval={task.approval_state} | "
+                    f"workspace={task.workspace_scope} | policy={task.workspace_policy} | "
+                    f"last={_short_description(last_summary, limit=100)}"
+                )
+            return 0
+
         if args.command == "task-status":
             task = get_task(args.task_id)
             history = get_task_history(args.task_id)
+            last_execution = task.execution_records[-1] if task.execution_records else None
             print(f"task_id: {task.task_id}")
             print(f"title: {task.title}")
             print(f"description: {task.description}")
@@ -484,6 +549,8 @@ def main(argv: list[str] | None = None) -> int:
             print(f"approval_state: {task.approval_state}")
             print(f"approval_request_id: {task.approval_request_id or 'none'}")
             print(f"source: {task.source}")
+            print(f"executor_action_type: {task.executor_action_type or 'none'}")
+            print(f"executor_target: {task.executor_target or 'none'}")
             print(f"workspace_scope: {task.workspace_scope}")
             print(f"workspace_policy: {task.workspace_policy}")
             print(f"workspace_reason: {task.workspace_reason or 'none'}")
@@ -496,10 +563,24 @@ def main(argv: list[str] | None = None) -> int:
             print(f"created_at: {task.created_at}")
             print(f"updated_at: {task.updated_at}")
             print(f"next_action: {get_task_next_action(task)}")
+            print(f"execution_count: {len(task.execution_records)}")
+            print(f"last_execution_status: {last_execution.status if last_execution else 'not_run'}")
+            print(f"last_execution_summary: {last_execution.output_summary if last_execution else 'none'}")
+            print(f"last_artifact_path: {last_execution.artifact_path if last_execution and last_execution.artifact_path else 'none'}")
             print("target_paths:")
             if task.target_paths:
                 for item in task.target_paths:
                     print(f"- {item}")
+            else:
+                print("- none")
+            print("execution_history:")
+            if task.execution_records:
+                for item in task.execution_records:
+                    print(
+                        f"- {item.status} | started={item.started_at} | "
+                        f"finished={item.finished_at or 'none'} | target={item.target or 'none'} | "
+                        f"summary={item.output_summary or 'none'} | artifact={item.artifact_path or 'none'}"
+                    )
             else:
                 print("- none")
             print("history:")
@@ -702,6 +783,29 @@ def main(argv: list[str] | None = None) -> int:
             print(f"task_id: {task.task_id}")
             print(f"status: {task.status}")
             print(f"approval_state: {task.approval_state}")
+            if task.execution_records:
+                last_execution = task.execution_records[-1]
+                print(f"execution_status: {last_execution.status}")
+                print(f"execution_summary: {last_execution.output_summary or 'none'}")
+                print(f"artifact_path: {last_execution.artifact_path or 'none'}")
+            print(f"next_action: {get_task_next_action(task)}")
+            return 0
+
+        if args.command == "execute-task":
+            task = execute_task(args.task_id)
+            print(f"task_id: {task.task_id}")
+            print(f"status: {task.status}")
+            print(f"approval_state: {task.approval_state}")
+            print(f"executor_action_type: {task.executor_action_type or 'none'}")
+            if task.execution_records:
+                last_execution = task.execution_records[-1]
+                print(f"execution_status: {last_execution.status}")
+                print(f"execution_summary: {last_execution.output_summary or 'none'}")
+                print(f"artifact_path: {last_execution.artifact_path or 'none'}")
+            else:
+                print("execution_status: not_run")
+                print("execution_summary: none")
+                print("artifact_path: none")
             print(f"next_action: {get_task_next_action(task)}")
             return 0
 

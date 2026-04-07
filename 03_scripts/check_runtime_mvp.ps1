@@ -41,18 +41,18 @@ function Invoke-ModuleCommand {
         [string[]]$Arguments
     )
 
-    $escapedArgs = foreach ($item in $Arguments) {
-        $value = $item.Replace('\', '\\').Replace("'", "\\'")
-        "'$value'"
-    }
-    $pythonList = '[' + ($escapedArgs -join ', ') + ']'
+    $argumentsJson = ConvertTo-Json -InputObject @($Arguments) -Compress
+    $argumentsEncoded = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($argumentsJson))
     $runtimeSrcEscaped = $runtimeSrc.Replace('\', '\\').Replace("'", "\\'")
     $scriptPath = [System.IO.Path]::ChangeExtension([System.IO.Path]::GetTempFileName(), '.py')
     $code = @"
+import base64
+import json
 import sys
 sys.path.insert(0, r'$runtimeSrcEscaped')
 from super_ai_agent.cli import main
-raise SystemExit(main($pythonList))
+argv = json.loads(base64.b64decode('$argumentsEncoded').decode('utf-8'))
+raise SystemExit(main(argv))
 "@
 
     $stdoutPath = [System.IO.Path]::GetTempFileName()
@@ -632,6 +632,192 @@ if ($safeTaskIdOk) {
         (($reviewedTaskStatusResult.Output | Out-String) -match '- resumed \|')
     Write-Check -Name 'Task history reflects manual supervisor loop' -Passed $reviewedTaskStatusOk -Detail (($reviewedTaskStatusResult.Output | Out-String).Trim())
     if (-not $reviewedTaskStatusOk) { $failed++ }
+}
+
+$executorReadResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'read_file',
+    '--target', '14_context/current_state.md'
+)
+$executorReadQueuedOk = $executorReadResult.ExitCode -eq 0 -and `
+    (($executorReadResult.Output | Out-String) -match 'status:\s+queued') -and `
+    (($executorReadResult.Output | Out-String) -match 'approval_state:\s+not_required') -and `
+    (($executorReadResult.Output | Out-String) -match 'executor_action_type:\s+read_file') -and `
+    (($executorReadResult.Output | Out-String) -match 'workspace_scope:\s+in_scope')
+Write-Check -Name 'Executor read_file queue stays in scope' -Passed $executorReadQueuedOk -Detail (($executorReadResult.Output | Out-String).Trim())
+if (-not $executorReadQueuedOk) { $failed++ }
+
+$executorReadTaskMatch = [regex]::Match(($executorReadResult.Output | Out-String), 'task_id:\s*(\S+)')
+$executorReadTaskId = if ($executorReadTaskMatch.Success) { $executorReadTaskMatch.Groups[1].Value } else { $null }
+$executorReadTaskOk = -not [string]::IsNullOrWhiteSpace($executorReadTaskId)
+Write-Check -Name 'Executor read_file task id parsed' -Passed $executorReadTaskOk -Detail ($(if ($executorReadTaskOk) { $executorReadTaskId } else { 'missing read_file task id' }))
+if (-not $executorReadTaskOk) { $failed++ }
+
+if ($executorReadTaskOk) {
+    $executorReadExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $executorReadTaskId)
+    $executorReadExecuteOk = $executorReadExecute.ExitCode -eq 0 -and `
+        (($executorReadExecute.Output | Out-String) -match 'status:\s+completed') -and `
+        (($executorReadExecute.Output | Out-String) -match 'execution_status:\s+succeeded')
+    Write-Check -Name 'Executor read_file execution succeeds' -Passed $executorReadExecuteOk -Detail (($executorReadExecute.Output | Out-String).Trim())
+    if (-not $executorReadExecuteOk) { $failed++ }
+
+    $executorReadStatus = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $executorReadTaskId)
+    $executorReadStatusOk = $executorReadStatus.ExitCode -eq 0 -and `
+        (($executorReadStatus.Output | Out-String) -match 'execution_count:\s+1') -and `
+        (($executorReadStatus.Output | Out-String) -match 'last_execution_status:\s+succeeded') -and `
+        (($executorReadStatus.Output | Out-String) -match 'execution_history:') -and `
+        (($executorReadStatus.Output | Out-String) -match '- succeeded \|')
+    Write-Check -Name 'Executor read_file result persists in task history' -Passed $executorReadStatusOk -Detail (($executorReadStatus.Output | Out-String).Trim())
+    if (-not $executorReadStatusOk) { $failed++ }
+}
+
+$executorArtifactRelative = '11_exports/personal_ops/checker-executor-artifact.md'
+$executorArtifactPath = Join-Path $repoRoot $executorArtifactRelative
+$executorArtifactContent = "# Checker Executor Artifact`n`nCreated by the runtime checker."
+$executorArtifactQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'create_artifact',
+    '--target', $executorArtifactRelative,
+    '--content', $executorArtifactContent
+)
+$executorArtifactQueuedOk = $executorArtifactQueue.ExitCode -eq 0 -and `
+    (($executorArtifactQueue.Output | Out-String) -match 'status:\s+pending_approval') -and `
+    (($executorArtifactQueue.Output | Out-String) -match 'approval_state:\s+pending') -and `
+    (($executorArtifactQueue.Output | Out-String) -match 'workspace_scope:\s+in_scope')
+Write-Check -Name 'Executor create_artifact queues with approval' -Passed $executorArtifactQueuedOk -Detail (($executorArtifactQueue.Output | Out-String).Trim())
+if (-not $executorArtifactQueuedOk) { $failed++ }
+
+$executorArtifactTaskMatch = [regex]::Match(($executorArtifactQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$executorArtifactTaskId = if ($executorArtifactTaskMatch.Success) { $executorArtifactTaskMatch.Groups[1].Value } else { $null }
+$executorArtifactTaskOk = -not [string]::IsNullOrWhiteSpace($executorArtifactTaskId)
+Write-Check -Name 'Executor create_artifact task id parsed' -Passed $executorArtifactTaskOk -Detail ($(if ($executorArtifactTaskOk) { $executorArtifactTaskId } else { 'missing create_artifact task id' }))
+if (-not $executorArtifactTaskOk) { $failed++ }
+
+$executorArtifactApprovalMatch = [regex]::Match(($executorArtifactQueue.Output | Out-String), 'approval_request_id:\s*(\S+)')
+$executorArtifactApprovalId = if ($executorArtifactApprovalMatch.Success) { $executorArtifactApprovalMatch.Groups[1].Value } else { $null }
+$executorArtifactApprovalOk = -not [string]::IsNullOrWhiteSpace($executorArtifactApprovalId)
+Write-Check -Name 'Executor create_artifact approval id parsed' -Passed $executorArtifactApprovalOk -Detail ($(if ($executorArtifactApprovalOk) { $executorArtifactApprovalId } else { 'missing create_artifact approval id' }))
+if (-not $executorArtifactApprovalOk) { $failed++ }
+
+if ($executorArtifactApprovalOk) {
+    $executorArtifactApprove = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $executorArtifactApprovalId, '--note', 'runtime checker approved the artifact write')
+    $executorArtifactApproveOk = $executorArtifactApprove.ExitCode -eq 0 -and `
+        (($executorArtifactApprove.Output | Out-String) -match 'status:\s+approved') -and `
+        (($executorArtifactApprove.Output | Out-String) -match 'task_status:\s+queued')
+    Write-Check -Name 'Executor create_artifact approval persists' -Passed $executorArtifactApproveOk -Detail (($executorArtifactApprove.Output | Out-String).Trim())
+    if (-not $executorArtifactApproveOk) { $failed++ }
+}
+
+if ($executorArtifactTaskOk) {
+    $executorArtifactExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $executorArtifactTaskId)
+    $executorArtifactExecuteOk = $executorArtifactExecute.ExitCode -eq 0 -and `
+        (($executorArtifactExecute.Output | Out-String) -match 'status:\s+completed') -and `
+        (($executorArtifactExecute.Output | Out-String) -match 'execution_status:\s+succeeded') -and `
+        (Test-Path -LiteralPath $executorArtifactPath -PathType Leaf)
+    Write-Check -Name 'Executor create_artifact execution succeeds' -Passed $executorArtifactExecuteOk -Detail (($executorArtifactExecute.Output | Out-String).Trim())
+    if (-not $executorArtifactExecuteOk) { $failed++ }
+
+    $executorArtifactStatus = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $executorArtifactTaskId)
+    $executorArtifactStatusOk = $executorArtifactStatus.ExitCode -eq 0 -and `
+        (($executorArtifactStatus.Output | Out-String) -match 'execution_count:\s+1') -and `
+        (($executorArtifactStatus.Output | Out-String) -match 'last_execution_status:\s+succeeded') -and `
+        (($executorArtifactStatus.Output | Out-String) -match "last_artifact_path:\s+$([regex]::Escape($executorArtifactPath))") -and `
+        (($executorArtifactStatus.Output | Out-String) -match 'execution_history:') -and `
+        (($executorArtifactStatus.Output | Out-String) -match '- succeeded \|')
+    Write-Check -Name 'Executor create_artifact result persists' -Passed $executorArtifactStatusOk -Detail (($executorArtifactStatus.Output | Out-String).Trim())
+    if (-not $executorArtifactStatusOk) { $failed++ }
+}
+
+$executorCheckerQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'run_checker',
+    '--target', 'dashboard'
+)
+$executorCheckerQueuedOk = $executorCheckerQueue.ExitCode -eq 0 -and `
+    (($executorCheckerQueue.Output | Out-String) -match 'status:\s+pending_approval') -and `
+    (($executorCheckerQueue.Output | Out-String) -match 'executor_action_type:\s+run_checker')
+Write-Check -Name 'Executor run_checker queues with approval' -Passed $executorCheckerQueuedOk -Detail (($executorCheckerQueue.Output | Out-String).Trim())
+if (-not $executorCheckerQueuedOk) { $failed++ }
+
+$executorCheckerTaskMatch = [regex]::Match(($executorCheckerQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$executorCheckerTaskId = if ($executorCheckerTaskMatch.Success) { $executorCheckerTaskMatch.Groups[1].Value } else { $null }
+$executorCheckerTaskOk = -not [string]::IsNullOrWhiteSpace($executorCheckerTaskId)
+Write-Check -Name 'Executor checker task id parsed' -Passed $executorCheckerTaskOk -Detail ($(if ($executorCheckerTaskOk) { $executorCheckerTaskId } else { 'missing checker task id' }))
+if (-not $executorCheckerTaskOk) { $failed++ }
+
+$executorCheckerApprovalMatch = [regex]::Match(($executorCheckerQueue.Output | Out-String), 'approval_request_id:\s*(\S+)')
+$executorCheckerApprovalId = if ($executorCheckerApprovalMatch.Success) { $executorCheckerApprovalMatch.Groups[1].Value } else { $null }
+$executorCheckerApprovalOk = -not [string]::IsNullOrWhiteSpace($executorCheckerApprovalId)
+Write-Check -Name 'Executor checker approval id parsed' -Passed $executorCheckerApprovalOk -Detail ($(if ($executorCheckerApprovalOk) { $executorCheckerApprovalId } else { 'missing checker approval id' }))
+if (-not $executorCheckerApprovalOk) { $failed++ }
+
+if ($executorCheckerApprovalOk) {
+    $executorCheckerApprove = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $executorCheckerApprovalId, '--note', 'runtime checker approved dashboard checker execution')
+    $executorCheckerApproveOk = $executorCheckerApprove.ExitCode -eq 0 -and `
+        (($executorCheckerApprove.Output | Out-String) -match 'status:\s+approved') -and `
+        (($executorCheckerApprove.Output | Out-String) -match 'task_status:\s+queued')
+    Write-Check -Name 'Executor run_checker approval persists' -Passed $executorCheckerApproveOk -Detail (($executorCheckerApprove.Output | Out-String).Trim())
+    if (-not $executorCheckerApproveOk) { $failed++ }
+}
+
+if ($executorCheckerTaskOk) {
+    $executorCheckerExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $executorCheckerTaskId)
+    $executorCheckerExecuteOk = $executorCheckerExecute.ExitCode -eq 0 -and `
+        (($executorCheckerExecute.Output | Out-String) -match 'status:\s+completed') -and `
+        (($executorCheckerExecute.Output | Out-String) -match 'execution_status:\s+succeeded') -and `
+        (($executorCheckerExecute.Output | Out-String) -match 'Summary:\s+dashboard MVP checks passed\.')
+    Write-Check -Name 'Executor run_checker execution succeeds' -Passed $executorCheckerExecuteOk -Detail (($executorCheckerExecute.Output | Out-String).Trim())
+    if (-not $executorCheckerExecuteOk) { $failed++ }
+
+    $executorCheckerStatus = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $executorCheckerTaskId)
+    $executorCheckerStatusOk = $executorCheckerStatus.ExitCode -eq 0 -and `
+        (($executorCheckerStatus.Output | Out-String) -match 'execution_count:\s+1') -and `
+        (($executorCheckerStatus.Output | Out-String) -match 'last_execution_status:\s+succeeded') -and `
+        (($executorCheckerStatus.Output | Out-String) -match 'last_execution_summary:\s+Summary:\s+dashboard MVP checks passed\.')
+    Write-Check -Name 'Executor run_checker result persists' -Passed $executorCheckerStatusOk -Detail (($executorCheckerStatus.Output | Out-String).Trim())
+    if (-not $executorCheckerStatusOk) { $failed++ }
+}
+
+$executorOutsideQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'read_file',
+    '--target', 'C:\Windows\Temp\checker-executor-outside.txt'
+)
+$executorOutsideQueuedOk = $executorOutsideQueue.ExitCode -eq 0 -and `
+    (($executorOutsideQueue.Output | Out-String) -match 'status:\s+pending_approval') -and `
+    (($executorOutsideQueue.Output | Out-String) -match 'workspace_scope:\s+out_of_scope') -and `
+    (($executorOutsideQueue.Output | Out-String) -match 'workspace_policy:\s+blocked_by_workspace_policy')
+Write-Check -Name 'Executor out-of-scope path is escalated and blocked' -Passed $executorOutsideQueuedOk -Detail (($executorOutsideQueue.Output | Out-String).Trim())
+if (-not $executorOutsideQueuedOk) { $failed++ }
+
+$executorOutsideTaskMatch = [regex]::Match(($executorOutsideQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$executorOutsideTaskId = if ($executorOutsideTaskMatch.Success) { $executorOutsideTaskMatch.Groups[1].Value } else { $null }
+$executorOutsideTaskOk = -not [string]::IsNullOrWhiteSpace($executorOutsideTaskId)
+Write-Check -Name 'Executor out-of-scope task id parsed' -Passed $executorOutsideTaskOk -Detail ($(if ($executorOutsideTaskOk) { $executorOutsideTaskId } else { 'missing out-of-scope executor task id' }))
+if (-not $executorOutsideTaskOk) { $failed++ }
+
+$executorOutsideApprovalMatch = [regex]::Match(($executorOutsideQueue.Output | Out-String), 'approval_request_id:\s*(\S+)')
+$executorOutsideApprovalId = if ($executorOutsideApprovalMatch.Success) { $executorOutsideApprovalMatch.Groups[1].Value } else { $null }
+$executorOutsideApprovalOk = -not [string]::IsNullOrWhiteSpace($executorOutsideApprovalId)
+Write-Check -Name 'Executor out-of-scope approval id parsed' -Passed $executorOutsideApprovalOk -Detail ($(if ($executorOutsideApprovalOk) { $executorOutsideApprovalId } else { 'missing out-of-scope executor approval id' }))
+if (-not $executorOutsideApprovalOk) { $failed++ }
+
+if ($executorOutsideApprovalOk) {
+    $executorOutsideApprove = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $executorOutsideApprovalId, '--note', 'runtime checker recorded the out-of-scope executor request')
+    $executorOutsideApproveOk = $executorOutsideApprove.ExitCode -eq 0 -and `
+        (($executorOutsideApprove.Output | Out-String) -match 'task_status:\s+blocked_human_needed') -and `
+        (($executorOutsideApprove.Output | Out-String) -match 'workspace_policy:\s+blocked_by_workspace_policy')
+    Write-Check -Name 'Executor out-of-scope task stays blocked after approval' -Passed $executorOutsideApproveOk -Detail (($executorOutsideApprove.Output | Out-String).Trim())
+    if (-not $executorOutsideApproveOk) { $failed++ }
+}
+
+if ($executorOutsideTaskOk) {
+    $executorOutsideStatus = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $executorOutsideTaskId)
+    $executorOutsideStatusOk = $executorOutsideStatus.ExitCode -eq 0 -and `
+        (($executorOutsideStatus.Output | Out-String) -match 'status:\s+blocked_human_needed') -and `
+        (($executorOutsideStatus.Output | Out-String) -match 'workspace_policy:\s+blocked_by_workspace_policy')
+    Write-Check -Name 'Executor out-of-scope task remains blocked in task status' -Passed $executorOutsideStatusOk -Detail (($executorOutsideStatus.Output | Out-String).Trim())
+    if (-not $executorOutsideStatusOk) { $failed++ }
 }
 
 $listResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('list')

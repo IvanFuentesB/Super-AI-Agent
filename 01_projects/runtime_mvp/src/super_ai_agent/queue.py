@@ -3,14 +3,17 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from pathlib import Path
 import re
+import subprocess
 from uuid import uuid4
 
 from .models import (
     ApprovalRecord,
     ApprovalRequest,
+    EXECUTOR_ACTION_TYPES as MODEL_EXECUTOR_ACTION_TYPES,
     RuntimeStatusSummary,
     SupervisorState,
     Task,
+    TaskExecutionRecord,
     TaskEvent,
     TASK_RISK_LEVELS,
 )
@@ -27,6 +30,14 @@ from .storage import (
 )
 
 ALLOWED_RISKS = set(TASK_RISK_LEVELS)
+ALLOWED_EXECUTOR_ACTIONS = set(MODEL_EXECUTOR_ACTION_TYPES)
+READ_ONLY_EXECUTOR_ACTIONS = {"read_file", "list_directory", "git_status", "git_diff"}
+WRITE_EXECUTOR_ACTIONS = {"write_file", "append_file", "create_artifact"}
+CHECKER_EXECUTOR_ACTIONS = {"run_checker"}
+ALLOWED_CHECKER_TARGETS = {
+    "runtime": "check_runtime_mvp.ps1",
+    "dashboard": "check_dashboard_mvp.ps1",
+}
 QUEUEABLE_TASK_STATUSES = {"queued", "running", "waiting", "blocked_human_needed", "ready_to_resume"}
 WINDOWS_ABSOLUTE_PATH_PATTERN = re.compile(r"(?i)\b[A-Z]:\\[^\s\"'<>|?*]+")
 
@@ -98,6 +109,8 @@ def _task_next_action(task: Task) -> str:
     if task.status == "ready_to_resume":
         return "Re-queue the task when you want it to continue."
     if task.status == "queued":
+        if task.executor_action_type:
+            return "Run the allowlisted executor action when ready."
         return "Run the task manually when ready."
     if task.status == "completed":
         return "Review the completed output."
@@ -140,18 +153,22 @@ def _is_inside_allowed_root(path_value: str) -> bool:
         return False
 
 
-def _classify_workspace_targets(
-    *texts: str,
+def _classify_workspace_paths(
+    *paths: str,
 ) -> tuple[list[str], str, str, str]:
     allowed_root = get_allowed_workspace_root()
-    candidate_paths = [_normalize_candidate_path(item) for item in _extract_candidate_paths(*texts)]
+    candidate_paths = [
+        _normalize_candidate_path(item)
+        for item in paths
+        if str(item or "").strip()
+    ]
 
     if not candidate_paths:
         return (
             [],
             "no_path_detected",
             "allowed",
-            f"No explicit absolute path target detected. Allowed workspace root: {allowed_root}",
+            f"No explicit path target provided. Allowed workspace root: {allowed_root}",
         )
 
     outside = [item for item in candidate_paths if not _is_inside_allowed_root(item)]
@@ -174,11 +191,39 @@ def _classify_workspace_targets(
     )
 
 
+def _classify_workspace_targets(
+    *texts: str,
+) -> tuple[list[str], str, str, str]:
+    candidate_paths = [_normalize_candidate_path(item) for item in _extract_candidate_paths(*texts)]
+
+    if not candidate_paths:
+        allowed_root = get_allowed_workspace_root()
+        return (
+            [],
+            "no_path_detected",
+            "allowed",
+            f"No explicit absolute path target detected. Allowed workspace root: {allowed_root}",
+        )
+
+    return _classify_workspace_paths(*candidate_paths)
+
+
 def _apply_workspace_policy(
     task: Task,
     *texts: str,
 ) -> Task:
     target_paths, workspace_scope, workspace_policy, workspace_reason = _classify_workspace_targets(*texts)
+    task.target_paths = target_paths
+    task.workspace_scope = workspace_scope
+    task.workspace_policy = workspace_policy
+    task.workspace_reason = workspace_reason
+    if workspace_scope == "out_of_scope" and task.risk_level == "safe":
+        task.risk_level = "high_risk"
+    return task
+
+
+def _apply_workspace_policy_paths(task: Task, *paths: str) -> Task:
+    target_paths, workspace_scope, workspace_policy, workspace_reason = _classify_workspace_paths(*paths)
     task.target_paths = target_paths
     task.workspace_scope = workspace_scope
     task.workspace_policy = workspace_policy
@@ -218,6 +263,219 @@ def _build_approval_request(
         workspace_policy=task.workspace_policy,
         workspace_reason=task.workspace_reason,
     )
+
+
+def _resolve_executor_path(target: str) -> Path:
+    raw_target = (target or "").strip()
+    if not raw_target:
+        raise ValueError("A target path is required for this executor action.")
+
+    candidate = Path(raw_target).expanduser()
+    if not candidate.is_absolute():
+        candidate = get_allowed_workspace_root() / candidate
+    return candidate.resolve(strict=False)
+
+
+def _shorten_output(text: str, limit: int = 260) -> str:
+    normalized = " ".join((text or "").split())
+    if len(normalized) <= limit:
+        return normalized or "none"
+    return f"{normalized[: limit - 3].rstrip()}..."
+
+
+def _build_executor_title(action_type: str, target: str) -> str:
+    title_map = {
+        "read_file": "Read repo-local file",
+        "write_file": "Write repo-local file",
+        "append_file": "Append repo-local file",
+        "create_artifact": "Create repo-local artifact",
+        "list_directory": "List repo-local directory",
+        "git_status": "Show git status",
+        "git_diff": "Show git diff summary",
+        "run_checker": "Run repo checker",
+    }
+    label = title_map.get(action_type, "Run allowlisted repo action")
+    return f"{label}: {target}" if target else label
+
+
+def _build_executor_description(action_type: str, target: str) -> str:
+    descriptions = {
+        "read_file": "Allowlisted repo-local read_file action.",
+        "write_file": "Allowlisted repo-local write_file action.",
+        "append_file": "Allowlisted repo-local append_file action.",
+        "create_artifact": "Allowlisted repo-local create_artifact action.",
+        "list_directory": "Allowlisted repo-local list_directory action.",
+        "git_status": "Allowlisted repo-local git_status action.",
+        "git_diff": "Allowlisted repo-local git_diff action.",
+        "run_checker": "Allowlisted repo-local checker execution.",
+    }
+    suffix = f" Target: {target}" if target else ""
+    return f"{descriptions.get(action_type, 'Allowlisted repo-local executor action.')}{suffix}"
+
+
+def _executor_requires_approval(action_type: str) -> bool:
+    return action_type in WRITE_EXECUTOR_ACTIONS or action_type in CHECKER_EXECUTOR_ACTIONS
+
+
+def _last_execution_record(task: Task) -> TaskExecutionRecord | None:
+    if not task.execution_records:
+        return None
+    return task.execution_records[-1]
+
+
+def _prepare_executor_action(
+    action_type: str,
+    target: str,
+    content: str,
+) -> tuple[str, str, dict, list[str], str]:
+    normalized_action = (action_type or "").strip().lower()
+    if normalized_action not in ALLOWED_EXECUTOR_ACTIONS:
+        raise ValueError(f"Unsupported executor action: {action_type}")
+
+    payload: dict = {}
+    target_paths: list[str] = []
+    normalized_target = (target or "").strip()
+
+    if normalized_action in {"read_file", "write_file", "append_file", "create_artifact", "list_directory"}:
+        resolved_target = _resolve_executor_path(normalized_target)
+        normalized_target = str(resolved_target)
+        target_paths = [normalized_target]
+        if normalized_action in WRITE_EXECUTOR_ACTIONS:
+            payload["content"] = content
+    elif normalized_action in {"git_status", "git_diff"}:
+        normalized_target = str(get_allowed_workspace_root())
+        target_paths = [normalized_target]
+    elif normalized_action == "run_checker":
+        checker_name = normalized_target.lower()
+        if checker_name not in ALLOWED_CHECKER_TARGETS:
+            raise ValueError("run_checker target must be one of: runtime, dashboard")
+        script_path = (get_allowed_workspace_root() / "03_scripts" / ALLOWED_CHECKER_TARGETS[checker_name]).resolve(strict=False)
+        normalized_target = checker_name
+        target_paths = [str(script_path)]
+        payload["script_path"] = str(script_path)
+    else:
+        raise ValueError(f"Unsupported executor action: {action_type}")
+
+    risk_level = "safe" if normalized_action in READ_ONLY_EXECUTOR_ACTIONS else "ask"
+    return normalized_action, normalized_target, payload, target_paths, risk_level
+
+
+def enqueue_executor_task(
+    action_type: str,
+    target: str = "",
+    content: str = "",
+    source: str = "manual",
+) -> Task:
+    normalized_action, normalized_target, payload, target_paths, risk_level = _prepare_executor_action(
+        action_type=action_type,
+        target=target,
+        content=content,
+    )
+    display_target = normalized_target or "workspace_root"
+    return enqueue_task(
+        title=_build_executor_title(normalized_action, display_target),
+        description=_build_executor_description(normalized_action, display_target),
+        risk_level=risk_level,
+        source=source,
+        executor_action_type=normalized_action,
+        executor_target=normalized_target,
+        executor_payload=payload,
+        target_paths=target_paths,
+    )
+
+
+def list_executor_tasks() -> list[Task]:
+    return [task for task in list_tasks() if task.executor_action_type]
+
+
+def _run_repo_command(args: list[str]) -> str:
+    result = subprocess.run(
+        args,
+        cwd=get_allowed_workspace_root(),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    stdout = (result.stdout or "").strip()
+    stderr = (result.stderr or "").strip()
+    if result.returncode != 0:
+        raise RuntimeError(_shorten_output(stderr or stdout or f"Command failed: {' '.join(args)}"))
+    return stdout or stderr
+
+
+def _execute_allowlisted_action(task: Task) -> tuple[str, str]:
+    action_type = task.executor_action_type
+    artifact_path = ""
+
+    if action_type == "read_file":
+        target_path = Path(task.executor_target)
+        if not target_path.is_file():
+            raise RuntimeError("Target file does not exist or is not a file.")
+        content = target_path.read_text(encoding="utf-8", errors="replace")
+        return _shorten_output(content, limit=320) or f"Read {target_path.name}.", ""
+
+    if action_type == "write_file":
+        target_path = Path(task.executor_target)
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        content = str(task.executor_payload.get("content", ""))
+        target_path.write_text(content, encoding="utf-8")
+        artifact_path = str(target_path)
+        return f"Wrote {len(content)} character(s) to {target_path.name}.", artifact_path
+
+    if action_type == "append_file":
+        target_path = Path(task.executor_target)
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        content = str(task.executor_payload.get("content", ""))
+        with target_path.open("a", encoding="utf-8") as handle:
+            handle.write(content)
+        artifact_path = str(target_path)
+        return f"Appended {len(content)} character(s) to {target_path.name}.", artifact_path
+
+    if action_type == "create_artifact":
+        target_path = Path(task.executor_target)
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        content = str(task.executor_payload.get("content", ""))
+        target_path.write_text(content, encoding="utf-8")
+        artifact_path = str(target_path)
+        return f"Created artifact {target_path.name}.", artifact_path
+
+    if action_type == "list_directory":
+        target_path = Path(task.executor_target)
+        if not target_path.is_dir():
+            raise RuntimeError("Target directory does not exist or is not a directory.")
+        entries = sorted(item.name + ("\\" if item.is_dir() else "") for item in target_path.iterdir())
+        if not entries:
+            return "Directory is empty.", ""
+        return _shorten_output(", ".join(entries), limit=320), ""
+
+    if action_type == "git_status":
+        output = _run_repo_command(["git", "status", "--short", "--branch"])
+        return _shorten_output(output or "Working tree clean."), ""
+
+    if action_type == "git_diff":
+        output = _run_repo_command(["git", "diff", "--stat", "HEAD", "--", "."])
+        if not output:
+            return "Working tree clean. No diff summary to show.", ""
+        return _shorten_output(output), ""
+
+    if action_type == "run_checker":
+        script_path = Path(str(task.executor_payload.get("script_path", "")))
+        if not script_path.is_file():
+            raise RuntimeError("Checker script path is missing or invalid.")
+        result = subprocess.run(
+            ["powershell.exe", "-ExecutionPolicy", "Bypass", "-File", str(script_path)],
+            cwd=get_allowed_workspace_root(),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        output = ((result.stdout or "").strip() + "\n" + (result.stderr or "").strip()).strip()
+        if result.returncode != 0:
+            raise RuntimeError(_shorten_output(output or f"Checker failed: {script_path.name}"))
+        summary_line = output.splitlines()[-1] if output else f"{task.executor_target} checker passed."
+        return _shorten_output(summary_line), ""
+
+    raise RuntimeError(f"Executor action is not allowlisted: {action_type}")
 
 
 def _backfill_pending_approval_requests() -> tuple[list[Task], list[ApprovalRequest]]:
@@ -341,7 +599,17 @@ def refresh_supervisor_state(last_event: str | None = None) -> SupervisorState:
     return state
 
 
-def enqueue_task(title: str, description: str, risk_level: str, source: str = "manual") -> Task:
+def enqueue_task(
+    title: str,
+    description: str,
+    risk_level: str,
+    source: str = "manual",
+    *,
+    executor_action_type: str = "",
+    executor_target: str = "",
+    executor_payload: dict | None = None,
+    target_paths: list[str] | None = None,
+) -> Task:
     if risk_level not in ALLOWED_RISKS:
         raise ValueError(f"Unsupported risk level: {risk_level}")
     timestamp = _now()
@@ -362,8 +630,14 @@ def enqueue_task(title: str, description: str, risk_level: str, source: str = "m
         requires_human=False,
         admin_required=_requires_admin(risk_level),
         last_note="",
+        executor_action_type=executor_action_type,
+        executor_target=executor_target,
+        executor_payload=dict(executor_payload or {}),
     )
-    _apply_workspace_policy(task, title, description, source)
+    if target_paths:
+        _apply_workspace_policy_paths(task, *target_paths)
+    else:
+        _apply_workspace_policy(task, title, description, source)
     _append_task_event(task, "created", note=title)
     task.admin_required = _requires_admin(task.risk_level)
     requires_approval = _requires_approval(task.risk_level)
@@ -467,14 +741,17 @@ def request_task_approval(
             raise ValueError(f"Unsupported risk level: {risk_level}")
         task.risk_level = risk_level
 
-    _apply_workspace_policy(
-        task,
-        action_label,
-        reason,
-        source,
-        scope,
-        rollback_plan,
-    )
+    if task.executor_action_type and task.target_paths:
+        _apply_workspace_policy_paths(task, *task.target_paths)
+    else:
+        _apply_workspace_policy(
+            task,
+            action_label,
+            reason,
+            source,
+            scope,
+            rollback_plan,
+        )
     task.requires_approval = True
     task.admin_required = _requires_admin(task.risk_level) if requires_admin is None else requires_admin
     task.status = "pending_approval"
@@ -767,29 +1044,86 @@ def requeue_task(task_id: str, note: str = "") -> Task:
     return task
 
 
-def run_task_once(task_id: str) -> Task:
+def execute_task(task_id: str) -> Task:
     tasks = read_tasks()
     task = _find_task(tasks, task_id)
     if task.status != "queued":
-        raise ValueError(f"Task {task.task_id} must be queued before run-once.")
+        raise ValueError(f"Task {task.task_id} must be queued before execution.")
     if task.approval_state not in {"approved", "not_required"}:
-        raise ValueError(f"Task {task.task_id} must be approved before run-once.")
+        raise ValueError(f"Task {task.task_id} must be approved before execution.")
     if task.workspace_policy == "blocked_by_workspace_policy":
         raise ValueError(
             "Task is blocked by workspace policy until the allowed workspace root is expanded "
             "or the target is moved inside the workspace."
         )
 
-    task.status = "completed"
+    _ensure_task_history(task)
+    task.updated_at = _now()
+
+    if not task.executor_action_type:
+        task.status = "completed"
+        task.waiting_for = ""
+        task.blocked_reason = ""
+        task.requires_human = False
+        _append_task_event(task, "completed", note="Task completed in manual run-once mode.")
+        write_tasks(tasks)
+        refresh_supervisor_state(last_event=f"Task completed: {task.task_id}")
+        return task
+
+    task.status = "running"
     task.waiting_for = ""
     task.blocked_reason = ""
     task.requires_human = False
-    task.updated_at = _now()
-    _ensure_task_history(task)
-    _append_task_event(task, "completed", note="Task completed in manual run-once mode.")
+
+    started_at = _now()
+    execution_record = TaskExecutionRecord(
+        action_type=task.executor_action_type,
+        target=task.executor_target or "workspace_root",
+        started_at=started_at,
+        status="started",
+        success=False,
+    )
+    _append_task_event(
+        task,
+        "execution_started",
+        note=f"Started {task.executor_action_type} for {task.executor_target or 'workspace_root'}.",
+    )
+
+    try:
+        output_summary, artifact_path = _execute_allowlisted_action(task)
+        execution_record.finished_at = _now()
+        execution_record.status = "succeeded"
+        execution_record.success = True
+        execution_record.output_summary = output_summary
+        execution_record.artifact_path = artifact_path
+        task.execution_records.append(execution_record)
+        task.status = "completed"
+        task.last_note = output_summary
+        task.updated_at = execution_record.finished_at
+        _append_task_event(task, "completed", note=output_summary)
+        last_event = f"Executor task completed: {task.task_id}"
+    except Exception as exc:  # noqa: BLE001
+        failure_message = _shorten_output(str(exc))
+        execution_record.finished_at = _now()
+        execution_record.status = "failed"
+        execution_record.success = False
+        execution_record.output_summary = failure_message
+        task.execution_records.append(execution_record)
+        task.status = "failed"
+        task.blocked_reason = failure_message
+        task.last_note = failure_message
+        task.updated_at = execution_record.finished_at
+        task.requires_human = True
+        _append_task_event(task, "failed", note=failure_message)
+        last_event = f"Executor task failed: {task.task_id}"
+
     write_tasks(tasks)
-    refresh_supervisor_state(last_event=f"Task completed: {task.task_id}")
+    refresh_supervisor_state(last_event=last_event)
     return task
+
+
+def run_task_once(task_id: str) -> Task:
+    return execute_task(task_id)
 
 
 def list_pending_approvals() -> list[ApprovalRequest]:

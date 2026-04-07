@@ -64,6 +64,10 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Manual supervisor loop now exists for queued, pending_approval, blocked_human_needed, waiting, ready_to_resume, and completed task states
 - Dashboard now lets the operator inspect stopped tasks, review human-needed work, resume waiting tasks, and re-queue ready-to-resume tasks manually
 - Task history is now persisted and visible for key events such as created, escalated, approved or denied, deferred, blocked, resumed, and completed
+- Safe repo-local executor now exists for an allowlisted set of actions only
+- Runtime can now queue and execute in-scope read_file, write_file, append_file, create_artifact, list_directory, git_status, git_diff, and run_checker actions without exposing arbitrary shell execution
+- Write actions and checker runs stay approval-aware, and executor results now persist with status, summary, and artifact-path visibility in task history
+- Dashboard now shows executor tasks, lets the operator queue allowlisted repo-local actions, and lets approved in-scope executor tasks run manually from the console
 - No live external provider APIs yet
 - No real browser or app executor beyond the local playground yet
 - No remote auth layer yet
@@ -78,6 +82,7 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Claw Code remains temporary reference, not foundation
 
 ## Immediate Focus
+- Test the safe repo executor manually from the dashboard
 - Test the workspace-boundary flow manually from the dashboard
 - Test the manual supervisor loop from the dashboard
 - Decide the real desktop-control implementation path
@@ -93,4 +98,5 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Browser and app execution are still mostly research-only, even though the operator console now makes artifacts more usable and exposes the desktop bridge foundation
 - The supervisor, approval inbox, and manual task-control loop are still local-only foundations, not a full autonomous executor yet
 - Workspace policy blocks out-of-scope targets cleanly now, but there is still no explicit allowlist expansion flow yet
+- The safe repo executor is intentionally narrow and repo-bound; it is not a generic shell runner, desktop controller, or autonomy layer
 - Third-party intake repos are valuable comparison material, but most of their surface area is still too heavy to adopt directly

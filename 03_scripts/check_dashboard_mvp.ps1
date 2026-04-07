@@ -102,18 +102,18 @@ function Invoke-ModuleCommand {
         [string[]]$Arguments
     )
 
-    $escapedArgs = foreach ($item in $Arguments) {
-        $value = $item.Replace('\', '\\').Replace("'", "\\'")
-        "'$value'"
-    }
-    $pythonList = '[' + ($escapedArgs -join ', ') + ']'
+    $argumentsJson = ConvertTo-Json -InputObject @($Arguments) -Compress
+    $argumentsEncoded = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($argumentsJson))
     $runtimeSrcEscaped = $runtimeSrc.Replace('\', '\\').Replace("'", "\\'")
     $scriptPath = [System.IO.Path]::ChangeExtension([System.IO.Path]::GetTempFileName(), '.py')
     $code = @"
+import base64
+import json
 import sys
 sys.path.insert(0, r'$runtimeSrcEscaped')
 from super_ai_agent.cli import main
-raise SystemExit(main($pythonList))
+argv = json.loads(base64.b64decode('$argumentsEncoded').decode('utf-8'))
+raise SystemExit(main(argv))
 "@
 
     $stdoutPath = [System.IO.Path]::GetTempFileName()
@@ -299,6 +299,11 @@ try {
     Write-Check -Name 'Pending approvals endpoint' -Passed $pendingApprovalsOk -Detail ($(if ($pendingApprovalsOk) { $pendingApprovals.summary.headline } else { 'pending approvals missing structured output' }))
     if (-not $pendingApprovalsOk) { $failed++ }
 
+    $executorList = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/executor/tasks" -Method Get -TimeoutSec 30
+    $executorListOk = $executorList.ok -and $executorList.localOnly -and $null -ne $executorList.summary.tasks
+    Write-Check -Name 'Executor task list endpoint' -Passed $executorListOk -Detail ($(if ($executorListOk) { $executorList.summary.headline } else { 'executor task list missing structured output' }))
+    if (-not $executorListOk) { $failed++ }
+
     $approvalQueueSeed = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('enqueue', '--title', 'dashboard checker approval task', '--description', 'Validate dashboard approval queue actions.', '--risk', 'ask')
     $approvalQueueSeedOk = $approvalQueueSeed.ExitCode -eq 0
     Write-Check -Name 'Seed approval for dashboard test' -Passed $approvalQueueSeedOk -Detail (($approvalQueueSeed.Output | Out-String).Trim())
@@ -469,6 +474,106 @@ try {
         $waitingResumeOk = $waitingResume.ok -and $waitingResume.task.status -eq 'queued'
         Write-Check -Name 'Waiting task resume endpoint' -Passed $waitingResumeOk -Detail ($(if ($waitingResumeOk) { $waitingResume.summary.headline } else { 'waiting task did not resume to queued' }))
         if (-not $waitingResumeOk) { $failed++ }
+    }
+
+    $executorReadPayload = @{
+        actionType = 'read_file'
+        target = '14_context/current_state.md'
+    } | ConvertTo-Json
+    $executorReadQueue = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/executor/queue" -Method Post -ContentType 'application/json' -Body $executorReadPayload -TimeoutSec 30
+    $executorReadQueueOk = $executorReadQueue.ok -and `
+        $executorReadQueue.localOnly -and `
+        $executorReadQueue.task.status -eq 'queued' -and `
+        $executorReadQueue.task.executorActionType -eq 'read_file' -and `
+        $executorReadQueue.task.workspaceScope -eq 'in_scope'
+    Write-Check -Name 'Executor read_file queue endpoint' -Passed $executorReadQueueOk -Detail ($(if ($executorReadQueueOk) { $executorReadQueue.summary.headline } else { 'executor read_file queue failed' }))
+    if (-not $executorReadQueueOk) { $failed++ }
+
+    $executorReadTaskId = $executorReadQueue.summary.taskId
+    $executorReadTaskIdOk = -not [string]::IsNullOrWhiteSpace($executorReadTaskId)
+    Write-Check -Name 'Executor read_file task id returned' -Passed $executorReadTaskIdOk -Detail ($(if ($executorReadTaskIdOk) { $executorReadTaskId } else { 'executor read_file task id missing' }))
+    if (-not $executorReadTaskIdOk) { $failed++ }
+
+    if ($executorReadTaskIdOk) {
+        $executorReadDetail = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/item?taskId=$executorReadTaskId" -Method Get -TimeoutSec 30
+        $executorReadDetailOk = $executorReadDetail.ok -and `
+            $executorReadDetail.localOnly -and `
+            $executorReadDetail.summary.executorActionType -eq 'read_file'
+        Write-Check -Name 'Executor read_file task detail endpoint' -Passed $executorReadDetailOk -Detail ($(if ($executorReadDetailOk) { $executorReadDetail.summary.headline } else { 'executor read_file task detail missing action type' }))
+        if (-not $executorReadDetailOk) { $failed++ }
+
+        $executorReadExecutePayload = @{
+            taskId = $executorReadTaskId
+            action = 'execute'
+        } | ConvertTo-Json
+        $executorReadExecute = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $executorReadExecutePayload -TimeoutSec 30
+        $executorReadExecuteOk = $executorReadExecute.ok -and `
+            $executorReadExecute.task.status -eq 'completed' -and `
+            $executorReadExecute.task.lastExecutionStatus -eq 'succeeded'
+        Write-Check -Name 'Executor read_file execution endpoint' -Passed $executorReadExecuteOk -Detail ($(if ($executorReadExecuteOk) { $executorReadExecute.summary.headline } else { 'executor read_file execute failed' }))
+        if (-not $executorReadExecuteOk) { $failed++ }
+
+        $executorReadDetailAfter = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/item?taskId=$executorReadTaskId" -Method Get -TimeoutSec 30
+        $executorReadDetailAfterOk = $executorReadDetailAfter.ok -and `
+            $executorReadDetailAfter.summary.lastExecutionStatus -eq 'succeeded' -and `
+            $executorReadDetailAfter.summary.executionHistory.Count -gt 0
+        Write-Check -Name 'Executor read_file result persists in task detail' -Passed $executorReadDetailAfterOk -Detail ($(if ($executorReadDetailAfterOk) { $executorReadDetailAfter.summary.lastExecutionSummary } else { 'executor read_file result not persisted' }))
+        if (-not $executorReadDetailAfterOk) { $failed++ }
+    }
+
+    $executorArtifactPath = Join-Path $repoRoot '11_exports\personal_ops\dashboard-executor-artifact.md'
+    Remove-GeneratedFile -Path $executorArtifactPath
+    $executorArtifactPayload = @{
+        actionType = 'create_artifact'
+        target = '11_exports/personal_ops/dashboard-executor-artifact.md'
+        content = "# Dashboard Executor Artifact`n`nCreated through the dashboard executor test."
+    } | ConvertTo-Json
+    $executorArtifactQueue = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/executor/queue" -Method Post -ContentType 'application/json' -Body $executorArtifactPayload -TimeoutSec 30
+    $executorArtifactQueueOk = $executorArtifactQueue.ok -and `
+        $executorArtifactQueue.localOnly -and `
+        $executorArtifactQueue.task.status -eq 'pending_approval' -and `
+        $executorArtifactQueue.task.approvalState -eq 'pending'
+    Write-Check -Name 'Executor create_artifact queue endpoint' -Passed $executorArtifactQueueOk -Detail ($(if ($executorArtifactQueueOk) { $executorArtifactQueue.summary.headline } else { 'executor create_artifact queue failed' }))
+    if (-not $executorArtifactQueueOk) { $failed++ }
+
+    $executorArtifactTaskId = $executorArtifactQueue.summary.taskId
+    $executorArtifactApprovalId = if ($null -ne $executorArtifactQueue.task) { $executorArtifactQueue.task.approvalRequestId } else { $null }
+    $executorArtifactIdsOk = (-not [string]::IsNullOrWhiteSpace($executorArtifactTaskId)) -and (-not [string]::IsNullOrWhiteSpace($executorArtifactApprovalId)) -and ($executorArtifactApprovalId -ne 'none')
+    Write-Check -Name 'Executor create_artifact ids returned' -Passed $executorArtifactIdsOk -Detail ($(if ($executorArtifactIdsOk) { "$executorArtifactTaskId | $executorArtifactApprovalId" } else { 'executor create_artifact ids missing' }))
+    if (-not $executorArtifactIdsOk) { $failed++ }
+
+    if ($executorArtifactIdsOk) {
+        $executorArtifactApprovePayload = @{
+            approvalId = $executorArtifactApprovalId
+            decision = 'approve'
+            note = 'dashboard checker approved artifact execution'
+        } | ConvertTo-Json
+        $executorArtifactApprove = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/approvals/decision" -Method Post -ContentType 'application/json' -Body $executorArtifactApprovePayload -TimeoutSec 30
+        $executorArtifactApproveOk = $executorArtifactApprove.ok -and `
+            $executorArtifactApprove.approval.status -eq 'approved' -and `
+            $executorArtifactApprove.approval.workspacePolicy -eq 'allowed'
+        Write-Check -Name 'Executor create_artifact approval endpoint' -Passed $executorArtifactApproveOk -Detail ($(if ($executorArtifactApproveOk) { $executorArtifactApprove.summary.headline } else { 'executor create_artifact approval failed' }))
+        if (-not $executorArtifactApproveOk) { $failed++ }
+
+        $executorArtifactExecutePayload = @{
+            taskId = $executorArtifactTaskId
+            action = 'execute'
+        } | ConvertTo-Json
+        $executorArtifactExecute = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $executorArtifactExecutePayload -TimeoutSec 30
+        $executorArtifactExecuteOk = $executorArtifactExecute.ok -and `
+            $executorArtifactExecute.task.status -eq 'completed' -and `
+            $executorArtifactExecute.task.lastExecutionStatus -eq 'succeeded' -and `
+            (Test-Path -LiteralPath $executorArtifactPath -PathType Leaf)
+        Write-Check -Name 'Executor create_artifact execution endpoint' -Passed $executorArtifactExecuteOk -Detail ($(if ($executorArtifactExecuteOk) { $executorArtifactExecute.summary.headline } else { 'executor create_artifact execute failed' }))
+        if (-not $executorArtifactExecuteOk) { $failed++ }
+
+        $executorArtifactDetail = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/item?taskId=$executorArtifactTaskId" -Method Get -TimeoutSec 30
+        $executorArtifactDetailOk = $executorArtifactDetail.ok -and `
+            $executorArtifactDetail.summary.lastExecutionStatus -eq 'succeeded' -and `
+            $executorArtifactDetail.summary.lastArtifactPath -eq $executorArtifactPath -and `
+            $executorArtifactDetail.summary.executionHistory.Count -gt 0
+        Write-Check -Name 'Executor create_artifact result persists in task detail' -Passed $executorArtifactDetailOk -Detail ($(if ($executorArtifactDetailOk) { $executorArtifactDetail.summary.lastArtifactPath } else { 'executor create_artifact result not persisted' }))
+        if (-not $executorArtifactDetailOk) { $failed++ }
     }
 
     $capability = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/capability-summary" -Method Get -TimeoutSec 30

@@ -41,13 +41,15 @@ body {
 
 button,
 input,
-textarea {
+textarea,
+select {
   font: inherit;
 }
 
 button,
 input,
 textarea,
+select,
 pre,
 code {
   max-width: 100%;
@@ -349,7 +351,8 @@ button.is-busy {
 }
 
 input,
-textarea {
+textarea,
+select {
   width: 100%;
   min-width: 0;
   padding: 0.75rem;
