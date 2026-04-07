@@ -1,15 +1,15 @@
 # Dashboard MVP
 
-Small local dashboard for triggering the current safe demos and scaffold actions from a GUI.
+Local operator-console-style app for triggering the current safe demos and scaffold actions from a clearer GUI.
 
 ## What It Does
 
-- shows capability summary output
-- shows GitHub status output
+- shows operator-mode status
+- shows capability summary and clearer GitHub updates
 - generates internship, showcase, and portfolio scaffolds
 - triggers the browser smoke demo
 - triggers the visible browser demo
-- lists recent artifacts from key local output folders
+- lists recent artifacts and recent actions
 
 ## How To Run
 

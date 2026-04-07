@@ -26,21 +26,22 @@
 - [x] Browser control playground exists
 - [x] Browser visible demo exists
 - [x] Local dashboard MVP exists
+- [x] Operator console v2 exists
 
 ## Current Control Layer
 - Continue for local context/rules
 - Codex for execution and Git workflow
 
 ## Current Branch
-- feat/visible-browser-demo-and-dashboard
+- feat/dashboard-operator-console-v2
 
 ## Current Phase
-- visible browser demo and local dashboard MVP
+- dashboard operator console v2
 
 ## Next Milestones
-- test the local dashboard manually
-- improve the local dashboard UX
+- test dashboard v2 manually
 - decide between Playwright-first and browser-use-first for the next executor layer
+- begin desktop or app control research or a small playground
 - evaluate Windows-Use and Windows-MCP
 - optionally use the Playwright skill in Codex
 - prepare one internship-facing live demo
@@ -59,7 +60,7 @@
 - no live mail or LinkedIn adapters yet
 - no live Notion writes yet
 - live remote GitHub mutation is possible in this environment, so approval discipline remains critical
-- browser visible demo exists, but browser and app execution beyond the local playground are still research-only
+- browser visible demo and operator console v2 exist, but browser and app execution beyond the local playground are still research-only
 
 ## Last Reviewed
 - 2026-04-07

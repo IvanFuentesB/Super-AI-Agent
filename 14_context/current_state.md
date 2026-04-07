@@ -46,9 +46,11 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Browser control playground now exists
 - Playwright-based local smoke test now exists
 - Browser playground now has a visible headed demo mode
-- Local dashboard MVP now exists
+- Local operator-console-style dashboard now exists
+- Dashboard now presents clearer operator-mode status, GitHub updates, recent actions, and recent artifacts
 - Dashboard can trigger safe local scaffold generation
 - Dashboard can trigger local browser demos
+- GitHub status and scaffold generation are accessible through the dashboard
 - No live external provider APIs yet
 - No real browser or app executor beyond the local playground yet
 - No remote auth layer yet
@@ -62,9 +64,9 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Claw Code remains temporary reference, not foundation
 
 ## Immediate Focus
-- Test the local dashboard manually
-- Improve the local dashboard UX
+- Test dashboard v2 manually
 - Decide between Playwright-first and browser-use-first for the next executor layer
+- Begin desktop or app control research with a small playground later
 - Prepare one internship-facing live demo from the current runtime outputs
 - Keep GitHub remote actions explicit and approval-gated
 - Keep browser and app execution beyond the local playground in research until the control boundary is clearer
@@ -73,5 +75,5 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Continue session context still fills quickly
 - Runtime behavior still depends on the actual shell seeing the expected tool/auth state
 - Live remote GitHub mutation is now possible, so approval discipline matters more than before
-- Browser and app execution are still mostly research-only, even though the local dashboard and visible demo now make the current step easier to inspect
+- Browser and app execution are still mostly research-only, even though the operator console and visible demo now make the current step easier to inspect
 - Third-party intake repos are valuable comparison material, but most of their surface area is still too heavy to adopt directly

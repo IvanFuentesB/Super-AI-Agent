@@ -11,6 +11,10 @@ const browserProjectRoot = path.join(repoRoot, "01_projects", "browser_playgroun
 const runtimeProjectRoot = path.join(repoRoot, "01_projects", "runtime_mvp");
 const runtimeSrcPath = path.join(runtimeProjectRoot, "src");
 const dashboardPort = Number.parseInt(process.env.PORT || "3210", 10);
+const maxRecentActions = 25;
+
+let actionCounter = 0;
+const recentActions = [];
 
 function firstNonEmptyValue(values) {
   for (const value of values) {
@@ -75,6 +79,15 @@ function buildRuntimeEnv() {
     ...process.env,
     PYTHONPATH: pythonPath,
   };
+}
+
+function pushAction(entry) {
+  recentActions.unshift({
+    actionId: `action-${Date.now()}-${++actionCounter}`,
+    occurredAt: new Date().toISOString(),
+    ...entry,
+  });
+  recentActions.splice(maxRecentActions);
 }
 
 function runCommand(command, args, options = {}) {
@@ -180,6 +193,121 @@ async function runBrowserDemo(visible, checkOnly) {
   };
 }
 
+function parseKeyValueBlock(stdout) {
+  const values = {};
+  const listSections = {};
+  let currentList = null;
+
+  for (const rawLine of stdout.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line) {
+      continue;
+    }
+
+    if (line.endsWith(":") && !line.includes(" | ")) {
+      currentList = line.slice(0, -1);
+      if (!listSections[currentList]) {
+        listSections[currentList] = [];
+      }
+      continue;
+    }
+
+    if (currentList && line.startsWith("- ")) {
+      listSections[currentList].push(line.slice(2));
+      continue;
+    }
+
+    currentList = null;
+    const separatorIndex = line.indexOf(":");
+    if (separatorIndex !== -1) {
+      const key = line.slice(0, separatorIndex).trim();
+      const value = line.slice(separatorIndex + 1).trim();
+      values[key] = value;
+    }
+  }
+
+  return {
+    values,
+    listSections,
+  };
+}
+
+function parseCapabilitySummary(stdout) {
+  const capabilities = stdout
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const parts = line.split(" | ").map((part) => part.trim());
+      if (parts.length !== 4) {
+        return null;
+      }
+      return {
+        capabilityId: parts[0],
+        state: parts[1],
+        requiredTools: parts[2].replace(/^requires:\s*/, ""),
+        blockingIssue: parts[3].replace(/^block:\s*/, ""),
+      };
+    })
+    .filter(Boolean);
+
+  const availableCount = capabilities.filter((item) => item.state === "available").length;
+  const blockedCount = capabilities.filter((item) => item.state === "blocked").length;
+
+  return {
+    capabilities,
+    availableCount,
+    blockedCount,
+    headline: `${availableCount} available, ${blockedCount} blocked`,
+  };
+}
+
+function parseGithubStatus(stdout) {
+  const parsed = parseKeyValueBlock(stdout);
+  return {
+    repoRoot: parsed.values.repo_root || "unknown",
+    branch: parsed.values.branch || "unknown",
+    clean: parsed.values.clean === "yes",
+    stagedChanges: Number.parseInt(parsed.values.staged_changes || "0", 10),
+    unstagedChanges: Number.parseInt(parsed.values.unstaged_changes || "0", 10),
+    untrackedChanges: Number.parseInt(parsed.values.untracked_changes || "0", 10),
+    originUrl: parsed.values.origin_url || "none",
+    ghAvailable: parsed.values.gh_available === "yes",
+    ghAuthenticated: parsed.values.gh_authenticated || "unknown",
+    recentCommits: parsed.listSections.recent_commits || [],
+  };
+}
+
+function parseRemoteCapability(stdout) {
+  const parsed = parseKeyValueBlock(stdout);
+  return {
+    repoRoot: parsed.values.repo_root || "unknown",
+    branch: parsed.values.branch || "unknown",
+    originUrl: parsed.values.origin_url || "none",
+    ghAvailable: parsed.values.gh_available === "yes",
+    ghAuthenticated: parsed.values.gh_authenticated || "unknown",
+    remoteWritePossible: parsed.values.remote_write_possible === "yes",
+    blockingIssue: parsed.values.blocking_issue || "none",
+  };
+}
+
+function parseBrowserResult(stdout) {
+  const parsed = parseKeyValueBlock(stdout);
+  return {
+    mode: parsed.values.mode || "unknown",
+    screenshotPath: parsed.values.smoke_screenshot || parsed.values.screenshot_path || "none",
+    headless: parsed.values.headless || "unknown",
+    slowMo: parsed.values.slow_mo || "0",
+    keepOpenMs: parsed.values.keep_open_ms || "0",
+  };
+}
+
+function extractOutputPath(label, stdout) {
+  const regex = new RegExp(`${label}:\\s*(.+)$`, "m");
+  const match = stdout.match(regex);
+  return match ? match[1].trim() : null;
+}
+
 function relativeRepoPath(absolutePath) {
   return path.relative(repoRoot, absolutePath).replace(/\\/g, "/");
 }
@@ -217,6 +345,32 @@ function listRecentArtifacts() {
 
   artifacts.sort((left, right) => right.modifiedAt.localeCompare(left.modifiedAt));
   return artifacts.slice(0, 25);
+}
+
+function buildOperatorStatus() {
+  return {
+    localOnly: true,
+    headline: "Local operator console for safe, visible, reviewable actions.",
+    liveNow: [
+      "Capability summary and environment-aware status",
+      "GitHub read status and remote-capability visibility",
+      "Internship, showcase, and portfolio scaffold generation",
+      "Browser smoke demo and visible local browser demo",
+      "Recent artifacts and recent-action log",
+    ],
+    scaffoldOnly: [
+      "GitHub remote write actions remain explicit and approval-gated",
+      "Mail, Notion, and LinkedIn remain planning-only",
+      "Personal ops packs are generated outputs, not live send or publish flows",
+    ],
+    notImplementedYet: [
+      "Full browser executor loop",
+      "Desktop or Windows app control",
+      "Approval queue UI",
+      "Live mail, Notion, and LinkedIn adapters",
+    ],
+    nextStep: "Use the dashboard as the visible local control surface, then choose the next executor path deliberately.",
+  };
 }
 
 function sendJson(response, statusCode, payload) {
@@ -283,32 +437,116 @@ function requireFields(payload, fieldNames) {
   }
 }
 
+async function buildCapabilityResponse() {
+  const raw = await runRuntimeCli(["capability-matrix"]);
+  return {
+    ok: raw.ok,
+    summary: parseCapabilitySummary(raw.stdout),
+    raw,
+    localOnly: true,
+  };
+}
+
+async function buildGithubUpdatesResponse() {
+  const statusRaw = await runRuntimeCli(["github-status"]);
+  const capabilityRaw = await runRuntimeCli(["github-remote-capability"]);
+  const status = parseGithubStatus(statusRaw.stdout);
+  const capability = parseRemoteCapability(capabilityRaw.stdout);
+
+  return {
+    ok: statusRaw.ok && capabilityRaw.ok,
+    summary: {
+      branch: status.branch,
+      clean: status.clean,
+      stagedChanges: status.stagedChanges,
+      unstagedChanges: status.unstagedChanges,
+      untrackedChanges: status.untrackedChanges,
+      originUrl: status.originUrl,
+      ghAvailable: status.ghAvailable,
+      ghAuthenticated: capability.ghAuthenticated,
+      remoteWritePossible: capability.remoteWritePossible,
+      blockingIssue: capability.blockingIssue,
+      recentCommits: status.recentCommits,
+      headline: status.clean
+        ? `Branch ${status.branch} is clean.`
+        : `Branch ${status.branch} has local changes.`,
+    },
+    raw: {
+      githubStatus: statusRaw,
+      remoteCapability: capabilityRaw,
+    },
+    localOnly: true,
+  };
+}
+
 async function handleApiRequest(request, response, requestUrl) {
   if (request.method === "GET" && requestUrl.pathname === "/api/health") {
     sendJson(response, 200, {
       ok: true,
       service: "dashboard-mvp",
       port: dashboardPort,
+      localOnly: true,
     });
     return;
   }
 
-  if (request.method === "GET" && requestUrl.pathname === "/api/capability-summary") {
-    const result = await runRuntimeCli(["capability-matrix"]);
-    sendJson(response, result.ok ? 200 : 500, result);
+  if (request.method === "GET" && requestUrl.pathname === "/api/operator-status") {
+    const payload = {
+      ok: true,
+      ...buildOperatorStatus(),
+    };
+    pushAction({
+      actionType: "status",
+      label: "Viewed operator status",
+      status: "success",
+      summary: "Loaded the local operator-mode status summary.",
+    });
+    sendJson(response, 200, payload);
     return;
   }
 
-  if (request.method === "GET" && requestUrl.pathname === "/api/github-status") {
-    const result = await runRuntimeCli(["github-status"]);
-    sendJson(response, result.ok ? 200 : 500, result);
+  if (request.method === "GET" && requestUrl.pathname === "/api/capability-summary") {
+    const payload = await buildCapabilityResponse();
+    pushAction({
+      actionType: "status",
+      label: "Refreshed capability summary",
+      status: payload.ok ? "success" : "error",
+      summary: payload.summary.headline,
+    });
+    sendJson(response, payload.ok ? 200 : 500, payload);
+    return;
+  }
+
+  if (
+    request.method === "GET" &&
+    (requestUrl.pathname === "/api/github-status" || requestUrl.pathname === "/api/github-updates")
+  ) {
+    const payload = await buildGithubUpdatesResponse();
+    pushAction({
+      actionType: "github",
+      label: "Refreshed GitHub updates",
+      status: payload.ok ? "success" : "error",
+      summary: payload.summary.headline,
+    });
+    sendJson(response, payload.ok ? 200 : 500, payload);
     return;
   }
 
   if (request.method === "GET" && requestUrl.pathname === "/api/artifacts") {
+    const payload = {
+      ok: true,
+      localOnly: true,
+      artifacts: listRecentArtifacts(),
+    };
+    sendJson(response, 200, payload);
+    return;
+  }
+
+  if (request.method === "GET" && requestUrl.pathname === "/api/recent-actions") {
     sendJson(response, 200, {
       ok: true,
-      artifacts: listRecentArtifacts(),
+      localOnly: true,
+      actions: recentActions,
     });
     return;
   }
@@ -316,7 +554,7 @@ async function handleApiRequest(request, response, requestUrl) {
   if (request.method === "POST" && requestUrl.pathname === "/api/scaffold/internship") {
     const payload = await readJsonBody(request);
     requireFields(payload, ["targetRole", "company", "jobSource", "fitSummary"]);
-    const result = await runRuntimeCli([
+    const raw = await runRuntimeCli([
       "scaffold-internship-pack",
       "--target-role",
       String(payload.targetRole),
@@ -327,17 +565,35 @@ async function handleApiRequest(request, response, requestUrl) {
       "--fit-summary",
       String(payload.fitSummary),
     ]);
-    sendJson(response, result.ok ? 200 : 500, {
-      ...result,
+    const outputPath = extractOutputPath("personal_ops_path", raw.stdout) || "none";
+    const responsePayload = {
+      ok: raw.ok,
+      summary: {
+        action: "internship_scaffold",
+        headline: raw.ok
+          ? "Internship pack generated."
+          : "Internship pack generation failed.",
+        outputPath,
+      },
+      raw,
       artifacts: listRecentArtifacts(),
+      localOnly: true,
+    };
+    pushAction({
+      actionType: "personal_ops",
+      label: "Generated internship pack",
+      status: raw.ok ? "success" : "error",
+      summary: responsePayload.summary.headline,
+      outputPath,
     });
+    sendJson(response, raw.ok ? 200 : 500, responsePayload);
     return;
   }
 
   if (request.method === "POST" && requestUrl.pathname === "/api/scaffold/showcase") {
     const payload = await readJsonBody(request);
     requireFields(payload, ["projectName", "objective", "highlights"]);
-    const result = await runRuntimeCli([
+    const raw = await runRuntimeCli([
       "scaffold-showcase-case-study",
       "--project-name",
       String(payload.projectName),
@@ -346,17 +602,35 @@ async function handleApiRequest(request, response, requestUrl) {
       "--highlights",
       String(payload.highlights),
     ]);
-    sendJson(response, result.ok ? 200 : 500, {
-      ...result,
+    const outputPath = extractOutputPath("personal_ops_path", raw.stdout) || "none";
+    const responsePayload = {
+      ok: raw.ok,
+      summary: {
+        action: "showcase_case_study",
+        headline: raw.ok
+          ? "Showcase case study generated."
+          : "Showcase case study generation failed.",
+        outputPath,
+      },
+      raw,
       artifacts: listRecentArtifacts(),
+      localOnly: true,
+    };
+    pushAction({
+      actionType: "personal_ops",
+      label: "Generated showcase case study",
+      status: raw.ok ? "success" : "error",
+      summary: responsePayload.summary.headline,
+      outputPath,
     });
+    sendJson(response, raw.ok ? 200 : 500, responsePayload);
     return;
   }
 
   if (request.method === "POST" && requestUrl.pathname === "/api/scaffold/portfolio") {
     const payload = await readJsonBody(request);
     requireFields(payload, ["projectName", "summary", "stack"]);
-    const result = await runRuntimeCli([
+    const raw = await runRuntimeCli([
       "scaffold-portfolio-project-page",
       "--project-name",
       String(payload.projectName),
@@ -365,29 +639,91 @@ async function handleApiRequest(request, response, requestUrl) {
       "--stack",
       String(payload.stack),
     ]);
-    sendJson(response, result.ok ? 200 : 500, {
-      ...result,
+    const outputPath = extractOutputPath("personal_ops_path", raw.stdout) || "none";
+    const responsePayload = {
+      ok: raw.ok,
+      summary: {
+        action: "portfolio_project_page",
+        headline: raw.ok
+          ? "Portfolio project page generated."
+          : "Portfolio project page generation failed.",
+        outputPath,
+      },
+      raw,
       artifacts: listRecentArtifacts(),
+      localOnly: true,
+    };
+    pushAction({
+      actionType: "personal_ops",
+      label: "Generated portfolio page",
+      status: raw.ok ? "success" : "error",
+      summary: responsePayload.summary.headline,
+      outputPath,
     });
+    sendJson(response, raw.ok ? 200 : 500, responsePayload);
     return;
   }
 
   if (request.method === "POST" && requestUrl.pathname === "/api/browser/smoke") {
-    const result = await runBrowserDemo(false, false);
-    sendJson(response, result.ok ? 200 : 500, {
-      ...result,
+    const raw = await runBrowserDemo(false, false);
+    const browserResult = parseBrowserResult(raw.stdout);
+    const responsePayload = {
+      ok: raw.ok,
+      summary: {
+        action: "browser_smoke",
+        headline: raw.ok
+          ? "Headless browser smoke demo completed."
+          : "Headless browser smoke demo failed.",
+        mode: browserResult.mode,
+        screenshotPath: browserResult.screenshotPath,
+      },
+      raw,
       artifacts: listRecentArtifacts(),
+      localOnly: true,
+    };
+    pushAction({
+      actionType: "browser",
+      label: "Ran browser smoke demo",
+      status: raw.ok ? "success" : "error",
+      summary: responsePayload.summary.headline,
+      outputPath: browserResult.screenshotPath,
     });
+    sendJson(response, raw.ok ? 200 : 500, responsePayload);
     return;
   }
 
   if (request.method === "POST" && requestUrl.pathname === "/api/browser/visible") {
     const payload = await readJsonBody(request);
-    const result = await runBrowserDemo(true, Boolean(payload.checkOnly));
-    sendJson(response, result.ok ? 200 : 500, {
-      ...result,
+    const raw = await runBrowserDemo(true, Boolean(payload.checkOnly));
+    const browserResult = parseBrowserResult(raw.stdout);
+    const responsePayload = {
+      ok: raw.ok,
+      summary: {
+        action: "browser_visible",
+        headline: raw.ok
+          ? (payload.checkOnly
+              ? "Visible browser demo path checked."
+              : "Visible browser demo completed.")
+          : "Visible browser demo failed.",
+        mode: browserResult.mode,
+        screenshotPath: browserResult.screenshotPath,
+        headless: browserResult.headless,
+        checkOnly: Boolean(payload.checkOnly),
+      },
+      raw,
       artifacts: listRecentArtifacts(),
+      localOnly: true,
+    };
+    pushAction({
+      actionType: "browser",
+      label: payload.checkOnly
+        ? "Checked visible browser demo path"
+        : "Ran visible browser demo",
+      status: raw.ok ? "success" : "error",
+      summary: responsePayload.summary.headline,
+      outputPath: browserResult.screenshotPath,
     });
+    sendJson(response, raw.ok ? 200 : 500, responsePayload);
     return;
   }
 
@@ -428,6 +764,12 @@ async function handleRequest(request, response) {
 
     serveStatic(requestUrl, response);
   } catch (error) {
+    pushAction({
+      actionType: "error",
+      label: "Dashboard request failed",
+      status: "error",
+      summary: error.message,
+    });
     sendJson(response, 500, {
       ok: false,
       error: error.message,
@@ -438,6 +780,8 @@ async function handleRequest(request, response) {
 if (process.argv.includes("--check")) {
   const python = resolvePython();
   console.log("dashboard_check: ok");
+  console.log("mode: operator_console_v2");
+  console.log("local_only: yes");
   console.log(`python: ${python ? python.displayName : "missing"}`);
   console.log(`browser_runner: ${process.execPath}`);
   process.exit(0);
