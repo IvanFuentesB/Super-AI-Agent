@@ -75,6 +75,85 @@ function Resolve-CommandPath {
     return $null
 }
 
+function Resolve-PythonPath {
+    $command = Get-Command python -ErrorAction SilentlyContinue
+    if ($command) {
+        return $command.Source
+    }
+
+    $candidates = @(
+        'C:\Users\ai_sandbox\AppData\Local\Programs\Python\Python313\python.exe',
+        'C:\Program Files\KiCad\9.0\bin\python.exe',
+        'C:\Program Files\SOLIDWORKS Corp\SOLIDWORKS\Simulation\Topology\tools\smapy\python\python.exe'
+    )
+
+    foreach ($candidate in $candidates) {
+        if (Test-Path -LiteralPath $candidate -PathType Leaf) {
+            return $candidate
+        }
+    }
+
+    return $null
+}
+
+function Invoke-ModuleCommand {
+    param(
+        [string]$PythonPath,
+        [string[]]$Arguments
+    )
+
+    $escapedArgs = foreach ($item in $Arguments) {
+        $value = $item.Replace('\', '\\').Replace("'", "\\'")
+        "'$value'"
+    }
+    $pythonList = '[' + ($escapedArgs -join ', ') + ']'
+    $runtimeSrcEscaped = $runtimeSrc.Replace('\', '\\').Replace("'", "\\'")
+    $scriptPath = [System.IO.Path]::ChangeExtension([System.IO.Path]::GetTempFileName(), '.py')
+    $code = @"
+import sys
+sys.path.insert(0, r'$runtimeSrcEscaped')
+from super_ai_agent.cli import main
+raise SystemExit(main($pythonList))
+"@
+
+    $stdoutPath = [System.IO.Path]::GetTempFileName()
+    $stderrPath = [System.IO.Path]::GetTempFileName()
+
+    try {
+        Set-Content -LiteralPath $scriptPath -Value $code -Encoding UTF8
+        $process = Start-Process `
+            -FilePath $PythonPath `
+            -ArgumentList $scriptPath `
+            -NoNewWindow `
+            -PassThru `
+            -Wait `
+            -RedirectStandardOutput $stdoutPath `
+            -RedirectStandardError $stderrPath
+
+        $parts = @()
+        if (Test-Path -LiteralPath $stdoutPath) {
+            $stdoutText = Get-Content -Raw -LiteralPath $stdoutPath
+            if (-not [string]::IsNullOrWhiteSpace($stdoutText)) {
+                $parts += $stdoutText.TrimEnd()
+            }
+        }
+        if (Test-Path -LiteralPath $stderrPath) {
+            $stderrText = Get-Content -Raw -LiteralPath $stderrPath
+            if (-not [string]::IsNullOrWhiteSpace($stderrText)) {
+                $parts += $stderrText.TrimEnd()
+            }
+        }
+
+        return @{
+            ExitCode = $process.ExitCode
+            Output = ($parts -join [Environment]::NewLine)
+        }
+    }
+    finally {
+        Remove-Item -LiteralPath $scriptPath, $stdoutPath, $stderrPath -Force -ErrorAction SilentlyContinue
+    }
+}
+
 function Remove-GeneratedFile {
     param(
         [string]$Path
@@ -95,6 +174,8 @@ function Remove-GeneratedFile {
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $projectRoot = Join-Path $repoRoot '01_projects\dashboard_mvp'
 $browserArtifactPath = Join-Path $repoRoot '01_projects\browser_playground\artifacts\smoke-click.png'
+$runtimeRoot = Join-Path $repoRoot '01_projects\runtime_mvp'
+$runtimeSrc = Join-Path $runtimeRoot 'src'
 
 $expectedFiles = @(
     '04_docs/local_dashboard_mvp.md',
@@ -126,15 +207,19 @@ foreach ($relativePath in $expectedFiles) {
 
 $nodePath = Resolve-CommandPath -PrimaryName 'node.exe' -FallbackNames @('node')
 $npmPath = Resolve-CommandPath -PrimaryName 'npm.cmd' -FallbackNames @('npm')
+$pythonPath = Resolve-PythonPath
 
 $nodeOk = -not [string]::IsNullOrWhiteSpace($nodePath)
 $npmOk = -not [string]::IsNullOrWhiteSpace($npmPath)
+$pythonOk = -not [string]::IsNullOrWhiteSpace($pythonPath)
 Write-Check -Name 'Node available' -Passed $nodeOk -Detail ($(if ($nodeOk) { $nodePath } else { 'node not found' }))
 Write-Check -Name 'npm available' -Passed $npmOk -Detail ($(if ($npmOk) { $npmPath } else { 'npm not found' }))
+Write-Check -Name 'Python available for dashboard-integrated runtime actions' -Passed $pythonOk -Detail ($(if ($pythonOk) { $pythonPath } else { 'python not found' }))
 if (-not $nodeOk) { $failed++ }
 if (-not $npmOk) { $failed++ }
+if (-not $pythonOk) { $failed++ }
 
-if (-not ($nodeOk -and $npmOk)) {
+if (-not ($nodeOk -and $npmOk -and $pythonOk)) {
     Write-Host ''
     Write-Host ('Summary: {0} dashboard check(s) failed before server execution.' -f $failed)
     exit 1
@@ -213,6 +298,41 @@ try {
     $pendingApprovalsOk = $pendingApprovals.ok -and $pendingApprovals.localOnly -and $null -ne $pendingApprovals.summary.requests
     Write-Check -Name 'Pending approvals endpoint' -Passed $pendingApprovalsOk -Detail ($(if ($pendingApprovalsOk) { $pendingApprovals.summary.headline } else { 'pending approvals missing structured output' }))
     if (-not $pendingApprovalsOk) { $failed++ }
+
+    $approvalQueueSeed = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('enqueue', '--title', 'dashboard checker approval task', '--description', 'Validate dashboard approval queue actions.', '--risk', 'ask')
+    $approvalQueueSeedOk = $approvalQueueSeed.ExitCode -eq 0
+    Write-Check -Name 'Seed approval for dashboard test' -Passed $approvalQueueSeedOk -Detail (($approvalQueueSeed.Output | Out-String).Trim())
+    if (-not $approvalQueueSeedOk) {
+        $failed++
+    }
+
+    $approvalIdMatch = [regex]::Match(($approvalQueueSeed.Output | Out-String), 'approval_request_id:\s*(\S+)')
+    $approvalId = if ($approvalIdMatch.Success) { $approvalIdMatch.Groups[1].Value } else { $null }
+    $approvalIdOk = -not [string]::IsNullOrWhiteSpace($approvalId)
+    Write-Check -Name 'Dashboard approval id parsed' -Passed $approvalIdOk -Detail ($(if ($approvalIdOk) { $approvalId } else { 'missing approval id from seed task output' }))
+    if (-not $approvalIdOk) { $failed++ }
+
+    if ($approvalIdOk) {
+        $approvalDetail = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/approvals/item?approvalId=$approvalId" -Method Get -TimeoutSec 30
+        $approvalDetailOk = $approvalDetail.ok -and $approvalDetail.localOnly -and $approvalDetail.summary.status -eq 'pending'
+        Write-Check -Name 'Approval detail endpoint' -Passed $approvalDetailOk -Detail ($(if ($approvalDetailOk) { $approvalDetail.summary.headline } else { 'approval detail did not return pending state' }))
+        if (-not $approvalDetailOk) { $failed++ }
+
+        $approvalDecisionPayload = @{
+            approvalId = $approvalId
+            decision = 'defer'
+            note = 'dashboard checker deferred this request'
+        } | ConvertTo-Json
+        $approvalDecision = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/approvals/decision" -Method Post -ContentType 'application/json' -Body $approvalDecisionPayload -TimeoutSec 30
+        $approvalDecisionOk = $approvalDecision.ok -and $approvalDecision.localOnly -and $approvalDecision.approval.status -eq 'deferred'
+        Write-Check -Name 'Approval decision endpoint' -Passed $approvalDecisionOk -Detail ($(if ($approvalDecisionOk) { $approvalDecision.summary.headline } else { 'approval decision did not persist deferred state' }))
+        if (-not $approvalDecisionOk) { $failed++ }
+
+        $approvalDetailAfter = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/approvals/item?approvalId=$approvalId" -Method Get -TimeoutSec 30
+        $approvalDetailAfterOk = $approvalDetailAfter.ok -and $approvalDetailAfter.summary.status -eq 'deferred' -and $approvalDetailAfter.summary.decisionHistory.Count -gt 0
+        Write-Check -Name 'Approval detail reflects decision history' -Passed $approvalDetailAfterOk -Detail ($(if ($approvalDetailAfterOk) { $approvalDetailAfter.summary.headline } else { 'approval history not visible after dashboard decision' }))
+        if (-not $approvalDetailAfterOk) { $failed++ }
+    }
 
     $capability = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/capability-summary" -Method Get -TimeoutSec 30
     $capabilityOk = $capability.ok -and $capability.localOnly -and $capability.summary.availableCount -ge 0

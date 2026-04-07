@@ -42,11 +42,15 @@ from .personal_ops import (
 from .publishability import scan_publishability
 from .providers import list_provider_profiles
 from .queue import (
+    approve_approval_request,
     approve_task,
+    defer_approval_request,
+    deny_approval_request,
     enqueue_task,
     get_approval_request,
     get_status_summary,
     get_supervisor_state,
+    list_approval_records,
     list_approval_requests,
     list_blocked_tasks,
     list_pending_approvals,
@@ -89,6 +93,20 @@ def _get_current_branch() -> str | None:
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _approval_target(scope: str, task_id: str) -> str:
+    normalized_scope = (scope or "").strip()
+    if normalized_scope and normalized_scope != "runtime task execution":
+        return normalized_scope
+    return task_id
+
+
+def _short_description(text: str, limit: int = 120) -> str:
+    value = " ".join((text or "").split())
+    if len(value) <= limit:
+        return value or "none"
+    return f"{value[: limit - 3].rstrip()}..."
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -147,6 +165,18 @@ def _build_parser() -> argparse.ArgumentParser:
 
     approval_status_parser = subparsers.add_parser("approval-status")
     approval_status_parser.add_argument("--approval-id", default="")
+
+    approve_approval_parser = subparsers.add_parser("approve-approval")
+    approve_approval_parser.add_argument("--approval-id", required=True)
+    approve_approval_parser.add_argument("--note", default="")
+
+    deny_approval_parser = subparsers.add_parser("deny-approval")
+    deny_approval_parser.add_argument("--approval-id", required=True)
+    deny_approval_parser.add_argument("--note", default="")
+
+    defer_approval_parser = subparsers.add_parser("defer-approval")
+    defer_approval_parser.add_argument("--approval-id", required=True)
+    defer_approval_parser.add_argument("--note", default="")
 
     request_approval_parser = subparsers.add_parser("request-approval")
     request_approval_parser.add_argument("--task-id", required=True)
@@ -419,16 +449,21 @@ def main(argv: list[str] | None = None) -> int:
                 return 0
             print("requests:")
             for request in requests:
+                target = _approval_target(request.scope, request.task_id)
+                description = _short_description(request.reason)
                 print(
-                    f"- {request.approval_id} | {request.status} | {request.risk_level} | "
-                    f"{request.task_id} | admin_required="
-                    f"{'yes' if request.requires_admin else 'no'} | {request.action_label}"
+                    f"- {request.approval_id} | {request.status} | "
+                    f"risk={request.risk_level} | task={request.task_id} | "
+                    f"action={request.action_label} | target={target} | "
+                    f"description={description} | admin="
+                    f"{'yes' if request.requires_admin else 'no'}"
                 )
             return 0
 
         if args.command == "approval-status":
             if args.approval_id:
                 request = get_approval_request(args.approval_id)
+                history = list_approval_records(approval_id=request.approval_id)
                 print(f"approval_id: {request.approval_id}")
                 print(f"task_id: {request.task_id}")
                 print(f"status: {request.status}")
@@ -442,6 +477,15 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"reason: {request.reason}")
                 print(f"rollback_plan: {request.rollback_plan or 'none'}")
                 print(f"human_note: {request.human_note or 'none'}")
+                print("decision_history:")
+                if history:
+                    for record in history:
+                        print(
+                            f"- {record.decision} | {record.decided_at} | "
+                            f"note={record.note or 'none'}"
+                        )
+                else:
+                    print("- none")
                 return 0
 
             requests = list_approval_requests()
@@ -451,10 +495,56 @@ def main(argv: list[str] | None = None) -> int:
                 return 0
             print("requests:")
             for request in requests:
+                target = _approval_target(request.scope, request.task_id)
+                description = _short_description(request.reason)
                 print(
-                    f"- {request.approval_id} | {request.status} | {request.risk_level} | "
-                    f"{request.task_id} | {request.action_label}"
+                    f"- {request.approval_id} | {request.status} | "
+                    f"risk={request.risk_level} | task={request.task_id} | "
+                    f"action={request.action_label} | target={target} | "
+                    f"description={description}"
                 )
+            return 0
+
+        if args.command == "approve-approval":
+            task, request = approve_approval_request(
+                approval_id=args.approval_id,
+                note=args.note,
+            )
+            print(f"approval_id: {request.approval_id}")
+            print("decision: approved")
+            print(f"status: {request.status}")
+            print(f"task_id: {task.task_id}")
+            print(f"task_status: {task.status}")
+            print(f"approval_state: {task.approval_state}")
+            print(f"human_note: {request.human_note or 'none'}")
+            return 0
+
+        if args.command == "deny-approval":
+            task, request = deny_approval_request(
+                approval_id=args.approval_id,
+                note=args.note,
+            )
+            print(f"approval_id: {request.approval_id}")
+            print("decision: denied")
+            print(f"status: {request.status}")
+            print(f"task_id: {task.task_id}")
+            print(f"task_status: {task.status}")
+            print(f"approval_state: {task.approval_state}")
+            print(f"human_note: {request.human_note or 'none'}")
+            return 0
+
+        if args.command == "defer-approval":
+            task, request = defer_approval_request(
+                approval_id=args.approval_id,
+                note=args.note,
+            )
+            print(f"approval_id: {request.approval_id}")
+            print("decision: deferred")
+            print(f"status: {request.status}")
+            print(f"task_id: {task.task_id}")
+            print(f"task_status: {task.status}")
+            print(f"approval_state: {task.approval_state}")
+            print(f"human_note: {request.human_note or 'none'}")
             return 0
 
         if args.command == "request-approval":
@@ -549,10 +639,14 @@ def main(argv: list[str] | None = None) -> int:
             print("pending_approvals:")
             if pending_requests:
                 for request in pending_requests:
+                    target = _approval_target(request.scope, request.task_id)
+                    description = _short_description(request.reason)
                     print(
-                        f"- {request.approval_id} | {request.status} | {request.risk_level} | "
-                        f"{request.task_id} | admin_required="
-                        f"{'yes' if request.requires_admin else 'no'} | {request.action_label}"
+                        f"- {request.approval_id} | {request.status} | "
+                        f"risk={request.risk_level} | task={request.task_id} | "
+                        f"action={request.action_label} | target={target} | "
+                        f"description={description} | admin="
+                        f"{'yes' if request.requires_admin else 'no'}"
                     )
             else:
                 print("- none")

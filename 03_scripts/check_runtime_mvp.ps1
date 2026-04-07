@@ -457,6 +457,85 @@ if ($taskIdOk) {
     if (-not $runOnceOk) { $failed++ }
 }
 
+$approvalDecisionScenarios = @(
+    @{
+        Name = 'approve'
+        Command = 'approve-approval'
+        Note = 'checker approval queue action'
+        ExpectedStatus = 'approved'
+        ExpectedTaskStatus = 'queued'
+    },
+    @{
+        Name = 'deny'
+        Command = 'deny-approval'
+        Note = 'checker denied this request'
+        ExpectedStatus = 'denied'
+        ExpectedTaskStatus = 'rejected'
+    },
+    @{
+        Name = 'defer'
+        Command = 'defer-approval'
+        Note = 'checker deferred this request'
+        ExpectedStatus = 'deferred'
+        ExpectedTaskStatus = 'waiting'
+    }
+)
+
+foreach ($scenario in $approvalDecisionScenarios) {
+    $decisionEnqueueResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('enqueue', '--title', "checker $($scenario.Name) approval task", '--description', "Validate $($scenario.Name) approval action.", '--risk', 'ask')
+    $decisionEnqueueOk = $decisionEnqueueResult.ExitCode -eq 0
+    Write-Check -Name "CLI enqueue for $($scenario.Name) approval" -Passed $decisionEnqueueOk -Detail (($decisionEnqueueResult.Output | Out-String).Trim())
+    if (-not $decisionEnqueueOk) {
+        $failed++
+        continue
+    }
+
+    $decisionApprovalIdMatch = [regex]::Match(($decisionEnqueueResult.Output | Out-String), 'approval_request_id:\s*(\S+)')
+    $decisionApprovalId = if ($decisionApprovalIdMatch.Success) { $decisionApprovalIdMatch.Groups[1].Value } else { $null }
+    $decisionApprovalIdOk = -not [string]::IsNullOrWhiteSpace($decisionApprovalId)
+    Write-Check -Name "$($scenario.Name) approval id parsed" -Passed $decisionApprovalIdOk -Detail ($(if ($decisionApprovalIdOk) { $decisionApprovalId } else { 'missing approval id from enqueue output' }))
+    if (-not $decisionApprovalIdOk) {
+        $failed++
+        continue
+    }
+
+    $decisionResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @($scenario.Command, '--approval-id', $decisionApprovalId, '--note', $scenario.Note)
+    $decisionOk = $decisionResult.ExitCode -eq 0 -and (($decisionResult.Output | Out-String) -match "status:\s+$($scenario.ExpectedStatus)") -and (($decisionResult.Output | Out-String) -match "task_status:\s+$($scenario.ExpectedTaskStatus)")
+    Write-Check -Name "CLI $($scenario.Command)" -Passed $decisionOk -Detail (($decisionResult.Output | Out-String).Trim())
+    if (-not $decisionOk) {
+        $failed++
+        continue
+    }
+
+    $postDecisionStatus = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approval-status', '--approval-id', $decisionApprovalId)
+    $postDecisionStatusOk = $postDecisionStatus.ExitCode -eq 0 -and (($postDecisionStatus.Output | Out-String) -match "status:\s+$($scenario.ExpectedStatus)") -and (($postDecisionStatus.Output | Out-String) -match "decision_history:") -and (($postDecisionStatus.Output | Out-String) -match "- $($scenario.ExpectedStatus) \|")
+    Write-Check -Name "CLI approval-status after $($scenario.Name)" -Passed $postDecisionStatusOk -Detail (($postDecisionStatus.Output | Out-String).Trim())
+    if (-not $postDecisionStatusOk) { $failed++ }
+}
+
+$externalPathGuardResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'enqueue',
+    '--title', 'checker external path task',
+    '--description', 'Review C:\Windows\Temp\outside-target.txt before any action.',
+    '--risk', 'safe'
+)
+$externalPathGuardOk = $externalPathGuardResult.ExitCode -eq 0 -and (($externalPathGuardResult.Output | Out-String) -match 'status:\s+pending_approval') -and (($externalPathGuardResult.Output | Out-String) -match 'approval_state:\s+pending')
+Write-Check -Name 'Repo-root safety guard escalates external path task' -Passed $externalPathGuardOk -Detail (($externalPathGuardResult.Output | Out-String).Trim())
+if (-not $externalPathGuardOk) { $failed++ }
+
+$externalApprovalIdMatch = [regex]::Match(($externalPathGuardResult.Output | Out-String), 'approval_request_id:\s*(\S+)')
+$externalApprovalId = if ($externalApprovalIdMatch.Success) { $externalApprovalIdMatch.Groups[1].Value } else { $null }
+$externalApprovalIdOk = -not [string]::IsNullOrWhiteSpace($externalApprovalId)
+Write-Check -Name 'External path approval id parsed' -Passed $externalApprovalIdOk -Detail ($(if ($externalApprovalIdOk) { $externalApprovalId } else { 'missing approval id for external path guard scenario' }))
+if (-not $externalApprovalIdOk) { $failed++ }
+
+if ($externalApprovalIdOk) {
+    $externalApprovalStatusResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approval-status', '--approval-id', $externalApprovalId)
+    $externalApprovalStatusOk = $externalApprovalStatusResult.ExitCode -eq 0 -and (($externalApprovalStatusResult.Output | Out-String) -match 'risk_level:\s+high_risk')
+    Write-Check -Name 'External path approval is marked high risk' -Passed $externalApprovalStatusOk -Detail (($externalApprovalStatusResult.Output | Out-String).Trim())
+    if (-not $externalApprovalStatusOk) { $failed++ }
+}
+
 $safeTaskResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('enqueue', '--title', 'checker safe task', '--description', 'supervisor and human-needed check', '--risk', 'safe')
 $safeTaskOk = $safeTaskResult.ExitCode -eq 0
 Write-Check -Name 'CLI enqueue safe task' -Passed $safeTaskOk -Detail (($safeTaskResult.Output | Out-String).Trim())

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from pathlib import Path
+import re
 from uuid import uuid4
 
 from .models import (
@@ -12,6 +14,7 @@ from .models import (
     TASK_RISK_LEVELS,
 )
 from .storage import (
+    get_project_root,
     read_approval_requests,
     read_approvals,
     read_supervisor_state,
@@ -24,6 +27,8 @@ from .storage import (
 
 ALLOWED_RISKS = set(TASK_RISK_LEVELS)
 QUEUEABLE_TASK_STATUSES = {"queued", "running", "waiting", "blocked_human_needed"}
+REPO_ROOT = get_project_root().parents[1].resolve()
+WINDOWS_ABSOLUTE_PATH_PATTERN = re.compile(r"(?i)\b[A-Z]:\\[^\s\"'<>|?*]+")
 
 
 def _now() -> str:
@@ -61,6 +66,37 @@ def _requires_approval(risk_level: str) -> bool:
 
 def _requires_admin(risk_level: str) -> bool:
     return risk_level == "admin"
+
+
+def _extract_candidate_paths(*texts: str) -> list[str]:
+    candidates: list[str] = []
+    seen: set[str] = set()
+
+    for text in texts:
+        for match in WINDOWS_ABSOLUTE_PATH_PATTERN.findall(text or ""):
+            candidate = match.rstrip(".,;:!?)]}\"'")
+            if candidate and candidate not in seen:
+                seen.add(candidate)
+                candidates.append(candidate)
+
+    return candidates
+
+
+def _is_inside_repo_root(path_value: str) -> bool:
+    try:
+        return Path(path_value).resolve(strict=False).is_relative_to(REPO_ROOT)
+    except (OSError, ValueError):
+        return False
+
+
+def _apply_repo_root_safety_guard(
+    risk_level: str,
+    *texts: str,
+) -> str:
+    for candidate in _extract_candidate_paths(*texts):
+        if not _is_inside_repo_root(candidate):
+            return "high_risk"
+    return risk_level
 
 
 def _build_approval_request(
@@ -194,6 +230,7 @@ def enqueue_task(title: str, description: str, risk_level: str, source: str = "m
     if risk_level not in ALLOWED_RISKS:
         raise ValueError(f"Unsupported risk level: {risk_level}")
 
+    risk_level = _apply_repo_root_safety_guard(risk_level, title, description, source)
     timestamp = _now()
     requires_approval = _requires_approval(risk_level)
     task = Task(
@@ -259,8 +296,21 @@ def list_approval_requests(status: str | None = None) -> list[ApprovalRequest]:
 
 
 def get_approval_request(approval_id: str) -> ApprovalRequest:
-    requests = read_approval_requests()
+    _, requests = _backfill_pending_approval_requests()
     return _find_approval_request(requests, approval_id)
+
+
+def list_approval_records(
+    *,
+    approval_id: str = "",
+    task_id: str = "",
+) -> list[ApprovalRecord]:
+    records = read_approvals()
+    if approval_id:
+        records = [record for record in records if record.approval_id == approval_id]
+    if task_id:
+        records = [record for record in records if record.task_id == task_id]
+    return sorted(records, key=lambda record: record.decided_at, reverse=True)
 
 
 def request_task_approval(
@@ -281,6 +331,15 @@ def request_task_approval(
         if risk_level not in ALLOWED_RISKS:
             raise ValueError(f"Unsupported risk level: {risk_level}")
         task.risk_level = risk_level
+
+    task.risk_level = _apply_repo_root_safety_guard(
+        task.risk_level,
+        action_label,
+        reason,
+        source,
+        scope,
+        rollback_plan,
+    )
 
     task.requires_approval = True
     task.admin_required = _requires_admin(task.risk_level) if requires_admin is None else requires_admin
@@ -312,44 +371,98 @@ def request_task_approval(
     return approval_request
 
 
-def approve_task(task_id: str, note: str = "") -> Task:
+def _resolve_approval_request(
+    approval_id: str,
+    decision: str,
+    note: str = "",
+) -> tuple[Task, ApprovalRequest]:
+    if decision not in {"approved", "denied", "deferred"}:
+        raise ValueError(f"Unsupported approval decision: {decision}")
+
     tasks = read_tasks()
-    task = _find_task(tasks, task_id)
-    if task.approval_state not in {"pending", "deferred"}:
-        raise ValueError(f"Task is not pending approval: {task_id}")
+    task_lookup = {task.task_id: task for task in tasks}
+    requests = read_approval_requests()
+    request = _find_approval_request(requests, approval_id)
+    task = task_lookup.get(request.task_id)
+    if task is None:
+        raise ValueError(f"Task not found for approval request: {approval_id}")
+
+    if request.status not in {"pending", "deferred"}:
+        raise ValueError(f"Approval request is not actionable: {approval_id}")
 
     timestamp = _now()
-    task.status = "queued"
-    task.approval_state = "approved"
-    task.waiting_for = ""
-    task.blocked_reason = ""
-    task.requires_human = False
-    task.last_note = note
-    task.updated_at = timestamp
-    write_tasks(tasks)
+    request.status = decision
+    request.updated_at = timestamp
+    request.human_note = note
 
-    approval_id = task.approval_request_id
-    requests = read_approval_requests()
-    if approval_id:
-        request = _find_approval_request(requests, approval_id)
-        request.status = "approved"
-        request.updated_at = timestamp
-        request.human_note = note
-        write_approval_requests(requests)
+    task.approval_request_id = request.approval_id
+    task.updated_at = timestamp
+    task.last_note = note
+
+    if decision == "approved":
+        task.status = "queued"
+        task.approval_state = "approved"
+        task.waiting_for = ""
+        task.blocked_reason = ""
+        task.requires_human = False
+    elif decision == "denied":
+        task.status = "rejected"
+        task.approval_state = "denied"
+        task.waiting_for = ""
+        task.blocked_reason = "Human denied the requested action."
+        task.requires_human = False
+    else:
+        task.status = "waiting"
+        task.approval_state = "deferred"
+        task.waiting_for = "approval deferred by human"
+        task.blocked_reason = note or "Human deferred the requested action."
+        task.requires_human = True
+
+    write_tasks(tasks)
+    write_approval_requests(requests)
 
     approvals = read_approvals()
     approvals.append(
         ApprovalRecord(
             task_id=task.task_id,
-            decision="approved",
+            decision=decision,
             decided_at=timestamp,
             note=note,
             approval_id=approval_id,
         )
     )
     write_approvals(approvals)
-    refresh_supervisor_state(last_event=f"Approval granted for task {task.task_id}")
-    return task
+
+    event_map = {
+        "approved": f"Approval granted for task {task.task_id}",
+        "denied": f"Approval denied for task {task.task_id}",
+        "deferred": f"Approval deferred for task {task.task_id}",
+    }
+    refresh_supervisor_state(last_event=event_map[decision])
+    return task, request
+
+
+def approve_approval_request(approval_id: str, note: str = "") -> tuple[Task, ApprovalRequest]:
+    return _resolve_approval_request(approval_id=approval_id, decision="approved", note=note)
+
+
+def deny_approval_request(approval_id: str, note: str = "") -> tuple[Task, ApprovalRequest]:
+    return _resolve_approval_request(approval_id=approval_id, decision="denied", note=note)
+
+
+def defer_approval_request(approval_id: str, note: str = "") -> tuple[Task, ApprovalRequest]:
+    return _resolve_approval_request(approval_id=approval_id, decision="deferred", note=note)
+
+
+def approve_task(task_id: str, note: str = "") -> Task:
+    tasks = read_tasks()
+    task = _find_task(tasks, task_id)
+    if task.approval_state not in {"pending", "deferred"}:
+        raise ValueError(f"Task is not pending approval: {task_id}")
+    if task.approval_request_id:
+        task, _ = approve_approval_request(task.approval_request_id, note=note)
+        return task
+    raise ValueError(f"Task is missing an approval request id: {task_id}")
 
 
 def reject_task(task_id: str, note: str = "") -> Task:
@@ -357,39 +470,10 @@ def reject_task(task_id: str, note: str = "") -> Task:
     task = _find_task(tasks, task_id)
     if task.approval_state not in {"pending", "deferred"}:
         raise ValueError(f"Task is not pending approval: {task_id}")
-
-    timestamp = _now()
-    task.status = "rejected"
-    task.approval_state = "denied"
-    task.waiting_for = ""
-    task.blocked_reason = "Human denied the requested action."
-    task.requires_human = False
-    task.last_note = note
-    task.updated_at = timestamp
-    write_tasks(tasks)
-
-    approval_id = task.approval_request_id
-    requests = read_approval_requests()
-    if approval_id:
-        request = _find_approval_request(requests, approval_id)
-        request.status = "denied"
-        request.updated_at = timestamp
-        request.human_note = note
-        write_approval_requests(requests)
-
-    approvals = read_approvals()
-    approvals.append(
-        ApprovalRecord(
-            task_id=task.task_id,
-            decision="denied",
-            decided_at=timestamp,
-            note=note,
-            approval_id=approval_id,
-        )
-    )
-    write_approvals(approvals)
-    refresh_supervisor_state(last_event=f"Approval denied for task {task.task_id}")
-    return task
+    if task.approval_request_id:
+        task, _ = deny_approval_request(task.approval_request_id, note=note)
+        return task
+    raise ValueError(f"Task is missing an approval request id: {task_id}")
 
 
 def wait_task(task_id: str, reason: str = "waiting for human reply or external event") -> Task:

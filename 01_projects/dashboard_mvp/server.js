@@ -381,12 +381,45 @@ function parseApprovalRequestLine(line) {
     .map((item) => item.trim())
     .filter(Boolean);
 
+  const labeled = {};
+  for (const part of parts.slice(2)) {
+    const separatorIndex = part.indexOf("=");
+    if (separatorIndex === -1) {
+      continue;
+    }
+    const key = part.slice(0, separatorIndex).trim();
+    const value = part.slice(separatorIndex + 1).trim();
+    labeled[key] = value;
+  }
+
   return {
     approvalId: parts[0] || "",
     status: parts[1] || "unknown",
-    riskLevel: parts[2] || "unknown",
-    taskId: parts[3] || "",
-    detail: parts.slice(4).join(" | ") || "",
+    riskLevel: labeled.risk || "unknown",
+    taskId: labeled.task || "",
+    actionType: labeled.action || "Approval request",
+    target: labeled.target || labeled.task || "none",
+    shortDescription: labeled.description || "none",
+    adminRequired: labeled.admin || "unknown",
+    detail: [
+      labeled.action ? `action=${labeled.action}` : "",
+      labeled.target ? `target=${labeled.target}` : "",
+      labeled.description ? `description=${labeled.description}` : "",
+      labeled.admin ? `admin=${labeled.admin}` : "",
+    ].filter(Boolean).join(" | "),
+  };
+}
+
+function parseApprovalHistoryLine(line) {
+  const parts = String(line)
+    .split(" | ")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  return {
+    decision: parts[0] || "unknown",
+    decidedAt: parts[1] || "",
+    note: parts.slice(2).join(" | ").replace(/^note=/, "") || "none",
   };
 }
 
@@ -414,6 +447,31 @@ function parseApprovalList(stdout) {
     count,
     requests,
     headline: count > 0 ? `${count} approval request(s) pending.` : "No pending approvals right now.",
+  };
+}
+
+function parseApprovalDetail(stdout) {
+  const parsed = parseKeyValueBlock(stdout);
+  const history = (parsed.listSections.decision_history || [])
+    .filter((item) => item !== "none")
+    .map(parseApprovalHistoryLine);
+
+  return {
+    approvalId: parsed.values.approval_id || "",
+    taskId: parsed.values.task_id || "",
+    status: parsed.values.status || "unknown",
+    riskLevel: parsed.values.risk_level || "unknown",
+    actionLabel: parsed.values.action_label || "Approval request",
+    requestedAt: parsed.values.requested_at || "",
+    updatedAt: parsed.values.updated_at || "",
+    source: parsed.values.source || "manual",
+    scope: parsed.values.scope || "none",
+    requiresAdmin: parsed.values.requires_admin === "yes",
+    reason: parsed.values.reason || "none",
+    rollbackPlan: parsed.values.rollback_plan || "none",
+    humanNote: parsed.values.human_note || "none",
+    decisionHistory: history,
+    headline: `${parsed.values.action_label || "Approval request"} (${parsed.values.status || "unknown"})`,
   };
 }
 
@@ -676,6 +734,7 @@ function buildOperatorStatus() {
       "Browser smoke demo and visible local browser demo",
       "Desktop bridge status and safe local desktop checks",
       "Supervisor status and approval inbox visibility",
+      "Approval queue review with local approve, deny, and defer actions",
       "Recent artifacts and recent-action log",
     ],
     scaffoldOnly: [
@@ -689,10 +748,9 @@ function buildOperatorStatus() {
       "Full browser executor loop",
       "Desktop or Windows app control",
       "App switching, clicking, typing, or clipboard orchestration",
-      "Approval queue UI",
       "Live mail, Notion, and LinkedIn adapters",
     ],
-    nextStep: "Use the dashboard to review usable artifacts and inspect the desktop bridge status before choosing the real executor path.",
+    nextStep: "Use the approval queue to resolve pending requests locally, then review the desktop bridge status before choosing the real executor path.",
   };
 }
 
@@ -711,6 +769,16 @@ async function buildPendingApprovalsResponse() {
   return {
     ok: raw.ok,
     summary: parseApprovalList(raw.stdout),
+    raw,
+    localOnly: true,
+  };
+}
+
+async function buildApprovalItemResponse(approvalId) {
+  const raw = await runRuntimeCli(["approval-status", "--approval-id", approvalId]);
+  return {
+    ok: raw.ok,
+    summary: raw.ok ? parseApprovalDetail(raw.stdout) : null,
     raw,
     localOnly: true,
   };
@@ -904,6 +972,25 @@ async function handleApiRequest(request, response, requestUrl) {
     return;
   }
 
+  if (request.method === "GET" && requestUrl.pathname === "/api/approvals/item") {
+    const approvalId = requestUrl.searchParams.get("approvalId");
+    if (!approvalId) {
+      throw new Error("Missing approvalId query parameter.");
+    }
+
+    const payload = await buildApprovalItemResponse(approvalId);
+    pushAction({
+      actionType: "approval",
+      label: "Viewed approval item",
+      status: payload.ok ? "success" : "error",
+      summary: payload.ok && payload.summary
+        ? payload.summary.headline
+        : (payload.raw.stderr || "Approval item lookup failed."),
+    });
+    sendJson(response, payload.ok ? 200 : 500, payload);
+    return;
+  }
+
   if (request.method === "GET" && requestUrl.pathname === "/api/capability-summary") {
     const payload = await buildCapabilityResponse();
     pushAction({
@@ -958,6 +1045,71 @@ async function handleApiRequest(request, response, requestUrl) {
       summary: {
         headline: `Preview loaded for ${preview.name}.`,
         outputPath: preview.path,
+      },
+    });
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/api/approvals/decision") {
+    const payload = await readJsonBody(request);
+    requireFields(payload, ["approvalId", "decision"]);
+
+    const approvalId = String(payload.approvalId).trim();
+    const decision = String(payload.decision).trim().toLowerCase();
+    const note = payload.note ? String(payload.note) : "";
+    const commandMap = {
+      approve: "approve-approval",
+      deny: "deny-approval",
+      defer: "defer-approval",
+    };
+    const command = commandMap[decision];
+    if (!command) {
+      throw new Error("Unsupported approval decision.");
+    }
+
+    const cliArgs = [command, "--approval-id", approvalId];
+    if (note.trim()) {
+      cliArgs.push("--note", note);
+    }
+
+    const raw = await runRuntimeCli(cliArgs);
+    const approvalPayload = await buildApprovalItemResponse(approvalId);
+    const supervisorPayload = await buildSupervisorResponse();
+    const pendingPayload = await buildPendingApprovalsResponse();
+    const ok = raw.ok && approvalPayload.ok && supervisorPayload.ok && pendingPayload.ok;
+
+    const headlineMap = {
+      approve: "Approval approved.",
+      deny: "Approval denied.",
+      defer: "Approval deferred.",
+    };
+    const summaryHeadline = ok
+      ? headlineMap[decision]
+      : (raw.stderr || raw.stdout || "Approval decision failed.");
+
+    pushAction({
+      actionType: "approval",
+      label: `${decision[0].toUpperCase()}${decision.slice(1)} approval`,
+      status: ok ? "success" : "error",
+      summary: summaryHeadline,
+      outputPath: approvalId,
+    });
+
+    sendJson(response, ok ? 200 : 500, {
+      ok,
+      localOnly: true,
+      summary: {
+        headline: summaryHeadline,
+        approvalId,
+        decision,
+        status: approvalPayload.summary?.status || "unknown",
+      },
+      approval: approvalPayload.summary,
+      approvalRaw: approvalPayload.raw,
+      supervisor: supervisorPayload.summary,
+      pendingApprovals: pendingPayload.summary,
+      raw: {
+        decision: raw,
       },
     });
     return;

@@ -164,6 +164,76 @@
             <p>Risky or uncertain steps that must stop for the human before they continue.</p>
             <div id="pending-approvals-list" class="approval-list">Waiting for supervisor status.</div>
           </article>
+          <article class="status-card approval-detail-card">
+            <h3>Selected Approval</h3>
+            <p>Inspect one request, add a short note if helpful, and make a local manual decision.</p>
+            <div id="approval-detail-summary" class="summary-note">Select a pending approval to inspect it.</div>
+            <div class="approval-detail-grid">
+              <div class="approval-detail-field">
+                <span>Approval ID</span>
+                <strong id="approval-detail-id">-</strong>
+              </div>
+              <div class="approval-detail-field">
+                <span>Status</span>
+                <strong id="approval-detail-status">-</strong>
+              </div>
+              <div class="approval-detail-field">
+                <span>Risk</span>
+                <strong id="approval-detail-risk">-</strong>
+              </div>
+              <div class="approval-detail-field">
+                <span>Task ID</span>
+                <strong id="approval-detail-task-id">-</strong>
+              </div>
+              <div class="approval-detail-field approval-detail-wide">
+                <span>Action</span>
+                <strong id="approval-detail-action-label">-</strong>
+              </div>
+              <div class="approval-detail-field approval-detail-wide">
+                <span>Reason</span>
+                <strong id="approval-detail-reason">-</strong>
+              </div>
+              <div class="approval-detail-field approval-detail-wide">
+                <span>Target / Scope</span>
+                <strong id="approval-detail-scope">-</strong>
+              </div>
+              <div class="approval-detail-field approval-detail-wide">
+                <span>Rollback</span>
+                <strong id="approval-detail-rollback">-</strong>
+              </div>
+              <div class="approval-detail-field">
+                <span>Admin Required</span>
+                <strong id="approval-detail-admin">-</strong>
+              </div>
+              <div class="approval-detail-field">
+                <span>Updated</span>
+                <strong id="approval-detail-updated-at">-</strong>
+              </div>
+            </div>
+            <label class="approval-note-field">
+              Decision note (optional)
+              <textarea id="approval-decision-note" rows="3" placeholder="Add a short reason or operator note if useful."></textarea>
+            </label>
+            <div class="approval-decision-actions">
+              <button id="approval-approve" type="button">Approve Request</button>
+              <button id="approval-deny" type="button" class="button-danger">Deny Request</button>
+              <button id="approval-defer" type="button" class="button-secondary">Defer For Later</button>
+            </div>
+            <div id="approval-action-result" class="result-panel" aria-live="polite">Ready to inspect and decide on an approval item.</div>
+            <div class="subsection approval-history-section">
+              <div class="subsection-heading">
+                <h3>Decision History</h3>
+                <p>The smallest useful visibility into prior approval decisions for this item.</p>
+              </div>
+              <div id="approval-history-list" class="approval-history-list">
+                <p class="empty-state">No decision history loaded yet.</p>
+              </div>
+            </div>
+            <details class="details-block">
+              <summary>Show raw approval details</summary>
+              <pre id="approval-detail-raw">No approval selected.</pre>
+            </details>
+          </article>
           <article class="status-card">
             <h3>Human Needed / Blocked</h3>
             <p>Tasks that are paused because the operator needs to answer, review, or decide something.</p>
