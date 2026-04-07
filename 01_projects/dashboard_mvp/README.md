@@ -10,6 +10,9 @@ Local operator-console-style app for triggering the current safe demos and scaff
 - triggers the browser smoke demo
 - triggers the visible browser demo
 - lists recent artifacts and recent actions
+- previews markdown and text artifacts directly in the dashboard
+- can open an artifact or reveal it in Explorer
+- shows desktop bridge status and can run the safe local desktop foundation check
 - keeps raw details hidden by default where they are useful but secondary
 - gives clearer loading, success, and error feedback after actions run
 
@@ -28,3 +31,4 @@ Then open `http://127.0.0.1:3210`.
 - no approval queue UI
 - no browser executor loop
 - no native app control
+- no full desktop or app control yet

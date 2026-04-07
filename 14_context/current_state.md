@@ -51,6 +51,8 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Dashboard can trigger safe local scaffold generation
 - Dashboard can trigger local browser demos
 - GitHub status and scaffold generation are accessible through the dashboard
+- Artifact UX is improved and the dashboard can preview, open, and reveal generated artifacts
+- Desktop bridge foundation now exists with safe local status and checker support
 - No live external provider APIs yet
 - No real browser or app executor beyond the local playground yet
 - No remote auth layer yet
@@ -76,4 +78,5 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Runtime behavior still depends on the actual shell seeing the expected tool/auth state
 - Live remote GitHub mutation is now possible, so approval discipline matters more than before
 - Browser and app execution are still mostly research-only, even though the operator console and visible demo now make the current step easier to inspect
+- Browser and app execution are still mostly research-only, even though the operator console now makes artifacts more usable and exposes the desktop bridge foundation
 - Third-party intake repos are valuable comparison material, but most of their surface area is still too heavy to adopt directly

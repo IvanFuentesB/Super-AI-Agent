@@ -100,13 +100,17 @@ $expectedFiles = @(
     '04_docs/local_dashboard_mvp.md',
     '04_docs/operator_mode_plan.md',
     '04_docs/browser_control_playground.md',
+    '04_docs/artifact_ux_plan.md',
+    '04_docs/desktop_bridge_foundation.md',
     '01_projects/dashboard_mvp/README.md',
     '01_projects/dashboard_mvp/package.json',
     '01_projects/dashboard_mvp/server.js',
     '01_projects/dashboard_mvp/public/index.html',
     '01_projects/dashboard_mvp/public/app.js',
     '01_projects/dashboard_mvp/public/styles.css',
-    '01_projects/dashboard_mvp/artifacts/.gitkeep'
+    '01_projects/dashboard_mvp/artifacts/.gitkeep',
+    '01_projects/desktop_playground/README.md',
+    '01_projects/desktop_playground/check_desktop_playground.ps1'
 )
 
 $failed = 0
@@ -207,6 +211,11 @@ try {
     Write-Check -Name 'GitHub updates endpoint' -Passed $githubOk -Detail ($(if ($githubOk) { $githubStatus.summary.headline } else { 'GitHub updates missing structured output' }))
     if (-not $githubOk) { $failed++ }
 
+    $artifacts = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/artifacts" -Method Get -TimeoutSec 30
+    $artifactsOk = $artifacts.ok -and $artifacts.localOnly -and $null -ne $artifacts.artifacts
+    Write-Check -Name 'Artifact list endpoint' -Passed $artifactsOk -Detail ($(if ($artifactsOk) { "returned $($artifacts.artifacts.Count) artifact entries" } else { 'artifact list missing structured output' }))
+    if (-not $artifactsOk) { $failed++ }
+
     $internshipPayload = @{
         targetRole = 'Applied AI Intern'
         company = 'Example Labs'
@@ -219,6 +228,14 @@ try {
     Write-Check -Name 'Internship scaffold endpoint' -Passed $internshipOk -Detail ($(if ($internshipOk) { $internshipPath } else { 'internship scaffold was not created' }))
     if (-not $internshipOk) { $failed++ }
 
+    if ($internshipOk) {
+        $previewPayload = @{ path = $internshipPath } | ConvertTo-Json
+        $artifactPreview = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/artifacts/preview" -Method Post -ContentType 'application/json' -Body $previewPayload -TimeoutSec 30
+        $previewOk = $artifactPreview.ok -and $artifactPreview.localOnly -and $artifactPreview.preview.format -eq 'markdown'
+        Write-Check -Name 'Artifact preview endpoint' -Passed $previewOk -Detail ($(if ($previewOk) { $artifactPreview.preview.path } else { 'artifact preview failed for markdown output' }))
+        if (-not $previewOk) { $failed++ }
+    }
+
     $browserSmoke = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/browser/smoke" -Method Post -ContentType 'application/json' -Body '{}' -TimeoutSec 90
     $browserSmokeOk = $browserSmoke.ok -and (Test-Path -LiteralPath $browserArtifactPath -PathType Leaf)
     Write-Check -Name 'Browser smoke endpoint' -Passed $browserSmokeOk -Detail ($(if ($browserSmokeOk) { $browserSmoke.summary.headline } else { 'browser smoke artifact missing' }))
@@ -228,6 +245,16 @@ try {
     $visibleCheckOk = $visibleCheck.ok
     Write-Check -Name 'Visible demo endpoint' -Passed $visibleCheckOk -Detail ($(if ($visibleCheckOk) { 'visible endpoint responded in check-only mode' } else { 'visible endpoint failed' }))
     if (-not $visibleCheckOk) { $failed++ }
+
+    $desktopStatus = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/desktop-bridge/status" -Method Get -TimeoutSec 30
+    $desktopStatusOk = $desktopStatus.ok -and $desktopStatus.localOnly -and $desktopStatus.summary.powerShellAvailable
+    Write-Check -Name 'Desktop bridge status endpoint' -Passed $desktopStatusOk -Detail ($(if ($desktopStatusOk) { $desktopStatus.summary.headline } else { 'desktop bridge status missing structured output' }))
+    if (-not $desktopStatusOk) { $failed++ }
+
+    $desktopCheck = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/desktop-bridge/check" -Method Post -ContentType 'application/json' -Body '{}' -TimeoutSec 60
+    $desktopCheckOk = $desktopCheck.ok -and $desktopCheck.localOnly -and $desktopCheck.summary.shellCommandCapability
+    Write-Check -Name 'Desktop bridge check endpoint' -Passed $desktopCheckOk -Detail ($(if ($desktopCheckOk) { $desktopCheck.summary.headline } else { 'desktop bridge check failed' }))
+    if (-not $desktopCheckOk) { $failed++ }
 
     $recentActions = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/recent-actions" -Method Get -TimeoutSec 30
     $recentActionsOk = $recentActions.ok -and $recentActions.localOnly -and $recentActions.actions.Count -gt 0
