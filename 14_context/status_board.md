@@ -30,19 +30,22 @@
 - [x] Operator console v3 polish exists
 - [x] Artifact UX and desktop bridge foundation exist
 - [x] Supervisor and approval inbox foundation exist
+- [x] Workspace boundary enforcement exists
 
 ## Current Control Layer
 - Continue for local context/rules
 - Codex for execution and Git workflow
 
 ## Current Branch
-- feat/supervisor-and-approval-inbox
+- feat/workspace-boundaries
 
 ## Current Phase
-- supervisor and approval inbox foundation
+- workspace boundary enforcement for local operator safety
 
 ## Next Milestones
+- test the workspace-boundary flow manually from the operator console
 - test the supervisor and approval inbox manually from the operator console
+- design an explicit allowlist-expansion or workspace-override path later
 - add a real notification channel later
 - choose the real desktop-control implementation path
 - evaluate Windows-Use and Windows-MCP

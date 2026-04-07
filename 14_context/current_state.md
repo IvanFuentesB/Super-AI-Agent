@@ -57,6 +57,10 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Approval inbox foundation now exists
 - Local-only notification abstraction now exists
 - Dashboard now exposes supervisor status, pending approvals, and human-needed task state
+- Allowed-root workspace policy now exists with C:\Users\ai_sandbox\Documents\AI_Managed_Only as the default allowed root
+- Runtime now classifies task targets as in-scope, out-of-scope, or no-path-detected
+- Out-of-scope targets are blocked by workspace policy and surfaced clearly in approval and human-needed views
+- Dashboard now shows workspace scope, workspace policy, and readable workspace-block reasons for approval items
 - No live external provider APIs yet
 - No real browser or app executor beyond the local playground yet
 - No remote auth layer yet
@@ -71,6 +75,7 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Claw Code remains temporary reference, not foundation
 
 ## Immediate Focus
+- Test the workspace-boundary flow manually from the dashboard
 - Test the supervisor and approval inbox manually from the dashboard
 - Decide the real desktop-control implementation path
 - Keep GitHub remote actions explicit and approval-gated
@@ -84,4 +89,5 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Browser and app execution are still mostly research-only, even though the operator console and visible demo now make the current step easier to inspect
 - Browser and app execution are still mostly research-only, even though the operator console now makes artifacts more usable and exposes the desktop bridge foundation
 - The supervisor and approval inbox are local-only foundations, not a full autonomous executor yet
+- Workspace policy blocks out-of-scope targets cleanly now, but there is still no explicit allowlist expansion flow yet
 - Third-party intake repos are valuable comparison material, but most of their surface area is still too heavy to adopt directly

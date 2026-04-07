@@ -14,7 +14,7 @@ from .models import (
     TASK_RISK_LEVELS,
 )
 from .storage import (
-    get_project_root,
+    get_allowed_workspace_root,
     read_approval_requests,
     read_approvals,
     read_supervisor_state,
@@ -27,7 +27,6 @@ from .storage import (
 
 ALLOWED_RISKS = set(TASK_RISK_LEVELS)
 QUEUEABLE_TASK_STATUSES = {"queued", "running", "waiting", "blocked_human_needed"}
-REPO_ROOT = get_project_root().parents[1].resolve()
 WINDOWS_ABSOLUTE_PATH_PATTERN = re.compile(r"(?i)\b[A-Z]:\\[^\s\"'<>|?*]+")
 
 
@@ -68,6 +67,13 @@ def _requires_admin(risk_level: str) -> bool:
     return risk_level == "admin"
 
 
+def _normalize_candidate_path(path_value: str) -> str:
+    try:
+        return str(Path(path_value).expanduser().resolve(strict=False))
+    except (OSError, RuntimeError, ValueError):
+        return path_value
+
+
 def _extract_candidate_paths(*texts: str) -> list[str]:
     candidates: list[str] = []
     seen: set[str] = set()
@@ -82,21 +88,59 @@ def _extract_candidate_paths(*texts: str) -> list[str]:
     return candidates
 
 
-def _is_inside_repo_root(path_value: str) -> bool:
+def _is_inside_allowed_root(path_value: str) -> bool:
     try:
-        return Path(path_value).resolve(strict=False).is_relative_to(REPO_ROOT)
+        return Path(path_value).resolve(strict=False).is_relative_to(get_allowed_workspace_root())
     except (OSError, ValueError):
         return False
 
 
-def _apply_repo_root_safety_guard(
-    risk_level: str,
+def _classify_workspace_targets(
     *texts: str,
-) -> str:
-    for candidate in _extract_candidate_paths(*texts):
-        if not _is_inside_repo_root(candidate):
-            return "high_risk"
-    return risk_level
+) -> tuple[list[str], str, str, str]:
+    allowed_root = get_allowed_workspace_root()
+    candidate_paths = [_normalize_candidate_path(item) for item in _extract_candidate_paths(*texts)]
+
+    if not candidate_paths:
+        return (
+            [],
+            "no_path_detected",
+            "allowed",
+            f"No explicit absolute path target detected. Allowed workspace root: {allowed_root}",
+        )
+
+    outside = [item for item in candidate_paths if not _is_inside_allowed_root(item)]
+    if outside:
+        return (
+            candidate_paths,
+            "out_of_scope",
+            "blocked_by_workspace_policy",
+            (
+                "Blocked by workspace policy. Target path is outside the allowed workspace root: "
+                f"{allowed_root}"
+            ),
+        )
+
+    return (
+        candidate_paths,
+        "in_scope",
+        "allowed",
+        f"Target path is inside the allowed workspace root: {allowed_root}",
+    )
+
+
+def _apply_workspace_policy(
+    task: Task,
+    *texts: str,
+) -> Task:
+    target_paths, workspace_scope, workspace_policy, workspace_reason = _classify_workspace_targets(*texts)
+    task.target_paths = target_paths
+    task.workspace_scope = workspace_scope
+    task.workspace_policy = workspace_policy
+    task.workspace_reason = workspace_reason
+    if workspace_scope == "out_of_scope" and task.risk_level == "safe":
+        task.risk_level = "high_risk"
+    return task
 
 
 def _build_approval_request(
@@ -124,6 +168,10 @@ def _build_approval_request(
         requires_admin=admin_required,
         rollback_plan=rollback_plan,
         human_note="",
+        target_paths=list(task.target_paths),
+        workspace_scope=task.workspace_scope,
+        workspace_policy=task.workspace_policy,
+        workspace_reason=task.workspace_reason,
     )
 
 
@@ -131,9 +179,23 @@ def _backfill_pending_approval_requests() -> tuple[list[Task], list[ApprovalRequ
     tasks = read_tasks()
     requests = read_approval_requests()
     known_request_ids = {request.approval_id for request in requests}
+    request_lookup = {request.approval_id: request for request in requests}
     changed = False
 
     for task in tasks:
+        if not task.workspace_reason and not task.target_paths:
+            _apply_workspace_policy(task, task.title, task.description, task.source)
+            changed = True
+
+        if task.approval_request_id and task.approval_request_id in request_lookup:
+            request = request_lookup[task.approval_request_id]
+            if not request.workspace_reason and not request.target_paths:
+                request.target_paths = list(task.target_paths)
+                request.workspace_scope = task.workspace_scope
+                request.workspace_policy = task.workspace_policy
+                request.workspace_reason = task.workspace_reason
+                changed = True
+
         needs_backfill = (
             task.status == "pending_approval"
             and task.approval_state in {"pending", "deferred"}
@@ -229,17 +291,14 @@ def refresh_supervisor_state(last_event: str | None = None) -> SupervisorState:
 def enqueue_task(title: str, description: str, risk_level: str, source: str = "manual") -> Task:
     if risk_level not in ALLOWED_RISKS:
         raise ValueError(f"Unsupported risk level: {risk_level}")
-
-    risk_level = _apply_repo_root_safety_guard(risk_level, title, description, source)
     timestamp = _now()
-    requires_approval = _requires_approval(risk_level)
     task = Task(
         task_id=_new_task_id(),
         title=title,
         description=description,
         risk_level=risk_level,
         status="queued",
-        requires_approval=requires_approval,
+        requires_approval=False,
         approval_state="not_required",
         created_at=timestamp,
         updated_at=timestamp,
@@ -251,6 +310,10 @@ def enqueue_task(title: str, description: str, risk_level: str, source: str = "m
         admin_required=_requires_admin(risk_level),
         last_note="",
     )
+    _apply_workspace_policy(task, title, description, source)
+    task.admin_required = _requires_admin(task.risk_level)
+    requires_approval = _requires_approval(task.risk_level)
+    task.requires_approval = requires_approval
 
     approval_requests = read_approval_requests()
     if requires_approval:
@@ -266,8 +329,17 @@ def enqueue_task(title: str, description: str, risk_level: str, source: str = "m
         task.status = "pending_approval"
         task.approval_state = "pending"
         task.approval_request_id = approval_request.approval_id
-        task.waiting_for = "human_approval"
+        task.waiting_for = (
+            "workspace_policy_review"
+            if task.workspace_policy == "blocked_by_workspace_policy"
+            else "human_approval"
+        )
         task.requires_human = True
+        task.blocked_reason = (
+            task.workspace_reason
+            if task.workspace_policy == "blocked_by_workspace_policy"
+            else ""
+        )
         approval_requests.append(approval_request)
         write_approval_requests(approval_requests)
 
@@ -332,22 +404,29 @@ def request_task_approval(
             raise ValueError(f"Unsupported risk level: {risk_level}")
         task.risk_level = risk_level
 
-    task.risk_level = _apply_repo_root_safety_guard(
-        task.risk_level,
+    _apply_workspace_policy(
+        task,
         action_label,
         reason,
         source,
         scope,
         rollback_plan,
     )
-
     task.requires_approval = True
     task.admin_required = _requires_admin(task.risk_level) if requires_admin is None else requires_admin
     task.status = "pending_approval"
     task.approval_state = "pending"
-    task.waiting_for = "human_approval"
+    task.waiting_for = (
+        "workspace_policy_review"
+        if task.workspace_policy == "blocked_by_workspace_policy"
+        else "human_approval"
+    )
     task.requires_human = True
-    task.blocked_reason = ""
+    task.blocked_reason = (
+        task.workspace_reason
+        if task.workspace_policy == "blocked_by_workspace_policy"
+        else ""
+    )
     task.last_note = reason
     task.updated_at = timestamp
 
@@ -399,7 +478,18 @@ def _resolve_approval_request(
     task.updated_at = timestamp
     task.last_note = note
 
-    if decision == "approved":
+    workspace_blocked = task.workspace_policy == "blocked_by_workspace_policy"
+
+    if decision == "approved" and workspace_blocked:
+        task.status = "blocked_human_needed"
+        task.approval_state = "approved"
+        task.waiting_for = "workspace_policy_override"
+        task.blocked_reason = (
+            task.workspace_reason
+            or "Blocked by workspace policy until the allowed workspace root is expanded."
+        )
+        task.requires_human = True
+    elif decision == "approved":
         task.status = "queued"
         task.approval_state = "approved"
         task.waiting_for = ""
@@ -434,7 +524,11 @@ def _resolve_approval_request(
     write_approvals(approvals)
 
     event_map = {
-        "approved": f"Approval granted for task {task.task_id}",
+        "approved": (
+            f"Approval recorded, but workspace policy still blocks task {task.task_id}"
+            if workspace_blocked
+            else f"Approval granted for task {task.task_id}"
+        ),
         "denied": f"Approval denied for task {task.task_id}",
         "deferred": f"Approval deferred for task {task.task_id}",
     }
@@ -534,6 +628,11 @@ def run_task_once(task_id: str) -> Task:
         raise ValueError(f"Task {task.task_id} must be queued before run-once.")
     if task.approval_state not in {"approved", "not_required"}:
         raise ValueError(f"Task {task.task_id} must be approved before run-once.")
+    if task.workspace_policy == "blocked_by_workspace_policy":
+        raise ValueError(
+            "Task is blocked by workspace policy until the allowed workspace root is expanded "
+            "or the target is moved inside the workspace."
+        )
 
     task.status = "completed"
     task.waiting_for = ""

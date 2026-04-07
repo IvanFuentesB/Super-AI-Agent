@@ -334,6 +334,54 @@ try {
         if (-not $approvalDetailAfterOk) { $failed++ }
     }
 
+    $outOfScopeSeed = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+        'enqueue',
+        '--title', 'dashboard checker out-of-scope task',
+        '--description', 'Review C:\Windows\Temp\dashboard-outside-target.txt before any action.',
+        '--risk', 'safe'
+    )
+    $outOfScopeSeedOk = $outOfScopeSeed.ExitCode -eq 0
+    Write-Check -Name 'Seed out-of-scope approval for dashboard test' -Passed $outOfScopeSeedOk -Detail (($outOfScopeSeed.Output | Out-String).Trim())
+    if (-not $outOfScopeSeedOk) { $failed++ }
+
+    $outOfScopeApprovalMatch = [regex]::Match(($outOfScopeSeed.Output | Out-String), 'approval_request_id:\s*(\S+)')
+    $outOfScopeApprovalId = if ($outOfScopeApprovalMatch.Success) { $outOfScopeApprovalMatch.Groups[1].Value } else { $null }
+    $outOfScopeTaskMatch = [regex]::Match(($outOfScopeSeed.Output | Out-String), 'task_id:\s*(\S+)')
+    $outOfScopeTaskId = if ($outOfScopeTaskMatch.Success) { $outOfScopeTaskMatch.Groups[1].Value } else { $null }
+    $outOfScopeApprovalIdOk = -not [string]::IsNullOrWhiteSpace($outOfScopeApprovalId)
+    Write-Check -Name 'Out-of-scope approval id parsed' -Passed $outOfScopeApprovalIdOk -Detail ($(if ($outOfScopeApprovalIdOk) { $outOfScopeApprovalId } else { 'missing approval id for out-of-scope task' }))
+    if (-not $outOfScopeApprovalIdOk) { $failed++ }
+
+    if ($outOfScopeApprovalIdOk) {
+        $outOfScopeDetail = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/approvals/item?approvalId=$outOfScopeApprovalId" -Method Get -TimeoutSec 30
+        $outOfScopeDetailOk = $outOfScopeDetail.ok -and `
+            $outOfScopeDetail.summary.workspaceScope -eq 'out_of_scope' -and `
+            $outOfScopeDetail.summary.workspacePolicy -eq 'blocked_by_workspace_policy'
+        Write-Check -Name 'Out-of-scope approval detail is classified clearly' -Passed $outOfScopeDetailOk -Detail ($(if ($outOfScopeDetailOk) { $outOfScopeDetail.summary.workspaceReason } else { 'workspace classification missing from approval detail' }))
+        if (-not $outOfScopeDetailOk) { $failed++ }
+
+        $outOfScopeDecisionPayload = @{
+            approvalId = $outOfScopeApprovalId
+            decision = 'approve'
+            note = 'dashboard checker recorded out-of-scope approval'
+        } | ConvertTo-Json
+        $outOfScopeDecision = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/approvals/decision" -Method Post -ContentType 'application/json' -Body $outOfScopeDecisionPayload -TimeoutSec 30
+        $outOfScopeDecisionOk = $outOfScopeDecision.ok -and `
+            $outOfScopeDecision.approval.status -eq 'approved' -and `
+            $outOfScopeDecision.approval.workspacePolicy -eq 'blocked_by_workspace_policy'
+        Write-Check -Name 'Out-of-scope dashboard approval stays policy-blocked' -Passed $outOfScopeDecisionOk -Detail ($(if ($outOfScopeDecisionOk) { $outOfScopeDecision.summary.headline } else { 'out-of-scope approval did not stay policy-blocked' }))
+        if (-not $outOfScopeDecisionOk) { $failed++ }
+
+        $blockedTaskVisible = $false
+        if ($null -ne $outOfScopeDecision.supervisor.humanNeededTasks) {
+            $blockedTaskVisible = @($outOfScopeDecision.supervisor.humanNeededTasks | Where-Object {
+                $_.taskId -eq $outOfScopeTaskId -and $_.workspacePolicy -eq 'blocked_by_workspace_policy'
+            }).Count -gt 0
+        }
+        Write-Check -Name 'Out-of-scope task is visible in human-needed list' -Passed $blockedTaskVisible -Detail ($(if ($blockedTaskVisible) { $outOfScopeTaskId } else { 'human-needed list did not show blocked workspace task' }))
+        if (-not $blockedTaskVisible) { $failed++ }
+    }
+
     $capability = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/capability-summary" -Method Get -TimeoutSec 30
     $capabilityOk = $capability.ok -and $capability.localOnly -and $capability.summary.availableCount -ge 0
     Write-Check -Name 'Capability endpoint' -Passed $capabilityOk -Detail ($(if ($capabilityOk) { $capability.summary.headline } else { 'capability summary missing structured output' }))
