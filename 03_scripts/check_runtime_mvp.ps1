@@ -455,6 +455,14 @@ if ($taskIdOk) {
     $runOnceOk = $runOnceResult.ExitCode -eq 0
     Write-Check -Name 'CLI run-once' -Passed $runOnceOk -Detail (($runOnceResult.Output | Out-String).Trim())
     if (-not $runOnceOk) { $failed++ }
+
+    $taskStatusResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $taskId)
+    $taskStatusOk = $taskStatusResult.ExitCode -eq 0 -and `
+        (($taskStatusResult.Output | Out-String) -match 'status:\s+completed') -and `
+        (($taskStatusResult.Output | Out-String) -match 'history:') -and `
+        (($taskStatusResult.Output | Out-String) -match '- completed \|')
+    Write-Check -Name 'CLI task-status' -Passed $taskStatusOk -Detail (($taskStatusResult.Output | Out-String).Trim())
+    if (-not $taskStatusOk) { $failed++ }
 }
 
 $approvalDecisionScenarios = @(
@@ -559,6 +567,21 @@ if ($externalApprovalIdOk) {
         (($externalApprovalDecisionResult.Output | Out-String) -match 'workspace_policy:\s+blocked_by_workspace_policy')
     Write-Check -Name 'Out-of-scope approval stays blocked by workspace policy' -Passed $externalApprovalDecisionOk -Detail (($externalApprovalDecisionResult.Output | Out-String).Trim())
     if (-not $externalApprovalDecisionOk) { $failed++ }
+
+    $externalTaskIdMatch = [regex]::Match(($externalPathGuardResult.Output | Out-String), 'task_id:\s*(\S+)')
+    $externalTaskId = if ($externalTaskIdMatch.Success) { $externalTaskIdMatch.Groups[1].Value } else { $null }
+    $externalTaskIdOk = -not [string]::IsNullOrWhiteSpace($externalTaskId)
+    Write-Check -Name 'External path task id parsed' -Passed $externalTaskIdOk -Detail ($(if ($externalTaskIdOk) { $externalTaskId } else { 'missing task id for external path guard scenario' }))
+    if (-not $externalTaskIdOk) { $failed++ }
+
+    if ($externalTaskIdOk) {
+        $externalReviewResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('review-task', '--task-id', $externalTaskId, '--note', 'checker reviewed the workspace-blocked task')
+        $externalReviewOk = $externalReviewResult.ExitCode -eq 0 -and `
+            (($externalReviewResult.Output | Out-String) -match 'status:\s+blocked_human_needed') -and `
+            (($externalReviewResult.Output | Out-String) -match 'workspace_policy:\s+blocked_by_workspace_policy')
+        Write-Check -Name 'Workspace-blocked task stays blocked after review' -Passed $externalReviewOk -Detail (($externalReviewResult.Output | Out-String).Trim())
+        if (-not $externalReviewOk) { $failed++ }
+    }
 }
 
 $safeTaskResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('enqueue', '--title', 'checker safe task', '--description', 'supervisor and human-needed check', '--risk', 'safe')
@@ -587,6 +610,28 @@ if ($safeTaskIdOk) {
     $postHumanSupervisorOk = $postHumanSupervisorResult.ExitCode -eq 0 -and (($postHumanSupervisorResult.Output | Out-String) -match 'human_needed_tasks:')
     Write-Check -Name 'Supervisor reflects human-needed state' -Passed $postHumanSupervisorOk -Detail (($postHumanSupervisorResult.Output | Out-String).Trim())
     if (-not $postHumanSupervisorOk) { $failed++ }
+
+    $reviewTaskResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('review-task', '--task-id', $safeTaskId, '--note', 'checker reviewed the human-needed task')
+    $reviewTaskOk = $reviewTaskResult.ExitCode -eq 0 -and `
+        (($reviewTaskResult.Output | Out-String) -match 'status:\s+ready_to_resume') -and `
+        (($reviewTaskResult.Output | Out-String) -match 'next_action:\s+Re-queue the task')
+    Write-Check -Name 'CLI review-task' -Passed $reviewTaskOk -Detail (($reviewTaskResult.Output | Out-String).Trim())
+    if (-not $reviewTaskOk) { $failed++ }
+
+    $requeueTaskResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('requeue-task', '--task-id', $safeTaskId, '--note', 'checker re-queued the reviewed task')
+    $requeueTaskOk = $requeueTaskResult.ExitCode -eq 0 -and `
+        (($requeueTaskResult.Output | Out-String) -match 'status:\s+queued')
+    Write-Check -Name 'CLI requeue-task' -Passed $requeueTaskOk -Detail (($requeueTaskResult.Output | Out-String).Trim())
+    if (-not $requeueTaskOk) { $failed++ }
+
+    $reviewedTaskStatusResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $safeTaskId)
+    $reviewedTaskStatusOk = $reviewedTaskStatusResult.ExitCode -eq 0 -and `
+        (($reviewedTaskStatusResult.Output | Out-String) -match 'history:') -and `
+        (($reviewedTaskStatusResult.Output | Out-String) -match '- human_needed \|') -and `
+        (($reviewedTaskStatusResult.Output | Out-String) -match '- ready_to_resume \|') -and `
+        (($reviewedTaskStatusResult.Output | Out-String) -match '- resumed \|')
+    Write-Check -Name 'Task history reflects manual supervisor loop' -Passed $reviewedTaskStatusOk -Detail (($reviewedTaskStatusResult.Output | Out-String).Trim())
+    if (-not $reviewedTaskStatusOk) { $failed++ }
 }
 
 $listResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('list')

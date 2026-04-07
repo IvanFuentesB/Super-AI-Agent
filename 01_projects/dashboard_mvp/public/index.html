@@ -156,6 +156,10 @@
             <span>Waiting Tasks</span>
             <strong id="supervisor-waiting-count">-</strong>
           </article>
+          <article class="metric-card">
+            <span>Ready To Resume</span>
+            <strong id="supervisor-ready-count">-</strong>
+          </article>
         </div>
         <div id="supervisor-summary" class="summary-note">Waiting for supervisor status.</div>
         <div class="status-columns">
@@ -263,6 +267,97 @@
             <h3>Waiting To Resume</h3>
             <p>Tasks that should stay patient until a reply or other external event arrives.</p>
             <div id="waiting-tasks-list" class="approval-list">Waiting for supervisor status.</div>
+          </article>
+          <article class="status-card">
+            <h3>Ready To Re-Queue</h3>
+            <p>Tasks that were reviewed and can be placed back into the local queue manually.</p>
+            <div id="ready-to-resume-list" class="approval-list">Waiting for supervisor status.</div>
+          </article>
+          <article class="status-card approval-detail-card">
+            <h3>Selected Task</h3>
+            <p>Inspect why the task stopped, see its timeline, and move it forward only when the state allows it.</p>
+            <div id="task-detail-summary" class="summary-note">Select a stopped task to inspect it.</div>
+            <div class="approval-detail-grid">
+              <div class="approval-detail-field">
+                <span>Task ID</span>
+                <strong id="task-detail-id">-</strong>
+              </div>
+              <div class="approval-detail-field">
+                <span>Status</span>
+                <strong id="task-detail-status">-</strong>
+              </div>
+              <div class="approval-detail-field">
+                <span>Risk</span>
+                <strong id="task-detail-risk">-</strong>
+              </div>
+              <div class="approval-detail-field">
+                <span>Approval State</span>
+                <strong id="task-detail-approval-state">-</strong>
+              </div>
+              <div class="approval-detail-field approval-detail-wide">
+                <span>Title</span>
+                <strong id="task-detail-title">-</strong>
+              </div>
+              <div class="approval-detail-field approval-detail-wide">
+                <span>Description</span>
+                <strong id="task-detail-description">-</strong>
+              </div>
+              <div class="approval-detail-field">
+                <span>Workspace Scope</span>
+                <strong id="task-detail-workspace-scope">-</strong>
+              </div>
+              <div class="approval-detail-field">
+                <span>Workspace Policy</span>
+                <strong id="task-detail-workspace-policy">-</strong>
+              </div>
+              <div class="approval-detail-field approval-detail-wide">
+                <span>Workspace Reason</span>
+                <strong id="task-detail-workspace-reason">-</strong>
+              </div>
+              <div class="approval-detail-field approval-detail-wide">
+                <span>Allowed Workspace Root</span>
+                <strong id="task-detail-allowed-root">-</strong>
+              </div>
+              <div class="approval-detail-field approval-detail-wide">
+                <span>Waiting For</span>
+                <strong id="task-detail-waiting-for">-</strong>
+              </div>
+              <div class="approval-detail-field approval-detail-wide">
+                <span>Blocked Reason</span>
+                <strong id="task-detail-blocked-reason">-</strong>
+              </div>
+              <div class="approval-detail-field approval-detail-wide">
+                <span>Next Operator Step</span>
+                <strong id="task-detail-next-action">-</strong>
+              </div>
+              <div class="approval-detail-field approval-detail-wide">
+                <span>Last Note</span>
+                <strong id="task-detail-last-note">-</strong>
+              </div>
+            </div>
+            <label class="approval-note-field">
+              Task note (optional)
+              <textarea id="task-action-note" rows="3" placeholder="Add a short operator note for review or re-queue if useful."></textarea>
+            </label>
+            <div class="approval-decision-actions">
+              <button id="task-review" type="button" class="button-secondary">Mark Human Step Reviewed</button>
+              <button id="task-resume" type="button">Resume Waiting Task</button>
+              <button id="task-requeue" type="button" class="button-secondary">Re-Queue Task</button>
+            </div>
+            <div id="task-action-result" class="result-panel" aria-live="polite">Ready to inspect a stopped task.</div>
+            <div class="subsection approval-history-section">
+              <div class="subsection-heading">
+                <h3>Task Timeline</h3>
+                <p>The smallest useful history of why the task stopped and how it moved forward.</p>
+              </div>
+              <div id="task-history-list" class="approval-history-list">
+                <p class="empty-state">No task history loaded yet.</p>
+              </div>
+            </div>
+            <details class="details-block">
+              <summary>Show raw task details</summary>
+              <pre id="task-detail-raw">No task selected.</pre>
+            </details>
           </article>
         </div>
         <details class="details-block">

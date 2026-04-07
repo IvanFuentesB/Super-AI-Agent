@@ -31,20 +31,21 @@
 - [x] Artifact UX and desktop bridge foundation exist
 - [x] Supervisor and approval inbox foundation exist
 - [x] Workspace boundary enforcement exists
+- [x] Manual supervisor loop and task state controls exist
 
 ## Current Control Layer
 - Continue for local context/rules
 - Codex for execution and Git workflow
 
 ## Current Branch
-- feat/workspace-boundaries
+- feat/manual-supervisor-loop
 
 ## Current Phase
-- workspace boundary enforcement for local operator safety
+- manual supervisor loop for safe local operator control
 
 ## Next Milestones
 - test the workspace-boundary flow manually from the operator console
-- test the supervisor and approval inbox manually from the operator console
+- test the manual supervisor loop from the operator console
 - design an explicit allowlist-expansion or workspace-override path later
 - add a real notification channel later
 - choose the real desktop-control implementation path
@@ -66,7 +67,7 @@
 - no live mail or LinkedIn adapters yet
 - no live Notion writes yet
 - live remote GitHub mutation is possible in this environment, so approval discipline remains critical
-- browser visible demo, artifact UX, desktop bridge foundation, and supervisor inbox now exist, but browser and app execution beyond the local playground are still research-only
+- browser visible demo, artifact UX, desktop bridge foundation, supervisor inbox, and manual task-control loop now exist, but browser and app execution beyond the local playground are still research-only
 
 ## Last Reviewed
 - 2026-04-07

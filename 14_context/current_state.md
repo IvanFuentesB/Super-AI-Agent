@@ -61,6 +61,9 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Runtime now classifies task targets as in-scope, out-of-scope, or no-path-detected
 - Out-of-scope targets are blocked by workspace policy and surfaced clearly in approval and human-needed views
 - Dashboard now shows workspace scope, workspace policy, and readable workspace-block reasons for approval items
+- Manual supervisor loop now exists for queued, pending_approval, blocked_human_needed, waiting, ready_to_resume, and completed task states
+- Dashboard now lets the operator inspect stopped tasks, review human-needed work, resume waiting tasks, and re-queue ready-to-resume tasks manually
+- Task history is now persisted and visible for key events such as created, escalated, approved or denied, deferred, blocked, resumed, and completed
 - No live external provider APIs yet
 - No real browser or app executor beyond the local playground yet
 - No remote auth layer yet
@@ -76,7 +79,7 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 
 ## Immediate Focus
 - Test the workspace-boundary flow manually from the dashboard
-- Test the supervisor and approval inbox manually from the dashboard
+- Test the manual supervisor loop from the dashboard
 - Decide the real desktop-control implementation path
 - Keep GitHub remote actions explicit and approval-gated
 - Prepare one internship-facing live demo from the current runtime outputs
@@ -88,6 +91,6 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Live remote GitHub mutation is now possible, so approval discipline matters more than before
 - Browser and app execution are still mostly research-only, even though the operator console and visible demo now make the current step easier to inspect
 - Browser and app execution are still mostly research-only, even though the operator console now makes artifacts more usable and exposes the desktop bridge foundation
-- The supervisor and approval inbox are local-only foundations, not a full autonomous executor yet
+- The supervisor, approval inbox, and manual task-control loop are still local-only foundations, not a full autonomous executor yet
 - Workspace policy blocks out-of-scope targets cleanly now, but there is still no explicit allowlist expansion flow yet
 - Third-party intake repos are valuable comparison material, but most of their surface area is still too heavy to adopt directly

@@ -48,17 +48,23 @@ from .queue import (
     deny_approval_request,
     enqueue_task,
     get_approval_request,
+    get_task,
+    get_task_history,
+    get_task_next_action,
     get_status_summary,
     get_supervisor_state,
     list_approval_records,
     list_approval_requests,
     list_blocked_tasks,
     list_pending_approvals,
+    list_ready_to_resume_tasks,
     list_tasks,
     list_waiting_tasks,
     mark_task_human_needed,
+    requeue_task,
     reject_task,
     request_task_approval,
+    review_task_for_resume,
     resume_task,
     run_task_once,
     wait_task,
@@ -170,6 +176,17 @@ def _build_parser() -> argparse.ArgumentParser:
 
     run_once_parser = subparsers.add_parser("run-once")
     run_once_parser.add_argument("--task-id", required=True)
+
+    task_status_parser = subparsers.add_parser("task-status")
+    task_status_parser.add_argument("--task-id", required=True)
+
+    review_task_parser = subparsers.add_parser("review-task")
+    review_task_parser.add_argument("--task-id", required=True)
+    review_task_parser.add_argument("--note", default="")
+
+    requeue_task_parser = subparsers.add_parser("requeue-task")
+    requeue_task_parser.add_argument("--task-id", required=True)
+    requeue_task_parser.add_argument("--note", default="")
 
     approval_status_parser = subparsers.add_parser("approval-status")
     approval_status_parser.add_argument("--approval-id", default="")
@@ -412,6 +429,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"tasks_pending_approval: {summary.pending_approval_tasks}")
             print(f"tasks_waiting: {summary.waiting_tasks}")
             print(f"tasks_blocked_human_needed: {summary.blocked_human_needed_tasks}")
+            print(f"tasks_ready_to_resume: {summary.ready_to_resume_tasks}")
             print(f"tasks_completed: {summary.completed_tasks}")
             print(f"tasks_rejected: {summary.rejected_tasks}")
             print(f"tasks_failed: {summary.failed_tasks}")
@@ -450,8 +468,49 @@ def main(argv: list[str] | None = None) -> int:
                 print(
                     f"{task.task_id} | {task.status} | {task.risk_level} | "
                     f"{task.approval_state} | scope={task.workspace_scope} | "
-                    f"policy={task.workspace_policy} | {task.title}"
+                    f"policy={task.workspace_policy} | next={get_task_next_action(task)} | "
+                    f"{task.title}"
                 )
+            return 0
+
+        if args.command == "task-status":
+            task = get_task(args.task_id)
+            history = get_task_history(args.task_id)
+            print(f"task_id: {task.task_id}")
+            print(f"title: {task.title}")
+            print(f"description: {task.description}")
+            print(f"status: {task.status}")
+            print(f"risk_level: {task.risk_level}")
+            print(f"approval_state: {task.approval_state}")
+            print(f"approval_request_id: {task.approval_request_id or 'none'}")
+            print(f"source: {task.source}")
+            print(f"workspace_scope: {task.workspace_scope}")
+            print(f"workspace_policy: {task.workspace_policy}")
+            print(f"workspace_reason: {task.workspace_reason or 'none'}")
+            print(f"allowed_workspace_root: {get_allowed_workspace_root()}")
+            print(f"waiting_for: {task.waiting_for or 'none'}")
+            print(f"blocked_reason: {task.blocked_reason or 'none'}")
+            print(f"requires_human: {'yes' if task.requires_human else 'no'}")
+            print(f"admin_required: {'yes' if task.admin_required else 'no'}")
+            print(f"last_note: {task.last_note or 'none'}")
+            print(f"created_at: {task.created_at}")
+            print(f"updated_at: {task.updated_at}")
+            print(f"next_action: {get_task_next_action(task)}")
+            print("target_paths:")
+            if task.target_paths:
+                for item in task.target_paths:
+                    print(f"- {item}")
+            else:
+                print("- none")
+            print("history:")
+            if history:
+                for item in history:
+                    print(
+                        f"- {item.event_type} | {item.occurred_at} | "
+                        f"actor={item.actor} | note={item.note or 'none'}"
+                    )
+            else:
+                print("- none")
             return 0
 
         if args.command == "pending-approvals":
@@ -635,6 +694,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"task_id: {task.task_id}")
             print(f"status: {task.status}")
             print(f"approval_state: {task.approval_state}")
+            print(f"next_action: {get_task_next_action(task)}")
             return 0
 
         if args.command == "run-once":
@@ -642,6 +702,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"task_id: {task.task_id}")
             print(f"status: {task.status}")
             print(f"approval_state: {task.approval_state}")
+            print(f"next_action: {get_task_next_action(task)}")
             return 0
 
         if args.command == "mark-human-needed":
@@ -653,6 +714,26 @@ def main(argv: list[str] | None = None) -> int:
             print(f"blocked_reason: {task.blocked_reason}")
             print(f"notification_mode: {notification.channel}")
             print(f"notification_title: {notification.title}")
+            print(f"next_action: {get_task_next_action(task)}")
+            return 0
+
+        if args.command == "review-task":
+            task = review_task_for_resume(task_id=args.task_id, note=args.note)
+            print(f"task_id: {task.task_id}")
+            print(f"status: {task.status}")
+            print(f"approval_state: {task.approval_state}")
+            print(f"workspace_policy: {task.workspace_policy}")
+            print(f"blocked_reason: {task.blocked_reason or 'none'}")
+            print(f"next_action: {get_task_next_action(task)}")
+            return 0
+
+        if args.command == "requeue-task":
+            task = requeue_task(task_id=args.task_id, note=args.note)
+            print(f"task_id: {task.task_id}")
+            print(f"status: {task.status}")
+            print(f"approval_state: {task.approval_state}")
+            print(f"workspace_policy: {task.workspace_policy}")
+            print(f"next_action: {get_task_next_action(task)}")
             return 0
 
         if args.command == "supervisor-status":
@@ -665,6 +746,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"queued_count: {state.queued_count}")
             print(f"running_count: {state.running_count}")
             print(f"waiting_count: {state.waiting_count}")
+            print(f"ready_to_resume_count: {state.ready_to_resume_count}")
             print(f"pending_approval_count: {state.pending_approval_count}")
             print(f"blocked_human_needed_count: {state.blocked_human_needed_count}")
             print(f"notification_mode: {state.notification_mode}")
@@ -698,6 +780,7 @@ def main(argv: list[str] | None = None) -> int:
                     print(
                         f"- {task.task_id} | {task.status} | "
                         f"workspace={task.workspace_scope} | policy={task.workspace_policy} | "
+                        f"approval={task.approval_state} | next={_workspace_reason(get_task_next_action(task))} | "
                         f"detail={_workspace_reason(detail)}"
                     )
             else:
@@ -711,6 +794,21 @@ def main(argv: list[str] | None = None) -> int:
                     print(
                         f"- {task.task_id} | {task.status} | "
                         f"workspace={task.workspace_scope} | policy={task.workspace_policy} | "
+                        f"approval={task.approval_state} | next={_workspace_reason(get_task_next_action(task))} | "
+                        f"detail={_workspace_reason(detail)}"
+                    )
+            else:
+                print("- none")
+
+            ready_to_resume_tasks = list_ready_to_resume_tasks()
+            print("ready_to_resume_tasks:")
+            if ready_to_resume_tasks:
+                for task in ready_to_resume_tasks:
+                    detail = task.last_note or task.title
+                    print(
+                        f"- {task.task_id} | {task.status} | "
+                        f"workspace={task.workspace_scope} | policy={task.workspace_policy} | "
+                        f"approval={task.approval_state} | next={_workspace_reason(get_task_next_action(task))} | "
                         f"detail={_workspace_reason(detail)}"
                     )
             else:

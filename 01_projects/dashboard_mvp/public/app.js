@@ -4,6 +4,7 @@ const uiState = {
   nextLocalActionId: 1,
   selectedArtifactPath: "",
   selectedApprovalId: "",
+  selectedTaskId: "",
 };
 
 function escapeHtml(value) {
@@ -324,6 +325,35 @@ function renderApprovalHistory(items) {
     .join("");
 }
 
+function renderTaskHistory(items) {
+  const element = document.getElementById("task-history-list");
+  if (!element) {
+    return;
+  }
+
+  if (!items || items.length === 0) {
+    element.innerHTML = "<p class=\"empty-state\">No task history yet for this item.</p>";
+    return;
+  }
+
+  element.innerHTML = items
+    .map((item) => {
+      const state = normalizeState(item.eventType);
+      const note = item.note && item.note !== "none" ? item.note : "No note recorded.";
+      return `
+        <article class="approval-history-item">
+          <div class="approval-topline">
+            <strong>${escapeHtml(item.eventType)}</strong>
+            <span class="state-pill state-${state}">${escapeHtml(item.eventType)}</span>
+          </div>
+          <p>${escapeHtml(note)}</p>
+          <small>${escapeHtml(formatTimeStamp(item.occurredAt))} | ${escapeHtml(item.actor || "system")}</small>
+        </article>
+      `;
+    })
+    .join("");
+}
+
 function clearApprovalDetail(message) {
   uiState.selectedApprovalId = "";
   setText("approval-detail-id", "-");
@@ -349,6 +379,27 @@ function clearApprovalDetail(message) {
   setApprovalDecisionButtonsDisabled(true);
 }
 
+function setTaskActionButtonsDisabled(task = null) {
+  const status = String(task?.status || "").toLowerCase();
+  const workspaceBlocked = task?.workspacePolicy === "blocked_by_workspace_policy";
+  const reviewEnabled = status === "blocked_human_needed";
+  const resumeEnabled = status === "waiting";
+  const requeueEnabled = status === "ready_to_resume" && !workspaceBlocked;
+
+  const buttonStates = {
+    "task-review": !reviewEnabled,
+    "task-resume": !resumeEnabled,
+    "task-requeue": !requeueEnabled,
+  };
+
+  Object.entries(buttonStates).forEach(([id, disabled]) => {
+    const button = document.getElementById(id);
+    if (button) {
+      button.disabled = disabled;
+    }
+  });
+}
+
 function renderApprovalDetail(payload) {
   const summary = payload.summary || {};
   uiState.selectedApprovalId = summary.approvalId || "";
@@ -372,6 +423,54 @@ function renderApprovalDetail(payload) {
   renderApprovalHistory(summary.decisionHistory || []);
   renderRaw("approval-detail-raw", payload);
   setApprovalDecisionButtonsDisabled(!["pending", "deferred"].includes(String(summary.status || "").toLowerCase()));
+}
+
+function clearTaskDetail(message) {
+  uiState.selectedTaskId = "";
+  setText("task-detail-id", "-");
+  setText("task-detail-status", "-");
+  setText("task-detail-risk", "-");
+  setText("task-detail-approval-state", "-");
+  setText("task-detail-title", "-");
+  setText("task-detail-description", "-");
+  setText("task-detail-workspace-scope", "-");
+  setText("task-detail-workspace-policy", "-");
+  setText("task-detail-workspace-reason", "-");
+  setText("task-detail-allowed-root", "-");
+  setText("task-detail-waiting-for", "-");
+  setText("task-detail-blocked-reason", "-");
+  setText("task-detail-next-action", "-");
+  setText("task-detail-last-note", "-");
+  setText("task-detail-summary", message);
+  setValue("task-action-note", "");
+  renderTaskHistory([]);
+  renderRaw("task-detail-raw", { message });
+  setResultPanel("task-action-result", "neutral", "Task action panel is idle.", "Select a stopped task to inspect it.");
+  setTaskActionButtonsDisabled(null);
+}
+
+function renderTaskDetail(payload) {
+  const summary = payload.summary || {};
+  uiState.selectedTaskId = summary.taskId || "";
+  setText("task-detail-id", summary.taskId || "-");
+  setText("task-detail-status", summary.status || "-");
+  setText("task-detail-risk", summary.riskLevel || "-");
+  setText("task-detail-approval-state", summary.approvalState || "-");
+  setText("task-detail-title", summary.title || "-");
+  setText("task-detail-description", summary.description || "-");
+  setText("task-detail-workspace-scope", summary.workspaceScope || "no_path_detected");
+  setText("task-detail-workspace-policy", summary.workspacePolicy || "allowed");
+  setText("task-detail-workspace-reason", summary.workspaceReason || "none");
+  setText("task-detail-allowed-root", summary.allowedWorkspaceRoot || "unknown");
+  setText("task-detail-waiting-for", summary.waitingFor || "none");
+  setText("task-detail-blocked-reason", summary.blockedReason || "none");
+  setText("task-detail-next-action", summary.nextAction || "Review the task state.");
+  setText("task-detail-last-note", summary.lastNote || "none");
+  setText("task-detail-summary", summary.headline || "Task details loaded.");
+  setValue("task-action-note", summary.lastNote && summary.lastNote !== "none" ? summary.lastNote : "");
+  renderTaskHistory(summary.history || []);
+  renderRaw("task-detail-raw", payload);
+  setTaskActionButtonsDisabled(summary);
 }
 
 function renderApprovalCards(containerId, items, emptyText, options = {}) {
@@ -427,6 +526,50 @@ function renderApprovalCards(containerId, items, emptyText, options = {}) {
     .join("");
 }
 
+function renderTaskCards(containerId, items, emptyText) {
+  const container = document.getElementById(containerId);
+  if (!container) {
+    return;
+  }
+
+  if (!items || items.length === 0) {
+    container.innerHTML = `<p class="empty-state">${escapeHtml(emptyText)}</p>`;
+    return;
+  }
+
+  container.innerHTML = items
+    .map((item) => {
+      const status = normalizeState(item.status);
+      const isSelected = item.taskId && item.taskId === uiState.selectedTaskId;
+      return `
+        <article class="approval-item ${isSelected ? "is-selected" : ""}">
+          <div class="approval-topline">
+            <strong>${escapeHtml(item.taskId || "task")}</strong>
+            <span class="state-pill state-${status}">${escapeHtml(item.status || status)}</span>
+          </div>
+          <div class="approval-summary-grid">
+            <p><span>Workspace</span><strong>${escapeHtml(item.workspaceScope || "no_path_detected")}</strong></p>
+            <p><span>Policy</span><strong>${escapeHtml(item.workspacePolicy || "allowed")}</strong></p>
+            <p><span>Approval</span><strong>${escapeHtml(item.approvalState || "unknown")}</strong></p>
+            <p><span>Next</span><strong>${escapeHtml(item.nextAction || "Review the task state.")}</strong></p>
+          </div>
+          <p class="approval-description"><span>Why stopped</span>${escapeHtml(item.detail || "No detail recorded.")}</p>
+          <div class="approval-actions">
+            <button
+              class="button-secondary task-action-button"
+              type="button"
+              data-task-action="inspect"
+              data-task-id="${escapeHtml(item.taskId || "")}"
+            >
+              ${isSelected ? "Viewing Task" : "Inspect Task"}
+            </button>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+}
+
 function renderSupervisorStatus(payload) {
   const summary = payload.summary || {};
   const statusLabel = (summary.status || "unknown").replaceAll("_", " ");
@@ -442,12 +585,15 @@ function renderSupervisorStatus(payload) {
       ? "Risky or uncertain work is paused until the human approves it."
       : summary.blockedHumanNeededCount > 0
         ? "Some tasks are blocked on a human reply or judgment call."
-        : "No open approvals right now. The supervisor is only tracking local state.",
+        : summary.readyToResumeCount > 0
+          ? "Some tasks were reviewed already and can be re-queued manually."
+      : "No open approvals right now. The supervisor is only tracking local state.",
   );
   setText("supervisor-status", statusLabel);
   setText("supervisor-pending-count", String(summary.pendingApprovalCount ?? 0));
   setText("supervisor-human-needed-count", String(summary.blockedHumanNeededCount ?? 0));
   setText("supervisor-waiting-count", String(summary.waitingCount ?? 0));
+  setText("supervisor-ready-count", String(summary.readyToResumeCount ?? 0));
   setText("supervisor-summary", summary.headline || "Supervisor status unavailable.");
 
   renderApprovalCards(
@@ -456,15 +602,20 @@ function renderSupervisorStatus(payload) {
     "No pending approvals right now.",
     { inspectable: true },
   );
-  renderApprovalCards(
+  renderTaskCards(
     "human-needed-list",
     summary.humanNeededTasks || [],
     "No human-needed tasks right now.",
   );
-  renderApprovalCards(
+  renderTaskCards(
     "waiting-tasks-list",
     summary.waitingTasks || [],
     "No waiting tasks right now.",
+  );
+  renderTaskCards(
+    "ready-to-resume-list",
+    summary.readyToResumeTasks || [],
+    "No ready-to-resume tasks right now.",
   );
   renderRaw("supervisor-raw", payload);
 }
@@ -756,10 +907,21 @@ async function refreshSupervisorStatus() {
   renderSupervisorStatus(payload);
   const nextApprovalId =
     uiState.selectedApprovalId || payload.summary?.pendingApprovals?.[0]?.approvalId || "";
+  const nextTaskId =
+    uiState.selectedTaskId
+    || payload.summary?.humanNeededTasks?.[0]?.taskId
+    || payload.summary?.waitingTasks?.[0]?.taskId
+    || payload.summary?.readyToResumeTasks?.[0]?.taskId
+    || "";
   if (nextApprovalId) {
     await refreshApprovalDetail(nextApprovalId, { silent: true });
   } else {
     clearApprovalDetail("No approval item selected. Pending requests will appear here when they exist.");
+  }
+  if (nextTaskId) {
+    await refreshTaskDetail(nextTaskId, { silent: true });
+  } else {
+    clearTaskDetail("No stopped task selected. Human-needed, waiting, or ready-to-resume tasks will appear here.");
   }
 }
 
@@ -790,6 +952,29 @@ async function refreshApprovalDetail(approvalId, options = {}) {
     clearApprovalDetail("Approval details could not be loaded.");
     if (!silent) {
       setResultPanel("approval-action-result", "error", "Approval detail lookup failed.", error.message);
+    }
+    return null;
+  }
+}
+
+async function refreshTaskDetail(taskId, options = {}) {
+  const { silent = false } = options;
+  if (!taskId) {
+    clearTaskDetail("No task selected.");
+    return null;
+  }
+
+  try {
+    const payload = await requestJson(`/api/tasks/item?taskId=${encodeURIComponent(taskId)}`);
+    renderTaskDetail(payload);
+    if (!silent) {
+      setResultPanel("task-action-result", "success", "Task details loaded.", taskId);
+    }
+    return payload;
+  } catch (error) {
+    clearTaskDetail("Task details could not be loaded.");
+    if (!silent) {
+      setResultPanel("task-action-result", "error", "Task detail lookup failed.", error.message);
     }
     return null;
   }
@@ -843,6 +1028,60 @@ async function submitApprovalDecision(decision, button) {
     return result;
   } catch (error) {
     setResultPanel("approval-action-result", "error", "Approval decision failed.", error.message);
+    updateLocalAction(actionId, "error", error.message);
+    await refreshRecentActions();
+    return null;
+  }
+}
+
+async function submitTaskAction(action, button) {
+  const taskId = uiState.selectedTaskId;
+  if (!taskId) {
+    setResultPanel("task-action-result", "error", "No task selected.", "Pick a stopped task first.");
+    return null;
+  }
+
+  const note = document.getElementById("task-action-note")?.value || "";
+  const actionLabelMap = {
+    review: "Review task",
+    resume: "Resume waiting task",
+    requeue: "Re-queue task",
+  };
+  const actionId = createLocalAction(
+    actionLabelMap[action] || "Update task",
+    `Submitting ${action} action for ${taskId}.`,
+  );
+  setResultPanel("task-action-result", "loading", "Submitting task action...", `${action} ${taskId}`);
+
+  try {
+    const result = await withButtonState(button, "Working...", () =>
+      requestJson("/api/tasks/action", {
+        method: "POST",
+        body: JSON.stringify({
+          taskId,
+          action,
+          note,
+        }),
+      }),
+    );
+
+    if (result.task) {
+      renderTaskDetail({
+        summary: result.task,
+        raw: result.taskRaw,
+      });
+    }
+    setResultPanel(
+      "task-action-result",
+      "success",
+      result.summary?.headline || "Task action saved.",
+      result.summary?.taskId || taskId,
+    );
+    updateLocalAction(actionId, "success", result.summary?.headline || "Task action saved.");
+    await Promise.all([refreshSupervisorStatus(), refreshRecentActions()]);
+    return result;
+  } catch (error) {
+    setResultPanel("task-action-result", "error", "Task action failed.", error.message);
     updateLocalAction(actionId, "error", error.message);
     await refreshRecentActions();
     return null;
@@ -1243,6 +1482,30 @@ document.getElementById("pending-approvals-list").addEventListener("click", asyn
   await refreshRecentActions();
 });
 
+["human-needed-list", "waiting-tasks-list", "ready-to-resume-list"].forEach((containerId) => {
+  document.getElementById(containerId).addEventListener("click", async (event) => {
+    const button = event.target.closest("button[data-task-action='inspect']");
+    if (!button) {
+      return;
+    }
+
+    const taskId = button.getAttribute("data-task-id");
+    if (!taskId) {
+      return;
+    }
+
+    const actionId = createLocalAction("Inspect task", `Loading details for ${taskId}.`);
+    setResultPanel("task-action-result", "loading", "Loading task details...", taskId);
+    const result = await withButtonState(button, "Loading...", () => refreshTaskDetail(taskId));
+    if (result) {
+      updateLocalAction(actionId, "success", `Loaded task details for ${taskId}.`);
+    } else {
+      updateLocalAction(actionId, "error", `Task detail lookup failed for ${taskId}.`);
+    }
+    await refreshRecentActions();
+  });
+});
+
 document.getElementById("approval-approve").addEventListener("click", async (event) => {
   await submitApprovalDecision("approve", event.currentTarget);
 });
@@ -1255,7 +1518,20 @@ document.getElementById("approval-defer").addEventListener("click", async (event
   await submitApprovalDecision("defer", event.currentTarget);
 });
 
+document.getElementById("task-review").addEventListener("click", async (event) => {
+  await submitTaskAction("review", event.currentTarget);
+});
+
+document.getElementById("task-resume").addEventListener("click", async (event) => {
+  await submitTaskAction("resume", event.currentTarget);
+});
+
+document.getElementById("task-requeue").addEventListener("click", async (event) => {
+  await submitTaskAction("requeue", event.currentTarget);
+});
+
 clearApprovalDetail("Select a pending approval to inspect it.");
+clearTaskDetail("Select a stopped task to inspect it.");
 
 refreshConsole().catch((error) => {
   setText("operator-headline", "Console load failed.");

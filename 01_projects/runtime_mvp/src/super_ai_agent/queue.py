@@ -11,6 +11,7 @@ from .models import (
     RuntimeStatusSummary,
     SupervisorState,
     Task,
+    TaskEvent,
     TASK_RISK_LEVELS,
 )
 from .storage import (
@@ -26,7 +27,7 @@ from .storage import (
 )
 
 ALLOWED_RISKS = set(TASK_RISK_LEVELS)
-QUEUEABLE_TASK_STATUSES = {"queued", "running", "waiting", "blocked_human_needed"}
+QUEUEABLE_TASK_STATUSES = {"queued", "running", "waiting", "blocked_human_needed", "ready_to_resume"}
 WINDOWS_ABSOLUTE_PATH_PATTERN = re.compile(r"(?i)\b[A-Z]:\\[^\s\"'<>|?*]+")
 
 
@@ -57,6 +58,50 @@ def _find_approval_request(
         if request.approval_id == approval_id:
             return request
     raise ValueError(f"Approval request not found: {approval_id}")
+
+
+def _append_task_event(task: Task, event_type: str, note: str = "", actor: str = "system") -> None:
+    task.history.append(
+        TaskEvent(
+            event_type=event_type,
+            occurred_at=_now(),
+            note=note,
+            actor=actor,
+        )
+    )
+
+
+def _ensure_task_history(task: Task) -> bool:
+    if task.history:
+        return False
+
+    task.history.append(
+        TaskEvent(
+            event_type="created",
+            occurred_at=task.created_at or _now(),
+            note=task.title,
+            actor="system",
+        )
+    )
+    return True
+
+
+def _task_next_action(task: Task) -> str:
+    if task.status == "pending_approval":
+        return "Resolve the approval request."
+    if task.status == "blocked_human_needed":
+        if task.workspace_policy == "blocked_by_workspace_policy":
+            return "Keep blocked until the target is moved inside the workspace or policy changes."
+        return "Mark the human-needed step as reviewed."
+    if task.status == "waiting":
+        return "Resume the task when the reply or external event arrives."
+    if task.status == "ready_to_resume":
+        return "Re-queue the task when you want it to continue."
+    if task.status == "queued":
+        return "Run the task manually when ready."
+    if task.status == "completed":
+        return "Review the completed output."
+    return "Review the current task state."
 
 
 def _requires_approval(risk_level: str) -> bool:
@@ -183,6 +228,9 @@ def _backfill_pending_approval_requests() -> tuple[list[Task], list[ApprovalRequ
     changed = False
 
     for task in tasks:
+        if _ensure_task_history(task):
+            changed = True
+
         if not task.workspace_reason and not task.target_paths:
             _apply_workspace_policy(task, task.title, task.description, task.source)
             changed = True
@@ -255,6 +303,9 @@ def refresh_supervisor_state(last_event: str | None = None) -> SupervisorState:
     elif any(task.status == "waiting" for task in tasks):
         status = "waiting"
         active_task_id = _select_active_task_id(tasks, "waiting")
+    elif any(task.status == "ready_to_resume" for task in tasks):
+        status = "ready_to_resume"
+        active_task_id = _select_active_task_id(tasks, "ready_to_resume")
     elif any(task.status == "running" for task in tasks):
         status = "running"
         active_task_id = _select_active_task_id(tasks, "running")
@@ -274,6 +325,7 @@ def refresh_supervisor_state(last_event: str | None = None) -> SupervisorState:
             1 for task in tasks if task.status == "blocked_human_needed"
         ),
         waiting_count=sum(1 for task in tasks if task.status == "waiting"),
+        ready_to_resume_count=sum(1 for task in tasks if task.status == "ready_to_resume"),
         queued_count=sum(1 for task in tasks if task.status == "queued"),
         running_count=sum(1 for task in tasks if task.status == "running"),
         notification_mode=previous_state.notification_mode or "dashboard",
@@ -282,6 +334,7 @@ def refresh_supervisor_state(last_event: str | None = None) -> SupervisorState:
         notes=[
             "Local-only supervisor foundation is active.",
             "Remote or admin actions must remain explicit and approval-gated.",
+            "Stopped tasks move forward only through explicit operator actions.",
         ],
     )
     write_supervisor_state(state)
@@ -311,6 +364,7 @@ def enqueue_task(title: str, description: str, risk_level: str, source: str = "m
         last_note="",
     )
     _apply_workspace_policy(task, title, description, source)
+    _append_task_event(task, "created", note=title)
     task.admin_required = _requires_admin(task.risk_level)
     requires_approval = _requires_approval(task.risk_level)
     task.requires_approval = requires_approval
@@ -341,6 +395,15 @@ def enqueue_task(title: str, description: str, risk_level: str, source: str = "m
             else ""
         )
         approval_requests.append(approval_request)
+        _append_task_event(
+            task,
+            "escalated",
+            note=(
+                task.workspace_reason
+                if task.workspace_policy == "blocked_by_workspace_policy"
+                else "Task requires human approval before execution."
+            ),
+        )
         write_approval_requests(approval_requests)
 
     tasks = read_tasks()
@@ -429,6 +492,8 @@ def request_task_approval(
     )
     task.last_note = reason
     task.updated_at = timestamp
+    _ensure_task_history(task)
+    _append_task_event(task, "escalated", note=reason)
 
     requests = read_approval_requests()
     approval_request = _build_approval_request(
@@ -477,6 +542,7 @@ def _resolve_approval_request(
     task.approval_request_id = request.approval_id
     task.updated_at = timestamp
     task.last_note = note
+    _ensure_task_history(task)
 
     workspace_blocked = task.workspace_policy == "blocked_by_workspace_policy"
 
@@ -489,24 +555,33 @@ def _resolve_approval_request(
             or "Blocked by workspace policy until the allowed workspace root is expanded."
         )
         task.requires_human = True
+        _append_task_event(task, "approved", note=note or "Human approved the request.")
+        _append_task_event(
+            task,
+            "blocked_by_workspace_policy",
+            note=task.blocked_reason,
+        )
     elif decision == "approved":
         task.status = "queued"
         task.approval_state = "approved"
         task.waiting_for = ""
         task.blocked_reason = ""
         task.requires_human = False
+        _append_task_event(task, "approved", note=note or "Human approved the request.")
     elif decision == "denied":
         task.status = "rejected"
         task.approval_state = "denied"
         task.waiting_for = ""
         task.blocked_reason = "Human denied the requested action."
         task.requires_human = False
+        _append_task_event(task, "denied", note=note or task.blocked_reason)
     else:
         task.status = "waiting"
         task.approval_state = "deferred"
         task.waiting_for = "approval deferred by human"
         task.blocked_reason = note or "Human deferred the requested action."
         task.requires_human = True
+        _append_task_event(task, "deferred", note=note or task.blocked_reason)
 
     write_tasks(tasks)
     write_approval_requests(requests)
@@ -581,6 +656,8 @@ def wait_task(task_id: str, reason: str = "waiting for human reply or external e
     task.requires_human = True
     task.last_note = reason
     task.updated_at = _now()
+    _ensure_task_history(task)
+    _append_task_event(task, "waiting", note=reason)
     write_tasks(tasks)
     refresh_supervisor_state(last_event=f"Task waiting: {task.task_id}")
     return task
@@ -589,8 +666,8 @@ def wait_task(task_id: str, reason: str = "waiting for human reply or external e
 def resume_task(task_id: str) -> Task:
     tasks = read_tasks()
     task = _find_task(tasks, task_id)
-    if task.status not in {"waiting", "blocked_human_needed"}:
-        raise ValueError(f"Task {task_id} must be waiting or human-needed before resume.")
+    if task.status != "waiting":
+        raise ValueError(f"Task {task_id} must be waiting before resume.")
     if task.approval_state == "pending":
         raise ValueError(f"Task {task_id} still needs approval before resume.")
 
@@ -599,6 +676,8 @@ def resume_task(task_id: str) -> Task:
     task.blocked_reason = ""
     task.requires_human = False
     task.updated_at = _now()
+    _ensure_task_history(task)
+    _append_task_event(task, "resumed", note="Operator resumed the waiting task.")
     write_tasks(tasks)
     refresh_supervisor_state(last_event=f"Task resumed: {task.task_id}")
     return task
@@ -616,8 +695,75 @@ def mark_task_human_needed(task_id: str, reason: str) -> Task:
     task.requires_human = True
     task.last_note = reason
     task.updated_at = _now()
+    _ensure_task_history(task)
+    _append_task_event(task, "human_needed", note=reason)
     write_tasks(tasks)
     refresh_supervisor_state(last_event=f"Task blocked for human input: {task.task_id}")
+    return task
+
+
+def review_task_for_resume(task_id: str, note: str = "") -> Task:
+    tasks = read_tasks()
+    task = _find_task(tasks, task_id)
+    if task.status != "blocked_human_needed":
+        raise ValueError(f"Task {task_id} must be human-needed before review.")
+
+    timestamp = _now()
+    task.updated_at = timestamp
+    task.last_note = note
+    _ensure_task_history(task)
+
+    if task.workspace_policy == "blocked_by_workspace_policy":
+        task.waiting_for = "workspace_policy_override"
+        task.blocked_reason = (
+            task.workspace_reason
+            or "Task remains blocked until the target is moved inside the workspace."
+        )
+        task.requires_human = True
+        _append_task_event(
+            task,
+            "blocked_by_workspace_policy",
+            note=note or task.blocked_reason,
+        )
+        write_tasks(tasks)
+        refresh_supervisor_state(last_event=f"Task remains workspace-blocked: {task.task_id}")
+        return task
+
+    task.status = "ready_to_resume"
+    task.waiting_for = "operator_requeue"
+    task.blocked_reason = ""
+    task.requires_human = False
+    _append_task_event(
+        task,
+        "ready_to_resume",
+        note=note or "Human-needed review completed; task is ready to re-queue.",
+    )
+    write_tasks(tasks)
+    refresh_supervisor_state(last_event=f"Task ready to resume: {task.task_id}")
+    return task
+
+
+def requeue_task(task_id: str, note: str = "") -> Task:
+    tasks = read_tasks()
+    task = _find_task(tasks, task_id)
+    if task.status != "ready_to_resume":
+        raise ValueError(f"Task {task_id} must be ready_to_resume before re-queue.")
+    if task.workspace_policy == "blocked_by_workspace_policy":
+        raise ValueError(
+            "Task is blocked by workspace policy until the allowed workspace root is expanded "
+            "or the target is moved inside the workspace."
+        )
+
+    task.status = "queued"
+    task.waiting_for = ""
+    task.blocked_reason = ""
+    task.requires_human = False
+    task.updated_at = _now()
+    task.last_note = note
+    _ensure_task_history(task)
+    _append_task_event(task, "resumed", note=note or "Operator re-queued the task.")
+    write_tasks(tasks)
+    refresh_supervisor_state(last_event=f"Task re-queued: {task.task_id}")
     return task
 
 
@@ -639,6 +785,8 @@ def run_task_once(task_id: str) -> Task:
     task.blocked_reason = ""
     task.requires_human = False
     task.updated_at = _now()
+    _ensure_task_history(task)
+    _append_task_event(task, "completed", note="Task completed in manual run-once mode.")
     write_tasks(tasks)
     refresh_supervisor_state(last_event=f"Task completed: {task.task_id}")
     return task
@@ -654,6 +802,10 @@ def list_blocked_tasks() -> list[Task]:
 
 def list_waiting_tasks() -> list[Task]:
     return [task for task in list_tasks() if task.status == "waiting"]
+
+
+def list_ready_to_resume_tasks() -> list[Task]:
+    return [task for task in list_tasks() if task.status == "ready_to_resume"]
 
 
 def get_supervisor_state() -> SupervisorState:
@@ -672,6 +824,9 @@ def get_status_summary() -> RuntimeStatusSummary:
         blocked_human_needed_tasks=sum(
             1 for task in tasks if task.status == "blocked_human_needed"
         ),
+        ready_to_resume_tasks=sum(
+            1 for task in tasks if task.status == "ready_to_resume"
+        ),
         completed_tasks=sum(1 for task in tasks if task.status == "completed"),
         rejected_tasks=sum(1 for task in tasks if task.status == "rejected"),
         failed_tasks=sum(1 for task in tasks if task.status == "failed"),
@@ -679,3 +834,12 @@ def get_status_summary() -> RuntimeStatusSummary:
             1 for request in approval_requests if request.status == "pending"
         ),
     )
+
+
+def get_task_history(task_id: str) -> list[TaskEvent]:
+    task = get_task(task_id)
+    return list(task.history)
+
+
+def get_task_next_action(task: Task) -> str:
+    return _task_next_action(task)

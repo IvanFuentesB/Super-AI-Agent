@@ -11,11 +11,32 @@ TASK_STATUSES = (
     "waiting",
     "pending_approval",
     "blocked_human_needed",
+    "ready_to_resume",
     "completed",
     "rejected",
     "failed",
 )
 APPROVAL_STATUSES = ("pending", "approved", "denied", "deferred", "expired", "not_required")
+
+
+@dataclass
+class TaskEvent:
+    event_type: str
+    occurred_at: str
+    note: str = ""
+    actor: str = "system"
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "TaskEvent":
+        return cls(
+            event_type=data.get("event_type", "unknown"),
+            occurred_at=data.get("occurred_at", ""),
+            note=data.get("note", ""),
+            actor=data.get("actor", "system"),
+        )
 
 
 @dataclass
@@ -40,6 +61,7 @@ class Task:
     workspace_scope: str = "no_path_detected"
     workspace_policy: str = "allowed"
     workspace_reason: str = ""
+    history: list[TaskEvent] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -67,6 +89,11 @@ class Task:
             workspace_scope=data.get("workspace_scope", "no_path_detected"),
             workspace_policy=data.get("workspace_policy", "allowed"),
             workspace_reason=data.get("workspace_reason", ""),
+            history=[
+                TaskEvent.from_dict(item)
+                for item in data.get("history", [])
+                if isinstance(item, dict)
+            ],
         )
 
 
@@ -147,6 +174,7 @@ class SupervisorState:
     pending_approval_count: int
     blocked_human_needed_count: int
     waiting_count: int
+    ready_to_resume_count: int
     queued_count: int
     running_count: int
     notification_mode: str
@@ -167,6 +195,7 @@ class SupervisorState:
             pending_approval_count=int(data.get("pending_approval_count", 0)),
             blocked_human_needed_count=int(data.get("blocked_human_needed_count", 0)),
             waiting_count=int(data.get("waiting_count", 0)),
+            ready_to_resume_count=int(data.get("ready_to_resume_count", 0)),
             queued_count=int(data.get("queued_count", 0)),
             running_count=int(data.get("running_count", 0)),
             notification_mode=data.get("notification_mode", "dashboard"),
@@ -184,6 +213,7 @@ class RuntimeStatusSummary:
     waiting_tasks: int = 0
     pending_approval_tasks: int = 0
     blocked_human_needed_tasks: int = 0
+    ready_to_resume_tasks: int = 0
     completed_tasks: int = 0
     rejected_tasks: int = 0
     failed_tasks: int = 0

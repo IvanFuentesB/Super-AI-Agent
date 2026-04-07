@@ -380,6 +380,95 @@ try {
         }
         Write-Check -Name 'Out-of-scope task is visible in human-needed list' -Passed $blockedTaskVisible -Detail ($(if ($blockedTaskVisible) { $outOfScopeTaskId } else { 'human-needed list did not show blocked workspace task' }))
         if (-not $blockedTaskVisible) { $failed++ }
+
+        if ($outOfScopeTaskId) {
+            $blockedTaskDetail = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/item?taskId=$outOfScopeTaskId" -Method Get -TimeoutSec 30
+            $blockedTaskDetailOk = $blockedTaskDetail.ok -and $blockedTaskDetail.localOnly -and $blockedTaskDetail.summary.workspacePolicy -eq 'blocked_by_workspace_policy'
+            Write-Check -Name 'Blocked task detail endpoint' -Passed $blockedTaskDetailOk -Detail ($(if ($blockedTaskDetailOk) { $blockedTaskDetail.summary.headline } else { 'blocked task detail missing policy state' }))
+            if (-not $blockedTaskDetailOk) { $failed++ }
+
+            $blockedReviewPayload = @{
+                taskId = $outOfScopeTaskId
+                action = 'review'
+                note = 'dashboard checker reviewed the blocked task'
+            } | ConvertTo-Json
+            $blockedReview = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $blockedReviewPayload -TimeoutSec 30
+            $blockedReviewOk = $blockedReview.ok -and `
+                $blockedReview.task.status -eq 'blocked_human_needed' -and `
+                $blockedReview.task.workspacePolicy -eq 'blocked_by_workspace_policy'
+            Write-Check -Name 'Blocked task review stays blocked' -Passed $blockedReviewOk -Detail ($(if ($blockedReviewOk) { $blockedReview.summary.headline } else { 'blocked task review moved forward unexpectedly' }))
+            if (-not $blockedReviewOk) { $failed++ }
+        }
+    }
+
+    $humanLoopSeed = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('enqueue', '--title', 'dashboard checker human-needed task', '--description', 'Validate review and re-queue flow.', '--risk', 'safe')
+    $humanLoopSeedOk = $humanLoopSeed.ExitCode -eq 0
+    Write-Check -Name 'Seed human-needed task for dashboard loop' -Passed $humanLoopSeedOk -Detail (($humanLoopSeed.Output | Out-String).Trim())
+    if (-not $humanLoopSeedOk) { $failed++ }
+
+    $humanLoopTaskMatch = [regex]::Match(($humanLoopSeed.Output | Out-String), 'task_id:\s*(\S+)')
+    $humanLoopTaskId = if ($humanLoopTaskMatch.Success) { $humanLoopTaskMatch.Groups[1].Value } else { $null }
+    $humanLoopTaskIdOk = -not [string]::IsNullOrWhiteSpace($humanLoopTaskId)
+    Write-Check -Name 'Human-needed loop task id parsed' -Passed $humanLoopTaskIdOk -Detail ($(if ($humanLoopTaskIdOk) { $humanLoopTaskId } else { 'missing task id for human-needed loop' }))
+    if (-not $humanLoopTaskIdOk) { $failed++ }
+
+    if ($humanLoopTaskIdOk) {
+        $seedHumanNeeded = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('mark-human-needed', '--task-id', $humanLoopTaskId, '--reason', 'dashboard checker needs a manual review')
+        $seedHumanNeededOk = $seedHumanNeeded.ExitCode -eq 0
+        Write-Check -Name 'Seed mark-human-needed for dashboard loop' -Passed $seedHumanNeededOk -Detail (($seedHumanNeeded.Output | Out-String).Trim())
+        if (-not $seedHumanNeededOk) { $failed++ }
+
+        $humanTaskDetail = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/item?taskId=$humanLoopTaskId" -Method Get -TimeoutSec 30
+        $humanTaskDetailOk = $humanTaskDetail.ok -and $humanTaskDetail.summary.status -eq 'blocked_human_needed'
+        Write-Check -Name 'Human-needed task detail endpoint' -Passed $humanTaskDetailOk -Detail ($(if ($humanTaskDetailOk) { $humanTaskDetail.summary.headline } else { 'human-needed task detail missing blocked state' }))
+        if (-not $humanTaskDetailOk) { $failed++ }
+
+        $reviewPayload = @{
+            taskId = $humanLoopTaskId
+            action = 'review'
+            note = 'dashboard checker reviewed the human-needed task'
+        } | ConvertTo-Json
+        $reviewResult = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $reviewPayload -TimeoutSec 30
+        $reviewResultOk = $reviewResult.ok -and $reviewResult.task.status -eq 'ready_to_resume'
+        Write-Check -Name 'Task review endpoint' -Passed $reviewResultOk -Detail ($(if ($reviewResultOk) { $reviewResult.summary.headline } else { 'task review did not move to ready_to_resume' }))
+        if (-not $reviewResultOk) { $failed++ }
+
+        $requeuePayload = @{
+            taskId = $humanLoopTaskId
+            action = 'requeue'
+            note = 'dashboard checker re-queued the reviewed task'
+        } | ConvertTo-Json
+        $requeueResult = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $requeuePayload -TimeoutSec 30
+        $requeueResultOk = $requeueResult.ok -and $requeueResult.task.status -eq 'queued'
+        Write-Check -Name 'Task requeue endpoint' -Passed $requeueResultOk -Detail ($(if ($requeueResultOk) { $requeueResult.summary.headline } else { 'task requeue did not return queued state' }))
+        if (-not $requeueResultOk) { $failed++ }
+    }
+
+    $waitingLoopSeed = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('enqueue', '--title', 'dashboard checker waiting task', '--description', 'Validate waiting resume flow.', '--risk', 'safe')
+    $waitingLoopSeedOk = $waitingLoopSeed.ExitCode -eq 0
+    Write-Check -Name 'Seed waiting task for dashboard loop' -Passed $waitingLoopSeedOk -Detail (($waitingLoopSeed.Output | Out-String).Trim())
+    if (-not $waitingLoopSeedOk) { $failed++ }
+
+    $waitingTaskMatch = [regex]::Match(($waitingLoopSeed.Output | Out-String), 'task_id:\s*(\S+)')
+    $waitingTaskId = if ($waitingTaskMatch.Success) { $waitingTaskMatch.Groups[1].Value } else { $null }
+    $waitingTaskIdOk = -not [string]::IsNullOrWhiteSpace($waitingTaskId)
+    Write-Check -Name 'Waiting task id parsed' -Passed $waitingTaskIdOk -Detail ($(if ($waitingTaskIdOk) { $waitingTaskId } else { 'missing task id for waiting loop' }))
+    if (-not $waitingTaskIdOk) { $failed++ }
+
+    if ($waitingTaskIdOk) {
+        $seedWaiting = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('wait', '--task-id', $waitingTaskId, '--reason', 'dashboard checker waiting for reply')
+        $seedWaitingOk = $seedWaiting.ExitCode -eq 0
+        Write-Check -Name 'Seed wait for dashboard loop' -Passed $seedWaitingOk -Detail (($seedWaiting.Output | Out-String).Trim())
+        if (-not $seedWaitingOk) { $failed++ }
+
+        $waitingPayload = @{
+            taskId = $waitingTaskId
+            action = 'resume'
+        } | ConvertTo-Json
+        $waitingResume = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $waitingPayload -TimeoutSec 30
+        $waitingResumeOk = $waitingResume.ok -and $waitingResume.task.status -eq 'queued'
+        Write-Check -Name 'Waiting task resume endpoint' -Passed $waitingResumeOk -Detail ($(if ($waitingResumeOk) { $waitingResume.summary.headline } else { 'waiting task did not resume to queued' }))
+        if (-not $waitingResumeOk) { $failed++ }
     }
 
     $capability = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/capability-summary" -Method Get -TimeoutSec 30

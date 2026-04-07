@@ -449,6 +449,8 @@ function parseTaskStatusLine(line) {
     status: parts[1] || "unknown",
     workspaceScope: labeled.workspace || "no_path_detected",
     workspacePolicy: labeled.policy || "allowed",
+    approvalState: labeled.approval || "unknown",
+    nextAction: labeled.next || "Review the task state.",
     detail: labeled.detail || parts.slice(2).join(" | ") || "",
   };
 }
@@ -464,6 +466,53 @@ function parseApprovalList(stdout) {
     count,
     requests,
     headline: count > 0 ? `${count} approval request(s) pending.` : "No pending approvals right now.",
+  };
+}
+
+function parseTaskHistoryLine(line) {
+  const parts = String(line)
+    .split(" | ")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  return {
+    eventType: parts[0] || "unknown",
+    occurredAt: parts[1] || "",
+    actor: parts[2]?.replace(/^actor=/, "") || "system",
+    note: parts.slice(3).join(" | ").replace(/^note=/, "") || "none",
+  };
+}
+
+function parseTaskDetail(stdout) {
+  const parsed = parseKeyValueBlock(stdout);
+  const history = (parsed.listSections.history || [])
+    .filter((item) => item !== "none")
+    .map(parseTaskHistoryLine);
+
+  return {
+    taskId: parsed.values.task_id || "",
+    title: parsed.values.title || "Untitled task",
+    description: parsed.values.description || "none",
+    status: parsed.values.status || "unknown",
+    riskLevel: parsed.values.risk_level || "unknown",
+    approvalState: parsed.values.approval_state || "unknown",
+    approvalRequestId: parsed.values.approval_request_id || "none",
+    source: parsed.values.source || "manual",
+    workspaceScope: parsed.values.workspace_scope || "no_path_detected",
+    workspacePolicy: parsed.values.workspace_policy || "allowed",
+    workspaceReason: parsed.values.workspace_reason || "none",
+    allowedWorkspaceRoot: parsed.values.allowed_workspace_root || "unknown",
+    waitingFor: parsed.values.waiting_for || "none",
+    blockedReason: parsed.values.blocked_reason || "none",
+    requiresHuman: parsed.values.requires_human === "yes",
+    adminRequired: parsed.values.admin_required === "yes",
+    lastNote: parsed.values.last_note || "none",
+    createdAt: parsed.values.created_at || "",
+    updatedAt: parsed.values.updated_at || "",
+    nextAction: parsed.values.next_action || "Review the task state.",
+    targetPaths: (parsed.listSections.target_paths || []).filter((item) => item !== "none"),
+    history,
+    headline: `${parsed.values.title || "Task"} (${parsed.values.status || "unknown"})`,
   };
 }
 
@@ -508,11 +557,15 @@ function parseSupervisorStatus(stdout) {
   const waitingTasks = (parsed.listSections.waiting_tasks || [])
     .filter((item) => item !== "none")
     .map(parseTaskStatusLine);
+  const readyToResumeTasks = (parsed.listSections.ready_to_resume_tasks || [])
+    .filter((item) => item !== "none")
+    .map(parseTaskStatusLine);
 
   const status = parsed.values.status || "unknown";
   const pendingApprovalCount = Number.parseInt(parsed.values.pending_approval_count || "0", 10);
   const blockedHumanNeededCount = Number.parseInt(parsed.values.blocked_human_needed_count || "0", 10);
   const waitingCount = Number.parseInt(parsed.values.waiting_count || "0", 10);
+  const readyToResumeCount = Number.parseInt(parsed.values.ready_to_resume_count || "0", 10);
   const queuedCount = Number.parseInt(parsed.values.queued_count || "0", 10);
   const runningCount = Number.parseInt(parsed.values.running_count || "0", 10);
 
@@ -524,6 +577,7 @@ function parseSupervisorStatus(stdout) {
     queuedCount,
     runningCount,
     waitingCount,
+    readyToResumeCount,
     pendingApprovalCount,
     blockedHumanNeededCount,
     notificationMode: parsed.values.notification_mode || "dashboard",
@@ -534,13 +588,16 @@ function parseSupervisorStatus(stdout) {
     pendingApprovals,
     humanNeededTasks,
     waitingTasks,
+    readyToResumeTasks,
     headline:
       pendingApprovalCount > 0
         ? `${pendingApprovalCount} approval request(s) need review.`
         : blockedHumanNeededCount > 0
           ? `${blockedHumanNeededCount} task(s) are blocked on the human.`
-          : waitingCount > 0
-            ? `${waitingCount} task(s) are waiting to resume later.`
+        : waitingCount > 0
+          ? `${waitingCount} task(s) are waiting to resume later.`
+          : readyToResumeCount > 0
+            ? `${readyToResumeCount} task(s) are ready to re-queue.`
             : queuedCount > 0 || runningCount > 0
               ? "Supervisor is tracking local work without open approvals."
               : "Supervisor is idle and ready.",
@@ -758,6 +815,7 @@ function buildOperatorStatus() {
       "Desktop bridge status and safe local desktop checks",
       "Supervisor status and approval inbox visibility",
       "Approval queue review with local approve, deny, and defer actions",
+      "Manual task review, resume, and re-queue controls",
       "Recent artifacts and recent-action log",
     ],
     scaffoldOnly: [
@@ -802,6 +860,16 @@ async function buildApprovalItemResponse(approvalId) {
   return {
     ok: raw.ok,
     summary: raw.ok ? parseApprovalDetail(raw.stdout) : null,
+    raw,
+    localOnly: true,
+  };
+}
+
+async function buildTaskItemResponse(taskId) {
+  const raw = await runRuntimeCli(["task-status", "--task-id", taskId]);
+  return {
+    ok: raw.ok,
+    summary: raw.ok ? parseTaskDetail(raw.stdout) : null,
     raw,
     localOnly: true,
   };
@@ -1014,6 +1082,25 @@ async function handleApiRequest(request, response, requestUrl) {
     return;
   }
 
+  if (request.method === "GET" && requestUrl.pathname === "/api/tasks/item") {
+    const taskId = requestUrl.searchParams.get("taskId");
+    if (!taskId) {
+      throw new Error("Missing taskId query parameter.");
+    }
+
+    const payload = await buildTaskItemResponse(taskId);
+    pushAction({
+      actionType: "task",
+      label: "Viewed task item",
+      status: payload.ok ? "success" : "error",
+      summary: payload.ok && payload.summary
+        ? payload.summary.headline
+        : (payload.raw.stderr || "Task item lookup failed."),
+    });
+    sendJson(response, payload.ok ? 200 : 500, payload);
+    return;
+  }
+
   if (request.method === "GET" && requestUrl.pathname === "/api/capability-summary") {
     const payload = await buildCapabilityResponse();
     pushAction({
@@ -1137,6 +1224,76 @@ async function handleApiRequest(request, response, requestUrl) {
       pendingApprovals: pendingPayload.summary,
       raw: {
         decision: raw,
+      },
+    });
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/api/tasks/action") {
+    const payload = await readJsonBody(request);
+    requireFields(payload, ["taskId", "action"]);
+
+    const taskId = String(payload.taskId).trim();
+    const action = String(payload.action).trim().toLowerCase();
+    const note = payload.note ? String(payload.note) : "";
+    const commandMap = {
+      review: "review-task",
+      resume: "resume",
+      requeue: "requeue-task",
+    };
+    const command = commandMap[action];
+    if (!command) {
+      throw new Error("Unsupported task action.");
+    }
+
+    const cliArgs = [command, "--task-id", taskId];
+    if (note.trim() && (action === "review" || action === "requeue")) {
+      cliArgs.push("--note", note);
+    }
+
+    const raw = await runRuntimeCli(cliArgs);
+    const taskPayload = await buildTaskItemResponse(taskId);
+    const supervisorPayload = await buildSupervisorResponse();
+    const ok = raw.ok && taskPayload.ok && supervisorPayload.ok;
+
+    const headlineMap = {
+      review: "Task review recorded.",
+      resume: "Waiting task resumed.",
+      requeue: "Task re-queued.",
+    };
+    let summaryHeadline = headlineMap[action] || "Task action completed.";
+    if (!ok) {
+      summaryHeadline = raw.stderr || raw.stdout || "Task action failed.";
+    } else if (
+      action === "review" &&
+      taskPayload.summary?.workspacePolicy === "blocked_by_workspace_policy" &&
+      taskPayload.summary?.status === "blocked_human_needed"
+    ) {
+      summaryHeadline = "Task review recorded, but workspace policy still blocks it.";
+    }
+
+    pushAction({
+      actionType: "task",
+      label: `${action[0].toUpperCase()}${action.slice(1)} task`,
+      status: ok ? "success" : "error",
+      summary: summaryHeadline,
+      outputPath: taskId,
+    });
+
+    sendJson(response, ok ? 200 : 500, {
+      ok,
+      localOnly: true,
+      summary: {
+        headline: summaryHeadline,
+        taskId,
+        action,
+        status: taskPayload.summary?.status || "unknown",
+      },
+      task: taskPayload.summary,
+      taskRaw: taskPayload.raw,
+      supervisor: supervisorPayload.summary,
+      raw: {
+        action: raw,
       },
     });
     return;
