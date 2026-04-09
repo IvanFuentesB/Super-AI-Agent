@@ -31,6 +31,7 @@ EXECUTOR_ACTION_TYPES = (
     "double_click",
     "right_click",
     "scroll_mouse",
+    "run_operator_recipe",
 )
 EXECUTION_STATUSES = ("started", "succeeded", "failed", "interrupted")
 TASK_STATUSES = (

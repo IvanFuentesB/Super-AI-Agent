@@ -192,6 +192,7 @@ def _build_parser() -> argparse.ArgumentParser:
             "double_click",
             "right_click",
             "scroll_mouse",
+            "run_operator_recipe",
         ],
     )
     executor_parser.add_argument("--target", default="")
@@ -523,6 +524,10 @@ def main(argv: list[str] | None = None) -> int:
             print(f"workspace_policy: {task.workspace_policy}")
             print(f"workspace_reason: {task.workspace_reason or 'none'}")
             print(f"allowed_workspace_root: {get_allowed_workspace_root()}")
+            if task.executor_action_type == "run_operator_recipe":
+                print(f"recipe_name: {task.executor_payload.get('recipe_name', 'none')}")
+                print(f"recipe_label: {task.executor_payload.get('recipe_label', 'none')}")
+                print(f"recipe_step_count: {len(task.executor_payload.get('recipe_steps', []))}")
             if task.approval_request_id:
                 print(f"approval_request_id: {task.approval_request_id}")
             return 0
@@ -573,6 +578,14 @@ def main(argv: list[str] | None = None) -> int:
             print(f"source: {task.source}")
             print(f"executor_action_type: {task.executor_action_type or 'none'}")
             print(f"executor_target: {task.executor_target or 'none'}")
+            recipe_last_run = task.executor_payload.get("recipe_last_run", {}) if task.executor_action_type == "run_operator_recipe" else {}
+            print(f"recipe_name: {task.executor_payload.get('recipe_name', 'none') if task.executor_action_type == 'run_operator_recipe' else 'none'}")
+            print(f"recipe_label: {task.executor_payload.get('recipe_label', 'none') if task.executor_action_type == 'run_operator_recipe' else 'none'}")
+            print(f"recipe_status: {recipe_last_run.get('status', 'not_run') if task.executor_action_type == 'run_operator_recipe' else 'not_run'}")
+            print(f"recipe_summary: {recipe_last_run.get('summary', 'none') if task.executor_action_type == 'run_operator_recipe' else 'none'}")
+            print(f"recipe_run_count: {len(task.executor_payload.get('recipe_run_history', [])) if task.executor_action_type == 'run_operator_recipe' else 0}")
+            print(f"recipe_last_run_started_at: {recipe_last_run.get('started_at', 'none') if task.executor_action_type == 'run_operator_recipe' else 'none'}")
+            print(f"recipe_last_run_finished_at: {recipe_last_run.get('finished_at', 'none') if task.executor_action_type == 'run_operator_recipe' else 'none'}")
             print(f"workspace_scope: {task.workspace_scope}")
             print(f"workspace_policy: {task.workspace_policy}")
             print(f"workspace_reason: {task.workspace_reason or 'none'}")
@@ -593,6 +606,45 @@ def main(argv: list[str] | None = None) -> int:
             if task.target_paths:
                 for item in task.target_paths:
                     print(f"- {item}")
+            else:
+                print("- none")
+            print("recipe_steps:")
+            if task.executor_action_type == "run_operator_recipe" and task.executor_payload.get("recipe_steps"):
+                for item in task.executor_payload.get("recipe_steps", []):
+                    print(
+                        f"- planned | step={item.get('step', '?')} | "
+                        f"action={item.get('action_type', 'unknown')} | "
+                        f"target={item.get('target', 'none') or 'none'} | "
+                        f"label={item.get('label', 'recipe step')}"
+                    )
+            else:
+                print("- none")
+            print("recipe_last_run_steps:")
+            if task.executor_action_type == "run_operator_recipe" and recipe_last_run.get("steps"):
+                for item in recipe_last_run.get("steps", []):
+                    print(
+                        f"- {item.get('status', 'unknown')} | step={item.get('step', '?')} | "
+                        f"action={item.get('action_type', 'unknown')} | "
+                        f"target={item.get('target', 'none') or 'none'} | "
+                        f"label={item.get('label', 'recipe step')} | "
+                        f"started={item.get('started_at', 'none') or 'none'} | "
+                        f"finished={item.get('finished_at', 'none') or 'none'} | "
+                        f"summary={item.get('summary', 'none') or 'none'} | "
+                        f"artifact={item.get('artifact_path', 'none') or 'none'} | "
+                        f"clipboard={item.get('clipboard_preview', 'none') or 'none'} | "
+                        f"window={item.get('window_alias', 'none') or 'none'} | "
+                        f"coordinates={item.get('coordinates', 'none') or 'none'}"
+                    )
+            else:
+                print("- none")
+            print("recipe_run_history:")
+            if task.executor_action_type == "run_operator_recipe" and task.executor_payload.get("recipe_run_history"):
+                for item in task.executor_payload.get("recipe_run_history", []):
+                    print(
+                        f"- {item.get('status', 'unknown')} | started={item.get('started_at', 'none') or 'none'} | "
+                        f"finished={item.get('finished_at', 'none') or 'none'} | "
+                        f"summary={item.get('summary', 'none') or 'none'}"
+                    )
             else:
                 print("- none")
             print("execution_history:")

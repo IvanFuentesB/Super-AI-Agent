@@ -26,9 +26,16 @@ const desktopActionTypes = new Set([
   "right_click",
   "scroll_mouse",
 ]);
+const recipeActionTypes = new Set([
+  "run_operator_recipe",
+]);
 
 function isDesktopExecutorAction(actionType) {
   return desktopActionTypes.has(String(actionType || "").toLowerCase());
+}
+
+function isRecipeExecutorAction(actionType) {
+  return recipeActionTypes.has(String(actionType || "").toLowerCase());
 }
 
 function escapeHtml(value) {
@@ -97,6 +104,17 @@ function buildScrollTarget() {
   const windowAlias = getInputValue("desktop-mouse-window");
   const delta = getInputValue("desktop-scroll-delta");
   return windowAlias ? `${windowAlias}|${delta}` : delta;
+}
+
+function buildRecipeQueuePayload(recipeName, options = {}) {
+  const payload = {
+    actionType: "run_operator_recipe",
+    target: recipeName,
+  };
+  if (Object.keys(options).length > 0) {
+    payload.content = JSON.stringify(options);
+  }
+  return payload;
 }
 
 function renderRaw(id, payload) {
@@ -441,6 +459,73 @@ function renderExecutionHistory(items) {
     .join("");
 }
 
+function renderRecipeStepHistory(items) {
+  const element = document.getElementById("task-recipe-step-list");
+  if (!element) {
+    return;
+  }
+
+  if (!items || items.length === 0) {
+    element.innerHTML = "<p class=\"empty-state\">No recipe step data loaded yet.</p>";
+    return;
+  }
+
+  element.innerHTML = items
+    .map((item) => {
+      const state = normalizeState(item.status);
+      const detailBits = [
+        item.summary && item.summary !== "none" ? item.summary : "No step summary recorded.",
+        item.clipboardPreview && item.clipboardPreview !== "none" ? `Clipboard: ${item.clipboardPreview}` : "",
+        item.windowAlias && item.windowAlias !== "none" ? `Window: ${item.windowAlias}` : "",
+        item.coordinates && item.coordinates !== "none" ? `Coordinates: ${item.coordinates}` : "",
+      ].filter(Boolean);
+      const artifactLine = item.artifactPath && item.artifactPath !== "none"
+        ? `<small>Artifact: ${escapeHtml(item.artifactPath)}</small>`
+        : "";
+      return `
+        <article class="approval-history-item">
+          <div class="approval-topline">
+            <strong>Step ${escapeHtml(String(item.step || "?"))}: ${escapeHtml(item.label || item.actionType || "recipe step")}</strong>
+            <span class="state-pill state-${state}">${escapeHtml(item.status || state)}</span>
+          </div>
+          <p>${escapeHtml(item.actionType || "unknown")} -> ${escapeHtml(item.target || "none")}</p>
+          <p>${escapeHtml(detailBits.join(" | "))}</p>
+          <small>${escapeHtml(formatTimeStamp(item.startedAt))} -> ${escapeHtml(formatTimeStamp(item.finishedAt))}</small>
+          ${artifactLine}
+        </article>
+      `;
+    })
+    .join("");
+}
+
+function renderRecipeRunHistory(items) {
+  const element = document.getElementById("task-recipe-history-list");
+  if (!element) {
+    return;
+  }
+
+  if (!items || items.length === 0) {
+    element.innerHTML = "<p class=\"empty-state\">No recipe runs recorded yet.</p>";
+    return;
+  }
+
+  element.innerHTML = items
+    .map((item) => {
+      const state = normalizeState(item.status);
+      return `
+        <article class="approval-history-item">
+          <div class="approval-topline">
+            <strong>${escapeHtml(item.status || "unknown")}</strong>
+            <span class="state-pill state-${state}">${escapeHtml(item.status || state)}</span>
+          </div>
+          <p>${escapeHtml(item.summary || "No recipe run summary recorded.")}</p>
+          <small>${escapeHtml(formatTimeStamp(item.startedAt))} -> ${escapeHtml(formatTimeStamp(item.finishedAt))}</small>
+        </article>
+      `;
+    })
+    .join("");
+}
+
 function clearApprovalDetail(message) {
   uiState.selectedApprovalId = "";
   setText("approval-detail-id", "-");
@@ -520,6 +605,7 @@ function renderApprovalDetail(payload) {
 
 function clearTaskDetail(message) {
   uiState.selectedTaskId = "";
+  const recipePanel = document.getElementById("task-recipe-panel");
   setText("task-detail-id", "-");
   setText("task-detail-status", "-");
   setText("task-detail-risk", "-");
@@ -539,17 +625,29 @@ function clearTaskDetail(message) {
   setText("task-detail-last-execution-status", "-");
   setText("task-detail-last-execution-summary", "-");
   setText("task-detail-last-artifact-path", "-");
+  setText("task-detail-recipe-name", "-");
+  setText("task-detail-recipe-status", "-");
+  setText("task-detail-recipe-run-count", "-");
+  setText("task-detail-recipe-summary", "-");
+  setText("task-detail-recipe-last-run", "-");
   setText("task-detail-summary", message);
   setValue("task-action-note", "");
   renderTaskHistory([]);
   renderExecutionHistory([]);
+  renderRecipeStepHistory([]);
+  renderRecipeRunHistory([]);
   renderRaw("task-detail-raw", { message });
+  if (recipePanel) {
+    recipePanel.hidden = true;
+  }
   setResultPanel("task-action-result", "neutral", "Task action panel is idle.", "Select a stopped task to inspect it.");
   setTaskActionButtonsDisabled(null);
 }
 
 function renderTaskDetail(payload) {
   const summary = payload.summary || {};
+  const recipePanel = document.getElementById("task-recipe-panel");
+  const isRecipe = summary.executorActionType === "run_operator_recipe";
   uiState.selectedTaskId = summary.taskId || "";
   setText("task-detail-id", summary.taskId || "-");
   setText("task-detail-status", summary.status || "-");
@@ -574,6 +672,33 @@ function renderTaskDetail(payload) {
   setValue("task-action-note", summary.lastNote && summary.lastNote !== "none" ? summary.lastNote : "");
   renderTaskHistory(summary.history || []);
   renderExecutionHistory(summary.executionHistory || []);
+  if (recipePanel) {
+    recipePanel.hidden = !isRecipe;
+  }
+  if (isRecipe) {
+    const recipeSteps = (summary.recipeLastRunSteps || []).length > 0
+      ? summary.recipeLastRunSteps
+      : (summary.recipeSteps || []);
+    const lastRunWindow = [
+      summary.recipeLastRunStartedAt ? formatTimeStamp(summary.recipeLastRunStartedAt) : "",
+      summary.recipeLastRunFinishedAt ? formatTimeStamp(summary.recipeLastRunFinishedAt) : "",
+    ].filter(Boolean).join(" -> ");
+    setText("task-detail-recipe-name", summary.recipeLabel || summary.recipeName || "-");
+    setText("task-detail-recipe-status", summary.recipeStatus || "not_run");
+    setText("task-detail-recipe-run-count", String(summary.recipeRunCount ?? 0));
+    setText("task-detail-recipe-summary", summary.recipeSummary || "none");
+    setText("task-detail-recipe-last-run", lastRunWindow || "No recipe run recorded yet.");
+    renderRecipeStepHistory(recipeSteps);
+    renderRecipeRunHistory(summary.recipeRunHistory || []);
+  } else {
+    setText("task-detail-recipe-name", "-");
+    setText("task-detail-recipe-status", "-");
+    setText("task-detail-recipe-run-count", "-");
+    setText("task-detail-recipe-summary", "-");
+    setText("task-detail-recipe-last-run", "-");
+    renderRecipeStepHistory([]);
+    renderRecipeRunHistory([]);
+  }
   renderRaw("task-detail-raw", payload);
   setTaskActionButtonsDisabled(summary);
 }
@@ -682,7 +807,7 @@ function renderExecutorTaskCards(payload) {
   }
 
   const summary = payload.summary || {};
-  const items = (summary.tasks || []).filter((item) => !isDesktopExecutorAction(item.actionType));
+  const items = (summary.tasks || []).filter((item) => !isDesktopExecutorAction(item.actionType) && !isRecipeExecutorAction(item.actionType));
   if (items.length === 0) {
     container.innerHTML = "<p class=\"empty-state\">No repo-local executor tasks queued yet.</p>";
     renderRaw("executor-raw", payload);
@@ -723,6 +848,52 @@ function renderExecutorTaskCards(payload) {
     .join("");
 
   renderRaw("executor-raw", payload);
+}
+
+function renderRecipeTaskCards(payload) {
+  const container = document.getElementById("recipe-task-list");
+  if (!container) {
+    return;
+  }
+
+  const summary = payload.summary || {};
+  const items = (summary.tasks || []).filter((item) => isRecipeExecutorAction(item.actionType));
+  if (items.length === 0) {
+    container.innerHTML = "<p class=\"empty-state\">No operator recipe tasks queued yet.</p>";
+    return;
+  }
+
+  container.innerHTML = items
+    .map((item) => {
+      const status = normalizeState(item.status);
+      const isSelected = item.taskId && item.taskId === uiState.selectedTaskId;
+      return `
+        <article class="approval-item ${isSelected ? "is-selected" : ""}">
+          <div class="approval-topline">
+            <strong>${escapeHtml(item.taskId || "task")}</strong>
+            <span class="state-pill state-${status}">${escapeHtml(item.status || status)}</span>
+          </div>
+          <div class="approval-summary-grid">
+            <p><span>Recipe</span><strong>${escapeHtml(item.target || "unknown_recipe")}</strong></p>
+            <p><span>Approval</span><strong>${escapeHtml(item.approvalState || "unknown")}</strong></p>
+            <p><span>Workspace</span><strong>${escapeHtml(item.workspaceScope || "no_path_detected")}</strong></p>
+            <p><span>Policy</span><strong>${escapeHtml(item.workspacePolicy || "allowed")}</strong></p>
+          </div>
+          <p class="approval-description"><span>Last Result</span>${escapeHtml(item.lastSummary || "not_run")}</p>
+          <div class="approval-actions">
+            <button
+              class="button-secondary task-action-button"
+              type="button"
+              data-task-action="inspect"
+              data-task-id="${escapeHtml(item.taskId || "")}"
+            >
+              ${isSelected ? "Viewing Recipe Task" : "Inspect Recipe Task"}
+            </button>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
 }
 
 function renderDesktopTaskCards(payload) {
@@ -1145,6 +1316,7 @@ async function refreshSupervisorStatus() {
 async function refreshExecutorTasks() {
   const payload = await requestJson("/api/executor/tasks");
   renderExecutorTaskCards(payload);
+  renderRecipeTaskCards(payload);
   renderDesktopTaskCards(payload);
 
   const nextTaskId =
@@ -1882,6 +2054,64 @@ document.getElementById("queue-desktop-scroll").addEventListener("click", async 
   );
 });
 
+document.getElementById("queue-recipe-observe-desktop").addEventListener("click", async (event) => {
+  await runExecutorQueue(
+    buildRecipeQueuePayload("observe_desktop_state"),
+    "Queue observe desktop state recipe",
+    event.currentTarget,
+    { panelId: "recipe-action-summary" },
+  );
+});
+
+document.getElementById("queue-recipe-focus-terminal").addEventListener("click", async (event) => {
+  await runExecutorQueue(
+    buildRecipeQueuePayload("focus_or_reuse_terminal"),
+    "Queue focus or reuse terminal recipe",
+    event.currentTarget,
+    { panelId: "recipe-action-summary" },
+  );
+});
+
+document.getElementById("queue-recipe-copy-focused").addEventListener("click", async (event) => {
+  await runExecutorQueue(
+    buildRecipeQueuePayload("copy_from_focused_window"),
+    "Queue copy from focused window recipe",
+    event.currentTarget,
+    { panelId: "recipe-action-summary" },
+  );
+});
+
+document.getElementById("queue-recipe-paste-dashboard").addEventListener("click", async (event) => {
+  await runExecutorQueue(
+    buildRecipeQueuePayload("paste_into_target_window", { targetWindow: "dashboard_browser" }),
+    "Queue paste into dashboard browser recipe",
+    event.currentTarget,
+    { panelId: "recipe-action-summary" },
+  );
+});
+
+document.getElementById("queue-recipe-wait-step").addEventListener("click", async (event) => {
+  await runExecutorQueue(
+    buildRecipeQueuePayload("wait_and_resume_operator_step", { waitSeconds: 2 }),
+    "Queue wait and resume operator step recipe",
+    event.currentTarget,
+    { panelId: "recipe-action-summary" },
+  );
+});
+
+document.getElementById("queue-recipe-codex-handoff").addEventListener("click", async (event) => {
+  await runExecutorQueue(
+    buildRecipeQueuePayload("codex_to_dashboard_progress_handoff", {
+      sourceWindow: "terminal",
+      targetWindow: "dashboard_browser",
+      waitSeconds: 1,
+    }),
+    "Queue Codex to dashboard handoff recipe",
+    event.currentTarget,
+    { panelId: "recipe-action-summary" },
+  );
+});
+
 document.getElementById("run-browser-visible").addEventListener("click", async (event) => {
   await runBrowserAction(
     "/api/browser/visible",
@@ -2061,6 +2291,28 @@ document.getElementById("desktop-task-list").addEventListener("click", async (ev
     updateLocalAction(actionId, "success", `Loaded desktop task ${taskId}.`);
   } else {
     updateLocalAction(actionId, "error", `Desktop task detail lookup failed for ${taskId}.`);
+  }
+  await refreshRecentActions();
+});
+
+document.getElementById("recipe-task-list").addEventListener("click", async (event) => {
+  const button = event.target.closest("button[data-task-action='inspect']");
+  if (!button) {
+    return;
+  }
+
+  const taskId = button.getAttribute("data-task-id");
+  if (!taskId) {
+    return;
+  }
+
+  const actionId = createLocalAction("Inspect recipe task", `Loading details for ${taskId}.`);
+  setResultPanel("task-action-result", "loading", "Loading task details...", taskId);
+  const result = await withButtonState(button, "Loading...", () => refreshTaskDetail(taskId));
+  if (result) {
+    updateLocalAction(actionId, "success", `Loaded recipe task ${taskId}.`);
+  } else {
+    updateLocalAction(actionId, "error", `Recipe task detail lookup failed for ${taskId}.`);
   }
   await refreshRecentActions();
 });

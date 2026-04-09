@@ -514,6 +514,64 @@ function parseExecutionHistoryLine(line) {
   };
 }
 
+function parseRecipeStepLine(line) {
+  const parts = String(line)
+    .split(" | ")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  const labeled = {};
+  for (const part of parts.slice(1)) {
+    const separatorIndex = part.indexOf("=");
+    if (separatorIndex === -1) {
+      continue;
+    }
+    const key = part.slice(0, separatorIndex).trim();
+    const value = part.slice(separatorIndex + 1).trim();
+    labeled[key] = value;
+  }
+
+  return {
+    status: parts[0] || "unknown",
+    step: Number.parseInt(labeled.step || "0", 10),
+    actionType: labeled.action || "unknown",
+    target: labeled.target || "none",
+    label: labeled.label || "recipe step",
+    startedAt: labeled.started || "",
+    finishedAt: labeled.finished || "",
+    summary: labeled.summary || "none",
+    artifactPath: labeled.artifact || "none",
+    clipboardPreview: labeled.clipboard || "none",
+    windowAlias: labeled.window || "none",
+    coordinates: labeled.coordinates || "none",
+  };
+}
+
+function parseRecipeRunLine(line) {
+  const parts = String(line)
+    .split(" | ")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  const labeled = {};
+  for (const part of parts.slice(1)) {
+    const separatorIndex = part.indexOf("=");
+    if (separatorIndex === -1) {
+      continue;
+    }
+    const key = part.slice(0, separatorIndex).trim();
+    const value = part.slice(separatorIndex + 1).trim();
+    labeled[key] = value;
+  }
+
+  return {
+    status: parts[0] || "unknown",
+    startedAt: labeled.started || "",
+    finishedAt: labeled.finished || "",
+    summary: labeled.summary || "none",
+  };
+}
+
 function parseTaskDetail(stdout) {
   const parsed = parseKeyValueBlock(stdout);
   const history = (parsed.listSections.history || [])
@@ -522,6 +580,15 @@ function parseTaskDetail(stdout) {
   const executionHistory = (parsed.listSections.execution_history || [])
     .filter((item) => item !== "none")
     .map(parseExecutionHistoryLine);
+  const recipeSteps = (parsed.listSections.recipe_steps || [])
+    .filter((item) => item !== "none")
+    .map(parseRecipeStepLine);
+  const recipeLastRunSteps = (parsed.listSections.recipe_last_run_steps || [])
+    .filter((item) => item !== "none")
+    .map(parseRecipeStepLine);
+  const recipeRunHistory = (parsed.listSections.recipe_run_history || [])
+    .filter((item) => item !== "none")
+    .map(parseRecipeRunLine);
 
   return {
     taskId: parsed.values.task_id || "",
@@ -534,6 +601,13 @@ function parseTaskDetail(stdout) {
     source: parsed.values.source || "manual",
     executorActionType: parsed.values.executor_action_type || "none",
     executorTarget: parsed.values.executor_target || "none",
+    recipeName: parsed.values.recipe_name || "none",
+    recipeLabel: parsed.values.recipe_label || "none",
+    recipeStatus: parsed.values.recipe_status || "not_run",
+    recipeSummary: parsed.values.recipe_summary || "none",
+    recipeRunCount: Number.parseInt(parsed.values.recipe_run_count || "0", 10),
+    recipeLastRunStartedAt: parsed.values.recipe_last_run_started_at || "",
+    recipeLastRunFinishedAt: parsed.values.recipe_last_run_finished_at || "",
     workspaceScope: parsed.values.workspace_scope || "no_path_detected",
     workspacePolicy: parsed.values.workspace_policy || "allowed",
     workspaceReason: parsed.values.workspace_reason || "none",
@@ -551,6 +625,9 @@ function parseTaskDetail(stdout) {
     lastExecutionSummary: parsed.values.last_execution_summary || "none",
     lastArtifactPath: parsed.values.last_artifact_path || "none",
     targetPaths: (parsed.listSections.target_paths || []).filter((item) => item !== "none"),
+    recipeSteps,
+    recipeLastRunSteps,
+    recipeRunHistory,
     executionHistory,
     history,
     headline: `${parsed.values.title || "Task"} (${parsed.values.status || "unknown"})`,
@@ -917,6 +994,7 @@ function buildOperatorStatus() {
       "Internship, showcase, and portfolio scaffold generation",
       "Allowlisted repo-local executor tasks for safe checker, file, and git actions",
       "Allowlisted desktop bridge tasks for listing windows, checking the active window, focusing allowed windows, opening allowed local apps, capturing repo-local screenshots, clipboard reads and writes, waits, hotkeys, and narrow mouse actions",
+      "Narrow operator recipes built from the existing desktop hand primitives",
       "Artifact preview, open, and reveal from the dashboard",
       "Browser smoke demo and visible local browser demo",
       "Desktop bridge status and safe local desktop checks",
@@ -929,17 +1007,18 @@ function buildOperatorStatus() {
       "GitHub remote write actions remain explicit and approval-gated",
       "Mail, Notion, and LinkedIn remain planning-only",
       "Personal ops packs are generated outputs, not live send or publish flows",
-      "Desktop bridge actions are narrow, allowlisted, operator-triggered, and not yet recipe-driven",
+      "Desktop bridge actions and recipes are still narrow, allowlisted, and operator-triggered",
+      "The Codex-to-dashboard handoff recipe is only a prototype, not a real ChatGPT-specific workflow yet",
       "Notifications are local dashboard summaries only",
     ],
     notImplementedYet: [
       "Full browser executor loop",
       "Arbitrary desktop or Windows app control",
       "Freeform typing, drag-and-drop, or unrestricted mouse automation",
-      "Named multi-step operator recipes or Codex to ChatGPT handoff workflows",
+      "Durable real-window Codex to ChatGPT handoff workflows",
       "Live mail, Notion, and LinkedIn adapters",
     ],
-    nextStep: "Use the approval queue to clear any blocked step, then queue a narrow focus, clipboard, wait, hotkey, or mouse action and run it manually from the selected task panel.",
+    nextStep: "Queue a narrow operator recipe or desktop hand action, approve it if needed, run it manually, and inspect the per-step result history in the selected task panel.",
   };
 }
 

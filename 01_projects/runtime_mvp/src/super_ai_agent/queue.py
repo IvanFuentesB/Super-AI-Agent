@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import json
 from pathlib import Path
 import re
 import subprocess
@@ -34,6 +35,7 @@ ALLOWED_EXECUTOR_ACTIONS = set(MODEL_EXECUTOR_ACTION_TYPES)
 READ_ONLY_EXECUTOR_ACTIONS = {"read_file", "list_directory", "git_status", "git_diff"}
 WRITE_EXECUTOR_ACTIONS = {"write_file", "append_file", "create_artifact"}
 CHECKER_EXECUTOR_ACTIONS = {"run_checker"}
+RECIPE_EXECUTOR_ACTIONS = {"run_operator_recipe"}
 DESKTOP_OBSERVATION_ACTIONS = {
     "list_windows",
     "get_active_window",
@@ -65,6 +67,7 @@ ALLOWED_DESKTOP_APP_TARGETS = {"cursor", "vscode", "terminal", "dashboard_browse
 ALLOWED_DESKTOP_HOTKEYS = {"ctrl+c", "ctrl+v", "ctrl+l", "enter", "escape"}
 QUEUEABLE_TASK_STATUSES = {"queued", "running", "waiting", "blocked_human_needed", "ready_to_resume"}
 WINDOWS_ABSOLUTE_PATH_PATTERN = re.compile(r"(?i)\b[A-Z]:\\[^\s\"'<>|?*]+")
+DEFAULT_OPERATOR_RECIPE_WAIT_SECONDS = 2
 
 
 class DesktopActionInterrupted(RuntimeError):
@@ -390,6 +393,309 @@ def _normalize_wait_for_window_target(raw_target: str) -> str:
     return alias
 
 
+def _require_allowed_window_alias(raw_value: str, *, label: str) -> str:
+    normalized = (raw_value or "").strip().lower()
+    if normalized not in ALLOWED_DESKTOP_FOCUS_TARGETS:
+        raise ValueError(
+            f"{label} must be one of: "
+            + ", ".join(sorted(ALLOWED_DESKTOP_FOCUS_TARGETS))
+        )
+    return normalized
+
+
+def _parse_operator_recipe_options(raw_content: str) -> dict:
+    text = (raw_content or "").strip()
+    if not text:
+        return {}
+
+    try:
+        parsed = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise ValueError("Operator recipe options must be valid JSON.") from exc
+
+    if not isinstance(parsed, dict):
+        raise ValueError("Operator recipe options must decode to a JSON object.")
+
+    return parsed
+
+
+def _recipe_option_text(options: dict, *keys: str, default: str = "") -> str:
+    for key in keys:
+        value = options.get(key)
+        if value is None:
+            continue
+        text = str(value).strip()
+        if text:
+            return text
+    return default
+
+
+def _recipe_option_int(
+    options: dict,
+    *keys: str,
+    default: int,
+    minimum: int,
+    maximum: int,
+    label: str,
+) -> int:
+    for key in keys:
+        if key not in options:
+            continue
+        return _require_positive_int(
+            str(options[key]),
+            label=label,
+            minimum=minimum,
+            maximum=maximum,
+        )
+    return default
+
+
+def _build_recipe_step(
+    *,
+    action_type: str,
+    label: str,
+    target: str = "",
+    text_content: str = "",
+) -> dict:
+    return {
+        "action_type": action_type,
+        "label": label,
+        "target": target,
+        "text_content": text_content,
+    }
+
+
+def _recipe_observe_desktop_state(options: dict) -> dict:
+    return {
+        "name": "observe_desktop_state",
+        "label": "Observe desktop state",
+        "description": "Safe multi-step desktop observation only: list allowlisted windows, then record the active window without changing focus.",
+        "steps": [
+            _build_recipe_step(
+                action_type="list_windows",
+                label="List allowlisted windows",
+            ),
+            _build_recipe_step(
+                action_type="get_active_window",
+                label="Record the active window",
+            ),
+        ],
+    }
+
+
+def _recipe_focus_or_reuse_terminal(options: dict) -> dict:
+    return {
+        "name": "focus_or_reuse_terminal",
+        "label": "Focus or reuse terminal",
+        "description": "Prefer an existing allowlisted terminal window. Only open a terminal if no safe reusable terminal window is available.",
+        "steps": [
+            _build_recipe_step(
+                action_type="open_allowed_app",
+                target="terminal",
+                label="Focus an existing terminal or open one if missing",
+            ),
+        ],
+    }
+
+
+def _recipe_copy_from_focused_window(options: dict) -> dict:
+    source_window = _normalize_optional_window_target(
+        _recipe_option_text(options, "sourceWindow", "source_window"),
+        action_type="copy_from_focused_window source",
+    )
+    source_label = source_window or "focused allowlisted window"
+    return {
+        "name": "copy_from_focused_window",
+        "label": "Copy from focused window",
+        "description": "Copy the current selection from the focused allowlisted window, then read back the clipboard preview for a visible result.",
+        "steps": [
+            _build_recipe_step(
+                action_type="copy_selection",
+                target=source_window,
+                label=f"Copy selection from {source_label}",
+            ),
+            _build_recipe_step(
+                action_type="get_clipboard_text",
+                label="Read clipboard preview",
+            ),
+        ],
+    }
+
+
+def _recipe_paste_into_target_window(options: dict) -> dict:
+    target_window = _require_allowed_window_alias(
+        _recipe_option_text(
+            options,
+            "targetWindow",
+            "target_window",
+            default="dashboard_browser",
+        ),
+        label="paste_into_target_window targetWindow",
+    )
+    return {
+        "name": "paste_into_target_window",
+        "label": "Paste into target window",
+        "description": "Focus one allowed target window explicitly, then paste the current clipboard into it.",
+        "steps": [
+            _build_recipe_step(
+                action_type="focus_window",
+                target=target_window,
+                label=f"Focus {target_window}",
+            ),
+            _build_recipe_step(
+                action_type="paste_clipboard",
+                target=target_window,
+                label=f"Paste clipboard into {target_window}",
+            ),
+        ],
+    }
+
+
+def _recipe_wait_and_resume_operator_step(options: dict) -> dict:
+    wait_seconds = _recipe_option_int(
+        options,
+        "waitSeconds",
+        "wait_seconds",
+        default=DEFAULT_OPERATOR_RECIPE_WAIT_SECONDS,
+        minimum=1,
+        maximum=60,
+        label="wait_and_resume_operator_step waitSeconds",
+    )
+    return {
+        "name": "wait_and_resume_operator_step",
+        "label": "Wait and resume operator step",
+        "description": "Pause visibly for a short operator wait, then record which allowlisted window is active before the next manual step.",
+        "steps": [
+            _build_recipe_step(
+                action_type="wait_seconds",
+                target=str(wait_seconds),
+                label=f"Wait {wait_seconds} second(s)",
+            ),
+            _build_recipe_step(
+                action_type="get_active_window",
+                label="Record the active window after waiting",
+            ),
+        ],
+    }
+
+
+def _recipe_codex_to_dashboard_progress_handoff(options: dict) -> dict:
+    source_window = _require_allowed_window_alias(
+        _recipe_option_text(
+            options,
+            "sourceWindow",
+            "source_window",
+            default="terminal",
+        ),
+        label="codex_to_dashboard_progress_handoff sourceWindow",
+    )
+    target_window = _require_allowed_window_alias(
+        _recipe_option_text(
+            options,
+            "targetWindow",
+            "target_window",
+            default="dashboard_browser",
+        ),
+        label="codex_to_dashboard_progress_handoff targetWindow",
+    )
+    wait_seconds = _recipe_option_int(
+        options,
+        "waitSeconds",
+        "wait_seconds",
+        default=1,
+        minimum=1,
+        maximum=10,
+        label="codex_to_dashboard_progress_handoff waitSeconds",
+    )
+    return {
+        "name": "codex_to_dashboard_progress_handoff",
+        "label": "Codex to dashboard progress handoff",
+        "description": "Narrow prototype handoff: reuse the source window, copy the current selection, wait briefly, focus the dashboard browser, and paste the clipboard there. This is not yet a true ChatGPT-specific workflow.",
+        "steps": [
+            _build_recipe_step(
+                action_type="open_allowed_app",
+                target=source_window,
+                label=f"Focus or reuse {source_window}",
+            ),
+            _build_recipe_step(
+                action_type="copy_selection",
+                target=source_window,
+                label=f"Copy selection from {source_window}",
+            ),
+            _build_recipe_step(
+                action_type="wait_seconds",
+                target=str(wait_seconds),
+                label=f"Wait {wait_seconds} second(s)",
+            ),
+            _build_recipe_step(
+                action_type="focus_window",
+                target=target_window,
+                label=f"Focus {target_window}",
+            ),
+            _build_recipe_step(
+                action_type="paste_clipboard",
+                target=target_window,
+                label=f"Paste clipboard into {target_window}",
+            ),
+        ],
+    }
+
+
+OPERATOR_RECIPE_BUILDERS = {
+    "observe_desktop_state": _recipe_observe_desktop_state,
+    "focus_or_reuse_terminal": _recipe_focus_or_reuse_terminal,
+    "copy_from_focused_window": _recipe_copy_from_focused_window,
+    "paste_into_target_window": _recipe_paste_into_target_window,
+    "wait_and_resume_operator_step": _recipe_wait_and_resume_operator_step,
+    "codex_to_dashboard_progress_handoff": _recipe_codex_to_dashboard_progress_handoff,
+}
+
+
+def _build_operator_recipe_definition(recipe_name: str, options: dict | None = None) -> dict:
+    normalized_name = (recipe_name or "").strip().lower()
+    builder = OPERATOR_RECIPE_BUILDERS.get(normalized_name)
+    if builder is None:
+        raise ValueError(
+            "Unsupported operator recipe. Choose one of: "
+            + ", ".join(sorted(OPERATOR_RECIPE_BUILDERS))
+        )
+
+    recipe = builder(options or {})
+    steps = list(recipe.get("steps", []))
+    if not steps:
+        raise ValueError(f"Operator recipe has no steps: {normalized_name}")
+
+    normalized_steps = []
+    for index, step in enumerate(steps, 1):
+        action_type = str(step.get("action_type", "")).strip().lower()
+        if action_type not in DESKTOP_EXECUTOR_ACTIONS:
+            raise ValueError(
+                f"Operator recipe steps must use allowlisted desktop actions only: {action_type}"
+            )
+        normalized_steps.append(
+            {
+                "step": index,
+                "label": str(step.get("label", f"Step {index}")).strip() or f"Step {index}",
+                "action_type": action_type,
+                "target": str(step.get("target", "")).strip(),
+                "text_content": str(step.get("text_content", "")),
+            }
+        )
+
+    risk_level = (
+        "safe"
+        if all(item["action_type"] in DESKTOP_OBSERVATION_ACTIONS for item in normalized_steps)
+        else "ask"
+    )
+    return {
+        "name": normalized_name,
+        "label": str(recipe.get("label", normalized_name.replace("_", " "))).strip(),
+        "description": str(recipe.get("description", "Operator recipe")).strip(),
+        "steps": normalized_steps,
+        "risk_level": risk_level,
+    }
+
+
 def _require_target_text(raw_target: str, action_type: str) -> str:
     normalized = (raw_target or "").strip()
     if not normalized:
@@ -467,6 +773,7 @@ def _build_executor_title(action_type: str, target: str) -> str:
         "double_click": "Double click a known target",
         "right_click": "Right click a known target",
         "scroll_mouse": "Scroll inside an allowed window",
+        "run_operator_recipe": "Run operator recipe",
     }
     label = title_map.get(action_type, "Run allowlisted local action")
     return f"{label}: {target}" if target else label
@@ -499,6 +806,7 @@ def _build_executor_description(action_type: str, target: str) -> str:
         "double_click": "Approval-aware desktop bridge action for double clicking a known target only.",
         "right_click": "Approval-aware desktop bridge action for right clicking a known target only.",
         "scroll_mouse": "Approval-aware desktop bridge action for scrolling inside an allowed context only.",
+        "run_operator_recipe": "Allowlisted multi-step operator recipe built from existing desktop bridge actions.",
     }
     suffix = f" Target: {target}" if target else ""
     return f"{descriptions.get(action_type, 'Allowlisted local executor action.')}{suffix}"
@@ -509,6 +817,7 @@ def _executor_requires_approval(action_type: str) -> bool:
         action_type in WRITE_EXECUTOR_ACTIONS
         or action_type in CHECKER_EXECUTOR_ACTIONS
         or action_type in DESKTOP_VISIBLE_ACTIONS
+        or action_type in RECIPE_EXECUTOR_ACTIONS
     )
 
 
@@ -629,10 +938,28 @@ def _prepare_executor_action(
     elif normalized_action in {"move_mouse", "left_click", "double_click", "right_click", "scroll_mouse"}:
         normalized_target = _require_target_text(normalized_target, normalized_action)
         payload["bridge_target"] = normalized_target
+    elif normalized_action == "run_operator_recipe":
+        recipe_definition = _build_operator_recipe_definition(
+            normalized_target,
+            _parse_operator_recipe_options(content),
+        )
+        normalized_target = recipe_definition["name"]
+        payload.update(
+            {
+                "recipe_name": recipe_definition["name"],
+                "recipe_label": recipe_definition["label"],
+                "recipe_description": recipe_definition["description"],
+                "recipe_risk_level": recipe_definition["risk_level"],
+                "recipe_steps": recipe_definition["steps"],
+            }
+        )
     else:
         raise ValueError(f"Unsupported executor action: {action_type}")
 
-    risk_level = "safe" if normalized_action in (READ_ONLY_EXECUTOR_ACTIONS | DESKTOP_OBSERVATION_ACTIONS) else "ask"
+    if normalized_action == "run_operator_recipe":
+        risk_level = str(payload.get("recipe_risk_level") or recipe_definition["risk_level"])
+    else:
+        risk_level = "safe" if normalized_action in (READ_ONLY_EXECUTOR_ACTIONS | DESKTOP_OBSERVATION_ACTIONS) else "ask"
     return normalized_action, normalized_target, payload, target_paths, risk_level
 
 
@@ -647,10 +974,17 @@ def enqueue_executor_task(
         target=target,
         content=content,
     )
-    display_target = normalized_target or "workspace_root"
+    if normalized_action == "run_operator_recipe":
+        display_target = str(payload.get("recipe_label") or normalized_target or "operator_recipe")
+        title = f"Run operator recipe: {display_target}"
+        description = str(payload.get("recipe_description") or "Allowlisted operator recipe.")
+    else:
+        display_target = normalized_target or "workspace_root"
+        title = _build_executor_title(normalized_action, display_target)
+        description = _build_executor_description(normalized_action, display_target)
     return enqueue_task(
-        title=_build_executor_title(normalized_action, display_target),
-        description=_build_executor_description(normalized_action, display_target),
+        title=title,
+        description=description,
         risk_level=risk_level,
         source=source,
         executor_action_type=normalized_action,
@@ -679,13 +1013,114 @@ def _run_repo_command(args: list[str]) -> str:
     return stdout or stderr
 
 
-def _run_desktop_bridge_action(
+def _build_desktop_bridge_action_result(
+    *,
+    action_type: str,
+    target: str,
+    values: dict[str, str],
+    sections: dict[str, list[str]],
+    artifact_path: str,
+) -> dict:
+    headline = values.get("headline", "")
+
+    if action_type == "list_windows":
+        window_count = len([item for item in sections.get("windows", []) if item != "none"])
+        summary = headline or f"Detected {window_count} allowlisted window(s)."
+        return {"summary": _shorten_output(summary, limit=320), "artifact_path": "", "values": values, "sections": sections}
+
+    if action_type == "get_active_window":
+        alias = values.get("active_window_alias", "unsupported")
+        title = values.get("active_window_title", "none")
+        summary = headline or f"Active window alias: {alias}. Title: {title}."
+        return {"summary": _shorten_output(summary, limit=320), "artifact_path": "", "values": values, "sections": sections}
+
+    if action_type == "focus_window":
+        title = values.get("focused_window_title") or target or "allowlisted window"
+        summary = headline or f"Focused {title}."
+        return {"summary": _shorten_output(summary, limit=320), "artifact_path": "", "values": values, "sections": sections}
+
+    if action_type == "open_allowed_app":
+        reused_existing_window = values.get("reused_existing_window", "no") == "yes"
+        command_path = values.get("command_path", "unknown")
+        summary = (
+            headline
+            or (
+                f"Focused existing allowlisted app window: {target or 'allowed app'}."
+                if reused_existing_window
+                else f"Opened {target or 'allowed app'} using {command_path}."
+            )
+        )
+        return {"summary": _shorten_output(summary, limit=320), "artifact_path": "", "values": values, "sections": sections}
+
+    if action_type == "capture_desktop_screenshot":
+        captured_path = values.get("artifact_path", artifact_path)
+        summary = headline or "Captured desktop screenshot artifact."
+        return {"summary": _shorten_output(summary, limit=320), "artifact_path": captured_path, "values": values, "sections": sections}
+
+    if action_type == "get_clipboard_text":
+        preview = values.get("clipboard_preview", "empty")
+        summary = headline or f"Clipboard text captured. Preview: {preview}"
+        return {"summary": _shorten_output(summary, limit=320), "artifact_path": "", "values": values, "sections": sections}
+
+    if action_type == "set_clipboard_text":
+        preview = values.get("clipboard_preview", "empty")
+        summary = headline or f"Clipboard text updated. Preview: {preview}"
+        return {"summary": _shorten_output(summary, limit=320), "artifact_path": "", "values": values, "sections": sections}
+
+    if action_type == "copy_selection":
+        alias = values.get("active_window_alias") or values.get("focused_window_alias") or target or "allowed_window"
+        preview = values.get("clipboard_preview", "empty")
+        summary = headline or f"Copied the current selection from {alias}. Preview: {preview}"
+        return {"summary": _shorten_output(summary, limit=320), "artifact_path": "", "values": values, "sections": sections}
+
+    if action_type == "paste_clipboard":
+        alias = values.get("active_window_alias") or values.get("focused_window_alias") or target or "allowed_window"
+        preview = values.get("clipboard_preview", "empty")
+        summary = headline or f"Pasted clipboard text into {alias}. Preview: {preview}"
+        return {"summary": _shorten_output(summary, limit=320), "artifact_path": "", "values": values, "sections": sections}
+
+    if action_type == "send_hotkey":
+        hotkey = values.get("sent_hotkey", target or "unknown")
+        alias = values.get("active_window_alias") or values.get("focused_window_alias") or "allowed_window"
+        summary = headline or f"Sent allowlisted hotkey {hotkey} to {alias}."
+        return {"summary": _shorten_output(summary, limit=320), "artifact_path": "", "values": values, "sections": sections}
+
+    if action_type == "wait_seconds":
+        waited = values.get("waited_seconds", target or "0")
+        summary = headline or f"Waited {waited} second(s)."
+        return {"summary": _shorten_output(summary, limit=320), "artifact_path": "", "values": values, "sections": sections}
+
+    if action_type == "wait_for_window":
+        alias = values.get("wait_window_alias", target or "allowed_window")
+        title = values.get("matched_window_title", "none")
+        summary = headline or f"Detected {alias}. Title: {title}."
+        return {"summary": _shorten_output(summary, limit=320), "artifact_path": "", "values": values, "sections": sections}
+
+    if action_type == "move_mouse":
+        coordinates = values.get("coordinates", target or "unknown")
+        summary = headline or f"Moved mouse to {coordinates}."
+        return {"summary": _shorten_output(summary, limit=320), "artifact_path": "", "values": values, "sections": sections}
+
+    if action_type in {"left_click", "double_click", "right_click"}:
+        coordinates = values.get("coordinates", target or "unknown")
+        summary = headline or f"{action_type.replace('_', ' ')} succeeded at {coordinates}."
+        return {"summary": _shorten_output(summary, limit=320), "artifact_path": "", "values": values, "sections": sections}
+
+    if action_type == "scroll_mouse":
+        delta = values.get("scroll_delta", target or "unknown")
+        summary = headline or f"Scrolled mouse input by {delta}."
+        return {"summary": _shorten_output(summary, limit=320), "artifact_path": "", "values": values, "sections": sections}
+
+    raise RuntimeError(f"Desktop bridge action is not allowlisted: {action_type}")
+
+
+def _invoke_desktop_bridge_action(
     *,
     action_type: str,
     target: str = "",
     artifact_path: str = "",
     text_content: str = "",
-) -> tuple[str, str]:
+) -> dict:
     script_path = _desktop_bridge_script_path()
     if not script_path.is_file():
         raise RuntimeError("Desktop bridge action script is missing.")
@@ -735,88 +1170,166 @@ def _run_desktop_bridge_action(
         failure_reason = values.get("failure_reason") or values.get("headline") or output or "Desktop bridge action failed."
         raise RuntimeError(_shorten_output(failure_reason, limit=320))
 
-    headline = values.get("headline", "")
-    if action_type == "list_windows":
-        window_count = len([item for item in sections.get("windows", []) if item != "none"])
-        summary = headline or f"Detected {window_count} allowlisted window(s)."
-        return _shorten_output(summary, limit=320), ""
+    return _build_desktop_bridge_action_result(
+        action_type=action_type,
+        target=target,
+        values=values,
+        sections=sections,
+        artifact_path=artifact_path,
+    )
 
-    if action_type == "get_active_window":
-        alias = values.get("active_window_alias", "unsupported")
-        title = values.get("active_window_title", "none")
-        summary = headline or f"Active window alias: {alias}. Title: {title}."
-        return _shorten_output(summary, limit=320), ""
 
-    if action_type == "focus_window":
-        title = values.get("focused_window_title") or target or "allowlisted window"
-        summary = headline or f"Focused {title}."
-        return _shorten_output(summary, limit=320), ""
+def _run_desktop_bridge_action(
+    *,
+    action_type: str,
+    target: str = "",
+    artifact_path: str = "",
+    text_content: str = "",
+) -> tuple[str, str]:
+    result = _invoke_desktop_bridge_action(
+        action_type=action_type,
+        target=target,
+        artifact_path=artifact_path,
+        text_content=text_content,
+    )
+    return str(result["summary"]), str(result["artifact_path"] or "")
 
-    if action_type == "open_allowed_app":
-        command_path = values.get("command_path", "unknown")
-        summary = headline or f"Opened {target or 'allowed app'} using {command_path}."
-        return _shorten_output(summary, limit=320), ""
 
-    if action_type == "capture_desktop_screenshot":
-        captured_path = values.get("artifact_path", artifact_path)
-        summary = headline or "Captured desktop screenshot artifact."
-        return _shorten_output(summary, limit=320), captured_path
+def _persist_recipe_run(task: Task, run_payload: dict) -> None:
+    history = list(task.executor_payload.get("recipe_run_history", []))
+    history.append(run_payload)
+    task.executor_payload["recipe_last_run"] = run_payload
+    task.executor_payload["recipe_run_history"] = history[-5:]
 
-    if action_type == "get_clipboard_text":
-        preview = values.get("clipboard_preview", "empty")
-        summary = headline or f"Clipboard text captured. Preview: {preview}"
-        return _shorten_output(summary, limit=320), ""
 
-    if action_type == "set_clipboard_text":
-        preview = values.get("clipboard_preview", "empty")
-        summary = headline or f"Clipboard text updated. Preview: {preview}"
-        return _shorten_output(summary, limit=320), ""
+def _run_operator_recipe(task: Task) -> tuple[str, str]:
+    recipe_name = str(task.executor_payload.get("recipe_name") or task.executor_target).strip().lower()
+    recipe_label = str(task.executor_payload.get("recipe_label") or recipe_name or "operator recipe")
+    recipe_steps = list(task.executor_payload.get("recipe_steps", []))
+    if not recipe_name or not recipe_steps:
+        raise RuntimeError("Operator recipe payload is incomplete.")
 
-    if action_type == "copy_selection":
-        alias = values.get("active_window_alias") or values.get("focused_window_alias") or target or "allowed_window"
-        preview = values.get("clipboard_preview", "empty")
-        summary = headline or f"Copied the current selection from {alias}. Preview: {preview}"
-        return _shorten_output(summary, limit=320), ""
+    started_at = _now()
+    completed_steps: list[dict] = []
+    last_artifact_path = ""
+    task.executor_payload["recipe_name"] = recipe_name
+    task.executor_payload["recipe_label"] = recipe_label
+    task.executor_payload["recipe_step_count"] = len(recipe_steps)
 
-    if action_type == "paste_clipboard":
-        alias = values.get("active_window_alias") or values.get("focused_window_alias") or target or "allowed_window"
-        preview = values.get("clipboard_preview", "empty")
-        summary = headline or f"Pasted clipboard text into {alias}. Preview: {preview}"
-        return _shorten_output(summary, limit=320), ""
+    for step in recipe_steps:
+        action_type = str(step.get("action_type", "")).strip().lower()
+        label = str(step.get("label", action_type or "recipe step")).strip() or "recipe step"
+        target = str(step.get("target", "")).strip()
+        text_content = str(step.get("text_content", ""))
+        step_started_at = _now()
+        step_result = {
+            "step": int(step.get("step", len(completed_steps) + 1)),
+            "label": label,
+            "action_type": action_type,
+            "target": target,
+            "started_at": step_started_at,
+            "status": "started",
+            "summary": "",
+            "artifact_path": "",
+            "clipboard_preview": "",
+            "window_alias": "",
+            "window_title": "",
+            "coordinates": "",
+            "finished_at": "",
+        }
 
-    if action_type == "send_hotkey":
-        hotkey = values.get("sent_hotkey", target or "unknown")
-        alias = values.get("active_window_alias") or values.get("focused_window_alias") or "allowed_window"
-        summary = headline or f"Sent allowlisted hotkey {hotkey} to {alias}."
-        return _shorten_output(summary, limit=320), ""
+        try:
+            if action_type not in DESKTOP_EXECUTOR_ACTIONS:
+                raise RuntimeError(f"Recipe step action is not allowlisted: {action_type}")
 
-    if action_type == "wait_seconds":
-        waited = values.get("waited_seconds", target or "0")
-        summary = headline or f"Waited {waited} second(s)."
-        return _shorten_output(summary, limit=320), ""
+            result = _invoke_desktop_bridge_action(
+                action_type=action_type,
+                target=target,
+                artifact_path=str(step.get("artifact_path", "")),
+                text_content=text_content,
+            )
+            values = dict(result.get("values", {}))
+            last_artifact_path = str(result.get("artifact_path") or last_artifact_path)
+            step_result["status"] = "succeeded"
+            step_result["summary"] = str(result.get("summary", "step completed"))
+            step_result["artifact_path"] = str(result.get("artifact_path") or "")
+            step_result["clipboard_preview"] = str(values.get("clipboard_preview", ""))
+            step_result["window_alias"] = str(
+                values.get("active_window_alias")
+                or values.get("focused_window_alias")
+                or values.get("wait_window_alias")
+                or ""
+            )
+            step_result["window_title"] = str(
+                values.get("active_window_title")
+                or values.get("focused_window_title")
+                or values.get("matched_window_title")
+                or ""
+            )
+            step_result["coordinates"] = str(values.get("coordinates", ""))
+            step_result["finished_at"] = _now()
+            completed_steps.append(step_result)
+        except DesktopActionInterrupted as exc:
+            interruption_message = _shorten_output(str(exc), limit=320)
+            step_result["status"] = "interrupted"
+            step_result["summary"] = interruption_message
+            step_result["finished_at"] = _now()
+            completed_steps.append(step_result)
+            run_payload = {
+                "recipe_name": recipe_name,
+                "recipe_label": recipe_label,
+                "started_at": started_at,
+                "finished_at": step_result["finished_at"],
+                "status": "interrupted",
+                "summary": interruption_message,
+                "steps": completed_steps,
+            }
+            _persist_recipe_run(task, run_payload)
+            raise DesktopActionInterrupted(
+                _shorten_output(
+                    f"Recipe {recipe_label} interrupted during step {step_result['step']} ({label}). {interruption_message}",
+                    limit=320,
+                )
+            ) from exc
+        except Exception as exc:  # noqa: BLE001
+            failure_message = _shorten_output(str(exc), limit=320)
+            step_result["status"] = "failed"
+            step_result["summary"] = failure_message
+            step_result["finished_at"] = _now()
+            completed_steps.append(step_result)
+            run_payload = {
+                "recipe_name": recipe_name,
+                "recipe_label": recipe_label,
+                "started_at": started_at,
+                "finished_at": step_result["finished_at"],
+                "status": "failed",
+                "summary": failure_message,
+                "steps": completed_steps,
+            }
+            _persist_recipe_run(task, run_payload)
+            raise RuntimeError(
+                _shorten_output(
+                    f"Recipe {recipe_label} stopped at step {step_result['step']} ({label}). {failure_message}",
+                    limit=320,
+                )
+            ) from exc
 
-    if action_type == "wait_for_window":
-        alias = values.get("wait_window_alias", target or "allowed_window")
-        title = values.get("matched_window_title", "none")
-        summary = headline or f"Detected {alias}. Title: {title}."
-        return _shorten_output(summary, limit=320), ""
-
-    if action_type == "move_mouse":
-        coordinates = values.get("coordinates", target or "unknown")
-        summary = headline or f"Moved mouse to {coordinates}."
-        return _shorten_output(summary, limit=320), ""
-
-    if action_type in {"left_click", "double_click", "right_click"}:
-        coordinates = values.get("coordinates", target or "unknown")
-        summary = headline or f"{action_type.replace('_', ' ')} succeeded at {coordinates}."
-        return _shorten_output(summary, limit=320), ""
-
-    if action_type == "scroll_mouse":
-        delta = values.get("scroll_delta", target or "unknown")
-        summary = headline or f"Scrolled mouse input by {delta}."
-        return _shorten_output(summary, limit=320), ""
-
-    raise RuntimeError(f"Desktop bridge action is not allowlisted: {action_type}")
+    finished_at = _now()
+    summary = _shorten_output(
+        f"Recipe {recipe_label} completed {len(completed_steps)} step(s). Last step: {completed_steps[-1]['summary']}",
+        limit=320,
+    )
+    run_payload = {
+        "recipe_name": recipe_name,
+        "recipe_label": recipe_label,
+        "started_at": started_at,
+        "finished_at": finished_at,
+        "status": "succeeded",
+        "summary": summary,
+        "steps": completed_steps,
+    }
+    _persist_recipe_run(task, run_payload)
+    return summary, last_artifact_path
 
 
 def _execute_allowlisted_action(task: Task) -> tuple[str, str]:
@@ -903,6 +1416,9 @@ def _execute_allowlisted_action(task: Task) -> tuple[str, str]:
             artifact_path=str(task.executor_payload.get("artifact_path", "")),
             text_content=str(task.executor_payload.get("text_content", "")),
         )
+
+    if action_type == "run_operator_recipe":
+        return _run_operator_recipe(task)
 
     raise RuntimeError(f"Executor action is not allowlisted: {action_type}")
 

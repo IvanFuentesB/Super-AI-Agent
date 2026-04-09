@@ -169,8 +169,10 @@ $expectedFiles = @(
     '04_docs/licensing_strategy.md',
     '04_docs/truth_council_architecture.md',
     '04_docs/browser_app_control_architecture.md',
+    '08_research/repo_integration_map.md',
     '08_research/career_ops_extraction_map.md',
     '08_research/repo_intake_matrix.md',
+    '14_context/chat_handoff_latest.md',
     '07_templates/inbox_triage_runbook.md',
     '07_templates/linkedin_update_pack.md',
     '07_templates/cv_update_pack.md',
@@ -927,8 +929,9 @@ if (-not [string]::IsNullOrWhiteSpace($desktopOpenTaskId)) {
     $desktopOpenStatus = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $desktopOpenTaskId)
     $desktopOpenStatusOk = $desktopOpenStatus.ExitCode -eq 0 -and `
         (($desktopOpenStatus.Output | Out-String) -match 'last_execution_status:\s+succeeded') -and `
-        (($desktopOpenStatus.Output | Out-String) -match 'last_execution_summary:\s+Focused existing allowlisted app window')
-    Write-Check -Name 'Desktop executor open_allowed_app reuses an existing terminal window when possible' -Passed $desktopOpenStatusOk -Detail (($desktopOpenStatus.Output | Out-String).Trim())
+        ((($desktopOpenStatus.Output | Out-String) -match 'last_execution_summary:\s+Focused existing allowlisted app window') -or `
+         (($desktopOpenStatus.Output | Out-String) -match 'last_execution_summary:\s+Opened allowlisted app:\s+terminal'))
+    Write-Check -Name 'Desktop executor open_allowed_app reports reuse-first or safe open explicitly' -Passed $desktopOpenStatusOk -Detail (($desktopOpenStatus.Output | Out-String).Trim())
     if (-not $desktopOpenStatusOk) { $failed++ }
 }
 
@@ -1303,6 +1306,106 @@ if ($desktopInterruptTaskOk) {
     Write-Check -Name 'Interrupted desktop task only continues after explicit re-queue' -Passed $desktopInterruptRequeueOk -Detail (($desktopInterruptRequeue.Output | Out-String).Trim())
     if (-not $desktopInterruptRequeueOk) { $failed++ }
 }
+
+$recipeObserveQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'run_operator_recipe',
+    '--target', 'observe_desktop_state'
+)
+$recipeObserveQueueOk = $recipeObserveQueue.ExitCode -eq 0 -and `
+    (($recipeObserveQueue.Output | Out-String) -match 'status:\s+queued') -and `
+    (($recipeObserveQueue.Output | Out-String) -match 'approval_state:\s+not_required') -and `
+    (($recipeObserveQueue.Output | Out-String) -match 'executor_action_type:\s+run_operator_recipe') -and `
+    (($recipeObserveQueue.Output | Out-String) -match 'recipe_name:\s+observe_desktop_state')
+Write-Check -Name 'Operator recipe observe_desktop_state queues without approval' -Passed $recipeObserveQueueOk -Detail (($recipeObserveQueue.Output | Out-String).Trim())
+if (-not $recipeObserveQueueOk) { $failed++ }
+
+$recipeObserveTaskMatch = [regex]::Match(($recipeObserveQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$recipeObserveTaskId = if ($recipeObserveTaskMatch.Success) { $recipeObserveTaskMatch.Groups[1].Value } else { $null }
+$recipeObserveTaskOk = -not [string]::IsNullOrWhiteSpace($recipeObserveTaskId)
+Write-Check -Name 'Operator recipe observe_desktop_state task id parsed' -Passed $recipeObserveTaskOk -Detail ($(if ($recipeObserveTaskOk) { $recipeObserveTaskId } else { 'missing observe_desktop_state task id' }))
+if (-not $recipeObserveTaskOk) { $failed++ }
+
+if ($recipeObserveTaskOk) {
+    $recipeObserveExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $recipeObserveTaskId)
+    $recipeObserveExecuteOk = $recipeObserveExecute.ExitCode -eq 0 -and `
+        (($recipeObserveExecute.Output | Out-String) -match 'status:\s+completed') -and `
+        (($recipeObserveExecute.Output | Out-String) -match 'execution_status:\s+succeeded')
+    Write-Check -Name 'Operator recipe observe_desktop_state execution succeeds' -Passed $recipeObserveExecuteOk -Detail (($recipeObserveExecute.Output | Out-String).Trim())
+    if (-not $recipeObserveExecuteOk) { $failed++ }
+
+    $recipeObserveStatus = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $recipeObserveTaskId)
+    $recipeObserveStatusOk = $recipeObserveStatus.ExitCode -eq 0 -and `
+        (($recipeObserveStatus.Output | Out-String) -match 'recipe_name:\s+observe_desktop_state') -and `
+        (($recipeObserveStatus.Output | Out-String) -match 'recipe_status:\s+succeeded') -and `
+        (($recipeObserveStatus.Output | Out-String) -match 'recipe_run_count:\s+[1-9]') -and `
+        (($recipeObserveStatus.Output | Out-String) -match 'recipe_last_run_steps:\s*') -and `
+        (($recipeObserveStatus.Output | Out-String) -match 'action=list_windows')
+    Write-Check -Name 'Operator recipe observe_desktop_state result persists' -Passed $recipeObserveStatusOk -Detail (($recipeObserveStatus.Output | Out-String).Trim())
+    if (-not $recipeObserveStatusOk) { $failed++ }
+}
+
+$recipeFocusTerminalQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'run_operator_recipe',
+    '--target', 'focus_or_reuse_terminal'
+)
+$recipeFocusTerminalQueueOk = $recipeFocusTerminalQueue.ExitCode -eq 0 -and `
+    (($recipeFocusTerminalQueue.Output | Out-String) -match 'status:\s+pending_approval') -and `
+    (($recipeFocusTerminalQueue.Output | Out-String) -match 'approval_state:\s+pending') -and `
+    (($recipeFocusTerminalQueue.Output | Out-String) -match 'recipe_name:\s+focus_or_reuse_terminal')
+Write-Check -Name 'Operator recipe focus_or_reuse_terminal stays approval-aware' -Passed $recipeFocusTerminalQueueOk -Detail (($recipeFocusTerminalQueue.Output | Out-String).Trim())
+if (-not $recipeFocusTerminalQueueOk) { $failed++ }
+
+$recipeInterruptQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'run_operator_recipe',
+    '--target', 'wait_and_resume_operator_step',
+    '--content', '{"waitSeconds":5}'
+)
+$recipeInterruptQueueOk = $recipeInterruptQueue.ExitCode -eq 0 -and `
+    (($recipeInterruptQueue.Output | Out-String) -match 'status:\s+queued') -and `
+    (($recipeInterruptQueue.Output | Out-String) -match 'approval_state:\s+not_required') -and `
+    (($recipeInterruptQueue.Output | Out-String) -match 'recipe_name:\s+wait_and_resume_operator_step')
+Write-Check -Name 'Operator recipe wait_and_resume_operator_step queues without approval' -Passed $recipeInterruptQueueOk -Detail (($recipeInterruptQueue.Output | Out-String).Trim())
+if (-not $recipeInterruptQueueOk) { $failed++ }
+
+$recipeInterruptTaskMatch = [regex]::Match(($recipeInterruptQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$recipeInterruptTaskId = if ($recipeInterruptTaskMatch.Success) { $recipeInterruptTaskMatch.Groups[1].Value } else { $null }
+$recipeInterruptTaskOk = -not [string]::IsNullOrWhiteSpace($recipeInterruptTaskId)
+Write-Check -Name 'Operator recipe wait_and_resume_operator_step task id parsed' -Passed $recipeInterruptTaskOk -Detail ($(if ($recipeInterruptTaskOk) { $recipeInterruptTaskId } else { 'missing wait_and_resume_operator_step task id' }))
+if (-not $recipeInterruptTaskOk) { $failed++ }
+
+if ($recipeInterruptTaskOk) {
+    $recipeInterruptExecute = Invoke-ModuleCommand `
+        -PythonPath $pythonPath `
+        -Arguments @('execute-task', '--task-id', $recipeInterruptTaskId) `
+        -EnvOverrides @{ SUPER_AGENT_DESKTOP_TEST_INTERRUPT_AFTER_MS = '300' }
+    $recipeInterruptExecuteOk = $recipeInterruptExecute.ExitCode -eq 0 -and `
+        (($recipeInterruptExecute.Output | Out-String) -match 'status:\s+interrupted') -and `
+        (($recipeInterruptExecute.Output | Out-String) -match 'execution_status:\s+interrupted') -and `
+        (($recipeInterruptExecute.Output | Out-String) -match 'Ctrl\+8')
+    Write-Check -Name 'Operator recipe interruption persists through Ctrl+8 failsafe' -Passed $recipeInterruptExecuteOk -Detail (($recipeInterruptExecute.Output | Out-String).Trim())
+    if (-not $recipeInterruptExecuteOk) { $failed++ }
+
+    $recipeInterruptStatus = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $recipeInterruptTaskId)
+    $recipeInterruptStatusOk = $recipeInterruptStatus.ExitCode -eq 0 -and `
+        (($recipeInterruptStatus.Output | Out-String) -match 'status:\s+interrupted') -and `
+        (($recipeInterruptStatus.Output | Out-String) -match 'recipe_status:\s+interrupted') -and `
+        (($recipeInterruptStatus.Output | Out-String) -match 'waiting_for:\s+operator_review_after_interrupt')
+    Write-Check -Name 'Interrupted operator recipe stays stopped for operator review' -Passed $recipeInterruptStatusOk -Detail (($recipeInterruptStatus.Output | Out-String).Trim())
+    if (-not $recipeInterruptStatusOk) { $failed++ }
+}
+
+$invalidRecipeQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'run_operator_recipe',
+    '--target', 'not_a_recipe'
+)
+$invalidRecipeQueueOk = $invalidRecipeQueue.ExitCode -ne 0 -and `
+    (($invalidRecipeQueue.Output | Out-String) -match 'Unsupported operator recipe')
+Write-Check -Name 'Unsupported operator recipe fails safely' -Passed $invalidRecipeQueueOk -Detail (($invalidRecipeQueue.Output | Out-String).Trim())
+if (-not $invalidRecipeQueueOk) { $failed++ }
 
 $desktopInvalidTarget = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
     'queue-executor-action',

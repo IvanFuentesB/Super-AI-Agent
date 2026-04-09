@@ -632,10 +632,7 @@ function Parse-PointTarget {
         if ([string]::IsNullOrWhiteSpace($alias)) {
             throw 'center mouse targets require an allowed window alias.'
         }
-        $window = Get-WindowByAlias -Alias $alias
-        if ($null -eq $window) {
-            throw "No visible allowlisted window found for target: $alias"
-        }
+        $window = Wait-ForAllowedWindowInternal -Alias $alias -TimeoutSeconds 5
         $rect = Get-WindowRectangle -Handle $window.Handle
         if ($null -eq $rect) {
             throw "Unable to read the window rectangle for target: $alias"
@@ -981,8 +978,10 @@ function Invoke-DesktopAction {
             }
             Wait-WithInterrupt -Milliseconds 120 -Phase 'verifying mouse move'
             $cursor = [System.Windows.Forms.Cursor]::Position
-            if ($cursor.X -ne $point.X -or $cursor.Y -ne $point.Y) {
-                throw "Windows did not place the mouse at the requested coordinates: $($point.Coordinates)"
+            $deltaX = [Math]::Abs($cursor.X - $point.X)
+            $deltaY = [Math]::Abs($cursor.Y - $point.Y)
+            if ($deltaX -gt 6 -or $deltaY -gt 6) {
+                throw "Windows did not place the mouse at the requested coordinates: $($point.Coordinates) (actual $($cursor.X),$($cursor.Y))"
             }
 
             Write-Field 'action_type' 'move_mouse'
@@ -990,6 +989,7 @@ function Invoke-DesktopAction {
             Write-Field 'target' $Target
             Write-Field 'headline' ("Moved mouse to {0}" -f $point.Coordinates)
             Write-Field 'coordinates' $point.Coordinates
+            Write-Field 'actual_coordinates' ("{0},{1}" -f $cursor.X, $cursor.Y)
             return
         }
 

@@ -21,6 +21,7 @@
           <span class="console-badge">Artifact preview</span>
           <span class="console-badge">Visible browser demo</span>
           <span class="console-badge">Desktop bridge actions</span>
+          <span class="console-badge">Operator recipes</span>
         </div>
       </div>
     </header>
@@ -391,6 +392,52 @@
               </div>
               <div id="task-execution-history-list" class="approval-history-list">
                 <p class="empty-state">No executor result history loaded yet.</p>
+              </div>
+            </div>
+            <div id="task-recipe-panel" class="subsection approval-history-section" hidden>
+              <div class="subsection-heading">
+                <h3>Recipe Run Detail</h3>
+                <p>The current planned steps and the last persisted step-by-step result for this operator recipe.</p>
+              </div>
+              <div class="approval-detail-grid">
+                <div class="approval-detail-field">
+                  <span>Recipe</span>
+                  <strong id="task-detail-recipe-name">-</strong>
+                </div>
+                <div class="approval-detail-field">
+                  <span>Recipe Status</span>
+                  <strong id="task-detail-recipe-status">-</strong>
+                </div>
+                <div class="approval-detail-field">
+                  <span>Run Count</span>
+                  <strong id="task-detail-recipe-run-count">-</strong>
+                </div>
+                <div class="approval-detail-field approval-detail-wide">
+                  <span>Recipe Summary</span>
+                  <strong id="task-detail-recipe-summary">-</strong>
+                </div>
+                <div class="approval-detail-field approval-detail-wide">
+                  <span>Last Run Window</span>
+                  <strong id="task-detail-recipe-last-run">-</strong>
+                </div>
+              </div>
+              <div class="subsection approval-history-section">
+                <div class="subsection-heading">
+                  <h3>Recipe Steps</h3>
+                  <p>Planned steps are listed first. After a run, the persisted result for each step appears here.</p>
+                </div>
+                <div id="task-recipe-step-list" class="approval-history-list">
+                  <p class="empty-state">No recipe step data loaded yet.</p>
+                </div>
+              </div>
+              <div class="subsection approval-history-section">
+                <div class="subsection-heading">
+                  <h3>Recipe Run History</h3>
+                  <p>The smallest useful visibility into prior runs for this recipe task.</p>
+                </div>
+                <div id="task-recipe-history-list" class="approval-history-list">
+                  <p class="empty-state">No recipe runs recorded yet.</p>
+                </div>
               </div>
             </div>
             <details class="details-block">
@@ -781,6 +828,67 @@ This file was queued through the safe repo-local executor.
             <summary>Show desktop bridge details</summary>
             <pre id="desktop-raw">Waiting for refresh...</pre>
           </details>
+        </section>
+
+        <section class="panel">
+          <div class="section-heading">
+            <div>
+              <h2>Operator Recipes</h2>
+              <p>Small explicit multi-step workflows built from the current desktop hand layer. They stay local, inspectable, approval-aware, and interruptible.</p>
+            </div>
+          </div>
+          <div class="action-card-grid">
+            <article class="action-card">
+              <div class="card-heading">
+                <h3>Observe Desktop State</h3>
+                <p>Safe multi-step observation only: list allowlisted windows, then record the active window.</p>
+              </div>
+              <button id="queue-recipe-observe-desktop" class="button-secondary" type="button">Queue Observe Desktop State</button>
+            </article>
+            <article class="action-card">
+              <div class="card-heading">
+                <h3>Focus Or Reuse Terminal</h3>
+                <p>Prefer an existing terminal window first. Only open a new one if no safe reusable terminal window exists.</p>
+              </div>
+              <button id="queue-recipe-focus-terminal" type="button">Queue Focus / Reuse Terminal</button>
+            </article>
+            <article class="action-card">
+              <div class="card-heading">
+                <h3>Copy From Focused Window</h3>
+                <p>Copy the current selection from the focused allowed window, then read the clipboard preview into the persisted result.</p>
+              </div>
+              <button id="queue-recipe-copy-focused" type="button">Queue Copy From Focused Window</button>
+            </article>
+            <article class="action-card">
+              <div class="card-heading">
+                <h3>Paste Into Dashboard Browser</h3>
+                <p>Focus the operator-console browser window, then paste the current clipboard into it. Stops safely if that window is not available.</p>
+              </div>
+              <button id="queue-recipe-paste-dashboard" type="button">Queue Paste Into Dashboard Browser</button>
+            </article>
+            <article class="action-card">
+              <div class="card-heading">
+                <h3>Wait And Resume Operator Step</h3>
+                <p>Pause visibly for a short operator wait, then record the active window before the next manual step.</p>
+              </div>
+              <button id="queue-recipe-wait-step" class="button-secondary" type="button">Queue Wait And Resume Step</button>
+            </article>
+            <article class="action-card">
+              <div class="card-heading">
+                <h3>Codex To Dashboard Progress Handoff</h3>
+                <p>Narrow prototype handoff only: reuse terminal, copy the current selection, wait briefly, focus the dashboard browser, and paste there.</p>
+              </div>
+              <button id="queue-recipe-codex-handoff" type="button">Queue Prototype Progress Handoff</button>
+            </article>
+          </div>
+          <div id="recipe-action-summary" class="result-panel" aria-live="polite">Ready to queue a safe operator recipe.</div>
+          <div class="subsection">
+            <div class="subsection-heading">
+              <h3>Recipe Run Tasks</h3>
+              <p>Inspect one recipe task, then run it manually only when it is queued, in scope, and approval-cleared.</p>
+            </div>
+            <div id="recipe-task-list" class="approval-list">Waiting for recipe task list.</div>
+          </div>
         </section>
 
         <section class="panel">

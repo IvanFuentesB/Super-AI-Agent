@@ -198,6 +198,8 @@ $expectedFiles = @(
     '04_docs/supervisor_foundation.md',
     '04_docs/approval_inbox_plan.md',
     '04_docs/notification_adapter_plan.md',
+    '08_research/repo_integration_map.md',
+    '14_context/chat_handoff_latest.md',
     '01_projects/dashboard_mvp/README.md',
     '01_projects/dashboard_mvp/package.json',
     '01_projects/dashboard_mvp/server.js',
@@ -1087,6 +1089,106 @@ try {
             $desktopInterruptDetail.summary.blockedReason -match 'Ctrl\+8'
         Write-Check -Name 'Interrupted desktop task detail shows failsafe reason' -Passed $desktopInterruptDetailOk -Detail ($(if ($desktopInterruptDetailOk) { $desktopInterruptDetail.summary.blockedReason } else { 'interrupted desktop task detail missing failsafe reason' }))
         if (-not $desktopInterruptDetailOk) { $failed++ }
+    }
+
+    $recipeQueuePayload = @{
+        actionType = 'run_operator_recipe'
+        target = 'observe_desktop_state'
+    } | ConvertTo-Json
+    $recipeQueue = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/executor/queue" -Method Post -ContentType 'application/json' -Body $recipeQueuePayload -TimeoutSec 30
+    $recipeQueueOk = $recipeQueue.ok -and `
+        $recipeQueue.localOnly -and `
+        $recipeQueue.task.status -eq 'queued' -and `
+        $recipeQueue.task.approvalState -eq 'not_required' -and `
+        $recipeQueue.task.executorActionType -eq 'run_operator_recipe' -and `
+        $recipeQueue.task.recipeName -eq 'observe_desktop_state'
+    Write-Check -Name 'Operator recipe queue endpoint' -Passed $recipeQueueOk -Detail ($(if ($recipeQueueOk) { $recipeQueue.summary.headline } else { 'operator recipe queue failed' }))
+    if (-not $recipeQueueOk) { $failed++ }
+
+    $recipeTaskId = $recipeQueue.summary.taskId
+    $recipeTaskIdOk = -not [string]::IsNullOrWhiteSpace($recipeTaskId)
+    Write-Check -Name 'Operator recipe task id returned' -Passed $recipeTaskIdOk -Detail ($(if ($recipeTaskIdOk) { $recipeTaskId } else { 'operator recipe task id missing' }))
+    if (-not $recipeTaskIdOk) { $failed++ }
+
+    if ($recipeTaskIdOk) {
+        $recipeDetail = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/item?taskId=$recipeTaskId" -Method Get -TimeoutSec 30
+        $recipeDetailOk = $recipeDetail.ok -and `
+            $recipeDetail.localOnly -and `
+            $recipeDetail.summary.recipeName -eq 'observe_desktop_state' -and `
+            $recipeDetail.summary.recipeSteps.Count -ge 2
+        Write-Check -Name 'Operator recipe detail endpoint' -Passed $recipeDetailOk -Detail ($(if ($recipeDetailOk) { $recipeDetail.summary.headline } else { 'operator recipe detail missing planned steps' }))
+        if (-not $recipeDetailOk) { $failed++ }
+
+        $recipeExecutePayload = @{
+            taskId = $recipeTaskId
+            action = 'execute'
+        } | ConvertTo-Json
+        $recipeExecute = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $recipeExecutePayload -TimeoutSec 30
+        $recipeExecuteOk = $recipeExecute.ok -and `
+            $recipeExecute.task.status -eq 'completed' -and `
+            $recipeExecute.task.lastExecutionStatus -eq 'succeeded'
+        Write-Check -Name 'Operator recipe execution endpoint' -Passed $recipeExecuteOk -Detail ($(if ($recipeExecuteOk) { $recipeExecute.summary.headline } else { 'operator recipe execute failed' }))
+        if (-not $recipeExecuteOk) { $failed++ }
+
+        $recipeDetailAfter = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/item?taskId=$recipeTaskId" -Method Get -TimeoutSec 30
+        $recipeDetailAfterOk = $recipeDetailAfter.ok -and `
+            $recipeDetailAfter.summary.recipeStatus -eq 'succeeded' -and `
+            $recipeDetailAfter.summary.recipeLastRunSteps.Count -ge 2 -and `
+            $recipeDetailAfter.summary.recipeRunHistory.Count -ge 1
+        Write-Check -Name 'Operator recipe result persists in dashboard detail' -Passed $recipeDetailAfterOk -Detail ($(if ($recipeDetailAfterOk) { $recipeDetailAfter.summary.recipeSummary } else { 'operator recipe result history not persisted in dashboard detail' }))
+        if (-not $recipeDetailAfterOk) { $failed++ }
+    }
+
+    $approvalAwareRecipePayload = @{
+        actionType = 'run_operator_recipe'
+        target = 'focus_or_reuse_terminal'
+    } | ConvertTo-Json
+    $approvalAwareRecipeQueue = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/executor/queue" -Method Post -ContentType 'application/json' -Body $approvalAwareRecipePayload -TimeoutSec 30
+    $approvalAwareRecipeQueueOk = $approvalAwareRecipeQueue.ok -and `
+        $approvalAwareRecipeQueue.localOnly -and `
+        $approvalAwareRecipeQueue.task.status -eq 'pending_approval' -and `
+        $approvalAwareRecipeQueue.task.approvalState -eq 'pending' -and `
+        $approvalAwareRecipeQueue.task.recipeName -eq 'focus_or_reuse_terminal'
+    Write-Check -Name 'Approval-aware recipe queue endpoint' -Passed $approvalAwareRecipeQueueOk -Detail ($(if ($approvalAwareRecipeQueueOk) { $approvalAwareRecipeQueue.summary.headline } else { 'approval-aware recipe queue failed' }))
+    if (-not $approvalAwareRecipeQueueOk) { $failed++ }
+
+    $recipeInterruptSeed = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+        'queue-executor-action',
+        '--action-type', 'run_operator_recipe',
+        '--target', 'wait_and_resume_operator_step',
+        '--content', '{"waitSeconds":5}'
+    )
+    $recipeInterruptSeedOk = $recipeInterruptSeed.ExitCode -eq 0 -and `
+        (($recipeInterruptSeed.Output | Out-String) -match 'status:\s+queued') -and `
+        (($recipeInterruptSeed.Output | Out-String) -match 'approval_state:\s+not_required') -and `
+        (($recipeInterruptSeed.Output | Out-String) -match 'recipe_name:\s+wait_and_resume_operator_step')
+    Write-Check -Name 'Operator recipe interrupt seed queued' -Passed $recipeInterruptSeedOk -Detail (($recipeInterruptSeed.Output | Out-String).Trim())
+    if (-not $recipeInterruptSeedOk) { $failed++ }
+
+    $recipeInterruptTaskMatch = [regex]::Match(($recipeInterruptSeed.Output | Out-String), 'task_id:\s*(\S+)')
+    $recipeInterruptTaskId = if ($recipeInterruptTaskMatch.Success) { $recipeInterruptTaskMatch.Groups[1].Value } else { $null }
+    $recipeInterruptTaskOk = -not [string]::IsNullOrWhiteSpace($recipeInterruptTaskId)
+    Write-Check -Name 'Operator recipe interrupt task id returned' -Passed $recipeInterruptTaskOk -Detail ($(if ($recipeInterruptTaskOk) { $recipeInterruptTaskId } else { 'operator recipe interrupt task id missing' }))
+    if (-not $recipeInterruptTaskOk) { $failed++ }
+
+    if ($recipeInterruptTaskOk) {
+        $recipeInterruptExecute = Invoke-ModuleCommand `
+            -PythonPath $pythonPath `
+            -Arguments @('execute-task', '--task-id', $recipeInterruptTaskId) `
+            -EnvOverrides @{ SUPER_AGENT_DESKTOP_TEST_INTERRUPT_AFTER_MS = '300' }
+        $recipeInterruptExecuteOk = $recipeInterruptExecute.ExitCode -eq 0 -and `
+            (($recipeInterruptExecute.Output | Out-String) -match 'status:\s+interrupted') -and `
+            (($recipeInterruptExecute.Output | Out-String) -match 'execution_status:\s+interrupted')
+        Write-Check -Name 'Operator recipe interrupt executes into interrupted state' -Passed $recipeInterruptExecuteOk -Detail (($recipeInterruptExecute.Output | Out-String).Trim())
+        if (-not $recipeInterruptExecuteOk) { $failed++ }
+
+        $recipeInterruptDetail = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/item?taskId=$recipeInterruptTaskId" -Method Get -TimeoutSec 30
+        $recipeInterruptDetailOk = $recipeInterruptDetail.ok -and `
+            $recipeInterruptDetail.summary.status -eq 'interrupted' -and `
+            $recipeInterruptDetail.summary.recipeStatus -eq 'interrupted' -and `
+            $recipeInterruptDetail.summary.blockedReason -match 'Ctrl\+8'
+        Write-Check -Name 'Operator recipe interrupt detail shows failsafe state' -Passed $recipeInterruptDetailOk -Detail ($(if ($recipeInterruptDetailOk) { $recipeInterruptDetail.summary.blockedReason } else { 'operator recipe interrupt detail missing failsafe state' }))
+        if (-not $recipeInterruptDetailOk) { $failed++ }
     }
     }
 

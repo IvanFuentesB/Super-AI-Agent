@@ -35,23 +35,25 @@
 - [x] Safe repo-local executor exists
 - [x] Safe local desktop bridge actions exist
 - [x] Safe local desktop input, mouse actions, and Ctrl+8 failsafe exist
+- [x] Operator recipes, repo integration map, and compact chat handoff memory exist
 
 ## Current Control Layer
 - Continue for local context/rules
 - Codex for execution and Git workflow
 
 ## Current Branch
-- feat/desktop-input-mouse-failsafe
+- feat/operator-recipes-handoff-memory
 
 ## Current Phase
-- safe local desktop hand layer for allowlisted window focus, clipboard, hotkey, wait, mouse, and failsafe operations
+- first reusable operator recipe layer plus compact handoff memory and explicit repo integration mapping
 
 ## Next Milestones
 - test the safe repo executor manually from the operator console
 - test the desktop bridge hand layer manually from the operator console
 - test the workspace-boundary flow manually from the operator console
 - test the manual supervisor loop from the operator console
-- define the first tiny operator recipe or Codex-to-ChatGPT handoff path using focus, clipboard, paste, and wait primitives
+- test the first reusable operator recipes from the operator console
+- refine the narrow Codex-to-dashboard handoff recipe into a tighter future Codex-to-ChatGPT handoff path
 - design an explicit allowlist-expansion or workspace-override path later
 - add a real notification channel later
 - choose the real desktop-control implementation path

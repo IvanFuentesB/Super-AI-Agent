@@ -74,6 +74,10 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Dashboard now exposes clipboard, hotkey, wait, mouse, and interrupted-task visibility for the desktop hand layer
 - Ctrl+8 now acts as a local desktop failsafe that interrupts the current desktop macro task, persists the interruption, and requires operator review before re-queueing
 - Focus-first terminal reuse is now enforced more clearly, reducing duplicate terminal-window spawning when an allowed terminal window is already open
+- First reusable operator recipes now exist on top of the desktop hand primitives
+- Dashboard now shows recipe tasks, per-step recipe history, and recipe interruption state
+- Compact chat handoff memory now exists at 14_context\chat_handoff_latest.md for new-thread continuity
+- Repo integration classification now exists at 08_research\repo_integration_map.md
 - No live external provider APIs yet
 - No real browser or app executor beyond the local playground yet
 - No remote auth layer yet
@@ -92,7 +96,8 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Test the workspace-boundary flow manually from the dashboard
 - Test the manual supervisor loop from the dashboard
 - Test the new clipboard, hotkey, mouse, and Ctrl+8 failsafe flows manually from the dashboard
-- Define the first small operator recipe path for Codex to ChatGPT style handoff using focus, clipboard, paste, and wait primitives
+- Test the first reusable operator recipes manually from the dashboard, especially focus, copy, paste, wait, and the narrow handoff prototype
+- Refine the narrow Codex-to-dashboard handoff recipe into a more reliable cross-window handoff path without widening the control surface yet
 - Decide the real desktop-control implementation path
 - Keep GitHub remote actions explicit and approval-gated
 - Prepare one internship-facing live demo from the current runtime outputs
@@ -109,4 +114,6 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - The safe repo executor is intentionally narrow and repo-bound; it is not a generic shell runner, desktop controller, or autonomy layer
 - The desktop bridge is intentionally narrow and allowlisted; it is not arbitrary desktop control, click or type automation, clipboard orchestration, or a background daemon
 - The new desktop hand layer is useful but still narrow; it only supports explicit allowlisted clipboard, hotkey, wait, and mouse actions, and it still has no freeform typing, drag-and-drop, or arbitrary UI-state inference
+- The first operator recipe layer is intentionally small and still prototype-grade; the current handoff recipe is not a durable ChatGPT-specific workflow yet
+- Window matching still depends on visible titles and allowed aliases, so some cross-window flows can remain brittle until the target set is tightened
 - Third-party intake repos are valuable comparison material, but most of their surface area is still too heavy to adopt directly
