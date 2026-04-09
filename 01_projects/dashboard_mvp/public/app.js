@@ -13,6 +13,18 @@ const desktopActionTypes = new Set([
   "focus_window",
   "open_allowed_app",
   "capture_desktop_screenshot",
+  "get_clipboard_text",
+  "set_clipboard_text",
+  "copy_selection",
+  "paste_clipboard",
+  "send_hotkey",
+  "wait_seconds",
+  "wait_for_window",
+  "move_mouse",
+  "left_click",
+  "double_click",
+  "right_click",
+  "scroll_mouse",
 ]);
 
 function isDesktopExecutorAction(actionType) {
@@ -58,6 +70,35 @@ function setValue(id, value) {
   }
 }
 
+function getInputValue(id) {
+  const element = document.getElementById(id);
+  return element ? String(element.value || "").trim() : "";
+}
+
+function buildHotkeyTarget() {
+  const windowAlias = getInputValue("desktop-hotkey-window");
+  const hotkey = getInputValue("desktop-hotkey-value");
+  return windowAlias ? `${windowAlias}|${hotkey}` : hotkey;
+}
+
+function buildMouseTarget() {
+  const windowAlias = getInputValue("desktop-mouse-window");
+  const mode = getInputValue("desktop-mouse-mode");
+  if (mode === "coordinates") {
+    const x = getInputValue("desktop-mouse-x");
+    const y = getInputValue("desktop-mouse-y");
+    const coordinates = `${x},${y}`;
+    return windowAlias ? `${windowAlias}|${coordinates}` : coordinates;
+  }
+  return windowAlias ? `${windowAlias}|center` : "terminal|center";
+}
+
+function buildScrollTarget() {
+  const windowAlias = getInputValue("desktop-mouse-window");
+  const delta = getInputValue("desktop-scroll-delta");
+  return windowAlias ? `${windowAlias}|${delta}` : delta;
+}
+
 function renderRaw(id, payload) {
   const element = document.getElementById(id);
   if (element) {
@@ -74,7 +115,7 @@ function normalizeState(status) {
   if (["ok", "success", "available", "ready", "yes", "approved", "completed", "succeeded"].includes(value)) {
     return "success";
   }
-  if (["blocked", "error", "fail", "failed", "denied", "rejected"].includes(value)) {
+  if (["blocked", "error", "fail", "failed", "denied", "rejected", "interrupted"].includes(value)) {
     return "error";
   }
   if (["pending", "loading", "running", "not_run", "deferred", "waiting"].includes(value)) {
@@ -280,7 +321,7 @@ function renderDesktopBridge(payload) {
     "desktop-quick-note",
     summary.desktopControlImplemented
       ? "Desktop control is reported as live."
-      : "Narrow desktop-aware actions are available, but arbitrary desktop control is still not implemented.",
+      : `Narrow desktop-aware actions are available, but arbitrary desktop control is still not implemented. Emergency stop: ${summary.failsafeHotkey || "Ctrl+8"}.`,
   );
   setText("desktop-powershell", summary.powerShellAvailable ? "ready" : "missing");
   setText("desktop-shell", summary.shellCommandCapability ? "ready" : "blocked");
@@ -293,6 +334,7 @@ function renderDesktopBridge(payload) {
         : "blocked",
   );
   setText("desktop-control", summary.desktopControlImplemented ? "live" : "not yet");
+  setText("desktop-failsafe", summary.failsafeHotkey || "Ctrl+8");
   setText("desktop-summary", summary.headline || "Desktop bridge status unavailable.");
   renderStatusList("desktop-available-list", summary.availableNow);
   renderStatusList("desktop-missing-list", summary.missingNow);
@@ -427,7 +469,7 @@ function clearApprovalDetail(message) {
 function setTaskActionButtonsDisabled(task = null) {
   const status = String(task?.status || "").toLowerCase();
   const workspaceBlocked = task?.workspacePolicy === "blocked_by_workspace_policy";
-  const reviewEnabled = status === "blocked_human_needed";
+  const reviewEnabled = status === "blocked_human_needed" || status === "interrupted";
   const resumeEnabled = status === "waiting";
   const requeueEnabled = status === "ready_to_resume" && !workspaceBlocked;
   const executeEnabled =
@@ -750,7 +792,9 @@ function renderSupervisorStatus(payload) {
       ? "Risky or uncertain work is paused until the human approves it."
       : summary.blockedHumanNeededCount > 0
         ? "Some tasks are blocked on a human reply or judgment call."
-        : summary.readyToResumeCount > 0
+      : summary.interruptedCount > 0
+        ? "Some desktop tasks were interrupted by the failsafe and need operator review before they continue."
+      : summary.readyToResumeCount > 0
           ? "Some tasks were reviewed already and can be re-queued manually."
       : "No open approvals right now. The supervisor is only tracking local state.",
   );
@@ -759,6 +803,7 @@ function renderSupervisorStatus(payload) {
   setText("supervisor-human-needed-count", String(summary.blockedHumanNeededCount ?? 0));
   setText("supervisor-waiting-count", String(summary.waitingCount ?? 0));
   setText("supervisor-ready-count", String(summary.readyToResumeCount ?? 0));
+  setText("supervisor-interrupted-count", String(summary.interruptedCount ?? 0));
   setText("supervisor-summary", summary.headline || "Supervisor status unavailable.");
 
   renderApprovalCards(
@@ -771,6 +816,11 @@ function renderSupervisorStatus(payload) {
     "human-needed-list",
     summary.humanNeededTasks || [],
     "No human-needed tasks right now.",
+  );
+  renderTaskCards(
+    "interrupted-tasks-list",
+    summary.interruptedTasks || [],
+    "No interrupted tasks right now.",
   );
   renderTaskCards(
     "waiting-tasks-list",
@@ -1076,6 +1126,7 @@ async function refreshSupervisorStatus() {
   const nextTaskId =
     uiState.selectedTaskId
     || payload.summary?.humanNeededTasks?.[0]?.taskId
+    || payload.summary?.interruptedTasks?.[0]?.taskId
     || payload.summary?.waitingTasks?.[0]?.taskId
     || payload.summary?.readyToResumeTasks?.[0]?.taskId
     || "";
@@ -1087,7 +1138,7 @@ async function refreshSupervisorStatus() {
   if (nextTaskId) {
     await refreshTaskDetail(nextTaskId, { silent: true });
   } else {
-    clearTaskDetail("No stopped task selected. Human-needed, waiting, or ready-to-resume tasks will appear here.");
+    clearTaskDetail("No stopped task selected. Human-needed, interrupted, waiting, or ready-to-resume tasks will appear here.");
   }
 }
 
@@ -1696,6 +1747,141 @@ document.getElementById("queue-desktop-screenshot").addEventListener("click", as
   );
 });
 
+document.getElementById("queue-desktop-read-clipboard").addEventListener("click", async (event) => {
+  await runExecutorQueue(
+    { actionType: "get_clipboard_text" },
+    "Queue clipboard read",
+    event.currentTarget,
+    { panelId: "desktop-action-summary" },
+  );
+});
+
+document.getElementById("queue-desktop-set-clipboard").addEventListener("click", async (event) => {
+  await runExecutorQueue(
+    {
+      actionType: "set_clipboard_text",
+      content: getInputValue("desktop-clipboard-text"),
+    },
+    "Queue clipboard write",
+    event.currentTarget,
+    { panelId: "desktop-action-summary" },
+  );
+});
+
+document.getElementById("queue-desktop-copy-selection").addEventListener("click", async (event) => {
+  await runExecutorQueue(
+    { actionType: "copy_selection" },
+    "Queue copy selection",
+    event.currentTarget,
+    { panelId: "desktop-action-summary" },
+  );
+});
+
+document.getElementById("queue-desktop-paste-clipboard").addEventListener("click", async (event) => {
+  await runExecutorQueue(
+    { actionType: "paste_clipboard" },
+    "Queue paste clipboard",
+    event.currentTarget,
+    { panelId: "desktop-action-summary" },
+  );
+});
+
+document.getElementById("queue-desktop-hotkey").addEventListener("click", async (event) => {
+  await runExecutorQueue(
+    {
+      actionType: "send_hotkey",
+      target: buildHotkeyTarget(),
+    },
+    "Queue allowlisted hotkey",
+    event.currentTarget,
+    { panelId: "desktop-action-summary" },
+  );
+});
+
+document.getElementById("queue-desktop-wait-seconds").addEventListener("click", async (event) => {
+  await runExecutorQueue(
+    {
+      actionType: "wait_seconds",
+      target: getInputValue("desktop-wait-seconds") || "2",
+    },
+    "Queue explicit wait",
+    event.currentTarget,
+    { panelId: "desktop-action-summary" },
+  );
+});
+
+document.getElementById("queue-desktop-wait-window").addEventListener("click", async (event) => {
+  await runExecutorQueue(
+    {
+      actionType: "wait_for_window",
+      target: getInputValue("desktop-wait-window") || "terminal",
+    },
+    "Queue wait for window",
+    event.currentTarget,
+    { panelId: "desktop-action-summary" },
+  );
+});
+
+document.getElementById("queue-desktop-move-mouse").addEventListener("click", async (event) => {
+  await runExecutorQueue(
+    {
+      actionType: "move_mouse",
+      target: buildMouseTarget(),
+    },
+    "Queue mouse move",
+    event.currentTarget,
+    { panelId: "desktop-action-summary" },
+  );
+});
+
+document.getElementById("queue-desktop-left-click").addEventListener("click", async (event) => {
+  await runExecutorQueue(
+    {
+      actionType: "left_click",
+      target: buildMouseTarget(),
+    },
+    "Queue left click",
+    event.currentTarget,
+    { panelId: "desktop-action-summary" },
+  );
+});
+
+document.getElementById("queue-desktop-double-click").addEventListener("click", async (event) => {
+  await runExecutorQueue(
+    {
+      actionType: "double_click",
+      target: buildMouseTarget(),
+    },
+    "Queue double click",
+    event.currentTarget,
+    { panelId: "desktop-action-summary" },
+  );
+});
+
+document.getElementById("queue-desktop-right-click").addEventListener("click", async (event) => {
+  await runExecutorQueue(
+    {
+      actionType: "right_click",
+      target: buildMouseTarget(),
+    },
+    "Queue right click",
+    event.currentTarget,
+    { panelId: "desktop-action-summary" },
+  );
+});
+
+document.getElementById("queue-desktop-scroll").addEventListener("click", async (event) => {
+  await runExecutorQueue(
+    {
+      actionType: "scroll_mouse",
+      target: buildScrollTarget(),
+    },
+    "Queue mouse scroll",
+    event.currentTarget,
+    { panelId: "desktop-action-summary" },
+  );
+});
+
 document.getElementById("run-browser-visible").addEventListener("click", async (event) => {
   await runBrowserAction(
     "/api/browser/visible",
@@ -1811,7 +1997,7 @@ document.getElementById("pending-approvals-list").addEventListener("click", asyn
   await refreshRecentActions();
 });
 
-["human-needed-list", "waiting-tasks-list", "ready-to-resume-list"].forEach((containerId) => {
+["human-needed-list", "interrupted-tasks-list", "waiting-tasks-list", "ready-to-resume-list"].forEach((containerId) => {
   document.getElementById(containerId).addEventListener("click", async (event) => {
     const button = event.target.closest("button[data-task-action='inspect']");
     if (!button) {
@@ -1908,7 +2094,7 @@ document.getElementById("task-execute").addEventListener("click", async (event) 
 });
 
 clearApprovalDetail("Select a pending approval to inspect it.");
-clearTaskDetail("Select a stopped task or executor task to inspect it.");
+clearTaskDetail("Select a stopped, interrupted, or executor task to inspect it.");
 
 refreshConsole().catch((error) => {
   setText("operator-headline", "Console load failed.");

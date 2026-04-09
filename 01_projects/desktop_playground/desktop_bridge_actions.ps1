@@ -1,12 +1,32 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet('list_windows', 'get_active_window', 'focus_window', 'open_allowed_app', 'capture_desktop_screenshot')]
+    [ValidateSet(
+        'list_windows',
+        'get_active_window',
+        'focus_window',
+        'open_allowed_app',
+        'capture_desktop_screenshot',
+        'get_clipboard_text',
+        'set_clipboard_text',
+        'copy_selection',
+        'paste_clipboard',
+        'send_hotkey',
+        'wait_seconds',
+        'wait_for_window',
+        'move_mouse',
+        'left_click',
+        'double_click',
+        'right_click',
+        'scroll_mouse'
+    )]
     [string]$Action,
 
     [string]$Target = '',
 
     [string]$ArtifactPath = '',
+
+    [string]$TextContent = '',
 
     [string]$AllowedRoot = 'C:\Users\ai_sandbox\Documents\AI_Managed_Only'
 )
@@ -19,9 +39,16 @@ Add-Type -AssemblyName System.Drawing
 
 $signature = @'
 using System;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Text;
+
+[StructLayout(LayoutKind.Sequential)]
+public struct RECT
+{
+    public int Left;
+    public int Top;
+    public int Right;
+    public int Bottom;
+}
 
 public static class DesktopBridgeNative
 {
@@ -36,6 +63,18 @@ public static class DesktopBridgeNative
 
     [DllImport("user32.dll")]
     public static extern bool ShowWindowAsync(IntPtr hWnd, int nCmdShow);
+
+    [DllImport("user32.dll")]
+    public static extern short GetAsyncKeyState(int vKey);
+
+    [DllImport("user32.dll")]
+    public static extern bool SetCursorPos(int X, int Y);
+
+    [DllImport("user32.dll")]
+    public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+
+    [DllImport("user32.dll")]
+    public static extern void mouse_event(uint dwFlags, uint dx, uint dy, uint dwData, UIntPtr dwExtraInfo);
 }
 '@
 
@@ -84,6 +123,28 @@ $allowedAppSpecs = [ordered]@{
     }
 }
 
+$allowedHotkeys = [ordered]@{
+    'ctrl+c' = '^c'
+    'ctrl+v' = '^v'
+    'ctrl+l' = '^l'
+    'enter' = '{ENTER}'
+    'escape' = '{ESC}'
+}
+
+$mouseEventFlags = @{
+    LEFTDOWN = 0x0002
+    LEFTUP = 0x0004
+    RIGHTDOWN = 0x0008
+    RIGHTUP = 0x0010
+    WHEEL = 0x0800
+}
+
+$testInterruptAfterMs = 0
+if ($env:SUPER_AGENT_DESKTOP_TEST_INTERRUPT_AFTER_MS -match '^\d+$') {
+    $testInterruptAfterMs = [int]$env:SUPER_AGENT_DESKTOP_TEST_INTERRUPT_AFTER_MS
+}
+$interruptStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+
 function Write-Field {
     param(
         [string]$Name,
@@ -91,6 +152,24 @@ function Write-Field {
     )
 
     Write-Output ("{0}: {1}" -f $Name, $Value)
+}
+
+function Short-Preview {
+    param(
+        [string]$Text,
+        [int]$Limit = 120
+    )
+
+    $normalized = (([string]$Text) -replace '\s+', ' ').Trim()
+    if ([string]::IsNullOrWhiteSpace($normalized)) {
+        return 'empty'
+    }
+
+    if ($normalized.Length -le $Limit) {
+        return $normalized
+    }
+
+    return ($normalized.Substring(0, $Limit - 3).TrimEnd() + '...')
 }
 
 function Resolve-SafePath {
@@ -165,6 +244,54 @@ function Resolve-AllowedApp {
     throw "Allowed app target could not be resolved locally: $Alias"
 }
 
+function Test-EmergencyStopRequested {
+    $ctrlDown = ([DesktopBridgeNative]::GetAsyncKeyState(0x11) -band 0x8000) -ne 0
+    $eightDown = ([DesktopBridgeNative]::GetAsyncKeyState(0x38) -band 0x8000) -ne 0
+    $numpadEightDown = ([DesktopBridgeNative]::GetAsyncKeyState(0x68) -band 0x8000) -ne 0
+
+    if ($ctrlDown -and ($eightDown -or $numpadEightDown)) {
+        return $true
+    }
+
+    if ($testInterruptAfterMs -gt 0 -and $interruptStopwatch.ElapsedMilliseconds -ge $testInterruptAfterMs) {
+        return $true
+    }
+
+    return $false
+}
+
+function Assert-NotInterrupted {
+    param(
+        [string]$Phase = 'desktop action'
+    )
+
+    if (Test-EmergencyStopRequested) {
+        throw [System.OperationCanceledException]::new("Emergency stop requested with Ctrl+8 during $Phase.")
+    }
+}
+
+function Wait-WithInterrupt {
+    param(
+        [int]$Milliseconds,
+        [string]$Phase = 'desktop action wait'
+    )
+
+    if ($Milliseconds -le 0) {
+        Assert-NotInterrupted -Phase $Phase
+        return
+    }
+
+    $remaining = $Milliseconds
+    while ($remaining -gt 0) {
+        Assert-NotInterrupted -Phase $Phase
+        $chunk = [Math]::Min(100, $remaining)
+        Start-Sleep -Milliseconds $chunk
+        $remaining -= $chunk
+    }
+
+    Assert-NotInterrupted -Phase $Phase
+}
+
 function Get-AllowedWindows {
     $windows = @()
     foreach ($processItem in Get-Process | Where-Object { $_.MainWindowHandle -ne 0 -and -not [string]::IsNullOrWhiteSpace($_.MainWindowTitle) }) {
@@ -184,9 +311,11 @@ function Get-AllowedWindows {
                 Handle = [System.IntPtr]$processItem.MainWindowHandle
                 Title = $title
                 Aliases = @($aliases)
+                ProcessId = $processItem.Id
             }
         }
     }
+
     return @($windows)
 }
 
@@ -201,6 +330,28 @@ function Get-WindowByAlias {
     }
 
     return $matches[0]
+}
+
+function Get-WindowRectangle {
+    param(
+        [System.IntPtr]$Handle
+    )
+
+    $rect = New-Object RECT
+    if (-not [DesktopBridgeNative]::GetWindowRect($Handle, [ref]$rect)) {
+        return $null
+    }
+
+    return [pscustomobject]@{
+        Left = $rect.Left
+        Top = $rect.Top
+        Right = $rect.Right
+        Bottom = $rect.Bottom
+        Width = ($rect.Right - $rect.Left)
+        Height = ($rect.Bottom - $rect.Top)
+        CenterX = [int]([Math]::Round(($rect.Left + $rect.Right) / 2.0))
+        CenterY = [int]([Math]::Round(($rect.Top + $rect.Bottom) / 2.0))
+    }
 }
 
 function Get-ActiveWindowInfo {
@@ -237,6 +388,335 @@ function Get-ActiveWindowInfo {
         Handle = $handle
         Title = $title
         Alias = $alias
+    }
+}
+
+function Focus-AllowedWindowInternal {
+    param(
+        [string]$Alias
+    )
+
+    if (-not $allowedWindowTargets.Contains($Alias)) {
+        throw "Unsupported focus target: $Alias"
+    }
+
+    $window = Get-WindowByAlias -Alias $Alias
+    if ($null -eq $window) {
+        throw "No visible allowlisted window found for target: $Alias"
+    }
+
+    Assert-NotInterrupted -Phase "focusing $Alias"
+
+    $activeBefore = Get-ActiveWindowInfo
+    if ($activeBefore.Alias -eq $Alias -or $activeBefore.Title -eq $window.Title) {
+        return [pscustomobject]@{
+            Alias = $Alias
+            Title = $window.Title
+            Handle = $window.Handle
+            ActiveAlias = $activeBefore.Alias
+            ActiveTitle = $activeBefore.Title
+        }
+    }
+
+    $shell = New-Object -ComObject WScript.Shell
+    $activeWindow = $activeBefore
+    $focusOk = $false
+
+    foreach ($attempt in 1..4) {
+        Assert-NotInterrupted -Phase "focusing $Alias (attempt $attempt)"
+
+        if ($window.ProcessId -gt 0 -and $shell.AppActivate([int]$window.ProcessId)) {
+            $focusOk = $true
+        }
+
+        if (-not $focusOk -and $shell.AppActivate($window.Title)) {
+            $focusOk = $true
+        }
+
+        [void]$shell.SendKeys('%')
+        Start-Sleep -Milliseconds 80
+        [void][DesktopBridgeNative]::ShowWindowAsync($window.Handle, 9)
+        [void][DesktopBridgeNative]::BringWindowToTop($window.Handle)
+        if ([DesktopBridgeNative]::SetForegroundWindow($window.Handle)) {
+            $focusOk = $true
+        }
+
+        if (-not $focusOk) {
+            [void][DesktopBridgeNative]::ShowWindowAsync($window.Handle, 5)
+            if ([DesktopBridgeNative]::SetForegroundWindow($window.Handle)) {
+                $focusOk = $true
+            }
+            [void][DesktopBridgeNative]::BringWindowToTop($window.Handle)
+        }
+
+        Wait-WithInterrupt -Milliseconds 220 -Phase "verifying focus for $Alias"
+        $activeWindow = Get-ActiveWindowInfo
+        if ($activeWindow.Alias -eq $Alias -or $activeWindow.Title -eq $window.Title) {
+            $focusOk = $true
+            break
+        }
+    }
+
+    if (-not ($activeWindow.Alias -eq $Alias -or $activeWindow.Title -eq $window.Title)) {
+        throw "Windows did not move focus to the requested allowlisted window: $Alias"
+    }
+
+    return [pscustomobject]@{
+        Alias = $Alias
+        Title = $window.Title
+        Handle = $window.Handle
+        ActiveAlias = $activeWindow.Alias
+        ActiveTitle = $activeWindow.Title
+    }
+}
+
+function Wait-ForAllowedWindowInternal {
+    param(
+        [string]$Alias,
+        [int]$TimeoutSeconds = 15
+    )
+
+    if (-not $allowedWindowTargets.Contains($Alias)) {
+        throw "Unsupported allowed window target: $Alias"
+    }
+
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    while ((Get-Date) -lt $deadline) {
+        Assert-NotInterrupted -Phase "waiting for window $Alias"
+        $window = Get-WindowByAlias -Alias $Alias
+        if ($null -ne $window) {
+            return $window
+        }
+        Start-Sleep -Milliseconds 250
+    }
+
+    throw "Timed out waiting for allowlisted window: $Alias"
+}
+
+function Get-ClipboardTextSafe {
+    if ([System.Windows.Forms.Clipboard]::ContainsText()) {
+        return [System.Windows.Forms.Clipboard]::GetText()
+    }
+
+    return ''
+}
+
+function Set-ClipboardTextSafe {
+    param(
+        [string]$Value
+    )
+
+    if ([string]::IsNullOrEmpty($Value)) {
+        [System.Windows.Forms.Clipboard]::Clear()
+        return
+    }
+
+    [System.Windows.Forms.Clipboard]::SetText($Value)
+}
+
+function Resolve-InputWindowContext {
+    param(
+        [string]$Alias = ''
+    )
+
+    if (-not [string]::IsNullOrWhiteSpace($Alias)) {
+        return Focus-AllowedWindowInternal -Alias $Alias
+    }
+
+    $activeWindow = Get-ActiveWindowInfo
+    if (-not $allowedWindowTargets.Contains($activeWindow.Alias)) {
+        throw 'Desktop input actions require a focused allowlisted window or an explicit allowed target.'
+    }
+
+    return [pscustomobject]@{
+        Alias = $activeWindow.Alias
+        Title = $activeWindow.Title
+        Handle = $activeWindow.Handle
+        ActiveAlias = $activeWindow.Alias
+        ActiveTitle = $activeWindow.Title
+    }
+}
+
+function Resolve-HotkeySpec {
+    param(
+        [string]$HotkeyTarget
+    )
+
+    $normalized = ([string]$HotkeyTarget).Trim().ToLowerInvariant()
+    if ([string]::IsNullOrWhiteSpace($normalized)) {
+        throw 'send_hotkey requires a hotkey target.'
+    }
+
+    $alias = ''
+    $hotkey = $normalized
+    if ($normalized.Contains('|')) {
+        $parts = $normalized.Split('|', 2)
+        $alias = $parts[0].Trim()
+        $hotkey = $parts[1].Trim()
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($alias) -and -not $allowedWindowTargets.Contains($alias)) {
+        throw "Unsupported allowed window alias for hotkey target: $alias"
+    }
+
+    if (-not $allowedHotkeys.Contains($hotkey)) {
+        throw "Unsupported hotkey target: $hotkey"
+    }
+
+    return [pscustomobject]@{
+        Alias = $alias
+        Hotkey = $hotkey
+        SendKeys = $allowedHotkeys[$hotkey]
+    }
+}
+
+function Parse-WaitForWindowTarget {
+    param(
+        [string]$WaitTarget
+    )
+
+    $normalized = ([string]$WaitTarget).Trim().ToLowerInvariant()
+    if ([string]::IsNullOrWhiteSpace($normalized)) {
+        throw 'wait_for_window requires a target alias.'
+    }
+
+    $alias = $normalized
+    $timeoutSeconds = 15
+    if ($normalized.Contains('|')) {
+        $parts = $normalized.Split('|', 2)
+        $alias = $parts[0].Trim()
+        $timeoutRaw = $parts[1].Trim()
+        if (-not [int]::TryParse($timeoutRaw, [ref]$timeoutSeconds)) {
+            throw 'wait_for_window timeout must be an integer.'
+        }
+    }
+
+    if (-not $allowedWindowTargets.Contains($alias)) {
+        throw "Unsupported wait_for_window target: $alias"
+    }
+    if ($timeoutSeconds -lt 1 -or $timeoutSeconds -gt 120) {
+        throw 'wait_for_window timeout must be between 1 and 120 seconds.'
+    }
+
+    return [pscustomobject]@{
+        Alias = $alias
+        TimeoutSeconds = $timeoutSeconds
+    }
+}
+
+function Parse-PointTarget {
+    param(
+        [string]$PointTarget
+    )
+
+    $normalized = ([string]$PointTarget).Trim().ToLowerInvariant()
+    if ([string]::IsNullOrWhiteSpace($normalized)) {
+        throw 'Mouse actions require an explicit point target.'
+    }
+
+    $alias = ''
+    $pointSpec = $normalized
+    if ($normalized.Contains('|')) {
+        $parts = $normalized.Split('|', 2)
+        $alias = $parts[0].Trim()
+        $pointSpec = $parts[1].Trim()
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($alias) -and -not $allowedWindowTargets.Contains($alias)) {
+        throw "Unsupported mouse target window alias: $alias"
+    }
+
+    $x = 0
+    $y = 0
+    if ($pointSpec -eq 'center') {
+        if ([string]::IsNullOrWhiteSpace($alias)) {
+            throw 'center mouse targets require an allowed window alias.'
+        }
+        $window = Get-WindowByAlias -Alias $alias
+        if ($null -eq $window) {
+            throw "No visible allowlisted window found for target: $alias"
+        }
+        $rect = Get-WindowRectangle -Handle $window.Handle
+        if ($null -eq $rect) {
+            throw "Unable to read the window rectangle for target: $alias"
+        }
+        $x = $rect.CenterX
+        $y = $rect.CenterY
+    }
+    else {
+        if ($pointSpec -notmatch '^\s*(-?\d+)\s*,\s*(-?\d+)\s*$') {
+            throw 'Mouse point targets must be x,y or alias|center.'
+        }
+        $x = [int]$matches[1]
+        $y = [int]$matches[2]
+    }
+
+    $bounds = [System.Windows.Forms.SystemInformation]::VirtualScreen
+    $insideBounds = $x -ge $bounds.Left -and $x -le ($bounds.Right - 1) -and $y -ge $bounds.Top -and $y -le ($bounds.Bottom - 1)
+    if (-not $insideBounds) {
+        throw "Mouse target is outside the visible desktop bounds: $x,$y"
+    }
+
+    return [pscustomobject]@{
+        Alias = $alias
+        X = $x
+        Y = $y
+        Coordinates = "$x,$y"
+    }
+}
+
+function Parse-ScrollTarget {
+    param(
+        [string]$ScrollTarget
+    )
+
+    $normalized = ([string]$ScrollTarget).Trim().ToLowerInvariant()
+    if ([string]::IsNullOrWhiteSpace($normalized)) {
+        throw 'scroll_mouse requires a scroll amount target.'
+    }
+
+    $alias = ''
+    $deltaText = $normalized
+    if ($normalized.Contains('|')) {
+        $parts = $normalized.Split('|', 2)
+        $alias = $parts[0].Trim()
+        $deltaText = $parts[1].Trim()
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($alias) -and -not $allowedWindowTargets.Contains($alias)) {
+        throw "Unsupported mouse target window alias: $alias"
+    }
+
+    $delta = 0
+    if (-not [int]::TryParse($deltaText, [ref]$delta)) {
+        throw 'scroll_mouse target must be an integer amount or alias|amount.'
+    }
+    if ($delta -eq 0 -or [Math]::Abs($delta) -gt 1200) {
+        throw 'scroll_mouse amount must be between -1200 and 1200 and cannot be zero.'
+    }
+
+    return [pscustomobject]@{
+        Alias = $alias
+        Delta = $delta
+    }
+}
+
+function Invoke-MouseClickSequence {
+    param(
+        [uint32]$DownFlag,
+        [uint32]$UpFlag,
+        [int]$ClickCount = 1,
+        [string]$Phase = 'mouse click'
+    )
+
+    for ($index = 0; $index -lt $ClickCount; $index++) {
+        Assert-NotInterrupted -Phase $Phase
+        [DesktopBridgeNative]::mouse_event($DownFlag, 0, 0, 0, [UIntPtr]::Zero)
+        Wait-WithInterrupt -Milliseconds 70 -Phase $Phase
+        [DesktopBridgeNative]::mouse_event($UpFlag, 0, 0, 0, [UIntPtr]::Zero)
+        if ($index -lt ($ClickCount - 1)) {
+            Wait-WithInterrupt -Milliseconds 90 -Phase $Phase
+        }
     }
 }
 
@@ -288,39 +768,14 @@ function Invoke-DesktopAction {
             if ([string]::IsNullOrWhiteSpace($alias)) {
                 throw 'focus_window requires a target alias.'
             }
-            if (-not $allowedWindowTargets.Contains($alias)) {
-                throw "Unsupported focus target: $alias"
-            }
 
-            $window = Get-WindowByAlias -Alias $alias
-            if ($null -eq $window) {
-                throw "No visible allowlisted window found for target: $alias"
-            }
-
-            $shell = New-Object -ComObject WScript.Shell
-            $focusOk = $false
-
-            if ($shell.AppActivate($window.Title)) {
-                $focusOk = $true
-            }
-
-            if (-not $focusOk) {
-                [void][DesktopBridgeNative]::ShowWindowAsync($window.Handle, 5)
-                $focusOk = [DesktopBridgeNative]::SetForegroundWindow($window.Handle)
-                [void][DesktopBridgeNative]::BringWindowToTop($window.Handle)
-            }
-
-            Start-Sleep -Milliseconds 350
-            $activeWindow = Get-ActiveWindowInfo
-            if (-not ($activeWindow.Alias -eq $alias -or $activeWindow.Title -eq $window.Title)) {
-                throw "Windows did not move focus to the requested allowlisted window: $alias"
-            }
-
+            $focused = Focus-AllowedWindowInternal -Alias $alias
             Write-Field 'action_type' 'focus_window'
             Write-Field 'status' 'succeeded'
             Write-Field 'target' $alias
             Write-Field 'headline' ("Focused allowlisted window: {0}" -f $alias)
-            Write-Field 'focused_window_title' $window.Title
+            Write-Field 'focused_window_alias' $focused.ActiveAlias
+            Write-Field 'focused_window_title' $focused.ActiveTitle
             return
         }
 
@@ -330,7 +785,21 @@ function Invoke-DesktopAction {
                 throw 'open_allowed_app requires a target alias.'
             }
 
+            $existingWindow = Get-WindowByAlias -Alias $alias
+            if ($null -ne $existingWindow) {
+                $focused = Focus-AllowedWindowInternal -Alias $alias
+                Write-Field 'action_type' 'open_allowed_app'
+                Write-Field 'status' 'succeeded'
+                Write-Field 'target' $alias
+                Write-Field 'headline' ("Focused existing allowlisted app window: {0}" -f $alias)
+                Write-Field 'focused_window_title' $focused.ActiveTitle
+                Write-Field 'reused_existing_window' 'yes'
+                Write-Field 'command_path' 'none'
+                return
+            }
+
             $resolved = Resolve-AllowedApp -Alias $alias
+            Assert-NotInterrupted -Phase "opening $alias"
             $startProcessParams = @{
                 FilePath = $resolved.CommandPath
                 PassThru = $true
@@ -339,12 +808,17 @@ function Invoke-DesktopAction {
                 $startProcessParams.ArgumentList = $resolved.Arguments
             }
             $process = Start-Process @startProcessParams
+            [void](Wait-ForAllowedWindowInternal -Alias $alias -TimeoutSeconds 15)
+            $focused = Focus-AllowedWindowInternal -Alias $alias
+
             Write-Field 'action_type' 'open_allowed_app'
             Write-Field 'status' 'succeeded'
             Write-Field 'target' $alias
             Write-Field 'headline' ("Opened allowlisted app: {0}" -f $alias)
             Write-Field 'command_path' $resolved.CommandPath
             Write-Field 'process_id' "$($process.Id)"
+            Write-Field 'reused_existing_window' 'no'
+            Write-Field 'focused_window_title' $focused.ActiveTitle
             return
         }
 
@@ -359,6 +833,7 @@ function Invoke-DesktopAction {
                 New-Item -ItemType Directory -Path $artifactDirectory -Force | Out-Null
             }
 
+            Assert-NotInterrupted -Phase 'desktop screenshot capture'
             $bounds = [System.Windows.Forms.SystemInformation]::VirtualScreen
             $bitmap = New-Object System.Drawing.Bitmap $bounds.Width, $bounds.Height
             $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
@@ -378,12 +853,250 @@ function Invoke-DesktopAction {
             Write-Field 'artifact_path' $resolvedArtifactPath
             return
         }
+
+        'get_clipboard_text' {
+            $clipboardText = Get-ClipboardTextSafe
+            Write-Field 'action_type' 'get_clipboard_text'
+            Write-Field 'status' 'succeeded'
+            Write-Field 'target' 'clipboard'
+            Write-Field 'headline' 'Read clipboard text.'
+            Write-Field 'clipboard_preview' (Short-Preview -Text $clipboardText)
+            return
+        }
+
+        'set_clipboard_text' {
+            Assert-NotInterrupted -Phase 'setting clipboard text'
+            Set-ClipboardTextSafe -Value $TextContent
+            Write-Field 'action_type' 'set_clipboard_text'
+            Write-Field 'status' 'succeeded'
+            Write-Field 'target' 'clipboard'
+            Write-Field 'headline' 'Updated clipboard text.'
+            Write-Field 'clipboard_preview' (Short-Preview -Text (Get-ClipboardTextSafe))
+            return
+        }
+
+        'copy_selection' {
+            $alias = $Target.Trim().ToLowerInvariant()
+            if (-not [string]::IsNullOrWhiteSpace($alias) -and -not $allowedWindowTargets.Contains($alias)) {
+                throw "Unsupported allowed input target: $alias"
+            }
+
+            $context = Resolve-InputWindowContext -Alias $alias
+            Assert-NotInterrupted -Phase "copying selection from $($context.ActiveAlias)"
+            [System.Windows.Forms.SendKeys]::SendWait('^c')
+            Wait-WithInterrupt -Milliseconds 450 -Phase 'waiting for clipboard copy'
+
+            Write-Field 'action_type' 'copy_selection'
+            Write-Field 'status' 'succeeded'
+            Write-Field 'target' ($(if ($alias) { $alias } else { $context.ActiveAlias }))
+            Write-Field 'headline' ("Copied selection from allowlisted window: {0}" -f $context.ActiveAlias)
+            Write-Field 'active_window_alias' $context.ActiveAlias
+            Write-Field 'active_window_title' $context.ActiveTitle
+            Write-Field 'clipboard_preview' (Short-Preview -Text (Get-ClipboardTextSafe))
+            return
+        }
+
+        'paste_clipboard' {
+            $alias = $Target.Trim().ToLowerInvariant()
+            if (-not [string]::IsNullOrWhiteSpace($alias) -and -not $allowedWindowTargets.Contains($alias)) {
+                throw "Unsupported allowed input target: $alias"
+            }
+
+            $context = Resolve-InputWindowContext -Alias $alias
+            $clipboardPreview = Short-Preview -Text (Get-ClipboardTextSafe)
+            Assert-NotInterrupted -Phase "pasting clipboard into $($context.ActiveAlias)"
+            [System.Windows.Forms.SendKeys]::SendWait('^v')
+            Wait-WithInterrupt -Milliseconds 250 -Phase 'waiting after clipboard paste'
+
+            Write-Field 'action_type' 'paste_clipboard'
+            Write-Field 'status' 'succeeded'
+            Write-Field 'target' ($(if ($alias) { $alias } else { $context.ActiveAlias }))
+            Write-Field 'headline' ("Pasted clipboard into allowlisted window: {0}" -f $context.ActiveAlias)
+            Write-Field 'active_window_alias' $context.ActiveAlias
+            Write-Field 'active_window_title' $context.ActiveTitle
+            Write-Field 'clipboard_preview' $clipboardPreview
+            return
+        }
+
+        'send_hotkey' {
+            $spec = Resolve-HotkeySpec -HotkeyTarget $Target
+            $context = Resolve-InputWindowContext -Alias $spec.Alias
+            Assert-NotInterrupted -Phase "sending hotkey $($spec.Hotkey)"
+            [System.Windows.Forms.SendKeys]::SendWait($spec.SendKeys)
+            Wait-WithInterrupt -Milliseconds 220 -Phase "waiting after hotkey $($spec.Hotkey)"
+
+            Write-Field 'action_type' 'send_hotkey'
+            Write-Field 'status' 'succeeded'
+            Write-Field 'target' $spec.Hotkey
+            Write-Field 'headline' ("Sent allowlisted hotkey {0} to {1}" -f $spec.Hotkey, $context.ActiveAlias)
+            Write-Field 'active_window_alias' $context.ActiveAlias
+            Write-Field 'active_window_title' $context.ActiveTitle
+            Write-Field 'sent_hotkey' $spec.Hotkey
+            return
+        }
+
+        'wait_seconds' {
+            $seconds = 0
+            if (-not [int]::TryParse($Target.Trim(), [ref]$seconds)) {
+                throw 'wait_seconds target must be an integer number of seconds.'
+            }
+            if ($seconds -lt 1 -or $seconds -gt 60) {
+                throw 'wait_seconds target must be between 1 and 60 seconds.'
+            }
+
+            Wait-WithInterrupt -Milliseconds ($seconds * 1000) -Phase "waiting $seconds second(s)"
+            Write-Field 'action_type' 'wait_seconds'
+            Write-Field 'status' 'succeeded'
+            Write-Field 'target' $seconds
+            Write-Field 'headline' ("Waited {0} second(s)." -f $seconds)
+            Write-Field 'waited_seconds' $seconds
+            return
+        }
+
+        'wait_for_window' {
+            $spec = Parse-WaitForWindowTarget -WaitTarget $Target
+            $window = Wait-ForAllowedWindowInternal -Alias $spec.Alias -TimeoutSeconds $spec.TimeoutSeconds
+            Write-Field 'action_type' 'wait_for_window'
+            Write-Field 'status' 'succeeded'
+            Write-Field 'target' $spec.Alias
+            Write-Field 'headline' ("Detected allowlisted window: {0}" -f $spec.Alias)
+            Write-Field 'wait_window_alias' $spec.Alias
+            Write-Field 'matched_window_title' $window.Title
+            Write-Field 'timeout_seconds' $spec.TimeoutSeconds
+            return
+        }
+
+        'move_mouse' {
+            $point = Parse-PointTarget -PointTarget $Target
+            if (-not [string]::IsNullOrWhiteSpace($point.Alias)) {
+                [void](Resolve-InputWindowContext -Alias $point.Alias)
+            }
+            else {
+                [void](Resolve-InputWindowContext)
+            }
+
+            Assert-NotInterrupted -Phase "moving mouse to $($point.Coordinates)"
+            if (-not [DesktopBridgeNative]::SetCursorPos($point.X, $point.Y)) {
+                throw "Windows could not move the mouse to $($point.Coordinates)"
+            }
+            Wait-WithInterrupt -Milliseconds 120 -Phase 'verifying mouse move'
+            $cursor = [System.Windows.Forms.Cursor]::Position
+            if ($cursor.X -ne $point.X -or $cursor.Y -ne $point.Y) {
+                throw "Windows did not place the mouse at the requested coordinates: $($point.Coordinates)"
+            }
+
+            Write-Field 'action_type' 'move_mouse'
+            Write-Field 'status' 'succeeded'
+            Write-Field 'target' $Target
+            Write-Field 'headline' ("Moved mouse to {0}" -f $point.Coordinates)
+            Write-Field 'coordinates' $point.Coordinates
+            return
+        }
+
+        'left_click' {
+            $point = Parse-PointTarget -PointTarget $Target
+            if (-not [string]::IsNullOrWhiteSpace($point.Alias)) {
+                [void](Resolve-InputWindowContext -Alias $point.Alias)
+            }
+            else {
+                [void](Resolve-InputWindowContext)
+            }
+
+            if (-not [DesktopBridgeNative]::SetCursorPos($point.X, $point.Y)) {
+                throw "Windows could not move the mouse to $($point.Coordinates)"
+            }
+            Wait-WithInterrupt -Milliseconds 120 -Phase 'settling mouse before left click'
+            Invoke-MouseClickSequence -DownFlag $mouseEventFlags.LEFTDOWN -UpFlag $mouseEventFlags.LEFTUP -ClickCount 1 -Phase 'left click'
+
+            Write-Field 'action_type' 'left_click'
+            Write-Field 'status' 'succeeded'
+            Write-Field 'target' $Target
+            Write-Field 'headline' ("Left click completed at {0}" -f $point.Coordinates)
+            Write-Field 'coordinates' $point.Coordinates
+            return
+        }
+
+        'double_click' {
+            $point = Parse-PointTarget -PointTarget $Target
+            if (-not [string]::IsNullOrWhiteSpace($point.Alias)) {
+                [void](Resolve-InputWindowContext -Alias $point.Alias)
+            }
+            else {
+                [void](Resolve-InputWindowContext)
+            }
+
+            if (-not [DesktopBridgeNative]::SetCursorPos($point.X, $point.Y)) {
+                throw "Windows could not move the mouse to $($point.Coordinates)"
+            }
+            Wait-WithInterrupt -Milliseconds 120 -Phase 'settling mouse before double click'
+            Invoke-MouseClickSequence -DownFlag $mouseEventFlags.LEFTDOWN -UpFlag $mouseEventFlags.LEFTUP -ClickCount 2 -Phase 'double click'
+
+            Write-Field 'action_type' 'double_click'
+            Write-Field 'status' 'succeeded'
+            Write-Field 'target' $Target
+            Write-Field 'headline' ("Double click completed at {0}" -f $point.Coordinates)
+            Write-Field 'coordinates' $point.Coordinates
+            return
+        }
+
+        'right_click' {
+            $point = Parse-PointTarget -PointTarget $Target
+            if (-not [string]::IsNullOrWhiteSpace($point.Alias)) {
+                [void](Resolve-InputWindowContext -Alias $point.Alias)
+            }
+            else {
+                [void](Resolve-InputWindowContext)
+            }
+
+            if (-not [DesktopBridgeNative]::SetCursorPos($point.X, $point.Y)) {
+                throw "Windows could not move the mouse to $($point.Coordinates)"
+            }
+            Wait-WithInterrupt -Milliseconds 120 -Phase 'settling mouse before right click'
+            Invoke-MouseClickSequence -DownFlag $mouseEventFlags.RIGHTDOWN -UpFlag $mouseEventFlags.RIGHTUP -ClickCount 1 -Phase 'right click'
+
+            Write-Field 'action_type' 'right_click'
+            Write-Field 'status' 'succeeded'
+            Write-Field 'target' $Target
+            Write-Field 'headline' ("Right click completed at {0}" -f $point.Coordinates)
+            Write-Field 'coordinates' $point.Coordinates
+            return
+        }
+
+        'scroll_mouse' {
+            $scroll = Parse-ScrollTarget -ScrollTarget $Target
+            if (-not [string]::IsNullOrWhiteSpace($scroll.Alias)) {
+                [void](Resolve-InputWindowContext -Alias $scroll.Alias)
+            }
+            else {
+                [void](Resolve-InputWindowContext)
+            }
+
+            Assert-NotInterrupted -Phase 'scrolling mouse'
+            [DesktopBridgeNative]::mouse_event($mouseEventFlags.WHEEL, 0, 0, [uint32]$scroll.Delta, [UIntPtr]::Zero)
+            Wait-WithInterrupt -Milliseconds 120 -Phase 'settling after mouse scroll'
+
+            Write-Field 'action_type' 'scroll_mouse'
+            Write-Field 'status' 'succeeded'
+            Write-Field 'target' $Target
+            Write-Field 'headline' ("Mouse scroll completed with delta {0}" -f $scroll.Delta)
+            Write-Field 'scroll_delta' $scroll.Delta
+            return
+        }
     }
 }
 
 try {
     Invoke-DesktopAction
     exit 0
+}
+catch [System.OperationCanceledException] {
+    $message = $_.Exception.Message
+    Write-Field 'action_type' $Action
+    Write-Field 'status' 'interrupted'
+    Write-Field 'target' ($(if ($Target) { $Target } else { 'none' }))
+    Write-Field 'interruption_reason' $message
+    Write-Field 'headline' ("Desktop bridge action interrupted: {0}" -f $message)
+    exit 130
 }
 catch {
     $message = $_.Exception.Message

@@ -70,6 +70,10 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Write actions and checker runs stay approval-aware, and executor results now persist with status, summary, and artifact-path visibility in task history
 - Dashboard now shows executor tasks, lets the operator queue allowlisted repo-local actions, and lets approved in-scope executor tasks run manually from the console
 - Dashboard now shows desktop bridge tasks, lets the operator queue allowlisted desktop actions, and shows persisted desktop execution results and screenshot artifacts
+- Desktop bridge now includes narrow clipboard, hotkey, wait, and mouse actions for explicit local operator control
+- Dashboard now exposes clipboard, hotkey, wait, mouse, and interrupted-task visibility for the desktop hand layer
+- Ctrl+8 now acts as a local desktop failsafe that interrupts the current desktop macro task, persists the interruption, and requires operator review before re-queueing
+- Focus-first terminal reuse is now enforced more clearly, reducing duplicate terminal-window spawning when an allowed terminal window is already open
 - No live external provider APIs yet
 - No real browser or app executor beyond the local playground yet
 - No remote auth layer yet
@@ -87,6 +91,8 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Test the safe repo executor manually from the dashboard
 - Test the workspace-boundary flow manually from the dashboard
 - Test the manual supervisor loop from the dashboard
+- Test the new clipboard, hotkey, mouse, and Ctrl+8 failsafe flows manually from the dashboard
+- Define the first small operator recipe path for Codex to ChatGPT style handoff using focus, clipboard, paste, and wait primitives
 - Decide the real desktop-control implementation path
 - Keep GitHub remote actions explicit and approval-gated
 - Prepare one internship-facing live demo from the current runtime outputs
@@ -102,4 +108,5 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Workspace policy blocks out-of-scope targets cleanly now, but there is still no explicit allowlist expansion flow yet
 - The safe repo executor is intentionally narrow and repo-bound; it is not a generic shell runner, desktop controller, or autonomy layer
 - The desktop bridge is intentionally narrow and allowlisted; it is not arbitrary desktop control, click or type automation, clipboard orchestration, or a background daemon
+- The new desktop hand layer is useful but still narrow; it only supports explicit allowlisted clipboard, hotkey, wait, and mouse actions, and it still has no freeform typing, drag-and-drop, or arbitrary UI-state inference
 - Third-party intake repos are valuable comparison material, but most of their surface area is still too heavy to adopt directly

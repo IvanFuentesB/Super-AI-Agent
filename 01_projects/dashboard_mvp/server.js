@@ -369,6 +369,7 @@ function parseDesktopBridge(stdout) {
     processVisibility: parsed.values.process_visibility === "yes",
     shellCommandCapability: parsed.values.shell_command_capability === "yes",
     launcherCapability: parsed.values.launcher_capability || "unknown",
+    failsafeHotkey: parsed.values.failsafe_hotkey || "Ctrl+8",
     desktopControlImplemented: parsed.values.desktop_control_implemented === "yes",
     availableNow: parsed.listSections.available_now || [],
     missingNow: parsed.listSections.missing_now || [],
@@ -645,6 +646,9 @@ function parseSupervisorStatus(stdout) {
   const humanNeededTasks = (parsed.listSections.human_needed_tasks || [])
     .filter((item) => item !== "none")
     .map(parseTaskStatusLine);
+  const interruptedTasks = (parsed.listSections.interrupted_tasks || [])
+    .filter((item) => item !== "none")
+    .map(parseTaskStatusLine);
   const waitingTasks = (parsed.listSections.waiting_tasks || [])
     .filter((item) => item !== "none")
     .map(parseTaskStatusLine);
@@ -655,6 +659,7 @@ function parseSupervisorStatus(stdout) {
   const status = parsed.values.status || "unknown";
   const pendingApprovalCount = Number.parseInt(parsed.values.pending_approval_count || "0", 10);
   const blockedHumanNeededCount = Number.parseInt(parsed.values.blocked_human_needed_count || "0", 10);
+  const interruptedCount = Number.parseInt(parsed.values.interrupted_count || "0", 10);
   const waitingCount = Number.parseInt(parsed.values.waiting_count || "0", 10);
   const readyToResumeCount = Number.parseInt(parsed.values.ready_to_resume_count || "0", 10);
   const queuedCount = Number.parseInt(parsed.values.queued_count || "0", 10);
@@ -671,6 +676,7 @@ function parseSupervisorStatus(stdout) {
     readyToResumeCount,
     pendingApprovalCount,
     blockedHumanNeededCount,
+    interruptedCount,
     notificationMode: parsed.values.notification_mode || "dashboard",
     notificationTitle: parsed.values.notification_title || "Supervisor status",
     lastEvent: parsed.values.last_event || "none",
@@ -678,6 +684,7 @@ function parseSupervisorStatus(stdout) {
     allowedWorkspaceRoot: parsed.values.allowed_workspace_root || "unknown",
     pendingApprovals,
     humanNeededTasks,
+    interruptedTasks,
     waitingTasks,
     readyToResumeTasks,
     headline:
@@ -685,6 +692,8 @@ function parseSupervisorStatus(stdout) {
         ? `${pendingApprovalCount} approval request(s) need review.`
         : blockedHumanNeededCount > 0
           ? `${blockedHumanNeededCount} task(s) are blocked on the human.`
+        : interruptedCount > 0
+          ? `${interruptedCount} task(s) were interrupted by the local failsafe.`
         : waitingCount > 0
           ? `${waitingCount} task(s) are waiting to resume later.`
           : readyToResumeCount > 0
@@ -907,29 +916,30 @@ function buildOperatorStatus() {
       "GitHub read status and remote-capability visibility",
       "Internship, showcase, and portfolio scaffold generation",
       "Allowlisted repo-local executor tasks for safe checker, file, and git actions",
-      "Allowlisted desktop bridge tasks for listing windows, checking the active window, focusing allowed windows, opening allowed local apps, and capturing repo-local screenshots",
+      "Allowlisted desktop bridge tasks for listing windows, checking the active window, focusing allowed windows, opening allowed local apps, capturing repo-local screenshots, clipboard reads and writes, waits, hotkeys, and narrow mouse actions",
       "Artifact preview, open, and reveal from the dashboard",
       "Browser smoke demo and visible local browser demo",
       "Desktop bridge status and safe local desktop checks",
       "Supervisor status and approval inbox visibility",
       "Approval queue review with local approve, deny, and defer actions",
-      "Manual task review, resume, and re-queue controls",
+      "Manual task review, resume, re-queue, and failsafe interruption visibility",
       "Recent artifacts and recent-action log",
     ],
     scaffoldOnly: [
       "GitHub remote write actions remain explicit and approval-gated",
       "Mail, Notion, and LinkedIn remain planning-only",
       "Personal ops packs are generated outputs, not live send or publish flows",
-      "Desktop bridge actions are narrow, allowlisted, and operator-triggered",
+      "Desktop bridge actions are narrow, allowlisted, operator-triggered, and not yet recipe-driven",
       "Notifications are local dashboard summaries only",
     ],
     notImplementedYet: [
       "Full browser executor loop",
       "Arbitrary desktop or Windows app control",
-      "General app switching, clicking, typing, or clipboard orchestration",
+      "Freeform typing, drag-and-drop, or unrestricted mouse automation",
+      "Named multi-step operator recipes or Codex to ChatGPT handoff workflows",
       "Live mail, Notion, and LinkedIn adapters",
     ],
-    nextStep: "Use the approval queue to resolve pending requests locally, then queue a narrow desktop action or repo-local action and run it manually from the selected task panel.",
+    nextStep: "Use the approval queue to clear any blocked step, then queue a narrow focus, clipboard, wait, hotkey, or mouse action and run it manually from the selected task panel.",
   };
 }
 
@@ -1449,6 +1459,8 @@ async function handleApiRequest(request, response, requestUrl) {
     let summaryHeadline = headlineMap[action] || "Task action completed.";
     if (!ok) {
       summaryHeadline = raw.stderr || raw.stdout || "Task action failed.";
+    } else if (action === "execute" && taskPayload.summary?.status === "interrupted") {
+      summaryHeadline = "Desktop action interrupted by the local failsafe.";
     } else if (
       action === "review" &&
       taskPayload.summary?.workspacePolicy === "blocked_by_workspace_policy" &&
@@ -1544,10 +1556,12 @@ async function handleApiRequest(request, response, requestUrl) {
   }
 
   if (request.method === "POST" && requestUrl.pathname === "/api/desktop-bridge/check") {
-    const payload = await buildDesktopBridgeResponse(false);
+    const requestPayload = await readJsonBody(request);
+    const runFullCheck = requestPayload.fullCheck === true && requestPayload.allowDisruptiveActions === true;
+    const payload = await buildDesktopBridgeResponse(!runFullCheck);
     pushAction({
       actionType: "desktop",
-      label: "Ran desktop bridge check",
+      label: runFullCheck ? "Ran desktop bridge check" : "Ran desktop bridge status check",
       status: payload.ok ? "success" : "error",
       summary: payload.summary.headline,
     });

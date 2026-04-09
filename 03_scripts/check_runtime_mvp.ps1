@@ -38,19 +38,26 @@ function Resolve-PythonPath {
 function Invoke-ModuleCommand {
     param(
         [string]$PythonPath,
-        [string[]]$Arguments
+        [string[]]$Arguments,
+        [hashtable]$EnvOverrides = @{}
     )
 
     $argumentsJson = ConvertTo-Json -InputObject @($Arguments) -Compress
     $argumentsEncoded = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($argumentsJson))
+    $envOverridesJson = ConvertTo-Json -InputObject $EnvOverrides -Compress -Depth 5
+    $envOverridesEncoded = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($envOverridesJson))
     $runtimeSrcEscaped = $runtimeSrc.Replace('\', '\\').Replace("'", "\\'")
     $scriptPath = [System.IO.Path]::ChangeExtension([System.IO.Path]::GetTempFileName(), '.py')
     $code = @"
 import base64
 import json
+import os
 import sys
 sys.path.insert(0, r'$runtimeSrcEscaped')
 from super_ai_agent.cli import main
+env_overrides = json.loads(base64.b64decode('$envOverridesEncoded').decode('utf-8'))
+for key, value in env_overrides.items():
+    os.environ[str(key)] = str(value)
 argv = json.loads(base64.b64decode('$argumentsEncoded').decode('utf-8'))
 raise SystemExit(main(argv))
 "@
@@ -916,6 +923,13 @@ if (-not [string]::IsNullOrWhiteSpace($desktopOpenTaskId)) {
         (($desktopOpenExecute.Output | Out-String) -match 'execution_status:\s+succeeded')
     Write-Check -Name 'Desktop executor open_allowed_app execution succeeds' -Passed $desktopOpenExecuteOk -Detail (($desktopOpenExecute.Output | Out-String).Trim())
     if (-not $desktopOpenExecuteOk) { $failed++ }
+
+    $desktopOpenStatus = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $desktopOpenTaskId)
+    $desktopOpenStatusOk = $desktopOpenStatus.ExitCode -eq 0 -and `
+        (($desktopOpenStatus.Output | Out-String) -match 'last_execution_status:\s+succeeded') -and `
+        (($desktopOpenStatus.Output | Out-String) -match 'last_execution_summary:\s+Focused existing allowlisted app window')
+    Write-Check -Name 'Desktop executor open_allowed_app reuses an existing terminal window when possible' -Passed $desktopOpenStatusOk -Detail (($desktopOpenStatus.Output | Out-String).Trim())
+    if (-not $desktopOpenStatusOk) { $failed++ }
 }
 
 Start-Sleep -Milliseconds 1200
@@ -1000,6 +1014,294 @@ if (-not [string]::IsNullOrWhiteSpace($desktopScreenshotTaskId)) {
         (($desktopScreenshotStatus.Output | Out-String) -match 'last_execution_status:\s+succeeded')
     Write-Check -Name 'Desktop executor screenshot result persists' -Passed $desktopScreenshotStatusOk -Detail (($desktopScreenshotStatus.Output | Out-String).Trim())
     if (-not $desktopScreenshotStatusOk) { $failed++ }
+}
+
+$desktopSetClipboardQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'set_clipboard_text',
+    '--content', 'runtime-desktop-clipboard-check'
+)
+$desktopSetClipboardQueueOk = $desktopSetClipboardQueue.ExitCode -eq 0 -and `
+    (($desktopSetClipboardQueue.Output | Out-String) -match 'status:\s+pending_approval') -and `
+    (($desktopSetClipboardQueue.Output | Out-String) -match 'executor_action_type:\s+set_clipboard_text')
+Write-Check -Name 'Desktop executor set_clipboard_text queues with approval' -Passed $desktopSetClipboardQueueOk -Detail (($desktopSetClipboardQueue.Output | Out-String).Trim())
+if (-not $desktopSetClipboardQueueOk) { $failed++ }
+
+$desktopSetClipboardTaskMatch = [regex]::Match(($desktopSetClipboardQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$desktopSetClipboardTaskId = if ($desktopSetClipboardTaskMatch.Success) { $desktopSetClipboardTaskMatch.Groups[1].Value } else { $null }
+$desktopSetClipboardApprovalMatch = [regex]::Match(($desktopSetClipboardQueue.Output | Out-String), 'approval_request_id:\s*(\S+)')
+$desktopSetClipboardApprovalId = if ($desktopSetClipboardApprovalMatch.Success) { $desktopSetClipboardApprovalMatch.Groups[1].Value } else { $null }
+$desktopSetClipboardIdsOk = (-not [string]::IsNullOrWhiteSpace($desktopSetClipboardTaskId)) -and (-not [string]::IsNullOrWhiteSpace($desktopSetClipboardApprovalId))
+Write-Check -Name 'Desktop executor set_clipboard_text ids parsed' -Passed $desktopSetClipboardIdsOk -Detail ($(if ($desktopSetClipboardIdsOk) { "$desktopSetClipboardTaskId | $desktopSetClipboardApprovalId" } else { 'missing set_clipboard_text task or approval id' }))
+if (-not $desktopSetClipboardIdsOk) { $failed++ }
+
+if (-not [string]::IsNullOrWhiteSpace($desktopSetClipboardApprovalId)) {
+    $desktopSetClipboardApprove = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $desktopSetClipboardApprovalId, '--note', 'runtime checker approved set_clipboard_text')
+    $desktopSetClipboardApproveOk = $desktopSetClipboardApprove.ExitCode -eq 0 -and `
+        (($desktopSetClipboardApprove.Output | Out-String) -match 'task_status:\s+queued')
+    Write-Check -Name 'Desktop executor set_clipboard_text approval persists' -Passed $desktopSetClipboardApproveOk -Detail (($desktopSetClipboardApprove.Output | Out-String).Trim())
+    if (-not $desktopSetClipboardApproveOk) { $failed++ }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($desktopSetClipboardTaskId)) {
+    $desktopSetClipboardExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $desktopSetClipboardTaskId)
+    $desktopSetClipboardExecuteOk = $desktopSetClipboardExecute.ExitCode -eq 0 -and `
+        (($desktopSetClipboardExecute.Output | Out-String) -match 'status:\s+completed') -and `
+        (($desktopSetClipboardExecute.Output | Out-String) -match 'execution_summary:\s+Updated clipboard text\.')
+    Write-Check -Name 'Desktop executor set_clipboard_text execution succeeds' -Passed $desktopSetClipboardExecuteOk -Detail (($desktopSetClipboardExecute.Output | Out-String).Trim())
+    if (-not $desktopSetClipboardExecuteOk) { $failed++ }
+}
+
+$desktopReadClipboardQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'get_clipboard_text'
+)
+$desktopReadClipboardQueueOk = $desktopReadClipboardQueue.ExitCode -eq 0 -and `
+    (($desktopReadClipboardQueue.Output | Out-String) -match 'status:\s+queued') -and `
+    (($desktopReadClipboardQueue.Output | Out-String) -match 'executor_action_type:\s+get_clipboard_text')
+Write-Check -Name 'Desktop executor get_clipboard_text queues without approval' -Passed $desktopReadClipboardQueueOk -Detail (($desktopReadClipboardQueue.Output | Out-String).Trim())
+if (-not $desktopReadClipboardQueueOk) { $failed++ }
+
+$desktopReadClipboardTaskMatch = [regex]::Match(($desktopReadClipboardQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$desktopReadClipboardTaskId = if ($desktopReadClipboardTaskMatch.Success) { $desktopReadClipboardTaskMatch.Groups[1].Value } else { $null }
+$desktopReadClipboardTaskOk = -not [string]::IsNullOrWhiteSpace($desktopReadClipboardTaskId)
+Write-Check -Name 'Desktop executor get_clipboard_text task id parsed' -Passed $desktopReadClipboardTaskOk -Detail ($(if ($desktopReadClipboardTaskOk) { $desktopReadClipboardTaskId } else { 'missing get_clipboard_text task id' }))
+if (-not $desktopReadClipboardTaskOk) { $failed++ }
+
+if ($desktopReadClipboardTaskOk) {
+    $desktopReadClipboardExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $desktopReadClipboardTaskId)
+    $desktopReadClipboardExecuteOk = $desktopReadClipboardExecute.ExitCode -eq 0 -and `
+        (($desktopReadClipboardExecute.Output | Out-String) -match 'status:\s+completed') -and `
+        (($desktopReadClipboardExecute.Output | Out-String) -match 'execution_summary:\s+Read clipboard text\.')
+    Write-Check -Name 'Desktop executor get_clipboard_text execution succeeds' -Passed $desktopReadClipboardExecuteOk -Detail (($desktopReadClipboardExecute.Output | Out-String).Trim())
+    if (-not $desktopReadClipboardExecuteOk) { $failed++ }
+
+    $desktopReadClipboardStatus = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $desktopReadClipboardTaskId)
+    $desktopReadClipboardStatusOk = $desktopReadClipboardStatus.ExitCode -eq 0 -and `
+        (($desktopReadClipboardStatus.Output | Out-String) -match 'last_execution_status:\s+succeeded') -and `
+        (($desktopReadClipboardStatus.Output | Out-String) -match 'last_execution_summary:\s+Read clipboard text\.')
+    Write-Check -Name 'Desktop executor clipboard read result persists' -Passed $desktopReadClipboardStatusOk -Detail (($desktopReadClipboardStatus.Output | Out-String).Trim())
+    if (-not $desktopReadClipboardStatusOk) { $failed++ }
+}
+
+$desktopPasteQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'paste_clipboard',
+    '--target', 'terminal'
+)
+$desktopPasteQueueOk = $desktopPasteQueue.ExitCode -eq 0 -and `
+    (($desktopPasteQueue.Output | Out-String) -match 'status:\s+pending_approval') -and `
+    (($desktopPasteQueue.Output | Out-String) -match 'executor_action_type:\s+paste_clipboard')
+Write-Check -Name 'Desktop executor paste_clipboard queues with approval' -Passed $desktopPasteQueueOk -Detail (($desktopPasteQueue.Output | Out-String).Trim())
+if (-not $desktopPasteQueueOk) { $failed++ }
+
+$desktopPasteTaskMatch = [regex]::Match(($desktopPasteQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$desktopPasteTaskId = if ($desktopPasteTaskMatch.Success) { $desktopPasteTaskMatch.Groups[1].Value } else { $null }
+$desktopPasteApprovalMatch = [regex]::Match(($desktopPasteQueue.Output | Out-String), 'approval_request_id:\s*(\S+)')
+$desktopPasteApprovalId = if ($desktopPasteApprovalMatch.Success) { $desktopPasteApprovalMatch.Groups[1].Value } else { $null }
+$desktopPasteIdsOk = (-not [string]::IsNullOrWhiteSpace($desktopPasteTaskId)) -and (-not [string]::IsNullOrWhiteSpace($desktopPasteApprovalId))
+Write-Check -Name 'Desktop executor paste_clipboard ids parsed' -Passed $desktopPasteIdsOk -Detail ($(if ($desktopPasteIdsOk) { "$desktopPasteTaskId | $desktopPasteApprovalId" } else { 'missing paste_clipboard task or approval id' }))
+if (-not $desktopPasteIdsOk) { $failed++ }
+
+if (-not [string]::IsNullOrWhiteSpace($desktopPasteApprovalId)) {
+    $desktopPasteApprove = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $desktopPasteApprovalId, '--note', 'runtime checker approved paste_clipboard')
+    $desktopPasteApproveOk = $desktopPasteApprove.ExitCode -eq 0 -and `
+        (($desktopPasteApprove.Output | Out-String) -match 'task_status:\s+queued')
+    Write-Check -Name 'Desktop executor paste_clipboard approval persists' -Passed $desktopPasteApproveOk -Detail (($desktopPasteApprove.Output | Out-String).Trim())
+    if (-not $desktopPasteApproveOk) { $failed++ }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($desktopPasteTaskId)) {
+    $desktopPasteExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $desktopPasteTaskId)
+    $desktopPasteExecuteOk = $desktopPasteExecute.ExitCode -eq 0 -and `
+        (($desktopPasteExecute.Output | Out-String) -match 'status:\s+completed') -and `
+        (($desktopPasteExecute.Output | Out-String) -match 'execution_summary:\s+Pasted clipboard into allowlisted window')
+    Write-Check -Name 'Desktop executor paste_clipboard execution succeeds' -Passed $desktopPasteExecuteOk -Detail (($desktopPasteExecute.Output | Out-String).Trim())
+    if (-not $desktopPasteExecuteOk) { $failed++ }
+}
+
+$desktopHotkeyQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'send_hotkey',
+    '--target', 'terminal|ctrl+v'
+)
+$desktopHotkeyQueueOk = $desktopHotkeyQueue.ExitCode -eq 0 -and `
+    (($desktopHotkeyQueue.Output | Out-String) -match 'status:\s+pending_approval') -and `
+    (($desktopHotkeyQueue.Output | Out-String) -match 'executor_action_type:\s+send_hotkey')
+Write-Check -Name 'Desktop executor send_hotkey queues with approval' -Passed $desktopHotkeyQueueOk -Detail (($desktopHotkeyQueue.Output | Out-String).Trim())
+if (-not $desktopHotkeyQueueOk) { $failed++ }
+
+$desktopHotkeyTaskMatch = [regex]::Match(($desktopHotkeyQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$desktopHotkeyTaskId = if ($desktopHotkeyTaskMatch.Success) { $desktopHotkeyTaskMatch.Groups[1].Value } else { $null }
+$desktopHotkeyApprovalMatch = [regex]::Match(($desktopHotkeyQueue.Output | Out-String), 'approval_request_id:\s*(\S+)')
+$desktopHotkeyApprovalId = if ($desktopHotkeyApprovalMatch.Success) { $desktopHotkeyApprovalMatch.Groups[1].Value } else { $null }
+$desktopHotkeyIdsOk = (-not [string]::IsNullOrWhiteSpace($desktopHotkeyTaskId)) -and (-not [string]::IsNullOrWhiteSpace($desktopHotkeyApprovalId))
+Write-Check -Name 'Desktop executor send_hotkey ids parsed' -Passed $desktopHotkeyIdsOk -Detail ($(if ($desktopHotkeyIdsOk) { "$desktopHotkeyTaskId | $desktopHotkeyApprovalId" } else { 'missing send_hotkey task or approval id' }))
+if (-not $desktopHotkeyIdsOk) { $failed++ }
+
+if (-not [string]::IsNullOrWhiteSpace($desktopHotkeyApprovalId)) {
+    $desktopHotkeyApprove = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $desktopHotkeyApprovalId, '--note', 'runtime checker approved send_hotkey')
+    $desktopHotkeyApproveOk = $desktopHotkeyApprove.ExitCode -eq 0 -and `
+        (($desktopHotkeyApprove.Output | Out-String) -match 'task_status:\s+queued')
+    Write-Check -Name 'Desktop executor send_hotkey approval persists' -Passed $desktopHotkeyApproveOk -Detail (($desktopHotkeyApprove.Output | Out-String).Trim())
+    if (-not $desktopHotkeyApproveOk) { $failed++ }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($desktopHotkeyTaskId)) {
+    $desktopHotkeyExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $desktopHotkeyTaskId)
+    $desktopHotkeyExecuteOk = $desktopHotkeyExecute.ExitCode -eq 0 -and `
+        (($desktopHotkeyExecute.Output | Out-String) -match 'status:\s+completed') -and `
+        (($desktopHotkeyExecute.Output | Out-String) -match 'execution_summary:\s+Sent allowlisted hotkey ctrl\+v to terminal')
+    Write-Check -Name 'Desktop executor send_hotkey execution succeeds' -Passed $desktopHotkeyExecuteOk -Detail (($desktopHotkeyExecute.Output | Out-String).Trim())
+    if (-not $desktopHotkeyExecuteOk) { $failed++ }
+}
+
+$desktopWaitForWindowQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'wait_for_window',
+    '--target', 'terminal|2'
+)
+$desktopWaitForWindowQueueOk = $desktopWaitForWindowQueue.ExitCode -eq 0 -and `
+    (($desktopWaitForWindowQueue.Output | Out-String) -match 'status:\s+queued') -and `
+    (($desktopWaitForWindowQueue.Output | Out-String) -match 'executor_action_type:\s+wait_for_window')
+Write-Check -Name 'Desktop executor wait_for_window queues without approval' -Passed $desktopWaitForWindowQueueOk -Detail (($desktopWaitForWindowQueue.Output | Out-String).Trim())
+if (-not $desktopWaitForWindowQueueOk) { $failed++ }
+
+$desktopWaitForWindowTaskMatch = [regex]::Match(($desktopWaitForWindowQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$desktopWaitForWindowTaskId = if ($desktopWaitForWindowTaskMatch.Success) { $desktopWaitForWindowTaskMatch.Groups[1].Value } else { $null }
+$desktopWaitForWindowTaskOk = -not [string]::IsNullOrWhiteSpace($desktopWaitForWindowTaskId)
+Write-Check -Name 'Desktop executor wait_for_window task id parsed' -Passed $desktopWaitForWindowTaskOk -Detail ($(if ($desktopWaitForWindowTaskOk) { $desktopWaitForWindowTaskId } else { 'missing wait_for_window task id' }))
+if (-not $desktopWaitForWindowTaskOk) { $failed++ }
+
+if ($desktopWaitForWindowTaskOk) {
+    $desktopWaitForWindowExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $desktopWaitForWindowTaskId)
+    $desktopWaitForWindowExecuteOk = $desktopWaitForWindowExecute.ExitCode -eq 0 -and `
+        (($desktopWaitForWindowExecute.Output | Out-String) -match 'status:\s+completed') -and `
+        (($desktopWaitForWindowExecute.Output | Out-String) -match 'execution_summary:\s+Detected allowlisted window: terminal')
+    Write-Check -Name 'Desktop executor wait_for_window execution succeeds' -Passed $desktopWaitForWindowExecuteOk -Detail (($desktopWaitForWindowExecute.Output | Out-String).Trim())
+    if (-not $desktopWaitForWindowExecuteOk) { $failed++ }
+}
+
+$desktopMoveMouseQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'move_mouse',
+    '--target', 'terminal|center'
+)
+$desktopMoveMouseQueueOk = $desktopMoveMouseQueue.ExitCode -eq 0 -and `
+    (($desktopMoveMouseQueue.Output | Out-String) -match 'status:\s+pending_approval') -and `
+    (($desktopMoveMouseQueue.Output | Out-String) -match 'executor_action_type:\s+move_mouse')
+Write-Check -Name 'Desktop executor move_mouse queues with approval' -Passed $desktopMoveMouseQueueOk -Detail (($desktopMoveMouseQueue.Output | Out-String).Trim())
+if (-not $desktopMoveMouseQueueOk) { $failed++ }
+
+$desktopMoveMouseTaskMatch = [regex]::Match(($desktopMoveMouseQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$desktopMoveMouseTaskId = if ($desktopMoveMouseTaskMatch.Success) { $desktopMoveMouseTaskMatch.Groups[1].Value } else { $null }
+$desktopMoveMouseApprovalMatch = [regex]::Match(($desktopMoveMouseQueue.Output | Out-String), 'approval_request_id:\s*(\S+)')
+$desktopMoveMouseApprovalId = if ($desktopMoveMouseApprovalMatch.Success) { $desktopMoveMouseApprovalMatch.Groups[1].Value } else { $null }
+$desktopMoveMouseIdsOk = (-not [string]::IsNullOrWhiteSpace($desktopMoveMouseTaskId)) -and (-not [string]::IsNullOrWhiteSpace($desktopMoveMouseApprovalId))
+Write-Check -Name 'Desktop executor move_mouse ids parsed' -Passed $desktopMoveMouseIdsOk -Detail ($(if ($desktopMoveMouseIdsOk) { "$desktopMoveMouseTaskId | $desktopMoveMouseApprovalId" } else { 'missing move_mouse task or approval id' }))
+if (-not $desktopMoveMouseIdsOk) { $failed++ }
+
+if (-not [string]::IsNullOrWhiteSpace($desktopMoveMouseApprovalId)) {
+    $desktopMoveMouseApprove = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $desktopMoveMouseApprovalId, '--note', 'runtime checker approved move_mouse')
+    $desktopMoveMouseApproveOk = $desktopMoveMouseApprove.ExitCode -eq 0 -and `
+        (($desktopMoveMouseApprove.Output | Out-String) -match 'task_status:\s+queued')
+    Write-Check -Name 'Desktop executor move_mouse approval persists' -Passed $desktopMoveMouseApproveOk -Detail (($desktopMoveMouseApprove.Output | Out-String).Trim())
+    if (-not $desktopMoveMouseApproveOk) { $failed++ }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($desktopMoveMouseTaskId)) {
+    $desktopMoveMouseExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $desktopMoveMouseTaskId)
+    $desktopMoveMouseExecuteOk = $desktopMoveMouseExecute.ExitCode -eq 0 -and `
+        (($desktopMoveMouseExecute.Output | Out-String) -match 'status:\s+completed') -and `
+        (($desktopMoveMouseExecute.Output | Out-String) -match 'execution_summary:\s+Moved mouse to')
+    Write-Check -Name 'Desktop executor move_mouse execution succeeds' -Passed $desktopMoveMouseExecuteOk -Detail (($desktopMoveMouseExecute.Output | Out-String).Trim())
+    if (-not $desktopMoveMouseExecuteOk) { $failed++ }
+}
+
+$desktopLeftClickQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'left_click',
+    '--target', 'terminal|center'
+)
+$desktopLeftClickQueueOk = $desktopLeftClickQueue.ExitCode -eq 0 -and `
+    (($desktopLeftClickQueue.Output | Out-String) -match 'status:\s+pending_approval') -and `
+    (($desktopLeftClickQueue.Output | Out-String) -match 'executor_action_type:\s+left_click')
+Write-Check -Name 'Desktop executor left_click queues with approval' -Passed $desktopLeftClickQueueOk -Detail (($desktopLeftClickQueue.Output | Out-String).Trim())
+if (-not $desktopLeftClickQueueOk) { $failed++ }
+
+$desktopLeftClickTaskMatch = [regex]::Match(($desktopLeftClickQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$desktopLeftClickTaskId = if ($desktopLeftClickTaskMatch.Success) { $desktopLeftClickTaskMatch.Groups[1].Value } else { $null }
+$desktopLeftClickApprovalMatch = [regex]::Match(($desktopLeftClickQueue.Output | Out-String), 'approval_request_id:\s*(\S+)')
+$desktopLeftClickApprovalId = if ($desktopLeftClickApprovalMatch.Success) { $desktopLeftClickApprovalMatch.Groups[1].Value } else { $null }
+$desktopLeftClickIdsOk = (-not [string]::IsNullOrWhiteSpace($desktopLeftClickTaskId)) -and (-not [string]::IsNullOrWhiteSpace($desktopLeftClickApprovalId))
+Write-Check -Name 'Desktop executor left_click ids parsed' -Passed $desktopLeftClickIdsOk -Detail ($(if ($desktopLeftClickIdsOk) { "$desktopLeftClickTaskId | $desktopLeftClickApprovalId" } else { 'missing left_click task or approval id' }))
+if (-not $desktopLeftClickIdsOk) { $failed++ }
+
+if (-not [string]::IsNullOrWhiteSpace($desktopLeftClickApprovalId)) {
+    $desktopLeftClickApprove = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $desktopLeftClickApprovalId, '--note', 'runtime checker approved left_click')
+    $desktopLeftClickApproveOk = $desktopLeftClickApprove.ExitCode -eq 0 -and `
+        (($desktopLeftClickApprove.Output | Out-String) -match 'task_status:\s+queued')
+    Write-Check -Name 'Desktop executor left_click approval persists' -Passed $desktopLeftClickApproveOk -Detail (($desktopLeftClickApprove.Output | Out-String).Trim())
+    if (-not $desktopLeftClickApproveOk) { $failed++ }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($desktopLeftClickTaskId)) {
+    $desktopLeftClickExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $desktopLeftClickTaskId)
+    $desktopLeftClickExecuteOk = $desktopLeftClickExecute.ExitCode -eq 0 -and `
+        (($desktopLeftClickExecute.Output | Out-String) -match 'status:\s+completed') -and `
+        (($desktopLeftClickExecute.Output | Out-String) -match 'execution_summary:\s+Left click completed at')
+    Write-Check -Name 'Desktop executor left_click execution succeeds' -Passed $desktopLeftClickExecuteOk -Detail (($desktopLeftClickExecute.Output | Out-String).Trim())
+    if (-not $desktopLeftClickExecuteOk) { $failed++ }
+}
+
+$desktopInterruptQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'wait_seconds',
+    '--target', '5'
+)
+$desktopInterruptQueueOk = $desktopInterruptQueue.ExitCode -eq 0 -and `
+    (($desktopInterruptQueue.Output | Out-String) -match 'status:\s+queued') -and `
+    (($desktopInterruptQueue.Output | Out-String) -match 'executor_action_type:\s+wait_seconds')
+Write-Check -Name 'Desktop executor wait_seconds queues without approval for failsafe test' -Passed $desktopInterruptQueueOk -Detail (($desktopInterruptQueue.Output | Out-String).Trim())
+if (-not $desktopInterruptQueueOk) { $failed++ }
+
+$desktopInterruptTaskMatch = [regex]::Match(($desktopInterruptQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$desktopInterruptTaskId = if ($desktopInterruptTaskMatch.Success) { $desktopInterruptTaskMatch.Groups[1].Value } else { $null }
+$desktopInterruptTaskOk = -not [string]::IsNullOrWhiteSpace($desktopInterruptTaskId)
+Write-Check -Name 'Desktop executor interrupt task id parsed' -Passed $desktopInterruptTaskOk -Detail ($(if ($desktopInterruptTaskOk) { $desktopInterruptTaskId } else { 'missing wait_seconds interrupt task id' }))
+if (-not $desktopInterruptTaskOk) { $failed++ }
+
+if ($desktopInterruptTaskOk) {
+    $desktopInterruptExecute = Invoke-ModuleCommand `
+        -PythonPath $pythonPath `
+        -Arguments @('execute-task', '--task-id', $desktopInterruptTaskId) `
+        -EnvOverrides @{ SUPER_AGENT_DESKTOP_TEST_INTERRUPT_AFTER_MS = '300' }
+    $desktopInterruptExecuteOk = $desktopInterruptExecute.ExitCode -eq 0 -and `
+        (($desktopInterruptExecute.Output | Out-String) -match 'status:\s+interrupted') -and `
+        (($desktopInterruptExecute.Output | Out-String) -match 'execution_status:\s+interrupted') -and `
+        (($desktopInterruptExecute.Output | Out-String) -match 'Ctrl\+8')
+    Write-Check -Name 'Desktop executor Ctrl+8 failsafe interruption persists' -Passed $desktopInterruptExecuteOk -Detail (($desktopInterruptExecute.Output | Out-String).Trim())
+    if (-not $desktopInterruptExecuteOk) { $failed++ }
+
+    $desktopInterruptStatus = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $desktopInterruptTaskId)
+    $desktopInterruptStatusOk = $desktopInterruptStatus.ExitCode -eq 0 -and `
+        (($desktopInterruptStatus.Output | Out-String) -match 'status:\s+interrupted') -and `
+        (($desktopInterruptStatus.Output | Out-String) -match 'last_execution_status:\s+interrupted') -and `
+        (($desktopInterruptStatus.Output | Out-String) -match 'waiting_for:\s+operator_review_after_interrupt')
+    Write-Check -Name 'Interrupted desktop task stays stopped for operator review' -Passed $desktopInterruptStatusOk -Detail (($desktopInterruptStatus.Output | Out-String).Trim())
+    if (-not $desktopInterruptStatusOk) { $failed++ }
+
+    $desktopInterruptReview = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('review-task', '--task-id', $desktopInterruptTaskId, '--note', 'runtime checker reviewed the interrupted desktop task')
+    $desktopInterruptReviewOk = $desktopInterruptReview.ExitCode -eq 0 -and `
+        (($desktopInterruptReview.Output | Out-String) -match 'status:\s+ready_to_resume')
+    Write-Check -Name 'Interrupted desktop task can be marked reviewed manually' -Passed $desktopInterruptReviewOk -Detail (($desktopInterruptReview.Output | Out-String).Trim())
+    if (-not $desktopInterruptReviewOk) { $failed++ }
+
+    $desktopInterruptRequeue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('requeue-task', '--task-id', $desktopInterruptTaskId, '--note', 'runtime checker re-queued the interrupted desktop task')
+    $desktopInterruptRequeueOk = $desktopInterruptRequeue.ExitCode -eq 0 -and `
+        (($desktopInterruptRequeue.Output | Out-String) -match 'status:\s+queued')
+    Write-Check -Name 'Interrupted desktop task only continues after explicit re-queue' -Passed $desktopInterruptRequeueOk -Detail (($desktopInterruptRequeue.Output | Out-String).Trim())
+    if (-not $desktopInterruptRequeueOk) { $failed++ }
 }
 
 $desktopInvalidTarget = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(

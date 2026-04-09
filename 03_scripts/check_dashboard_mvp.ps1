@@ -1,5 +1,9 @@
 # Local dashboard MVP checker with safe local-only behavior.
 
+param(
+    [switch]$RuntimeLockSafe
+)
+
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
@@ -99,19 +103,26 @@ function Resolve-PythonPath {
 function Invoke-ModuleCommand {
     param(
         [string]$PythonPath,
-        [string[]]$Arguments
+        [string[]]$Arguments,
+        [hashtable]$EnvOverrides = @{}
     )
 
     $argumentsJson = ConvertTo-Json -InputObject @($Arguments) -Compress
     $argumentsEncoded = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($argumentsJson))
+    $envOverridesJson = ConvertTo-Json -InputObject $EnvOverrides -Compress -Depth 5
+    $envOverridesEncoded = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($envOverridesJson))
     $runtimeSrcEscaped = $runtimeSrc.Replace('\', '\\').Replace("'", "\\'")
     $scriptPath = [System.IO.Path]::ChangeExtension([System.IO.Path]::GetTempFileName(), '.py')
     $code = @"
 import base64
 import json
+import os
 import sys
 sys.path.insert(0, r'$runtimeSrcEscaped')
 from super_ai_agent.cli import main
+env_overrides = json.loads(base64.b64decode('$envOverridesEncoded').decode('utf-8'))
+for key, value in env_overrides.items():
+    os.environ[str(key)] = str(value)
 argv = json.loads(base64.b64decode('$argumentsEncoded').decode('utf-8'))
 raise SystemExit(main(argv))
 "@
@@ -306,6 +317,10 @@ try {
     Write-Check -Name 'Executor task list endpoint' -Passed $executorListOk -Detail ($(if ($executorListOk) { $executorList.summary.headline } else { 'executor task list missing structured output' }))
     if (-not $executorListOk) { $failed++ }
 
+    if ($RuntimeLockSafe) {
+        Write-Check -Name 'Runtime-lock-safe dashboard mode' -Passed $true -Detail 'Skipped dashboard actions that mutate runtime state because this checker is running inside the repo executor lock.'
+    }
+    else {
     $approvalQueueSeed = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('enqueue', '--title', 'dashboard checker approval task', '--description', 'Validate dashboard approval queue actions.', '--risk', 'ask')
     $approvalQueueSeedOk = $approvalQueueSeed.ExitCode -eq 0
     Write-Check -Name 'Seed approval for dashboard test' -Passed $approvalQueueSeedOk -Detail (($approvalQueueSeed.Output | Out-String).Trim())
@@ -730,6 +745,13 @@ try {
             $desktopOpenExecute.task.lastExecutionStatus -eq 'succeeded'
         Write-Check -Name 'Desktop open_allowed_app execution endpoint' -Passed $desktopOpenExecuteOk -Detail ($(if ($desktopOpenExecuteOk) { $desktopOpenExecute.summary.headline } else { 'desktop open_allowed_app execute failed' }))
         if (-not $desktopOpenExecuteOk) { $failed++ }
+
+        $desktopOpenDetail = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/item?taskId=$desktopOpenTaskId" -Method Get -TimeoutSec 30
+        $desktopOpenDetailOk = $desktopOpenDetail.ok -and `
+            $desktopOpenDetail.summary.lastExecutionStatus -eq 'succeeded' -and `
+            $desktopOpenDetail.summary.lastExecutionSummary -match 'Focused existing allowlisted app window'
+        Write-Check -Name 'Desktop open_allowed_app result reflects focus-first reuse' -Passed $desktopOpenDetailOk -Detail ($(if ($desktopOpenDetailOk) { $desktopOpenDetail.summary.lastExecutionSummary } else { 'desktop open_allowed_app did not report focused existing window reuse' }))
+        if (-not $desktopOpenDetailOk) { $failed++ }
     }
 
     Start-Sleep -Milliseconds 1200
@@ -823,6 +845,249 @@ try {
             $desktopScreenshotDetail.summary.lastArtifactPath -eq $desktopArtifactPath
         Write-Check -Name 'Desktop screenshot result persists in task detail' -Passed $desktopScreenshotDetailOk -Detail ($(if ($desktopScreenshotDetailOk) { $desktopScreenshotDetail.summary.lastArtifactPath } else { 'desktop screenshot result not persisted' }))
         if (-not $desktopScreenshotDetailOk) { $failed++ }
+    }
+
+    $desktopSetClipboardPayload = @{
+        actionType = 'set_clipboard_text'
+        content = 'dashboard-desktop-clipboard-check'
+    } | ConvertTo-Json
+    $desktopSetClipboardQueue = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/executor/queue" -Method Post -ContentType 'application/json' -Body $desktopSetClipboardPayload -TimeoutSec 30
+    $desktopSetClipboardQueueOk = $desktopSetClipboardQueue.ok -and `
+        $desktopSetClipboardQueue.localOnly -and `
+        $desktopSetClipboardQueue.task.status -eq 'pending_approval' -and `
+        $desktopSetClipboardQueue.task.executorActionType -eq 'set_clipboard_text'
+    Write-Check -Name 'Desktop set_clipboard_text queue endpoint' -Passed $desktopSetClipboardQueueOk -Detail ($(if ($desktopSetClipboardQueueOk) { $desktopSetClipboardQueue.summary.headline } else { 'desktop set_clipboard_text queue failed' }))
+    if (-not $desktopSetClipboardQueueOk) { $failed++ }
+
+    $desktopSetClipboardTaskId = $desktopSetClipboardQueue.summary.taskId
+    $desktopSetClipboardApprovalId = if ($null -ne $desktopSetClipboardQueue.task) { $desktopSetClipboardQueue.task.approvalRequestId } else { $null }
+    $desktopSetClipboardIdsOk = (-not [string]::IsNullOrWhiteSpace($desktopSetClipboardTaskId)) -and (-not [string]::IsNullOrWhiteSpace($desktopSetClipboardApprovalId)) -and ($desktopSetClipboardApprovalId -ne 'none')
+    Write-Check -Name 'Desktop set_clipboard_text ids returned' -Passed $desktopSetClipboardIdsOk -Detail ($(if ($desktopSetClipboardIdsOk) { "$desktopSetClipboardTaskId | $desktopSetClipboardApprovalId" } else { 'desktop set_clipboard_text ids missing' }))
+    if (-not $desktopSetClipboardIdsOk) { $failed++ }
+
+    if ($desktopSetClipboardIdsOk) {
+        $desktopSetClipboardApprovePayload = @{
+            approvalId = $desktopSetClipboardApprovalId
+            decision = 'approve'
+            note = 'dashboard checker approved set_clipboard_text'
+        } | ConvertTo-Json
+        $desktopSetClipboardApprove = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/approvals/decision" -Method Post -ContentType 'application/json' -Body $desktopSetClipboardApprovePayload -TimeoutSec 30
+        $desktopSetClipboardApproveOk = $desktopSetClipboardApprove.ok -and $desktopSetClipboardApprove.approval.status -eq 'approved'
+        Write-Check -Name 'Desktop set_clipboard_text approval endpoint' -Passed $desktopSetClipboardApproveOk -Detail ($(if ($desktopSetClipboardApproveOk) { $desktopSetClipboardApprove.summary.headline } else { 'desktop set_clipboard_text approval failed' }))
+        if (-not $desktopSetClipboardApproveOk) { $failed++ }
+
+        $desktopSetClipboardExecutePayload = @{
+            taskId = $desktopSetClipboardTaskId
+            action = 'execute'
+        } | ConvertTo-Json
+        $desktopSetClipboardExecute = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $desktopSetClipboardExecutePayload -TimeoutSec 30
+        $desktopSetClipboardExecuteOk = $desktopSetClipboardExecute.ok -and `
+            $desktopSetClipboardExecute.task.status -eq 'completed' -and `
+            $desktopSetClipboardExecute.task.lastExecutionStatus -eq 'succeeded'
+        Write-Check -Name 'Desktop set_clipboard_text execution endpoint' -Passed $desktopSetClipboardExecuteOk -Detail ($(if ($desktopSetClipboardExecuteOk) { $desktopSetClipboardExecute.summary.headline } else { 'desktop set_clipboard_text execute failed' }))
+        if (-not $desktopSetClipboardExecuteOk) { $failed++ }
+    }
+
+    $desktopReadClipboardPayload = @{
+        actionType = 'get_clipboard_text'
+    } | ConvertTo-Json
+    $desktopReadClipboardQueue = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/executor/queue" -Method Post -ContentType 'application/json' -Body $desktopReadClipboardPayload -TimeoutSec 30
+    $desktopReadClipboardQueueOk = $desktopReadClipboardQueue.ok -and `
+        $desktopReadClipboardQueue.localOnly -and `
+        $desktopReadClipboardQueue.task.status -eq 'queued' -and `
+        $desktopReadClipboardQueue.task.executorActionType -eq 'get_clipboard_text'
+    Write-Check -Name 'Desktop get_clipboard_text queue endpoint' -Passed $desktopReadClipboardQueueOk -Detail ($(if ($desktopReadClipboardQueueOk) { $desktopReadClipboardQueue.summary.headline } else { 'desktop get_clipboard_text queue failed' }))
+    if (-not $desktopReadClipboardQueueOk) { $failed++ }
+
+    $desktopReadClipboardTaskId = $desktopReadClipboardQueue.summary.taskId
+    $desktopReadClipboardTaskIdOk = -not [string]::IsNullOrWhiteSpace($desktopReadClipboardTaskId)
+    Write-Check -Name 'Desktop get_clipboard_text task id returned' -Passed $desktopReadClipboardTaskIdOk -Detail ($(if ($desktopReadClipboardTaskIdOk) { $desktopReadClipboardTaskId } else { 'desktop get_clipboard_text task id missing' }))
+    if (-not $desktopReadClipboardTaskIdOk) { $failed++ }
+
+    if ($desktopReadClipboardTaskIdOk) {
+        $desktopReadClipboardExecutePayload = @{
+            taskId = $desktopReadClipboardTaskId
+            action = 'execute'
+        } | ConvertTo-Json
+        $desktopReadClipboardExecute = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $desktopReadClipboardExecutePayload -TimeoutSec 30
+        $desktopReadClipboardExecuteOk = $desktopReadClipboardExecute.ok -and `
+            $desktopReadClipboardExecute.task.status -eq 'completed' -and `
+            $desktopReadClipboardExecute.task.lastExecutionStatus -eq 'succeeded'
+        Write-Check -Name 'Desktop get_clipboard_text execution endpoint' -Passed $desktopReadClipboardExecuteOk -Detail ($(if ($desktopReadClipboardExecuteOk) { $desktopReadClipboardExecute.summary.headline } else { 'desktop get_clipboard_text execute failed' }))
+        if (-not $desktopReadClipboardExecuteOk) { $failed++ }
+
+        $desktopReadClipboardDetail = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/item?taskId=$desktopReadClipboardTaskId" -Method Get -TimeoutSec 30
+        $desktopReadClipboardDetailOk = $desktopReadClipboardDetail.ok -and `
+            $desktopReadClipboardDetail.summary.lastExecutionSummary -match 'Read clipboard text'
+        Write-Check -Name 'Desktop get_clipboard_text result persists in task detail' -Passed $desktopReadClipboardDetailOk -Detail ($(if ($desktopReadClipboardDetailOk) { $desktopReadClipboardDetail.summary.lastExecutionSummary } else { 'desktop clipboard read result not persisted' }))
+        if (-not $desktopReadClipboardDetailOk) { $failed++ }
+    }
+
+    $desktopHotkeyPayload = @{
+        actionType = 'send_hotkey'
+        target = 'terminal|ctrl+v'
+    } | ConvertTo-Json
+    $desktopHotkeyQueue = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/executor/queue" -Method Post -ContentType 'application/json' -Body $desktopHotkeyPayload -TimeoutSec 30
+    $desktopHotkeyQueueOk = $desktopHotkeyQueue.ok -and `
+        $desktopHotkeyQueue.localOnly -and `
+        $desktopHotkeyQueue.task.status -eq 'pending_approval' -and `
+        $desktopHotkeyQueue.task.executorActionType -eq 'send_hotkey'
+    Write-Check -Name 'Desktop send_hotkey queue endpoint' -Passed $desktopHotkeyQueueOk -Detail ($(if ($desktopHotkeyQueueOk) { $desktopHotkeyQueue.summary.headline } else { 'desktop send_hotkey queue failed' }))
+    if (-not $desktopHotkeyQueueOk) { $failed++ }
+
+    $desktopHotkeyTaskId = $desktopHotkeyQueue.summary.taskId
+    $desktopHotkeyApprovalId = if ($null -ne $desktopHotkeyQueue.task) { $desktopHotkeyQueue.task.approvalRequestId } else { $null }
+    $desktopHotkeyIdsOk = (-not [string]::IsNullOrWhiteSpace($desktopHotkeyTaskId)) -and (-not [string]::IsNullOrWhiteSpace($desktopHotkeyApprovalId)) -and ($desktopHotkeyApprovalId -ne 'none')
+    Write-Check -Name 'Desktop send_hotkey ids returned' -Passed $desktopHotkeyIdsOk -Detail ($(if ($desktopHotkeyIdsOk) { "$desktopHotkeyTaskId | $desktopHotkeyApprovalId" } else { 'desktop send_hotkey ids missing' }))
+    if (-not $desktopHotkeyIdsOk) { $failed++ }
+
+    if ($desktopHotkeyIdsOk) {
+        $desktopHotkeyApprovePayload = @{
+            approvalId = $desktopHotkeyApprovalId
+            decision = 'approve'
+            note = 'dashboard checker approved send_hotkey'
+        } | ConvertTo-Json
+        $desktopHotkeyApprove = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/approvals/decision" -Method Post -ContentType 'application/json' -Body $desktopHotkeyApprovePayload -TimeoutSec 30
+        $desktopHotkeyApproveOk = $desktopHotkeyApprove.ok -and $desktopHotkeyApprove.approval.status -eq 'approved'
+        Write-Check -Name 'Desktop send_hotkey approval endpoint' -Passed $desktopHotkeyApproveOk -Detail ($(if ($desktopHotkeyApproveOk) { $desktopHotkeyApprove.summary.headline } else { 'desktop send_hotkey approval failed' }))
+        if (-not $desktopHotkeyApproveOk) { $failed++ }
+
+        $desktopHotkeyExecutePayload = @{
+            taskId = $desktopHotkeyTaskId
+            action = 'execute'
+        } | ConvertTo-Json
+        $desktopHotkeyExecute = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $desktopHotkeyExecutePayload -TimeoutSec 30
+        $desktopHotkeyExecuteOk = $desktopHotkeyExecute.ok -and `
+            $desktopHotkeyExecute.task.status -eq 'completed' -and `
+            $desktopHotkeyExecute.task.lastExecutionStatus -eq 'succeeded'
+        Write-Check -Name 'Desktop send_hotkey execution endpoint' -Passed $desktopHotkeyExecuteOk -Detail ($(if ($desktopHotkeyExecuteOk) { $desktopHotkeyExecute.summary.headline } else { 'desktop send_hotkey execute failed' }))
+        if (-not $desktopHotkeyExecuteOk) { $failed++ }
+    }
+
+    $desktopMoveMousePayload = @{
+        actionType = 'move_mouse'
+        target = 'terminal|center'
+    } | ConvertTo-Json
+    $desktopMoveMouseQueue = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/executor/queue" -Method Post -ContentType 'application/json' -Body $desktopMoveMousePayload -TimeoutSec 30
+    $desktopMoveMouseQueueOk = $desktopMoveMouseQueue.ok -and `
+        $desktopMoveMouseQueue.localOnly -and `
+        $desktopMoveMouseQueue.task.status -eq 'pending_approval' -and `
+        $desktopMoveMouseQueue.task.executorActionType -eq 'move_mouse'
+    Write-Check -Name 'Desktop move_mouse queue endpoint' -Passed $desktopMoveMouseQueueOk -Detail ($(if ($desktopMoveMouseQueueOk) { $desktopMoveMouseQueue.summary.headline } else { 'desktop move_mouse queue failed' }))
+    if (-not $desktopMoveMouseQueueOk) { $failed++ }
+
+    $desktopMoveMouseTaskId = $desktopMoveMouseQueue.summary.taskId
+    $desktopMoveMouseApprovalId = if ($null -ne $desktopMoveMouseQueue.task) { $desktopMoveMouseQueue.task.approvalRequestId } else { $null }
+    $desktopMoveMouseIdsOk = (-not [string]::IsNullOrWhiteSpace($desktopMoveMouseTaskId)) -and (-not [string]::IsNullOrWhiteSpace($desktopMoveMouseApprovalId)) -and ($desktopMoveMouseApprovalId -ne 'none')
+    Write-Check -Name 'Desktop move_mouse ids returned' -Passed $desktopMoveMouseIdsOk -Detail ($(if ($desktopMoveMouseIdsOk) { "$desktopMoveMouseTaskId | $desktopMoveMouseApprovalId" } else { 'desktop move_mouse ids missing' }))
+    if (-not $desktopMoveMouseIdsOk) { $failed++ }
+
+    if ($desktopMoveMouseIdsOk) {
+        $desktopMoveMouseApprovePayload = @{
+            approvalId = $desktopMoveMouseApprovalId
+            decision = 'approve'
+            note = 'dashboard checker approved move_mouse'
+        } | ConvertTo-Json
+        $desktopMoveMouseApprove = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/approvals/decision" -Method Post -ContentType 'application/json' -Body $desktopMoveMouseApprovePayload -TimeoutSec 30
+        $desktopMoveMouseApproveOk = $desktopMoveMouseApprove.ok -and $desktopMoveMouseApprove.approval.status -eq 'approved'
+        Write-Check -Name 'Desktop move_mouse approval endpoint' -Passed $desktopMoveMouseApproveOk -Detail ($(if ($desktopMoveMouseApproveOk) { $desktopMoveMouseApprove.summary.headline } else { 'desktop move_mouse approval failed' }))
+        if (-not $desktopMoveMouseApproveOk) { $failed++ }
+
+        $desktopMoveMouseExecutePayload = @{
+            taskId = $desktopMoveMouseTaskId
+            action = 'execute'
+        } | ConvertTo-Json
+        $desktopMoveMouseExecute = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $desktopMoveMouseExecutePayload -TimeoutSec 30
+        $desktopMoveMouseExecuteOk = $desktopMoveMouseExecute.ok -and `
+            $desktopMoveMouseExecute.task.status -eq 'completed' -and `
+            $desktopMoveMouseExecute.task.lastExecutionStatus -eq 'succeeded'
+        Write-Check -Name 'Desktop move_mouse execution endpoint' -Passed $desktopMoveMouseExecuteOk -Detail ($(if ($desktopMoveMouseExecuteOk) { $desktopMoveMouseExecute.summary.headline } else { 'desktop move_mouse execute failed' }))
+        if (-not $desktopMoveMouseExecuteOk) { $failed++ }
+    }
+
+    $desktopLeftClickPayload = @{
+        actionType = 'left_click'
+        target = 'terminal|center'
+    } | ConvertTo-Json
+    $desktopLeftClickQueue = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/executor/queue" -Method Post -ContentType 'application/json' -Body $desktopLeftClickPayload -TimeoutSec 30
+    $desktopLeftClickQueueOk = $desktopLeftClickQueue.ok -and `
+        $desktopLeftClickQueue.localOnly -and `
+        $desktopLeftClickQueue.task.status -eq 'pending_approval' -and `
+        $desktopLeftClickQueue.task.executorActionType -eq 'left_click'
+    Write-Check -Name 'Desktop left_click queue endpoint' -Passed $desktopLeftClickQueueOk -Detail ($(if ($desktopLeftClickQueueOk) { $desktopLeftClickQueue.summary.headline } else { 'desktop left_click queue failed' }))
+    if (-not $desktopLeftClickQueueOk) { $failed++ }
+
+    $desktopLeftClickTaskId = $desktopLeftClickQueue.summary.taskId
+    $desktopLeftClickApprovalId = if ($null -ne $desktopLeftClickQueue.task) { $desktopLeftClickQueue.task.approvalRequestId } else { $null }
+    $desktopLeftClickIdsOk = (-not [string]::IsNullOrWhiteSpace($desktopLeftClickTaskId)) -and (-not [string]::IsNullOrWhiteSpace($desktopLeftClickApprovalId)) -and ($desktopLeftClickApprovalId -ne 'none')
+    Write-Check -Name 'Desktop left_click ids returned' -Passed $desktopLeftClickIdsOk -Detail ($(if ($desktopLeftClickIdsOk) { "$desktopLeftClickTaskId | $desktopLeftClickApprovalId" } else { 'desktop left_click ids missing' }))
+    if (-not $desktopLeftClickIdsOk) { $failed++ }
+
+    if ($desktopLeftClickIdsOk) {
+        $desktopLeftClickApprovePayload = @{
+            approvalId = $desktopLeftClickApprovalId
+            decision = 'approve'
+            note = 'dashboard checker approved left_click'
+        } | ConvertTo-Json
+        $desktopLeftClickApprove = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/approvals/decision" -Method Post -ContentType 'application/json' -Body $desktopLeftClickApprovePayload -TimeoutSec 30
+        $desktopLeftClickApproveOk = $desktopLeftClickApprove.ok -and $desktopLeftClickApprove.approval.status -eq 'approved'
+        Write-Check -Name 'Desktop left_click approval endpoint' -Passed $desktopLeftClickApproveOk -Detail ($(if ($desktopLeftClickApproveOk) { $desktopLeftClickApprove.summary.headline } else { 'desktop left_click approval failed' }))
+        if (-not $desktopLeftClickApproveOk) { $failed++ }
+
+        $desktopLeftClickExecutePayload = @{
+            taskId = $desktopLeftClickTaskId
+            action = 'execute'
+        } | ConvertTo-Json
+        $desktopLeftClickExecute = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $desktopLeftClickExecutePayload -TimeoutSec 30
+        $desktopLeftClickExecuteOk = $desktopLeftClickExecute.ok -and `
+            $desktopLeftClickExecute.task.status -eq 'completed' -and `
+            $desktopLeftClickExecute.task.lastExecutionStatus -eq 'succeeded'
+        Write-Check -Name 'Desktop left_click execution endpoint' -Passed $desktopLeftClickExecuteOk -Detail ($(if ($desktopLeftClickExecuteOk) { $desktopLeftClickExecute.summary.headline } else { 'desktop left_click execute failed' }))
+        if (-not $desktopLeftClickExecuteOk) { $failed++ }
+    }
+
+    $desktopInterruptSeed = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+        'queue-executor-action',
+        '--action-type', 'wait_seconds',
+        '--target', '5'
+    )
+    $desktopInterruptSeedOk = $desktopInterruptSeed.ExitCode -eq 0 -and `
+        (($desktopInterruptSeed.Output | Out-String) -match 'status:\s+queued') -and `
+        (($desktopInterruptSeed.Output | Out-String) -match 'executor_action_type:\s+wait_seconds')
+    Write-Check -Name 'Desktop interrupt seed task queued' -Passed $desktopInterruptSeedOk -Detail (($desktopInterruptSeed.Output | Out-String).Trim())
+    if (-not $desktopInterruptSeedOk) { $failed++ }
+
+    $desktopInterruptTaskMatch = [regex]::Match(($desktopInterruptSeed.Output | Out-String), 'task_id:\s*(\S+)')
+    $desktopInterruptTaskId = if ($desktopInterruptTaskMatch.Success) { $desktopInterruptTaskMatch.Groups[1].Value } else { $null }
+    $desktopInterruptTaskOk = -not [string]::IsNullOrWhiteSpace($desktopInterruptTaskId)
+    Write-Check -Name 'Desktop interrupt task id returned' -Passed $desktopInterruptTaskOk -Detail ($(if ($desktopInterruptTaskOk) { $desktopInterruptTaskId } else { 'desktop interrupt task id missing' }))
+    if (-not $desktopInterruptTaskOk) { $failed++ }
+
+    if ($desktopInterruptTaskOk) {
+        $desktopInterruptExecute = Invoke-ModuleCommand `
+            -PythonPath $pythonPath `
+            -Arguments @('execute-task', '--task-id', $desktopInterruptTaskId) `
+            -EnvOverrides @{ SUPER_AGENT_DESKTOP_TEST_INTERRUPT_AFTER_MS = '300' }
+        $desktopInterruptExecuteOk = $desktopInterruptExecute.ExitCode -eq 0 -and `
+            (($desktopInterruptExecute.Output | Out-String) -match 'status:\s+interrupted') -and `
+            (($desktopInterruptExecute.Output | Out-String) -match 'execution_status:\s+interrupted')
+        Write-Check -Name 'Desktop interrupt seed executes into interrupted state' -Passed $desktopInterruptExecuteOk -Detail (($desktopInterruptExecute.Output | Out-String).Trim())
+        if (-not $desktopInterruptExecuteOk) { $failed++ }
+
+        $supervisorAfterInterrupt = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/supervisor/status" -Method Get -TimeoutSec 30
+        $supervisorAfterInterruptOk = $supervisorAfterInterrupt.ok -and `
+            $supervisorAfterInterrupt.summary.interruptedTasks.taskId -contains $desktopInterruptTaskId
+        Write-Check -Name 'Interrupted desktop task is visible in supervisor status' -Passed $supervisorAfterInterruptOk -Detail ($(if ($supervisorAfterInterruptOk) { $desktopInterruptTaskId } else { 'interrupted desktop task missing from supervisor status' }))
+        if (-not $supervisorAfterInterruptOk) { $failed++ }
+
+        $desktopInterruptDetail = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/item?taskId=$desktopInterruptTaskId" -Method Get -TimeoutSec 30
+        $desktopInterruptDetailOk = $desktopInterruptDetail.ok -and `
+            $desktopInterruptDetail.summary.status -eq 'interrupted' -and `
+            $desktopInterruptDetail.summary.lastExecutionStatus -eq 'interrupted' -and `
+            $desktopInterruptDetail.summary.blockedReason -match 'Ctrl\+8'
+        Write-Check -Name 'Interrupted desktop task detail shows failsafe reason' -Passed $desktopInterruptDetailOk -Detail ($(if ($desktopInterruptDetailOk) { $desktopInterruptDetail.summary.blockedReason } else { 'interrupted desktop task detail missing failsafe reason' }))
+        if (-not $desktopInterruptDetailOk) { $failed++ }
+    }
     }
 
     $recentActions = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/recent-actions" -Method Get -TimeoutSec 30

@@ -34,22 +34,24 @@
 - [x] Manual supervisor loop and task state controls exist
 - [x] Safe repo-local executor exists
 - [x] Safe local desktop bridge actions exist
+- [x] Safe local desktop input, mouse actions, and Ctrl+8 failsafe exist
 
 ## Current Control Layer
 - Continue for local context/rules
 - Codex for execution and Git workflow
 
 ## Current Branch
-- feat/desktop-bridge-actions
+- feat/desktop-input-mouse-failsafe
 
 ## Current Phase
-- safe local desktop bridge actions for allowlisted window, app, and screenshot operations
+- safe local desktop hand layer for allowlisted window focus, clipboard, hotkey, wait, mouse, and failsafe operations
 
 ## Next Milestones
 - test the safe repo executor manually from the operator console
-- test the desktop bridge actions manually from the operator console
+- test the desktop bridge hand layer manually from the operator console
 - test the workspace-boundary flow manually from the operator console
 - test the manual supervisor loop from the operator console
+- define the first tiny operator recipe or Codex-to-ChatGPT handoff path using focus, clipboard, paste, and wait primitives
 - design an explicit allowlist-expansion or workspace-override path later
 - add a real notification channel later
 - choose the real desktop-control implementation path
@@ -73,7 +75,7 @@
 - live remote GitHub mutation is possible in this environment, so approval discipline remains critical
 - browser visible demo, artifact UX, desktop bridge foundation, supervisor inbox, and manual task-control loop now exist, but browser and app execution beyond the local playground are still research-only
 - the safe repo executor is intentionally narrow and repo-bound, and it still is not a generic shell runner or full executor
-- the desktop bridge is intentionally narrow and allowlisted, and it still is not arbitrary desktop control or autonomous computer use
+- the desktop bridge is intentionally narrow and allowlisted, and it still is not arbitrary desktop control, freeform typing, drag-and-drop, or autonomous computer use
 
 ## Last Reviewed
-- 2026-04-07
+- 2026-04-09

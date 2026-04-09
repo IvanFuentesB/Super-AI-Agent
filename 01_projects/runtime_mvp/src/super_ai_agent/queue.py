@@ -34,8 +34,27 @@ ALLOWED_EXECUTOR_ACTIONS = set(MODEL_EXECUTOR_ACTION_TYPES)
 READ_ONLY_EXECUTOR_ACTIONS = {"read_file", "list_directory", "git_status", "git_diff"}
 WRITE_EXECUTOR_ACTIONS = {"write_file", "append_file", "create_artifact"}
 CHECKER_EXECUTOR_ACTIONS = {"run_checker"}
-DESKTOP_OBSERVATION_ACTIONS = {"list_windows", "get_active_window"}
-DESKTOP_VISIBLE_ACTIONS = {"focus_window", "open_allowed_app", "capture_desktop_screenshot"}
+DESKTOP_OBSERVATION_ACTIONS = {
+    "list_windows",
+    "get_active_window",
+    "get_clipboard_text",
+    "wait_seconds",
+    "wait_for_window",
+}
+DESKTOP_VISIBLE_ACTIONS = {
+    "focus_window",
+    "open_allowed_app",
+    "capture_desktop_screenshot",
+    "set_clipboard_text",
+    "copy_selection",
+    "paste_clipboard",
+    "send_hotkey",
+    "move_mouse",
+    "left_click",
+    "double_click",
+    "right_click",
+    "scroll_mouse",
+}
 DESKTOP_EXECUTOR_ACTIONS = DESKTOP_OBSERVATION_ACTIONS | DESKTOP_VISIBLE_ACTIONS
 ALLOWED_CHECKER_TARGETS = {
     "runtime": "check_runtime_mvp.ps1",
@@ -43,8 +62,13 @@ ALLOWED_CHECKER_TARGETS = {
 }
 ALLOWED_DESKTOP_FOCUS_TARGETS = {"cursor", "vscode", "terminal", "dashboard_browser"}
 ALLOWED_DESKTOP_APP_TARGETS = {"cursor", "vscode", "terminal", "dashboard_browser"}
+ALLOWED_DESKTOP_HOTKEYS = {"ctrl+c", "ctrl+v", "ctrl+l", "enter", "escape"}
 QUEUEABLE_TASK_STATUSES = {"queued", "running", "waiting", "blocked_human_needed", "ready_to_resume"}
 WINDOWS_ABSOLUTE_PATH_PATTERN = re.compile(r"(?i)\b[A-Z]:\\[^\s\"'<>|?*]+")
+
+
+class DesktopActionInterrupted(RuntimeError):
+    """Raised when a desktop bridge action is interrupted by the local failsafe."""
 
 
 def _now() -> str:
@@ -109,6 +133,8 @@ def _task_next_action(task: Task) -> str:
         if task.workspace_policy == "blocked_by_workspace_policy":
             return "Keep blocked until the target is moved inside the workspace or policy changes."
         return "Mark the human-needed step as reviewed."
+    if task.status == "interrupted":
+        return "Inspect the interruption reason, then mark the task reviewed before re-queueing it."
     if task.status == "waiting":
         return "Resume the task when the reply or external event arrives."
     if task.status == "ready_to_resume":
@@ -281,6 +307,96 @@ def _resolve_executor_path(target: str) -> Path:
     return candidate.resolve(strict=False)
 
 
+def _split_alias_payload(target: str) -> tuple[str, str]:
+    normalized = (target or "").strip().lower()
+    if "|" not in normalized:
+        return "", normalized
+    alias, payload = normalized.split("|", 1)
+    return alias.strip(), payload.strip()
+
+
+def _require_positive_int(
+    raw_value: str,
+    *,
+    label: str,
+    minimum: int,
+    maximum: int,
+) -> int:
+    try:
+        value = int(str(raw_value).strip())
+    except ValueError as exc:
+        raise ValueError(f"{label} must be an integer.") from exc
+
+    if value < minimum or value > maximum:
+        raise ValueError(f"{label} must be between {minimum} and {maximum}.")
+    return value
+
+
+def _normalize_optional_window_target(
+    raw_target: str,
+    *,
+    action_type: str,
+) -> str:
+    normalized = (raw_target or "").strip().lower()
+    if not normalized:
+        return ""
+    if normalized not in ALLOWED_DESKTOP_FOCUS_TARGETS:
+        raise ValueError(
+            f"{action_type} target must be blank or one of: "
+            + ", ".join(sorted(ALLOWED_DESKTOP_FOCUS_TARGETS))
+        )
+    return normalized
+
+
+def _normalize_hotkey_target(raw_target: str) -> str:
+    alias, hotkey = _split_alias_payload(raw_target)
+    if not hotkey:
+        raise ValueError(
+            "send_hotkey target must be one of: "
+            + ", ".join(sorted(ALLOWED_DESKTOP_HOTKEYS))
+        )
+    if alias and alias not in ALLOWED_DESKTOP_FOCUS_TARGETS:
+        raise ValueError(
+            "send_hotkey alias must be blank or one of: "
+            + ", ".join(sorted(ALLOWED_DESKTOP_FOCUS_TARGETS))
+        )
+    if hotkey not in ALLOWED_DESKTOP_HOTKEYS:
+        raise ValueError(
+            "send_hotkey target must be one of: "
+            + ", ".join(sorted(ALLOWED_DESKTOP_HOTKEYS))
+        )
+    return f"{alias}|{hotkey}" if alias else hotkey
+
+
+def _normalize_wait_for_window_target(raw_target: str) -> str:
+    alias, timeout_text = _split_alias_payload(raw_target)
+    if not alias:
+        alias = (raw_target or "").strip().lower()
+        timeout_text = ""
+    if alias not in ALLOWED_DESKTOP_FOCUS_TARGETS:
+        raise ValueError(
+            "wait_for_window target must be one of: "
+            + ", ".join(sorted(ALLOWED_DESKTOP_FOCUS_TARGETS))
+            + " with an optional |timeoutSeconds suffix."
+        )
+    if timeout_text:
+        timeout_value = _require_positive_int(
+            timeout_text,
+            label="wait_for_window timeout",
+            minimum=1,
+            maximum=120,
+        )
+        return f"{alias}|{timeout_value}"
+    return alias
+
+
+def _require_target_text(raw_target: str, action_type: str) -> str:
+    normalized = (raw_target or "").strip()
+    if not normalized:
+        raise ValueError(f"{action_type} requires an explicit target.")
+    return normalized
+
+
 def _desktop_bridge_script_path() -> Path:
     return (
         get_allowed_workspace_root()
@@ -339,6 +455,18 @@ def _build_executor_title(action_type: str, target: str) -> str:
         "focus_window": "Focus allowlisted desktop window",
         "open_allowed_app": "Open allowlisted local app",
         "capture_desktop_screenshot": "Capture local desktop screenshot",
+        "get_clipboard_text": "Read clipboard text",
+        "set_clipboard_text": "Set clipboard text",
+        "copy_selection": "Copy selection from focused window",
+        "paste_clipboard": "Paste clipboard into focused window",
+        "send_hotkey": "Send allowlisted desktop hotkey",
+        "wait_seconds": "Wait for a visible operator pause",
+        "wait_for_window": "Wait for an allowlisted window",
+        "move_mouse": "Move mouse to a known target",
+        "left_click": "Left click a known target",
+        "double_click": "Double click a known target",
+        "right_click": "Right click a known target",
+        "scroll_mouse": "Scroll inside an allowed window",
     }
     label = title_map.get(action_type, "Run allowlisted local action")
     return f"{label}: {target}" if target else label
@@ -359,6 +487,18 @@ def _build_executor_description(action_type: str, target: str) -> str:
         "focus_window": "Approval-aware desktop bridge action for focusing one allowlisted window.",
         "open_allowed_app": "Approval-aware desktop bridge action for opening one allowlisted local app.",
         "capture_desktop_screenshot": "Approval-aware desktop bridge action for a repo-local desktop screenshot artifact.",
+        "get_clipboard_text": "Allowlisted desktop bridge action for reading the current clipboard text only.",
+        "set_clipboard_text": "Approval-aware desktop bridge action for setting clipboard text explicitly.",
+        "copy_selection": "Approval-aware desktop bridge action for copying the current selection from an allowed window.",
+        "paste_clipboard": "Approval-aware desktop bridge action for pasting clipboard text into an allowed focused window.",
+        "send_hotkey": "Approval-aware desktop bridge action for a narrow allowlisted hotkey only.",
+        "wait_seconds": "Allowlisted desktop bridge action for an explicit visible wait.",
+        "wait_for_window": "Allowlisted desktop bridge action for waiting on one allowlisted window only.",
+        "move_mouse": "Approval-aware desktop bridge action for moving the mouse to a known target only.",
+        "left_click": "Approval-aware desktop bridge action for left clicking a known target only.",
+        "double_click": "Approval-aware desktop bridge action for double clicking a known target only.",
+        "right_click": "Approval-aware desktop bridge action for right clicking a known target only.",
+        "scroll_mouse": "Approval-aware desktop bridge action for scrolling inside an allowed context only.",
     }
     suffix = f" Target: {target}" if target else ""
     return f"{descriptions.get(action_type, 'Allowlisted local executor action.')}{suffix}"
@@ -456,6 +596,39 @@ def _prepare_executor_action(
         normalized_target = str(resolved_target)
         target_paths = [normalized_target]
         payload["artifact_path"] = normalized_target
+    elif normalized_action == "get_clipboard_text":
+        normalized_target = "clipboard"
+        payload["bridge_target"] = ""
+    elif normalized_action == "set_clipboard_text":
+        normalized_target = "clipboard"
+        payload["bridge_target"] = ""
+        payload["text_content"] = content
+    elif normalized_action == "copy_selection":
+        alias = _normalize_optional_window_target(normalized_target, action_type="copy_selection")
+        normalized_target = alias or "active_allowed_window"
+        payload["bridge_target"] = alias
+    elif normalized_action == "paste_clipboard":
+        alias = _normalize_optional_window_target(normalized_target, action_type="paste_clipboard")
+        normalized_target = alias or "active_allowed_window"
+        payload["bridge_target"] = alias
+    elif normalized_action == "send_hotkey":
+        normalized_target = _normalize_hotkey_target(normalized_target)
+        payload["bridge_target"] = normalized_target
+    elif normalized_action == "wait_seconds":
+        wait_seconds = _require_positive_int(
+            normalized_target,
+            label="wait_seconds target",
+            minimum=1,
+            maximum=60,
+        )
+        normalized_target = str(wait_seconds)
+        payload["bridge_target"] = normalized_target
+    elif normalized_action == "wait_for_window":
+        normalized_target = _normalize_wait_for_window_target(normalized_target)
+        payload["bridge_target"] = normalized_target
+    elif normalized_action in {"move_mouse", "left_click", "double_click", "right_click", "scroll_mouse"}:
+        normalized_target = _require_target_text(normalized_target, normalized_action)
+        payload["bridge_target"] = normalized_target
     else:
         raise ValueError(f"Unsupported executor action: {action_type}")
 
@@ -511,6 +684,7 @@ def _run_desktop_bridge_action(
     action_type: str,
     target: str = "",
     artifact_path: str = "",
+    text_content: str = "",
 ) -> tuple[str, str]:
     script_path = _desktop_bridge_script_path()
     if not script_path.is_file():
@@ -531,6 +705,8 @@ def _run_desktop_bridge_action(
         command.extend(["-Target", target])
     if artifact_path:
         command.extend(["-ArtifactPath", artifact_path])
+    if action_type == "set_clipboard_text":
+        command.extend(["-TextContent", text_content])
 
     result = subprocess.run(
         command,
@@ -545,6 +721,15 @@ def _run_desktop_bridge_action(
         if part.strip()
     ).strip()
     values, sections = _parse_key_value_output(output)
+
+    if values.get("status") == "interrupted":
+        interruption_reason = (
+            values.get("interruption_reason")
+            or values.get("headline")
+            or output
+            or "Desktop action interrupted by local failsafe."
+        )
+        raise DesktopActionInterrupted(_shorten_output(interruption_reason, limit=320))
 
     if result.returncode != 0:
         failure_reason = values.get("failure_reason") or values.get("headline") or output or "Desktop bridge action failed."
@@ -576,6 +761,60 @@ def _run_desktop_bridge_action(
         captured_path = values.get("artifact_path", artifact_path)
         summary = headline or "Captured desktop screenshot artifact."
         return _shorten_output(summary, limit=320), captured_path
+
+    if action_type == "get_clipboard_text":
+        preview = values.get("clipboard_preview", "empty")
+        summary = headline or f"Clipboard text captured. Preview: {preview}"
+        return _shorten_output(summary, limit=320), ""
+
+    if action_type == "set_clipboard_text":
+        preview = values.get("clipboard_preview", "empty")
+        summary = headline or f"Clipboard text updated. Preview: {preview}"
+        return _shorten_output(summary, limit=320), ""
+
+    if action_type == "copy_selection":
+        alias = values.get("active_window_alias") or values.get("focused_window_alias") or target or "allowed_window"
+        preview = values.get("clipboard_preview", "empty")
+        summary = headline or f"Copied the current selection from {alias}. Preview: {preview}"
+        return _shorten_output(summary, limit=320), ""
+
+    if action_type == "paste_clipboard":
+        alias = values.get("active_window_alias") or values.get("focused_window_alias") or target or "allowed_window"
+        preview = values.get("clipboard_preview", "empty")
+        summary = headline or f"Pasted clipboard text into {alias}. Preview: {preview}"
+        return _shorten_output(summary, limit=320), ""
+
+    if action_type == "send_hotkey":
+        hotkey = values.get("sent_hotkey", target or "unknown")
+        alias = values.get("active_window_alias") or values.get("focused_window_alias") or "allowed_window"
+        summary = headline or f"Sent allowlisted hotkey {hotkey} to {alias}."
+        return _shorten_output(summary, limit=320), ""
+
+    if action_type == "wait_seconds":
+        waited = values.get("waited_seconds", target or "0")
+        summary = headline or f"Waited {waited} second(s)."
+        return _shorten_output(summary, limit=320), ""
+
+    if action_type == "wait_for_window":
+        alias = values.get("wait_window_alias", target or "allowed_window")
+        title = values.get("matched_window_title", "none")
+        summary = headline or f"Detected {alias}. Title: {title}."
+        return _shorten_output(summary, limit=320), ""
+
+    if action_type == "move_mouse":
+        coordinates = values.get("coordinates", target or "unknown")
+        summary = headline or f"Moved mouse to {coordinates}."
+        return _shorten_output(summary, limit=320), ""
+
+    if action_type in {"left_click", "double_click", "right_click"}:
+        coordinates = values.get("coordinates", target or "unknown")
+        summary = headline or f"{action_type.replace('_', ' ')} succeeded at {coordinates}."
+        return _shorten_output(summary, limit=320), ""
+
+    if action_type == "scroll_mouse":
+        delta = values.get("scroll_delta", target or "unknown")
+        summary = headline or f"Scrolled mouse input by {delta}."
+        return _shorten_output(summary, limit=320), ""
 
     raise RuntimeError(f"Desktop bridge action is not allowlisted: {action_type}")
 
@@ -639,8 +878,13 @@ def _execute_allowlisted_action(task: Task) -> tuple[str, str]:
         script_path = Path(str(task.executor_payload.get("script_path", "")))
         if not script_path.is_file():
             raise RuntimeError("Checker script path is missing or invalid.")
+        command = ["powershell.exe", "-ExecutionPolicy", "Bypass", "-File", str(script_path)]
+        if (task.executor_target or "").strip().lower() == "dashboard":
+            # Avoid deadlocking on the runtime data lock when the dashboard checker
+            # shells back into runtime-mutating paths through the local server.
+            command.append("-RuntimeLockSafe")
         result = subprocess.run(
-            ["powershell.exe", "-ExecutionPolicy", "Bypass", "-File", str(script_path)],
+            command,
             cwd=get_allowed_workspace_root(),
             capture_output=True,
             text=True,
@@ -657,6 +901,7 @@ def _execute_allowlisted_action(task: Task) -> tuple[str, str]:
             action_type=action_type,
             target=str(task.executor_payload.get("bridge_target", task.executor_target)),
             artifact_path=str(task.executor_payload.get("artifact_path", "")),
+            text_content=str(task.executor_payload.get("text_content", "")),
         )
 
     raise RuntimeError(f"Executor action is not allowlisted: {action_type}")
@@ -742,6 +987,9 @@ def refresh_supervisor_state(last_event: str | None = None) -> SupervisorState:
     elif any(task.status == "blocked_human_needed" for task in tasks):
         status = "blocked_human_needed"
         active_task_id = _select_active_task_id(tasks, "blocked_human_needed")
+    elif any(task.status == "interrupted" for task in tasks):
+        status = "interrupted"
+        active_task_id = _select_active_task_id(tasks, "interrupted")
     elif any(task.status == "waiting" for task in tasks):
         status = "waiting"
         active_task_id = _select_active_task_id(tasks, "waiting")
@@ -766,6 +1014,7 @@ def refresh_supervisor_state(last_event: str | None = None) -> SupervisorState:
         blocked_human_needed_count=sum(
             1 for task in tasks if task.status == "blocked_human_needed"
         ),
+        interrupted_count=sum(1 for task in tasks if task.status == "interrupted"),
         waiting_count=sum(1 for task in tasks if task.status == "waiting"),
         ready_to_resume_count=sum(1 for task in tasks if task.status == "ready_to_resume"),
         queued_count=sum(1 for task in tasks if task.status == "queued"),
@@ -777,6 +1026,7 @@ def refresh_supervisor_state(last_event: str | None = None) -> SupervisorState:
             "Local-only supervisor foundation is active.",
             "Remote or admin actions must remain explicit and approval-gated.",
             "Stopped tasks move forward only through explicit operator actions.",
+            "Desktop input and mouse actions stay allowlisted, visible, and interruptible with Ctrl+8.",
         ],
     )
     write_supervisor_state(state)
@@ -1166,8 +1416,8 @@ def mark_task_human_needed(task_id: str, reason: str) -> Task:
 def review_task_for_resume(task_id: str, note: str = "") -> Task:
     tasks = read_tasks()
     task = _find_task(tasks, task_id)
-    if task.status != "blocked_human_needed":
-        raise ValueError(f"Task {task_id} must be human-needed before review.")
+    if task.status not in {"blocked_human_needed", "interrupted"}:
+        raise ValueError(f"Task {task_id} must be human-needed or interrupted before review.")
 
     timestamp = _now()
     task.updated_at = timestamp
@@ -1286,6 +1536,21 @@ def execute_task(task_id: str) -> Task:
         task.updated_at = execution_record.finished_at
         _append_task_event(task, "completed", note=output_summary)
         last_event = f"Executor task completed: {task.task_id}"
+    except DesktopActionInterrupted as exc:
+        interruption_message = _shorten_output(str(exc), limit=320)
+        execution_record.finished_at = _now()
+        execution_record.status = "interrupted"
+        execution_record.success = False
+        execution_record.output_summary = interruption_message
+        task.execution_records.append(execution_record)
+        task.status = "interrupted"
+        task.waiting_for = "operator_review_after_interrupt"
+        task.blocked_reason = interruption_message
+        task.last_note = interruption_message
+        task.updated_at = execution_record.finished_at
+        task.requires_human = True
+        _append_task_event(task, "interrupted", note=interruption_message)
+        last_event = f"Executor task interrupted: {task.task_id}"
     except Exception as exc:  # noqa: BLE001
         failure_message = _shorten_output(str(exc))
         execution_record.finished_at = _now()
@@ -1318,6 +1583,10 @@ def list_blocked_tasks() -> list[Task]:
     return [task for task in list_tasks() if task.status == "blocked_human_needed"]
 
 
+def list_interrupted_tasks() -> list[Task]:
+    return [task for task in list_tasks() if task.status == "interrupted"]
+
+
 def list_waiting_tasks() -> list[Task]:
     return [task for task in list_tasks() if task.status == "waiting"]
 
@@ -1342,6 +1611,7 @@ def get_status_summary() -> RuntimeStatusSummary:
         blocked_human_needed_tasks=sum(
             1 for task in tasks if task.status == "blocked_human_needed"
         ),
+        interrupted_tasks=sum(1 for task in tasks if task.status == "interrupted"),
         ready_to_resume_tasks=sum(
             1 for task in tasks if task.status == "ready_to_resume"
         ),

@@ -4,8 +4,10 @@ import base64
 import json
 import os
 import subprocess
+import time
 from datetime import datetime, timezone
 from pathlib import Path
+from contextlib import contextmanager
 
 from .models import ApprovalRecord, ApprovalRequest, SupervisorState, Task
 
@@ -16,6 +18,7 @@ TASKS_PATH = RUNTIME_DATA_DIR / "tasks.json"
 APPROVALS_PATH = RUNTIME_DATA_DIR / "approvals.json"
 APPROVAL_REQUESTS_PATH = RUNTIME_DATA_DIR / "approval_requests.json"
 SUPERVISOR_STATE_PATH = RUNTIME_DATA_DIR / "supervisor_state.json"
+RUNTIME_LOCK_PATH = RUNTIME_DATA_DIR / ".runtime_data.lock"
 
 
 def get_project_root() -> Path:
@@ -45,7 +48,9 @@ def _default_supervisor_state() -> SupervisorState:
         active_task_id="",
         pending_approval_count=0,
         blocked_human_needed_count=0,
+        interrupted_count=0,
         waiting_count=0,
+        ready_to_resume_count=0,
         queued_count=0,
         running_count=0,
         notification_mode="dashboard",
@@ -82,11 +87,14 @@ def _ensure_directory(path: Path) -> None:
 
 def _write_text(path: Path, text: str) -> None:
     _ensure_directory(path.parent)
+    temp_path = path.with_name(
+        f"{path.name}.tmp-{os.getpid()}-{int(time.time() * 1000)}"
+    )
     try:
-        path.write_text(text, encoding="utf-8")
+        temp_path.write_text(text, encoding="utf-8")
     except OSError:
         encoded = base64.b64encode(text.encode("utf-8")).decode("ascii")
-        escaped_path = _ps_literal(path)
+        escaped_path = _ps_literal(temp_path)
         subprocess.run(
             [
                 "powershell.exe",
@@ -102,6 +110,41 @@ def _write_text(path: Path, text: str) -> None:
             capture_output=True,
             text=True,
         )
+    os.replace(temp_path, path)
+
+
+@contextmanager
+def runtime_data_lock(timeout_seconds: float = 30.0, poll_seconds: float = 0.05):
+    ensure_runtime_files()
+    deadline = time.monotonic() + timeout_seconds
+    lock_handle: int | None = None
+
+    while lock_handle is None:
+        try:
+            lock_handle = os.open(
+                RUNTIME_LOCK_PATH,
+                os.O_CREAT | os.O_EXCL | os.O_WRONLY,
+            )
+            os.write(
+                lock_handle,
+                f"pid={os.getpid()} created_at={_now()}".encode("utf-8"),
+            )
+        except FileExistsError:
+            if time.monotonic() >= deadline:
+                raise TimeoutError(
+                    f"Timed out waiting for runtime data lock: {RUNTIME_LOCK_PATH}"
+                ) from None
+            time.sleep(poll_seconds)
+
+    try:
+        yield
+    finally:
+        if lock_handle is not None:
+            os.close(lock_handle)
+        try:
+            RUNTIME_LOCK_PATH.unlink(missing_ok=True)
+        except OSError:
+            pass
 
 
 def get_runtime_data_dir() -> Path:

@@ -160,6 +160,10 @@
             <span>Ready To Resume</span>
             <strong id="supervisor-ready-count">-</strong>
           </article>
+          <article class="metric-card">
+            <span>Interrupted</span>
+            <strong id="supervisor-interrupted-count">-</strong>
+          </article>
         </div>
         <div id="supervisor-summary" class="summary-note">Waiting for supervisor status.</div>
         <div class="status-columns">
@@ -262,6 +266,11 @@
             <h3>Human Needed / Blocked</h3>
             <p>Tasks that are paused because the operator needs to answer, review, or decide something.</p>
             <div id="human-needed-list" class="approval-list">Waiting for supervisor status.</div>
+          </article>
+          <article class="status-card">
+            <h3>Interrupted / Failsafe</h3>
+            <p>Tasks stopped by the local failsafe or another explicit interrupt. Review them before any re-queue.</p>
+            <div id="interrupted-tasks-list" class="approval-list">Waiting for supervisor status.</div>
           </article>
           <article class="status-card">
             <h3>Waiting To Resume</h3>
@@ -582,6 +591,10 @@ This file was queued through the safe repo-local executor.
               <span>Desktop Control</span>
               <strong id="desktop-control">-</strong>
             </article>
+            <article class="metric-card">
+              <span>Failsafe</span>
+              <strong id="desktop-failsafe">-</strong>
+            </article>
           </div>
           <div id="desktop-summary" class="summary-note">Waiting for desktop bridge status.</div>
           <div class="desktop-bridge-columns">
@@ -641,6 +654,116 @@ This file was queued through the safe repo-local executor.
                   <p>Approval-aware screenshot capture into a repo-local desktop artifact path.</p>
                 </div>
                 <button id="queue-desktop-screenshot" type="button">Queue Desktop Screenshot</button>
+              </article>
+              <article class="action-card">
+                <div class="card-heading">
+                  <h3>Clipboard Hand Layer</h3>
+                  <p>Read the clipboard, copy from the focused allowed window, paste into the focused allowed window, or set clipboard text explicitly.</p>
+                </div>
+                <div class="compact-action-grid">
+                  <button id="queue-desktop-read-clipboard" class="button-secondary" type="button">Queue Read Clipboard</button>
+                  <button id="queue-desktop-copy-selection" type="button">Queue Copy Selection</button>
+                  <button id="queue-desktop-paste-clipboard" type="button">Queue Paste Clipboard</button>
+                </div>
+                <details class="details-block form-block">
+                  <summary>Set clipboard text</summary>
+                  <div class="stacked-form">
+                    <label>
+                      Clipboard text
+                      <textarea id="desktop-clipboard-text" rows="4" placeholder="Paste or type the exact clipboard text you want to set."></textarea>
+                    </label>
+                    <button id="queue-desktop-set-clipboard" type="button">Queue Set Clipboard Text</button>
+                  </div>
+                </details>
+              </article>
+              <article class="action-card">
+                <div class="card-heading">
+                  <h3>Hotkey And Wait Controls</h3>
+                  <p>Queue one safe hotkey or one visible wait at a time. Hotkeys stay allowlisted, and waits prepare the next recipe layer.</p>
+                </div>
+                <div class="stacked-form">
+                  <label>
+                    Hotkey window (optional)
+                    <select id="desktop-hotkey-window">
+                      <option value="">Focused allowlisted window</option>
+                      <option value="terminal">Terminal</option>
+                      <option value="vscode">VS Code</option>
+                      <option value="cursor">Cursor</option>
+                      <option value="dashboard_browser">Dashboard browser</option>
+                    </select>
+                  </label>
+                  <label>
+                    Allowlisted hotkey
+                    <select id="desktop-hotkey-value">
+                      <option value="ctrl+c">Ctrl+C</option>
+                      <option value="ctrl+v">Ctrl+V</option>
+                      <option value="ctrl+l">Ctrl+L</option>
+                      <option value="enter">Enter</option>
+                      <option value="escape">Escape</option>
+                    </select>
+                  </label>
+                  <button id="queue-desktop-hotkey" type="button">Queue Safe Hotkey</button>
+                  <label>
+                    Wait seconds
+                    <input id="desktop-wait-seconds" type="number" min="1" max="60" value="2" />
+                  </label>
+                  <button id="queue-desktop-wait-seconds" class="button-secondary" type="button">Queue Wait Seconds</button>
+                  <label>
+                    Wait for window
+                    <select id="desktop-wait-window">
+                      <option value="terminal">Terminal</option>
+                      <option value="vscode">VS Code</option>
+                      <option value="cursor">Cursor</option>
+                      <option value="dashboard_browser">Dashboard browser</option>
+                    </select>
+                  </label>
+                  <button id="queue-desktop-wait-window" class="button-secondary" type="button">Queue Wait For Window</button>
+                </div>
+              </article>
+              <article class="action-card">
+                <div class="card-heading">
+                  <h3>Mouse Controls</h3>
+                  <p>Move or click in a narrow, explicit way only. Use a known window center or explicit coordinates inside a visible allowed context.</p>
+                </div>
+                <div class="stacked-form">
+                  <label>
+                    Window context (optional)
+                    <select id="desktop-mouse-window">
+                      <option value="terminal">Terminal</option>
+                      <option value="vscode">VS Code</option>
+                      <option value="cursor">Cursor</option>
+                      <option value="dashboard_browser">Dashboard browser</option>
+                    </select>
+                  </label>
+                  <label>
+                    Point mode
+                    <select id="desktop-mouse-mode">
+                      <option value="center">Window center</option>
+                      <option value="coordinates">Custom coordinates</option>
+                    </select>
+                  </label>
+                  <div class="inline-input-grid">
+                    <label>
+                      X
+                      <input id="desktop-mouse-x" type="number" value="500" />
+                    </label>
+                    <label>
+                      Y
+                      <input id="desktop-mouse-y" type="number" value="400" />
+                    </label>
+                  </div>
+                  <div class="compact-action-grid">
+                    <button id="queue-desktop-move-mouse" class="button-secondary" type="button">Queue Move Mouse</button>
+                    <button id="queue-desktop-left-click" type="button">Queue Left Click</button>
+                    <button id="queue-desktop-double-click" class="button-secondary" type="button">Queue Double Click</button>
+                    <button id="queue-desktop-right-click" class="button-secondary" type="button">Queue Right Click</button>
+                  </div>
+                  <label>
+                    Scroll delta
+                    <input id="desktop-scroll-delta" type="number" min="-1200" max="1200" step="120" value="-120" />
+                  </label>
+                  <button id="queue-desktop-scroll" class="button-secondary" type="button">Queue Scroll Mouse</button>
+                </div>
               </article>
             </div>
             <div id="desktop-action-summary" class="result-panel" aria-live="polite">Ready to queue a safe local desktop action.</div>

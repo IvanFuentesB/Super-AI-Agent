@@ -19,14 +19,27 @@ EXECUTOR_ACTION_TYPES = (
     "focus_window",
     "open_allowed_app",
     "capture_desktop_screenshot",
+    "get_clipboard_text",
+    "set_clipboard_text",
+    "copy_selection",
+    "paste_clipboard",
+    "send_hotkey",
+    "wait_seconds",
+    "wait_for_window",
+    "move_mouse",
+    "left_click",
+    "double_click",
+    "right_click",
+    "scroll_mouse",
 )
-EXECUTION_STATUSES = ("started", "succeeded", "failed")
+EXECUTION_STATUSES = ("started", "succeeded", "failed", "interrupted")
 TASK_STATUSES = (
     "queued",
     "running",
     "waiting",
     "pending_approval",
     "blocked_human_needed",
+    "interrupted",
     "ready_to_resume",
     "completed",
     "rejected",
@@ -231,6 +244,7 @@ class SupervisorState:
     active_task_id: str
     pending_approval_count: int
     blocked_human_needed_count: int
+    interrupted_count: int
     waiting_count: int
     ready_to_resume_count: int
     queued_count: int
@@ -252,6 +266,7 @@ class SupervisorState:
             active_task_id=data.get("active_task_id", ""),
             pending_approval_count=int(data.get("pending_approval_count", 0)),
             blocked_human_needed_count=int(data.get("blocked_human_needed_count", 0)),
+            interrupted_count=int(data.get("interrupted_count", 0)),
             waiting_count=int(data.get("waiting_count", 0)),
             ready_to_resume_count=int(data.get("ready_to_resume_count", 0)),
             queued_count=int(data.get("queued_count", 0)),
@@ -271,6 +286,7 @@ class RuntimeStatusSummary:
     waiting_tasks: int = 0
     pending_approval_tasks: int = 0
     blocked_human_needed_tasks: int = 0
+    interrupted_tasks: int = 0
     ready_to_resume_tasks: int = 0
     completed_tasks: int = 0
     rejected_tasks: int = 0

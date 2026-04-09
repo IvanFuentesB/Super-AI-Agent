@@ -59,6 +59,7 @@ from .queue import (
     list_approval_requests,
     list_blocked_tasks,
     list_executor_tasks,
+    list_interrupted_tasks,
     list_pending_approvals,
     list_ready_to_resume_tasks,
     list_tasks,
@@ -83,6 +84,7 @@ from .storage import (
     get_runtime_data_dir,
     get_project_root,
     read_tasks,
+    runtime_data_lock,
 )
 from .truth_council import build_truth_council_result
 from .workflow_catalog import get_workflow, list_workflows
@@ -178,6 +180,18 @@ def _build_parser() -> argparse.ArgumentParser:
             "focus_window",
             "open_allowed_app",
             "capture_desktop_screenshot",
+            "get_clipboard_text",
+            "set_clipboard_text",
+            "copy_selection",
+            "paste_clipboard",
+            "send_hotkey",
+            "wait_seconds",
+            "wait_for_window",
+            "move_mouse",
+            "left_click",
+            "double_click",
+            "right_click",
+            "scroll_mouse",
         ],
     )
     executor_parser.add_argument("--target", default="")
@@ -460,6 +474,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"tasks_pending_approval: {summary.pending_approval_tasks}")
             print(f"tasks_waiting: {summary.waiting_tasks}")
             print(f"tasks_blocked_human_needed: {summary.blocked_human_needed_tasks}")
+            print(f"tasks_interrupted: {summary.interrupted_tasks}")
             print(f"tasks_ready_to_resume: {summary.ready_to_resume_tasks}")
             print(f"tasks_completed: {summary.completed_tasks}")
             print(f"tasks_rejected: {summary.rejected_tasks}")
@@ -473,12 +488,13 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if args.command == "enqueue":
-            task = enqueue_task(
-                title=args.title,
-                description=args.description,
-                risk_level=args.risk,
-                source=args.source,
-            )
+            with runtime_data_lock():
+                task = enqueue_task(
+                    title=args.title,
+                    description=args.description,
+                    risk_level=args.risk,
+                    source=args.source,
+                )
             print(f"task_id: {task.task_id}")
             print(f"status: {task.status}")
             print(f"approval_state: {task.approval_state}")
@@ -491,12 +507,13 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if args.command == "queue-executor-action":
-            task = enqueue_executor_task(
-                action_type=args.action_type,
-                target=args.target,
-                content=args.content,
-                source=args.source,
-            )
+            with runtime_data_lock():
+                task = enqueue_executor_task(
+                    action_type=args.action_type,
+                    target=args.target,
+                    content=args.content,
+                    source=args.source,
+                )
             print(f"task_id: {task.task_id}")
             print(f"status: {task.status}")
             print(f"approval_state: {task.approval_state}")
@@ -676,10 +693,11 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if args.command == "approve-approval":
-            task, request = approve_approval_request(
-                approval_id=args.approval_id,
-                note=args.note,
-            )
+            with runtime_data_lock():
+                task, request = approve_approval_request(
+                    approval_id=args.approval_id,
+                    note=args.note,
+                )
             print(f"approval_id: {request.approval_id}")
             print("decision: approved")
             print(f"status: {request.status}")
@@ -693,10 +711,11 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if args.command == "deny-approval":
-            task, request = deny_approval_request(
-                approval_id=args.approval_id,
-                note=args.note,
-            )
+            with runtime_data_lock():
+                task, request = deny_approval_request(
+                    approval_id=args.approval_id,
+                    note=args.note,
+                )
             print(f"approval_id: {request.approval_id}")
             print("decision: denied")
             print(f"status: {request.status}")
@@ -710,10 +729,11 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if args.command == "defer-approval":
-            task, request = defer_approval_request(
-                approval_id=args.approval_id,
-                note=args.note,
-            )
+            with runtime_data_lock():
+                task, request = defer_approval_request(
+                    approval_id=args.approval_id,
+                    note=args.note,
+                )
             print(f"approval_id: {request.approval_id}")
             print("decision: deferred")
             print(f"status: {request.status}")
@@ -727,16 +747,17 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if args.command == "request-approval":
-            request = request_task_approval(
-                task_id=args.task_id,
-                action_label=args.action_label,
-                reason=args.reason,
-                risk_level=args.risk_level,
-                source=args.source,
-                scope=args.scope,
-                rollback_plan=args.rollback_plan,
-                requires_admin=args.requires_admin == "yes",
-            )
+            with runtime_data_lock():
+                request = request_task_approval(
+                    task_id=args.task_id,
+                    action_label=args.action_label,
+                    reason=args.reason,
+                    risk_level=args.risk_level,
+                    source=args.source,
+                    scope=args.scope,
+                    rollback_plan=args.rollback_plan,
+                    requires_admin=args.requires_admin == "yes",
+                )
             notification = build_approval_notification(request)
             print(f"approval_id: {request.approval_id}")
             print(f"task_id: {request.task_id}")
@@ -752,7 +773,8 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if args.command == "approve":
-            task = approve_task(task_id=args.task_id, note=args.note)
+            with runtime_data_lock():
+                task = approve_task(task_id=args.task_id, note=args.note)
             print(f"task_id: {task.task_id}")
             print(f"status: {task.status}")
             print(f"approval_state: {task.approval_state}")
@@ -760,7 +782,8 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if args.command == "reject":
-            task = reject_task(task_id=args.task_id, note=args.note)
+            with runtime_data_lock():
+                task = reject_task(task_id=args.task_id, note=args.note)
             print(f"task_id: {task.task_id}")
             print(f"status: {task.status}")
             print(f"approval_state: {task.approval_state}")
@@ -768,7 +791,8 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if args.command == "wait":
-            task = wait_task(args.task_id, reason=args.reason)
+            with runtime_data_lock():
+                task = wait_task(args.task_id, reason=args.reason)
             print(f"task_id: {task.task_id}")
             print(f"status: {task.status}")
             print(f"approval_state: {task.approval_state}")
@@ -776,7 +800,8 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if args.command == "resume":
-            task = resume_task(args.task_id)
+            with runtime_data_lock():
+                task = resume_task(args.task_id)
             print(f"task_id: {task.task_id}")
             print(f"status: {task.status}")
             print(f"approval_state: {task.approval_state}")
@@ -784,7 +809,8 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if args.command == "run-once":
-            task = run_task_once(args.task_id)
+            with runtime_data_lock():
+                task = run_task_once(args.task_id)
             print(f"task_id: {task.task_id}")
             print(f"status: {task.status}")
             print(f"approval_state: {task.approval_state}")
@@ -797,7 +823,8 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if args.command == "execute-task":
-            task = execute_task(args.task_id)
+            with runtime_data_lock():
+                task = execute_task(args.task_id)
             print(f"task_id: {task.task_id}")
             print(f"status: {task.status}")
             print(f"approval_state: {task.approval_state}")
@@ -815,7 +842,8 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if args.command == "mark-human-needed":
-            task = mark_task_human_needed(task_id=args.task_id, reason=args.reason)
+            with runtime_data_lock():
+                task = mark_task_human_needed(task_id=args.task_id, reason=args.reason)
             notification = build_human_needed_notification(task)
             print(f"task_id: {task.task_id}")
             print(f"status: {task.status}")
@@ -827,7 +855,8 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if args.command == "review-task":
-            task = review_task_for_resume(task_id=args.task_id, note=args.note)
+            with runtime_data_lock():
+                task = review_task_for_resume(task_id=args.task_id, note=args.note)
             print(f"task_id: {task.task_id}")
             print(f"status: {task.status}")
             print(f"approval_state: {task.approval_state}")
@@ -837,7 +866,8 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if args.command == "requeue-task":
-            task = requeue_task(task_id=args.task_id, note=args.note)
+            with runtime_data_lock():
+                task = requeue_task(task_id=args.task_id, note=args.note)
             print(f"task_id: {task.task_id}")
             print(f"status: {task.status}")
             print(f"approval_state: {task.approval_state}")
@@ -858,6 +888,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"ready_to_resume_count: {state.ready_to_resume_count}")
             print(f"pending_approval_count: {state.pending_approval_count}")
             print(f"blocked_human_needed_count: {state.blocked_human_needed_count}")
+            print(f"interrupted_count: {state.interrupted_count}")
             print(f"notification_mode: {state.notification_mode}")
             print(f"notification_title: {notification.title}")
             print(f"last_event: {state.last_event or 'none'}")
@@ -886,6 +917,20 @@ def main(argv: list[str] | None = None) -> int:
             if blocked_tasks:
                 for task in blocked_tasks:
                     detail = task.blocked_reason or task.waiting_for or task.title
+                    print(
+                        f"- {task.task_id} | {task.status} | "
+                        f"workspace={task.workspace_scope} | policy={task.workspace_policy} | "
+                        f"approval={task.approval_state} | next={_workspace_reason(get_task_next_action(task))} | "
+                        f"detail={_workspace_reason(detail)}"
+                    )
+            else:
+                print("- none")
+
+            interrupted_tasks = list_interrupted_tasks()
+            print("interrupted_tasks:")
+            if interrupted_tasks:
+                for task in interrupted_tasks:
+                    detail = task.blocked_reason or task.last_note or task.title
                     print(
                         f"- {task.task_id} | {task.status} | "
                         f"workspace={task.workspace_scope} | policy={task.workspace_policy} | "
