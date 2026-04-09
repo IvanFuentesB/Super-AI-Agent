@@ -36,16 +36,17 @@
 - [x] Safe local desktop bridge actions exist
 - [x] Safe local desktop input, mouse actions, and Ctrl+8 failsafe exist
 - [x] Operator recipes, repo integration map, and compact chat handoff memory exist
+- [x] Ghoti visual cue, resource guard, retry limits, and clipboard guard exist
 
 ## Current Control Layer
 - Continue for local context/rules
 - Codex for execution and Git workflow
 
 ## Current Branch
-- feat/operator-recipes-handoff-memory
+- feat/ghoti-visual-cue-resource-guard
 
 ## Current Phase
-- first reusable operator recipe layer plus compact handoff memory and explicit repo integration mapping
+- Ghoti hardening pass completed; ready for the first serious cross-window handoff workflow
 
 ## Next Milestones
 - test the safe repo executor manually from the operator console
@@ -53,7 +54,9 @@
 - test the workspace-boundary flow manually from the operator console
 - test the manual supervisor loop from the operator console
 - test the first reusable operator recipes from the operator console
+- manually verify the new Ghoti cue, resource/process guard warnings, retry ceiling, and interrupted-task messaging
 - refine the narrow Codex-to-dashboard handoff recipe into a tighter future Codex-to-ChatGPT handoff path
+- build the first practical cross-window handoff recipe with focus, copy, paste, wait, retry, and safe interruption
 - design an explicit allowlist-expansion or workspace-override path later
 - add a real notification channel later
 - choose the real desktop-control implementation path
@@ -78,6 +81,8 @@
 - browser visible demo, artifact UX, desktop bridge foundation, supervisor inbox, and manual task-control loop now exist, but browser and app execution beyond the local playground are still research-only
 - the safe repo executor is intentionally narrow and repo-bound, and it still is not a generic shell runner or full executor
 - the desktop bridge is intentionally narrow and allowlisted, and it still is not arbitrary desktop control, freeform typing, drag-and-drop, or autonomous computer use
+- some focus-sensitive desktop actions still depend on what the active Windows session allows, so manual-focus-required remains the honest fallback in some checker sessions
+- desktop screenshot capture can still be unavailable in some Windows sessions, so manual capture remains the honest fallback there
 
 ## Last Reviewed
 - 2026-04-09

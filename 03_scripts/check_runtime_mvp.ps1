@@ -444,6 +444,12 @@ if ($taskIdOk) {
     Write-Check -Name 'CLI supervisor-status' -Passed $supervisorStatusOk -Detail (($supervisorStatusResult.Output | Out-String).Trim())
     if (-not $supervisorStatusOk) { $failed++ }
 
+    $ghotiFieldsOk = (($supervisorStatusResult.Output | Out-String) -match 'ghoti_state:\s+\S+') -and `
+        (($supervisorStatusResult.Output | Out-String) -match 'operator_next_step:\s+\S+') -and `
+        (($supervisorStatusResult.Output | Out-String) -match 'resource_guard_event_count:\s+\d+')
+    Write-Check -Name 'Supervisor status reports Ghoti state fields' -Passed $ghotiFieldsOk -Detail (($supervisorStatusResult.Output | Out-String).Trim())
+    if (-not $ghotiFieldsOk) { $failed++ }
+
     $approvalStatusListResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approval-status')
     $approvalStatusListOk = $approvalStatusListResult.ExitCode -eq 0 -and (($approvalStatusListResult.Output | Out-String) -match 'count:\s+\d+')
     Write-Check -Name 'CLI approval-status list' -Passed $approvalStatusListOk -Detail (($approvalStatusListResult.Output | Out-String).Trim())
@@ -935,6 +941,65 @@ if (-not [string]::IsNullOrWhiteSpace($desktopOpenTaskId)) {
     if (-not $desktopOpenStatusOk) { $failed++ }
 }
 
+$desktopGuardQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'open_allowed_app',
+    '--target', 'terminal'
+)
+$desktopGuardQueueOk = $desktopGuardQueue.ExitCode -eq 0 -and `
+    (($desktopGuardQueue.Output | Out-String) -match 'status:\s+pending_approval') -and `
+    (($desktopGuardQueue.Output | Out-String) -match 'executor_action_type:\s+open_allowed_app')
+Write-Check -Name 'Desktop resource-guard task queues for terminal open' -Passed $desktopGuardQueueOk -Detail (($desktopGuardQueue.Output | Out-String).Trim())
+if (-not $desktopGuardQueueOk) { $failed++ }
+
+$desktopGuardTaskMatch = [regex]::Match(($desktopGuardQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$desktopGuardTaskId = if ($desktopGuardTaskMatch.Success) { $desktopGuardTaskMatch.Groups[1].Value } else { $null }
+$desktopGuardApprovalMatch = [regex]::Match(($desktopGuardQueue.Output | Out-String), 'approval_request_id:\s*(\S+)')
+$desktopGuardApprovalId = if ($desktopGuardApprovalMatch.Success) { $desktopGuardApprovalMatch.Groups[1].Value } else { $null }
+$desktopGuardIdsOk = (-not [string]::IsNullOrWhiteSpace($desktopGuardTaskId)) -and (-not [string]::IsNullOrWhiteSpace($desktopGuardApprovalId))
+Write-Check -Name 'Desktop resource-guard ids parsed' -Passed $desktopGuardIdsOk -Detail ($(if ($desktopGuardIdsOk) { "$desktopGuardTaskId | $desktopGuardApprovalId" } else { 'missing resource-guard task or approval id' }))
+if (-not $desktopGuardIdsOk) { $failed++ }
+
+if (-not [string]::IsNullOrWhiteSpace($desktopGuardApprovalId)) {
+    $desktopGuardApprove = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $desktopGuardApprovalId, '--note', 'runtime checker approved the guarded terminal open')
+    $desktopGuardApproveOk = $desktopGuardApprove.ExitCode -eq 0 -and `
+        (($desktopGuardApprove.Output | Out-String) -match 'task_status:\s+queued')
+    Write-Check -Name 'Desktop resource-guard approval persists' -Passed $desktopGuardApproveOk -Detail (($desktopGuardApprove.Output | Out-String).Trim())
+    if (-not $desktopGuardApproveOk) { $failed++ }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($desktopGuardTaskId)) {
+    $desktopGuardExecute = Invoke-ModuleCommand `
+        -PythonPath $pythonPath `
+        -Arguments @('execute-task', '--task-id', $desktopGuardTaskId) `
+        -EnvOverrides @{
+            SUPER_AGENT_DESKTOP_TEST_TERMINAL_WINDOW_COUNT = '3'
+            SUPER_AGENT_DESKTOP_TEST_TERMINAL_PROCESS_COUNT = '6'
+            SUPER_AGENT_DESKTOP_TEST_FORCE_RESOURCE_GUARD = '1'
+        }
+    $desktopGuardExecuteOk = $desktopGuardExecute.ExitCode -eq 0 -and `
+        (($desktopGuardExecute.Output | Out-String) -match 'status:\s+blocked_human_needed') -and `
+        (($desktopGuardExecute.Output | Out-String) -match 'execution_status:\s+failed') -and `
+        (($desktopGuardExecute.Output | Out-String) -match 'resource guard')
+    Write-Check -Name 'Desktop resource guard blocks duplicate terminal spawning in runtime executor' -Passed $desktopGuardExecuteOk -Detail (($desktopGuardExecute.Output | Out-String).Trim())
+    if (-not $desktopGuardExecuteOk) { $failed++ }
+
+    $desktopGuardStatus = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $desktopGuardTaskId)
+    $desktopGuardStatusOk = $desktopGuardStatus.ExitCode -eq 0 -and `
+        (($desktopGuardStatus.Output | Out-String) -match 'status:\s+blocked_human_needed') -and `
+        (($desktopGuardStatus.Output | Out-String) -match 'last_resource_guard_reason:\s+\S+') -and `
+        (($desktopGuardStatus.Output | Out-String) -match 'waiting_for:\s+resource_guard_review')
+    Write-Check -Name 'Runtime task status persists resource guard blocking detail' -Passed $desktopGuardStatusOk -Detail (($desktopGuardStatus.Output | Out-String).Trim())
+    if (-not $desktopGuardStatusOk) { $failed++ }
+
+    $guardSupervisorStatus = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('supervisor-status')
+    $guardSupervisorStatusOk = $guardSupervisorStatus.ExitCode -eq 0 -and `
+        (($guardSupervisorStatus.Output | Out-String) -match 'ghoti_state:\s+resource_guard_triggered') -and `
+        (($guardSupervisorStatus.Output | Out-String) -match 'resource_guard_event_count:\s+[1-9]')
+    Write-Check -Name 'Supervisor reflects resource guard state clearly' -Passed $guardSupervisorStatusOk -Detail (($guardSupervisorStatus.Output | Out-String).Trim())
+    if (-not $guardSupervisorStatusOk) { $failed++ }
+}
+
 Start-Sleep -Milliseconds 1200
 
 $desktopFocusQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
@@ -1159,6 +1224,68 @@ if (-not [string]::IsNullOrWhiteSpace($desktopHotkeyTaskId)) {
     if (-not $desktopHotkeyExecuteOk) { $failed++ }
 }
 
+$clipboardGuardSetQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'set_clipboard_text',
+    '--content', 'Run Desktop Bridge Check'
+)
+$clipboardGuardSetQueueOk = $clipboardGuardSetQueue.ExitCode -eq 0 -and `
+    (($clipboardGuardSetQueue.Output | Out-String) -match 'status:\s+pending_approval')
+Write-Check -Name 'Clipboard guard seed queue succeeds' -Passed $clipboardGuardSetQueueOk -Detail (($clipboardGuardSetQueue.Output | Out-String).Trim())
+if (-not $clipboardGuardSetQueueOk) { $failed++ }
+
+$clipboardGuardSetTaskMatch = [regex]::Match(($clipboardGuardSetQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$clipboardGuardSetTaskId = if ($clipboardGuardSetTaskMatch.Success) { $clipboardGuardSetTaskMatch.Groups[1].Value } else { $null }
+$clipboardGuardSetApprovalMatch = [regex]::Match(($clipboardGuardSetQueue.Output | Out-String), 'approval_request_id:\s*(\S+)')
+$clipboardGuardSetApprovalId = if ($clipboardGuardSetApprovalMatch.Success) { $clipboardGuardSetApprovalMatch.Groups[1].Value } else { $null }
+
+if (-not [string]::IsNullOrWhiteSpace($clipboardGuardSetApprovalId)) {
+    $clipboardGuardSetApprove = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $clipboardGuardSetApprovalId, '--note', 'runtime checker seeded suspicious clipboard text')
+    $clipboardGuardSetApproveOk = $clipboardGuardSetApprove.ExitCode -eq 0
+    Write-Check -Name 'Clipboard guard seed approval persists' -Passed $clipboardGuardSetApproveOk -Detail (($clipboardGuardSetApprove.Output | Out-String).Trim())
+    if (-not $clipboardGuardSetApproveOk) { $failed++ }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($clipboardGuardSetTaskId)) {
+    $clipboardGuardSetExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $clipboardGuardSetTaskId)
+    $clipboardGuardSetExecuteOk = $clipboardGuardSetExecute.ExitCode -eq 0 -and `
+        (($clipboardGuardSetExecute.Output | Out-String) -match 'status:\s+completed')
+    Write-Check -Name 'Clipboard guard seed execution succeeds' -Passed $clipboardGuardSetExecuteOk -Detail (($clipboardGuardSetExecute.Output | Out-String).Trim())
+    if (-not $clipboardGuardSetExecuteOk) { $failed++ }
+}
+
+$clipboardGuardPasteQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'paste_clipboard',
+    '--target', 'terminal'
+)
+$clipboardGuardPasteQueueOk = $clipboardGuardPasteQueue.ExitCode -eq 0 -and `
+    (($clipboardGuardPasteQueue.Output | Out-String) -match 'status:\s+pending_approval')
+Write-Check -Name 'Clipboard guard paste task queues' -Passed $clipboardGuardPasteQueueOk -Detail (($clipboardGuardPasteQueue.Output | Out-String).Trim())
+if (-not $clipboardGuardPasteQueueOk) { $failed++ }
+
+$clipboardGuardPasteTaskMatch = [regex]::Match(($clipboardGuardPasteQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$clipboardGuardPasteTaskId = if ($clipboardGuardPasteTaskMatch.Success) { $clipboardGuardPasteTaskMatch.Groups[1].Value } else { $null }
+$clipboardGuardPasteApprovalMatch = [regex]::Match(($clipboardGuardPasteQueue.Output | Out-String), 'approval_request_id:\s*(\S+)')
+$clipboardGuardPasteApprovalId = if ($clipboardGuardPasteApprovalMatch.Success) { $clipboardGuardPasteApprovalMatch.Groups[1].Value } else { $null }
+
+if (-not [string]::IsNullOrWhiteSpace($clipboardGuardPasteApprovalId)) {
+    $clipboardGuardPasteApprove = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $clipboardGuardPasteApprovalId, '--note', 'runtime checker approved guarded paste test')
+    $clipboardGuardPasteApproveOk = $clipboardGuardPasteApprove.ExitCode -eq 0
+    Write-Check -Name 'Clipboard guard paste approval persists' -Passed $clipboardGuardPasteApproveOk -Detail (($clipboardGuardPasteApprove.Output | Out-String).Trim())
+    if (-not $clipboardGuardPasteApproveOk) { $failed++ }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($clipboardGuardPasteTaskId)) {
+    $clipboardGuardPasteExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $clipboardGuardPasteTaskId)
+    $clipboardGuardPasteExecuteOk = $clipboardGuardPasteExecute.ExitCode -eq 0 -and `
+        (($clipboardGuardPasteExecute.Output | Out-String) -match 'status:\s+blocked_human_needed') -and `
+        (($clipboardGuardPasteExecute.Output | Out-String) -match 'execution_status:\s+failed') -and `
+        (($clipboardGuardPasteExecute.Output | Out-String) -match 'Clipboard guard blocked')
+    Write-Check -Name 'Clipboard guard blocks suspicious paste into terminal' -Passed $clipboardGuardPasteExecuteOk -Detail (($clipboardGuardPasteExecute.Output | Out-String).Trim())
+    if (-not $clipboardGuardPasteExecuteOk) { $failed++ }
+}
+
 $desktopWaitForWindowQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
     'queue-executor-action',
     '--action-type', 'wait_for_window',
@@ -1305,6 +1432,50 @@ if ($desktopInterruptTaskOk) {
         (($desktopInterruptRequeue.Output | Out-String) -match 'status:\s+queued')
     Write-Check -Name 'Interrupted desktop task only continues after explicit re-queue' -Passed $desktopInterruptRequeueOk -Detail (($desktopInterruptRequeue.Output | Out-String).Trim())
     if (-not $desktopInterruptRequeueOk) { $failed++ }
+}
+
+$desktopRetryQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'focus_window',
+    '--target', 'terminal'
+)
+$desktopRetryQueueOk = $desktopRetryQueue.ExitCode -eq 0 -and `
+    (($desktopRetryQueue.Output | Out-String) -match 'status:\s+pending_approval') -and `
+    (($desktopRetryQueue.Output | Out-String) -match 'executor_action_type:\s+focus_window')
+Write-Check -Name 'Desktop retry-limit task queues' -Passed $desktopRetryQueueOk -Detail (($desktopRetryQueue.Output | Out-String).Trim())
+if (-not $desktopRetryQueueOk) { $failed++ }
+
+$desktopRetryTaskMatch = [regex]::Match(($desktopRetryQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$desktopRetryTaskId = if ($desktopRetryTaskMatch.Success) { $desktopRetryTaskMatch.Groups[1].Value } else { $null }
+$desktopRetryApprovalMatch = [regex]::Match(($desktopRetryQueue.Output | Out-String), 'approval_request_id:\s*(\S+)')
+$desktopRetryApprovalId = if ($desktopRetryApprovalMatch.Success) { $desktopRetryApprovalMatch.Groups[1].Value } else { $null }
+
+if (-not [string]::IsNullOrWhiteSpace($desktopRetryApprovalId)) {
+    $desktopRetryApprove = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $desktopRetryApprovalId, '--note', 'runtime checker approved retry-limit focus_window test')
+    $desktopRetryApproveOk = $desktopRetryApprove.ExitCode -eq 0
+    Write-Check -Name 'Desktop retry-limit approval persists' -Passed $desktopRetryApproveOk -Detail (($desktopRetryApprove.Output | Out-String).Trim())
+    if (-not $desktopRetryApproveOk) { $failed++ }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($desktopRetryTaskId)) {
+    $desktopRetryExecute = Invoke-ModuleCommand `
+        -PythonPath $pythonPath `
+        -Arguments @('execute-task', '--task-id', $desktopRetryTaskId) `
+        -EnvOverrides @{ SUPER_AGENT_DESKTOP_TEST_FAIL_ACTIONS = 'focus_window' }
+    $desktopRetryExecuteOk = $desktopRetryExecute.ExitCode -eq 0 -and `
+        (($desktopRetryExecute.Output | Out-String) -match 'status:\s+failed') -and `
+        (($desktopRetryExecute.Output | Out-String) -match 'execution_status:\s+failed')
+    Write-Check -Name 'Desktop retry-limit execution fails safely after repeated failure' -Passed $desktopRetryExecuteOk -Detail (($desktopRetryExecute.Output | Out-String).Trim())
+    if (-not $desktopRetryExecuteOk) { $failed++ }
+
+    $desktopRetryStatus = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $desktopRetryTaskId)
+    $desktopRetryStatusOk = $desktopRetryStatus.ExitCode -eq 0 -and `
+        (($desktopRetryStatus.Output | Out-String) -match 'status:\s+failed') -and `
+        (($desktopRetryStatus.Output | Out-String) -match 'last_attempt_count:\s+2') -and `
+        (($desktopRetryStatus.Output | Out-String) -match 'retry_limit:\s+2') -and `
+        (($desktopRetryStatus.Output | Out-String) -match 'last_failure_reason:\s+Failed after 2 attempt\(s\)\.')
+    Write-Check -Name 'Retry limit persists after two failed attempts' -Passed $desktopRetryStatusOk -Detail (($desktopRetryStatus.Output | Out-String).Trim())
+    if (-not $desktopRetryStatusOk) { $failed++ }
 }
 
 $recipeObserveQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(

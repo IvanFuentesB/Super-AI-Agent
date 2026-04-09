@@ -130,16 +130,59 @@ function normalizeState(status) {
   }
 
   const value = String(status).toLowerCase();
-  if (["ok", "success", "available", "ready", "yes", "approved", "completed", "succeeded"].includes(value)) {
+  if (["ok", "success", "available", "ready", "yes", "approved", "completed", "succeeded", "ready_to_resume"].includes(value)) {
     return "success";
   }
-  if (["blocked", "error", "fail", "failed", "denied", "rejected", "interrupted"].includes(value)) {
+  if (["blocked", "error", "fail", "failed", "denied", "rejected", "interrupted", "resource_guard_triggered", "blocked_human_needed"].includes(value)) {
     return "error";
   }
-  if (["pending", "loading", "running", "not_run", "deferred", "waiting"].includes(value)) {
+  if (["pending", "loading", "running", "not_run", "deferred", "waiting", "active", "approval_needed", "queued", "pending_approval"].includes(value)) {
     return "loading";
   }
   return "neutral";
+}
+
+function renderGhotiState(summary = {}) {
+  const stateValue = summary.ghotiState || "idle";
+  const normalized = normalizeState(stateValue);
+  const reason = summary.ghotiReason && summary.ghotiReason !== "none"
+    ? summary.ghotiReason
+    : "No active guard or interruption reason right now.";
+  const nextStep = summary.operatorNextStep && summary.operatorNextStep !== "none"
+    ? summary.operatorNextStep
+    : "Queue or review a local task when you want Ghoti to act.";
+  const events = summary.resourceGuardEvents || [];
+  const eventCount = summary.resourceGuardEventCount ?? events.length ?? 0;
+
+  setText("ghoti-state-label", stateValue.replaceAll("_", " "));
+  setText("ghoti-state-reason", reason);
+  setText("ghoti-next-step", nextStep);
+  setText("ghoti-resource-guard-count", String(eventCount));
+  setText("ghoti-indicator-state", stateValue.replaceAll("_", " "));
+  setText("ghoti-indicator-note", reason);
+
+  const pill = document.getElementById("ghoti-state-pill");
+  if (pill) {
+    pill.className = `state-pill state-${normalized}`;
+    pill.textContent = stateValue.replaceAll("_", " ");
+  }
+
+  const indicator = document.getElementById("ghoti-state-indicator");
+  if (indicator) {
+    indicator.className = `ghoti-state-indicator is-${normalized}`;
+  }
+
+  const panel = document.getElementById("ghoti-state-panel");
+  if (panel) {
+    panel.className = `ghoti-state-panel ghoti-state-${normalized}`;
+  }
+
+  const list = document.getElementById("ghoti-resource-guard-list");
+  if (list) {
+    list.innerHTML = events.length
+      ? events.map((item) => `<article class="log-item"><p>${escapeHtml(item)}</p></article>`).join("")
+      : "<p class=\"empty-state\">No recent resource guard events.</p>";
+  }
 }
 
 function formatTimeStamp(value) {
@@ -353,7 +396,49 @@ function renderDesktopBridge(payload) {
   );
   setText("desktop-control", summary.desktopControlImplemented ? "live" : "not yet");
   setText("desktop-failsafe", summary.failsafeHotkey || "Ctrl+8");
+  setText(
+    "desktop-terminal-windows",
+    summary.terminalWindowLimit
+      ? `${summary.terminalWindowCount ?? 0}/${summary.terminalWindowLimit}`
+      : String(summary.terminalWindowCount ?? 0),
+  );
+  setText(
+    "desktop-powershell-processes",
+    summary.terminalProcessLimit
+      ? `${summary.powerShellProcessCount ?? 0}/${summary.terminalProcessLimit}`
+      : String(summary.powerShellProcessCount ?? 0),
+  );
+  setText("desktop-node-processes", String(summary.nodeProcessCount ?? 0));
+  setText("desktop-python-processes", String(summary.pythonProcessCount ?? 0));
+  setText("desktop-ollama", summary.ollamaPresent ? "running" : "not seen");
   setText("desktop-summary", summary.headline || "Desktop bridge status unavailable.");
+  const resourceBits = [];
+  if (
+    Number.isFinite(summary.terminalWindowCount)
+    && Number.isFinite(summary.terminalWindowLimit)
+    && summary.terminalWindowLimit > 0
+    && summary.terminalWindowCount >= summary.terminalWindowLimit
+  ) {
+    resourceBits.push("Terminal window count is at or above the current soft limit.");
+  }
+  if (
+    Number.isFinite(summary.powerShellProcessCount)
+    && Number.isFinite(summary.terminalProcessLimit)
+    && summary.terminalProcessLimit > 0
+    && summary.powerShellProcessCount >= summary.terminalProcessLimit
+  ) {
+    resourceBits.push("PowerShell process count is at or above the current soft limit.");
+  }
+  if (summary.resourceGuardOk) {
+    resourceBits.push("Resource guard is ready to stop duplicate terminal spawning.");
+  }
+  if (summary.clipboardGuardOk) {
+    resourceBits.push("Clipboard guard is ready to block checker or recipe labels from landing in the terminal.");
+  }
+  if (summary.mode === "status" && resourceBits.length === 0) {
+    resourceBits.push("Status-only desktop check loaded the current resource picture without running disruptive actions.");
+  }
+  setText("desktop-resource-summary", resourceBits.join(" ") || "Desktop resource guard details unavailable.");
   renderStatusList("desktop-available-list", summary.availableNow);
   renderStatusList("desktop-missing-list", summary.missingNow);
   renderRaw("desktop-raw", payload);
@@ -444,6 +529,9 @@ function renderExecutionHistory(items) {
       const artifactLine = item.artifactPath && item.artifactPath !== "none"
         ? `<small>Artifact: ${escapeHtml(item.artifactPath)}</small>`
         : "";
+      const reasonLine = item.reason && item.reason !== "none"
+        ? `<small>Reason: ${escapeHtml(item.reason)}</small>`
+        : "";
       return `
         <article class="approval-history-item">
           <div class="approval-topline">
@@ -451,7 +539,8 @@ function renderExecutionHistory(items) {
             <span class="state-pill state-${state}">${escapeHtml(item.status)}</span>
           </div>
           <p>${escapeHtml(summary)}</p>
-          <small>${escapeHtml(formatTimeStamp(item.startedAt))} -> ${escapeHtml(formatTimeStamp(item.finishedAt))} | ${escapeHtml(item.target || "none")}</small>
+          <small>${escapeHtml(formatTimeStamp(item.startedAt))} -> ${escapeHtml(formatTimeStamp(item.finishedAt))} | ${escapeHtml(item.target || "none")} | attempts=${escapeHtml(String(item.attempts || 1))}</small>
+          ${reasonLine}
           ${artifactLine}
         </article>
       `;
@@ -478,6 +567,8 @@ function renderRecipeStepHistory(items) {
         item.clipboardPreview && item.clipboardPreview !== "none" ? `Clipboard: ${item.clipboardPreview}` : "",
         item.windowAlias && item.windowAlias !== "none" ? `Window: ${item.windowAlias}` : "",
         item.coordinates && item.coordinates !== "none" ? `Coordinates: ${item.coordinates}` : "",
+        item.attempts ? `Attempts: ${item.attempts}/${item.maxAttempts || item.attempts}` : "",
+        item.required ? `Required: ${item.required}` : "",
       ].filter(Boolean);
       const artifactLine = item.artifactPath && item.artifactPath !== "none"
         ? `<small>Artifact: ${escapeHtml(item.artifactPath)}</small>`
@@ -622,9 +713,14 @@ function clearTaskDetail(message) {
   setText("task-detail-blocked-reason", "-");
   setText("task-detail-next-action", "-");
   setText("task-detail-last-note", "-");
+  setText("task-detail-retry-limit", "-");
+  setText("task-detail-last-attempt-count", "-");
   setText("task-detail-last-execution-status", "-");
   setText("task-detail-last-execution-summary", "-");
   setText("task-detail-last-artifact-path", "-");
+  setText("task-detail-last-failure-reason", "-");
+  setText("task-detail-last-interruption-reason", "-");
+  setText("task-detail-last-resource-guard-reason", "-");
   setText("task-detail-recipe-name", "-");
   setText("task-detail-recipe-status", "-");
   setText("task-detail-recipe-run-count", "-");
@@ -665,9 +761,14 @@ function renderTaskDetail(payload) {
   setText("task-detail-blocked-reason", summary.blockedReason || "none");
   setText("task-detail-next-action", summary.nextAction || "Review the task state.");
   setText("task-detail-last-note", summary.lastNote || "none");
+  setText("task-detail-retry-limit", String(summary.retryLimit ?? 0));
+  setText("task-detail-last-attempt-count", String(summary.lastAttemptCount ?? 0));
   setText("task-detail-last-execution-status", summary.lastExecutionStatus || "not_run");
   setText("task-detail-last-execution-summary", summary.lastExecutionSummary || "none");
   setText("task-detail-last-artifact-path", summary.lastArtifactPath || "none");
+  setText("task-detail-last-failure-reason", summary.lastFailureReason || "none");
+  setText("task-detail-last-interruption-reason", summary.lastInterruptionReason || "none");
+  setText("task-detail-last-resource-guard-reason", summary.lastResourceGuardReason || "none");
   setText("task-detail-summary", summary.headline || "Task details loaded.");
   setValue("task-action-note", summary.lastNote && summary.lastNote !== "none" ? summary.lastNote : "");
   renderTaskHistory(summary.history || []);
@@ -784,6 +885,7 @@ function renderTaskCards(containerId, items, emptyText) {
             <p><span>Next</span><strong>${escapeHtml(item.nextAction || "Review the task state.")}</strong></p>
           </div>
           <p class="approval-description"><span>Why stopped</span>${escapeHtml(item.detail || "No detail recorded.")}</p>
+          <p class="approval-description"><span>Operator move</span>${escapeHtml(item.nextAction || "Review the task state.")}</p>
           <div class="approval-actions">
             <button
               class="button-secondary task-action-button"
@@ -953,11 +1055,14 @@ function renderSupervisorStatus(payload) {
   const statusLabel = (summary.status || "unknown").replaceAll("_", " ");
   const workspaceBlocked = (summary.pendingApprovals || []).some((item) => item.workspacePolicy === "blocked_by_workspace_policy")
     || (summary.humanNeededTasks || []).some((item) => item.workspacePolicy === "blocked_by_workspace_policy");
+  renderGhotiState(summary);
 
   setText("supervisor-headline", summary.headline || "Supervisor status unavailable.");
   setText(
     "supervisor-quick-note",
-    workspaceBlocked
+    summary.ghotiState === "resource_guard_triggered"
+      ? "Ghoti paused new window-spawning work because the current terminal or process picture looks cluttered."
+      : workspaceBlocked
       ? "Some requests are blocked by workspace policy because they target paths outside the allowed workspace."
       : summary.pendingApprovalCount > 0
       ? "Risky or uncertain work is paused until the human approves it."
@@ -975,7 +1080,10 @@ function renderSupervisorStatus(payload) {
   setText("supervisor-waiting-count", String(summary.waitingCount ?? 0));
   setText("supervisor-ready-count", String(summary.readyToResumeCount ?? 0));
   setText("supervisor-interrupted-count", String(summary.interruptedCount ?? 0));
-  setText("supervisor-summary", summary.headline || "Supervisor status unavailable.");
+  setText(
+    "supervisor-summary",
+    [summary.headline || "Supervisor status unavailable.", summary.operatorNextStep || ""].filter(Boolean).join(" "),
+  );
 
   renderApprovalCards(
     "pending-approvals-list",

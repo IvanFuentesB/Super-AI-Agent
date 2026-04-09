@@ -602,6 +602,11 @@ def main(argv: list[str] | None = None) -> int:
             print(f"last_execution_status: {last_execution.status if last_execution else 'not_run'}")
             print(f"last_execution_summary: {last_execution.output_summary if last_execution else 'none'}")
             print(f"last_artifact_path: {last_execution.artifact_path if last_execution and last_execution.artifact_path else 'none'}")
+            print(f"last_attempt_count: {last_execution.attempt_count if last_execution else 0}")
+            print(f"last_failure_reason: {last_execution.failure_reason if last_execution and last_execution.failure_reason else 'none'}")
+            print(f"last_interruption_reason: {last_execution.interruption_reason if last_execution and last_execution.interruption_reason else 'none'}")
+            print(f"last_resource_guard_reason: {last_execution.resource_guard_reason if last_execution and last_execution.resource_guard_reason else 'none'}")
+            print(f"retry_limit: {task.executor_payload.get('last_retry_limit', task.executor_payload.get('max_attempts', 0)) or 0}")
             print("target_paths:")
             if task.target_paths:
                 for item in task.target_paths:
@@ -627,6 +632,9 @@ def main(argv: list[str] | None = None) -> int:
                         f"action={item.get('action_type', 'unknown')} | "
                         f"target={item.get('target', 'none') or 'none'} | "
                         f"label={item.get('label', 'recipe step')} | "
+                        f"attempts={item.get('attempt_count', 0)} | "
+                        f"max_attempts={item.get('max_attempts', 0)} | "
+                        f"required={'yes' if item.get('required', True) else 'no'} | "
                         f"started={item.get('started_at', 'none') or 'none'} | "
                         f"finished={item.get('finished_at', 'none') or 'none'} | "
                         f"summary={item.get('summary', 'none') or 'none'} | "
@@ -653,7 +661,8 @@ def main(argv: list[str] | None = None) -> int:
                     print(
                         f"- {item.status} | started={item.started_at} | "
                         f"finished={item.finished_at or 'none'} | target={item.target or 'none'} | "
-                        f"summary={item.output_summary or 'none'} | artifact={item.artifact_path or 'none'}"
+                        f"attempts={item.attempt_count} | summary={item.output_summary or 'none'} | "
+                        f"artifact={item.artifact_path or 'none'} | reason={item.failure_reason or item.interruption_reason or item.resource_guard_reason or 'none'}"
                     )
             else:
                 print("- none")
@@ -946,6 +955,10 @@ def main(argv: list[str] | None = None) -> int:
             print(f"last_event: {state.last_event or 'none'}")
             print(f"updated_at: {state.updated_at}")
             print(f"allowed_workspace_root: {get_allowed_workspace_root()}")
+            print(f"ghoti_state: {state.ghoti_state}")
+            print(f"ghoti_reason: {state.ghoti_reason or 'none'}")
+            print(f"operator_next_step: {state.operator_next_step or 'none'}")
+            print(f"resource_guard_event_count: {state.resource_guard_event_count}")
 
             pending_requests = list_pending_approvals()
             print("pending_approvals:")
@@ -1017,6 +1030,13 @@ def main(argv: list[str] | None = None) -> int:
                         f"approval={task.approval_state} | next={_workspace_reason(get_task_next_action(task))} | "
                         f"detail={_workspace_reason(detail)}"
                     )
+            else:
+                print("- none")
+
+            print("resource_guard_events:")
+            if state.recent_resource_guard_events:
+                for item in state.recent_resource_guard_events:
+                    print(f"- {item}")
             else:
                 print("- none")
             return 0

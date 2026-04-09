@@ -371,6 +371,33 @@ function parseDesktopBridge(stdout) {
     launcherCapability: parsed.values.launcher_capability || "unknown",
     failsafeHotkey: parsed.values.failsafe_hotkey || "Ctrl+8",
     desktopControlImplemented: parsed.values.desktop_control_implemented === "yes",
+    terminalWindowCount: Number.parseInt(parsed.values.terminal_window_count || "0", 10),
+    powerShellProcessCount: Number.parseInt(parsed.values.powershell_process_count || "0", 10),
+    nodeProcessCount: Number.parseInt(parsed.values.node_process_count || "0", 10),
+    pythonProcessCount: Number.parseInt(parsed.values.python_process_count || "0", 10),
+    terminalWindowLimit: Number.parseInt(parsed.values.terminal_window_limit || "0", 10),
+    terminalProcessLimit: Number.parseInt(parsed.values.terminal_process_limit || "0", 10),
+    ollamaPresent: parsed.values.ollama_present === "yes",
+    listWindowsOk: parsed.values.list_windows_ok === "yes",
+    activeWindowOk: parsed.values.active_window_ok === "yes",
+    openAllowedAppOk: parsed.values.open_allowed_app_ok === "yes",
+    duplicateTerminalAvoidanceOk: parsed.values.duplicate_terminal_avoidance_ok === "yes",
+    focusWindowOk: parsed.values.focus_window_ok === "yes",
+    clipboardWriteOk: parsed.values.clipboard_write_ok === "yes",
+    clipboardReadOk: parsed.values.clipboard_read_ok === "yes",
+    pasteClipboardOk: parsed.values.paste_clipboard_ok === "yes",
+    sendHotkeyOk: parsed.values.send_hotkey_ok === "yes",
+    copySelectionOk: parsed.values.copy_selection_ok === "yes",
+    waitSecondsOk: parsed.values.wait_seconds_ok === "yes",
+    waitForWindowOk: parsed.values.wait_for_window_ok === "yes",
+    moveMouseOk: parsed.values.move_mouse_ok === "yes",
+    leftClickOk: parsed.values.left_click_ok === "yes",
+    scrollMouseOk: parsed.values.scroll_mouse_ok === "yes",
+    failsafeInterruptOk: parsed.values.failsafe_interrupt_ok === "yes",
+    captureDesktopScreenshotOk: parsed.values.capture_desktop_screenshot_ok === "yes",
+    unsupportedActionBlocked: parsed.values.unsupported_action_blocked === "yes",
+    resourceGuardOk: parsed.values.resource_guard_ok === "yes",
+    clipboardGuardOk: parsed.values.clipboard_guard_ok === "yes",
     availableNow: parsed.listSections.available_now || [],
     missingNow: parsed.listSections.missing_now || [],
   };
@@ -511,6 +538,8 @@ function parseExecutionHistoryLine(line) {
     target: labeled.target || "none",
     summary: labeled.summary || "none",
     artifactPath: labeled.artifact || "none",
+    attempts: Number.parseInt(labeled.attempts || "1", 10),
+    reason: labeled.reason || "none",
   };
 }
 
@@ -544,6 +573,9 @@ function parseRecipeStepLine(line) {
     clipboardPreview: labeled.clipboard || "none",
     windowAlias: labeled.window || "none",
     coordinates: labeled.coordinates || "none",
+    attempts: Number.parseInt(labeled.attempts || "0", 10),
+    maxAttempts: Number.parseInt(labeled.max_attempts || "0", 10),
+    required: labeled.required || "yes",
   };
 }
 
@@ -624,6 +656,11 @@ function parseTaskDetail(stdout) {
     lastExecutionStatus: parsed.values.last_execution_status || "not_run",
     lastExecutionSummary: parsed.values.last_execution_summary || "none",
     lastArtifactPath: parsed.values.last_artifact_path || "none",
+    lastAttemptCount: Number.parseInt(parsed.values.last_attempt_count || "0", 10),
+    lastFailureReason: parsed.values.last_failure_reason || "none",
+    lastInterruptionReason: parsed.values.last_interruption_reason || "none",
+    lastResourceGuardReason: parsed.values.last_resource_guard_reason || "none",
+    retryLimit: Number.parseInt(parsed.values.retry_limit || "0", 10),
     targetPaths: (parsed.listSections.target_paths || []).filter((item) => item !== "none"),
     recipeSteps,
     recipeLastRunSteps,
@@ -732,6 +769,8 @@ function parseSupervisorStatus(stdout) {
   const readyToResumeTasks = (parsed.listSections.ready_to_resume_tasks || [])
     .filter((item) => item !== "none")
     .map(parseTaskStatusLine);
+  const resourceGuardEvents = (parsed.listSections.resource_guard_events || [])
+    .filter((item) => item !== "none");
 
   const status = parsed.values.status || "unknown";
   const pendingApprovalCount = Number.parseInt(parsed.values.pending_approval_count || "0", 10);
@@ -754,11 +793,16 @@ function parseSupervisorStatus(stdout) {
     pendingApprovalCount,
     blockedHumanNeededCount,
     interruptedCount,
+    ghotiState: parsed.values.ghoti_state || "idle",
+    ghotiReason: parsed.values.ghoti_reason || "none",
+    operatorNextStep: parsed.values.operator_next_step || "Review the local operator state.",
+    resourceGuardEventCount: Number.parseInt(parsed.values.resource_guard_event_count || "0", 10),
     notificationMode: parsed.values.notification_mode || "dashboard",
     notificationTitle: parsed.values.notification_title || "Supervisor status",
     lastEvent: parsed.values.last_event || "none",
     updatedAt: parsed.values.updated_at || "",
     allowedWorkspaceRoot: parsed.values.allowed_workspace_root || "unknown",
+    resourceGuardEvents,
     pendingApprovals,
     humanNeededTasks,
     interruptedTasks,

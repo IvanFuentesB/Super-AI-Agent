@@ -309,6 +309,13 @@ try {
     Write-Check -Name 'Supervisor status endpoint' -Passed $supervisorStatusOk -Detail ($(if ($supervisorStatusOk) { $supervisorStatus.summary.headline } else { 'supervisor status missing structured output' }))
     if (-not $supervisorStatusOk) { $failed++ }
 
+    $ghotiStatusOk = $supervisorStatus.ok -and `
+        $supervisorStatus.summary.ghotiState -and `
+        $null -ne $supervisorStatus.summary.resourceGuardEventCount -and `
+        $supervisorStatus.summary.operatorNextStep
+    Write-Check -Name 'Supervisor endpoint includes Ghoti state fields' -Passed $ghotiStatusOk -Detail ($(if ($ghotiStatusOk) { "$($supervisorStatus.summary.ghotiState) | $($supervisorStatus.summary.operatorNextStep)" } else { 'Ghoti state fields missing from supervisor status' }))
+    if (-not $ghotiStatusOk) { $failed++ }
+
     $pendingApprovals = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/approvals/pending" -Method Get -TimeoutSec 30
     $pendingApprovalsOk = $pendingApprovals.ok -and $pendingApprovals.localOnly -and $null -ne $pendingApprovals.summary.requests
     Write-Check -Name 'Pending approvals endpoint' -Passed $pendingApprovalsOk -Detail ($(if ($pendingApprovalsOk) { $pendingApprovals.summary.headline } else { 'pending approvals missing structured output' }))
@@ -645,6 +652,16 @@ try {
     Write-Check -Name 'Desktop bridge status endpoint' -Passed $desktopStatusOk -Detail ($(if ($desktopStatusOk) { $desktopStatus.summary.headline } else { 'desktop bridge status missing structured output' }))
     if (-not $desktopStatusOk) { $failed++ }
 
+    $desktopGuardSummaryOk = $desktopStatus.ok -and `
+        $null -ne $desktopStatus.summary.terminalWindowCount -and `
+        $null -ne $desktopStatus.summary.powerShellProcessCount -and `
+        $null -ne $desktopStatus.summary.nodeProcessCount -and `
+        $null -ne $desktopStatus.summary.pythonProcessCount -and `
+        $null -ne $desktopStatus.summary.resourceGuardOk -and `
+        $null -ne $desktopStatus.summary.clipboardGuardOk
+    Write-Check -Name 'Desktop bridge status includes resource guard fields' -Passed $desktopGuardSummaryOk -Detail ($(if ($desktopGuardSummaryOk) { "term=$($desktopStatus.summary.terminalWindowCount) | pwsh=$($desktopStatus.summary.powerShellProcessCount) | node=$($desktopStatus.summary.nodeProcessCount)" } else { 'desktop bridge resource guard fields missing' }))
+    if (-not $desktopGuardSummaryOk) { $failed++ }
+
     $desktopCheck = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/desktop-bridge/check" -Method Post -ContentType 'application/json' -Body '{}' -TimeoutSec 60
     $desktopCheckOk = $desktopCheck.ok -and $desktopCheck.localOnly -and $desktopCheck.summary.shellCommandCapability
     Write-Check -Name 'Desktop bridge check endpoint' -Passed $desktopCheckOk -Detail ($(if ($desktopCheckOk) { $desktopCheck.summary.headline } else { 'desktop bridge check failed' }))
@@ -754,6 +771,95 @@ try {
             $desktopOpenDetail.summary.lastExecutionSummary -match 'Focused existing allowlisted app window'
         Write-Check -Name 'Desktop open_allowed_app result reflects focus-first reuse' -Passed $desktopOpenDetailOk -Detail ($(if ($desktopOpenDetailOk) { $desktopOpenDetail.summary.lastExecutionSummary } else { 'desktop open_allowed_app did not report focused existing window reuse' }))
         if (-not $desktopOpenDetailOk) { $failed++ }
+    }
+
+    $guardSeed = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+        'queue-executor-action',
+        '--action-type', 'open_allowed_app',
+        '--target', 'terminal'
+    )
+    $guardSeedOk = $guardSeed.ExitCode -eq 0
+    Write-Check -Name 'Seed dashboard resource-guard task' -Passed $guardSeedOk -Detail (($guardSeed.Output | Out-String).Trim())
+    if (-not $guardSeedOk) { $failed++ }
+
+    $guardTaskMatch = [regex]::Match(($guardSeed.Output | Out-String), 'task_id:\s*(\S+)')
+    $guardTaskId = if ($guardTaskMatch.Success) { $guardTaskMatch.Groups[1].Value } else { $null }
+    $guardApprovalMatch = [regex]::Match(($guardSeed.Output | Out-String), 'approval_request_id:\s*(\S+)')
+    $guardApprovalId = if ($guardApprovalMatch.Success) { $guardApprovalMatch.Groups[1].Value } else { $null }
+
+    if (-not [string]::IsNullOrWhiteSpace($guardApprovalId)) {
+        $guardApprove = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $guardApprovalId, '--note', 'dashboard checker approved guarded terminal open')
+        $guardApproveOk = $guardApprove.ExitCode -eq 0
+        Write-Check -Name 'Seed resource-guard approval' -Passed $guardApproveOk -Detail (($guardApprove.Output | Out-String).Trim())
+        if (-not $guardApproveOk) { $failed++ }
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($guardTaskId)) {
+        $guardExecute = Invoke-ModuleCommand `
+            -PythonPath $pythonPath `
+            -Arguments @('execute-task', '--task-id', $guardTaskId) `
+            -EnvOverrides @{
+                SUPER_AGENT_DESKTOP_TEST_TERMINAL_WINDOW_COUNT = '3'
+                SUPER_AGENT_DESKTOP_TEST_TERMINAL_PROCESS_COUNT = '6'
+                SUPER_AGENT_DESKTOP_TEST_FORCE_RESOURCE_GUARD = '1'
+            }
+        $guardExecuteOk = $guardExecute.ExitCode -eq 0 -and (($guardExecute.Output | Out-String) -match 'status:\s+blocked_human_needed')
+        Write-Check -Name 'Seed resource-guard execution' -Passed $guardExecuteOk -Detail (($guardExecute.Output | Out-String).Trim())
+        if (-not $guardExecuteOk) { $failed++ }
+
+        $guardTaskDetail = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/item?taskId=$guardTaskId" -Method Get -TimeoutSec 30
+        $guardTaskDetailOk = $guardTaskDetail.ok -and `
+            $guardTaskDetail.summary.status -eq 'blocked_human_needed' -and `
+            $guardTaskDetail.summary.lastResourceGuardReason -match 'resource guard'
+        Write-Check -Name 'Task detail shows resource guard reason' -Passed $guardTaskDetailOk -Detail ($(if ($guardTaskDetailOk) { $guardTaskDetail.summary.lastResourceGuardReason } else { 'resource guard reason missing from dashboard task detail' }))
+        if (-not $guardTaskDetailOk) { $failed++ }
+
+        $guardSupervisor = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/supervisor/status" -Method Get -TimeoutSec 30
+        $guardSupervisorOk = $guardSupervisor.ok -and `
+            $guardSupervisor.summary.ghotiState -eq 'resource_guard_triggered' -and `
+            $guardSupervisor.summary.resourceGuardEventCount -ge 1
+        Write-Check -Name 'Supervisor view shows resource guard state' -Passed $guardSupervisorOk -Detail ($(if ($guardSupervisorOk) { $guardSupervisor.summary.ghotiReason } else { 'resource guard state missing from supervisor view' }))
+        if (-not $guardSupervisorOk) { $failed++ }
+    }
+
+    $retrySeed = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+        'queue-executor-action',
+        '--action-type', 'focus_window',
+        '--target', 'terminal'
+    )
+    $retrySeedOk = $retrySeed.ExitCode -eq 0
+    Write-Check -Name 'Seed dashboard retry-limit task' -Passed $retrySeedOk -Detail (($retrySeed.Output | Out-String).Trim())
+    if (-not $retrySeedOk) { $failed++ }
+
+    $retryTaskMatch = [regex]::Match(($retrySeed.Output | Out-String), 'task_id:\s*(\S+)')
+    $retryTaskId = if ($retryTaskMatch.Success) { $retryTaskMatch.Groups[1].Value } else { $null }
+    $retryApprovalMatch = [regex]::Match(($retrySeed.Output | Out-String), 'approval_request_id:\s*(\S+)')
+    $retryApprovalId = if ($retryApprovalMatch.Success) { $retryApprovalMatch.Groups[1].Value } else { $null }
+
+    if (-not [string]::IsNullOrWhiteSpace($retryApprovalId)) {
+        $retryApprove = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $retryApprovalId, '--note', 'dashboard checker approved retry-limit test')
+        $retryApproveOk = $retryApprove.ExitCode -eq 0
+        Write-Check -Name 'Seed retry-limit approval' -Passed $retryApproveOk -Detail (($retryApprove.Output | Out-String).Trim())
+        if (-not $retryApproveOk) { $failed++ }
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($retryTaskId)) {
+        $retryExecute = Invoke-ModuleCommand `
+            -PythonPath $pythonPath `
+            -Arguments @('execute-task', '--task-id', $retryTaskId) `
+            -EnvOverrides @{ SUPER_AGENT_DESKTOP_TEST_FAIL_ACTIONS = 'focus_window' }
+        $retryExecuteOk = $retryExecute.ExitCode -eq 0 -and (($retryExecute.Output | Out-String) -match 'status:\s+failed')
+        Write-Check -Name 'Seed retry-limit execution' -Passed $retryExecuteOk -Detail (($retryExecute.Output | Out-String).Trim())
+        if (-not $retryExecuteOk) { $failed++ }
+
+        $retryTaskDetail = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/item?taskId=$retryTaskId" -Method Get -TimeoutSec 30
+        $retryTaskDetailOk = $retryTaskDetail.ok -and `
+            $retryTaskDetail.summary.status -eq 'failed' -and `
+            $retryTaskDetail.summary.lastAttemptCount -eq 2 -and `
+            $retryTaskDetail.summary.retryLimit -eq 2 -and `
+            $retryTaskDetail.summary.lastFailureReason -match 'Failed after 2 attempt'
+        Write-Check -Name 'Task detail shows retry limit and failure reason' -Passed $retryTaskDetailOk -Detail ($(if ($retryTaskDetailOk) { $retryTaskDetail.summary.lastFailureReason } else { 'retry-limit fields missing from dashboard task detail' }))
+        if (-not $retryTaskDetailOk) { $failed++ }
     }
 
     Start-Sleep -Milliseconds 1200

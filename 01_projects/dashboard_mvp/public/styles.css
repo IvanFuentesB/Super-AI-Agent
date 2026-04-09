@@ -80,6 +80,82 @@ code {
   line-height: 1.1;
 }
 
+.ghoti-state-indicator {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 30;
+  width: min(21rem, calc(100vw - 2rem));
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+}
+
+.ghoti-indicator-topline,
+.ghoti-state-topline,
+.ghoti-state-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.ghoti-state-indicator span,
+.ghoti-state-meta span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.ghoti-state-indicator p,
+.ghoti-state-copy {
+  margin: 0.45rem 0 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.ghoti-state-panel {
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  background: var(--panel-soft);
+}
+
+.ghoti-resource-guard-list {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.75rem;
+}
+
+.ghoti-state-success,
+.ghoti-state-indicator.is-success {
+  border-color: #bdddc9;
+  background: #f3faf6;
+}
+
+.ghoti-state-loading,
+.ghoti-state-indicator.is-loading {
+  border-color: #ead9aa;
+  background: #fffbef;
+}
+
+.ghoti-state-error,
+.ghoti-state-indicator.is-error {
+  border-color: #ecc6c6;
+  background: #fff7f7;
+}
+
+.ghoti-state-neutral,
+.ghoti-state-indicator.is-neutral {
+  border-color: var(--panel-border);
+  background: rgba(255, 255, 255, 0.96);
+}
+
 .hero-text {
   max-width: 60rem;
   margin: 0.9rem 0 0;
@@ -477,6 +553,10 @@ textarea {
   gap: 0.9rem;
 }
 
+.desktop-resource-grid {
+  margin-top: 0.85rem;
+}
+
 .approval-detail-grid {
   display: grid;
   gap: 0.75rem;
@@ -744,6 +824,12 @@ code {
 @media (max-width: 860px) {
   .hero {
     padding: 1.5rem 0.85rem 1.2rem;
+  }
+
+  .ghoti-state-indicator {
+    right: 0.5rem;
+    bottom: 0.5rem;
+    width: min(20rem, calc(100vw - 1rem));
   }
 
   .page-shell {

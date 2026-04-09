@@ -40,6 +40,7 @@ Add-Type -AssemblyName System.Drawing
 $signature = @'
 using System;
 using System.Runtime.InteropServices;
+using System.Text;
 
 [StructLayout(LayoutKind.Sequential)]
 public struct RECT
@@ -72,6 +73,15 @@ public static class DesktopBridgeNative
 
     [DllImport("user32.dll")]
     public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    public static extern int GetWindowText(IntPtr hWnd, StringBuilder text, int count);
+
+    [DllImport("user32.dll")]
+    public static extern int GetWindowTextLength(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
 
     [DllImport("user32.dll")]
     public static extern void mouse_event(uint dwFlags, uint dx, uint dy, uint dwData, UIntPtr dwExtraInfo);
@@ -144,6 +154,20 @@ if ($env:SUPER_AGENT_DESKTOP_TEST_INTERRUPT_AFTER_MS -match '^\d+$') {
     $testInterruptAfterMs = [int]$env:SUPER_AGENT_DESKTOP_TEST_INTERRUPT_AFTER_MS
 }
 $interruptStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+$forcedFailureActions = @()
+if (-not [string]::IsNullOrWhiteSpace($env:SUPER_AGENT_DESKTOP_TEST_FAIL_ACTIONS)) {
+    $forcedFailureActions = @(
+        $env:SUPER_AGENT_DESKTOP_TEST_FAIL_ACTIONS.Split(',') |
+            ForEach-Object { $_.Trim().ToLowerInvariant() } |
+            Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+    )
+}
+$resourceGuardThresholds = [ordered]@{
+    TerminalWindowLimit = 3
+    TerminalProcessLimit = 6
+    NodeProcessLimit = 10
+    PythonProcessLimit = 10
+}
 
 function Write-Field {
     param(
@@ -170,6 +194,124 @@ function Short-Preview {
     }
 
     return ($normalized.Substring(0, $Limit - 3).TrimEnd() + '...')
+}
+
+function Get-EnvOverrideInt {
+    param(
+        [string]$Name,
+        [int]$DefaultValue
+    )
+
+    $raw = [Environment]::GetEnvironmentVariable($Name)
+    if ([string]::IsNullOrWhiteSpace($raw)) {
+        return $DefaultValue
+    }
+
+    $value = 0
+    if ([int]::TryParse($raw, [ref]$value)) {
+        return $value
+    }
+
+    return $DefaultValue
+}
+
+function Get-ProcessCountSafe {
+    param(
+        [string[]]$Names
+    )
+
+    try {
+        return @(
+            Get-Process -ErrorAction SilentlyContinue |
+                Where-Object { $Names -contains $_.ProcessName.ToLowerInvariant() }
+        ).Count
+    }
+    catch {
+        return 0
+    }
+}
+
+function Get-ResourceGuardSnapshot {
+    $terminalWindowCount = @(Get-AllowedWindows | Where-Object { $_.Aliases -contains 'terminal' }).Count
+    $powerShellProcessCount = Get-ProcessCountSafe -Names @('powershell', 'pwsh')
+    $nodeProcessCount = Get-ProcessCountSafe -Names @('node', 'npm')
+    $pythonProcessCount = Get-ProcessCountSafe -Names @('python', 'pythonw')
+    $ollamaPresent = (Get-ProcessCountSafe -Names @('ollama')) -gt 0
+
+    $terminalWindowCount = Get-EnvOverrideInt -Name 'SUPER_AGENT_DESKTOP_TEST_TERMINAL_WINDOW_COUNT' -DefaultValue $terminalWindowCount
+    $powerShellProcessCount = Get-EnvOverrideInt -Name 'SUPER_AGENT_DESKTOP_TEST_TERMINAL_PROCESS_COUNT' -DefaultValue $powerShellProcessCount
+    $nodeProcessCount = Get-EnvOverrideInt -Name 'SUPER_AGENT_DESKTOP_TEST_NODE_PROCESS_COUNT' -DefaultValue $nodeProcessCount
+    $pythonProcessCount = Get-EnvOverrideInt -Name 'SUPER_AGENT_DESKTOP_TEST_PYTHON_PROCESS_COUNT' -DefaultValue $pythonProcessCount
+
+    return [pscustomobject]@{
+        TerminalWindowCount = $terminalWindowCount
+        PowerShellProcessCount = $powerShellProcessCount
+        NodeProcessCount = $nodeProcessCount
+        PythonProcessCount = $pythonProcessCount
+        OllamaPresent = $ollamaPresent
+    }
+}
+
+function Write-ResourceGuardSnapshot {
+    param(
+        [pscustomobject]$Snapshot
+    )
+
+    Write-Field 'terminal_window_count' "$($Snapshot.TerminalWindowCount)"
+    Write-Field 'powershell_process_count' "$($Snapshot.PowerShellProcessCount)"
+    Write-Field 'node_process_count' "$($Snapshot.NodeProcessCount)"
+    Write-Field 'python_process_count' "$($Snapshot.PythonProcessCount)"
+    Write-Field 'ollama_present' $(if ($Snapshot.OllamaPresent) { 'yes' } else { 'no' })
+    Write-Field 'terminal_window_limit' "$($resourceGuardThresholds.TerminalWindowLimit)"
+    Write-Field 'terminal_process_limit' "$($resourceGuardThresholds.TerminalProcessLimit)"
+}
+
+function Assert-NotForcedFailure {
+    param(
+        [string]$ActionName
+    )
+
+    if ($forcedFailureActions -contains $ActionName.Trim().ToLowerInvariant()) {
+        throw "Forced desktop action failure for testing: $ActionName"
+    }
+}
+
+function Stop-BlockedAction {
+    param(
+        [string]$Reason,
+        [string]$GuardState = 'blocked',
+        [string]$TargetValue = ''
+    )
+
+    $snapshot = Get-ResourceGuardSnapshot
+    $effectiveTarget = 'none'
+    if (-not [string]::IsNullOrWhiteSpace($TargetValue)) {
+        $effectiveTarget = $TargetValue
+    }
+    elseif (-not [string]::IsNullOrWhiteSpace($Target)) {
+        $effectiveTarget = $Target
+    }
+    Write-Field 'action_type' $Action
+    Write-Field 'status' 'blocked'
+    Write-Field 'target' $effectiveTarget
+    Write-Field 'guard_state' $GuardState
+    Write-Field 'failure_reason' $Reason
+    Write-Field 'headline' $Reason
+    Write-ResourceGuardSnapshot -Snapshot $snapshot
+    exit 41
+}
+
+function Test-SuspiciousTerminalClipboardText {
+    param(
+        [string]$ClipboardText
+    )
+
+    $normalized = (([string]$ClipboardText) -replace '\s+', ' ').Trim()
+    if ([string]::IsNullOrWhiteSpace($normalized)) {
+        return $false
+    }
+
+    return $normalized -match '(?i)(^run desktop bridge check$|^refresh console status$|^refresh github summary$|^focus or reuse terminal$|^copy from focused window$|^paste into target window$|check_runtime_mvp\.ps1|check_dashboard_mvp\.ps1|check_desktop_playground\.ps1|write-check -name|\[(pass|fail)\])'
 }
 
 function Resolve-SafePath {
@@ -295,7 +437,10 @@ function Wait-WithInterrupt {
 function Get-AllowedWindows {
     $windows = @()
     foreach ($processItem in Get-Process | Where-Object { $_.MainWindowHandle -ne 0 -and -not [string]::IsNullOrWhiteSpace($_.MainWindowTitle) }) {
-        $title = $processItem.MainWindowTitle.Trim()
+        $title = Get-WindowTitleByHandle -Handle ([System.IntPtr]$processItem.MainWindowHandle)
+        if ([string]::IsNullOrWhiteSpace($title)) {
+            $title = $processItem.MainWindowTitle.Trim()
+        }
         $aliases = @()
         foreach ($entry in $allowedWindowTargets.GetEnumerator()) {
             foreach ($needle in $entry.Value) {
@@ -317,6 +462,43 @@ function Get-AllowedWindows {
     }
 
     return @($windows)
+}
+
+function Get-WindowTitleByHandle {
+    param(
+        [System.IntPtr]$Handle
+    )
+
+    if ($Handle -eq [System.IntPtr]::Zero) {
+        return ''
+    }
+
+    $length = [DesktopBridgeNative]::GetWindowTextLength($Handle)
+    $bufferSize = [Math]::Max($length + 1, 256)
+    $builder = New-Object System.Text.StringBuilder $bufferSize
+    [void][DesktopBridgeNative]::GetWindowText($Handle, $builder, $builder.Capacity)
+    return $builder.ToString().Trim()
+}
+
+function Get-AllowedAliasByTitle {
+    param(
+        [string]$Title
+    )
+
+    $normalizedTitle = ([string]$Title).Trim()
+    if ([string]::IsNullOrWhiteSpace($normalizedTitle)) {
+        return 'none'
+    }
+
+    foreach ($entry in $allowedWindowTargets.GetEnumerator()) {
+        foreach ($needle in $entry.Value) {
+            if ($normalizedTitle.IndexOf($needle, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) {
+                return $entry.Key
+            }
+        }
+    }
+
+    return 'unsupported'
 }
 
 function Get-WindowByAlias {
@@ -361,33 +543,20 @@ function Get-ActiveWindowInfo {
             Handle = [IntPtr]::Zero
             Title = ''
             Alias = 'none'
+            ProcessId = 0
         }
     }
 
-    $title = ''
-    foreach ($processItem in Get-Process | Where-Object { $_.MainWindowHandle -eq $handle }) {
-        $title = $processItem.MainWindowTitle.Trim()
-        break
-    }
-    $alias = 'unsupported'
-
-    foreach ($entry in $allowedWindowTargets.GetEnumerator()) {
-        foreach ($needle in $entry.Value) {
-            if ($title.IndexOf($needle, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) {
-                $alias = $entry.Key
-                break
-            }
-        }
-
-        if ($alias -ne 'unsupported') {
-            break
-        }
-    }
+    $title = Get-WindowTitleByHandle -Handle $handle
+    $alias = Get-AllowedAliasByTitle -Title $title
+    $processId = [uint32]0
+    [void][DesktopBridgeNative]::GetWindowThreadProcessId($handle, [ref]$processId)
 
     return [pscustomobject]@{
         Handle = $handle
         Title = $title
         Alias = $alias
+        ProcessId = [int]$processId
     }
 }
 
@@ -408,7 +577,7 @@ function Focus-AllowedWindowInternal {
     Assert-NotInterrupted -Phase "focusing $Alias"
 
     $activeBefore = Get-ActiveWindowInfo
-    if ($activeBefore.Alias -eq $Alias -or $activeBefore.Title -eq $window.Title) {
+    if ($activeBefore.Handle -eq $window.Handle -or $activeBefore.Alias -eq $Alias -or $activeBefore.Title -eq $window.Title) {
         return [pscustomobject]@{
             Alias = $Alias
             Title = $window.Title
@@ -451,13 +620,13 @@ function Focus-AllowedWindowInternal {
 
         Wait-WithInterrupt -Milliseconds 220 -Phase "verifying focus for $Alias"
         $activeWindow = Get-ActiveWindowInfo
-        if ($activeWindow.Alias -eq $Alias -or $activeWindow.Title -eq $window.Title) {
+        if ($activeWindow.Handle -eq $window.Handle -or $activeWindow.Alias -eq $Alias -or $activeWindow.Title -eq $window.Title) {
             $focusOk = $true
             break
         }
     }
 
-    if (-not ($activeWindow.Alias -eq $Alias -or $activeWindow.Title -eq $window.Title)) {
+    if (-not ($activeWindow.Handle -eq $window.Handle -or $activeWindow.Alias -eq $Alias -or $activeWindow.Title -eq $window.Title)) {
         throw "Windows did not move focus to the requested allowlisted window: $Alias"
     }
 
@@ -534,6 +703,62 @@ function Resolve-InputWindowContext {
         Handle = $activeWindow.Handle
         ActiveAlias = $activeWindow.Alias
         ActiveTitle = $activeWindow.Title
+    }
+}
+
+function Focus-AllowedWindowOrBlock {
+    param(
+        [string]$Alias,
+        [string]$ActionLabel = 'desktop action'
+    )
+
+    try {
+        return Focus-AllowedWindowInternal -Alias $Alias
+    }
+    catch {
+        $message = $_.Exception.Message
+        if ($message -like 'Windows did not move focus to the requested allowlisted window:*') {
+            $activeWindow = Get-ActiveWindowInfo
+            $reason = if ($activeWindow.Handle -eq [System.IntPtr]::Zero) {
+                "Foreground desktop access is unavailable in this session, so $ActionLabel requires manual operator focus for target: $Alias."
+            }
+            else {
+                "Windows did not confirm focus for allowlisted target $Alias, so $ActionLabel requires manual operator focus."
+            }
+            Stop-BlockedAction -Reason $reason -GuardState 'manual_focus_required' -TargetValue $Alias
+        }
+
+        throw
+    }
+}
+
+function Resolve-InputWindowContextOrBlock {
+    param(
+        [string]$Alias = '',
+        [string]$ActionLabel = 'desktop input action'
+    )
+
+    try {
+        return Resolve-InputWindowContext -Alias $Alias
+    }
+    catch {
+        $message = $_.Exception.Message
+        if (
+            $message -like 'Windows did not move focus to the requested allowlisted window:*' -or
+            $message -like 'Desktop input actions require a focused allowlisted window or an explicit allowed target.'
+        ) {
+            $effectiveTarget = if ([string]::IsNullOrWhiteSpace($Alias)) { 'active_allowlisted_window' } else { $Alias }
+            $activeWindow = Get-ActiveWindowInfo
+            $reason = if ($activeWindow.Handle -eq [System.IntPtr]::Zero) {
+                "Foreground desktop access is unavailable in this session, so $ActionLabel requires manual operator focus for target: $effectiveTarget."
+            }
+            else {
+                "Desktop input focus could not be verified for target $effectiveTarget, so $ActionLabel requires manual operator focus."
+            }
+            Stop-BlockedAction -Reason $reason -GuardState 'manual_focus_required' -TargetValue $effectiveTarget
+        }
+
+        throw
     }
 }
 
@@ -718,9 +943,12 @@ function Invoke-MouseClickSequence {
 }
 
 function Invoke-DesktopAction {
+    Assert-NotForcedFailure -ActionName $Action
+
     switch ($Action) {
         'list_windows' {
             $windows = @(Get-AllowedWindows)
+            $snapshot = Get-ResourceGuardSnapshot
             $targetFilter = $Target.Trim().ToLowerInvariant()
             if ($targetFilter) {
                 if (-not $allowedWindowTargets.Contains($targetFilter)) {
@@ -746,17 +974,21 @@ function Invoke-DesktopAction {
             foreach ($alias in $allowedWindowTargets.Keys) {
                 Write-Output ("- {0}" -f $alias)
             }
+            Write-ResourceGuardSnapshot -Snapshot $snapshot
             return
         }
 
         'get_active_window' {
             $activeWindow = Get-ActiveWindowInfo
+            $snapshot = Get-ResourceGuardSnapshot
             Write-Field 'action_type' 'get_active_window'
             Write-Field 'status' 'succeeded'
             Write-Field 'target' 'foreground_window'
             Write-Field 'headline' ($(if ($activeWindow.Title) { 'Active window detected.' } else { 'No active window title detected.' }))
             Write-Field 'active_window_alias' $activeWindow.Alias
             Write-Field 'active_window_title' ($(if ($activeWindow.Title) { $activeWindow.Title } else { 'none' }))
+            Write-Field 'foreground_access' $(if ($activeWindow.Handle -eq [System.IntPtr]::Zero) { 'unavailable' } else { 'available' })
+            Write-ResourceGuardSnapshot -Snapshot $snapshot
             return
         }
 
@@ -766,7 +998,7 @@ function Invoke-DesktopAction {
                 throw 'focus_window requires a target alias.'
             }
 
-            $focused = Focus-AllowedWindowInternal -Alias $alias
+            $focused = Focus-AllowedWindowOrBlock -Alias $alias -ActionLabel 'focusing an allowlisted window'
             Write-Field 'action_type' 'focus_window'
             Write-Field 'status' 'succeeded'
             Write-Field 'target' $alias
@@ -782,9 +1014,11 @@ function Invoke-DesktopAction {
                 throw 'open_allowed_app requires a target alias.'
             }
 
-            $existingWindow = Get-WindowByAlias -Alias $alias
+            $forceResourceGuardCheck = [Environment]::GetEnvironmentVariable('SUPER_AGENT_DESKTOP_TEST_FORCE_RESOURCE_GUARD') -eq '1'
+            $existingWindow = if ($forceResourceGuardCheck) { $null } else { Get-WindowByAlias -Alias $alias }
             if ($null -ne $existingWindow) {
-                $focused = Focus-AllowedWindowInternal -Alias $alias
+                $snapshot = Get-ResourceGuardSnapshot
+                $focused = Focus-AllowedWindowOrBlock -Alias $alias -ActionLabel 'reusing an existing allowlisted app window'
                 Write-Field 'action_type' 'open_allowed_app'
                 Write-Field 'status' 'succeeded'
                 Write-Field 'target' $alias
@@ -792,7 +1026,21 @@ function Invoke-DesktopAction {
                 Write-Field 'focused_window_title' $focused.ActiveTitle
                 Write-Field 'reused_existing_window' 'yes'
                 Write-Field 'command_path' 'none'
+                Write-ResourceGuardSnapshot -Snapshot $snapshot
                 return
+            }
+
+            $snapshot = Get-ResourceGuardSnapshot
+            if (
+                $alias -eq 'terminal' -and (
+                    $snapshot.TerminalWindowCount -ge $resourceGuardThresholds.TerminalWindowLimit -or
+                    $snapshot.PowerShellProcessCount -ge $resourceGuardThresholds.TerminalProcessLimit
+                )
+            ) {
+                Stop-BlockedAction `
+                    -Reason ("Resource guard blocked opening another terminal window because {0} terminal window(s) and {1} PowerShell process(es) are already present." -f $snapshot.TerminalWindowCount, $snapshot.PowerShellProcessCount) `
+                    -GuardState 'resource_guard_triggered' `
+                    -TargetValue $alias
             }
 
             $resolved = Resolve-AllowedApp -Alias $alias
@@ -806,7 +1054,7 @@ function Invoke-DesktopAction {
             }
             $process = Start-Process @startProcessParams
             [void](Wait-ForAllowedWindowInternal -Alias $alias -TimeoutSeconds 15)
-            $focused = Focus-AllowedWindowInternal -Alias $alias
+            $focused = Focus-AllowedWindowOrBlock -Alias $alias -ActionLabel 'opening an allowlisted local app'
 
             Write-Field 'action_type' 'open_allowed_app'
             Write-Field 'status' 'succeeded'
@@ -816,6 +1064,7 @@ function Invoke-DesktopAction {
             Write-Field 'process_id' "$($process.Id)"
             Write-Field 'reused_existing_window' 'no'
             Write-Field 'focused_window_title' $focused.ActiveTitle
+            Write-ResourceGuardSnapshot -Snapshot $snapshot
             return
         }
 
@@ -837,6 +1086,16 @@ function Invoke-DesktopAction {
             try {
                 $graphics.CopyFromScreen($bounds.X, $bounds.Y, 0, 0, $bitmap.Size)
                 $bitmap.Save($resolvedArtifactPath, [System.Drawing.Imaging.ImageFormat]::Png)
+            }
+            catch {
+                $message = $_.Exception.Message
+                if ($message -match 'CopyFromScreen|Controlador no v[aá]lido|invalid (handle|parameter|driver)|The handle is invalid|Invalid driver') {
+                    Stop-BlockedAction `
+                        -Reason 'Desktop screenshot capture is unavailable in this Windows session, so a manual screenshot is required.' `
+                        -GuardState 'desktop_capture_unavailable' `
+                        -TargetValue 'desktop'
+                }
+                throw
             }
             finally {
                 $graphics.Dispose()
@@ -878,7 +1137,7 @@ function Invoke-DesktopAction {
                 throw "Unsupported allowed input target: $alias"
             }
 
-            $context = Resolve-InputWindowContext -Alias $alias
+            $context = Resolve-InputWindowContextOrBlock -Alias $alias -ActionLabel 'copying a selection'
             Assert-NotInterrupted -Phase "copying selection from $($context.ActiveAlias)"
             [System.Windows.Forms.SendKeys]::SendWait('^c')
             Wait-WithInterrupt -Milliseconds 450 -Phase 'waiting for clipboard copy'
@@ -899,8 +1158,22 @@ function Invoke-DesktopAction {
                 throw "Unsupported allowed input target: $alias"
             }
 
-            $context = Resolve-InputWindowContext -Alias $alias
-            $clipboardPreview = Short-Preview -Text (Get-ClipboardTextSafe)
+            $clipboardText = Get-ClipboardTextSafe
+            $clipboardPreview = Short-Preview -Text $clipboardText
+            if ((-not [string]::IsNullOrWhiteSpace($alias) -and $alias -eq 'terminal' -and (Test-SuspiciousTerminalClipboardText -ClipboardText $clipboardText))) {
+                Stop-BlockedAction `
+                    -Reason 'Clipboard guard blocked pasting likely checker or recipe label text into the terminal.' `
+                    -GuardState 'clipboard_guard_triggered' `
+                    -TargetValue 'terminal'
+            }
+
+            $context = Resolve-InputWindowContextOrBlock -Alias $alias -ActionLabel 'pasting clipboard text'
+            if ($context.ActiveAlias -eq 'terminal' -and (Test-SuspiciousTerminalClipboardText -ClipboardText $clipboardText)) {
+                Stop-BlockedAction `
+                    -Reason 'Clipboard guard blocked pasting likely checker or recipe label text into the terminal.' `
+                    -GuardState 'clipboard_guard_triggered' `
+                    -TargetValue $context.ActiveAlias
+            }
             Assert-NotInterrupted -Phase "pasting clipboard into $($context.ActiveAlias)"
             [System.Windows.Forms.SendKeys]::SendWait('^v')
             Wait-WithInterrupt -Milliseconds 250 -Phase 'waiting after clipboard paste'
@@ -917,7 +1190,19 @@ function Invoke-DesktopAction {
 
         'send_hotkey' {
             $spec = Resolve-HotkeySpec -HotkeyTarget $Target
-            $context = Resolve-InputWindowContext -Alias $spec.Alias
+            if ($spec.Hotkey -eq 'ctrl+v') {
+                $clipboardText = Get-ClipboardTextSafe
+                if (
+                    ((-not [string]::IsNullOrWhiteSpace($spec.Alias) -and $spec.Alias -eq 'terminal') -or [string]::IsNullOrWhiteSpace($spec.Alias)) -and
+                    (Test-SuspiciousTerminalClipboardText -ClipboardText $clipboardText)
+                ) {
+                    Stop-BlockedAction `
+                        -Reason 'Clipboard guard blocked Ctrl+V because the clipboard looks like checker or recipe label text.' `
+                        -GuardState 'clipboard_guard_triggered' `
+                        -TargetValue $(if ([string]::IsNullOrWhiteSpace($spec.Alias)) { 'active_allowlisted_window' } else { $spec.Alias })
+                }
+            }
+            $context = Resolve-InputWindowContextOrBlock -Alias $spec.Alias -ActionLabel ("sending hotkey {0}" -f $spec.Hotkey)
             Assert-NotInterrupted -Phase "sending hotkey $($spec.Hotkey)"
             [System.Windows.Forms.SendKeys]::SendWait($spec.SendKeys)
             Wait-WithInterrupt -Milliseconds 220 -Phase "waiting after hotkey $($spec.Hotkey)"
@@ -966,10 +1251,10 @@ function Invoke-DesktopAction {
         'move_mouse' {
             $point = Parse-PointTarget -PointTarget $Target
             if (-not [string]::IsNullOrWhiteSpace($point.Alias)) {
-                [void](Resolve-InputWindowContext -Alias $point.Alias)
+                [void](Resolve-InputWindowContextOrBlock -Alias $point.Alias -ActionLabel 'moving the mouse')
             }
             else {
-                [void](Resolve-InputWindowContext)
+                [void](Resolve-InputWindowContextOrBlock -ActionLabel 'moving the mouse')
             }
 
             Assert-NotInterrupted -Phase "moving mouse to $($point.Coordinates)"
@@ -996,10 +1281,10 @@ function Invoke-DesktopAction {
         'left_click' {
             $point = Parse-PointTarget -PointTarget $Target
             if (-not [string]::IsNullOrWhiteSpace($point.Alias)) {
-                [void](Resolve-InputWindowContext -Alias $point.Alias)
+                [void](Resolve-InputWindowContextOrBlock -Alias $point.Alias -ActionLabel 'left clicking')
             }
             else {
-                [void](Resolve-InputWindowContext)
+                [void](Resolve-InputWindowContextOrBlock -ActionLabel 'left clicking')
             }
 
             if (-not [DesktopBridgeNative]::SetCursorPos($point.X, $point.Y)) {
@@ -1019,10 +1304,10 @@ function Invoke-DesktopAction {
         'double_click' {
             $point = Parse-PointTarget -PointTarget $Target
             if (-not [string]::IsNullOrWhiteSpace($point.Alias)) {
-                [void](Resolve-InputWindowContext -Alias $point.Alias)
+                [void](Resolve-InputWindowContextOrBlock -Alias $point.Alias -ActionLabel 'double clicking')
             }
             else {
-                [void](Resolve-InputWindowContext)
+                [void](Resolve-InputWindowContextOrBlock -ActionLabel 'double clicking')
             }
 
             if (-not [DesktopBridgeNative]::SetCursorPos($point.X, $point.Y)) {
@@ -1042,10 +1327,10 @@ function Invoke-DesktopAction {
         'right_click' {
             $point = Parse-PointTarget -PointTarget $Target
             if (-not [string]::IsNullOrWhiteSpace($point.Alias)) {
-                [void](Resolve-InputWindowContext -Alias $point.Alias)
+                [void](Resolve-InputWindowContextOrBlock -Alias $point.Alias -ActionLabel 'right clicking')
             }
             else {
-                [void](Resolve-InputWindowContext)
+                [void](Resolve-InputWindowContextOrBlock -ActionLabel 'right clicking')
             }
 
             if (-not [DesktopBridgeNative]::SetCursorPos($point.X, $point.Y)) {
@@ -1065,10 +1350,10 @@ function Invoke-DesktopAction {
         'scroll_mouse' {
             $scroll = Parse-ScrollTarget -ScrollTarget $Target
             if (-not [string]::IsNullOrWhiteSpace($scroll.Alias)) {
-                [void](Resolve-InputWindowContext -Alias $scroll.Alias)
+                [void](Resolve-InputWindowContextOrBlock -Alias $scroll.Alias -ActionLabel 'scrolling mouse input')
             }
             else {
-                [void](Resolve-InputWindowContext)
+                [void](Resolve-InputWindowContextOrBlock -ActionLabel 'scrolling mouse input')
             }
 
             Assert-NotInterrupted -Phase 'scrolling mouse'

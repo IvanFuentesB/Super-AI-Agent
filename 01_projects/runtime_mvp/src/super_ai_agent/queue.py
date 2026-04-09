@@ -68,10 +68,16 @@ ALLOWED_DESKTOP_HOTKEYS = {"ctrl+c", "ctrl+v", "ctrl+l", "enter", "escape"}
 QUEUEABLE_TASK_STATUSES = {"queued", "running", "waiting", "blocked_human_needed", "ready_to_resume"}
 WINDOWS_ABSOLUTE_PATH_PATTERN = re.compile(r"(?i)\b[A-Z]:\\[^\s\"'<>|?*]+")
 DEFAULT_OPERATOR_RECIPE_WAIT_SECONDS = 2
+DEFAULT_DESKTOP_MAX_ATTEMPTS = 2
+RESOURCE_GUARD_WAITING_FOR = "resource_guard_review"
 
 
 class DesktopActionInterrupted(RuntimeError):
     """Raised when a desktop bridge action is interrupted by the local failsafe."""
+
+
+class DesktopActionBlocked(RuntimeError):
+    """Raised when the desktop bridge blocks an action for safety or clarity."""
 
 
 def _now() -> str:
@@ -133,6 +139,8 @@ def _task_next_action(task: Task) -> str:
     if task.status == "pending_approval":
         return "Resolve the approval request."
     if task.status == "blocked_human_needed":
+        if (task.waiting_for or "") == RESOURCE_GUARD_WAITING_FOR or _task_has_resource_guard_reason(task):
+            return "Reduce duplicate windows or processes, then review the blocked task before re-queueing it."
         if task.workspace_policy == "blocked_by_workspace_policy":
             return "Keep blocked until the target is moved inside the workspace or policy changes."
         return "Mark the human-needed step as reviewed."
@@ -148,6 +156,8 @@ def _task_next_action(task: Task) -> str:
         return "Run the task manually when ready."
     if task.status == "completed":
         return "Review the completed output."
+    if task.status == "failed":
+        return "Inspect the failure reason before deciding whether to retry manually."
     return "Review the current task state."
 
 
@@ -456,12 +466,16 @@ def _build_recipe_step(
     label: str,
     target: str = "",
     text_content: str = "",
+    required: bool = True,
+    max_attempts: int = DEFAULT_DESKTOP_MAX_ATTEMPTS,
 ) -> dict:
     return {
         "action_type": action_type,
         "label": label,
         "target": target,
         "text_content": text_content,
+        "required": required,
+        "max_attempts": max_attempts,
     }
 
 
@@ -679,6 +693,14 @@ def _build_operator_recipe_definition(recipe_name: str, options: dict | None = N
                 "action_type": action_type,
                 "target": str(step.get("target", "")).strip(),
                 "text_content": str(step.get("text_content", "")),
+                "required": bool(step.get("required", True)),
+                "max_attempts": max(
+                    1,
+                    min(
+                        DEFAULT_DESKTOP_MAX_ATTEMPTS,
+                        int(step.get("max_attempts", DEFAULT_DESKTOP_MAX_ATTEMPTS) or DEFAULT_DESKTOP_MAX_ATTEMPTS),
+                    ),
+                ),
             }
         )
 
@@ -744,6 +766,43 @@ def _parse_key_value_output(text: str) -> tuple[dict[str, str], dict[str, list[s
             values[key.strip()] = value.strip()
 
     return values, sections
+
+
+def _set_desktop_execution_metadata(
+    task: Task,
+    *,
+    attempt_count: int,
+    max_attempts: int,
+    failure_reason: str = "",
+    interruption_reason: str = "",
+    resource_guard_reason: str = "",
+) -> None:
+    task.executor_payload["last_attempt_count"] = attempt_count
+    task.executor_payload["last_retry_limit"] = max_attempts
+    task.executor_payload["last_failure_reason"] = failure_reason
+    task.executor_payload["last_interruption_reason"] = interruption_reason
+    task.executor_payload["last_resource_guard_reason"] = resource_guard_reason
+
+
+def _task_has_resource_guard_reason(task: Task) -> bool:
+    blocked = (task.blocked_reason or "").lower()
+    waiting_for = (task.waiting_for or "").lower()
+    if "resource guard" in blocked or waiting_for == RESOURCE_GUARD_WAITING_FOR:
+        return True
+    return any(item.event_type == "resource_guard_triggered" for item in task.history)
+
+
+def _recent_resource_guard_events(tasks: list[Task], limit: int = 5) -> list[str]:
+    recent_items: list[tuple[str, str]] = []
+    for task in tasks:
+        for item in task.history:
+            if item.event_type != "resource_guard_triggered":
+                continue
+            note = item.note or task.blocked_reason or f"Resource guard stopped {task.task_id}."
+            recent_items.append((item.occurred_at, _shorten_output(f"{task.task_id}: {note}", limit=240)))
+
+    recent_items.sort(key=lambda item: item[0], reverse=True)
+    return [item[1] for item in recent_items[:limit]]
 
 
 def _build_executor_title(action_type: str, target: str) -> str:
@@ -858,6 +917,7 @@ def _prepare_executor_action(
         target_paths = [str(script_path)]
         payload["script_path"] = str(script_path)
     elif normalized_action == "list_windows":
+        payload["max_attempts"] = DEFAULT_DESKTOP_MAX_ATTEMPTS
         target_filter = normalized_target.lower()
         if target_filter:
             if target_filter not in ALLOWED_DESKTOP_FOCUS_TARGETS:
@@ -873,6 +933,7 @@ def _prepare_executor_action(
     elif normalized_action == "get_active_window":
         normalized_target = "foreground_window"
         payload["bridge_target"] = ""
+        payload["max_attempts"] = DEFAULT_DESKTOP_MAX_ATTEMPTS
     elif normalized_action == "focus_window":
         target_alias = normalized_target.lower()
         if target_alias not in ALLOWED_DESKTOP_FOCUS_TARGETS:
@@ -882,6 +943,7 @@ def _prepare_executor_action(
             )
         normalized_target = target_alias
         payload["bridge_target"] = target_alias
+        payload["max_attempts"] = DEFAULT_DESKTOP_MAX_ATTEMPTS
     elif normalized_action == "open_allowed_app":
         target_alias = normalized_target.lower()
         if target_alias not in ALLOWED_DESKTOP_APP_TARGETS:
@@ -891,6 +953,7 @@ def _prepare_executor_action(
             )
         normalized_target = target_alias
         payload["bridge_target"] = target_alias
+        payload["max_attempts"] = DEFAULT_DESKTOP_MAX_ATTEMPTS
     elif normalized_action == "capture_desktop_screenshot":
         screenshot_target = normalized_target or str(
             (
@@ -905,24 +968,30 @@ def _prepare_executor_action(
         normalized_target = str(resolved_target)
         target_paths = [normalized_target]
         payload["artifact_path"] = normalized_target
+        payload["max_attempts"] = DEFAULT_DESKTOP_MAX_ATTEMPTS
     elif normalized_action == "get_clipboard_text":
         normalized_target = "clipboard"
         payload["bridge_target"] = ""
+        payload["max_attempts"] = DEFAULT_DESKTOP_MAX_ATTEMPTS
     elif normalized_action == "set_clipboard_text":
         normalized_target = "clipboard"
         payload["bridge_target"] = ""
         payload["text_content"] = content
+        payload["max_attempts"] = DEFAULT_DESKTOP_MAX_ATTEMPTS
     elif normalized_action == "copy_selection":
         alias = _normalize_optional_window_target(normalized_target, action_type="copy_selection")
         normalized_target = alias or "active_allowed_window"
         payload["bridge_target"] = alias
+        payload["max_attempts"] = DEFAULT_DESKTOP_MAX_ATTEMPTS
     elif normalized_action == "paste_clipboard":
         alias = _normalize_optional_window_target(normalized_target, action_type="paste_clipboard")
         normalized_target = alias or "active_allowed_window"
         payload["bridge_target"] = alias
+        payload["max_attempts"] = DEFAULT_DESKTOP_MAX_ATTEMPTS
     elif normalized_action == "send_hotkey":
         normalized_target = _normalize_hotkey_target(normalized_target)
         payload["bridge_target"] = normalized_target
+        payload["max_attempts"] = DEFAULT_DESKTOP_MAX_ATTEMPTS
     elif normalized_action == "wait_seconds":
         wait_seconds = _require_positive_int(
             normalized_target,
@@ -932,12 +1001,15 @@ def _prepare_executor_action(
         )
         normalized_target = str(wait_seconds)
         payload["bridge_target"] = normalized_target
+        payload["max_attempts"] = DEFAULT_DESKTOP_MAX_ATTEMPTS
     elif normalized_action == "wait_for_window":
         normalized_target = _normalize_wait_for_window_target(normalized_target)
         payload["bridge_target"] = normalized_target
+        payload["max_attempts"] = DEFAULT_DESKTOP_MAX_ATTEMPTS
     elif normalized_action in {"move_mouse", "left_click", "double_click", "right_click", "scroll_mouse"}:
         normalized_target = _require_target_text(normalized_target, normalized_action)
         payload["bridge_target"] = normalized_target
+        payload["max_attempts"] = DEFAULT_DESKTOP_MAX_ATTEMPTS
     elif normalized_action == "run_operator_recipe":
         recipe_definition = _build_operator_recipe_definition(
             normalized_target,
@@ -951,6 +1023,7 @@ def _prepare_executor_action(
                 "recipe_description": recipe_definition["description"],
                 "recipe_risk_level": recipe_definition["risk_level"],
                 "recipe_steps": recipe_definition["steps"],
+                "max_attempts": DEFAULT_DESKTOP_MAX_ATTEMPTS,
             }
         )
     else:
@@ -1166,6 +1239,15 @@ def _invoke_desktop_bridge_action(
         )
         raise DesktopActionInterrupted(_shorten_output(interruption_reason, limit=320))
 
+    if values.get("status") == "blocked":
+        failure_reason = (
+            values.get("failure_reason")
+            or values.get("headline")
+            or output
+            or "Desktop bridge action was blocked by a local guard."
+        )
+        raise DesktopActionBlocked(_shorten_output(failure_reason, limit=320))
+
     if result.returncode != 0:
         failure_reason = values.get("failure_reason") or values.get("headline") or output or "Desktop bridge action failed."
         raise RuntimeError(_shorten_output(failure_reason, limit=320))
@@ -1181,18 +1263,62 @@ def _invoke_desktop_bridge_action(
 
 def _run_desktop_bridge_action(
     *,
+    task: Task,
     action_type: str,
     target: str = "",
     artifact_path: str = "",
     text_content: str = "",
 ) -> tuple[str, str]:
-    result = _invoke_desktop_bridge_action(
-        action_type=action_type,
-        target=target,
-        artifact_path=artifact_path,
-        text_content=text_content,
-    )
-    return str(result["summary"]), str(result["artifact_path"] or "")
+    max_attempts = int(task.executor_payload.get("max_attempts", DEFAULT_DESKTOP_MAX_ATTEMPTS) or DEFAULT_DESKTOP_MAX_ATTEMPTS)
+    max_attempts = max(1, min(DEFAULT_DESKTOP_MAX_ATTEMPTS, max_attempts))
+    last_error = ""
+
+    for attempt in range(1, max_attempts + 1):
+        try:
+            result = _invoke_desktop_bridge_action(
+                action_type=action_type,
+                target=target,
+                artifact_path=artifact_path,
+                text_content=text_content,
+            )
+            _set_desktop_execution_metadata(
+                task,
+                attempt_count=attempt,
+                max_attempts=max_attempts,
+            )
+            summary = str(result["summary"] or "")
+            if attempt > 1:
+                summary = _shorten_output(f"Succeeded on attempt {attempt}/{max_attempts}. {summary}", limit=320)
+            return summary, str(result["artifact_path"] or "")
+        except DesktopActionInterrupted as exc:
+            _set_desktop_execution_metadata(
+                task,
+                attempt_count=attempt,
+                max_attempts=max_attempts,
+                interruption_reason=str(exc),
+            )
+            raise
+        except DesktopActionBlocked as exc:
+            _set_desktop_execution_metadata(
+                task,
+                attempt_count=attempt,
+                max_attempts=max_attempts,
+                failure_reason=str(exc),
+                resource_guard_reason=str(exc) if "resource guard" in str(exc).lower() else "",
+            )
+            raise
+        except Exception as exc:  # noqa: BLE001
+            last_error = _shorten_output(str(exc), limit=320)
+            _set_desktop_execution_metadata(
+                task,
+                attempt_count=attempt,
+                max_attempts=max_attempts,
+                failure_reason=last_error,
+            )
+            if attempt >= max_attempts:
+                break
+
+    raise RuntimeError(_shorten_output(f"Failed after {max_attempts} attempt(s). Last error: {last_error or 'desktop action failed.'}", limit=320))
 
 
 def _persist_recipe_run(task: Task, run_payload: dict) -> None:
@@ -1221,6 +1347,14 @@ def _run_operator_recipe(task: Task) -> tuple[str, str]:
         label = str(step.get("label", action_type or "recipe step")).strip() or "recipe step"
         target = str(step.get("target", "")).strip()
         text_content = str(step.get("text_content", ""))
+        required = bool(step.get("required", True))
+        max_attempts = max(
+            1,
+            min(
+                DEFAULT_DESKTOP_MAX_ATTEMPTS,
+                int(step.get("max_attempts", DEFAULT_DESKTOP_MAX_ATTEMPTS) or DEFAULT_DESKTOP_MAX_ATTEMPTS),
+            ),
+        )
         step_started_at = _now()
         step_result = {
             "step": int(step.get("step", len(completed_steps) + 1)),
@@ -1236,83 +1370,148 @@ def _run_operator_recipe(task: Task) -> tuple[str, str]:
             "window_title": "",
             "coordinates": "",
             "finished_at": "",
+            "attempt_count": 0,
+            "max_attempts": max_attempts,
+            "required": required,
+            "retry_notes": [],
         }
+        step_completed = False
 
-        try:
-            if action_type not in DESKTOP_EXECUTOR_ACTIONS:
-                raise RuntimeError(f"Recipe step action is not allowlisted: {action_type}")
+        for attempt in range(1, max_attempts + 1):
+            step_result["attempt_count"] = attempt
+            try:
+                if action_type not in DESKTOP_EXECUTOR_ACTIONS:
+                    raise RuntimeError(f"Recipe step action is not allowlisted: {action_type}")
 
-            result = _invoke_desktop_bridge_action(
-                action_type=action_type,
-                target=target,
-                artifact_path=str(step.get("artifact_path", "")),
-                text_content=text_content,
-            )
-            values = dict(result.get("values", {}))
-            last_artifact_path = str(result.get("artifact_path") or last_artifact_path)
-            step_result["status"] = "succeeded"
-            step_result["summary"] = str(result.get("summary", "step completed"))
-            step_result["artifact_path"] = str(result.get("artifact_path") or "")
-            step_result["clipboard_preview"] = str(values.get("clipboard_preview", ""))
-            step_result["window_alias"] = str(
-                values.get("active_window_alias")
-                or values.get("focused_window_alias")
-                or values.get("wait_window_alias")
-                or ""
-            )
-            step_result["window_title"] = str(
-                values.get("active_window_title")
-                or values.get("focused_window_title")
-                or values.get("matched_window_title")
-                or ""
-            )
-            step_result["coordinates"] = str(values.get("coordinates", ""))
-            step_result["finished_at"] = _now()
-            completed_steps.append(step_result)
-        except DesktopActionInterrupted as exc:
-            interruption_message = _shorten_output(str(exc), limit=320)
-            step_result["status"] = "interrupted"
-            step_result["summary"] = interruption_message
-            step_result["finished_at"] = _now()
-            completed_steps.append(step_result)
-            run_payload = {
-                "recipe_name": recipe_name,
-                "recipe_label": recipe_label,
-                "started_at": started_at,
-                "finished_at": step_result["finished_at"],
-                "status": "interrupted",
-                "summary": interruption_message,
-                "steps": completed_steps,
-            }
-            _persist_recipe_run(task, run_payload)
-            raise DesktopActionInterrupted(
-                _shorten_output(
-                    f"Recipe {recipe_label} interrupted during step {step_result['step']} ({label}). {interruption_message}",
+                result = _invoke_desktop_bridge_action(
+                    action_type=action_type,
+                    target=target,
+                    artifact_path=str(step.get("artifact_path", "")),
+                    text_content=text_content,
+                )
+                values = dict(result.get("values", {}))
+                last_artifact_path = str(result.get("artifact_path") or last_artifact_path)
+                step_result["status"] = "succeeded"
+                step_summary = str(result.get("summary", "step completed"))
+                if attempt > 1:
+                    step_summary = _shorten_output(
+                        f"Succeeded on attempt {attempt}/{max_attempts}. {step_summary}",
+                        limit=320,
+                    )
+                step_result["summary"] = step_summary
+                step_result["artifact_path"] = str(result.get("artifact_path") or "")
+                step_result["clipboard_preview"] = str(values.get("clipboard_preview", ""))
+                step_result["window_alias"] = str(
+                    values.get("active_window_alias")
+                    or values.get("focused_window_alias")
+                    or values.get("wait_window_alias")
+                    or ""
+                )
+                step_result["window_title"] = str(
+                    values.get("active_window_title")
+                    or values.get("focused_window_title")
+                    or values.get("matched_window_title")
+                    or ""
+                )
+                step_result["coordinates"] = str(values.get("coordinates", ""))
+                step_result["finished_at"] = _now()
+                completed_steps.append(step_result)
+                step_completed = True
+                break
+            except DesktopActionInterrupted as exc:
+                interruption_message = _shorten_output(str(exc), limit=320)
+                step_result["status"] = "interrupted"
+                step_result["summary"] = interruption_message
+                step_result["finished_at"] = _now()
+                step_result["retry_notes"].append(
+                    f"Attempt {attempt}/{max_attempts}: {interruption_message}"
+                )
+                completed_steps.append(step_result)
+                run_payload = {
+                    "recipe_name": recipe_name,
+                    "recipe_label": recipe_label,
+                    "started_at": started_at,
+                    "finished_at": step_result["finished_at"],
+                    "status": "interrupted",
+                    "summary": interruption_message,
+                    "steps": completed_steps,
+                }
+                _persist_recipe_run(task, run_payload)
+                raise DesktopActionInterrupted(
+                    _shorten_output(
+                        f"Recipe {recipe_label} interrupted during step {step_result['step']} ({label}). {interruption_message}",
+                        limit=320,
+                    )
+                ) from exc
+            except DesktopActionBlocked as exc:
+                blocked_message = _shorten_output(str(exc), limit=320)
+                step_result["status"] = "blocked"
+                step_result["summary"] = blocked_message
+                step_result["finished_at"] = _now()
+                step_result["retry_notes"].append(
+                    f"Attempt {attempt}/{max_attempts}: {blocked_message}"
+                )
+                completed_steps.append(step_result)
+                run_payload = {
+                    "recipe_name": recipe_name,
+                    "recipe_label": recipe_label,
+                    "started_at": started_at,
+                    "finished_at": step_result["finished_at"],
+                    "status": "blocked",
+                    "summary": blocked_message,
+                    "steps": completed_steps,
+                }
+                _persist_recipe_run(task, run_payload)
+                raise DesktopActionBlocked(
+                    _shorten_output(
+                        f"Recipe {recipe_label} stopped at step {step_result['step']} ({label}). {blocked_message}",
+                        limit=320,
+                    )
+                ) from exc
+            except Exception as exc:  # noqa: BLE001
+                failure_message = _shorten_output(str(exc), limit=320)
+                step_result["retry_notes"].append(
+                    f"Attempt {attempt}/{max_attempts}: {failure_message}"
+                )
+                if attempt < max_attempts:
+                    continue
+
+                step_result["finished_at"] = _now()
+                if required:
+                    step_result["status"] = "failed"
+                    step_result["summary"] = _shorten_output(
+                        f"Failed after {max_attempts} attempt(s). Last error: {failure_message}",
+                        limit=320,
+                    )
+                    completed_steps.append(step_result)
+                    run_payload = {
+                        "recipe_name": recipe_name,
+                        "recipe_label": recipe_label,
+                        "started_at": started_at,
+                        "finished_at": step_result["finished_at"],
+                        "status": "failed",
+                        "summary": step_result["summary"],
+                        "steps": completed_steps,
+                    }
+                    _persist_recipe_run(task, run_payload)
+                    raise RuntimeError(
+                        _shorten_output(
+                            f"Recipe {recipe_label} stopped at step {step_result['step']} ({label}). {step_result['summary']}",
+                            limit=320,
+                        )
+                    ) from exc
+
+                step_result["status"] = "skipped"
+                step_result["summary"] = _shorten_output(
+                    f"Skipped after {max_attempts} failed attempt(s). Last error: {failure_message}",
                     limit=320,
                 )
-            ) from exc
-        except Exception as exc:  # noqa: BLE001
-            failure_message = _shorten_output(str(exc), limit=320)
-            step_result["status"] = "failed"
-            step_result["summary"] = failure_message
-            step_result["finished_at"] = _now()
-            completed_steps.append(step_result)
-            run_payload = {
-                "recipe_name": recipe_name,
-                "recipe_label": recipe_label,
-                "started_at": started_at,
-                "finished_at": step_result["finished_at"],
-                "status": "failed",
-                "summary": failure_message,
-                "steps": completed_steps,
-            }
-            _persist_recipe_run(task, run_payload)
-            raise RuntimeError(
-                _shorten_output(
-                    f"Recipe {recipe_label} stopped at step {step_result['step']} ({label}). {failure_message}",
-                    limit=320,
-                )
-            ) from exc
+                completed_steps.append(step_result)
+                step_completed = True
+                break
+
+        if not step_completed:
+            break
 
     finished_at = _now()
     summary = _shorten_output(
@@ -1411,6 +1610,7 @@ def _execute_allowlisted_action(task: Task) -> tuple[str, str]:
 
     if action_type in DESKTOP_EXECUTOR_ACTIONS:
         return _run_desktop_bridge_action(
+            task=task,
             action_type=action_type,
             target=str(task.executor_payload.get("bridge_target", task.executor_target)),
             artifact_path=str(task.executor_payload.get("artifact_path", "")),
@@ -1493,6 +1693,14 @@ def _select_active_task_id(tasks: list[Task], target_status: str) -> str:
 def refresh_supervisor_state(last_event: str | None = None) -> SupervisorState:
     tasks, approval_requests = _backfill_pending_approval_requests()
     previous_state = read_supervisor_state()
+    pending_approval_count = sum(1 for request in approval_requests if request.status == "pending")
+    blocked_human_needed_count = sum(1 for task in tasks if task.status == "blocked_human_needed")
+    interrupted_count = sum(1 for task in tasks if task.status == "interrupted")
+    waiting_count = sum(1 for task in tasks if task.status == "waiting")
+    ready_to_resume_count = sum(1 for task in tasks if task.status == "ready_to_resume")
+    queued_count = sum(1 for task in tasks if task.status == "queued")
+    running_count = sum(1 for task in tasks if task.status == "running")
+    resource_guard_events = _recent_resource_guard_events(tasks)
 
     status = "idle"
     active_task_id = ""
@@ -1519,30 +1727,57 @@ def refresh_supervisor_state(last_event: str | None = None) -> SupervisorState:
         status = "queued"
         active_task_id = _select_active_task_id(tasks, "queued")
 
+    ghoti_state = "idle"
+    ghoti_reason = "Ghoti is idle."
+    operator_next_step = "Queue or review a local task when you want Ghoti to act."
+
+    if resource_guard_events:
+        ghoti_state = "resource_guard_triggered"
+        ghoti_reason = resource_guard_events[0]
+        operator_next_step = "Reduce duplicate windows or processes, then review the blocked task before re-queueing it."
+    elif pending_approval_count > 0:
+        ghoti_state = "approval_needed"
+        ghoti_reason = f"{pending_approval_count} approval request(s) are waiting for review."
+        operator_next_step = "Inspect and approve, deny, or defer the pending approval items."
+    elif interrupted_count > 0:
+        ghoti_state = "interrupted"
+        ghoti_reason = f"{interrupted_count} task(s) were interrupted by the local failsafe."
+        operator_next_step = "Review the interrupted task, then re-queue it only if the state is safe."
+    elif waiting_count > 0:
+        ghoti_state = "waiting"
+        ghoti_reason = f"{waiting_count} task(s) are waiting for a reply or timeout."
+        operator_next_step = "Resume the waiting task only when the expected reply or event has arrived."
+    elif running_count > 0 or queued_count > 0 or ready_to_resume_count > 0 or blocked_human_needed_count > 0:
+        ghoti_state = "active"
+        ghoti_reason = "Ghoti has queued or operator-reviewed work ready to inspect."
+        operator_next_step = "Inspect the selected task and run, review, or re-queue the next safe step."
+
     state = SupervisorState(
         supervisor_id=previous_state.supervisor_id or "local-supervisor",
         mode=previous_state.mode or "local_only",
         status=status,
         active_task_id=active_task_id,
-        pending_approval_count=sum(
-            1 for request in approval_requests if request.status == "pending"
-        ),
-        blocked_human_needed_count=sum(
-            1 for task in tasks if task.status == "blocked_human_needed"
-        ),
-        interrupted_count=sum(1 for task in tasks if task.status == "interrupted"),
-        waiting_count=sum(1 for task in tasks if task.status == "waiting"),
-        ready_to_resume_count=sum(1 for task in tasks if task.status == "ready_to_resume"),
-        queued_count=sum(1 for task in tasks if task.status == "queued"),
-        running_count=sum(1 for task in tasks if task.status == "running"),
+        pending_approval_count=pending_approval_count,
+        blocked_human_needed_count=blocked_human_needed_count,
+        interrupted_count=interrupted_count,
+        waiting_count=waiting_count,
+        ready_to_resume_count=ready_to_resume_count,
+        queued_count=queued_count,
+        running_count=running_count,
         notification_mode=previous_state.notification_mode or "dashboard",
         updated_at=_now(),
+        ghoti_state=ghoti_state,
+        ghoti_reason=ghoti_reason,
+        operator_next_step=operator_next_step,
+        resource_guard_event_count=len(resource_guard_events),
+        recent_resource_guard_events=resource_guard_events,
         last_event=last_event if last_event is not None else previous_state.last_event,
         notes=[
             "Local-only supervisor foundation is active.",
             "Remote or admin actions must remain explicit and approval-gated.",
             "Stopped tasks move forward only through explicit operator actions.",
             "Desktop input and mouse actions stay allowlisted, visible, and interruptible with Ctrl+8.",
+            "Desktop actions stop after two attempts by default instead of retrying forever.",
         ],
     )
     write_supervisor_state(state)
@@ -2046,18 +2281,39 @@ def execute_task(task_id: str) -> Task:
         execution_record.success = True
         execution_record.output_summary = output_summary
         execution_record.artifact_path = artifact_path
+        execution_record.attempt_count = int(task.executor_payload.get("last_attempt_count", 1) or 1)
         task.execution_records.append(execution_record)
         task.status = "completed"
         task.last_note = output_summary
         task.updated_at = execution_record.finished_at
         _append_task_event(task, "completed", note=output_summary)
         last_event = f"Executor task completed: {task.task_id}"
+    except DesktopActionBlocked as exc:
+        blocked_message = _shorten_output(str(exc), limit=320)
+        execution_record.finished_at = _now()
+        execution_record.status = "failed"
+        execution_record.success = False
+        execution_record.output_summary = blocked_message
+        execution_record.failure_reason = blocked_message
+        execution_record.resource_guard_reason = blocked_message if "resource guard" in blocked_message.lower() else ""
+        execution_record.attempt_count = int(task.executor_payload.get("last_attempt_count", 1) or 1)
+        task.execution_records.append(execution_record)
+        task.status = "blocked_human_needed"
+        task.waiting_for = RESOURCE_GUARD_WAITING_FOR
+        task.blocked_reason = blocked_message
+        task.last_note = blocked_message
+        task.updated_at = execution_record.finished_at
+        task.requires_human = True
+        _append_task_event(task, "resource_guard_triggered", note=blocked_message)
+        last_event = f"Resource guard blocked task: {task.task_id}"
     except DesktopActionInterrupted as exc:
         interruption_message = _shorten_output(str(exc), limit=320)
         execution_record.finished_at = _now()
         execution_record.status = "interrupted"
         execution_record.success = False
         execution_record.output_summary = interruption_message
+        execution_record.interruption_reason = interruption_message
+        execution_record.attempt_count = int(task.executor_payload.get("last_attempt_count", 1) or 1)
         task.execution_records.append(execution_record)
         task.status = "interrupted"
         task.waiting_for = "operator_review_after_interrupt"
@@ -2073,6 +2329,8 @@ def execute_task(task_id: str) -> Task:
         execution_record.status = "failed"
         execution_record.success = False
         execution_record.output_summary = failure_message
+        execution_record.failure_reason = failure_message
+        execution_record.attempt_count = int(task.executor_payload.get("last_attempt_count", 1) or 1)
         task.execution_records.append(execution_record)
         task.status = "failed"
         task.blocked_reason = failure_message

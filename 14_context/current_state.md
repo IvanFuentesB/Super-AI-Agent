@@ -78,6 +78,12 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Dashboard now shows recipe tasks, per-step recipe history, and recipe interruption state
 - Compact chat handoff memory now exists at 14_context\chat_handoff_latest.md for new-thread continuity
 - Repo integration classification now exists at 08_research\repo_integration_map.md
+- Blueprint.am is now explicitly classified as external inspiration only, with a narrow internal hardware-builder-assist note under 08_research
+- Ghoti now has a visible dashboard state cue for idle, active, waiting, approval-needed, interrupted, and resource-guard-triggered states
+- Resource/process guardrails now exist for duplicate terminal and process pressure
+- Desktop and recipe steps now stop after two failed attempts instead of retrying indefinitely
+- Checker and recipe label text is now blocked from being pasted into terminals by the clipboard guard
+- Desktop checker behavior is now safe-by-default and non-disruptive in sessions where Windows foreground control or screenshot capture cannot be verified
 - No live external provider APIs yet
 - No real browser or app executor beyond the local playground yet
 - No remote auth layer yet
@@ -97,7 +103,8 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Test the manual supervisor loop from the dashboard
 - Test the new clipboard, hotkey, mouse, and Ctrl+8 failsafe flows manually from the dashboard
 - Test the first reusable operator recipes manually from the dashboard, especially focus, copy, paste, wait, and the narrow handoff prototype
-- Refine the narrow Codex-to-dashboard handoff recipe into a more reliable cross-window handoff path without widening the control surface yet
+- Refresh Ghoti handoff memory first when chats get long, then use the new cue, resource guard, and retry ceiling as the base for a more serious cross-window handoff
+- Refine the narrow Codex-to-dashboard handoff recipe into a more reliable Codex-to-ChatGPT style cross-window handoff path without widening the control surface yet
 - Decide the real desktop-control implementation path
 - Keep GitHub remote actions explicit and approval-gated
 - Prepare one internship-facing live demo from the current runtime outputs
@@ -116,4 +123,6 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - The new desktop hand layer is useful but still narrow; it only supports explicit allowlisted clipboard, hotkey, wait, and mouse actions, and it still has no freeform typing, drag-and-drop, or arbitrary UI-state inference
 - The first operator recipe layer is intentionally small and still prototype-grade; the current handoff recipe is not a durable ChatGPT-specific workflow yet
 - Window matching still depends on visible titles and allowed aliases, so some cross-window flows can remain brittle until the target set is tightened
+- Some focus-sensitive desktop actions still depend on what the current Windows session allows; in non-interactive checker sessions they may stop safely with manual-focus-required instead of pretending success
+- Desktop screenshot capture can still be unavailable in some Windows sessions, so manual capture remains the honest fallback there
 - Third-party intake repos are valuable comparison material, but most of their surface area is still too heavy to adopt directly

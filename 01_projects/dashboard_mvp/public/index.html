@@ -26,6 +26,14 @@
       </div>
     </header>
 
+    <aside id="ghoti-state-indicator" class="ghoti-state-indicator is-neutral" aria-live="polite">
+      <div class="ghoti-indicator-topline">
+        <span>Ghoti</span>
+        <strong id="ghoti-indicator-state">idle</strong>
+      </div>
+      <p id="ghoti-indicator-note">Waiting for local operator state.</p>
+    </aside>
+
     <main class="page-shell">
       <section class="summary-grid">
         <article class="summary-card">
@@ -165,6 +173,24 @@
             <span>Interrupted</span>
             <strong id="supervisor-interrupted-count">-</strong>
           </article>
+        </div>
+        <div id="ghoti-state-panel" class="ghoti-state-panel ghoti-state-neutral">
+          <div class="ghoti-state-topline">
+            <div>
+              <span class="summary-label">Ghoti State</span>
+              <strong id="ghoti-state-label">idle</strong>
+            </div>
+            <span id="ghoti-state-pill" class="state-pill state-neutral">idle</span>
+          </div>
+          <p id="ghoti-state-reason" class="ghoti-state-copy">Waiting for supervisor status.</p>
+          <p id="ghoti-next-step" class="ghoti-state-copy">Refresh the supervisor panel to load the next operator step.</p>
+          <div class="ghoti-state-meta">
+            <span>Recent resource guard events</span>
+            <strong id="ghoti-resource-guard-count">0</strong>
+          </div>
+          <div id="ghoti-resource-guard-list" class="ghoti-resource-guard-list">
+            <p class="empty-state">No recent resource guard events loaded yet.</p>
+          </div>
         </div>
         <div id="supervisor-summary" class="summary-note">Waiting for supervisor status.</div>
         <div class="status-columns">
@@ -353,6 +379,14 @@
                 <strong id="task-detail-last-note">-</strong>
               </div>
               <div class="approval-detail-field">
+                <span>Retry Limit</span>
+                <strong id="task-detail-retry-limit">-</strong>
+              </div>
+              <div class="approval-detail-field">
+                <span>Last Attempt Count</span>
+                <strong id="task-detail-last-attempt-count">-</strong>
+              </div>
+              <div class="approval-detail-field">
                 <span>Last Execution Status</span>
                 <strong id="task-detail-last-execution-status">-</strong>
               </div>
@@ -363,6 +397,18 @@
               <div class="approval-detail-field approval-detail-wide">
                 <span>Artifact Path</span>
                 <strong id="task-detail-last-artifact-path">-</strong>
+              </div>
+              <div class="approval-detail-field approval-detail-wide">
+                <span>Last Failure Reason</span>
+                <strong id="task-detail-last-failure-reason">-</strong>
+              </div>
+              <div class="approval-detail-field approval-detail-wide">
+                <span>Last Interruption Reason</span>
+                <strong id="task-detail-last-interruption-reason">-</strong>
+              </div>
+              <div class="approval-detail-field approval-detail-wide">
+                <span>Resource Guard Reason</span>
+                <strong id="task-detail-last-resource-guard-reason">-</strong>
               </div>
             </div>
             <label class="approval-note-field">
@@ -643,6 +689,29 @@ This file was queued through the safe repo-local executor.
               <strong id="desktop-failsafe">-</strong>
             </article>
           </div>
+          <div class="metric-grid desktop-resource-grid">
+            <article class="metric-card">
+              <span>Terminal Windows</span>
+              <strong id="desktop-terminal-windows">-</strong>
+            </article>
+            <article class="metric-card">
+              <span>PowerShell Proc</span>
+              <strong id="desktop-powershell-processes">-</strong>
+            </article>
+            <article class="metric-card">
+              <span>Node Proc</span>
+              <strong id="desktop-node-processes">-</strong>
+            </article>
+            <article class="metric-card">
+              <span>Python Proc</span>
+              <strong id="desktop-python-processes">-</strong>
+            </article>
+            <article class="metric-card">
+              <span>Ollama</span>
+              <strong id="desktop-ollama">-</strong>
+            </article>
+          </div>
+          <div id="desktop-resource-summary" class="summary-note">Waiting for desktop resource guard status.</div>
           <div id="desktop-summary" class="summary-note">Waiting for desktop bridge status.</div>
           <div class="desktop-bridge-columns">
             <article class="status-card">

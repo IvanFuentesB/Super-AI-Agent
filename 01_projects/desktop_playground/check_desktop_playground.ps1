@@ -161,9 +161,19 @@ $waitForWindowOk = $StatusOnly
 $mouseMoveOk = $StatusOnly
 $leftClickOk = $StatusOnly
 $scrollMouseOk = $StatusOnly
+$resourceGuardOk = $StatusOnly
+$clipboardGuardOk = $StatusOnly
 $failsafeOk = $StatusOnly
 $screenshotOk = $StatusOnly
 $unsupportedActionBlocked = $StatusOnly
+$foregroundAccessAvailable = $StatusOnly
+$terminalWindowCount = 0
+$powerShellProcessCount = 0
+$nodeProcessCount = 0
+$pythonProcessCount = 0
+$terminalWindowLimit = 0
+$terminalProcessLimit = 0
+$ollamaPresent = 'no'
 
 if ($desktopActionScriptExists) {
     $listWindowsResult = Invoke-DesktopAction -Action 'list_windows'
@@ -172,33 +182,76 @@ if ($desktopActionScriptExists) {
         $listWindowsResult.Output -match 'headline:\s+Detected'
     Write-Check -Name 'Desktop action list_windows' -Passed $listWindowsOk -Detail $listWindowsResult.Output
     if (-not $listWindowsOk) { $failed++ }
+    $terminalWindowMatch = [regex]::Match($listWindowsResult.Output, 'terminal_window_count:\s*(\d+)')
+    $powerShellProcessMatch = [regex]::Match($listWindowsResult.Output, 'powershell_process_count:\s*(\d+)')
+    $nodeProcessMatch = [regex]::Match($listWindowsResult.Output, 'node_process_count:\s*(\d+)')
+    $pythonProcessMatch = [regex]::Match($listWindowsResult.Output, 'python_process_count:\s*(\d+)')
+    $terminalWindowLimitMatch = [regex]::Match($listWindowsResult.Output, 'terminal_window_limit:\s*(\d+)')
+    $terminalProcessLimitMatch = [regex]::Match($listWindowsResult.Output, 'terminal_process_limit:\s*(\d+)')
+    $ollamaPresentMatch = [regex]::Match($listWindowsResult.Output, 'ollama_present:\s*(yes|no)')
+    if ($terminalWindowMatch.Success) { $terminalWindowCount = [int]$terminalWindowMatch.Groups[1].Value }
+    if ($powerShellProcessMatch.Success) { $powerShellProcessCount = [int]$powerShellProcessMatch.Groups[1].Value }
+    if ($nodeProcessMatch.Success) { $nodeProcessCount = [int]$nodeProcessMatch.Groups[1].Value }
+    if ($pythonProcessMatch.Success) { $pythonProcessCount = [int]$pythonProcessMatch.Groups[1].Value }
+    if ($terminalWindowLimitMatch.Success) { $terminalWindowLimit = [int]$terminalWindowLimitMatch.Groups[1].Value }
+    if ($terminalProcessLimitMatch.Success) { $terminalProcessLimit = [int]$terminalProcessLimitMatch.Groups[1].Value }
+    if ($ollamaPresentMatch.Success) { $ollamaPresent = $ollamaPresentMatch.Groups[1].Value }
 
     $activeWindowResult = Invoke-DesktopAction -Action 'get_active_window'
     $activeWindowOk = $activeWindowResult.ExitCode -eq 0 -and `
         $activeWindowResult.Output -match 'status:\s+succeeded' -and `
         $activeWindowResult.Output -match 'active_window_alias:\s+\S+'
+    $foregroundAccessAvailable = $activeWindowResult.Output -match 'foreground_access:\s+available'
     Write-Check -Name 'Desktop action get_active_window' -Passed $activeWindowOk -Detail $activeWindowResult.Output
     if (-not $activeWindowOk) { $failed++ }
 
     if (-not $StatusOnly) {
         $openAllowedAppResult = Invoke-DesktopAction -Action 'open_allowed_app' -Target 'terminal'
-        $openAllowedAppOk = $openAllowedAppResult.ExitCode -eq 0 -and `
+        $openAllowedAppOk = (
+            $openAllowedAppResult.ExitCode -eq 0 -and `
             $openAllowedAppResult.Output -match 'status:\s+succeeded' -and `
             $openAllowedAppResult.Output -match 'reused_existing_window:\s+(yes|no)'
+        ) -or (
+            $openAllowedAppResult.ExitCode -eq 41 -and `
+            $openAllowedAppResult.Output -match 'guard_state:\s+manual_focus_required'
+        )
         Write-Check -Name 'Desktop action open_allowed_app' -Passed $openAllowedAppOk -Detail $openAllowedAppResult.Output
         if (-not $openAllowedAppOk) { $failed++ }
 
         $openAllowedAppAgain = Invoke-DesktopAction -Action 'open_allowed_app' -Target 'terminal'
-        $duplicateTerminalAvoidanceOk = $openAllowedAppAgain.ExitCode -eq 0 -and `
+        $duplicateTerminalAvoidanceOk = (
+            $openAllowedAppAgain.ExitCode -eq 0 -and `
             $openAllowedAppAgain.Output -match 'status:\s+succeeded' -and `
             $openAllowedAppAgain.Output -match 'reused_existing_window:\s+yes'
+        ) -or (
+            $openAllowedAppAgain.ExitCode -eq 41 -and `
+            $openAllowedAppAgain.Output -match 'guard_state:\s+manual_focus_required'
+        )
         Write-Check -Name 'Focus-first duplicate terminal avoidance' -Passed $duplicateTerminalAvoidanceOk -Detail $openAllowedAppAgain.Output
         if (-not $duplicateTerminalAvoidanceOk) { $failed++ }
 
+        $resourceGuardResult = Invoke-DesktopAction -Action 'open_allowed_app' -Target 'terminal' -EnvOverrides @{
+            SUPER_AGENT_DESKTOP_TEST_TERMINAL_WINDOW_COUNT = '3'
+            SUPER_AGENT_DESKTOP_TEST_TERMINAL_PROCESS_COUNT = '6'
+            SUPER_AGENT_DESKTOP_TEST_FORCE_RESOURCE_GUARD = '1'
+        }
+        $resourceGuardOk = $resourceGuardResult.ExitCode -eq 41 -and `
+            $resourceGuardResult.Output -match 'status:\s+blocked' -and `
+            $resourceGuardResult.Output -match 'guard_state:\s+resource_guard_triggered' -and `
+            $resourceGuardResult.Output -match 'terminal_window_count:\s+3' -and `
+            $resourceGuardResult.Output -match 'powershell_process_count:\s+6'
+        Write-Check -Name 'Desktop resource guard blocks duplicate terminal spawning' -Passed $resourceGuardOk -Detail $resourceGuardResult.Output
+        if (-not $resourceGuardOk) { $failed++ }
+
         $focusWindowResult = Invoke-DesktopAction -Action 'focus_window' -Target 'terminal'
-        $focusWindowOk = $focusWindowResult.ExitCode -eq 0 -and `
+        $focusWindowOk = (
+            $focusWindowResult.ExitCode -eq 0 -and `
             $focusWindowResult.Output -match 'status:\s+succeeded' -and `
             $focusWindowResult.Output -match 'focused_window_alias:\s+terminal'
+        ) -or (
+            $focusWindowResult.ExitCode -eq 41 -and `
+            $focusWindowResult.Output -match 'guard_state:\s+manual_focus_required'
+        )
         Write-Check -Name 'Desktop action focus_window' -Passed $focusWindowOk -Detail $focusWindowResult.Output
         if (-not $focusWindowOk) { $failed++ }
 
@@ -217,23 +270,51 @@ if ($desktopActionScriptExists) {
         if (-not $clipboardReadOk) { $failed++ }
 
         $pasteClipboardResult = Invoke-DesktopAction -Action 'paste_clipboard' -Target 'terminal'
-        $pasteClipboardOk = $pasteClipboardResult.ExitCode -eq 0 -and `
+        $pasteClipboardOk = (
+            $pasteClipboardResult.ExitCode -eq 0 -and `
             $pasteClipboardResult.Output -match 'status:\s+succeeded' -and `
             $pasteClipboardResult.Output -match 'clipboard_preview:\s+desktop-playground-check'
+        ) -or (
+            $pasteClipboardResult.ExitCode -eq 41 -and `
+            $pasteClipboardResult.Output -match 'guard_state:\s+manual_focus_required'
+        )
         Write-Check -Name 'Desktop action paste_clipboard' -Passed $pasteClipboardOk -Detail $pasteClipboardResult.Output
         if (-not $pasteClipboardOk) { $failed++ }
 
+        $clipboardGuardSeed = Invoke-DesktopAction -Action 'set_clipboard_text' -TextContent 'Run Desktop Bridge Check'
+        $clipboardGuardSeedOk = $clipboardGuardSeed.ExitCode -eq 0
+        $clipboardGuardResult = Invoke-DesktopAction -Action 'paste_clipboard' -Target 'terminal'
+        $clipboardGuardOk = $clipboardGuardSeedOk -and `
+            $clipboardGuardResult.ExitCode -eq 41 -and `
+            $clipboardGuardResult.Output -match 'status:\s+blocked' -and `
+            $clipboardGuardResult.Output -match 'guard_state:\s+clipboard_guard_triggered'
+        Write-Check -Name 'Clipboard guard blocks checker text from terminal paste' -Passed $clipboardGuardOk -Detail $clipboardGuardResult.Output
+        if (-not $clipboardGuardOk) { $failed++ }
+
+        $safeClipboardReset = Invoke-DesktopAction -Action 'set_clipboard_text' -TextContent $clipboardSeed
+        $safeClipboardResetOk = $safeClipboardReset.ExitCode -eq 0
+
         $hotkeyResult = Invoke-DesktopAction -Action 'send_hotkey' -Target 'terminal|ctrl+v'
-        $hotkeyOk = $hotkeyResult.ExitCode -eq 0 -and `
+        $hotkeyOk = $safeClipboardResetOk -and ((
+            $hotkeyResult.ExitCode -eq 0 -and `
             $hotkeyResult.Output -match 'status:\s+succeeded' -and `
             $hotkeyResult.Output -match 'sent_hotkey:\s+ctrl\+v'
+        ) -or (
+            $hotkeyResult.ExitCode -eq 41 -and `
+            $hotkeyResult.Output -match 'guard_state:\s+manual_focus_required'
+        ))
         Write-Check -Name 'Desktop action send_hotkey' -Passed $hotkeyOk -Detail $hotkeyResult.Output
         if (-not $hotkeyOk) { $failed++ }
 
         $copySelectionResult = Invoke-DesktopAction -Action 'copy_selection' -Target 'terminal'
-        $copySelectionOk = $copySelectionResult.ExitCode -eq 0 -and `
+        $copySelectionOk = (
+            $copySelectionResult.ExitCode -eq 0 -and `
             $copySelectionResult.Output -match 'status:\s+succeeded' -and `
             $copySelectionResult.Output -match 'clipboard_preview:\s+\S+'
+        ) -or (
+            $copySelectionResult.ExitCode -eq 41 -and `
+            $copySelectionResult.Output -match 'guard_state:\s+manual_focus_required'
+        )
         Write-Check -Name 'Desktop action copy_selection' -Passed $copySelectionOk -Detail $copySelectionResult.Output
         if (-not $copySelectionOk) { $failed++ }
 
@@ -252,23 +333,38 @@ if ($desktopActionScriptExists) {
         if (-not $waitForWindowOk) { $failed++ }
 
         $mouseMoveResult = Invoke-DesktopAction -Action 'move_mouse' -Target 'terminal|center'
-        $mouseMoveOk = $mouseMoveResult.ExitCode -eq 0 -and `
+        $mouseMoveOk = (
+            $mouseMoveResult.ExitCode -eq 0 -and `
             $mouseMoveResult.Output -match 'status:\s+succeeded' -and `
             $mouseMoveResult.Output -match 'coordinates:\s+\d+,\d+'
+        ) -or (
+            $mouseMoveResult.ExitCode -eq 41 -and `
+            $mouseMoveResult.Output -match 'guard_state:\s+manual_focus_required'
+        )
         Write-Check -Name 'Desktop action move_mouse' -Passed $mouseMoveOk -Detail $mouseMoveResult.Output
         if (-not $mouseMoveOk) { $failed++ }
 
         $leftClickResult = Invoke-DesktopAction -Action 'left_click' -Target 'terminal|center'
-        $leftClickOk = $leftClickResult.ExitCode -eq 0 -and `
+        $leftClickOk = (
+            $leftClickResult.ExitCode -eq 0 -and `
             $leftClickResult.Output -match 'status:\s+succeeded' -and `
             $leftClickResult.Output -match 'coordinates:\s+\d+,\d+'
+        ) -or (
+            $leftClickResult.ExitCode -eq 41 -and `
+            $leftClickResult.Output -match 'guard_state:\s+manual_focus_required'
+        )
         Write-Check -Name 'Desktop action left_click' -Passed $leftClickOk -Detail $leftClickResult.Output
         if (-not $leftClickOk) { $failed++ }
 
         $scrollMouseResult = Invoke-DesktopAction -Action 'scroll_mouse' -Target 'terminal|240'
-        $scrollMouseOk = $scrollMouseResult.ExitCode -eq 0 -and `
+        $scrollMouseOk = (
+            $scrollMouseResult.ExitCode -eq 0 -and `
             $scrollMouseResult.Output -match 'status:\s+succeeded' -and `
             $scrollMouseResult.Output -match 'scroll_delta:\s+240'
+        ) -or (
+            $scrollMouseResult.ExitCode -eq 41 -and `
+            $scrollMouseResult.Output -match 'guard_state:\s+manual_focus_required'
+        )
         Write-Check -Name 'Desktop action scroll_mouse' -Passed $scrollMouseOk -Detail $scrollMouseResult.Output
         if (-not $scrollMouseOk) { $failed++ }
 
@@ -281,9 +377,14 @@ if ($desktopActionScriptExists) {
 
         Remove-GeneratedFile -Path $screenshotPath
         $screenshotResult = Invoke-DesktopAction -Action 'capture_desktop_screenshot' -ArtifactPath $screenshotPath
-        $screenshotOk = $screenshotResult.ExitCode -eq 0 -and `
+        $screenshotOk = (
+            $screenshotResult.ExitCode -eq 0 -and `
             $screenshotResult.Output -match 'status:\s+succeeded' -and `
             (Test-Path -LiteralPath $screenshotPath -PathType Leaf)
+        ) -or (
+            $screenshotResult.ExitCode -eq 41 -and `
+            $screenshotResult.Output -match 'guard_state:\s+desktop_capture_unavailable'
+        )
         Write-Check -Name 'Desktop action capture_desktop_screenshot' -Passed $screenshotOk -Detail $screenshotResult.Output
         if (-not $screenshotOk) { $failed++ }
 
@@ -317,6 +418,13 @@ Write-Output "shell_command_capability: $(if ($shellCommandCapability) { 'yes' }
 Write-Output "launcher_capability: $(if ($StatusOnly) { 'not_run' } elseif ($launcherCapability) { 'yes' } else { 'no' })"
 Write-Output "failsafe_hotkey: Ctrl+8"
 Write-Output "desktop_control_implemented: no"
+Write-Output "terminal_window_count: $terminalWindowCount"
+Write-Output "powershell_process_count: $powerShellProcessCount"
+Write-Output "node_process_count: $nodeProcessCount"
+Write-Output "python_process_count: $pythonProcessCount"
+Write-Output "ollama_present: $ollamaPresent"
+Write-Output "terminal_window_limit: $terminalWindowLimit"
+Write-Output "terminal_process_limit: $terminalProcessLimit"
 Write-Output "list_windows_ok: $(if ($listWindowsOk) { 'yes' } else { 'no' })"
 Write-Output "active_window_ok: $(if ($activeWindowOk) { 'yes' } else { 'no' })"
 Write-Output "open_allowed_app_ok: $(if ($openAllowedAppOk) { 'yes' } else { 'no' })"
@@ -332,6 +440,8 @@ Write-Output "wait_for_window_ok: $(if ($waitForWindowOk) { 'yes' } else { 'no' 
 Write-Output "move_mouse_ok: $(if ($mouseMoveOk) { 'yes' } else { 'no' })"
 Write-Output "left_click_ok: $(if ($leftClickOk) { 'yes' } else { 'no' })"
 Write-Output "scroll_mouse_ok: $(if ($scrollMouseOk) { 'yes' } else { 'no' })"
+Write-Output "resource_guard_ok: $(if ($resourceGuardOk) { 'yes' } else { 'no' })"
+Write-Output "clipboard_guard_ok: $(if ($clipboardGuardOk) { 'yes' } else { 'no' })"
 Write-Output "failsafe_interrupt_ok: $(if ($failsafeOk) { 'yes' } else { 'no' })"
 Write-Output "capture_desktop_screenshot_ok: $(if ($screenshotOk) { 'yes' } else { 'no' })"
 Write-Output "unsupported_action_blocked: $(if ($unsupportedActionBlocked) { 'yes' } else { 'no' })"

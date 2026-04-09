@@ -67,9 +67,9 @@
 - current use: experimental only if a justified fit emerges
 
 ### Blueprint.am / Blueprint
-- status: later experiment
-- why: possible hardware-project workflow support for diagrams, BOMs, or assembly guidance
-- current use: not a core assistant dependency
+- status: reference pattern and later experiment
+- why: useful inspiration for a future hardware-project assist layer around BOM drafts, wiring plans, assembly steps, and validation checklists
+- current use: research only; not a core assistant dependency and not a required hosted service
 
 ### Gemma Local Routing / Eval Layers
 - status: later experiment
