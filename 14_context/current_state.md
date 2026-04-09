@@ -76,6 +76,8 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Focus-first terminal reuse is now enforced more clearly, reducing duplicate terminal-window spawning when an allowed terminal window is already open
 - First reusable operator recipes now exist on top of the desktop hand primitives
 - Dashboard now shows recipe tasks, per-step recipe history, and recipe interruption state
+- The first narrow supervised Codex-to-ChatGPT handoff MVP now exists as an operator recipe with explicit source and target metadata, clipboard classification, and paste-only default behavior
+- Dashboard task views now include recent and visibility filters so the operator can reduce task-history noise without deleting old tasks
 - Compact chat handoff memory now exists at 14_context\chat_handoff_latest.md for new-thread continuity
 - Repo integration classification now exists at 08_research\repo_integration_map.md
 - Blueprint.am is now explicitly classified as external inspiration only, with a narrow internal hardware-builder-assist note under 08_research
@@ -84,6 +86,8 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Desktop and recipe steps now stop after two failed attempts instead of retrying indefinitely
 - Checker and recipe label text is now blocked from being pasted into terminals by the clipboard guard
 - Desktop checker behavior is now safe-by-default and non-disruptive in sessions where Windows foreground control or screenshot capture cannot be verified
+- Recent task evidence now shows bad terminal payloads being blocked while valid paste and allowlisted hotkey actions can succeed
+- No task deletion flow exists, and task cleanup should continue to prefer filtering, archive-style visibility, and history retention
 - No live external provider APIs yet
 - No real browser or app executor beyond the local playground yet
 - No remote auth layer yet
@@ -98,14 +102,12 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Claw Code remains temporary reference, not foundation
 
 ## Immediate Focus
-- Test the safe repo executor manually from the dashboard
-- Test the workspace-boundary flow manually from the dashboard
-- Test the manual supervisor loop from the dashboard
-- Test the new clipboard, hotkey, mouse, and Ctrl+8 failsafe flows manually from the dashboard
-- Test the first reusable operator recipes manually from the dashboard, especially focus, copy, paste, wait, and the narrow handoff prototype
-- Refresh Ghoti handoff memory first when chats get long, then use the new cue, resource guard, and retry ceiling as the base for a more serious cross-window handoff
-- Refine the narrow Codex-to-dashboard handoff recipe into a more reliable Codex-to-ChatGPT style cross-window handoff path without widening the control surface yet
-- Decide the real desktop-control implementation path
+- Refresh Ghoti handoff memory first when chats get long, then use the new cue, resource guard, retry ceiling, and safe handoff MVP as the base for the next real cross-window loop
+- Manually test the Codex-to-ChatGPT handoff MVP with real Codex and ChatGPT windows, not only terminal-safe checker targets
+- Tighten real Codex and ChatGPT target matching so the handoff recipe is less title-brittle
+- Improve operator-facing task filtering and recent views instead of adding any task deletion path
+- Keep the operator stack swappable from the provider brain so later model changes do not require a rewrite
+- Decide the next narrow desktop-control implementation path
 - Keep GitHub remote actions explicit and approval-gated
 - Prepare one internship-facing live demo from the current runtime outputs
 - Keep browser and app execution beyond the local playground in research until the control boundary is clearer
@@ -121,8 +123,9 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - The safe repo executor is intentionally narrow and repo-bound; it is not a generic shell runner, desktop controller, or autonomy layer
 - The desktop bridge is intentionally narrow and allowlisted; it is not arbitrary desktop control, click or type automation, clipboard orchestration, or a background daemon
 - The new desktop hand layer is useful but still narrow; it only supports explicit allowlisted clipboard, hotkey, wait, and mouse actions, and it still has no freeform typing, drag-and-drop, or arbitrary UI-state inference
-- The first operator recipe layer is intentionally small and still prototype-grade; the current handoff recipe is not a durable ChatGPT-specific workflow yet
+- The first operator recipe layer is intentionally small and still prototype-grade; the current handoff recipe is an MVP, not yet a durable ChatGPT-specific workflow
 - Window matching still depends on visible titles and allowed aliases, so some cross-window flows can remain brittle until the target set is tightened
 - Some focus-sensitive desktop actions still depend on what the current Windows session allows; in non-interactive checker sessions they may stop safely with manual-focus-required instead of pretending success
 - Desktop screenshot capture can still be unavailable in some Windows sessions, so manual capture remains the honest fallback there
+- Task history is large and noisy even after the first filter pass, and the operator console still needs better operator-facing filtering so stale failures do not crowd current work
 - Third-party intake repos are valuable comparison material, but most of their surface area is still too heavy to adopt directly

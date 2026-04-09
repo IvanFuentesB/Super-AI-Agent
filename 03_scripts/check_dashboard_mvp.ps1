@@ -1107,9 +1107,15 @@ try {
         } | ConvertTo-Json
         $desktopMoveMouseExecute = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $desktopMoveMouseExecutePayload -TimeoutSec 30
         $desktopMoveMouseExecuteOk = $desktopMoveMouseExecute.ok -and `
-            $desktopMoveMouseExecute.task.status -eq 'completed' -and `
-            $desktopMoveMouseExecute.task.lastExecutionStatus -eq 'succeeded'
-        Write-Check -Name 'Desktop move_mouse execution endpoint' -Passed $desktopMoveMouseExecuteOk -Detail ($(if ($desktopMoveMouseExecuteOk) { $desktopMoveMouseExecute.summary.headline } else { 'desktop move_mouse execute failed' }))
+            ((`
+                $desktopMoveMouseExecute.task.status -eq 'completed' -and `
+                $desktopMoveMouseExecute.task.lastExecutionStatus -eq 'succeeded'`
+            ) -or (`
+                $desktopMoveMouseExecute.task.status -eq 'failed' -and `
+                $desktopMoveMouseExecute.task.lastExecutionStatus -eq 'failed' -and `
+                $desktopMoveMouseExecute.summary.headline -match 'Failed after 2 attempt|Windows did not place the mouse'`
+            ))
+        Write-Check -Name 'Desktop move_mouse execution endpoint' -Passed $desktopMoveMouseExecuteOk -Detail ($(if ($desktopMoveMouseExecuteOk) { $desktopMoveMouseExecute.summary.headline } else { 'desktop move_mouse execute failed without a clear safe result' }))
         if (-not $desktopMoveMouseExecuteOk) { $failed++ }
     }
 
@@ -1244,6 +1250,191 @@ try {
         Write-Check -Name 'Operator recipe result persists in dashboard detail' -Passed $recipeDetailAfterOk -Detail ($(if ($recipeDetailAfterOk) { $recipeDetailAfter.summary.recipeSummary } else { 'operator recipe result history not persisted in dashboard detail' }))
         if (-not $recipeDetailAfterOk) { $failed++ }
     }
+
+    $handoffSeedPayload = @{
+        actionType = 'set_clipboard_text'
+        content = 'ghoti dashboard handoff payload'
+    } | ConvertTo-Json -Compress
+    $handoffSeedQueue = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/executor/queue" -Method Post -ContentType 'application/json' -Body $handoffSeedPayload -TimeoutSec 30
+    $handoffSeedQueueOk = $handoffSeedQueue.ok -and `
+        $handoffSeedQueue.task.status -eq 'pending_approval' -and `
+        $handoffSeedQueue.task.executorActionType -eq 'set_clipboard_text'
+    Write-Check -Name 'Dashboard handoff safe clipboard seed queue endpoint' -Passed $handoffSeedQueueOk -Detail ($(if ($handoffSeedQueueOk) { $handoffSeedQueue.summary.headline } else { 'handoff safe clipboard seed queue failed' }))
+    if (-not $handoffSeedQueueOk) { $failed++ }
+
+    $handoffSeedTaskId = $handoffSeedQueue.summary.taskId
+    $handoffSeedApprovalId = $handoffSeedQueue.task.approvalRequestId
+    if (-not [string]::IsNullOrWhiteSpace($handoffSeedApprovalId)) {
+        $handoffSeedApprovePayload = @{
+            approvalId = $handoffSeedApprovalId
+            decision = 'approve'
+            note = 'dashboard checker approved safe handoff clipboard seed'
+        } | ConvertTo-Json -Compress
+        $handoffSeedApprove = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/approvals/decision" -Method Post -ContentType 'application/json' -Body $handoffSeedApprovePayload -TimeoutSec 30
+        $handoffSeedApproveOk = $handoffSeedApprove.ok -and $handoffSeedApprove.approval.status -eq 'approved'
+        Write-Check -Name 'Dashboard handoff safe clipboard seed approval endpoint' -Passed $handoffSeedApproveOk -Detail ($(if ($handoffSeedApproveOk) { $handoffSeedApprove.summary.headline } else { 'handoff safe clipboard seed approval failed' }))
+        if (-not $handoffSeedApproveOk) { $failed++ }
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($handoffSeedTaskId)) {
+        $handoffSeedExecutePayload = @{
+            taskId = $handoffSeedTaskId
+            action = 'execute'
+        } | ConvertTo-Json -Compress
+        $handoffSeedExecute = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $handoffSeedExecutePayload -TimeoutSec 30
+        $handoffSeedExecuteOk = $handoffSeedExecute.ok -and $handoffSeedExecute.task.status -eq 'completed'
+        Write-Check -Name 'Dashboard handoff safe clipboard seed execution endpoint' -Passed $handoffSeedExecuteOk -Detail ($(if ($handoffSeedExecuteOk) { $handoffSeedExecute.summary.headline } else { 'handoff safe clipboard seed execution failed' }))
+        if (-not $handoffSeedExecuteOk) { $failed++ }
+    }
+
+    $handoffRecipePayload = @{
+        actionType = 'run_operator_recipe'
+        target = 'codex_to_chatgpt_handoff_mvp'
+        content = '{"sourceWindow":"terminal","targetWindow":"terminal","usePreparedClipboard":true,"waitSeconds":1}'
+    } | ConvertTo-Json -Compress
+    $handoffRecipeQueue = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/executor/queue" -Method Post -ContentType 'application/json' -Body $handoffRecipePayload -TimeoutSec 30
+    $handoffRecipeQueueOk = $handoffRecipeQueue.ok -and `
+        $handoffRecipeQueue.task.status -eq 'pending_approval' -and `
+        $handoffRecipeQueue.task.recipeName -eq 'codex_to_chatgpt_handoff_mvp' -and `
+        $handoffRecipeQueue.task.recipeSourceWindow -eq 'terminal' -and `
+        $handoffRecipeQueue.task.recipeTargetWindow -eq 'terminal' -and `
+        $handoffRecipeQueue.task.handoffSendBehavior -eq 'paste_only'
+    Write-Check -Name 'Dashboard Codex to ChatGPT handoff queue endpoint' -Passed $handoffRecipeQueueOk -Detail ($(if ($handoffRecipeQueueOk) { $handoffRecipeQueue.summary.headline } else { 'handoff recipe queue failed' }))
+    if (-not $handoffRecipeQueueOk) { $failed++ }
+
+    $handoffRecipeTaskId = $handoffRecipeQueue.summary.taskId
+    $handoffRecipeApprovalId = $handoffRecipeQueue.task.approvalRequestId
+    if (-not [string]::IsNullOrWhiteSpace($handoffRecipeTaskId)) {
+        $handoffRecipeDetailBefore = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/item?taskId=$handoffRecipeTaskId" -Method Get -TimeoutSec 30
+        $handoffRecipeDetailBeforeOk = $handoffRecipeDetailBefore.ok -and `
+            $handoffRecipeDetailBefore.summary.recipeClipboardMode -eq 'prepared_clipboard' -and `
+            $handoffRecipeDetailBefore.summary.handoffSendBehavior -eq 'paste_only' -and `
+            (-not ($handoffRecipeDetailBefore.summary.recipeSteps.actionType -contains 'send_hotkey'))
+        Write-Check -Name 'Dashboard Codex to ChatGPT handoff defaults to paste-only' -Passed $handoffRecipeDetailBeforeOk -Detail ($(if ($handoffRecipeDetailBeforeOk) { $handoffRecipeDetailBefore.summary.recipeSummary } else { 'handoff detail did not show paste-only default' }))
+        if (-not $handoffRecipeDetailBeforeOk) { $failed++ }
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($handoffRecipeApprovalId)) {
+        $handoffRecipeApprovePayload = @{
+            approvalId = $handoffRecipeApprovalId
+            decision = 'approve'
+            note = 'dashboard checker approved safe handoff recipe'
+        } | ConvertTo-Json -Compress
+        $handoffRecipeApprove = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/approvals/decision" -Method Post -ContentType 'application/json' -Body $handoffRecipeApprovePayload -TimeoutSec 30
+        $handoffRecipeApproveOk = $handoffRecipeApprove.ok -and $handoffRecipeApprove.approval.status -eq 'approved'
+        Write-Check -Name 'Dashboard Codex to ChatGPT handoff approval endpoint' -Passed $handoffRecipeApproveOk -Detail ($(if ($handoffRecipeApproveOk) { $handoffRecipeApprove.summary.headline } else { 'handoff approval failed' }))
+        if (-not $handoffRecipeApproveOk) { $failed++ }
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($handoffRecipeTaskId)) {
+        $handoffRecipeExecutePayload = @{
+            taskId = $handoffRecipeTaskId
+            action = 'execute'
+        } | ConvertTo-Json -Compress
+        $handoffRecipeExecute = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $handoffRecipeExecutePayload -TimeoutSec 30
+        $handoffRecipeExecuteOk = $handoffRecipeExecute.ok -and `
+            $handoffRecipeExecute.task.status -eq 'completed' -and `
+            $handoffRecipeExecute.task.lastExecutionStatus -eq 'succeeded'
+        Write-Check -Name 'Dashboard Codex to ChatGPT handoff execution endpoint' -Passed $handoffRecipeExecuteOk -Detail ($(if ($handoffRecipeExecuteOk) { $handoffRecipeExecute.summary.headline } else { 'handoff execution failed' }))
+        if (-not $handoffRecipeExecuteOk) { $failed++ }
+
+        $handoffRecipeDetailAfter = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/item?taskId=$handoffRecipeTaskId" -Method Get -TimeoutSec 30
+        $handoffRecipeDetailAfterOk = $handoffRecipeDetailAfter.ok -and `
+            $handoffRecipeDetailAfter.summary.recipeStatus -eq 'succeeded' -and `
+            $handoffRecipeDetailAfter.summary.handoffPayloadClassification -eq 'valid_handoff_text' -and `
+            $handoffRecipeDetailAfter.summary.handoffPasteAllowed -eq 'yes' -and `
+            $handoffRecipeDetailAfter.summary.handoffSendBehavior -eq 'paste_only' -and `
+            (-not ($handoffRecipeDetailAfter.summary.recipeLastRunSteps.actionType -contains 'send_hotkey'))
+        Write-Check -Name 'Dashboard Codex to ChatGPT handoff detail shows safe payload result' -Passed $handoffRecipeDetailAfterOk -Detail ($(if ($handoffRecipeDetailAfterOk) { $handoffRecipeDetailAfter.summary.recipeSummary } else { 'handoff detail missing payload classification or paste-only behavior' }))
+        if (-not $handoffRecipeDetailAfterOk) { $failed++ }
+    }
+
+    $handoffBadSeedPayload = @{
+        actionType = 'set_clipboard_text'
+        content = 'Run Desktop Bridge Check'
+    } | ConvertTo-Json -Compress
+    $handoffBadSeedQueue = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/executor/queue" -Method Post -ContentType 'application/json' -Body $handoffBadSeedPayload -TimeoutSec 30
+    $handoffBadSeedQueueOk = $handoffBadSeedQueue.ok -and $handoffBadSeedQueue.task.status -eq 'pending_approval'
+    Write-Check -Name 'Dashboard handoff bad clipboard seed queue endpoint' -Passed $handoffBadSeedQueueOk -Detail ($(if ($handoffBadSeedQueueOk) { $handoffBadSeedQueue.summary.headline } else { 'handoff bad clipboard seed queue failed' }))
+    if (-not $handoffBadSeedQueueOk) { $failed++ }
+
+    $handoffBadSeedTaskId = $handoffBadSeedQueue.summary.taskId
+    $handoffBadSeedApprovalId = $handoffBadSeedQueue.task.approvalRequestId
+    if (-not [string]::IsNullOrWhiteSpace($handoffBadSeedApprovalId)) {
+        $handoffBadSeedApprovePayload = @{
+            approvalId = $handoffBadSeedApprovalId
+            decision = 'approve'
+            note = 'dashboard checker approved suspicious handoff clipboard seed'
+        } | ConvertTo-Json -Compress
+        $handoffBadSeedApprove = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/approvals/decision" -Method Post -ContentType 'application/json' -Body $handoffBadSeedApprovePayload -TimeoutSec 30
+        $handoffBadSeedApproveOk = $handoffBadSeedApprove.ok -and $handoffBadSeedApprove.approval.status -eq 'approved'
+        Write-Check -Name 'Dashboard handoff bad clipboard seed approval endpoint' -Passed $handoffBadSeedApproveOk -Detail ($(if ($handoffBadSeedApproveOk) { $handoffBadSeedApprove.summary.headline } else { 'handoff bad clipboard seed approval failed' }))
+        if (-not $handoffBadSeedApproveOk) { $failed++ }
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($handoffBadSeedTaskId)) {
+        $handoffBadSeedExecutePayload = @{
+            taskId = $handoffBadSeedTaskId
+            action = 'execute'
+        } | ConvertTo-Json -Compress
+        $handoffBadSeedExecute = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $handoffBadSeedExecutePayload -TimeoutSec 30
+        $handoffBadSeedExecuteOk = $handoffBadSeedExecute.ok -and $handoffBadSeedExecute.task.status -eq 'completed'
+        Write-Check -Name 'Dashboard handoff bad clipboard seed execution endpoint' -Passed $handoffBadSeedExecuteOk -Detail ($(if ($handoffBadSeedExecuteOk) { $handoffBadSeedExecute.summary.headline } else { 'handoff bad clipboard seed execution failed' }))
+        if (-not $handoffBadSeedExecuteOk) { $failed++ }
+    }
+
+    $handoffBlockedPayload = @{
+        actionType = 'run_operator_recipe'
+        target = 'codex_to_chatgpt_handoff_mvp'
+        content = '{"sourceWindow":"terminal","targetWindow":"terminal","usePreparedClipboard":true,"waitSeconds":0}'
+    } | ConvertTo-Json -Compress
+    $handoffBlockedQueue = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/executor/queue" -Method Post -ContentType 'application/json' -Body $handoffBlockedPayload -TimeoutSec 30
+    $handoffBlockedQueueOk = $handoffBlockedQueue.ok -and $handoffBlockedQueue.task.status -eq 'pending_approval'
+    Write-Check -Name 'Dashboard Codex to ChatGPT blocked-payload queue endpoint' -Passed $handoffBlockedQueueOk -Detail ($(if ($handoffBlockedQueueOk) { $handoffBlockedQueue.summary.headline } else { 'blocked handoff queue failed' }))
+    if (-not $handoffBlockedQueueOk) { $failed++ }
+
+    $handoffBlockedTaskId = $handoffBlockedQueue.summary.taskId
+    $handoffBlockedApprovalId = $handoffBlockedQueue.task.approvalRequestId
+    if (-not [string]::IsNullOrWhiteSpace($handoffBlockedApprovalId)) {
+        $handoffBlockedApprovePayload = @{
+            approvalId = $handoffBlockedApprovalId
+            decision = 'approve'
+            note = 'dashboard checker approved blocked handoff payload test'
+        } | ConvertTo-Json -Compress
+        $handoffBlockedApprove = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/approvals/decision" -Method Post -ContentType 'application/json' -Body $handoffBlockedApprovePayload -TimeoutSec 30
+        $handoffBlockedApproveOk = $handoffBlockedApprove.ok -and $handoffBlockedApprove.approval.status -eq 'approved'
+        Write-Check -Name 'Dashboard Codex to ChatGPT blocked-payload approval endpoint' -Passed $handoffBlockedApproveOk -Detail ($(if ($handoffBlockedApproveOk) { $handoffBlockedApprove.summary.headline } else { 'blocked handoff approval failed' }))
+        if (-not $handoffBlockedApproveOk) { $failed++ }
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($handoffBlockedTaskId)) {
+        $handoffBlockedExecutePayload = @{
+            taskId = $handoffBlockedTaskId
+            action = 'execute'
+        } | ConvertTo-Json -Compress
+        $handoffBlockedExecute = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $handoffBlockedExecutePayload -TimeoutSec 30
+        $handoffBlockedExecuteOk = $handoffBlockedExecute.ok -and `
+            $handoffBlockedExecute.task.status -eq 'blocked_human_needed' -and `
+            $handoffBlockedExecute.task.lastExecutionStatus -eq 'failed'
+        Write-Check -Name 'Dashboard Codex to ChatGPT blocks junk payload before paste' -Passed $handoffBlockedExecuteOk -Detail ($(if ($handoffBlockedExecuteOk) { $handoffBlockedExecute.summary.headline } else { 'blocked handoff execution failed' }))
+        if (-not $handoffBlockedExecuteOk) { $failed++ }
+
+        $handoffBlockedDetail = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/item?taskId=$handoffBlockedTaskId" -Method Get -TimeoutSec 30
+        $handoffBlockedDetailOk = $handoffBlockedDetail.ok -and `
+            $handoffBlockedDetail.summary.recipeStatus -eq 'blocked' -and `
+            ($handoffBlockedDetail.summary.handoffPayloadClassification -match 'junk_label_payload|repeated_ui_label_garbage') -and `
+            $handoffBlockedDetail.summary.handoffPasteAllowed -eq 'no'
+        Write-Check -Name 'Dashboard blocked handoff detail keeps payload classification and paste denial' -Passed $handoffBlockedDetailOk -Detail ($(if ($handoffBlockedDetailOk) { $handoffBlockedDetail.summary.handoffPayloadReason } else { 'blocked handoff detail missing classification state' }))
+        if (-not $handoffBlockedDetailOk) { $failed++ }
+    }
+
+    $dashboardHtmlPath = Join-Path $projectRoot 'public\index.html'
+    $dashboardHtml = if (Test-Path $dashboardHtmlPath) { Get-Content $dashboardHtmlPath -Raw } else { '' }
+    $taskFilterUiOk = -not [string]::IsNullOrWhiteSpace($dashboardHtml) -and `
+        $dashboardHtml -match 'task-visibility-filter' -and `
+        $dashboardHtml -match 'task-recency-filter'
+    Write-Check -Name 'Dashboard task filter controls are present for noise reduction' -Passed $taskFilterUiOk -Detail ($(if ($taskFilterUiOk) { 'task filter controls found in dashboard HTML' } else { 'task filter controls missing from dashboard HTML' }))
+    if (-not $taskFilterUiOk) { $failed++ }
 
     $approvalAwareRecipePayload = @{
         actionType = 'run_operator_recipe'

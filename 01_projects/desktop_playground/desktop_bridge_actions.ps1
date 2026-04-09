@@ -95,6 +95,8 @@ if (-not ('DesktopBridgeNative' -as [type])) {
 $allowedWindowTargets = [ordered]@{
     cursor = @('Cursor')
     vscode = @('Visual Studio Code')
+    codex = @('Codex')
+    chatgpt = @('ChatGPT', 'chatgpt.com', 'chat.openai.com')
     terminal = @('Windows Terminal', 'PowerShell', 'Command Prompt')
     dashboard_browser = @('Super-AI-Agent Operator Console', '127.0.0.1:3210')
 }
@@ -301,17 +303,52 @@ function Stop-BlockedAction {
     exit 41
 }
 
-function Test-SuspiciousTerminalClipboardText {
+function Get-ClipboardPayloadClassification {
     param(
         [string]$ClipboardText
     )
 
     $normalized = (([string]$ClipboardText) -replace '\s+', ' ').Trim()
     if ([string]::IsNullOrWhiteSpace($normalized)) {
-        return $false
+        return [pscustomobject]@{
+            Classification = 'empty_payload'
+            IsBlocked = $true
+            Reason = 'Clipboard is empty, so the handoff payload is not safe to paste yet.'
+        }
     }
 
-    return $normalized -match '(?i)(^run desktop bridge check$|^refresh console status$|^refresh github summary$|^focus or reuse terminal$|^copy from focused window$|^paste into target window$|check_runtime_mvp\.ps1|check_dashboard_mvp\.ps1|check_desktop_playground\.ps1|write-check -name|\[(pass|fail)\])'
+    $suspiciousPattern = '(?i)(run desktop bridge check|refresh console status|refresh github summary|focus or reuse terminal|copy from focused window|paste into target window|queue prototype progress handoff|codex to dashboard progress handoff|codex to chatgpt handoff mvp|check_runtime_mvp\.ps1|check_dashboard_mvp\.ps1|check_desktop_playground\.ps1|write-check -name|\[(pass|fail)\])'
+    $matchCount = [regex]::Matches($normalized, $suspiciousPattern, [System.Text.RegularExpressions.RegexOptions]::IgnoreCase).Count
+    if ($matchCount -gt 1) {
+        return [pscustomobject]@{
+            Classification = 'repeated_ui_label_garbage'
+            IsBlocked = $true
+            Reason = 'Clipboard looks like repeated checker or recipe labels concatenated together, so the payload was blocked.'
+        }
+    }
+
+    if ($matchCount -eq 1) {
+        return [pscustomobject]@{
+            Classification = 'junk_label_payload'
+            IsBlocked = $true
+            Reason = 'Clipboard looks like a checker or recipe label instead of real handoff text, so the payload was blocked.'
+        }
+    }
+
+    return [pscustomobject]@{
+        Classification = 'valid_handoff_text'
+        IsBlocked = $false
+        Reason = 'Clipboard payload looks like real handoff text.'
+    }
+}
+
+function Test-SuspiciousTerminalClipboardText {
+    param(
+        [string]$ClipboardText
+    )
+
+    $classification = Get-ClipboardPayloadClassification -ClipboardText $ClipboardText
+    return $classification.Classification -in @('junk_label_payload', 'repeated_ui_label_garbage')
 }
 
 function Resolve-SafePath {
@@ -1112,22 +1149,29 @@ function Invoke-DesktopAction {
 
         'get_clipboard_text' {
             $clipboardText = Get-ClipboardTextSafe
+            $clipboardClassification = Get-ClipboardPayloadClassification -ClipboardText $clipboardText
             Write-Field 'action_type' 'get_clipboard_text'
             Write-Field 'status' 'succeeded'
             Write-Field 'target' 'clipboard'
             Write-Field 'headline' 'Read clipboard text.'
             Write-Field 'clipboard_preview' (Short-Preview -Text $clipboardText)
+            Write-Field 'clipboard_classification' $clipboardClassification.Classification
+            Write-Field 'clipboard_guard_reason' $clipboardClassification.Reason
             return
         }
 
         'set_clipboard_text' {
             Assert-NotInterrupted -Phase 'setting clipboard text'
             Set-ClipboardTextSafe -Value $TextContent
+            $clipboardText = Get-ClipboardTextSafe
+            $clipboardClassification = Get-ClipboardPayloadClassification -ClipboardText $clipboardText
             Write-Field 'action_type' 'set_clipboard_text'
             Write-Field 'status' 'succeeded'
             Write-Field 'target' 'clipboard'
             Write-Field 'headline' 'Updated clipboard text.'
-            Write-Field 'clipboard_preview' (Short-Preview -Text (Get-ClipboardTextSafe))
+            Write-Field 'clipboard_preview' (Short-Preview -Text $clipboardText)
+            Write-Field 'clipboard_classification' $clipboardClassification.Classification
+            Write-Field 'clipboard_guard_reason' $clipboardClassification.Reason
             return
         }
 
@@ -1141,6 +1185,8 @@ function Invoke-DesktopAction {
             Assert-NotInterrupted -Phase "copying selection from $($context.ActiveAlias)"
             [System.Windows.Forms.SendKeys]::SendWait('^c')
             Wait-WithInterrupt -Milliseconds 450 -Phase 'waiting for clipboard copy'
+            $clipboardText = Get-ClipboardTextSafe
+            $clipboardClassification = Get-ClipboardPayloadClassification -ClipboardText $clipboardText
 
             Write-Field 'action_type' 'copy_selection'
             Write-Field 'status' 'succeeded'
@@ -1148,7 +1194,9 @@ function Invoke-DesktopAction {
             Write-Field 'headline' ("Copied selection from allowlisted window: {0}" -f $context.ActiveAlias)
             Write-Field 'active_window_alias' $context.ActiveAlias
             Write-Field 'active_window_title' $context.ActiveTitle
-            Write-Field 'clipboard_preview' (Short-Preview -Text (Get-ClipboardTextSafe))
+            Write-Field 'clipboard_preview' (Short-Preview -Text $clipboardText)
+            Write-Field 'clipboard_classification' $clipboardClassification.Classification
+            Write-Field 'clipboard_guard_reason' $clipboardClassification.Reason
             return
         }
 
@@ -1160,17 +1208,18 @@ function Invoke-DesktopAction {
 
             $clipboardText = Get-ClipboardTextSafe
             $clipboardPreview = Short-Preview -Text $clipboardText
-            if ((-not [string]::IsNullOrWhiteSpace($alias) -and $alias -eq 'terminal' -and (Test-SuspiciousTerminalClipboardText -ClipboardText $clipboardText))) {
+            $clipboardClassification = Get-ClipboardPayloadClassification -ClipboardText $clipboardText
+            if ((-not [string]::IsNullOrWhiteSpace($alias) -and $alias -eq 'terminal' -and $clipboardClassification.IsBlocked)) {
                 Stop-BlockedAction `
-                    -Reason 'Clipboard guard blocked pasting likely checker or recipe label text into the terminal.' `
+                    -Reason $clipboardClassification.Reason `
                     -GuardState 'clipboard_guard_triggered' `
                     -TargetValue 'terminal'
             }
 
             $context = Resolve-InputWindowContextOrBlock -Alias $alias -ActionLabel 'pasting clipboard text'
-            if ($context.ActiveAlias -eq 'terminal' -and (Test-SuspiciousTerminalClipboardText -ClipboardText $clipboardText)) {
+            if ($context.ActiveAlias -eq 'terminal' -and $clipboardClassification.IsBlocked) {
                 Stop-BlockedAction `
-                    -Reason 'Clipboard guard blocked pasting likely checker or recipe label text into the terminal.' `
+                    -Reason $clipboardClassification.Reason `
                     -GuardState 'clipboard_guard_triggered' `
                     -TargetValue $context.ActiveAlias
             }
@@ -1185,6 +1234,8 @@ function Invoke-DesktopAction {
             Write-Field 'active_window_alias' $context.ActiveAlias
             Write-Field 'active_window_title' $context.ActiveTitle
             Write-Field 'clipboard_preview' $clipboardPreview
+            Write-Field 'clipboard_classification' $clipboardClassification.Classification
+            Write-Field 'clipboard_guard_reason' $clipboardClassification.Reason
             return
         }
 
@@ -1192,12 +1243,13 @@ function Invoke-DesktopAction {
             $spec = Resolve-HotkeySpec -HotkeyTarget $Target
             if ($spec.Hotkey -eq 'ctrl+v') {
                 $clipboardText = Get-ClipboardTextSafe
+                $clipboardClassification = Get-ClipboardPayloadClassification -ClipboardText $clipboardText
                 if (
                     ((-not [string]::IsNullOrWhiteSpace($spec.Alias) -and $spec.Alias -eq 'terminal') -or [string]::IsNullOrWhiteSpace($spec.Alias)) -and
-                    (Test-SuspiciousTerminalClipboardText -ClipboardText $clipboardText)
+                    $clipboardClassification.IsBlocked
                 ) {
                     Stop-BlockedAction `
-                        -Reason 'Clipboard guard blocked Ctrl+V because the clipboard looks like checker or recipe label text.' `
+                        -Reason $clipboardClassification.Reason `
                         -GuardState 'clipboard_guard_triggered' `
                         -TargetValue $(if ([string]::IsNullOrWhiteSpace($spec.Alias)) { 'active_allowlisted_window' } else { $spec.Alias })
                 }
@@ -1214,6 +1266,11 @@ function Invoke-DesktopAction {
             Write-Field 'active_window_alias' $context.ActiveAlias
             Write-Field 'active_window_title' $context.ActiveTitle
             Write-Field 'sent_hotkey' $spec.Hotkey
+            if ($spec.Hotkey -eq 'ctrl+v') {
+                $clipboardClassification = Get-ClipboardPayloadClassification -ClipboardText (Get-ClipboardTextSafe)
+                Write-Field 'clipboard_classification' $clipboardClassification.Classification
+                Write-Field 'clipboard_guard_reason' $clipboardClassification.Reason
+            }
             return
         }
 

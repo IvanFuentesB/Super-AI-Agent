@@ -528,6 +528,10 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"recipe_name: {task.executor_payload.get('recipe_name', 'none')}")
                 print(f"recipe_label: {task.executor_payload.get('recipe_label', 'none')}")
                 print(f"recipe_step_count: {len(task.executor_payload.get('recipe_steps', []))}")
+                print(f"recipe_source_window: {task.executor_payload.get('recipe_source_window', 'none')}")
+                print(f"recipe_target_window: {task.executor_payload.get('recipe_target_window', 'none')}")
+                print(f"recipe_clipboard_mode: {task.executor_payload.get('recipe_clipboard_mode', 'none')}")
+                print(f"handoff_send_behavior: {task.executor_payload.get('handoff_send_behavior', 'none')}")
             if task.approval_request_id:
                 print(f"approval_request_id: {task.approval_request_id}")
             return 0
@@ -556,11 +560,26 @@ def main(argv: list[str] | None = None) -> int:
             for task in tasks:
                 last_execution = task.execution_records[-1] if task.execution_records else None
                 last_summary = last_execution.output_summary if last_execution else "not_run"
+                recipe_bits = []
+                if task.executor_action_type == "run_operator_recipe":
+                    recipe_source = task.executor_payload.get("recipe_source_window", "")
+                    recipe_target = task.executor_payload.get("recipe_target_window", "")
+                    payload_classification = task.executor_payload.get("handoff_payload_classification", "")
+                    send_behavior = task.executor_payload.get("handoff_send_behavior", "")
+                    if recipe_source:
+                        recipe_bits.append(f"source_window={recipe_source}")
+                    if recipe_target:
+                        recipe_bits.append(f"target_window={recipe_target}")
+                    if payload_classification:
+                        recipe_bits.append(f"classification={payload_classification}")
+                    if send_behavior:
+                        recipe_bits.append(f"send_behavior={send_behavior}")
                 print(
                     f"- {task.task_id} | {task.status} | action={task.executor_action_type} | "
                     f"target={task.executor_target or 'none'} | approval={task.approval_state} | "
                     f"workspace={task.workspace_scope} | policy={task.workspace_policy} | "
                     f"last={_short_description(last_summary, limit=100)}"
+                    + (f" | {' | '.join(recipe_bits)}" if recipe_bits else "")
                 )
             return 0
 
@@ -586,6 +605,15 @@ def main(argv: list[str] | None = None) -> int:
             print(f"recipe_run_count: {len(task.executor_payload.get('recipe_run_history', [])) if task.executor_action_type == 'run_operator_recipe' else 0}")
             print(f"recipe_last_run_started_at: {recipe_last_run.get('started_at', 'none') if task.executor_action_type == 'run_operator_recipe' else 'none'}")
             print(f"recipe_last_run_finished_at: {recipe_last_run.get('finished_at', 'none') if task.executor_action_type == 'run_operator_recipe' else 'none'}")
+            print(f"recipe_source_window: {task.executor_payload.get('recipe_source_window', 'none') if task.executor_action_type == 'run_operator_recipe' else 'none'}")
+            print(f"recipe_target_window: {task.executor_payload.get('recipe_target_window', 'none') if task.executor_action_type == 'run_operator_recipe' else 'none'}")
+            print(f"recipe_clipboard_mode: {task.executor_payload.get('recipe_clipboard_mode', 'none') if task.executor_action_type == 'run_operator_recipe' else 'none'}")
+            print(f"handoff_payload_classification: {task.executor_payload.get('handoff_payload_classification', 'none') if task.executor_action_type == 'run_operator_recipe' else 'none'}")
+            print(f"handoff_payload_preview: {task.executor_payload.get('handoff_payload_preview', 'none') if task.executor_action_type == 'run_operator_recipe' else 'none'}")
+            print(f"handoff_payload_reason: {task.executor_payload.get('handoff_payload_reason', 'none') if task.executor_action_type == 'run_operator_recipe' else 'none'}")
+            print(f"handoff_paste_allowed: {task.executor_payload.get('handoff_paste_allowed', 'none') if task.executor_action_type == 'run_operator_recipe' else 'none'}")
+            print(f"handoff_send_behavior: {task.executor_payload.get('handoff_send_behavior', 'none') if task.executor_action_type == 'run_operator_recipe' else 'none'}")
+            print(f"handoff_send_allowed: {task.executor_payload.get('handoff_send_allowed', 'none') if task.executor_action_type == 'run_operator_recipe' else 'none'}")
             print(f"workspace_scope: {task.workspace_scope}")
             print(f"workspace_policy: {task.workspace_policy}")
             print(f"workspace_reason: {task.workspace_reason or 'none'}")
@@ -640,6 +668,7 @@ def main(argv: list[str] | None = None) -> int:
                         f"summary={item.get('summary', 'none') or 'none'} | "
                         f"artifact={item.get('artifact_path', 'none') or 'none'} | "
                         f"clipboard={item.get('clipboard_preview', 'none') or 'none'} | "
+                        f"classification={item.get('clipboard_classification', 'none') or 'none'} | "
                         f"window={item.get('window_alias', 'none') or 'none'} | "
                         f"coordinates={item.get('coordinates', 'none') or 'none'}"
                     )

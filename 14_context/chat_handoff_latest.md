@@ -1,16 +1,18 @@
 # Chat Handoff Latest
 
 ## 1. Project Purpose
-- Build Ghoti: a local-first supervised Windows operator for legitimate business, documentation, research, owned-account workflows, and later browser/app control.
-- Keep execution explicit, approval-gated, workspace-bound, resumable, inspectable, and easy to hand off when chats get long.
-- Long term, support a model council or router across ChatGPT, Claude, Gemini, Gemma local, and later others.
+- Build Ghoti: a supervised, local-first Windows operator that can help think, plan, build, document, and perform narrow approved actions on the machine.
+- Keep the operator stack separate from the brain/provider layer so ChatGPT, Claude, Gemini, Gemma local, or later models can be swapped without rewriting approvals, memory, recipes, dashboard, or integrations.
+- Stay practical: explicit actions, visible state, approval gates, compact durable memory, and clean handoff when chats get long.
 
-## 2. Current Repo Root And Boundary Rules
-- Canonical repo and workspace root:
+## 2. Repo Root And Boundary Rules
+- Canonical workspace root:
   `C:\Users\ai_sandbox\Documents\AI_Managed_Only`
-- Do not touch files outside that root unless the user explicitly approves it.
-- Out-of-scope paths must stay blocked or escalated, never treated as normal work.
+- Do not touch files or areas outside that root unless the user explicitly approves it.
 - Do not affect the other Windows profile.
+- Out-of-scope paths must stay blocked or escalated, never treated as normal work.
+- No task should be deleted without the user's explicit approval.
+- Prefer archive, filter, and history visibility instead of deletion.
 
 ## 3. Completed Feature Branches In Order
 - `feat/supervisor-and-approval-inbox`
@@ -21,32 +23,36 @@
 - `feat/desktop-bridge-actions`
 - `feat/desktop-input-mouse-failsafe`
 - `feat/operator-recipes-handoff-memory`
-- `feat/ghoti-visual-cue-resource-guard` (current working branch)
+- `feat/ghoti-visual-cue-resource-guard`
+- `feat/codex-chatgpt-handoff-mvp`
 
 ## 4. Current Working Capabilities
 - Approval queue UI with approve, deny, and defer.
-- Workspace-bound task classification and blocking.
-- Manual supervisor loop with waiting, review, resume, re-queue, and task history.
-- Safe repo-local executor for allowlisted file, git, artifact, and checker actions.
-- Local dashboard operator console with artifact preview, open, reveal, and supervisor views.
+- Workspace-bound task classification and policy blocking.
+- Manual supervisor loop with waiting, review, resume, re-queue, interruption, and task history.
+- Safe repo-local executor for allowlisted file, git, artifact, checker, and recipe actions.
+- Dashboard operator console with artifact preview/open/reveal, supervisor views, desktop bridge status, and recent actions.
 - Browser playground with headless smoke and visible local demo.
 - Narrow desktop bridge with window, clipboard, hotkey, wait, screenshot, and mouse actions.
-- Narrow operator recipes built from the desktop hand primitives.
-- Ghoti state cue in the dashboard for `idle`, `active`, `waiting`, `approval_needed`, `interrupted`, and `resource_guard_triggered`.
-- Resource/process guard for duplicate terminal/process pressure.
+- Ghoti dashboard state cue for `idle`, `active`, `waiting`, `approval_needed`, `interrupted`, and `resource_guard_triggered`.
+- Resource/process guard for duplicate terminal and process pressure.
 - Two-attempt retry ceiling for desktop actions and recipe steps.
-- Clipboard guard that blocks obvious checker or recipe labels from being pasted into terminals.
-- Compact handoff memory and repo-integration mapping inside `14_context` and `08_research`.
+- Clipboard guard that blocks checker or recipe junk before it reaches terminal or handoff targets.
+- First reusable operator recipe layer.
+- First narrow supervised Codex-to-ChatGPT handoff MVP recipe.
+- Operator-facing task filtering for noisy task history:
+  recent-only and visibility filters are now present in the dashboard.
 
 ## 5. Current Safety Model
 - Risky actions require approval.
-- The workspace root is the default hard boundary.
-- Out-of-scope targets stay blocked by workspace policy even if approval is recorded.
+- Workspace root is the hard default boundary.
+- Out-of-scope targets stay blocked even if approval is recorded.
 - No arbitrary shell passthrough.
 - No admin automation.
+- No unrestricted desktop control.
 - No silent daemon or hidden autonomy.
-- Desktop recipes stay explicit, allowlisted, approval-aware, and stop on `Ctrl+8`.
-- Focus-sensitive desktop actions stop safely when Windows cannot grant or confirm foreground control.
+- Desktop actions and recipes stay explicit, allowlisted, approval-aware, and stop on `Ctrl+8`.
+- Handoff defaults to paste-only. Auto-send is blocked unless the recipe explicitly allows it.
 
 ## 6. Current Desktop-Control Capabilities
 - `list_windows`
@@ -66,54 +72,65 @@
 - `double_click`
 - `right_click`
 - `scroll_mouse`
-- narrow operator recipes:
-  - `observe_desktop_state`
-  - `focus_or_reuse_terminal`
-  - `copy_from_focused_window`
-  - `paste_into_target_window`
-  - `wait_and_resume_operator_step`
-  - `codex_to_dashboard_progress_handoff`
-- `Ctrl+8` interrupt path that persists an interrupted state and requires operator review before re-queueing
+- `Ctrl+8` interrupt path with persisted interrupted state
 
-## 7. Known Weird Behaviors / Current Issues
-- The chat context fills quickly, so the handoff files matter.
-- In this current checker session, some focus-sensitive desktop actions can hit `manual_focus_required` because Windows foreground access is not always available to the spawned process.
-- In this current checker session, desktop screenshot capture can hit `desktop_capture_unavailable`, so manual capture is still needed there.
-- PowerShell or Node windows can still appear during checks or desktop actions; focus-first reuse now exists, but clutter is still a concern.
-- The desktop bridge and recipe layer are still narrow and deterministic, not a full UI-state-aware desktop controller.
-- `codex_to_dashboard_progress_handoff` is only a narrow prototype. It is not a real ChatGPT-specific workflow yet.
-- Runtime data contains a lot of persisted checker-created tasks.
+## 7. Current Handoff MVP
+- New recipe:
+  `codex_to_chatgpt_handoff_mvp`
+- Current behavior:
+  focus source window, copy or reuse prepared clipboard text, classify clipboard payload, focus target window, paste safely, optionally wait, optionally allow explicit send.
+- Current defaults:
+  source `codex`, target `chatgpt`, paste-only by default, no auto-Enter.
+- Current narrow safe target aliases:
+  `codex`, `chatgpt`, `terminal`, plus the existing allowlisted window targets.
+- Current proven behavior:
+  junk or internal label payloads are blocked before paste,
+  valid handoff payloads can pass,
+  explicit send remains opt-in.
 
-## 8. Repo Integration Map Summary
+## 8. Known Weird Behaviors / Current Issues
+- Chat context still fills quickly, so the handoff files matter.
+- Window matching still depends on visible titles and narrow aliases, so real Codex/ChatGPT targeting is still somewhat brittle.
+- Some focus-sensitive desktop actions can still hit `manual_focus_required` depending on the Windows session.
+- Desktop screenshot capture can still hit `desktop_capture_unavailable` in some sessions.
+- PowerShell or Node windows can still appear during some checks or desktop actions, although focus-first reuse and resource guards reduce this.
+- Task history is large and noisy even with the new filters; operator-facing filtering still needs another pass.
+- Older failed checker tasks still exist and should not be over-weighted without checking the latest checker results.
+
+## 9. Repo Integration Map Summary
 - Core now:
-  this repo itself, runtime MVP, dashboard MVP, browser playground, desktop playground, supervisor flow, approval flow, workspace policy, allowlisted executor, and narrow operator recipes.
+  this repo, runtime MVP, dashboard MVP, browser playground, desktop playground, supervisor flow, approval flow, workspace policy, allowlisted executor, and narrow operator recipes.
 - DNA/reference:
   Codex, Claude Code, OpenClaw, official Playwright, Windows-Use, Windows-MCP, Open Interpreter, Open Computer Use, browser-use, Stagehand, and Blueprint.am as product inspiration only.
 - Later experiment:
   OpenHands or OpenHarness style systems, Claw Code, Kronos, MiroFish, and future local model routing and eval layers.
 - Use-only / optional utility:
-  career-ops, pi-mono, seomachine, thepopebot, RedditVideoMakerBot, awesome-claude-code, and side demo/design helpers.
+  career-ops, pi-mono, seomachine, thepopebot, RedditVideoMakerBot, and side helper repos.
 - Not foundation:
   leak-style extraction repos, abuse-oriented automation, and unrelated side tools.
 
-## 9. Immediate Next Recommended Branch
-- `feat/practical-codex-chatgpt-handoff-loop`
-- Purpose:
-  build the first serious cross-window handoff recipe on top of the new Ghoti cue, retry policy, resource guard, and failsafe. Start narrow:
-  focus source window, copy safe progress text, verify clipboard, focus target window, paste, wait, and stop safely if context is unclear.
+## 10. Exact Next Recommended Step
+- Build the next branch around a more practical real-window handoff loop:
+  tighten Codex and ChatGPT target matching, add a more deliberate operator-reviewed paste-confirm flow, and keep paste-only as the default.
+- Keep working on operator-facing history filtering instead of deleting old tasks.
 
-## 10. What Still Does NOT Exist Yet
+## 11. What Still Does NOT Exist Yet
+- No durable real ChatGPT-specific target resolver.
+- No unrestricted desktop control, freeform typing, drag-and-drop, or free-roaming automation.
 - No full browser executor loop.
-- No full Windows app or desktop executor.
-- No unrestricted typing, drag-and-drop, or free-roaming desktop automation.
-- No real ChatGPT-specific target window matching or durable Codex-to-ChatGPT workflow yet.
-- No tray app, always-on-top standalone cue window, or external notification channel yet.
-- No live Notion integration.
-- No live mail or LinkedIn execution adapters.
-- No multi-model routing or council execution layer yet.
-- No strong skip-policy layer beyond the current retry ceiling and manual review flow.
+- No full Windows app executor.
+- No external notifications or remote replies.
+- No live Notion, mail-send, or LinkedIn execution adapters.
+- No multi-model council/router execution layer yet.
+- No task deletion flow, and none should be added without explicit user approval.
 
-## 11. 14_context Files To Read First In A New Thread
+## 12. Current Practical Conclusions
+- Terminal junk or label payloads can now be blocked safely.
+- Valid paste and allowlisted hotkey actions can succeed.
+- The first narrow supervised Codex-to-ChatGPT handoff workflow now exists in MVP form.
+- Task history is large and noisy and needs better operator-facing filtering rather than deletion.
+
+## 13. 14_context Files To Read First In A New Thread
 - `14_context/chat_handoff_latest.md`
 - `14_context/current_state.md`
 - `14_context/next_actions.md`

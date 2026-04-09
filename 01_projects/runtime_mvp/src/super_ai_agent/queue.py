@@ -62,7 +62,7 @@ ALLOWED_CHECKER_TARGETS = {
     "runtime": "check_runtime_mvp.ps1",
     "dashboard": "check_dashboard_mvp.ps1",
 }
-ALLOWED_DESKTOP_FOCUS_TARGETS = {"cursor", "vscode", "terminal", "dashboard_browser"}
+ALLOWED_DESKTOP_FOCUS_TARGETS = {"cursor", "vscode", "codex", "chatgpt", "terminal", "dashboard_browser"}
 ALLOWED_DESKTOP_APP_TARGETS = {"cursor", "vscode", "terminal", "dashboard_browser"}
 ALLOWED_DESKTOP_HOTKEYS = {"ctrl+c", "ctrl+v", "ctrl+l", "enter", "escape"}
 QUEUEABLE_TASK_STATUSES = {"queued", "running", "waiting", "blocked_human_needed", "ready_to_resume"}
@@ -70,6 +70,7 @@ WINDOWS_ABSOLUTE_PATH_PATTERN = re.compile(r"(?i)\b[A-Z]:\\[^\s\"'<>|?*]+")
 DEFAULT_OPERATOR_RECIPE_WAIT_SECONDS = 2
 DEFAULT_DESKTOP_MAX_ATTEMPTS = 2
 RESOURCE_GUARD_WAITING_FOR = "resource_guard_review"
+VALID_HANDOFF_PAYLOAD_CLASSIFICATIONS = {"valid_handoff_text"}
 
 
 class DesktopActionInterrupted(RuntimeError):
@@ -460,6 +461,30 @@ def _recipe_option_int(
     return default
 
 
+def _recipe_option_bool(
+    options: dict,
+    *keys: str,
+    default: bool,
+    label: str,
+) -> bool:
+    truthy = {"1", "true", "yes", "y", "on"}
+    falsy = {"0", "false", "no", "n", "off"}
+
+    for key in keys:
+        if key not in options:
+            continue
+        value = options[key]
+        if isinstance(value, bool):
+            return value
+        normalized = str(value).strip().lower()
+        if normalized in truthy:
+            return True
+        if normalized in falsy:
+            return False
+        raise ValueError(f"{label} must be a boolean-like value.")
+    return default
+
+
 def _build_recipe_step(
     *,
     action_type: str,
@@ -655,6 +680,129 @@ def _recipe_codex_to_dashboard_progress_handoff(options: dict) -> dict:
     }
 
 
+def _recipe_codex_to_chatgpt_handoff_mvp(options: dict) -> dict:
+    source_window = _require_allowed_window_alias(
+        _recipe_option_text(
+            options,
+            "sourceWindow",
+            "source_window",
+            default="codex",
+        ),
+        label="codex_to_chatgpt_handoff_mvp sourceWindow",
+    )
+    target_window = _require_allowed_window_alias(
+        _recipe_option_text(
+            options,
+            "targetWindow",
+            "target_window",
+            default="chatgpt",
+        ),
+        label="codex_to_chatgpt_handoff_mvp targetWindow",
+    )
+    wait_seconds = _recipe_option_int(
+        options,
+        "waitSeconds",
+        "wait_seconds",
+        default=1,
+        minimum=0,
+        maximum=10,
+        label="codex_to_chatgpt_handoff_mvp waitSeconds",
+    )
+    use_prepared_clipboard = _recipe_option_bool(
+        options,
+        "usePreparedClipboard",
+        "use_prepared_clipboard",
+        default=False,
+        label="codex_to_chatgpt_handoff_mvp usePreparedClipboard",
+    )
+    allow_send = _recipe_option_bool(
+        options,
+        "allowSend",
+        "allow_send",
+        default=False,
+        label="codex_to_chatgpt_handoff_mvp allowSend",
+    )
+
+    steps: list[dict] = []
+    if not use_prepared_clipboard:
+        steps.extend(
+            [
+                _build_recipe_step(
+                    action_type="focus_window",
+                    target=source_window,
+                    label=f"Focus {source_window}",
+                ),
+                _build_recipe_step(
+                    action_type="copy_selection",
+                    target=source_window,
+                    label=f"Copy selection from {source_window}",
+                ),
+            ]
+        )
+
+    steps.append(
+        _build_recipe_step(
+            action_type="get_clipboard_text",
+            label=(
+                "Read prepared clipboard payload"
+                if use_prepared_clipboard
+                else "Classify copied clipboard payload"
+            ),
+        )
+    )
+
+    if wait_seconds > 0:
+        steps.append(
+            _build_recipe_step(
+                action_type="wait_seconds",
+                target=str(wait_seconds),
+                label=f"Wait {wait_seconds} second(s)",
+            )
+        )
+
+    steps.extend(
+        [
+            _build_recipe_step(
+                action_type="focus_window",
+                target=target_window,
+                label=f"Focus {target_window}",
+            ),
+            _build_recipe_step(
+                action_type="paste_clipboard",
+                target=target_window,
+                label=f"Paste clipboard into {target_window}",
+            ),
+        ]
+    )
+
+    if allow_send:
+        steps.append(
+            _build_recipe_step(
+                action_type="send_hotkey",
+                target=f"{target_window}|enter",
+                label=f"Explicitly send pasted handoff in {target_window}",
+            )
+        )
+
+    return {
+        "name": "codex_to_chatgpt_handoff_mvp",
+        "label": "Codex to ChatGPT handoff MVP",
+        "description": "First narrow supervised handoff workflow: focus Codex, copy or reuse a prepared clipboard payload, classify it, focus ChatGPT, and paste only by default. Enter is blocked unless the recipe explicitly allows it.",
+        "metadata": {
+            "recipe_source_window": source_window,
+            "recipe_target_window": target_window,
+            "recipe_clipboard_mode": "prepared_clipboard" if use_prepared_clipboard else "copy_selection",
+            "handoff_send_behavior": "explicit_enter_after_paste" if allow_send else "paste_only",
+            "handoff_send_allowed": "explicit_after_paste" if allow_send else "blocked_by_default",
+            "handoff_paste_allowed": "pending_classification",
+            "handoff_payload_classification": "pending",
+            "handoff_payload_preview": "none",
+            "handoff_payload_reason": "Clipboard has not been classified yet.",
+        },
+        "steps": steps,
+    }
+
+
 OPERATOR_RECIPE_BUILDERS = {
     "observe_desktop_state": _recipe_observe_desktop_state,
     "focus_or_reuse_terminal": _recipe_focus_or_reuse_terminal,
@@ -662,6 +810,7 @@ OPERATOR_RECIPE_BUILDERS = {
     "paste_into_target_window": _recipe_paste_into_target_window,
     "wait_and_resume_operator_step": _recipe_wait_and_resume_operator_step,
     "codex_to_dashboard_progress_handoff": _recipe_codex_to_dashboard_progress_handoff,
+    "codex_to_chatgpt_handoff_mvp": _recipe_codex_to_chatgpt_handoff_mvp,
 }
 
 
@@ -715,6 +864,7 @@ def _build_operator_recipe_definition(recipe_name: str, options: dict | None = N
         "description": str(recipe.get("description", "Operator recipe")).strip(),
         "steps": normalized_steps,
         "risk_level": risk_level,
+        "metadata": dict(recipe.get("metadata", {})),
     }
 
 
@@ -1015,6 +1165,7 @@ def _prepare_executor_action(
             normalized_target,
             _parse_operator_recipe_options(content),
         )
+        recipe_metadata = dict(recipe_definition.get("metadata", {}))
         normalized_target = recipe_definition["name"]
         payload.update(
             {
@@ -1024,6 +1175,7 @@ def _prepare_executor_action(
                 "recipe_risk_level": recipe_definition["risk_level"],
                 "recipe_steps": recipe_definition["steps"],
                 "max_attempts": DEFAULT_DESKTOP_MAX_ATTEMPTS,
+                **recipe_metadata,
             }
         )
     else:
@@ -1328,6 +1480,64 @@ def _persist_recipe_run(task: Task, run_payload: dict) -> None:
     task.executor_payload["recipe_run_history"] = history[-5:]
 
 
+def _handoff_payload_reason(classification: str, reason: str, preview: str) -> str:
+    normalized_classification = (classification or "").strip().lower()
+    normalized_reason = (reason or "").strip()
+    if normalized_reason and normalized_reason.lower() != "none":
+        return normalized_reason
+    if normalized_classification == "empty_payload":
+        return "Clipboard is empty, so the handoff payload was blocked before paste."
+    if normalized_classification == "junk_label_payload":
+        return "Clipboard looks like a checker or recipe label instead of real handoff text."
+    if normalized_classification == "repeated_ui_label_garbage":
+        return "Clipboard looks like repeated concatenated UI labels, so the payload was blocked."
+    if normalized_classification == "valid_handoff_text":
+        return f"Clipboard payload looks safe for handoff. Preview: {preview or 'none'}"
+    return "Clipboard payload classification is unknown, so the handoff cannot continue safely."
+
+
+def _apply_handoff_recipe_step_metadata(
+    task: Task,
+    *,
+    step_result: dict,
+    values: dict[str, str],
+) -> None:
+    classification = str(values.get("clipboard_classification", "")).strip().lower()
+    preview = str(values.get("clipboard_preview", "")).strip()
+    reason = _handoff_payload_reason(
+        classification,
+        str(values.get("clipboard_guard_reason", "")),
+        preview,
+    )
+
+    if step_result["action_type"] in {"copy_selection", "get_clipboard_text"}:
+        if not classification:
+            classification = "empty_payload" if not preview or preview.lower() == "empty" else "valid_handoff_text"
+            reason = _handoff_payload_reason(classification, "", preview)
+
+        task.executor_payload["handoff_payload_classification"] = classification
+        task.executor_payload["handoff_payload_preview"] = preview or "none"
+        task.executor_payload["handoff_payload_reason"] = reason
+        task.executor_payload["handoff_paste_allowed"] = (
+            "yes" if classification in VALID_HANDOFF_PAYLOAD_CLASSIFICATIONS else "no"
+        )
+        if classification not in VALID_HANDOFF_PAYLOAD_CLASSIFICATIONS:
+            task.executor_payload["handoff_send_allowed"] = "no"
+            raise DesktopActionBlocked(
+                _shorten_output(f"Handoff payload blocked before paste. {reason}", limit=320)
+            )
+        if task.executor_payload.get("handoff_send_behavior") == "explicit_enter_after_paste":
+            task.executor_payload["handoff_send_allowed"] = "explicit_after_paste"
+        return
+
+    if step_result["action_type"] == "paste_clipboard":
+        task.executor_payload["handoff_paste_allowed"] = "yes"
+        return
+
+    if step_result["action_type"] == "send_hotkey":
+        task.executor_payload["handoff_send_allowed"] = "yes"
+
+
 def _run_operator_recipe(task: Task) -> tuple[str, str]:
     recipe_name = str(task.executor_payload.get("recipe_name") or task.executor_target).strip().lower()
     recipe_label = str(task.executor_payload.get("recipe_label") or recipe_name or "operator recipe")
@@ -1366,6 +1576,7 @@ def _run_operator_recipe(task: Task) -> tuple[str, str]:
             "summary": "",
             "artifact_path": "",
             "clipboard_preview": "",
+            "clipboard_classification": "",
             "window_alias": "",
             "window_title": "",
             "coordinates": "",
@@ -1397,10 +1608,11 @@ def _run_operator_recipe(task: Task) -> tuple[str, str]:
                     step_summary = _shorten_output(
                         f"Succeeded on attempt {attempt}/{max_attempts}. {step_summary}",
                         limit=320,
-                    )
+                )
                 step_result["summary"] = step_summary
                 step_result["artifact_path"] = str(result.get("artifact_path") or "")
                 step_result["clipboard_preview"] = str(values.get("clipboard_preview", ""))
+                step_result["clipboard_classification"] = str(values.get("clipboard_classification", ""))
                 step_result["window_alias"] = str(
                     values.get("active_window_alias")
                     or values.get("focused_window_alias")
@@ -1414,6 +1626,12 @@ def _run_operator_recipe(task: Task) -> tuple[str, str]:
                     or ""
                 )
                 step_result["coordinates"] = str(values.get("coordinates", ""))
+                if recipe_name == "codex_to_chatgpt_handoff_mvp":
+                    _apply_handoff_recipe_step_metadata(
+                        task,
+                        step_result=step_result,
+                        values=values,
+                    )
                 step_result["finished_at"] = _now()
                 completed_steps.append(step_result)
                 step_completed = True

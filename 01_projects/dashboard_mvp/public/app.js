@@ -5,6 +5,7 @@ const uiState = {
   selectedArtifactPath: "",
   selectedApprovalId: "",
   selectedTaskId: "",
+  executorTasksPayload: null,
 };
 
 const desktopActionTypes = new Set([
@@ -82,6 +83,11 @@ function getInputValue(id) {
   return element ? String(element.value || "").trim() : "";
 }
 
+function isChecked(id) {
+  const element = document.getElementById(id);
+  return Boolean(element?.checked);
+}
+
 function buildHotkeyTarget() {
   const windowAlias = getInputValue("desktop-hotkey-window");
   const hotkey = getInputValue("desktop-hotkey-value");
@@ -117,6 +123,16 @@ function buildRecipeQueuePayload(recipeName, options = {}) {
   return payload;
 }
 
+function buildCodexChatGptHandoffOptions() {
+  return {
+    sourceWindow: getInputValue("handoff-source-window") || "codex",
+    targetWindow: getInputValue("handoff-target-window") || "chatgpt",
+    waitSeconds: Number.parseInt(getInputValue("handoff-wait-seconds") || "1", 10) || 1,
+    usePreparedClipboard: isChecked("handoff-use-prepared-clipboard"),
+    allowSend: isChecked("handoff-allow-send"),
+  };
+}
+
 function renderRaw(id, payload) {
   const element = document.getElementById(id);
   if (element) {
@@ -140,6 +156,77 @@ function normalizeState(status) {
     return "loading";
   }
   return "neutral";
+}
+
+const actionableTaskStatuses = new Set([
+  "queued",
+  "running",
+  "waiting",
+  "pending_approval",
+  "blocked_human_needed",
+  "interrupted",
+  "ready_to_resume",
+  "failed",
+]);
+
+function getTaskVisibilityFilter() {
+  return document.getElementById("task-visibility-filter")?.value || "actionable";
+}
+
+function getTaskRecencyLimit() {
+  const value = document.getElementById("task-recency-filter")?.value || "12";
+  if (value === "all") {
+    return Number.POSITIVE_INFINITY;
+  }
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 12;
+}
+
+function applyTaskListFilters(items) {
+  const allItems = Array.isArray(items) ? items : [];
+  const visibility = getTaskVisibilityFilter();
+  const recencyLimit = getTaskRecencyLimit();
+  const actionableItems = visibility === "actionable"
+    ? allItems.filter((item) => actionableTaskStatuses.has(String(item.status || "").toLowerCase()))
+    : allItems;
+  const visibleItems = Number.isFinite(recencyLimit)
+    ? actionableItems.slice(0, recencyLimit)
+    : actionableItems;
+
+  return {
+    items: visibleItems,
+    totalCount: allItems.length,
+    actionableCount: actionableItems.length,
+    visibility,
+    recencyLimit,
+  };
+}
+
+function buildTaskFilterNotice(label, filtered) {
+  if (!filtered.totalCount) {
+    return "";
+  }
+
+  const limitText = Number.isFinite(filtered.recencyLimit)
+    ? `${filtered.items.length} of ${filtered.actionableCount}`
+    : `${filtered.items.length}`;
+  const scopeText = filtered.visibility === "actionable"
+    ? "actionable task(s)"
+    : "task(s)";
+  const hiddenCount = filtered.totalCount - filtered.items.length;
+  const hiddenText = hiddenCount > 0
+    ? ` ${hiddenCount} older or completed ${label.toLowerCase()} item(s) are hidden by the current filter.`
+    : "";
+  return `<p class="list-filter-note">Showing ${limitText} recent ${scopeText} in ${escapeHtml(label)}.${hiddenText}</p>`;
+}
+
+function rerenderTaskListsFromState() {
+  if (!uiState.executorTasksPayload) {
+    return;
+  }
+  renderExecutorTaskCards(uiState.executorTasksPayload);
+  renderRecipeTaskCards(uiState.executorTasksPayload);
+  renderDesktopTaskCards(uiState.executorTasksPayload);
 }
 
 function renderGhotiState(summary = {}) {
@@ -565,6 +652,7 @@ function renderRecipeStepHistory(items) {
       const detailBits = [
         item.summary && item.summary !== "none" ? item.summary : "No step summary recorded.",
         item.clipboardPreview && item.clipboardPreview !== "none" ? `Clipboard: ${item.clipboardPreview}` : "",
+        item.clipboardClassification && item.clipboardClassification !== "none" ? `Classification: ${item.clipboardClassification}` : "",
         item.windowAlias && item.windowAlias !== "none" ? `Window: ${item.windowAlias}` : "",
         item.coordinates && item.coordinates !== "none" ? `Coordinates: ${item.coordinates}` : "",
         item.attempts ? `Attempts: ${item.attempts}/${item.maxAttempts || item.attempts}` : "",
@@ -726,6 +814,14 @@ function clearTaskDetail(message) {
   setText("task-detail-recipe-run-count", "-");
   setText("task-detail-recipe-summary", "-");
   setText("task-detail-recipe-last-run", "-");
+  setText("task-detail-recipe-source-window", "-");
+  setText("task-detail-recipe-target-window", "-");
+  setText("task-detail-recipe-clipboard-mode", "-");
+  setText("task-detail-recipe-payload-classification", "-");
+  setText("task-detail-recipe-payload-preview", "-");
+  setText("task-detail-recipe-paste-allowed", "-");
+  setText("task-detail-recipe-send-behavior", "-");
+  setText("task-detail-recipe-send-allowed", "-");
   setText("task-detail-summary", message);
   setValue("task-action-note", "");
   renderTaskHistory([]);
@@ -789,6 +885,14 @@ function renderTaskDetail(payload) {
     setText("task-detail-recipe-run-count", String(summary.recipeRunCount ?? 0));
     setText("task-detail-recipe-summary", summary.recipeSummary || "none");
     setText("task-detail-recipe-last-run", lastRunWindow || "No recipe run recorded yet.");
+    setText("task-detail-recipe-source-window", summary.recipeSourceWindow || "none");
+    setText("task-detail-recipe-target-window", summary.recipeTargetWindow || "none");
+    setText("task-detail-recipe-clipboard-mode", summary.recipeClipboardMode || "none");
+    setText("task-detail-recipe-payload-classification", summary.handoffPayloadClassification || "none");
+    setText("task-detail-recipe-payload-preview", summary.handoffPayloadPreview || "none");
+    setText("task-detail-recipe-paste-allowed", summary.handoffPasteAllowed || "none");
+    setText("task-detail-recipe-send-behavior", summary.handoffSendBehavior || "none");
+    setText("task-detail-recipe-send-allowed", summary.handoffSendAllowed || "none");
     renderRecipeStepHistory(recipeSteps);
     renderRecipeRunHistory(summary.recipeRunHistory || []);
   } else {
@@ -797,6 +901,14 @@ function renderTaskDetail(payload) {
     setText("task-detail-recipe-run-count", "-");
     setText("task-detail-recipe-summary", "-");
     setText("task-detail-recipe-last-run", "-");
+    setText("task-detail-recipe-source-window", "-");
+    setText("task-detail-recipe-target-window", "-");
+    setText("task-detail-recipe-clipboard-mode", "-");
+    setText("task-detail-recipe-payload-classification", "-");
+    setText("task-detail-recipe-payload-preview", "-");
+    setText("task-detail-recipe-paste-allowed", "-");
+    setText("task-detail-recipe-send-behavior", "-");
+    setText("task-detail-recipe-send-allowed", "-");
     renderRecipeStepHistory([]);
     renderRecipeRunHistory([]);
   }
@@ -909,14 +1021,19 @@ function renderExecutorTaskCards(payload) {
   }
 
   const summary = payload.summary || {};
-  const items = (summary.tasks || []).filter((item) => !isDesktopExecutorAction(item.actionType) && !isRecipeExecutorAction(item.actionType));
+  const allItems = (summary.tasks || []).filter((item) => !isDesktopExecutorAction(item.actionType) && !isRecipeExecutorAction(item.actionType));
+  const filtered = applyTaskListFilters(allItems);
+  const items = filtered.items;
   if (items.length === 0) {
-    container.innerHTML = "<p class=\"empty-state\">No repo-local executor tasks queued yet.</p>";
+    const emptyText = filtered.totalCount > 0
+      ? "No repo-local executor tasks match the current task filter."
+      : "No repo-local executor tasks queued yet.";
+    container.innerHTML = `<p class="empty-state">${escapeHtml(emptyText)}</p>`;
     renderRaw("executor-raw", payload);
     return;
   }
 
-  container.innerHTML = items
+  container.innerHTML = buildTaskFilterNotice("Repo Executor", filtered) + items
     .map((item) => {
       const status = normalizeState(item.status);
       const isSelected = item.taskId && item.taskId === uiState.selectedTaskId;
@@ -959,13 +1076,18 @@ function renderRecipeTaskCards(payload) {
   }
 
   const summary = payload.summary || {};
-  const items = (summary.tasks || []).filter((item) => isRecipeExecutorAction(item.actionType));
+  const allItems = (summary.tasks || []).filter((item) => isRecipeExecutorAction(item.actionType));
+  const filtered = applyTaskListFilters(allItems);
+  const items = filtered.items;
   if (items.length === 0) {
-    container.innerHTML = "<p class=\"empty-state\">No operator recipe tasks queued yet.</p>";
+    const emptyText = filtered.totalCount > 0
+      ? "No operator recipe tasks match the current task filter."
+      : "No operator recipe tasks queued yet.";
+    container.innerHTML = `<p class="empty-state">${escapeHtml(emptyText)}</p>`;
     return;
   }
 
-  container.innerHTML = items
+  container.innerHTML = buildTaskFilterNotice("Operator Recipes", filtered) + items
     .map((item) => {
       const status = normalizeState(item.status);
       const isSelected = item.taskId && item.taskId === uiState.selectedTaskId;
@@ -977,9 +1099,13 @@ function renderRecipeTaskCards(payload) {
           </div>
           <div class="approval-summary-grid">
             <p><span>Recipe</span><strong>${escapeHtml(item.target || "unknown_recipe")}</strong></p>
+            <p><span>Source</span><strong>${escapeHtml(item.sourceWindow || "none")}</strong></p>
+            <p><span>Target</span><strong>${escapeHtml(item.targetWindow || "none")}</strong></p>
             <p><span>Approval</span><strong>${escapeHtml(item.approvalState || "unknown")}</strong></p>
             <p><span>Workspace</span><strong>${escapeHtml(item.workspaceScope || "no_path_detected")}</strong></p>
             <p><span>Policy</span><strong>${escapeHtml(item.workspacePolicy || "allowed")}</strong></p>
+            <p><span>Payload</span><strong>${escapeHtml(item.payloadClassification && item.payloadClassification !== "none" ? item.payloadClassification : "not_classified")}</strong></p>
+            <p><span>Send</span><strong>${escapeHtml(item.sendBehavior && item.sendBehavior !== "none" ? item.sendBehavior : "not_applicable")}</strong></p>
           </div>
           <p class="approval-description"><span>Last Result</span>${escapeHtml(item.lastSummary || "not_run")}</p>
           <div class="approval-actions">
@@ -1005,13 +1131,18 @@ function renderDesktopTaskCards(payload) {
   }
 
   const summary = payload.summary || {};
-  const items = (summary.tasks || []).filter((item) => isDesktopExecutorAction(item.actionType));
+  const allItems = (summary.tasks || []).filter((item) => isDesktopExecutorAction(item.actionType));
+  const filtered = applyTaskListFilters(allItems);
+  const items = filtered.items;
   if (items.length === 0) {
-    container.innerHTML = "<p class=\"empty-state\">No desktop action tasks queued yet.</p>";
+    const emptyText = filtered.totalCount > 0
+      ? "No desktop action tasks match the current task filter."
+      : "No desktop action tasks queued yet.";
+    container.innerHTML = `<p class="empty-state">${escapeHtml(emptyText)}</p>`;
     return;
   }
 
-  container.innerHTML = items
+  container.innerHTML = buildTaskFilterNotice("Desktop Actions", filtered) + items
     .map((item) => {
       const status = normalizeState(item.status);
       const isSelected = item.taskId && item.taskId === uiState.selectedTaskId;
@@ -1423,12 +1554,16 @@ async function refreshSupervisorStatus() {
 
 async function refreshExecutorTasks() {
   const payload = await requestJson("/api/executor/tasks");
+  uiState.executorTasksPayload = payload;
   renderExecutorTaskCards(payload);
   renderRecipeTaskCards(payload);
   renderDesktopTaskCards(payload);
 
+  const filteredTasks = applyTaskListFilters(payload.summary?.tasks || []).items;
+
   const nextTaskId =
     uiState.selectedTaskId
+    || filteredTasks?.[0]?.taskId
     || payload.summary?.tasks?.[0]?.taskId
     || "";
 
@@ -1847,6 +1982,14 @@ document.getElementById("refresh-executor-tasks").addEventListener("click", asyn
   );
 });
 
+document.getElementById("task-visibility-filter").addEventListener("change", () => {
+  rerenderTaskListsFromState();
+});
+
+document.getElementById("task-recency-filter").addEventListener("change", () => {
+  rerenderTaskListsFromState();
+});
+
 document.getElementById("refresh-capabilities-panel").addEventListener("click", async (event) => {
   await runRefresh(
     event.currentTarget,
@@ -2209,12 +2352,8 @@ document.getElementById("queue-recipe-wait-step").addEventListener("click", asyn
 
 document.getElementById("queue-recipe-codex-handoff").addEventListener("click", async (event) => {
   await runExecutorQueue(
-    buildRecipeQueuePayload("codex_to_dashboard_progress_handoff", {
-      sourceWindow: "terminal",
-      targetWindow: "dashboard_browser",
-      waitSeconds: 1,
-    }),
-    "Queue Codex to dashboard handoff recipe",
+    buildRecipeQueuePayload("codex_to_chatgpt_handoff_mvp", buildCodexChatGptHandoffOptions()),
+    "Queue Codex to ChatGPT handoff recipe",
     event.currentTarget,
     { panelId: "recipe-action-summary" },
   );

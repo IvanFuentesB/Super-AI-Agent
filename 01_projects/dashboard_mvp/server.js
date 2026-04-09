@@ -571,6 +571,7 @@ function parseRecipeStepLine(line) {
     summary: labeled.summary || "none",
     artifactPath: labeled.artifact || "none",
     clipboardPreview: labeled.clipboard || "none",
+    clipboardClassification: labeled.classification || "none",
     windowAlias: labeled.window || "none",
     coordinates: labeled.coordinates || "none",
     attempts: Number.parseInt(labeled.attempts || "0", 10),
@@ -640,6 +641,15 @@ function parseTaskDetail(stdout) {
     recipeRunCount: Number.parseInt(parsed.values.recipe_run_count || "0", 10),
     recipeLastRunStartedAt: parsed.values.recipe_last_run_started_at || "",
     recipeLastRunFinishedAt: parsed.values.recipe_last_run_finished_at || "",
+    recipeSourceWindow: parsed.values.recipe_source_window || "none",
+    recipeTargetWindow: parsed.values.recipe_target_window || "none",
+    recipeClipboardMode: parsed.values.recipe_clipboard_mode || "none",
+    handoffPayloadClassification: parsed.values.handoff_payload_classification || "none",
+    handoffPayloadPreview: parsed.values.handoff_payload_preview || "none",
+    handoffPayloadReason: parsed.values.handoff_payload_reason || "none",
+    handoffPasteAllowed: parsed.values.handoff_paste_allowed || "none",
+    handoffSendBehavior: parsed.values.handoff_send_behavior || "none",
+    handoffSendAllowed: parsed.values.handoff_send_allowed || "none",
     workspaceScope: parsed.values.workspace_scope || "no_path_detected",
     workspacePolicy: parsed.values.workspace_policy || "allowed",
     workspaceReason: parsed.values.workspace_reason || "none",
@@ -697,6 +707,10 @@ function parseExecutorTaskLine(line) {
     workspaceScope: labeled.workspace || "no_path_detected",
     workspacePolicy: labeled.policy || "allowed",
     lastSummary: labeled.last || "not_run",
+    sourceWindow: labeled.source_window || "none",
+    targetWindow: labeled.target_window || "none",
+    payloadClassification: labeled.classification || "none",
+    sendBehavior: labeled.send_behavior || "none",
     detail: [
       labeled.action ? `action=${labeled.action}` : "",
       labeled.target ? `target=${labeled.target}` : "",
@@ -704,6 +718,9 @@ function parseExecutorTaskLine(line) {
       labeled.workspace ? `workspace=${labeled.workspace}` : "",
       labeled.policy ? `policy=${labeled.policy}` : "",
       labeled.last ? `last=${labeled.last}` : "",
+      labeled.source_window ? `source=${labeled.source_window}` : "",
+      labeled.target_window ? `target_window=${labeled.target_window}` : "",
+      labeled.classification ? `classification=${labeled.classification}` : "",
     ].filter(Boolean).join(" | "),
   };
 }
@@ -1113,6 +1130,37 @@ async function buildExecutorTasksResponse() {
     summary: raw.ok ? parseExecutorTaskList(raw.stdout) : null,
     raw,
     localOnly: true,
+  };
+}
+
+function buildCompactSupervisorSummary(summary) {
+  if (!summary) {
+    return null;
+  }
+
+  return {
+    headline: summary.headline || "Supervisor status unavailable.",
+    status: summary.status || "unknown",
+    ghotiState: summary.ghotiState || "idle",
+    ghotiReason: summary.ghotiReason || "none",
+    operatorNextStep: summary.operatorNextStep || "Refresh supervisor status.",
+    pendingApprovalCount: Number(summary.pendingApprovalCount || 0),
+    blockedHumanNeededCount: Number(summary.blockedHumanNeededCount || 0),
+    waitingCount: Number(summary.waitingCount || 0),
+    readyToResumeCount: Number(summary.readyToResumeCount || 0),
+    interruptedCount: Number(summary.interruptedCount || 0),
+    resourceGuardEventCount: Number(summary.resourceGuardEventCount || 0),
+  };
+}
+
+function buildCompactExecutorTaskSummary(summary) {
+  if (!summary) {
+    return null;
+  }
+
+  return {
+    headline: summary.headline || "No executor tasks queued yet.",
+    count: Number(summary.count || 0),
   };
 }
 
@@ -1585,6 +1633,24 @@ async function handleApiRequest(request, response, requestUrl) {
     } else if (action === "execute" && taskPayload.summary?.status === "interrupted") {
       summaryHeadline = "Desktop action interrupted by the local failsafe.";
     } else if (
+      action === "execute" &&
+      taskPayload.summary?.status === "blocked_human_needed" &&
+      taskPayload.summary?.lastExecutionStatus === "failed"
+    ) {
+      summaryHeadline =
+        taskPayload.summary?.lastExecutionSummary
+        || taskPayload.summary?.blockedReason
+        || "Allowlisted executor action was blocked.";
+    } else if (
+      action === "execute" &&
+      taskPayload.summary?.status === "failed" &&
+      taskPayload.summary?.lastExecutionStatus === "failed"
+    ) {
+      summaryHeadline =
+        taskPayload.summary?.lastExecutionSummary
+        || taskPayload.summary?.lastFailureReason
+        || "Allowlisted executor action failed.";
+    } else if (
       action === "review" &&
       taskPayload.summary?.workspacePolicy === "blocked_by_workspace_policy" &&
       taskPayload.summary?.status === "blocked_human_needed"
@@ -1611,8 +1677,8 @@ async function handleApiRequest(request, response, requestUrl) {
       },
       task: taskPayload.summary,
       taskRaw: taskPayload.raw,
-      supervisor: supervisorPayload.summary,
-      executorTasks: executorPayload.summary,
+      supervisor: buildCompactSupervisorSummary(supervisorPayload.summary),
+      executorTasks: buildCompactExecutorTaskSummary(executorPayload.summary),
       raw: {
         action: raw,
       },

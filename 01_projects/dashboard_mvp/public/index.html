@@ -422,6 +422,24 @@
               <button id="task-execute" type="button">Run Allowed Action</button>
             </div>
             <div id="task-action-result" class="result-panel" aria-live="polite">Ready to inspect a stopped task.</div>
+            <div class="task-filter-toolbar">
+              <label>
+                Task view
+                <select id="task-visibility-filter">
+                  <option value="actionable" selected>Actionable only</option>
+                  <option value="all">Show all</option>
+                </select>
+              </label>
+              <label>
+                Recent limit
+                <select id="task-recency-filter">
+                  <option value="12" selected>Recent 12</option>
+                  <option value="24">Recent 24</option>
+                  <option value="40">Recent 40</option>
+                  <option value="all">All</option>
+                </select>
+              </label>
+            </div>
             <div class="subsection approval-history-section">
               <div class="subsection-heading">
                 <h3>Task Timeline</h3>
@@ -465,6 +483,38 @@
                 <div class="approval-detail-field approval-detail-wide">
                   <span>Last Run Window</span>
                   <strong id="task-detail-recipe-last-run">-</strong>
+                </div>
+                <div class="approval-detail-field">
+                  <span>Source Window</span>
+                  <strong id="task-detail-recipe-source-window">-</strong>
+                </div>
+                <div class="approval-detail-field">
+                  <span>Target Window</span>
+                  <strong id="task-detail-recipe-target-window">-</strong>
+                </div>
+                <div class="approval-detail-field">
+                  <span>Clipboard Mode</span>
+                  <strong id="task-detail-recipe-clipboard-mode">-</strong>
+                </div>
+                <div class="approval-detail-field">
+                  <span>Payload Classification</span>
+                  <strong id="task-detail-recipe-payload-classification">-</strong>
+                </div>
+                <div class="approval-detail-field">
+                  <span>Paste Allowed</span>
+                  <strong id="task-detail-recipe-paste-allowed">-</strong>
+                </div>
+                <div class="approval-detail-field">
+                  <span>Send Behavior</span>
+                  <strong id="task-detail-recipe-send-behavior">-</strong>
+                </div>
+                <div class="approval-detail-field">
+                  <span>Send Allowed</span>
+                  <strong id="task-detail-recipe-send-allowed">-</strong>
+                </div>
+                <div class="approval-detail-field approval-detail-wide">
+                  <span>Payload Preview</span>
+                  <strong id="task-detail-recipe-payload-preview">-</strong>
                 </div>
               </div>
               <div class="subsection approval-history-section">
@@ -944,10 +994,47 @@ This file was queued through the safe repo-local executor.
             </article>
             <article class="action-card">
               <div class="card-heading">
-                <h3>Codex To Dashboard Progress Handoff</h3>
-                <p>Narrow prototype handoff only: reuse terminal, copy the current selection, wait briefly, focus the dashboard browser, and paste there.</p>
+                <h3>Codex To ChatGPT Handoff MVP</h3>
+                <p>First narrow supervised handoff. It copies or reuses clipboard text, classifies it, focuses one explicit target, and pastes only by default.</p>
               </div>
-              <button id="queue-recipe-codex-handoff" type="button">Queue Prototype Progress Handoff</button>
+              <form class="stacked-form" onsubmit="return false;">
+                <div class="inline-input-grid">
+                  <label>
+                    Source
+                    <select id="handoff-source-window">
+                      <option value="codex" selected>Codex</option>
+                      <option value="terminal">Terminal</option>
+                      <option value="cursor">Cursor</option>
+                      <option value="vscode">VS Code</option>
+                    </select>
+                  </label>
+                  <label>
+                    Target
+                    <select id="handoff-target-window">
+                      <option value="chatgpt" selected>ChatGPT</option>
+                      <option value="dashboard_browser">Dashboard Browser</option>
+                      <option value="terminal">Terminal</option>
+                      <option value="cursor">Cursor</option>
+                      <option value="vscode">VS Code</option>
+                    </select>
+                  </label>
+                  <label>
+                    Wait Seconds
+                    <input id="handoff-wait-seconds" type="number" min="0" max="10" value="1" />
+                  </label>
+                </div>
+                <div class="compact-option-grid">
+                  <label class="checkbox-row">
+                    <input id="handoff-use-prepared-clipboard" type="checkbox" />
+                    Use prepared clipboard instead of copying from the source window
+                  </label>
+                  <label class="checkbox-row">
+                    <input id="handoff-allow-send" type="checkbox" />
+                    Allow Enter after paste
+                  </label>
+                </div>
+              </form>
+              <button id="queue-recipe-codex-handoff" type="button">Queue Codex To ChatGPT Handoff</button>
             </article>
           </div>
           <div id="recipe-action-summary" class="result-panel" aria-live="polite">Ready to queue a safe operator recipe.</div>

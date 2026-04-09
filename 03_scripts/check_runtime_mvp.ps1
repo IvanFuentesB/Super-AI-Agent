@@ -1281,7 +1281,7 @@ if (-not [string]::IsNullOrWhiteSpace($clipboardGuardPasteTaskId)) {
     $clipboardGuardPasteExecuteOk = $clipboardGuardPasteExecute.ExitCode -eq 0 -and `
         (($clipboardGuardPasteExecute.Output | Out-String) -match 'status:\s+blocked_human_needed') -and `
         (($clipboardGuardPasteExecute.Output | Out-String) -match 'execution_status:\s+failed') -and `
-        (($clipboardGuardPasteExecute.Output | Out-String) -match 'Clipboard guard blocked')
+        (($clipboardGuardPasteExecute.Output | Out-String) -match '(Clipboard guard blocked|checker or recipe label|payload was blocked)')
     Write-Check -Name 'Clipboard guard blocks suspicious paste into terminal' -Passed $clipboardGuardPasteExecuteOk -Detail (($clipboardGuardPasteExecute.Output | Out-String).Trim())
     if (-not $clipboardGuardPasteExecuteOk) { $failed++ }
 }
@@ -1527,6 +1527,191 @@ $recipeFocusTerminalQueueOk = $recipeFocusTerminalQueue.ExitCode -eq 0 -and `
     (($recipeFocusTerminalQueue.Output | Out-String) -match 'recipe_name:\s+focus_or_reuse_terminal')
 Write-Check -Name 'Operator recipe focus_or_reuse_terminal stays approval-aware' -Passed $recipeFocusTerminalQueueOk -Detail (($recipeFocusTerminalQueue.Output | Out-String).Trim())
 if (-not $recipeFocusTerminalQueueOk) { $failed++ }
+
+$handoffSeedQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'set_clipboard_text',
+    '--content', 'ghoti safe handoff payload'
+)
+$handoffSeedQueueOk = $handoffSeedQueue.ExitCode -eq 0 -and `
+    (($handoffSeedQueue.Output | Out-String) -match 'status:\s+pending_approval')
+Write-Check -Name 'Handoff safe clipboard seed queues with approval' -Passed $handoffSeedQueueOk -Detail (($handoffSeedQueue.Output | Out-String).Trim())
+if (-not $handoffSeedQueueOk) { $failed++ }
+
+$handoffSeedTaskMatch = [regex]::Match(($handoffSeedQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$handoffSeedTaskId = if ($handoffSeedTaskMatch.Success) { $handoffSeedTaskMatch.Groups[1].Value } else { $null }
+$handoffSeedApprovalMatch = [regex]::Match(($handoffSeedQueue.Output | Out-String), 'approval_request_id:\s*(\S+)')
+$handoffSeedApprovalId = if ($handoffSeedApprovalMatch.Success) { $handoffSeedApprovalMatch.Groups[1].Value } else { $null }
+$handoffSeedIdsOk = (-not [string]::IsNullOrWhiteSpace($handoffSeedTaskId)) -and (-not [string]::IsNullOrWhiteSpace($handoffSeedApprovalId))
+Write-Check -Name 'Handoff safe clipboard seed ids parsed' -Passed $handoffSeedIdsOk -Detail ($(if ($handoffSeedIdsOk) { "$handoffSeedTaskId | $handoffSeedApprovalId" } else { 'missing safe clipboard seed ids' }))
+if (-not $handoffSeedIdsOk) { $failed++ }
+
+if (-not [string]::IsNullOrWhiteSpace($handoffSeedApprovalId)) {
+    $handoffSeedApprove = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $handoffSeedApprovalId, '--note', 'runtime checker approved safe handoff clipboard seed')
+    $handoffSeedApproveOk = $handoffSeedApprove.ExitCode -eq 0 -and `
+        (($handoffSeedApprove.Output | Out-String) -match 'task_status:\s+queued')
+    Write-Check -Name 'Handoff safe clipboard seed approval persists' -Passed $handoffSeedApproveOk -Detail (($handoffSeedApprove.Output | Out-String).Trim())
+    if (-not $handoffSeedApproveOk) { $failed++ }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($handoffSeedTaskId)) {
+    $handoffSeedExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $handoffSeedTaskId)
+    $handoffSeedExecuteOk = $handoffSeedExecute.ExitCode -eq 0 -and `
+        (($handoffSeedExecute.Output | Out-String) -match 'status:\s+completed')
+    Write-Check -Name 'Handoff safe clipboard seed execution succeeds' -Passed $handoffSeedExecuteOk -Detail (($handoffSeedExecute.Output | Out-String).Trim())
+    if (-not $handoffSeedExecuteOk) { $failed++ }
+}
+
+$handoffRecipeQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'run_operator_recipe',
+    '--target', 'codex_to_chatgpt_handoff_mvp',
+    '--content', '{"sourceWindow":"terminal","targetWindow":"terminal","usePreparedClipboard":true,"waitSeconds":1}'
+)
+$handoffRecipeQueueOk = $handoffRecipeQueue.ExitCode -eq 0 -and `
+    (($handoffRecipeQueue.Output | Out-String) -match 'status:\s+pending_approval') -and `
+    (($handoffRecipeQueue.Output | Out-String) -match 'recipe_name:\s+codex_to_chatgpt_handoff_mvp') -and `
+    (($handoffRecipeQueue.Output | Out-String) -match 'recipe_source_window:\s+terminal') -and `
+    (($handoffRecipeQueue.Output | Out-String) -match 'recipe_target_window:\s+terminal') -and `
+    (($handoffRecipeQueue.Output | Out-String) -match 'handoff_send_behavior:\s+paste_only')
+Write-Check -Name 'Codex to ChatGPT handoff recipe queues with explicit targets' -Passed $handoffRecipeQueueOk -Detail (($handoffRecipeQueue.Output | Out-String).Trim())
+if (-not $handoffRecipeQueueOk) { $failed++ }
+
+$handoffRecipeTaskMatch = [regex]::Match(($handoffRecipeQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$handoffRecipeTaskId = if ($handoffRecipeTaskMatch.Success) { $handoffRecipeTaskMatch.Groups[1].Value } else { $null }
+$handoffRecipeApprovalMatch = [regex]::Match(($handoffRecipeQueue.Output | Out-String), 'approval_request_id:\s*(\S+)')
+$handoffRecipeApprovalId = if ($handoffRecipeApprovalMatch.Success) { $handoffRecipeApprovalMatch.Groups[1].Value } else { $null }
+$handoffRecipeIdsOk = (-not [string]::IsNullOrWhiteSpace($handoffRecipeTaskId)) -and (-not [string]::IsNullOrWhiteSpace($handoffRecipeApprovalId))
+Write-Check -Name 'Codex to ChatGPT handoff ids parsed' -Passed $handoffRecipeIdsOk -Detail ($(if ($handoffRecipeIdsOk) { "$handoffRecipeTaskId | $handoffRecipeApprovalId" } else { 'missing handoff recipe ids' }))
+if (-not $handoffRecipeIdsOk) { $failed++ }
+
+if ($handoffRecipeIdsOk) {
+    $handoffRecipeStatusBefore = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $handoffRecipeTaskId)
+    $handoffRecipeStatusBeforeOk = $handoffRecipeStatusBefore.ExitCode -eq 0 -and `
+        (($handoffRecipeStatusBefore.Output | Out-String) -match 'recipe_clipboard_mode:\s+prepared_clipboard') -and `
+        (($handoffRecipeStatusBefore.Output | Out-String) -match 'handoff_send_behavior:\s+paste_only') -and `
+        (($handoffRecipeStatusBefore.Output | Out-String) -notmatch 'action=send_hotkey')
+    Write-Check -Name 'Codex to ChatGPT handoff defaults to paste-only' -Passed $handoffRecipeStatusBeforeOk -Detail (($handoffRecipeStatusBefore.Output | Out-String).Trim())
+    if (-not $handoffRecipeStatusBeforeOk) { $failed++ }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($handoffRecipeApprovalId)) {
+    $handoffRecipeApprove = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $handoffRecipeApprovalId, '--note', 'runtime checker approved safe handoff recipe')
+    $handoffRecipeApproveOk = $handoffRecipeApprove.ExitCode -eq 0 -and `
+        (($handoffRecipeApprove.Output | Out-String) -match 'task_status:\s+queued')
+    Write-Check -Name 'Codex to ChatGPT handoff approval persists' -Passed $handoffRecipeApproveOk -Detail (($handoffRecipeApprove.Output | Out-String).Trim())
+    if (-not $handoffRecipeApproveOk) { $failed++ }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($handoffRecipeTaskId)) {
+    $handoffRecipeExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $handoffRecipeTaskId)
+    $handoffRecipeExecuteOk = $handoffRecipeExecute.ExitCode -eq 0 -and `
+        (($handoffRecipeExecute.Output | Out-String) -match 'status:\s+completed') -and `
+        (($handoffRecipeExecute.Output | Out-String) -match 'execution_status:\s+succeeded')
+    Write-Check -Name 'Codex to ChatGPT handoff executes with safe payload' -Passed $handoffRecipeExecuteOk -Detail (($handoffRecipeExecute.Output | Out-String).Trim())
+    if (-not $handoffRecipeExecuteOk) { $failed++ }
+
+    $handoffRecipeStatus = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $handoffRecipeTaskId)
+    $handoffRecipeStatusOk = $handoffRecipeStatus.ExitCode -eq 0 -and `
+        (($handoffRecipeStatus.Output | Out-String) -match 'recipe_status:\s+succeeded') -and `
+        (($handoffRecipeStatus.Output | Out-String) -match 'handoff_payload_classification:\s+valid_handoff_text') -and `
+        (($handoffRecipeStatus.Output | Out-String) -match 'handoff_paste_allowed:\s+yes') -and `
+        (($handoffRecipeStatus.Output | Out-String) -match 'handoff_send_allowed:\s+blocked_by_default')
+    Write-Check -Name 'Codex to ChatGPT handoff result persists with payload classification' -Passed $handoffRecipeStatusOk -Detail (($handoffRecipeStatus.Output | Out-String).Trim())
+    if (-not $handoffRecipeStatusOk) { $failed++ }
+}
+
+$explicitSendQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'run_operator_recipe',
+    '--target', 'codex_to_chatgpt_handoff_mvp',
+    '--content', '{"sourceWindow":"terminal","targetWindow":"terminal","usePreparedClipboard":true,"allowSend":true,"waitSeconds":0}'
+)
+$explicitSendQueueOk = $explicitSendQueue.ExitCode -eq 0 -and `
+    (($explicitSendQueue.Output | Out-String) -match 'status:\s+pending_approval') -and `
+    (($explicitSendQueue.Output | Out-String) -match 'handoff_send_behavior:\s+explicit_enter_after_paste')
+Write-Check -Name 'Codex to ChatGPT handoff can expose Enter only when explicitly allowed' -Passed $explicitSendQueueOk -Detail (($explicitSendQueue.Output | Out-String).Trim())
+if (-not $explicitSendQueueOk) { $failed++ }
+
+$explicitSendTaskMatch = [regex]::Match(($explicitSendQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$explicitSendTaskId = if ($explicitSendTaskMatch.Success) { $explicitSendTaskMatch.Groups[1].Value } else { $null }
+if (-not [string]::IsNullOrWhiteSpace($explicitSendTaskId)) {
+    $explicitSendStatus = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $explicitSendTaskId)
+    $explicitSendStatusOk = $explicitSendStatus.ExitCode -eq 0 -and `
+        (($explicitSendStatus.Output | Out-String) -match 'handoff_send_behavior:\s+explicit_enter_after_paste') -and `
+        (($explicitSendStatus.Output | Out-String) -match 'action=send_hotkey')
+    Write-Check -Name 'Explicit send handoff adds Enter step only when requested' -Passed $explicitSendStatusOk -Detail (($explicitSendStatus.Output | Out-String).Trim())
+    if (-not $explicitSendStatusOk) { $failed++ }
+}
+
+$handoffBadSeedQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'set_clipboard_text',
+    '--content', 'Run Desktop Bridge Check'
+)
+$handoffBadSeedQueueOk = $handoffBadSeedQueue.ExitCode -eq 0 -and `
+    (($handoffBadSeedQueue.Output | Out-String) -match 'status:\s+pending_approval')
+Write-Check -Name 'Handoff suspicious clipboard seed queues with approval' -Passed $handoffBadSeedQueueOk -Detail (($handoffBadSeedQueue.Output | Out-String).Trim())
+if (-not $handoffBadSeedQueueOk) { $failed++ }
+
+$handoffBadSeedTaskMatch = [regex]::Match(($handoffBadSeedQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$handoffBadSeedTaskId = if ($handoffBadSeedTaskMatch.Success) { $handoffBadSeedTaskMatch.Groups[1].Value } else { $null }
+$handoffBadSeedApprovalMatch = [regex]::Match(($handoffBadSeedQueue.Output | Out-String), 'approval_request_id:\s*(\S+)')
+$handoffBadSeedApprovalId = if ($handoffBadSeedApprovalMatch.Success) { $handoffBadSeedApprovalMatch.Groups[1].Value } else { $null }
+if (-not [string]::IsNullOrWhiteSpace($handoffBadSeedApprovalId)) {
+    $handoffBadSeedApprove = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $handoffBadSeedApprovalId, '--note', 'runtime checker seeded suspicious handoff clipboard text')
+    $handoffBadSeedApproveOk = $handoffBadSeedApprove.ExitCode -eq 0
+    Write-Check -Name 'Handoff suspicious clipboard seed approval persists' -Passed $handoffBadSeedApproveOk -Detail (($handoffBadSeedApprove.Output | Out-String).Trim())
+    if (-not $handoffBadSeedApproveOk) { $failed++ }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($handoffBadSeedTaskId)) {
+    $handoffBadSeedExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $handoffBadSeedTaskId)
+    $handoffBadSeedExecuteOk = $handoffBadSeedExecute.ExitCode -eq 0 -and `
+        (($handoffBadSeedExecute.Output | Out-String) -match 'status:\s+completed')
+    Write-Check -Name 'Handoff suspicious clipboard seed execution succeeds' -Passed $handoffBadSeedExecuteOk -Detail (($handoffBadSeedExecute.Output | Out-String).Trim())
+    if (-not $handoffBadSeedExecuteOk) { $failed++ }
+}
+
+$handoffBlockedQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'run_operator_recipe',
+    '--target', 'codex_to_chatgpt_handoff_mvp',
+    '--content', '{"sourceWindow":"terminal","targetWindow":"terminal","usePreparedClipboard":true,"waitSeconds":0}'
+)
+$handoffBlockedQueueOk = $handoffBlockedQueue.ExitCode -eq 0 -and `
+    (($handoffBlockedQueue.Output | Out-String) -match 'status:\s+pending_approval')
+Write-Check -Name 'Codex to ChatGPT handoff blocked-payload recipe queues' -Passed $handoffBlockedQueueOk -Detail (($handoffBlockedQueue.Output | Out-String).Trim())
+if (-not $handoffBlockedQueueOk) { $failed++ }
+
+$handoffBlockedTaskMatch = [regex]::Match(($handoffBlockedQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$handoffBlockedTaskId = if ($handoffBlockedTaskMatch.Success) { $handoffBlockedTaskMatch.Groups[1].Value } else { $null }
+$handoffBlockedApprovalMatch = [regex]::Match(($handoffBlockedQueue.Output | Out-String), 'approval_request_id:\s*(\S+)')
+$handoffBlockedApprovalId = if ($handoffBlockedApprovalMatch.Success) { $handoffBlockedApprovalMatch.Groups[1].Value } else { $null }
+if (-not [string]::IsNullOrWhiteSpace($handoffBlockedApprovalId)) {
+    $handoffBlockedApprove = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $handoffBlockedApprovalId, '--note', 'runtime checker approved blocked handoff payload test')
+    $handoffBlockedApproveOk = $handoffBlockedApprove.ExitCode -eq 0
+    Write-Check -Name 'Codex to ChatGPT handoff blocked-payload approval persists' -Passed $handoffBlockedApproveOk -Detail (($handoffBlockedApprove.Output | Out-String).Trim())
+    if (-not $handoffBlockedApproveOk) { $failed++ }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($handoffBlockedTaskId)) {
+    $handoffBlockedExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $handoffBlockedTaskId)
+    $handoffBlockedExecuteOk = $handoffBlockedExecute.ExitCode -eq 0 -and `
+        (($handoffBlockedExecute.Output | Out-String) -match 'status:\s+blocked_human_needed') -and `
+        (($handoffBlockedExecute.Output | Out-String) -match 'execution_status:\s+failed') -and `
+        (($handoffBlockedExecute.Output | Out-String) -match '(Handoff payload blocked before paste|checker or recipe label|payload was blocked)')
+    Write-Check -Name 'Codex to ChatGPT handoff blocks junk payload before paste' -Passed $handoffBlockedExecuteOk -Detail (($handoffBlockedExecute.Output | Out-String).Trim())
+    if (-not $handoffBlockedExecuteOk) { $failed++ }
+
+    $handoffBlockedStatus = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $handoffBlockedTaskId)
+    $handoffBlockedStatusOk = $handoffBlockedStatus.ExitCode -eq 0 -and `
+        (($handoffBlockedStatus.Output | Out-String) -match 'recipe_status:\s+blocked') -and `
+        (($handoffBlockedStatus.Output | Out-String) -match 'handoff_payload_classification:\s+(junk_label_payload|repeated_ui_label_garbage)') -and `
+        (($handoffBlockedStatus.Output | Out-String) -match 'handoff_paste_allowed:\s+no')
+    Write-Check -Name 'Codex to ChatGPT blocked payload classification persists' -Passed $handoffBlockedStatusOk -Detail (($handoffBlockedStatus.Output | Out-String).Trim())
+    if (-not $handoffBlockedStatusOk) { $failed++ }
+}
 
 $recipeInterruptQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
     'queue-executor-action',
