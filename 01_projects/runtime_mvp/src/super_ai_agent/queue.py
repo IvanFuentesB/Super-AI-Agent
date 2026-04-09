@@ -34,10 +34,15 @@ ALLOWED_EXECUTOR_ACTIONS = set(MODEL_EXECUTOR_ACTION_TYPES)
 READ_ONLY_EXECUTOR_ACTIONS = {"read_file", "list_directory", "git_status", "git_diff"}
 WRITE_EXECUTOR_ACTIONS = {"write_file", "append_file", "create_artifact"}
 CHECKER_EXECUTOR_ACTIONS = {"run_checker"}
+DESKTOP_OBSERVATION_ACTIONS = {"list_windows", "get_active_window"}
+DESKTOP_VISIBLE_ACTIONS = {"focus_window", "open_allowed_app", "capture_desktop_screenshot"}
+DESKTOP_EXECUTOR_ACTIONS = DESKTOP_OBSERVATION_ACTIONS | DESKTOP_VISIBLE_ACTIONS
 ALLOWED_CHECKER_TARGETS = {
     "runtime": "check_runtime_mvp.ps1",
     "dashboard": "check_dashboard_mvp.ps1",
 }
+ALLOWED_DESKTOP_FOCUS_TARGETS = {"cursor", "vscode", "terminal", "dashboard_browser"}
+ALLOWED_DESKTOP_APP_TARGETS = {"cursor", "vscode", "terminal", "dashboard_browser"}
 QUEUEABLE_TASK_STATUSES = {"queued", "running", "waiting", "blocked_human_needed", "ready_to_resume"}
 WINDOWS_ABSOLUTE_PATH_PATTERN = re.compile(r"(?i)\b[A-Z]:\\[^\s\"'<>|?*]+")
 
@@ -276,11 +281,47 @@ def _resolve_executor_path(target: str) -> Path:
     return candidate.resolve(strict=False)
 
 
+def _desktop_bridge_script_path() -> Path:
+    return (
+        get_allowed_workspace_root()
+        / "01_projects"
+        / "desktop_playground"
+        / "desktop_bridge_actions.ps1"
+    ).resolve(strict=False)
+
+
 def _shorten_output(text: str, limit: int = 260) -> str:
     normalized = " ".join((text or "").split())
     if len(normalized) <= limit:
         return normalized or "none"
     return f"{normalized[: limit - 3].rstrip()}..."
+
+
+def _parse_key_value_output(text: str) -> tuple[dict[str, str], dict[str, list[str]]]:
+    values: dict[str, str] = {}
+    sections: dict[str, list[str]] = {}
+    current_section = ""
+
+    for raw_line in (text or "").splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+
+        if line.endswith(":") and " | " not in line:
+            current_section = line[:-1]
+            sections.setdefault(current_section, [])
+            continue
+
+        if current_section and line.startswith("- "):
+            sections[current_section].append(line[2:])
+            continue
+
+        current_section = ""
+        if ":" in line:
+            key, value = line.split(":", 1)
+            values[key.strip()] = value.strip()
+
+    return values, sections
 
 
 def _build_executor_title(action_type: str, target: str) -> str:
@@ -293,8 +334,13 @@ def _build_executor_title(action_type: str, target: str) -> str:
         "git_status": "Show git status",
         "git_diff": "Show git diff summary",
         "run_checker": "Run repo checker",
+        "list_windows": "List allowlisted desktop windows",
+        "get_active_window": "Check active desktop window",
+        "focus_window": "Focus allowlisted desktop window",
+        "open_allowed_app": "Open allowlisted local app",
+        "capture_desktop_screenshot": "Capture local desktop screenshot",
     }
-    label = title_map.get(action_type, "Run allowlisted repo action")
+    label = title_map.get(action_type, "Run allowlisted local action")
     return f"{label}: {target}" if target else label
 
 
@@ -308,13 +354,22 @@ def _build_executor_description(action_type: str, target: str) -> str:
         "git_status": "Allowlisted repo-local git_status action.",
         "git_diff": "Allowlisted repo-local git_diff action.",
         "run_checker": "Allowlisted repo-local checker execution.",
+        "list_windows": "Allowlisted desktop bridge action for visible allowlisted windows only.",
+        "get_active_window": "Allowlisted desktop bridge action for the current foreground window only.",
+        "focus_window": "Approval-aware desktop bridge action for focusing one allowlisted window.",
+        "open_allowed_app": "Approval-aware desktop bridge action for opening one allowlisted local app.",
+        "capture_desktop_screenshot": "Approval-aware desktop bridge action for a repo-local desktop screenshot artifact.",
     }
     suffix = f" Target: {target}" if target else ""
-    return f"{descriptions.get(action_type, 'Allowlisted repo-local executor action.')}{suffix}"
+    return f"{descriptions.get(action_type, 'Allowlisted local executor action.')}{suffix}"
 
 
 def _executor_requires_approval(action_type: str) -> bool:
-    return action_type in WRITE_EXECUTOR_ACTIONS or action_type in CHECKER_EXECUTOR_ACTIONS
+    return (
+        action_type in WRITE_EXECUTOR_ACTIONS
+        or action_type in CHECKER_EXECUTOR_ACTIONS
+        or action_type in DESKTOP_VISIBLE_ACTIONS
+    )
 
 
 def _last_execution_record(task: Task) -> TaskExecutionRecord | None:
@@ -353,10 +408,58 @@ def _prepare_executor_action(
         normalized_target = checker_name
         target_paths = [str(script_path)]
         payload["script_path"] = str(script_path)
+    elif normalized_action == "list_windows":
+        target_filter = normalized_target.lower()
+        if target_filter:
+            if target_filter not in ALLOWED_DESKTOP_FOCUS_TARGETS:
+                raise ValueError(
+                    "list_windows target must be blank or one of: "
+                    + ", ".join(sorted(ALLOWED_DESKTOP_FOCUS_TARGETS))
+                )
+            normalized_target = target_filter
+            payload["bridge_target"] = target_filter
+        else:
+            normalized_target = "all_allowed_windows"
+            payload["bridge_target"] = ""
+    elif normalized_action == "get_active_window":
+        normalized_target = "foreground_window"
+        payload["bridge_target"] = ""
+    elif normalized_action == "focus_window":
+        target_alias = normalized_target.lower()
+        if target_alias not in ALLOWED_DESKTOP_FOCUS_TARGETS:
+            raise ValueError(
+                "focus_window target must be one of: "
+                + ", ".join(sorted(ALLOWED_DESKTOP_FOCUS_TARGETS))
+            )
+        normalized_target = target_alias
+        payload["bridge_target"] = target_alias
+    elif normalized_action == "open_allowed_app":
+        target_alias = normalized_target.lower()
+        if target_alias not in ALLOWED_DESKTOP_APP_TARGETS:
+            raise ValueError(
+                "open_allowed_app target must be one of: "
+                + ", ".join(sorted(ALLOWED_DESKTOP_APP_TARGETS))
+            )
+        normalized_target = target_alias
+        payload["bridge_target"] = target_alias
+    elif normalized_action == "capture_desktop_screenshot":
+        screenshot_target = normalized_target or str(
+            (
+                get_allowed_workspace_root()
+                / "05_logs"
+                / "tmp"
+                / "desktop"
+                / f"desktop-capture-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}.png"
+            ).resolve(strict=False)
+        )
+        resolved_target = _resolve_executor_path(screenshot_target)
+        normalized_target = str(resolved_target)
+        target_paths = [normalized_target]
+        payload["artifact_path"] = normalized_target
     else:
         raise ValueError(f"Unsupported executor action: {action_type}")
 
-    risk_level = "safe" if normalized_action in READ_ONLY_EXECUTOR_ACTIONS else "ask"
+    risk_level = "safe" if normalized_action in (READ_ONLY_EXECUTOR_ACTIONS | DESKTOP_OBSERVATION_ACTIONS) else "ask"
     return normalized_action, normalized_target, payload, target_paths, risk_level
 
 
@@ -401,6 +504,80 @@ def _run_repo_command(args: list[str]) -> str:
     if result.returncode != 0:
         raise RuntimeError(_shorten_output(stderr or stdout or f"Command failed: {' '.join(args)}"))
     return stdout or stderr
+
+
+def _run_desktop_bridge_action(
+    *,
+    action_type: str,
+    target: str = "",
+    artifact_path: str = "",
+) -> tuple[str, str]:
+    script_path = _desktop_bridge_script_path()
+    if not script_path.is_file():
+        raise RuntimeError("Desktop bridge action script is missing.")
+
+    command = [
+        "powershell.exe",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        str(script_path),
+        "-Action",
+        action_type,
+        "-AllowedRoot",
+        str(get_allowed_workspace_root()),
+    ]
+    if target:
+        command.extend(["-Target", target])
+    if artifact_path:
+        command.extend(["-ArtifactPath", artifact_path])
+
+    result = subprocess.run(
+        command,
+        cwd=get_allowed_workspace_root(),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    output = "\n".join(
+        part.strip()
+        for part in ((result.stdout or "").strip(), (result.stderr or "").strip())
+        if part.strip()
+    ).strip()
+    values, sections = _parse_key_value_output(output)
+
+    if result.returncode != 0:
+        failure_reason = values.get("failure_reason") or values.get("headline") or output or "Desktop bridge action failed."
+        raise RuntimeError(_shorten_output(failure_reason, limit=320))
+
+    headline = values.get("headline", "")
+    if action_type == "list_windows":
+        window_count = len([item for item in sections.get("windows", []) if item != "none"])
+        summary = headline or f"Detected {window_count} allowlisted window(s)."
+        return _shorten_output(summary, limit=320), ""
+
+    if action_type == "get_active_window":
+        alias = values.get("active_window_alias", "unsupported")
+        title = values.get("active_window_title", "none")
+        summary = headline or f"Active window alias: {alias}. Title: {title}."
+        return _shorten_output(summary, limit=320), ""
+
+    if action_type == "focus_window":
+        title = values.get("focused_window_title") or target or "allowlisted window"
+        summary = headline or f"Focused {title}."
+        return _shorten_output(summary, limit=320), ""
+
+    if action_type == "open_allowed_app":
+        command_path = values.get("command_path", "unknown")
+        summary = headline or f"Opened {target or 'allowed app'} using {command_path}."
+        return _shorten_output(summary, limit=320), ""
+
+    if action_type == "capture_desktop_screenshot":
+        captured_path = values.get("artifact_path", artifact_path)
+        summary = headline or "Captured desktop screenshot artifact."
+        return _shorten_output(summary, limit=320), captured_path
+
+    raise RuntimeError(f"Desktop bridge action is not allowlisted: {action_type}")
 
 
 def _execute_allowlisted_action(task: Task) -> tuple[str, str]:
@@ -474,6 +651,13 @@ def _execute_allowlisted_action(task: Task) -> tuple[str, str]:
             raise RuntimeError(_shorten_output(output or f"Checker failed: {script_path.name}"))
         summary_line = output.splitlines()[-1] if output else f"{task.executor_target} checker passed."
         return _shorten_output(summary_line), ""
+
+    if action_type in DESKTOP_EXECUTOR_ACTIONS:
+        return _run_desktop_bridge_action(
+            action_type=action_type,
+            target=str(task.executor_payload.get("bridge_target", task.executor_target)),
+            artifact_path=str(task.executor_payload.get("artifact_path", "")),
+        )
 
     raise RuntimeError(f"Executor action is not allowlisted: {action_type}")
 

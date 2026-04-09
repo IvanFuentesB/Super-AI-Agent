@@ -7,6 +7,18 @@ const uiState = {
   selectedTaskId: "",
 };
 
+const desktopActionTypes = new Set([
+  "list_windows",
+  "get_active_window",
+  "focus_window",
+  "open_allowed_app",
+  "capture_desktop_screenshot",
+]);
+
+function isDesktopExecutorAction(actionType) {
+  return desktopActionTypes.has(String(actionType || "").toLowerCase());
+}
+
 function escapeHtml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -268,7 +280,7 @@ function renderDesktopBridge(payload) {
     "desktop-quick-note",
     summary.desktopControlImplemented
       ? "Desktop control is reported as live."
-      : "Safe local checks are available, but real desktop control is still not implemented.",
+      : "Narrow desktop-aware actions are available, but arbitrary desktop control is still not implemented.",
   );
   setText("desktop-powershell", summary.powerShellAvailable ? "ready" : "missing");
   setText("desktop-shell", summary.shellCommandCapability ? "ready" : "blocked");
@@ -628,9 +640,9 @@ function renderExecutorTaskCards(payload) {
   }
 
   const summary = payload.summary || {};
-  const items = summary.tasks || [];
+  const items = (summary.tasks || []).filter((item) => !isDesktopExecutorAction(item.actionType));
   if (items.length === 0) {
-    container.innerHTML = "<p class=\"empty-state\">No executor tasks queued yet.</p>";
+    container.innerHTML = "<p class=\"empty-state\">No repo-local executor tasks queued yet.</p>";
     renderRaw("executor-raw", payload);
     return;
   }
@@ -669,6 +681,58 @@ function renderExecutorTaskCards(payload) {
     .join("");
 
   renderRaw("executor-raw", payload);
+}
+
+function renderDesktopTaskCards(payload) {
+  const container = document.getElementById("desktop-task-list");
+  if (!container) {
+    return;
+  }
+
+  const summary = payload.summary || {};
+  const items = (summary.tasks || []).filter((item) => isDesktopExecutorAction(item.actionType));
+  if (items.length === 0) {
+    container.innerHTML = "<p class=\"empty-state\">No desktop action tasks queued yet.</p>";
+    return;
+  }
+
+  container.innerHTML = items
+    .map((item) => {
+      const status = normalizeState(item.status);
+      const isSelected = item.taskId && item.taskId === uiState.selectedTaskId;
+      const approvalNote = ["approved", "not_required"].includes(String(item.approvalState || "").toLowerCase())
+        ? "ready to run when queued"
+        : "approval still required before run";
+
+      return `
+        <article class="approval-item ${isSelected ? "is-selected" : ""}">
+          <div class="approval-topline">
+            <strong>${escapeHtml(item.taskId || "task")}</strong>
+            <span class="state-pill state-${status}">${escapeHtml(item.status || status)}</span>
+          </div>
+          <div class="approval-summary-grid">
+            <p><span>Desktop action</span><strong>${escapeHtml(item.actionType || "unknown")}</strong></p>
+            <p><span>Target</span><strong>${escapeHtml(item.target || "none")}</strong></p>
+            <p><span>Approval</span><strong>${escapeHtml(item.approvalState || "unknown")}</strong></p>
+            <p><span>Workspace</span><strong>${escapeHtml(item.workspaceScope || "no_path_detected")}</strong></p>
+            <p><span>Policy</span><strong>${escapeHtml(item.workspacePolicy || "allowed")}</strong></p>
+          </div>
+          <p class="approval-description"><span>Run state</span>${escapeHtml(approvalNote)}</p>
+          <p class="approval-description"><span>Last Result</span>${escapeHtml(item.lastSummary || "not_run")}</p>
+          <div class="approval-actions">
+            <button
+              class="button-secondary task-action-button"
+              type="button"
+              data-task-action="inspect"
+              data-task-id="${escapeHtml(item.taskId || "")}"
+            >
+              ${isSelected ? "Viewing Task" : "Inspect Desktop Task"}
+            </button>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
 }
 
 function renderSupervisorStatus(payload) {
@@ -745,6 +809,7 @@ function renderArtifacts(payload) {
 
   container.innerHTML = artifacts
     .map((artifact) => {
+      const groupLabel = String(artifact.group || "artifact").replaceAll("_", " ");
       const previewButton = artifact.previewable
         ? `<button class="button-secondary artifact-action" type="button" data-artifact-action="preview" data-artifact-path="${escapeHtml(artifact.path)}">Preview</button>`
         : `<button class="button-secondary artifact-action" type="button" disabled>Preview unavailable</button>`;
@@ -753,7 +818,7 @@ function renderArtifacts(payload) {
         <article class="artifact-item">
           <div class="artifact-topline">
             <strong>${escapeHtml(artifact.name)}</strong>
-            <span class="artifact-group">${escapeHtml(artifact.group)}</span>
+            <span class="artifact-group">${escapeHtml(groupLabel)}</span>
           </div>
           <code class="artifact-path">${escapeHtml(artifact.path)}</code>
           <span class="artifact-meta">${escapeHtml(artifact.modifiedAt)}</span>
@@ -1029,6 +1094,7 @@ async function refreshSupervisorStatus() {
 async function refreshExecutorTasks() {
   const payload = await requestJson("/api/executor/tasks");
   renderExecutorTaskCards(payload);
+  renderDesktopTaskCards(payload);
 
   const nextTaskId =
     uiState.selectedTaskId
@@ -1196,7 +1262,7 @@ async function submitTaskAction(action, button) {
       result.summary?.taskId || taskId,
     );
     updateLocalAction(actionId, "success", result.summary?.headline || "Task action saved.");
-    await Promise.all([refreshSupervisorStatus(), refreshExecutorTasks(), refreshRecentActions()]);
+    await Promise.all([refreshSupervisorStatus(), refreshExecutorTasks(), refreshArtifacts(), refreshRecentActions()]);
     return result;
   } catch (error) {
     setResultPanel("task-action-result", "error", "Task action failed.", error.message);
@@ -1300,9 +1366,10 @@ async function runScaffold(formId, endpoint, summaryId, rawId, actionLabel, butt
   }
 }
 
-async function runExecutorQueue(payload, actionLabel, button) {
+async function runExecutorQueue(payload, actionLabel, button, options = {}) {
+  const panelId = options.panelId || "executor-queue-summary";
   const actionId = createLocalAction(actionLabel, "Queueing a safe repo-local executor task.");
-  setResultPanel("executor-queue-summary", "loading", "Queueing executor task...", actionLabel);
+  setResultPanel(panelId, "loading", "Queueing executor task...", actionLabel);
 
   try {
     const result = await withButtonState(button, "Working...", () =>
@@ -1319,16 +1386,16 @@ async function runExecutorQueue(payload, actionLabel, button) {
       });
     }
     setResultPanel(
-      "executor-queue-summary",
+      panelId,
       "success",
       result.summary?.headline || "Executor task queued.",
       result.summary?.taskId || "task created",
     );
     updateLocalAction(actionId, "success", result.summary?.headline || "Executor task queued.");
-    await Promise.all([refreshSupervisorStatus(), refreshExecutorTasks(), refreshRecentActions()]);
+    await Promise.all([refreshSupervisorStatus(), refreshExecutorTasks(), refreshArtifacts(), refreshRecentActions()]);
     return result;
   } catch (error) {
-    setResultPanel("executor-queue-summary", "error", "Executor task queue failed.", error.message);
+    setResultPanel(panelId, "error", "Executor task queue failed.", error.message);
     updateLocalAction(actionId, "error", error.message);
     await refreshRecentActions();
     return null;
@@ -1575,6 +1642,60 @@ document.getElementById("queue-git-diff").addEventListener("click", async (event
   );
 });
 
+document.getElementById("queue-desktop-list-windows").addEventListener("click", async (event) => {
+  await runExecutorQueue(
+    { actionType: "list_windows" },
+    "Queue desktop window list",
+    event.currentTarget,
+    { panelId: "desktop-action-summary" },
+  );
+});
+
+document.getElementById("queue-desktop-active-window").addEventListener("click", async (event) => {
+  await runExecutorQueue(
+    { actionType: "get_active_window" },
+    "Queue active window check",
+    event.currentTarget,
+    { panelId: "desktop-action-summary" },
+  );
+});
+
+document.getElementById("queue-desktop-focus-terminal").addEventListener("click", async (event) => {
+  await runExecutorQueue(
+    { actionType: "focus_window", target: "terminal" },
+    "Queue focus terminal",
+    event.currentTarget,
+    { panelId: "desktop-action-summary" },
+  );
+});
+
+document.getElementById("queue-desktop-focus-vscode").addEventListener("click", async (event) => {
+  await runExecutorQueue(
+    { actionType: "focus_window", target: "vscode" },
+    "Queue focus VS Code",
+    event.currentTarget,
+    { panelId: "desktop-action-summary" },
+  );
+});
+
+document.getElementById("queue-desktop-open-terminal").addEventListener("click", async (event) => {
+  await runExecutorQueue(
+    { actionType: "open_allowed_app", target: "terminal" },
+    "Queue open terminal",
+    event.currentTarget,
+    { panelId: "desktop-action-summary" },
+  );
+});
+
+document.getElementById("queue-desktop-screenshot").addEventListener("click", async (event) => {
+  await runExecutorQueue(
+    { actionType: "capture_desktop_screenshot" },
+    "Queue desktop screenshot",
+    event.currentTarget,
+    { panelId: "desktop-action-summary" },
+  );
+});
+
 document.getElementById("run-browser-visible").addEventListener("click", async (event) => {
   await runBrowserAction(
     "/api/browser/visible",
@@ -1732,6 +1853,28 @@ document.getElementById("executor-task-list").addEventListener("click", async (e
     updateLocalAction(actionId, "success", `Loaded executor task ${taskId}.`);
   } else {
     updateLocalAction(actionId, "error", `Executor task detail lookup failed for ${taskId}.`);
+  }
+  await refreshRecentActions();
+});
+
+document.getElementById("desktop-task-list").addEventListener("click", async (event) => {
+  const button = event.target.closest("button[data-task-action='inspect']");
+  if (!button) {
+    return;
+  }
+
+  const taskId = button.getAttribute("data-task-id");
+  if (!taskId) {
+    return;
+  }
+
+  const actionId = createLocalAction("Inspect desktop task", `Loading details for ${taskId}.`);
+  setResultPanel("task-action-result", "loading", "Loading task details...", taskId);
+  const result = await withButtonState(button, "Loading...", () => refreshTaskDetail(taskId));
+  if (result) {
+    updateLocalAction(actionId, "success", `Loaded desktop task ${taskId}.`);
+  } else {
+    updateLocalAction(actionId, "error", `Desktop task detail lookup failed for ${taskId}.`);
   }
   await refreshRecentActions();
 });

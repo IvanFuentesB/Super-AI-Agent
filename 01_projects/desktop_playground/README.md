@@ -1,6 +1,6 @@
 # Desktop Playground
 
-Local desktop bridge foundation for checking whether the workspace can safely support the first desktop-control building blocks.
+Local desktop bridge playground for a narrow, safe, approval-aware first slice of desktop-aware operator actions.
 
 ## What It Checks Now
 
@@ -8,14 +8,19 @@ Local desktop bridge foundation for checking whether the workspace can safely su
 - basic process visibility
 - harmless shell command execution
 - harmless local launcher capability
+- allowlisted window discovery
+- foreground window detection
+- focusing an allowlisted terminal window
+- opening an allowlisted local app
+- capturing a repo-local desktop screenshot artifact
 
 ## What It Does Not Do Yet
 
-- no cursor movement
-- no app switching
+- no arbitrary desktop control
+- no general app switching or window targeting
 - no click or typing automation
 - no clipboard orchestration
-- no approval wait loop
+- no approval wait loop or daemon behavior
 
 ## How To Run
 

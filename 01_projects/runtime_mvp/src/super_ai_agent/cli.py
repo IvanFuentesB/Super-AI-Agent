@@ -173,6 +173,11 @@ def _build_parser() -> argparse.ArgumentParser:
             "git_status",
             "git_diff",
             "run_checker",
+            "list_windows",
+            "get_active_window",
+            "focus_window",
+            "open_allowed_app",
+            "capture_desktop_screenshot",
         ],
     )
     executor_parser.add_argument("--target", default="")

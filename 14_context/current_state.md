@@ -53,6 +53,7 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - GitHub status and scaffold generation are accessible through the dashboard
 - Artifact UX is improved and the dashboard can preview, open, and reveal generated artifacts
 - Desktop bridge foundation now exists with safe local status and checker support
+- Desktop bridge actions now exist for allowlisted window listing, active-window detection, focusing allowed windows, opening allowed local apps, and capturing repo-local desktop screenshots
 - Always-on supervisor foundation now exists
 - Approval inbox foundation now exists
 - Local-only notification abstraction now exists
@@ -68,6 +69,7 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Runtime can now queue and execute in-scope read_file, write_file, append_file, create_artifact, list_directory, git_status, git_diff, and run_checker actions without exposing arbitrary shell execution
 - Write actions and checker runs stay approval-aware, and executor results now persist with status, summary, and artifact-path visibility in task history
 - Dashboard now shows executor tasks, lets the operator queue allowlisted repo-local actions, and lets approved in-scope executor tasks run manually from the console
+- Dashboard now shows desktop bridge tasks, lets the operator queue allowlisted desktop actions, and shows persisted desktop execution results and screenshot artifacts
 - No live external provider APIs yet
 - No real browser or app executor beyond the local playground yet
 - No remote auth layer yet
@@ -99,4 +101,5 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - The supervisor, approval inbox, and manual task-control loop are still local-only foundations, not a full autonomous executor yet
 - Workspace policy blocks out-of-scope targets cleanly now, but there is still no explicit allowlist expansion flow yet
 - The safe repo executor is intentionally narrow and repo-bound; it is not a generic shell runner, desktop controller, or autonomy layer
+- The desktop bridge is intentionally narrow and allowlisted; it is not arbitrary desktop control, click or type automation, clipboard orchestration, or a background daemon
 - Third-party intake repos are valuable comparison material, but most of their surface area is still too heavy to adopt directly

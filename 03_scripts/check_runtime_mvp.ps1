@@ -93,6 +93,16 @@ raise SystemExit(main(argv))
     }
 }
 
+function Remove-GeneratedFile {
+    param(
+        [string]$Path
+    )
+
+    if (Test-Path -LiteralPath $Path -PathType Leaf) {
+        Remove-Item -LiteralPath $Path -Force -ErrorAction SilentlyContinue
+    }
+}
+
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $runtimeRoot = Join-Path $repoRoot '01_projects\runtime_mvp'
 $runtimeSrc = Join-Path $runtimeRoot 'src'
@@ -178,7 +188,8 @@ $expectedFiles = @(
     '23_configs/owned_account_policy.example.json',
     '23_configs/workflow_catalog.example.json',
     '23_configs/publish_policy.example.json',
-    '23_configs/truth_council_policy.example.json'
+    '23_configs/truth_council_policy.example.json',
+    '01_projects/desktop_playground/desktop_bridge_actions.ps1'
 )
 
 $failed = 0
@@ -819,6 +830,189 @@ if ($executorOutsideTaskOk) {
     Write-Check -Name 'Executor out-of-scope task remains blocked in task status' -Passed $executorOutsideStatusOk -Detail (($executorOutsideStatus.Output | Out-String).Trim())
     if (-not $executorOutsideStatusOk) { $failed++ }
 }
+
+$desktopListQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'list_windows'
+)
+$desktopListQueueOk = $desktopListQueue.ExitCode -eq 0 -and `
+    (($desktopListQueue.Output | Out-String) -match 'status:\s+queued') -and `
+    (($desktopListQueue.Output | Out-String) -match 'approval_state:\s+not_required') -and `
+    (($desktopListQueue.Output | Out-String) -match 'executor_action_type:\s+list_windows')
+Write-Check -Name 'Desktop executor list_windows queues without approval' -Passed $desktopListQueueOk -Detail (($desktopListQueue.Output | Out-String).Trim())
+if (-not $desktopListQueueOk) { $failed++ }
+
+$desktopListTaskMatch = [regex]::Match(($desktopListQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$desktopListTaskId = if ($desktopListTaskMatch.Success) { $desktopListTaskMatch.Groups[1].Value } else { $null }
+$desktopListTaskOk = -not [string]::IsNullOrWhiteSpace($desktopListTaskId)
+Write-Check -Name 'Desktop executor list_windows task id parsed' -Passed $desktopListTaskOk -Detail ($(if ($desktopListTaskOk) { $desktopListTaskId } else { 'missing list_windows task id' }))
+if (-not $desktopListTaskOk) { $failed++ }
+
+if ($desktopListTaskOk) {
+    $desktopListExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $desktopListTaskId)
+    $desktopListExecuteOk = $desktopListExecute.ExitCode -eq 0 -and `
+        (($desktopListExecute.Output | Out-String) -match 'status:\s+completed') -and `
+        (($desktopListExecute.Output | Out-String) -match 'execution_status:\s+succeeded')
+    Write-Check -Name 'Desktop executor list_windows execution succeeds' -Passed $desktopListExecuteOk -Detail (($desktopListExecute.Output | Out-String).Trim())
+    if (-not $desktopListExecuteOk) { $failed++ }
+}
+
+$desktopActiveQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'get_active_window'
+)
+$desktopActiveQueueOk = $desktopActiveQueue.ExitCode -eq 0 -and `
+    (($desktopActiveQueue.Output | Out-String) -match 'status:\s+queued') -and `
+    (($desktopActiveQueue.Output | Out-String) -match 'executor_action_type:\s+get_active_window')
+Write-Check -Name 'Desktop executor get_active_window queues without approval' -Passed $desktopActiveQueueOk -Detail (($desktopActiveQueue.Output | Out-String).Trim())
+if (-not $desktopActiveQueueOk) { $failed++ }
+
+$desktopActiveTaskMatch = [regex]::Match(($desktopActiveQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$desktopActiveTaskId = if ($desktopActiveTaskMatch.Success) { $desktopActiveTaskMatch.Groups[1].Value } else { $null }
+$desktopActiveTaskOk = -not [string]::IsNullOrWhiteSpace($desktopActiveTaskId)
+Write-Check -Name 'Desktop executor get_active_window task id parsed' -Passed $desktopActiveTaskOk -Detail ($(if ($desktopActiveTaskOk) { $desktopActiveTaskId } else { 'missing get_active_window task id' }))
+if (-not $desktopActiveTaskOk) { $failed++ }
+
+if ($desktopActiveTaskOk) {
+    $desktopActiveExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $desktopActiveTaskId)
+    $desktopActiveExecuteOk = $desktopActiveExecute.ExitCode -eq 0 -and `
+        (($desktopActiveExecute.Output | Out-String) -match 'status:\s+completed') -and `
+        (($desktopActiveExecute.Output | Out-String) -match 'execution_status:\s+succeeded')
+    Write-Check -Name 'Desktop executor get_active_window execution succeeds' -Passed $desktopActiveExecuteOk -Detail (($desktopActiveExecute.Output | Out-String).Trim())
+    if (-not $desktopActiveExecuteOk) { $failed++ }
+}
+
+$desktopOpenQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'open_allowed_app',
+    '--target', 'terminal'
+)
+$desktopOpenQueueOk = $desktopOpenQueue.ExitCode -eq 0 -and `
+    (($desktopOpenQueue.Output | Out-String) -match 'status:\s+pending_approval') -and `
+    (($desktopOpenQueue.Output | Out-String) -match 'executor_action_type:\s+open_allowed_app')
+Write-Check -Name 'Desktop executor open_allowed_app queues with approval' -Passed $desktopOpenQueueOk -Detail (($desktopOpenQueue.Output | Out-String).Trim())
+if (-not $desktopOpenQueueOk) { $failed++ }
+
+$desktopOpenTaskMatch = [regex]::Match(($desktopOpenQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$desktopOpenTaskId = if ($desktopOpenTaskMatch.Success) { $desktopOpenTaskMatch.Groups[1].Value } else { $null }
+$desktopOpenApprovalMatch = [regex]::Match(($desktopOpenQueue.Output | Out-String), 'approval_request_id:\s*(\S+)')
+$desktopOpenApprovalId = if ($desktopOpenApprovalMatch.Success) { $desktopOpenApprovalMatch.Groups[1].Value } else { $null }
+$desktopOpenIdsOk = (-not [string]::IsNullOrWhiteSpace($desktopOpenTaskId)) -and (-not [string]::IsNullOrWhiteSpace($desktopOpenApprovalId))
+Write-Check -Name 'Desktop executor open_allowed_app ids parsed' -Passed $desktopOpenIdsOk -Detail ($(if ($desktopOpenIdsOk) { "$desktopOpenTaskId | $desktopOpenApprovalId" } else { 'missing open_allowed_app task or approval id' }))
+if (-not $desktopOpenIdsOk) { $failed++ }
+
+if (-not [string]::IsNullOrWhiteSpace($desktopOpenApprovalId)) {
+    $desktopOpenApprove = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $desktopOpenApprovalId, '--note', 'runtime checker approved open_allowed_app')
+    $desktopOpenApproveOk = $desktopOpenApprove.ExitCode -eq 0 -and `
+        (($desktopOpenApprove.Output | Out-String) -match 'task_status:\s+queued')
+    Write-Check -Name 'Desktop executor open_allowed_app approval persists' -Passed $desktopOpenApproveOk -Detail (($desktopOpenApprove.Output | Out-String).Trim())
+    if (-not $desktopOpenApproveOk) { $failed++ }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($desktopOpenTaskId)) {
+    $desktopOpenExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $desktopOpenTaskId)
+    $desktopOpenExecuteOk = $desktopOpenExecute.ExitCode -eq 0 -and `
+        (($desktopOpenExecute.Output | Out-String) -match 'status:\s+completed') -and `
+        (($desktopOpenExecute.Output | Out-String) -match 'execution_status:\s+succeeded')
+    Write-Check -Name 'Desktop executor open_allowed_app execution succeeds' -Passed $desktopOpenExecuteOk -Detail (($desktopOpenExecute.Output | Out-String).Trim())
+    if (-not $desktopOpenExecuteOk) { $failed++ }
+}
+
+Start-Sleep -Milliseconds 1200
+
+$desktopFocusQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'focus_window',
+    '--target', 'terminal'
+)
+$desktopFocusQueueOk = $desktopFocusQueue.ExitCode -eq 0 -and `
+    (($desktopFocusQueue.Output | Out-String) -match 'status:\s+pending_approval') -and `
+    (($desktopFocusQueue.Output | Out-String) -match 'executor_action_type:\s+focus_window')
+Write-Check -Name 'Desktop executor focus_window queues with approval' -Passed $desktopFocusQueueOk -Detail (($desktopFocusQueue.Output | Out-String).Trim())
+if (-not $desktopFocusQueueOk) { $failed++ }
+
+$desktopFocusTaskMatch = [regex]::Match(($desktopFocusQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$desktopFocusTaskId = if ($desktopFocusTaskMatch.Success) { $desktopFocusTaskMatch.Groups[1].Value } else { $null }
+$desktopFocusApprovalMatch = [regex]::Match(($desktopFocusQueue.Output | Out-String), 'approval_request_id:\s*(\S+)')
+$desktopFocusApprovalId = if ($desktopFocusApprovalMatch.Success) { $desktopFocusApprovalMatch.Groups[1].Value } else { $null }
+$desktopFocusIdsOk = (-not [string]::IsNullOrWhiteSpace($desktopFocusTaskId)) -and (-not [string]::IsNullOrWhiteSpace($desktopFocusApprovalId))
+Write-Check -Name 'Desktop executor focus_window ids parsed' -Passed $desktopFocusIdsOk -Detail ($(if ($desktopFocusIdsOk) { "$desktopFocusTaskId | $desktopFocusApprovalId" } else { 'missing focus_window task or approval id' }))
+if (-not $desktopFocusIdsOk) { $failed++ }
+
+if (-not [string]::IsNullOrWhiteSpace($desktopFocusApprovalId)) {
+    $desktopFocusApprove = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $desktopFocusApprovalId, '--note', 'runtime checker approved focus_window')
+    $desktopFocusApproveOk = $desktopFocusApprove.ExitCode -eq 0 -and `
+        (($desktopFocusApprove.Output | Out-String) -match 'task_status:\s+queued')
+    Write-Check -Name 'Desktop executor focus_window approval persists' -Passed $desktopFocusApproveOk -Detail (($desktopFocusApprove.Output | Out-String).Trim())
+    if (-not $desktopFocusApproveOk) { $failed++ }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($desktopFocusTaskId)) {
+    $desktopFocusExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $desktopFocusTaskId)
+    $desktopFocusExecuteOk = $desktopFocusExecute.ExitCode -eq 0 -and `
+        (($desktopFocusExecute.Output | Out-String) -match 'status:\s+completed') -and `
+        (($desktopFocusExecute.Output | Out-String) -match 'execution_status:\s+succeeded')
+    Write-Check -Name 'Desktop executor focus_window execution succeeds' -Passed $desktopFocusExecuteOk -Detail (($desktopFocusExecute.Output | Out-String).Trim())
+    if (-not $desktopFocusExecuteOk) { $failed++ }
+}
+
+$runtimeDesktopArtifactPath = Join-Path $repoRoot '05_logs\tmp\desktop\runtime-checker-desktop-capture.png'
+Remove-GeneratedFile -Path $runtimeDesktopArtifactPath
+$desktopScreenshotQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'capture_desktop_screenshot',
+    '--target', $runtimeDesktopArtifactPath
+)
+$desktopScreenshotQueueOk = $desktopScreenshotQueue.ExitCode -eq 0 -and `
+    (($desktopScreenshotQueue.Output | Out-String) -match 'status:\s+pending_approval') -and `
+    (($desktopScreenshotQueue.Output | Out-String) -match 'workspace_scope:\s+in_scope')
+Write-Check -Name 'Desktop executor screenshot queues with approval' -Passed $desktopScreenshotQueueOk -Detail (($desktopScreenshotQueue.Output | Out-String).Trim())
+if (-not $desktopScreenshotQueueOk) { $failed++ }
+
+$desktopScreenshotTaskMatch = [regex]::Match(($desktopScreenshotQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$desktopScreenshotTaskId = if ($desktopScreenshotTaskMatch.Success) { $desktopScreenshotTaskMatch.Groups[1].Value } else { $null }
+$desktopScreenshotApprovalMatch = [regex]::Match(($desktopScreenshotQueue.Output | Out-String), 'approval_request_id:\s*(\S+)')
+$desktopScreenshotApprovalId = if ($desktopScreenshotApprovalMatch.Success) { $desktopScreenshotApprovalMatch.Groups[1].Value } else { $null }
+$desktopScreenshotIdsOk = (-not [string]::IsNullOrWhiteSpace($desktopScreenshotTaskId)) -and (-not [string]::IsNullOrWhiteSpace($desktopScreenshotApprovalId))
+Write-Check -Name 'Desktop executor screenshot ids parsed' -Passed $desktopScreenshotIdsOk -Detail ($(if ($desktopScreenshotIdsOk) { "$desktopScreenshotTaskId | $desktopScreenshotApprovalId" } else { 'missing screenshot task or approval id' }))
+if (-not $desktopScreenshotIdsOk) { $failed++ }
+
+if (-not [string]::IsNullOrWhiteSpace($desktopScreenshotApprovalId)) {
+    $desktopScreenshotApprove = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $desktopScreenshotApprovalId, '--note', 'runtime checker approved screenshot capture')
+    $desktopScreenshotApproveOk = $desktopScreenshotApprove.ExitCode -eq 0 -and `
+        (($desktopScreenshotApprove.Output | Out-String) -match 'task_status:\s+queued')
+    Write-Check -Name 'Desktop executor screenshot approval persists' -Passed $desktopScreenshotApproveOk -Detail (($desktopScreenshotApprove.Output | Out-String).Trim())
+    if (-not $desktopScreenshotApproveOk) { $failed++ }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($desktopScreenshotTaskId)) {
+    $desktopScreenshotExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $desktopScreenshotTaskId)
+    $desktopScreenshotExecuteOk = $desktopScreenshotExecute.ExitCode -eq 0 -and `
+        (($desktopScreenshotExecute.Output | Out-String) -match 'status:\s+completed') -and `
+        (($desktopScreenshotExecute.Output | Out-String) -match 'execution_status:\s+succeeded') -and `
+        (Test-Path -LiteralPath $runtimeDesktopArtifactPath -PathType Leaf)
+    Write-Check -Name 'Desktop executor screenshot execution succeeds' -Passed $desktopScreenshotExecuteOk -Detail (($desktopScreenshotExecute.Output | Out-String).Trim())
+    if (-not $desktopScreenshotExecuteOk) { $failed++ }
+
+    $desktopScreenshotStatus = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $desktopScreenshotTaskId)
+    $desktopScreenshotStatusOk = $desktopScreenshotStatus.ExitCode -eq 0 -and `
+        (($desktopScreenshotStatus.Output | Out-String) -match "last_artifact_path:\s+$([regex]::Escape($runtimeDesktopArtifactPath))") -and `
+        (($desktopScreenshotStatus.Output | Out-String) -match 'last_execution_status:\s+succeeded')
+    Write-Check -Name 'Desktop executor screenshot result persists' -Passed $desktopScreenshotStatusOk -Detail (($desktopScreenshotStatus.Output | Out-String).Trim())
+    if (-not $desktopScreenshotStatusOk) { $failed++ }
+}
+
+$desktopInvalidTarget = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'focus_window',
+    '--target', 'not_allowed'
+)
+$desktopInvalidTargetOk = $desktopInvalidTarget.ExitCode -ne 0 -and `
+    (($desktopInvalidTarget.Output | Out-String) -match 'focus_window target must be one of')
+Write-Check -Name 'Desktop executor unsupported target fails safely' -Passed $desktopInvalidTargetOk -Detail (($desktopInvalidTarget.Output | Out-String).Trim())
+if (-not $desktopInvalidTargetOk) { $failed++ }
+
+Remove-GeneratedFile -Path $runtimeDesktopArtifactPath
 
 $listResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('list')
 $listOk = $listResult.ExitCode -eq 0
