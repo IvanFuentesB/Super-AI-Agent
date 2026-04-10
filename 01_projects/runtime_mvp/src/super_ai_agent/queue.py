@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import hashlib
 import json
 from pathlib import Path
 import re
@@ -65,6 +66,8 @@ ALLOWED_CHECKER_TARGETS = {
 ALLOWED_DESKTOP_FOCUS_TARGETS = {"cursor", "vscode", "codex", "chatgpt", "terminal", "dashboard_browser"}
 ALLOWED_DESKTOP_APP_TARGETS = {"cursor", "vscode", "terminal", "dashboard_browser"}
 ALLOWED_DESKTOP_HOTKEYS = {"ctrl+c", "ctrl+v", "ctrl+l", "enter", "escape"}
+HANDOFF_SOURCE_WINDOW_ALIASES = {"codex"}
+HANDOFF_TARGET_WINDOW_ALIASES = {"chatgpt"}
 QUEUEABLE_TASK_STATUSES = {"queued", "running", "waiting", "blocked_human_needed", "ready_to_resume"}
 WINDOWS_ABSOLUTE_PATH_PATTERN = re.compile(r"(?i)\b[A-Z]:\\[^\s\"'<>|?*]+")
 DEFAULT_OPERATOR_RECIPE_WAIT_SECONDS = 2
@@ -79,6 +82,10 @@ class DesktopActionInterrupted(RuntimeError):
 
 class DesktopActionBlocked(RuntimeError):
     """Raised when the desktop bridge blocks an action for safety or clarity."""
+
+    def __init__(self, message: str, *, values: dict[str, str] | None = None) -> None:
+        super().__init__(message)
+        self.values = values or {}
 
 
 def _now() -> str:
@@ -414,6 +421,26 @@ def _require_allowed_window_alias(raw_value: str, *, label: str) -> str:
     return normalized
 
 
+def _require_handoff_window_alias(raw_value: str, *, label: str, role: str) -> str:
+    normalized = (raw_value or "").strip().lower()
+    if role == "source":
+        allowed_aliases = HANDOFF_SOURCE_WINDOW_ALIASES
+    elif role == "target":
+        allowed_aliases = HANDOFF_TARGET_WINDOW_ALIASES
+    else:
+        raise ValueError(f"Unsupported handoff window role: {role}")
+
+    if normalized == "terminal":
+        raise ValueError(
+            f"{label} must not use terminal or shell targets. Codex to ChatGPT handoff never falls back to terminal or PowerShell."
+        )
+    if normalized not in allowed_aliases:
+        raise ValueError(
+            f"{label} must be one of: " + ", ".join(sorted(allowed_aliases))
+        )
+    return normalized
+
+
 def _parse_operator_recipe_options(raw_content: str) -> dict:
     text = (raw_content or "").strip()
     if not text:
@@ -681,7 +708,7 @@ def _recipe_codex_to_dashboard_progress_handoff(options: dict) -> dict:
 
 
 def _recipe_codex_to_chatgpt_handoff_mvp(options: dict) -> dict:
-    source_window = _require_allowed_window_alias(
+    source_window = _require_handoff_window_alias(
         _recipe_option_text(
             options,
             "sourceWindow",
@@ -689,8 +716,9 @@ def _recipe_codex_to_chatgpt_handoff_mvp(options: dict) -> dict:
             default="codex",
         ),
         label="codex_to_chatgpt_handoff_mvp sourceWindow",
+        role="source",
     )
-    target_window = _require_allowed_window_alias(
+    target_window = _require_handoff_window_alias(
         _recipe_option_text(
             options,
             "targetWindow",
@@ -698,6 +726,7 @@ def _recipe_codex_to_chatgpt_handoff_mvp(options: dict) -> dict:
             default="chatgpt",
         ),
         label="codex_to_chatgpt_handoff_mvp targetWindow",
+        role="target",
     )
     wait_seconds = _recipe_option_int(
         options,
@@ -798,6 +827,16 @@ def _recipe_codex_to_chatgpt_handoff_mvp(options: dict) -> dict:
             "handoff_payload_classification": "pending",
             "handoff_payload_preview": "none",
             "handoff_payload_reason": "Clipboard has not been classified yet.",
+            "handoff_fallback_denied": "terminal_shell_fallback_blocked",
+            "handoff_target_resolution_status": "pending_window_match",
+            "handoff_manual_target_resolution": "not_needed",
+            "handoff_source_match": (
+                "clipboard_prepared_manually" if use_prepared_clipboard else "pending_source_match"
+            ),
+            "handoff_target_match": "pending_target_match",
+            "handoff_stop_reason": "none",
+            "handoff_blocked_payload_repeats": "0",
+            "handoff_payload_fingerprint": "none",
         },
         "steps": steps,
     }
@@ -1398,7 +1437,7 @@ def _invoke_desktop_bridge_action(
             or output
             or "Desktop bridge action was blocked by a local guard."
         )
-        raise DesktopActionBlocked(_shorten_output(failure_reason, limit=320))
+        raise DesktopActionBlocked(_shorten_output(failure_reason, limit=320), values=values)
 
     if result.returncode != 0:
         failure_reason = values.get("failure_reason") or values.get("headline") or output or "Desktop bridge action failed."
@@ -1496,6 +1535,109 @@ def _handoff_payload_reason(classification: str, reason: str, preview: str) -> s
     return "Clipboard payload classification is unknown, so the handoff cannot continue safely."
 
 
+def _handoff_payload_fingerprint(raw_text: str) -> str:
+    normalized = " ".join((raw_text or "").strip().lower().split())
+    if not normalized:
+        return "none"
+    return hashlib.sha1(normalized.encode("utf-8")).hexdigest()[:12]
+
+
+def _update_handoff_window_match_metadata(task: Task, *, step_result: dict) -> None:
+    action_type = str(step_result.get("action_type", "")).strip().lower()
+    target = str(step_result.get("target", "")).strip().lower()
+    alias = str(step_result.get("window_alias", "")).strip().lower()
+    title = str(step_result.get("window_title", "")).strip()
+    if not alias:
+        return
+
+    match_value = alias if not title else f"{alias} | {title}"
+    source_window = str(task.executor_payload.get("recipe_source_window", "")).strip().lower()
+    target_window = str(task.executor_payload.get("recipe_target_window", "")).strip().lower()
+
+    if action_type in {"focus_window", "copy_selection"} and target == source_window:
+        task.executor_payload["handoff_source_match"] = match_value
+
+    if action_type in {"focus_window", "paste_clipboard", "send_hotkey"} and (
+        target == target_window or target.startswith(f"{target_window}|")
+    ):
+        task.executor_payload["handoff_target_match"] = match_value
+
+    if (
+        str(task.executor_payload.get("handoff_source_match", "")).strip()
+        and str(task.executor_payload.get("handoff_target_match", "")).strip()
+        and task.executor_payload.get("handoff_target_match") != "pending_target_match"
+    ):
+        task.executor_payload["handoff_target_resolution_status"] = "resolved"
+        task.executor_payload["handoff_manual_target_resolution"] = "not_needed"
+
+
+def _apply_handoff_blocked_metadata(
+    task: Task,
+    *,
+    step_result: dict,
+    blocked_message: str,
+    blocked_values: dict[str, str] | None = None,
+) -> None:
+    blocked_values = blocked_values or {}
+    lowered_message = blocked_message.lower()
+    guard_state = str(blocked_values.get("guard_state", "")).strip().lower()
+    target = str(step_result.get("target", "")).strip().lower()
+    source_window = str(task.executor_payload.get("recipe_source_window", "")).strip().lower()
+    target_window = str(task.executor_payload.get("recipe_target_window", "")).strip().lower()
+
+    task.executor_payload["handoff_stop_reason"] = blocked_message
+    task.executor_payload["handoff_send_allowed"] = "no"
+
+    if any(
+        phrase in lowered_message
+        for phrase in (
+            "checker or recipe label",
+            "repeated concatenated ui labels",
+            "payload was blocked",
+            "clipboard is empty",
+            "handoff payload blocked before paste",
+        )
+    ):
+        task.executor_payload["handoff_paste_allowed"] = "no"
+
+    needs_manual_resolution = guard_state == "manual_focus_required" or any(
+        phrase in lowered_message
+        for phrase in (
+            "no visible allowlisted window found",
+            "manual focus is required",
+            "did not move focus",
+            "requested allowlisted window",
+            "target is unclear",
+        )
+    )
+    if not needs_manual_resolution:
+        return
+
+    task.executor_payload["handoff_target_resolution_status"] = "manual_target_resolution_required"
+    task.executor_payload["handoff_manual_target_resolution"] = "required"
+    task.executor_payload["handoff_fallback_denied"] = "yes"
+    task.executor_payload["handoff_paste_allowed"] = "no"
+
+    if target == source_window:
+        task.executor_payload["handoff_source_match"] = "not_resolved"
+    if target == target_window or target.startswith(f"{target_window}|"):
+        task.executor_payload["handoff_target_match"] = "not_resolved"
+
+
+def _handoff_manual_resolution_failure(failure_message: str) -> bool:
+    lowered_message = (failure_message or "").lower()
+    return any(
+        phrase in lowered_message
+        for phrase in (
+            "no visible allowlisted window found",
+            "manual focus is required",
+            "did not move focus",
+            "requested allowlisted window",
+            "target is unclear",
+        )
+    )
+
+
 def _apply_handoff_recipe_step_metadata(
     task: Task,
     *,
@@ -1504,6 +1646,7 @@ def _apply_handoff_recipe_step_metadata(
 ) -> None:
     classification = str(values.get("clipboard_classification", "")).strip().lower()
     preview = str(values.get("clipboard_preview", "")).strip()
+    fingerprint = _handoff_payload_fingerprint(str(values.get("clipboard_fingerprint", "")) or preview)
     reason = _handoff_payload_reason(
         classification,
         str(values.get("clipboard_guard_reason", "")),
@@ -1518,14 +1661,33 @@ def _apply_handoff_recipe_step_metadata(
         task.executor_payload["handoff_payload_classification"] = classification
         task.executor_payload["handoff_payload_preview"] = preview or "none"
         task.executor_payload["handoff_payload_reason"] = reason
+        task.executor_payload["handoff_payload_fingerprint"] = fingerprint
         task.executor_payload["handoff_paste_allowed"] = (
             "yes" if classification in VALID_HANDOFF_PAYLOAD_CLASSIFICATIONS else "no"
         )
         if classification not in VALID_HANDOFF_PAYLOAD_CLASSIFICATIONS:
+            previous_fingerprint = str(task.executor_payload.get("handoff_blocked_payload_fingerprint", ""))
+            previous_count = int(task.executor_payload.get("handoff_blocked_payload_repeats", "0") or 0)
+            repeated_count = previous_count + 1 if fingerprint != "none" and fingerprint == previous_fingerprint else 1
+            task.executor_payload["handoff_blocked_payload_fingerprint"] = fingerprint
+            task.executor_payload["handoff_blocked_payload_repeats"] = str(repeated_count)
             task.executor_payload["handoff_send_allowed"] = "no"
+            if repeated_count >= 2:
+                reason = _shorten_output(
+                    f"{reason} Repeated identical blocked handoff payload detected again. Stop retrying and resolve the clipboard content manually.",
+                    limit=320,
+                )
+                task.executor_payload["handoff_payload_reason"] = reason
             raise DesktopActionBlocked(
-                _shorten_output(f"Handoff payload blocked before paste. {reason}", limit=320)
+                _shorten_output(f"Handoff payload blocked before paste. {reason}", limit=320),
+                values={
+                    "clipboard_classification": classification,
+                    "clipboard_preview": preview,
+                    "clipboard_fingerprint": fingerprint,
+                    "clipboard_guard_reason": reason,
+                },
             )
+        task.executor_payload["handoff_blocked_payload_repeats"] = "0"
         if task.executor_payload.get("handoff_send_behavior") == "explicit_enter_after_paste":
             task.executor_payload["handoff_send_allowed"] = "explicit_after_paste"
         return
@@ -1632,6 +1794,7 @@ def _run_operator_recipe(task: Task) -> tuple[str, str]:
                         step_result=step_result,
                         values=values,
                     )
+                    _update_handoff_window_match_metadata(task, step_result=step_result)
                 step_result["finished_at"] = _now()
                 completed_steps.append(step_result)
                 step_completed = True
@@ -1663,6 +1826,13 @@ def _run_operator_recipe(task: Task) -> tuple[str, str]:
                 ) from exc
             except DesktopActionBlocked as exc:
                 blocked_message = _shorten_output(str(exc), limit=320)
+                if recipe_name == "codex_to_chatgpt_handoff_mvp":
+                    _apply_handoff_blocked_metadata(
+                        task,
+                        step_result=step_result,
+                        blocked_message=blocked_message,
+                        blocked_values=getattr(exc, "values", {}),
+                    )
                 step_result["status"] = "blocked"
                 step_result["summary"] = blocked_message
                 step_result["finished_at"] = _now()
@@ -1696,6 +1866,40 @@ def _run_operator_recipe(task: Task) -> tuple[str, str]:
 
                 step_result["finished_at"] = _now()
                 if required:
+                    if (
+                        recipe_name == "codex_to_chatgpt_handoff_mvp"
+                        and _handoff_manual_resolution_failure(failure_message)
+                    ):
+                        blocked_message = _shorten_output(
+                            f"Failed after {max_attempts} attempt(s). Last error: {failure_message}",
+                            limit=320,
+                        )
+                        _apply_handoff_blocked_metadata(
+                            task,
+                            step_result=step_result,
+                            blocked_message=blocked_message,
+                            blocked_values={"guard_state": "manual_focus_required"},
+                        )
+                        step_result["status"] = "blocked"
+                        step_result["summary"] = blocked_message
+                        completed_steps.append(step_result)
+                        run_payload = {
+                            "recipe_name": recipe_name,
+                            "recipe_label": recipe_label,
+                            "started_at": started_at,
+                            "finished_at": step_result["finished_at"],
+                            "status": "blocked",
+                            "summary": blocked_message,
+                            "steps": completed_steps,
+                        }
+                        _persist_recipe_run(task, run_payload)
+                        raise DesktopActionBlocked(
+                            _shorten_output(
+                                f"Recipe {recipe_label} stopped at step {step_result['step']} ({label}). {blocked_message}",
+                                limit=320,
+                            )
+                        ) from exc
+
                     step_result["status"] = "failed"
                     step_result["summary"] = _shorten_output(
                         f"Failed after {max_attempts} attempt(s). Last error: {failure_message}",

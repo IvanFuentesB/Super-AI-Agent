@@ -532,6 +532,8 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"recipe_target_window: {task.executor_payload.get('recipe_target_window', 'none')}")
                 print(f"recipe_clipboard_mode: {task.executor_payload.get('recipe_clipboard_mode', 'none')}")
                 print(f"handoff_send_behavior: {task.executor_payload.get('handoff_send_behavior', 'none')}")
+                print(f"handoff_fallback_denied: {task.executor_payload.get('handoff_fallback_denied', 'none')}")
+                print(f"handoff_target_resolution_status: {task.executor_payload.get('handoff_target_resolution_status', 'none')}")
             if task.approval_request_id:
                 print(f"approval_request_id: {task.approval_request_id}")
             return 0
@@ -614,6 +616,13 @@ def main(argv: list[str] | None = None) -> int:
             print(f"handoff_paste_allowed: {task.executor_payload.get('handoff_paste_allowed', 'none') if task.executor_action_type == 'run_operator_recipe' else 'none'}")
             print(f"handoff_send_behavior: {task.executor_payload.get('handoff_send_behavior', 'none') if task.executor_action_type == 'run_operator_recipe' else 'none'}")
             print(f"handoff_send_allowed: {task.executor_payload.get('handoff_send_allowed', 'none') if task.executor_action_type == 'run_operator_recipe' else 'none'}")
+            print(f"handoff_fallback_denied: {task.executor_payload.get('handoff_fallback_denied', 'none') if task.executor_action_type == 'run_operator_recipe' else 'none'}")
+            print(f"handoff_target_resolution_status: {task.executor_payload.get('handoff_target_resolution_status', 'none') if task.executor_action_type == 'run_operator_recipe' else 'none'}")
+            print(f"handoff_manual_target_resolution: {task.executor_payload.get('handoff_manual_target_resolution', 'none') if task.executor_action_type == 'run_operator_recipe' else 'none'}")
+            print(f"handoff_source_match: {task.executor_payload.get('handoff_source_match', 'none') if task.executor_action_type == 'run_operator_recipe' else 'none'}")
+            print(f"handoff_target_match: {task.executor_payload.get('handoff_target_match', 'none') if task.executor_action_type == 'run_operator_recipe' else 'none'}")
+            print(f"handoff_stop_reason: {task.executor_payload.get('handoff_stop_reason', 'none') if task.executor_action_type == 'run_operator_recipe' else 'none'}")
+            print(f"handoff_blocked_payload_repeats: {task.executor_payload.get('handoff_blocked_payload_repeats', '0') if task.executor_action_type == 'run_operator_recipe' else '0'}")
             print(f"workspace_scope: {task.workspace_scope}")
             print(f"workspace_policy: {task.workspace_policy}")
             print(f"workspace_reason: {task.workspace_reason or 'none'}")

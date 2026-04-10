@@ -1287,18 +1287,29 @@ try {
         if (-not $handoffSeedExecuteOk) { $failed++ }
     }
 
+    $handoffUiHtmlPath = Join-Path $projectRoot 'public\index.html'
+    $handoffUiHtml = if (Test-Path $handoffUiHtmlPath) { Get-Content $handoffUiHtmlPath -Raw } else { '' }
+    $handoffUiTargetsOk = -not [string]::IsNullOrWhiteSpace($handoffUiHtml) -and `
+        $handoffUiHtml -match '(?s)<select id="handoff-source-window">.*?<option value="codex"' -and `
+        $handoffUiHtml -match '(?s)<select id="handoff-target-window">.*?<option value="chatgpt"' -and `
+        $handoffUiHtml -notmatch '(?s)<select id="handoff-source-window">.*?<option value="terminal"' -and `
+        $handoffUiHtml -notmatch '(?s)<select id="handoff-target-window">.*?<option value="terminal"'
+    Write-Check -Name 'Dashboard handoff UI does not expose terminal fallback targets' -Passed $handoffUiTargetsOk -Detail ($(if ($handoffUiTargetsOk) { 'handoff source and target controls only expose Codex and ChatGPT for this recipe' } else { 'handoff UI still exposes terminal fallback targets' }))
+    if (-not $handoffUiTargetsOk) { $failed++ }
+
     $handoffRecipePayload = @{
         actionType = 'run_operator_recipe'
         target = 'codex_to_chatgpt_handoff_mvp'
-        content = '{"sourceWindow":"terminal","targetWindow":"terminal","usePreparedClipboard":true,"waitSeconds":1}'
+        content = '{"sourceWindow":"codex","targetWindow":"chatgpt","usePreparedClipboard":true,"waitSeconds":1}'
     } | ConvertTo-Json -Compress
     $handoffRecipeQueue = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/executor/queue" -Method Post -ContentType 'application/json' -Body $handoffRecipePayload -TimeoutSec 30
     $handoffRecipeQueueOk = $handoffRecipeQueue.ok -and `
         $handoffRecipeQueue.task.status -eq 'pending_approval' -and `
         $handoffRecipeQueue.task.recipeName -eq 'codex_to_chatgpt_handoff_mvp' -and `
-        $handoffRecipeQueue.task.recipeSourceWindow -eq 'terminal' -and `
-        $handoffRecipeQueue.task.recipeTargetWindow -eq 'terminal' -and `
-        $handoffRecipeQueue.task.handoffSendBehavior -eq 'paste_only'
+        $handoffRecipeQueue.task.recipeSourceWindow -eq 'codex' -and `
+        $handoffRecipeQueue.task.recipeTargetWindow -eq 'chatgpt' -and `
+        $handoffRecipeQueue.task.handoffSendBehavior -eq 'paste_only' -and `
+        $handoffRecipeQueue.task.handoffFallbackDenied -eq 'terminal_shell_fallback_blocked'
     Write-Check -Name 'Dashboard Codex to ChatGPT handoff queue endpoint' -Passed $handoffRecipeQueueOk -Detail ($(if ($handoffRecipeQueueOk) { $handoffRecipeQueue.summary.headline } else { 'handoff recipe queue failed' }))
     if (-not $handoffRecipeQueueOk) { $failed++ }
 
@@ -1308,9 +1319,12 @@ try {
         $handoffRecipeDetailBefore = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/item?taskId=$handoffRecipeTaskId" -Method Get -TimeoutSec 30
         $handoffRecipeDetailBeforeOk = $handoffRecipeDetailBefore.ok -and `
             $handoffRecipeDetailBefore.summary.recipeClipboardMode -eq 'prepared_clipboard' -and `
+            $handoffRecipeDetailBefore.summary.recipeSourceWindow -eq 'codex' -and `
+            $handoffRecipeDetailBefore.summary.recipeTargetWindow -eq 'chatgpt' -and `
             $handoffRecipeDetailBefore.summary.handoffSendBehavior -eq 'paste_only' -and `
+            $handoffRecipeDetailBefore.summary.handoffFallbackDenied -eq 'terminal_shell_fallback_blocked' -and `
             (-not ($handoffRecipeDetailBefore.summary.recipeSteps.actionType -contains 'send_hotkey'))
-        Write-Check -Name 'Dashboard Codex to ChatGPT handoff defaults to paste-only' -Passed $handoffRecipeDetailBeforeOk -Detail ($(if ($handoffRecipeDetailBeforeOk) { $handoffRecipeDetailBefore.summary.recipeSummary } else { 'handoff detail did not show paste-only default' }))
+        Write-Check -Name 'Dashboard Codex to ChatGPT handoff defaults to paste-only with strict targets' -Passed $handoffRecipeDetailBeforeOk -Detail ($(if ($handoffRecipeDetailBeforeOk) { $handoffRecipeDetailBefore.summary.recipeSummary } else { 'handoff detail did not show strict paste-only default' }))
         if (-not $handoffRecipeDetailBeforeOk) { $failed++ }
     }
 
@@ -1332,20 +1346,33 @@ try {
             action = 'execute'
         } | ConvertTo-Json -Compress
         $handoffRecipeExecute = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $handoffRecipeExecutePayload -TimeoutSec 30
-        $handoffRecipeExecuteOk = $handoffRecipeExecute.ok -and `
-            $handoffRecipeExecute.task.status -eq 'completed' -and `
-            $handoffRecipeExecute.task.lastExecutionStatus -eq 'succeeded'
+        $handoffRecipeExecuteOk = $handoffRecipeExecute.ok -and (`
+            ((`
+                $handoffRecipeExecute.task.status -eq 'completed' -and `
+                $handoffRecipeExecute.task.lastExecutionStatus -eq 'succeeded'`
+            ) -or (`
+                $handoffRecipeExecute.task.status -eq 'blocked_human_needed' -and `
+                $handoffRecipeExecute.task.lastExecutionStatus -eq 'failed'`
+            )))
         Write-Check -Name 'Dashboard Codex to ChatGPT handoff execution endpoint' -Passed $handoffRecipeExecuteOk -Detail ($(if ($handoffRecipeExecuteOk) { $handoffRecipeExecute.summary.headline } else { 'handoff execution failed' }))
         if (-not $handoffRecipeExecuteOk) { $failed++ }
 
         $handoffRecipeDetailAfter = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/item?taskId=$handoffRecipeTaskId" -Method Get -TimeoutSec 30
-        $handoffRecipeDetailAfterOk = $handoffRecipeDetailAfter.ok -and `
+        $handoffRecipeDetailAfterSucceeded = $handoffRecipeDetailAfter.ok -and `
             $handoffRecipeDetailAfter.summary.recipeStatus -eq 'succeeded' -and `
             $handoffRecipeDetailAfter.summary.handoffPayloadClassification -eq 'valid_handoff_text' -and `
             $handoffRecipeDetailAfter.summary.handoffPasteAllowed -eq 'yes' -and `
             $handoffRecipeDetailAfter.summary.handoffSendBehavior -eq 'paste_only' -and `
             (-not ($handoffRecipeDetailAfter.summary.recipeLastRunSteps.actionType -contains 'send_hotkey'))
-        Write-Check -Name 'Dashboard Codex to ChatGPT handoff detail shows safe payload result' -Passed $handoffRecipeDetailAfterOk -Detail ($(if ($handoffRecipeDetailAfterOk) { $handoffRecipeDetailAfter.summary.recipeSummary } else { 'handoff detail missing payload classification or paste-only behavior' }))
+        $handoffRecipeDetailAfterBlocked = $handoffRecipeDetailAfter.ok -and `
+            $handoffRecipeDetailAfter.summary.recipeStatus -eq 'blocked' -and `
+            $handoffRecipeDetailAfter.summary.handoffPayloadClassification -eq 'valid_handoff_text' -and `
+            $handoffRecipeDetailAfter.summary.handoffPasteAllowed -eq 'no' -and `
+            $handoffRecipeDetailAfter.summary.handoffTargetResolutionStatus -eq 'manual_target_resolution_required' -and `
+            $handoffRecipeDetailAfter.summary.handoffManualTargetResolution -eq 'required' -and `
+            $handoffRecipeDetailAfter.summary.handoffFallbackDenied -eq 'yes'
+        $handoffRecipeDetailAfterOk = $handoffRecipeDetailAfterSucceeded -or $handoffRecipeDetailAfterBlocked
+        Write-Check -Name 'Dashboard handoff detail keeps safe payload classification and denies terminal fallback' -Passed $handoffRecipeDetailAfterOk -Detail ($(if ($handoffRecipeDetailAfterOk) { $handoffRecipeDetailAfter.summary.recipeSummary } else { 'handoff detail missing safe payload or manual target resolution state' }))
         if (-not $handoffRecipeDetailAfterOk) { $failed++ }
     }
 
@@ -1386,10 +1413,13 @@ try {
     $handoffBlockedPayload = @{
         actionType = 'run_operator_recipe'
         target = 'codex_to_chatgpt_handoff_mvp'
-        content = '{"sourceWindow":"terminal","targetWindow":"terminal","usePreparedClipboard":true,"waitSeconds":0}'
+        content = '{"sourceWindow":"codex","targetWindow":"chatgpt","usePreparedClipboard":true,"waitSeconds":0}'
     } | ConvertTo-Json -Compress
     $handoffBlockedQueue = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/executor/queue" -Method Post -ContentType 'application/json' -Body $handoffBlockedPayload -TimeoutSec 30
-    $handoffBlockedQueueOk = $handoffBlockedQueue.ok -and $handoffBlockedQueue.task.status -eq 'pending_approval'
+    $handoffBlockedQueueOk = $handoffBlockedQueue.ok -and `
+        $handoffBlockedQueue.task.status -eq 'pending_approval' -and `
+        $handoffBlockedQueue.task.recipeSourceWindow -eq 'codex' -and `
+        $handoffBlockedQueue.task.recipeTargetWindow -eq 'chatgpt'
     Write-Check -Name 'Dashboard Codex to ChatGPT blocked-payload queue endpoint' -Passed $handoffBlockedQueueOk -Detail ($(if ($handoffBlockedQueueOk) { $handoffBlockedQueue.summary.headline } else { 'blocked handoff queue failed' }))
     if (-not $handoffBlockedQueueOk) { $failed++ }
 
@@ -1423,16 +1453,57 @@ try {
         $handoffBlockedDetailOk = $handoffBlockedDetail.ok -and `
             $handoffBlockedDetail.summary.recipeStatus -eq 'blocked' -and `
             ($handoffBlockedDetail.summary.handoffPayloadClassification -match 'junk_label_payload|repeated_ui_label_garbage') -and `
-            $handoffBlockedDetail.summary.handoffPasteAllowed -eq 'no'
+            $handoffBlockedDetail.summary.handoffPasteAllowed -eq 'no' -and `
+            $handoffBlockedDetail.summary.handoffBlockedPayloadRepeats -eq 1
         Write-Check -Name 'Dashboard blocked handoff detail keeps payload classification and paste denial' -Passed $handoffBlockedDetailOk -Detail ($(if ($handoffBlockedDetailOk) { $handoffBlockedDetail.summary.handoffPayloadReason } else { 'blocked handoff detail missing classification state' }))
         if (-not $handoffBlockedDetailOk) { $failed++ }
+
+        $handoffBlockedReviewPayload = @{
+            taskId = $handoffBlockedTaskId
+            action = 'review'
+            note = 'dashboard checker reviewed repeated blocked handoff payload'
+        } | ConvertTo-Json -Compress
+        $handoffBlockedReview = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $handoffBlockedReviewPayload -TimeoutSec 30
+        $handoffBlockedReviewOk = $handoffBlockedReview.ok -and $handoffBlockedReview.task.status -eq 'ready_to_resume'
+        Write-Check -Name 'Dashboard blocked handoff task can be reviewed for manual re-queue' -Passed $handoffBlockedReviewOk -Detail ($(if ($handoffBlockedReviewOk) { $handoffBlockedReview.summary.headline } else { 'blocked handoff review failed' }))
+        if (-not $handoffBlockedReviewOk) { $failed++ }
+
+        $handoffBlockedRequeuePayload = @{
+            taskId = $handoffBlockedTaskId
+            action = 'requeue'
+            note = 'dashboard checker re-queued repeated blocked handoff payload'
+        } | ConvertTo-Json -Compress
+        $handoffBlockedRequeue = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $handoffBlockedRequeuePayload -TimeoutSec 30
+        $handoffBlockedRequeueOk = $handoffBlockedRequeue.ok -and $handoffBlockedRequeue.task.status -eq 'queued'
+        Write-Check -Name 'Dashboard blocked handoff task re-queues only after explicit operator action' -Passed $handoffBlockedRequeueOk -Detail ($(if ($handoffBlockedRequeueOk) { $handoffBlockedRequeue.summary.headline } else { 'blocked handoff requeue failed' }))
+        if (-not $handoffBlockedRequeueOk) { $failed++ }
+
+        $handoffBlockedExecuteAgainPayload = @{
+            taskId = $handoffBlockedTaskId
+            action = 'execute'
+        } | ConvertTo-Json -Compress
+        $handoffBlockedExecuteAgain = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $handoffBlockedExecuteAgainPayload -TimeoutSec 30
+        $handoffBlockedExecuteAgainOk = $handoffBlockedExecuteAgain.ok -and `
+            $handoffBlockedExecuteAgain.task.status -eq 'blocked_human_needed' -and `
+            $handoffBlockedExecuteAgain.task.lastExecutionStatus -eq 'failed'
+        Write-Check -Name 'Dashboard repeated identical junk handoff payload blocks again without looping' -Passed $handoffBlockedExecuteAgainOk -Detail ($(if ($handoffBlockedExecuteAgainOk) { $handoffBlockedExecuteAgain.summary.headline } else { 'repeated blocked handoff execution failed' }))
+        if (-not $handoffBlockedExecuteAgainOk) { $failed++ }
+
+        $handoffBlockedDetailAgain = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/item?taskId=$handoffBlockedTaskId" -Method Get -TimeoutSec 30
+        $handoffBlockedDetailAgainOk = $handoffBlockedDetailAgain.ok -and `
+            $handoffBlockedDetailAgain.summary.handoffBlockedPayloadRepeats -eq 2 -and `
+            $handoffBlockedDetailAgain.summary.handoffPayloadReason -match 'Repeated identical blocked handoff payload detected again'
+        Write-Check -Name 'Dashboard repeated identical junk handoff payload is counted and reported clearly' -Passed $handoffBlockedDetailAgainOk -Detail ($(if ($handoffBlockedDetailAgainOk) { $handoffBlockedDetailAgain.summary.handoffPayloadReason } else { 'repeated blocked handoff detail missing repeat count' }))
+        if (-not $handoffBlockedDetailAgainOk) { $failed++ }
     }
 
     $dashboardHtmlPath = Join-Path $projectRoot 'public\index.html'
     $dashboardHtml = if (Test-Path $dashboardHtmlPath) { Get-Content $dashboardHtmlPath -Raw } else { '' }
     $taskFilterUiOk = -not [string]::IsNullOrWhiteSpace($dashboardHtml) -and `
         $dashboardHtml -match 'task-visibility-filter' -and `
-        $dashboardHtml -match 'task-recency-filter'
+        $dashboardHtml -match 'task-recency-filter' -and `
+        $dashboardHtml -match 'queue-recipe-codex-handoff' -and `
+        $dashboardHtml -match 'This handoff never falls back to terminal or PowerShell'
     Write-Check -Name 'Dashboard task filter controls are present for noise reduction' -Passed $taskFilterUiOk -Detail ($(if ($taskFilterUiOk) { 'task filter controls found in dashboard HTML' } else { 'task filter controls missing from dashboard HTML' }))
     if (-not $taskFilterUiOk) { $failed++ }
 

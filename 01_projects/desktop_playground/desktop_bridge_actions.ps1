@@ -303,6 +303,27 @@ function Stop-BlockedAction {
     exit 41
 }
 
+function Get-ClipboardPayloadFingerprint {
+    param(
+        [string]$ClipboardText
+    )
+
+    $normalized = (([string]$ClipboardText) -replace '\s+', ' ').Trim().ToLowerInvariant()
+    if ([string]::IsNullOrWhiteSpace($normalized)) {
+        return 'none'
+    }
+
+    $sha1 = [System.Security.Cryptography.SHA1]::Create()
+    try {
+        $bytes = [System.Text.Encoding]::UTF8.GetBytes($normalized)
+        $hashBytes = $sha1.ComputeHash($bytes)
+        return ([System.BitConverter]::ToString($hashBytes)).Replace('-', '').ToLowerInvariant().Substring(0, 12)
+    }
+    finally {
+        $sha1.Dispose()
+    }
+}
+
 function Get-ClipboardPayloadClassification {
     param(
         [string]$ClipboardText
@@ -1150,6 +1171,7 @@ function Invoke-DesktopAction {
         'get_clipboard_text' {
             $clipboardText = Get-ClipboardTextSafe
             $clipboardClassification = Get-ClipboardPayloadClassification -ClipboardText $clipboardText
+            $clipboardFingerprint = Get-ClipboardPayloadFingerprint -ClipboardText $clipboardText
             Write-Field 'action_type' 'get_clipboard_text'
             Write-Field 'status' 'succeeded'
             Write-Field 'target' 'clipboard'
@@ -1157,6 +1179,7 @@ function Invoke-DesktopAction {
             Write-Field 'clipboard_preview' (Short-Preview -Text $clipboardText)
             Write-Field 'clipboard_classification' $clipboardClassification.Classification
             Write-Field 'clipboard_guard_reason' $clipboardClassification.Reason
+            Write-Field 'clipboard_fingerprint' $clipboardFingerprint
             return
         }
 
@@ -1165,6 +1188,7 @@ function Invoke-DesktopAction {
             Set-ClipboardTextSafe -Value $TextContent
             $clipboardText = Get-ClipboardTextSafe
             $clipboardClassification = Get-ClipboardPayloadClassification -ClipboardText $clipboardText
+            $clipboardFingerprint = Get-ClipboardPayloadFingerprint -ClipboardText $clipboardText
             Write-Field 'action_type' 'set_clipboard_text'
             Write-Field 'status' 'succeeded'
             Write-Field 'target' 'clipboard'
@@ -1172,6 +1196,7 @@ function Invoke-DesktopAction {
             Write-Field 'clipboard_preview' (Short-Preview -Text $clipboardText)
             Write-Field 'clipboard_classification' $clipboardClassification.Classification
             Write-Field 'clipboard_guard_reason' $clipboardClassification.Reason
+            Write-Field 'clipboard_fingerprint' $clipboardFingerprint
             return
         }
 
@@ -1187,6 +1212,7 @@ function Invoke-DesktopAction {
             Wait-WithInterrupt -Milliseconds 450 -Phase 'waiting for clipboard copy'
             $clipboardText = Get-ClipboardTextSafe
             $clipboardClassification = Get-ClipboardPayloadClassification -ClipboardText $clipboardText
+            $clipboardFingerprint = Get-ClipboardPayloadFingerprint -ClipboardText $clipboardText
 
             Write-Field 'action_type' 'copy_selection'
             Write-Field 'status' 'succeeded'
@@ -1197,6 +1223,7 @@ function Invoke-DesktopAction {
             Write-Field 'clipboard_preview' (Short-Preview -Text $clipboardText)
             Write-Field 'clipboard_classification' $clipboardClassification.Classification
             Write-Field 'clipboard_guard_reason' $clipboardClassification.Reason
+            Write-Field 'clipboard_fingerprint' $clipboardFingerprint
             return
         }
 
@@ -1209,6 +1236,7 @@ function Invoke-DesktopAction {
             $clipboardText = Get-ClipboardTextSafe
             $clipboardPreview = Short-Preview -Text $clipboardText
             $clipboardClassification = Get-ClipboardPayloadClassification -ClipboardText $clipboardText
+            $clipboardFingerprint = Get-ClipboardPayloadFingerprint -ClipboardText $clipboardText
             if ((-not [string]::IsNullOrWhiteSpace($alias) -and $alias -eq 'terminal' -and $clipboardClassification.IsBlocked)) {
                 Stop-BlockedAction `
                     -Reason $clipboardClassification.Reason `
@@ -1236,6 +1264,7 @@ function Invoke-DesktopAction {
             Write-Field 'clipboard_preview' $clipboardPreview
             Write-Field 'clipboard_classification' $clipboardClassification.Classification
             Write-Field 'clipboard_guard_reason' $clipboardClassification.Reason
+            Write-Field 'clipboard_fingerprint' $clipboardFingerprint
             return
         }
 
@@ -1244,6 +1273,7 @@ function Invoke-DesktopAction {
             if ($spec.Hotkey -eq 'ctrl+v') {
                 $clipboardText = Get-ClipboardTextSafe
                 $clipboardClassification = Get-ClipboardPayloadClassification -ClipboardText $clipboardText
+                $clipboardFingerprint = Get-ClipboardPayloadFingerprint -ClipboardText $clipboardText
                 if (
                     ((-not [string]::IsNullOrWhiteSpace($spec.Alias) -and $spec.Alias -eq 'terminal') -or [string]::IsNullOrWhiteSpace($spec.Alias)) -and
                     $clipboardClassification.IsBlocked
@@ -1268,8 +1298,10 @@ function Invoke-DesktopAction {
             Write-Field 'sent_hotkey' $spec.Hotkey
             if ($spec.Hotkey -eq 'ctrl+v') {
                 $clipboardClassification = Get-ClipboardPayloadClassification -ClipboardText (Get-ClipboardTextSafe)
+                $clipboardFingerprint = Get-ClipboardPayloadFingerprint -ClipboardText (Get-ClipboardTextSafe)
                 Write-Field 'clipboard_classification' $clipboardClassification.Classification
                 Write-Field 'clipboard_guard_reason' $clipboardClassification.Reason
+                Write-Field 'clipboard_fingerprint' $clipboardFingerprint
             }
             return
         }

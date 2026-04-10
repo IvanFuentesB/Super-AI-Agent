@@ -888,11 +888,17 @@ function renderTaskDetail(payload) {
     setText("task-detail-recipe-source-window", summary.recipeSourceWindow || "none");
     setText("task-detail-recipe-target-window", summary.recipeTargetWindow || "none");
     setText("task-detail-recipe-clipboard-mode", summary.recipeClipboardMode || "none");
+    setText("task-detail-recipe-fallback-denied", summary.handoffFallbackDenied || "none");
+    setText("task-detail-recipe-target-resolution", summary.handoffTargetResolutionStatus || "none");
     setText("task-detail-recipe-payload-classification", summary.handoffPayloadClassification || "none");
     setText("task-detail-recipe-payload-preview", summary.handoffPayloadPreview || "none");
     setText("task-detail-recipe-paste-allowed", summary.handoffPasteAllowed || "none");
     setText("task-detail-recipe-send-behavior", summary.handoffSendBehavior || "none");
     setText("task-detail-recipe-send-allowed", summary.handoffSendAllowed || "none");
+    setText("task-detail-recipe-source-match", summary.handoffSourceMatch || "none");
+    setText("task-detail-recipe-target-match", summary.handoffTargetMatch || "none");
+    setText("task-detail-recipe-blocked-payload-repeats", String(summary.handoffBlockedPayloadRepeats ?? 0));
+    setText("task-detail-recipe-stop-reason", summary.handoffStopReason || "none");
     renderRecipeStepHistory(recipeSteps);
     renderRecipeRunHistory(summary.recipeRunHistory || []);
   } else {
@@ -904,11 +910,17 @@ function renderTaskDetail(payload) {
     setText("task-detail-recipe-source-window", "-");
     setText("task-detail-recipe-target-window", "-");
     setText("task-detail-recipe-clipboard-mode", "-");
+    setText("task-detail-recipe-fallback-denied", "-");
+    setText("task-detail-recipe-target-resolution", "-");
     setText("task-detail-recipe-payload-classification", "-");
     setText("task-detail-recipe-payload-preview", "-");
     setText("task-detail-recipe-paste-allowed", "-");
     setText("task-detail-recipe-send-behavior", "-");
     setText("task-detail-recipe-send-allowed", "-");
+    setText("task-detail-recipe-source-match", "-");
+    setText("task-detail-recipe-target-match", "-");
+    setText("task-detail-recipe-blocked-payload-repeats", "-");
+    setText("task-detail-recipe-stop-reason", "-");
     renderRecipeStepHistory([]);
     renderRecipeRunHistory([]);
   }

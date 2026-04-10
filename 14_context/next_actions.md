@@ -1,9 +1,13 @@
 # Next Actions
 
-- Manually test `codex_to_chatgpt_handoff_mvp` with real Codex and ChatGPT windows, not only terminal-safe checker targets
+- Manually re-test `codex_to_chatgpt_handoff_mvp` with real Codex and ChatGPT windows now that terminal fallback is blocked
+- Tighten Codex and ChatGPT target resolution so the handoff recipe can find the right windows more deterministically without unsafe fallback guessing
+- Add a small operator-confirmed handoff review step later only if it improves safety without reintroducing terminal or shell fallback
+- Keep repeated identical blocked handoff payloads from being re-run beyond the current two-attempt ceiling
 - Tighten target-window naming and matching so the handoff recipe can find the right Codex and ChatGPT windows deterministically without opening duplicate windows
 - Keep paste-only as the default and only add an operator-reviewed send step if real target matching becomes reliable
 - Improve operator-facing task-history filtering and recent views instead of adding any deletion path
+- Keep no-task-deletion as an explicit policy and use filter/archive/history instead
 - Keep the recipe library narrow, composable, approval-aware, and ready for later provider swapping
 - Keep the operator stack separate from the brain/provider layer so future ChatGPT, Claude, Gemini, or Gemma routing does not force a core rewrite
 - Test the safe repo executor manually from the operator console, including read, artifact, checker, and failure visibility paths

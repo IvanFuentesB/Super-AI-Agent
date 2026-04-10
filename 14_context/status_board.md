@@ -45,13 +45,15 @@
 - Codex for execution and Git workflow
 
 ## Current Branch
-- feat/codex-chatgpt-handoff-mvp
+- fix/codex-handoff-no-terminal-fallback
 
 ## Current Phase
-- First serious supervised Codex-to-ChatGPT handoff workflow MVP complete
+- Handoff hardening complete: terminal fallback blocked and repeated junk payload retries capped safely
 
 ## Next Milestones
-- manually test the Codex-to-ChatGPT handoff MVP with real Codex and ChatGPT windows
+- manually test the Codex-to-ChatGPT handoff MVP with real Codex and ChatGPT windows now that terminal fallback is blocked
+- tighten real Codex and ChatGPT target matching so manual target resolution is needed less often
+- keep repeated junk payload retry handling capped at two attempts and visible to the operator
 - tighten real Codex and ChatGPT target matching so the handoff recipe is less title-brittle
 - improve operator-facing task-history filtering so stale failures stay visible without crowding current work
 - test the safe repo executor manually from the operator console
@@ -87,7 +89,9 @@
 - some focus-sensitive desktop actions still depend on what the active Windows session allows, so manual-focus-required remains the honest fallback in some checker sessions
 - desktop screenshot capture can still be unavailable in some Windows sessions, so manual capture remains the honest fallback there
 - no task deletion flow exists, and old task noise should be handled through filtering, recent views, or archive-style visibility instead
+- Codex-to-ChatGPT handoff is not allowed to fall back to terminal or PowerShell targets
+- if the same action or payload fails twice, Ghoti should stop retrying it and clearly report the problem
 - the operator stack should stay separable from the provider brain so future model changes do not require a rewrite
 
 ## Last Reviewed
-- 2026-04-09
+- 2026-04-10

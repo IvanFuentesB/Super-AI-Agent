@@ -1562,19 +1562,31 @@ if (-not [string]::IsNullOrWhiteSpace($handoffSeedTaskId)) {
     if (-not $handoffSeedExecuteOk) { $failed++ }
 }
 
-$handoffRecipeQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+$handoffInvalidQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
     'queue-executor-action',
     '--action-type', 'run_operator_recipe',
     '--target', 'codex_to_chatgpt_handoff_mvp',
     '--content', '{"sourceWindow":"terminal","targetWindow":"terminal","usePreparedClipboard":true,"waitSeconds":1}'
 )
+$handoffInvalidQueueOk = $handoffInvalidQueue.ExitCode -ne 0 -and `
+    (($handoffInvalidQueue.Output | Out-String) -match 'must not use terminal or shell targets')
+Write-Check -Name 'Codex to ChatGPT handoff rejects terminal fallback targets' -Passed $handoffInvalidQueueOk -Detail (($handoffInvalidQueue.Output | Out-String).Trim())
+if (-not $handoffInvalidQueueOk) { $failed++ }
+
+$handoffRecipeQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'run_operator_recipe',
+    '--target', 'codex_to_chatgpt_handoff_mvp',
+    '--content', '{"sourceWindow":"codex","targetWindow":"chatgpt","usePreparedClipboard":true,"waitSeconds":1}'
+)
 $handoffRecipeQueueOk = $handoffRecipeQueue.ExitCode -eq 0 -and `
     (($handoffRecipeQueue.Output | Out-String) -match 'status:\s+pending_approval') -and `
     (($handoffRecipeQueue.Output | Out-String) -match 'recipe_name:\s+codex_to_chatgpt_handoff_mvp') -and `
-    (($handoffRecipeQueue.Output | Out-String) -match 'recipe_source_window:\s+terminal') -and `
-    (($handoffRecipeQueue.Output | Out-String) -match 'recipe_target_window:\s+terminal') -and `
-    (($handoffRecipeQueue.Output | Out-String) -match 'handoff_send_behavior:\s+paste_only')
-Write-Check -Name 'Codex to ChatGPT handoff recipe queues with explicit targets' -Passed $handoffRecipeQueueOk -Detail (($handoffRecipeQueue.Output | Out-String).Trim())
+    (($handoffRecipeQueue.Output | Out-String) -match 'recipe_source_window:\s+codex') -and `
+    (($handoffRecipeQueue.Output | Out-String) -match 'recipe_target_window:\s+chatgpt') -and `
+    (($handoffRecipeQueue.Output | Out-String) -match 'handoff_send_behavior:\s+paste_only') -and `
+    (($handoffRecipeQueue.Output | Out-String) -match 'handoff_fallback_denied:\s+terminal_shell_fallback_blocked')
+Write-Check -Name 'Codex to ChatGPT handoff queues with strict safe targets' -Passed $handoffRecipeQueueOk -Detail (($handoffRecipeQueue.Output | Out-String).Trim())
 if (-not $handoffRecipeQueueOk) { $failed++ }
 
 $handoffRecipeTaskMatch = [regex]::Match(($handoffRecipeQueue.Output | Out-String), 'task_id:\s*(\S+)')
@@ -1590,8 +1602,10 @@ if ($handoffRecipeIdsOk) {
     $handoffRecipeStatusBeforeOk = $handoffRecipeStatusBefore.ExitCode -eq 0 -and `
         (($handoffRecipeStatusBefore.Output | Out-String) -match 'recipe_clipboard_mode:\s+prepared_clipboard') -and `
         (($handoffRecipeStatusBefore.Output | Out-String) -match 'handoff_send_behavior:\s+paste_only') -and `
-        (($handoffRecipeStatusBefore.Output | Out-String) -notmatch 'action=send_hotkey')
-    Write-Check -Name 'Codex to ChatGPT handoff defaults to paste-only' -Passed $handoffRecipeStatusBeforeOk -Detail (($handoffRecipeStatusBefore.Output | Out-String).Trim())
+        (($handoffRecipeStatusBefore.Output | Out-String) -match 'handoff_fallback_denied:\s+terminal_shell_fallback_blocked') -and `
+        (($handoffRecipeStatusBefore.Output | Out-String) -notmatch 'action=send_hotkey') -and `
+        (($handoffRecipeStatusBefore.Output | Out-String) -notmatch 'target=terminal')
+    Write-Check -Name 'Codex to ChatGPT handoff defaults to paste-only with no terminal step' -Passed $handoffRecipeStatusBeforeOk -Detail (($handoffRecipeStatusBefore.Output | Out-String).Trim())
     if (-not $handoffRecipeStatusBeforeOk) { $failed++ }
 }
 
@@ -1605,19 +1619,38 @@ if (-not [string]::IsNullOrWhiteSpace($handoffRecipeApprovalId)) {
 
 if (-not [string]::IsNullOrWhiteSpace($handoffRecipeTaskId)) {
     $handoffRecipeExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $handoffRecipeTaskId)
-    $handoffRecipeExecuteOk = $handoffRecipeExecute.ExitCode -eq 0 -and `
-        (($handoffRecipeExecute.Output | Out-String) -match 'status:\s+completed') -and `
-        (($handoffRecipeExecute.Output | Out-String) -match 'execution_status:\s+succeeded')
-    Write-Check -Name 'Codex to ChatGPT handoff executes with safe payload' -Passed $handoffRecipeExecuteOk -Detail (($handoffRecipeExecute.Output | Out-String).Trim())
+    $handoffRecipeExecuteText = ($handoffRecipeExecute.Output | Out-String)
+    $handoffRecipeExecuteOk = $handoffRecipeExecute.ExitCode -eq 0 -and (
+        (
+            ($handoffRecipeExecuteText -match 'status:\s+completed') -and
+            ($handoffRecipeExecuteText -match 'execution_status:\s+succeeded')
+        ) -or (
+            ($handoffRecipeExecuteText -match 'status:\s+blocked_human_needed') -and
+            ($handoffRecipeExecuteText -match 'execution_status:\s+failed')
+        )
+    )
+    Write-Check -Name 'Codex to ChatGPT handoff safe path either completes or blocks for manual target resolution' -Passed $handoffRecipeExecuteOk -Detail $handoffRecipeExecuteText.Trim()
     if (-not $handoffRecipeExecuteOk) { $failed++ }
 
     $handoffRecipeStatus = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $handoffRecipeTaskId)
-    $handoffRecipeStatusOk = $handoffRecipeStatus.ExitCode -eq 0 -and `
-        (($handoffRecipeStatus.Output | Out-String) -match 'recipe_status:\s+succeeded') -and `
-        (($handoffRecipeStatus.Output | Out-String) -match 'handoff_payload_classification:\s+valid_handoff_text') -and `
-        (($handoffRecipeStatus.Output | Out-String) -match 'handoff_paste_allowed:\s+yes') -and `
-        (($handoffRecipeStatus.Output | Out-String) -match 'handoff_send_allowed:\s+blocked_by_default')
-    Write-Check -Name 'Codex to ChatGPT handoff result persists with payload classification' -Passed $handoffRecipeStatusOk -Detail (($handoffRecipeStatus.Output | Out-String).Trim())
+    $handoffRecipeStatusText = ($handoffRecipeStatus.Output | Out-String)
+    $handoffRecipeStatusCompleted = $handoffRecipeStatus.ExitCode -eq 0 -and `
+        ($handoffRecipeStatusText -match 'recipe_status:\s+succeeded') -and `
+        ($handoffRecipeStatusText -match 'handoff_payload_classification:\s+valid_handoff_text') -and `
+        ($handoffRecipeStatusText -match 'handoff_paste_allowed:\s+yes') -and `
+        ($handoffRecipeStatusText -match 'handoff_send_allowed:\s+blocked_by_default') -and `
+        ($handoffRecipeStatusText -match 'handoff_target_match:\s+(?!not_resolved).+') -and `
+        ($handoffRecipeStatusText -notmatch 'target=terminal')
+    $handoffRecipeStatusBlocked = $handoffRecipeStatus.ExitCode -eq 0 -and `
+        ($handoffRecipeStatusText -match 'recipe_status:\s+blocked') -and `
+        ($handoffRecipeStatusText -match 'handoff_payload_classification:\s+valid_handoff_text') -and `
+        ($handoffRecipeStatusText -match 'handoff_paste_allowed:\s+no') -and `
+        ($handoffRecipeStatusText -match 'handoff_target_resolution_status:\s+manual_target_resolution_required') -and `
+        ($handoffRecipeStatusText -match 'handoff_manual_target_resolution:\s+required') -and `
+        ($handoffRecipeStatusText -match 'handoff_fallback_denied:\s+yes') -and `
+        ($handoffRecipeStatusText -notmatch 'target=terminal')
+    $handoffRecipeStatusOk = $handoffRecipeStatusCompleted -or $handoffRecipeStatusBlocked
+    Write-Check -Name 'Codex to ChatGPT handoff keeps safe target metadata and denies terminal fallback' -Passed $handoffRecipeStatusOk -Detail $handoffRecipeStatusText.Trim()
     if (-not $handoffRecipeStatusOk) { $failed++ }
 }
 
@@ -1625,11 +1658,13 @@ $explicitSendQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
     'queue-executor-action',
     '--action-type', 'run_operator_recipe',
     '--target', 'codex_to_chatgpt_handoff_mvp',
-    '--content', '{"sourceWindow":"terminal","targetWindow":"terminal","usePreparedClipboard":true,"allowSend":true,"waitSeconds":0}'
+    '--content', '{"sourceWindow":"codex","targetWindow":"chatgpt","usePreparedClipboard":true,"allowSend":true,"waitSeconds":0}'
 )
 $explicitSendQueueOk = $explicitSendQueue.ExitCode -eq 0 -and `
     (($explicitSendQueue.Output | Out-String) -match 'status:\s+pending_approval') -and `
-    (($explicitSendQueue.Output | Out-String) -match 'handoff_send_behavior:\s+explicit_enter_after_paste')
+    (($explicitSendQueue.Output | Out-String) -match 'handoff_send_behavior:\s+explicit_enter_after_paste') -and `
+    (($explicitSendQueue.Output | Out-String) -match 'recipe_target_window:\s+chatgpt') -and `
+    (($explicitSendQueue.Output | Out-String) -notmatch 'recipe_target_window:\s+terminal')
 Write-Check -Name 'Codex to ChatGPT handoff can expose Enter only when explicitly allowed' -Passed $explicitSendQueueOk -Detail (($explicitSendQueue.Output | Out-String).Trim())
 if (-not $explicitSendQueueOk) { $failed++ }
 
@@ -1639,8 +1674,9 @@ if (-not [string]::IsNullOrWhiteSpace($explicitSendTaskId)) {
     $explicitSendStatus = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $explicitSendTaskId)
     $explicitSendStatusOk = $explicitSendStatus.ExitCode -eq 0 -and `
         (($explicitSendStatus.Output | Out-String) -match 'handoff_send_behavior:\s+explicit_enter_after_paste') -and `
-        (($explicitSendStatus.Output | Out-String) -match 'action=send_hotkey')
-    Write-Check -Name 'Explicit send handoff adds Enter step only when requested' -Passed $explicitSendStatusOk -Detail (($explicitSendStatus.Output | Out-String).Trim())
+        (($explicitSendStatus.Output | Out-String) -match 'action=send_hotkey') -and `
+        (($explicitSendStatus.Output | Out-String) -match 'target=chatgpt\|enter')
+    Write-Check -Name 'Explicit send handoff adds Enter step only when requested for ChatGPT' -Passed $explicitSendStatusOk -Detail (($explicitSendStatus.Output | Out-String).Trim())
     if (-not $explicitSendStatusOk) { $failed++ }
 }
 
@@ -1677,10 +1713,12 @@ $handoffBlockedQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @
     'queue-executor-action',
     '--action-type', 'run_operator_recipe',
     '--target', 'codex_to_chatgpt_handoff_mvp',
-    '--content', '{"sourceWindow":"terminal","targetWindow":"terminal","usePreparedClipboard":true,"waitSeconds":0}'
+    '--content', '{"sourceWindow":"codex","targetWindow":"chatgpt","usePreparedClipboard":true,"waitSeconds":0}'
 )
 $handoffBlockedQueueOk = $handoffBlockedQueue.ExitCode -eq 0 -and `
-    (($handoffBlockedQueue.Output | Out-String) -match 'status:\s+pending_approval')
+    (($handoffBlockedQueue.Output | Out-String) -match 'status:\s+pending_approval') -and `
+    (($handoffBlockedQueue.Output | Out-String) -match 'recipe_source_window:\s+codex') -and `
+    (($handoffBlockedQueue.Output | Out-String) -match 'recipe_target_window:\s+chatgpt')
 Write-Check -Name 'Codex to ChatGPT handoff blocked-payload recipe queues' -Passed $handoffBlockedQueueOk -Detail (($handoffBlockedQueue.Output | Out-String).Trim())
 if (-not $handoffBlockedQueueOk) { $failed++ }
 
@@ -1700,7 +1738,8 @@ if (-not [string]::IsNullOrWhiteSpace($handoffBlockedTaskId)) {
     $handoffBlockedExecuteOk = $handoffBlockedExecute.ExitCode -eq 0 -and `
         (($handoffBlockedExecute.Output | Out-String) -match 'status:\s+blocked_human_needed') -and `
         (($handoffBlockedExecute.Output | Out-String) -match 'execution_status:\s+failed') -and `
-        (($handoffBlockedExecute.Output | Out-String) -match '(Handoff payload blocked before paste|checker or recipe label|payload was blocked)')
+        (($handoffBlockedExecute.Output | Out-String) -match '(Handoff payload blocked before paste|checker or recipe label|payload was blocked)') -and `
+        (($handoffBlockedExecute.Output | Out-String) -notmatch 'target=terminal')
     Write-Check -Name 'Codex to ChatGPT handoff blocks junk payload before paste' -Passed $handoffBlockedExecuteOk -Detail (($handoffBlockedExecute.Output | Out-String).Trim())
     if (-not $handoffBlockedExecuteOk) { $failed++ }
 
@@ -1708,9 +1747,42 @@ if (-not [string]::IsNullOrWhiteSpace($handoffBlockedTaskId)) {
     $handoffBlockedStatusOk = $handoffBlockedStatus.ExitCode -eq 0 -and `
         (($handoffBlockedStatus.Output | Out-String) -match 'recipe_status:\s+blocked') -and `
         (($handoffBlockedStatus.Output | Out-String) -match 'handoff_payload_classification:\s+(junk_label_payload|repeated_ui_label_garbage)') -and `
-        (($handoffBlockedStatus.Output | Out-String) -match 'handoff_paste_allowed:\s+no')
+        (($handoffBlockedStatus.Output | Out-String) -match 'handoff_paste_allowed:\s+no') -and `
+        (($handoffBlockedStatus.Output | Out-String) -match 'handoff_blocked_payload_repeats:\s+1')
     Write-Check -Name 'Codex to ChatGPT blocked payload classification persists' -Passed $handoffBlockedStatusOk -Detail (($handoffBlockedStatus.Output | Out-String).Trim())
     if (-not $handoffBlockedStatusOk) { $failed++ }
+
+    $handoffBlockedNoRetryLoopOk = $handoffBlockedStatus.ExitCode -eq 0 -and `
+        (($handoffBlockedStatus.Output | Out-String) -match 'action=get_clipboard_text') -and `
+        (($handoffBlockedStatus.Output | Out-String) -match 'attempts=1 \| max_attempts=2')
+    Write-Check -Name 'Blocked junk handoff payload stops immediately instead of retrying the same paste path' -Passed $handoffBlockedNoRetryLoopOk -Detail (($handoffBlockedStatus.Output | Out-String).Trim())
+    if (-not $handoffBlockedNoRetryLoopOk) { $failed++ }
+
+    $handoffBlockedReview = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('review-task', '--task-id', $handoffBlockedTaskId, '--note', 'runtime checker reviewed repeated blocked payload')
+    $handoffBlockedReviewOk = $handoffBlockedReview.ExitCode -eq 0 -and `
+        (($handoffBlockedReview.Output | Out-String) -match 'status:\s+ready_to_resume')
+    Write-Check -Name 'Blocked handoff task can be reviewed for manual re-queue' -Passed $handoffBlockedReviewOk -Detail (($handoffBlockedReview.Output | Out-String).Trim())
+    if (-not $handoffBlockedReviewOk) { $failed++ }
+
+    $handoffBlockedRequeue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('requeue-task', '--task-id', $handoffBlockedTaskId, '--note', 'runtime checker re-queued repeated blocked payload')
+    $handoffBlockedRequeueOk = $handoffBlockedRequeue.ExitCode -eq 0 -and `
+        (($handoffBlockedRequeue.Output | Out-String) -match 'status:\s+queued')
+    Write-Check -Name 'Blocked handoff task re-queues only after explicit operator action' -Passed $handoffBlockedRequeueOk -Detail (($handoffBlockedRequeue.Output | Out-String).Trim())
+    if (-not $handoffBlockedRequeueOk) { $failed++ }
+
+    $handoffBlockedExecuteAgain = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $handoffBlockedTaskId)
+    $handoffBlockedExecuteAgainOk = $handoffBlockedExecuteAgain.ExitCode -eq 0 -and `
+        (($handoffBlockedExecuteAgain.Output | Out-String) -match 'status:\s+blocked_human_needed') -and `
+        (($handoffBlockedExecuteAgain.Output | Out-String) -match 'execution_status:\s+failed')
+    Write-Check -Name 'Repeated identical junk handoff payload blocks again without looping' -Passed $handoffBlockedExecuteAgainOk -Detail (($handoffBlockedExecuteAgain.Output | Out-String).Trim())
+    if (-not $handoffBlockedExecuteAgainOk) { $failed++ }
+
+    $handoffBlockedStatusAgain = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $handoffBlockedTaskId)
+    $handoffBlockedStatusAgainOk = $handoffBlockedStatusAgain.ExitCode -eq 0 -and `
+        (($handoffBlockedStatusAgain.Output | Out-String) -match 'handoff_blocked_payload_repeats:\s+2') -and `
+        (($handoffBlockedStatusAgain.Output | Out-String) -match 'Repeated identical blocked handoff payload detected again')
+    Write-Check -Name 'Repeated identical junk handoff payload is counted and reported clearly' -Passed $handoffBlockedStatusAgainOk -Detail (($handoffBlockedStatusAgain.Output | Out-String).Trim())
+    if (-not $handoffBlockedStatusAgainOk) { $failed++ }
 }
 
 $recipeInterruptQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
