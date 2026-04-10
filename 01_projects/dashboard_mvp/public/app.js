@@ -6,6 +6,7 @@ const uiState = {
   selectedApprovalId: "",
   selectedTaskId: "",
   executorTasksPayload: null,
+  handoffTargetsPayload: null,
 };
 
 const desktopActionTypes = new Set([
@@ -78,6 +79,21 @@ function setValue(id, value) {
   }
 }
 
+function setSelectOptions(id, options, preferredValue = "") {
+  const element = document.getElementById(id);
+  if (!element) {
+    return;
+  }
+
+  const currentValue = preferredValue || String(element.value || "");
+  element.innerHTML = options
+    .map((item) => `<option value="${escapeHtml(item.value)}">${escapeHtml(item.label)}</option>`)
+    .join("");
+
+  const hasPreferredValue = options.some((item) => item.value === currentValue);
+  element.value = hasPreferredValue ? currentValue : (options[0]?.value || "");
+}
+
 function getInputValue(id) {
   const element = document.getElementById(id);
   return element ? String(element.value || "").trim() : "";
@@ -124,13 +140,62 @@ function buildRecipeQueuePayload(recipeName, options = {}) {
 }
 
 function buildCodexChatGptHandoffOptions() {
-  return {
+  const options = {
     sourceWindow: getInputValue("handoff-source-window") || "codex",
     targetWindow: getInputValue("handoff-target-window") || "chatgpt",
     waitSeconds: Number.parseInt(getInputValue("handoff-wait-seconds") || "1", 10) || 1,
     usePreparedClipboard: isChecked("handoff-use-prepared-clipboard"),
     allowSend: isChecked("handoff-allow-send"),
   };
+  const sourceCandidateId = getInputValue("handoff-source-candidate");
+  const targetCandidateId = getInputValue("handoff-target-candidate");
+  if (sourceCandidateId) {
+    options.sourceWindowCandidateId = sourceCandidateId;
+  }
+  if (targetCandidateId) {
+    options.targetWindowCandidateId = targetCandidateId;
+  }
+  return options;
+}
+
+function formatHandoffCandidateLabel(item) {
+  const bits = [item.title || item.candidateId || "Visible window"];
+  if (item.candidateId) {
+    bits.push(item.candidateId);
+  }
+  if (item.isActive) {
+    bits.push("active");
+  }
+  if (item.isFixture) {
+    bits.push("fixture");
+  }
+  return bits.join(" | ");
+}
+
+function renderHandoffTargetCandidates(payload) {
+  uiState.handoffTargetsPayload = payload;
+  const summary = payload?.summary || {};
+  const codexCandidates = Array.isArray(summary.codexCandidates) ? summary.codexCandidates : [];
+  const chatgptCandidates = Array.isArray(summary.chatgptCandidates) ? summary.chatgptCandidates : [];
+  const sourceOptions = [{ value: "", label: "Auto match" }].concat(
+    codexCandidates.map((item) => ({
+      value: item.candidateId || "",
+      label: formatHandoffCandidateLabel(item),
+    })),
+  );
+  const targetOptions = [{ value: "", label: "Auto match" }].concat(
+    chatgptCandidates.map((item) => ({
+      value: item.candidateId || "",
+      label: formatHandoffCandidateLabel(item),
+    })),
+  );
+
+  setSelectOptions("handoff-source-candidate", sourceOptions);
+  setSelectOptions("handoff-target-candidate", targetOptions);
+  setText(
+    "handoff-target-summary",
+    summary.headline || "Visible Codex and ChatGPT window candidates are ready for manual selection.",
+  );
 }
 
 function renderRaw(id, payload) {
@@ -651,9 +716,12 @@ function renderRecipeStepHistory(items) {
       const state = normalizeState(item.status);
       const detailBits = [
         item.summary && item.summary !== "none" ? item.summary : "No step summary recorded.",
+        item.bridgeTarget && item.bridgeTarget !== "none" ? `Bridge target: ${item.bridgeTarget}` : "",
         item.clipboardPreview && item.clipboardPreview !== "none" ? `Clipboard: ${item.clipboardPreview}` : "",
         item.clipboardClassification && item.clipboardClassification !== "none" ? `Classification: ${item.clipboardClassification}` : "",
         item.windowAlias && item.windowAlias !== "none" ? `Window: ${item.windowAlias}` : "",
+        item.windowCandidateId && item.windowCandidateId !== "none" ? `Candidate: ${item.windowCandidateId}` : "",
+        item.windowResolutionMode && item.windowResolutionMode !== "none" ? `Resolution: ${item.windowResolutionMode}` : "",
         item.coordinates && item.coordinates !== "none" ? `Coordinates: ${item.coordinates}` : "",
         item.attempts ? `Attempts: ${item.attempts}/${item.maxAttempts || item.attempts}` : "",
         item.required ? `Required: ${item.required}` : "",
@@ -887,6 +955,10 @@ function renderTaskDetail(payload) {
     setText("task-detail-recipe-last-run", lastRunWindow || "No recipe run recorded yet.");
     setText("task-detail-recipe-source-window", summary.recipeSourceWindow || "none");
     setText("task-detail-recipe-target-window", summary.recipeTargetWindow || "none");
+    setText("task-detail-recipe-source-selection-mode", summary.handoffSourceSelectionMode || "none");
+    setText("task-detail-recipe-target-selection-mode", summary.handoffTargetSelectionMode || "none");
+    setText("task-detail-recipe-source-candidate", summary.recipeSourceWindowCandidateId || "none");
+    setText("task-detail-recipe-target-candidate", summary.recipeTargetWindowCandidateId || "none");
     setText("task-detail-recipe-clipboard-mode", summary.recipeClipboardMode || "none");
     setText("task-detail-recipe-fallback-denied", summary.handoffFallbackDenied || "none");
     setText("task-detail-recipe-target-resolution", summary.handoffTargetResolutionStatus || "none");
@@ -909,6 +981,10 @@ function renderTaskDetail(payload) {
     setText("task-detail-recipe-last-run", "-");
     setText("task-detail-recipe-source-window", "-");
     setText("task-detail-recipe-target-window", "-");
+    setText("task-detail-recipe-source-selection-mode", "-");
+    setText("task-detail-recipe-target-selection-mode", "-");
+    setText("task-detail-recipe-source-candidate", "-");
+    setText("task-detail-recipe-target-candidate", "-");
     setText("task-detail-recipe-clipboard-mode", "-");
     setText("task-detail-recipe-fallback-denied", "-");
     setText("task-detail-recipe-target-resolution", "-");
@@ -1781,6 +1857,11 @@ async function refreshDesktopBridgeStatus() {
   renderDesktopBridge(payload);
 }
 
+async function refreshHandoffTargetCandidates() {
+  const payload = await requestJson("/api/desktop-bridge/handoff-targets");
+  renderHandoffTargetCandidates(payload);
+}
+
 async function refreshConsole() {
   await Promise.all([
     refreshOperatorStatus(),
@@ -1791,6 +1872,7 @@ async function refreshConsole() {
     refreshExecutorTasks(),
     refreshArtifacts(),
     refreshDesktopBridgeStatus(),
+    refreshHandoffTargetCandidates(),
     refreshRecentActions(),
   ]);
 }
@@ -2367,6 +2449,19 @@ document.getElementById("queue-recipe-codex-handoff").addEventListener("click", 
     buildRecipeQueuePayload("codex_to_chatgpt_handoff_mvp", buildCodexChatGptHandoffOptions()),
     "Queue Codex to ChatGPT handoff recipe",
     event.currentTarget,
+    { panelId: "recipe-action-summary" },
+  );
+});
+
+document.getElementById("refresh-handoff-targets").addEventListener("click", async (event) => {
+  await runRefresh(
+    event.currentTarget,
+    "Refresh handoff target candidates",
+    "Refreshing visible Codex and ChatGPT targets...",
+    () => refreshHandoffTargetCandidates(),
+    (error) => {
+      setText("handoff-target-summary", error.message);
+    },
     { panelId: "recipe-action-summary" },
   );
 });

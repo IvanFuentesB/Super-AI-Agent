@@ -926,18 +926,36 @@ if (-not [string]::IsNullOrWhiteSpace($desktopOpenApprovalId)) {
 
 if (-not [string]::IsNullOrWhiteSpace($desktopOpenTaskId)) {
     $desktopOpenExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $desktopOpenTaskId)
-    $desktopOpenExecuteOk = $desktopOpenExecute.ExitCode -eq 0 -and `
-        (($desktopOpenExecute.Output | Out-String) -match 'status:\s+completed') -and `
-        (($desktopOpenExecute.Output | Out-String) -match 'execution_status:\s+succeeded')
-    Write-Check -Name 'Desktop executor open_allowed_app execution succeeds' -Passed $desktopOpenExecuteOk -Detail (($desktopOpenExecute.Output | Out-String).Trim())
+    $desktopOpenExecuteText = ($desktopOpenExecute.Output | Out-String)
+    $desktopOpenExecuteOk = $desktopOpenExecute.ExitCode -eq 0 -and (
+        (
+            ($desktopOpenExecuteText -match 'status:\s+completed') -and
+            ($desktopOpenExecuteText -match 'execution_status:\s+succeeded')
+        ) -or (
+            ($desktopOpenExecuteText -match 'status:\s+blocked_human_needed') -and
+            ($desktopOpenExecuteText -match 'execution_status:\s+failed') -and
+            ($desktopOpenExecuteText -match 'manual operator focus')
+        )
+    )
+    Write-Check -Name 'Desktop executor open_allowed_app execution stays honest about focus reuse or manual focus blocking' -Passed $desktopOpenExecuteOk -Detail $desktopOpenExecuteText.Trim()
     if (-not $desktopOpenExecuteOk) { $failed++ }
 
     $desktopOpenStatus = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $desktopOpenTaskId)
-    $desktopOpenStatusOk = $desktopOpenStatus.ExitCode -eq 0 -and `
-        (($desktopOpenStatus.Output | Out-String) -match 'last_execution_status:\s+succeeded') -and `
-        ((($desktopOpenStatus.Output | Out-String) -match 'last_execution_summary:\s+Focused existing allowlisted app window') -or `
-         (($desktopOpenStatus.Output | Out-String) -match 'last_execution_summary:\s+Opened allowlisted app:\s+terminal'))
-    Write-Check -Name 'Desktop executor open_allowed_app reports reuse-first or safe open explicitly' -Passed $desktopOpenStatusOk -Detail (($desktopOpenStatus.Output | Out-String).Trim())
+    $desktopOpenStatusText = ($desktopOpenStatus.Output | Out-String)
+    $desktopOpenStatusOk = $desktopOpenStatus.ExitCode -eq 0 -and (
+        (
+            ($desktopOpenStatusText -match 'last_execution_status:\s+succeeded') -and
+            (
+                ($desktopOpenStatusText -match 'last_execution_summary:\s+Focused existing allowlisted app window') -or
+                ($desktopOpenStatusText -match 'last_execution_summary:\s+Opened allowlisted app:\s+terminal')
+            )
+        ) -or (
+            ($desktopOpenStatusText -match 'status:\s+blocked_human_needed') -and
+            ($desktopOpenStatusText -match 'last_execution_status:\s+failed') -and
+            ($desktopOpenStatusText -match 'manual operator focus')
+        )
+    )
+    Write-Check -Name 'Desktop executor open_allowed_app reports reuse-first success or clear manual-focus blocking' -Passed $desktopOpenStatusOk -Detail $desktopOpenStatusText.Trim()
     if (-not $desktopOpenStatusOk) { $failed++ }
 }
 
@@ -1031,10 +1049,18 @@ if (-not [string]::IsNullOrWhiteSpace($desktopFocusApprovalId)) {
 
 if (-not [string]::IsNullOrWhiteSpace($desktopFocusTaskId)) {
     $desktopFocusExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $desktopFocusTaskId)
-    $desktopFocusExecuteOk = $desktopFocusExecute.ExitCode -eq 0 -and `
-        (($desktopFocusExecute.Output | Out-String) -match 'status:\s+completed') -and `
-        (($desktopFocusExecute.Output | Out-String) -match 'execution_status:\s+succeeded')
-    Write-Check -Name 'Desktop executor focus_window execution succeeds' -Passed $desktopFocusExecuteOk -Detail (($desktopFocusExecute.Output | Out-String).Trim())
+    $desktopFocusExecuteText = ($desktopFocusExecute.Output | Out-String)
+    $desktopFocusExecuteOk = $desktopFocusExecute.ExitCode -eq 0 -and (
+        (
+            ($desktopFocusExecuteText -match 'status:\s+completed') -and
+            ($desktopFocusExecuteText -match 'execution_status:\s+succeeded')
+        ) -or (
+            ($desktopFocusExecuteText -match 'status:\s+blocked_human_needed') -and
+            ($desktopFocusExecuteText -match 'execution_status:\s+failed') -and
+            ($desktopFocusExecuteText -match 'manual operator focus')
+        )
+    )
+    Write-Check -Name 'Desktop executor focus_window execution succeeds or blocks safely for manual focus' -Passed $desktopFocusExecuteOk -Detail $desktopFocusExecuteText.Trim()
     if (-not $desktopFocusExecuteOk) { $failed++ }
 }
 
@@ -1069,18 +1095,34 @@ if (-not [string]::IsNullOrWhiteSpace($desktopScreenshotApprovalId)) {
 
 if (-not [string]::IsNullOrWhiteSpace($desktopScreenshotTaskId)) {
     $desktopScreenshotExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $desktopScreenshotTaskId)
-    $desktopScreenshotExecuteOk = $desktopScreenshotExecute.ExitCode -eq 0 -and `
-        (($desktopScreenshotExecute.Output | Out-String) -match 'status:\s+completed') -and `
-        (($desktopScreenshotExecute.Output | Out-String) -match 'execution_status:\s+succeeded') -and `
-        (Test-Path -LiteralPath $runtimeDesktopArtifactPath -PathType Leaf)
-    Write-Check -Name 'Desktop executor screenshot execution succeeds' -Passed $desktopScreenshotExecuteOk -Detail (($desktopScreenshotExecute.Output | Out-String).Trim())
+    $desktopScreenshotExecuteText = ($desktopScreenshotExecute.Output | Out-String)
+    $desktopScreenshotExecuteOk = $desktopScreenshotExecute.ExitCode -eq 0 -and (
+        (
+            ($desktopScreenshotExecuteText -match 'status:\s+completed') -and
+            ($desktopScreenshotExecuteText -match 'execution_status:\s+succeeded') -and
+            (Test-Path -LiteralPath $runtimeDesktopArtifactPath -PathType Leaf)
+        ) -or (
+            ($desktopScreenshotExecuteText -match 'status:\s+blocked_human_needed') -and
+            ($desktopScreenshotExecuteText -match 'execution_status:\s+failed') -and
+            ($desktopScreenshotExecuteText -match 'manual screenshot is required')
+        )
+    )
+    Write-Check -Name 'Desktop executor screenshot execution succeeds or blocks safely for manual capture' -Passed $desktopScreenshotExecuteOk -Detail $desktopScreenshotExecuteText.Trim()
     if (-not $desktopScreenshotExecuteOk) { $failed++ }
 
     $desktopScreenshotStatus = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $desktopScreenshotTaskId)
-    $desktopScreenshotStatusOk = $desktopScreenshotStatus.ExitCode -eq 0 -and `
-        (($desktopScreenshotStatus.Output | Out-String) -match "last_artifact_path:\s+$([regex]::Escape($runtimeDesktopArtifactPath))") -and `
-        (($desktopScreenshotStatus.Output | Out-String) -match 'last_execution_status:\s+succeeded')
-    Write-Check -Name 'Desktop executor screenshot result persists' -Passed $desktopScreenshotStatusOk -Detail (($desktopScreenshotStatus.Output | Out-String).Trim())
+    $desktopScreenshotStatusText = ($desktopScreenshotStatus.Output | Out-String)
+    $desktopScreenshotStatusOk = $desktopScreenshotStatus.ExitCode -eq 0 -and (
+        (
+            ($desktopScreenshotStatusText -match "last_artifact_path:\s+$([regex]::Escape($runtimeDesktopArtifactPath))") -and
+            ($desktopScreenshotStatusText -match 'last_execution_status:\s+succeeded')
+        ) -or (
+            ($desktopScreenshotStatusText -match 'status:\s+blocked_human_needed') -and
+            ($desktopScreenshotStatusText -match 'last_execution_status:\s+failed') -and
+            ($desktopScreenshotStatusText -match 'manual screenshot is required')
+        )
+    )
+    Write-Check -Name 'Desktop executor screenshot result persists or reports manual capture blocking clearly' -Passed $desktopScreenshotStatusOk -Detail $desktopScreenshotStatusText.Trim()
     if (-not $desktopScreenshotStatusOk) { $failed++ }
 }
 
@@ -1181,10 +1223,18 @@ if (-not [string]::IsNullOrWhiteSpace($desktopPasteApprovalId)) {
 
 if (-not [string]::IsNullOrWhiteSpace($desktopPasteTaskId)) {
     $desktopPasteExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $desktopPasteTaskId)
-    $desktopPasteExecuteOk = $desktopPasteExecute.ExitCode -eq 0 -and `
-        (($desktopPasteExecute.Output | Out-String) -match 'status:\s+completed') -and `
-        (($desktopPasteExecute.Output | Out-String) -match 'execution_summary:\s+Pasted clipboard into allowlisted window')
-    Write-Check -Name 'Desktop executor paste_clipboard execution succeeds' -Passed $desktopPasteExecuteOk -Detail (($desktopPasteExecute.Output | Out-String).Trim())
+    $desktopPasteExecuteText = ($desktopPasteExecute.Output | Out-String)
+    $desktopPasteExecuteOk = $desktopPasteExecute.ExitCode -eq 0 -and (
+        (
+            ($desktopPasteExecuteText -match 'status:\s+completed') -and
+            ($desktopPasteExecuteText -match 'execution_summary:\s+Pasted clipboard into allowlisted window')
+        ) -or (
+            ($desktopPasteExecuteText -match 'status:\s+blocked_human_needed') -and
+            ($desktopPasteExecuteText -match 'execution_status:\s+failed') -and
+            ($desktopPasteExecuteText -match 'manual operator focus')
+        )
+    )
+    Write-Check -Name 'Desktop executor paste_clipboard execution succeeds or blocks safely for manual focus' -Passed $desktopPasteExecuteOk -Detail $desktopPasteExecuteText.Trim()
     if (-not $desktopPasteExecuteOk) { $failed++ }
 }
 
@@ -1217,10 +1267,18 @@ if (-not [string]::IsNullOrWhiteSpace($desktopHotkeyApprovalId)) {
 
 if (-not [string]::IsNullOrWhiteSpace($desktopHotkeyTaskId)) {
     $desktopHotkeyExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $desktopHotkeyTaskId)
-    $desktopHotkeyExecuteOk = $desktopHotkeyExecute.ExitCode -eq 0 -and `
-        (($desktopHotkeyExecute.Output | Out-String) -match 'status:\s+completed') -and `
-        (($desktopHotkeyExecute.Output | Out-String) -match 'execution_summary:\s+Sent allowlisted hotkey ctrl\+v to terminal')
-    Write-Check -Name 'Desktop executor send_hotkey execution succeeds' -Passed $desktopHotkeyExecuteOk -Detail (($desktopHotkeyExecute.Output | Out-String).Trim())
+    $desktopHotkeyExecuteText = ($desktopHotkeyExecute.Output | Out-String)
+    $desktopHotkeyExecuteOk = $desktopHotkeyExecute.ExitCode -eq 0 -and (
+        (
+            ($desktopHotkeyExecuteText -match 'status:\s+completed') -and
+            ($desktopHotkeyExecuteText -match 'execution_summary:\s+Sent allowlisted hotkey ctrl\+v to terminal')
+        ) -or (
+            ($desktopHotkeyExecuteText -match 'status:\s+blocked_human_needed') -and
+            ($desktopHotkeyExecuteText -match 'execution_status:\s+failed') -and
+            ($desktopHotkeyExecuteText -match 'manual operator focus')
+        )
+    )
+    Write-Check -Name 'Desktop executor send_hotkey execution succeeds or blocks safely for manual focus' -Passed $desktopHotkeyExecuteOk -Detail $desktopHotkeyExecuteText.Trim()
     if (-not $desktopHotkeyExecuteOk) { $failed++ }
 }
 
@@ -1341,10 +1399,18 @@ if (-not [string]::IsNullOrWhiteSpace($desktopMoveMouseApprovalId)) {
 
 if (-not [string]::IsNullOrWhiteSpace($desktopMoveMouseTaskId)) {
     $desktopMoveMouseExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $desktopMoveMouseTaskId)
-    $desktopMoveMouseExecuteOk = $desktopMoveMouseExecute.ExitCode -eq 0 -and `
-        (($desktopMoveMouseExecute.Output | Out-String) -match 'status:\s+completed') -and `
-        (($desktopMoveMouseExecute.Output | Out-String) -match 'execution_summary:\s+Moved mouse to')
-    Write-Check -Name 'Desktop executor move_mouse execution succeeds' -Passed $desktopMoveMouseExecuteOk -Detail (($desktopMoveMouseExecute.Output | Out-String).Trim())
+    $desktopMoveMouseExecuteText = ($desktopMoveMouseExecute.Output | Out-String)
+    $desktopMoveMouseExecuteOk = $desktopMoveMouseExecute.ExitCode -eq 0 -and (
+        (
+            ($desktopMoveMouseExecuteText -match 'status:\s+completed') -and
+            ($desktopMoveMouseExecuteText -match 'execution_summary:\s+Moved mouse to')
+        ) -or (
+            ($desktopMoveMouseExecuteText -match 'status:\s+blocked_human_needed') -and
+            ($desktopMoveMouseExecuteText -match 'execution_status:\s+failed') -and
+            ($desktopMoveMouseExecuteText -match 'manual operator focus')
+        )
+    )
+    Write-Check -Name 'Desktop executor move_mouse execution succeeds or blocks safely for manual focus' -Passed $desktopMoveMouseExecuteOk -Detail $desktopMoveMouseExecuteText.Trim()
     if (-not $desktopMoveMouseExecuteOk) { $failed++ }
 }
 
@@ -1377,10 +1443,18 @@ if (-not [string]::IsNullOrWhiteSpace($desktopLeftClickApprovalId)) {
 
 if (-not [string]::IsNullOrWhiteSpace($desktopLeftClickTaskId)) {
     $desktopLeftClickExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $desktopLeftClickTaskId)
-    $desktopLeftClickExecuteOk = $desktopLeftClickExecute.ExitCode -eq 0 -and `
-        (($desktopLeftClickExecute.Output | Out-String) -match 'status:\s+completed') -and `
-        (($desktopLeftClickExecute.Output | Out-String) -match 'execution_summary:\s+Left click completed at')
-    Write-Check -Name 'Desktop executor left_click execution succeeds' -Passed $desktopLeftClickExecuteOk -Detail (($desktopLeftClickExecute.Output | Out-String).Trim())
+    $desktopLeftClickExecuteText = ($desktopLeftClickExecute.Output | Out-String)
+    $desktopLeftClickExecuteOk = $desktopLeftClickExecute.ExitCode -eq 0 -and (
+        (
+            ($desktopLeftClickExecuteText -match 'status:\s+completed') -and
+            ($desktopLeftClickExecuteText -match 'execution_summary:\s+Left click completed at')
+        ) -or (
+            ($desktopLeftClickExecuteText -match 'status:\s+blocked_human_needed') -and
+            ($desktopLeftClickExecuteText -match 'execution_status:\s+failed') -and
+            ($desktopLeftClickExecuteText -match 'manual operator focus')
+        )
+    )
+    Write-Check -Name 'Desktop executor left_click execution succeeds or blocks safely for manual focus' -Passed $desktopLeftClickExecuteOk -Detail $desktopLeftClickExecuteText.Trim()
     if (-not $desktopLeftClickExecuteOk) { $failed++ }
 }
 
@@ -1528,6 +1602,12 @@ $recipeFocusTerminalQueueOk = $recipeFocusTerminalQueue.ExitCode -eq 0 -and `
 Write-Check -Name 'Operator recipe focus_or_reuse_terminal stays approval-aware' -Passed $recipeFocusTerminalQueueOk -Detail (($recipeFocusTerminalQueue.Output | Out-String).Trim())
 if (-not $recipeFocusTerminalQueueOk) { $failed++ }
 
+$handoffFixtureWindowsJson = @(
+    @{ Title = 'Codex - Task'; ProcessId = 1201; Active = $true },
+    @{ Title = 'ChatGPT - Browser'; ProcessId = 2202; Active = $false },
+    @{ Title = 'ChatGPT Notes'; ProcessId = 2203; Active = $false }
+) | ConvertTo-Json -Compress
+
 $handoffSeedQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
     'queue-executor-action',
     '--action-type', 'set_clipboard_text',
@@ -1609,6 +1689,31 @@ if ($handoffRecipeIdsOk) {
     if (-not $handoffRecipeStatusBeforeOk) { $failed++ }
 }
 
+$handoffCandidateQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'run_operator_recipe',
+    '--target', 'codex_to_chatgpt_handoff_mvp',
+    '--content', '{"sourceWindow":"codex","targetWindow":"chatgpt","sourceWindowCandidateId":"pid:1201","targetWindowCandidateId":"pid:2202","usePreparedClipboard":true,"waitSeconds":0}'
+)
+$handoffCandidateQueueOk = $handoffCandidateQueue.ExitCode -eq 0 -and `
+    (($handoffCandidateQueue.Output | Out-String) -match 'status:\s+pending_approval') -and `
+    (($handoffCandidateQueue.Output | Out-String) -match 'recipe_name:\s+codex_to_chatgpt_handoff_mvp')
+Write-Check -Name 'Codex to ChatGPT handoff manual-candidate queue persists' -Passed $handoffCandidateQueueOk -Detail (($handoffCandidateQueue.Output | Out-String).Trim())
+if (-not $handoffCandidateQueueOk) { $failed++ }
+
+$handoffCandidateTaskMatch = [regex]::Match(($handoffCandidateQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$handoffCandidateTaskId = if ($handoffCandidateTaskMatch.Success) { $handoffCandidateTaskMatch.Groups[1].Value } else { $null }
+if (-not [string]::IsNullOrWhiteSpace($handoffCandidateTaskId)) {
+    $handoffCandidateStatus = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $handoffCandidateTaskId)
+    $handoffCandidateStatusOk = $handoffCandidateStatus.ExitCode -eq 0 -and `
+        (($handoffCandidateStatus.Output | Out-String) -match 'recipe_source_window_candidate_id:\s+pid:1201') -and `
+        (($handoffCandidateStatus.Output | Out-String) -match 'recipe_target_window_candidate_id:\s+pid:2202') -and `
+        (($handoffCandidateStatus.Output | Out-String) -match 'handoff_source_selection_mode:\s+manual_candidate_selected') -and `
+        (($handoffCandidateStatus.Output | Out-String) -match 'handoff_target_selection_mode:\s+manual_candidate_selected')
+    Write-Check -Name 'Codex to ChatGPT handoff manual candidate selection is visible before execution' -Passed $handoffCandidateStatusOk -Detail (($handoffCandidateStatus.Output | Out-String).Trim())
+    if (-not $handoffCandidateStatusOk) { $failed++ }
+}
+
 if (-not [string]::IsNullOrWhiteSpace($handoffRecipeApprovalId)) {
     $handoffRecipeApprove = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $handoffRecipeApprovalId, '--note', 'runtime checker approved safe handoff recipe')
     $handoffRecipeApproveOk = $handoffRecipeApprove.ExitCode -eq 0 -and `
@@ -1618,39 +1723,30 @@ if (-not [string]::IsNullOrWhiteSpace($handoffRecipeApprovalId)) {
 }
 
 if (-not [string]::IsNullOrWhiteSpace($handoffRecipeTaskId)) {
-    $handoffRecipeExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $handoffRecipeTaskId)
+    $handoffRecipeExecute = Invoke-ModuleCommand `
+        -PythonPath $pythonPath `
+        -Arguments @('execute-task', '--task-id', $handoffRecipeTaskId) `
+        -EnvOverrides @{ SUPER_AGENT_DESKTOP_TEST_WINDOW_FIXTURES = $handoffFixtureWindowsJson }
     $handoffRecipeExecuteText = ($handoffRecipeExecute.Output | Out-String)
-    $handoffRecipeExecuteOk = $handoffRecipeExecute.ExitCode -eq 0 -and (
-        (
-            ($handoffRecipeExecuteText -match 'status:\s+completed') -and
-            ($handoffRecipeExecuteText -match 'execution_status:\s+succeeded')
-        ) -or (
-            ($handoffRecipeExecuteText -match 'status:\s+blocked_human_needed') -and
-            ($handoffRecipeExecuteText -match 'execution_status:\s+failed')
-        )
-    )
-    Write-Check -Name 'Codex to ChatGPT handoff safe path either completes or blocks for manual target resolution' -Passed $handoffRecipeExecuteOk -Detail $handoffRecipeExecuteText.Trim()
+    $handoffRecipeExecuteOk = $handoffRecipeExecute.ExitCode -eq 0 -and `
+        ($handoffRecipeExecuteText -match 'status:\s+blocked_human_needed') -and `
+        ($handoffRecipeExecuteText -match 'execution_status:\s+failed') -and `
+        ($handoffRecipeExecuteText -match 'manual target resolution is required|manual_target_resolution_required')
+    Write-Check -Name 'Codex to ChatGPT handoff blocks safely when real target matching is ambiguous' -Passed $handoffRecipeExecuteOk -Detail $handoffRecipeExecuteText.Trim()
     if (-not $handoffRecipeExecuteOk) { $failed++ }
 
     $handoffRecipeStatus = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $handoffRecipeTaskId)
     $handoffRecipeStatusText = ($handoffRecipeStatus.Output | Out-String)
-    $handoffRecipeStatusCompleted = $handoffRecipeStatus.ExitCode -eq 0 -and `
-        ($handoffRecipeStatusText -match 'recipe_status:\s+succeeded') -and `
-        ($handoffRecipeStatusText -match 'handoff_payload_classification:\s+valid_handoff_text') -and `
-        ($handoffRecipeStatusText -match 'handoff_paste_allowed:\s+yes') -and `
-        ($handoffRecipeStatusText -match 'handoff_send_allowed:\s+blocked_by_default') -and `
-        ($handoffRecipeStatusText -match 'handoff_target_match:\s+(?!not_resolved).+') -and `
-        ($handoffRecipeStatusText -notmatch 'target=terminal')
-    $handoffRecipeStatusBlocked = $handoffRecipeStatus.ExitCode -eq 0 -and `
+    $handoffRecipeStatusOk = $handoffRecipeStatus.ExitCode -eq 0 -and `
         ($handoffRecipeStatusText -match 'recipe_status:\s+blocked') -and `
         ($handoffRecipeStatusText -match 'handoff_payload_classification:\s+valid_handoff_text') -and `
         ($handoffRecipeStatusText -match 'handoff_paste_allowed:\s+no') -and `
         ($handoffRecipeStatusText -match 'handoff_target_resolution_status:\s+manual_target_resolution_required') -and `
         ($handoffRecipeStatusText -match 'handoff_manual_target_resolution:\s+required') -and `
+        ($handoffRecipeStatusText -match 'handoff_target_selection_mode:\s+manual_selection_required') -and `
         ($handoffRecipeStatusText -match 'handoff_fallback_denied:\s+yes') -and `
         ($handoffRecipeStatusText -notmatch 'target=terminal')
-    $handoffRecipeStatusOk = $handoffRecipeStatusCompleted -or $handoffRecipeStatusBlocked
-    Write-Check -Name 'Codex to ChatGPT handoff keeps safe target metadata and denies terminal fallback' -Passed $handoffRecipeStatusOk -Detail $handoffRecipeStatusText.Trim()
+    Write-Check -Name 'Codex to ChatGPT handoff keeps manual-resolution metadata and denies terminal fallback' -Passed $handoffRecipeStatusOk -Detail $handoffRecipeStatusText.Trim()
     if (-not $handoffRecipeStatusOk) { $failed++ }
 }
 

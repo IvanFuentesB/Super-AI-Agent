@@ -12,6 +12,7 @@ const runtimeProjectRoot = path.join(repoRoot, "01_projects", "runtime_mvp");
 const runtimeSrcPath = path.join(runtimeProjectRoot, "src");
 const desktopPlaygroundRoot = path.join(repoRoot, "01_projects", "desktop_playground");
 const desktopCheckScriptPath = path.join(desktopPlaygroundRoot, "check_desktop_playground.ps1");
+const desktopActionsScriptPath = path.join(desktopPlaygroundRoot, "desktop_bridge_actions.ps1");
 const dashboardPort = Number.parseInt(process.env.PORT || "3210", 10);
 const maxRecentActions = 25;
 const previewableExtensions = new Set([
@@ -241,6 +242,50 @@ async function runDesktopBridgeCheck(statusOnly) {
     cwd: desktopPlaygroundRoot,
     env: process.env,
     timeoutMs: 120000,
+  });
+
+  return {
+    ...result,
+    tool: powerShell.displayName,
+  };
+}
+
+async function runDesktopBridgeAction(action, options = {}) {
+  const powerShell = resolvePowerShell();
+  if (!powerShell) {
+    return {
+      ok: false,
+      exitCode: 1,
+      stdout: "",
+      stderr: "PowerShell runtime not found for desktop bridge action.",
+      command: "powershell -ExecutionPolicy Bypass -File desktop_bridge_actions.ps1",
+      tool: "powershell",
+    };
+  }
+
+  const args = [
+    ...powerShell.baseArgs,
+    "-ExecutionPolicy",
+    "Bypass",
+    "-File",
+    desktopActionsScriptPath,
+    "-Action",
+    String(action || ""),
+  ];
+  if (options.target) {
+    args.push("-Target", String(options.target));
+  }
+  if (options.artifactPath) {
+    args.push("-ArtifactPath", String(options.artifactPath));
+  }
+  if (options.textContent) {
+    args.push("-TextContent", String(options.textContent));
+  }
+
+  const result = await runCommand(powerShell.command, args, {
+    cwd: desktopPlaygroundRoot,
+    env: options.env || process.env,
+    timeoutMs: options.timeoutMs || 120000,
   });
 
   return {
@@ -565,6 +610,7 @@ function parseRecipeStepLine(line) {
     step: Number.parseInt(labeled.step || "0", 10),
     actionType: labeled.action || "unknown",
     target: labeled.target || "none",
+    bridgeTarget: labeled.bridge_target || "none",
     label: labeled.label || "recipe step",
     startedAt: labeled.started || "",
     finishedAt: labeled.finished || "",
@@ -573,10 +619,41 @@ function parseRecipeStepLine(line) {
     clipboardPreview: labeled.clipboard || "none",
     clipboardClassification: labeled.classification || "none",
     windowAlias: labeled.window || "none",
+    windowCandidateId: labeled.candidate || "none",
+    windowResolutionMode: labeled.resolution_mode || "none",
     coordinates: labeled.coordinates || "none",
     attempts: Number.parseInt(labeled.attempts || "0", 10),
     maxAttempts: Number.parseInt(labeled.max_attempts || "0", 10),
     required: labeled.required || "yes",
+  };
+}
+
+function parseWindowCandidateLine(line) {
+  const parts = String(line)
+    .split(" | ")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  const labeled = {};
+  for (const part of parts) {
+    const separatorIndex = part.indexOf("=");
+    if (separatorIndex === -1) {
+      continue;
+    }
+    const key = part.slice(0, separatorIndex).trim();
+    const value = part.slice(separatorIndex + 1).trim();
+    labeled[key] = value;
+  }
+
+  return {
+    aliases: (labeled.aliases || "").split(",").map((item) => item.trim()).filter(Boolean),
+    title: labeled.title || "unknown",
+    candidateId: labeled.candidate || "none",
+    processId: Number.parseInt(labeled.pid || "0", 10),
+    isActive: labeled.active === "yes",
+    isFixture: labeled.fixture === "yes",
+    matchScore: Number.parseInt(labeled.score || "0", 10),
+    matchReason: labeled.reason || "none",
   };
 }
 
@@ -643,7 +720,11 @@ function parseTaskDetail(stdout) {
     recipeLastRunFinishedAt: parsed.values.recipe_last_run_finished_at || "",
     recipeSourceWindow: parsed.values.recipe_source_window || "none",
     recipeTargetWindow: parsed.values.recipe_target_window || "none",
+    recipeSourceWindowCandidateId: parsed.values.recipe_source_window_candidate_id || "none",
+    recipeTargetWindowCandidateId: parsed.values.recipe_target_window_candidate_id || "none",
     recipeClipboardMode: parsed.values.recipe_clipboard_mode || "none",
+    handoffSourceSelectionMode: parsed.values.handoff_source_selection_mode || "none",
+    handoffTargetSelectionMode: parsed.values.handoff_target_selection_mode || "none",
     handoffPayloadClassification: parsed.values.handoff_payload_classification || "none",
     handoffPayloadPreview: parsed.values.handoff_payload_preview || "none",
     handoffPayloadReason: parsed.values.handoff_payload_reason || "none",
@@ -1297,6 +1378,30 @@ async function buildDesktopBridgeResponse(statusOnly) {
   };
 }
 
+async function buildHandoffTargetCandidatesResponse() {
+  const raw = await runDesktopBridgeAction("list_windows");
+  const parsed = parseKeyValueBlock(raw.stdout);
+  const windows = (parsed.listSections.windows || [])
+    .filter((item) => item !== "none")
+    .map(parseWindowCandidateLine);
+  const codexCandidates = windows.filter((item) => item.aliases.includes("codex"));
+  const chatgptCandidates = windows.filter((item) => item.aliases.includes("chatgpt"));
+
+  return {
+    ok: raw.ok,
+    summary: {
+      headline: raw.ok
+        ? `Loaded ${codexCandidates.length} Codex and ${chatgptCandidates.length} ChatGPT window candidate(s).`
+        : "Failed to load handoff target candidates.",
+      codexCandidates,
+      chatgptCandidates,
+      candidateCount: windows.length,
+    },
+    raw,
+    localOnly: true,
+  };
+}
+
 async function handleApiRequest(request, response, requestUrl) {
   if (request.method === "GET" && requestUrl.pathname === "/api/health") {
     sendJson(response, 200, {
@@ -1758,6 +1863,18 @@ async function handleApiRequest(request, response, requestUrl) {
     pushAction({
       actionType: "desktop",
       label: runFullCheck ? "Ran desktop bridge check" : "Ran desktop bridge status check",
+      status: payload.ok ? "success" : "error",
+      summary: payload.summary.headline,
+    });
+    sendJson(response, payload.ok ? 200 : 500, payload);
+    return;
+  }
+
+  if (request.method === "GET" && requestUrl.pathname === "/api/desktop-bridge/handoff-targets") {
+    const payload = await buildHandoffTargetCandidatesResponse();
+    pushAction({
+      actionType: "desktop",
+      label: "Viewed handoff target candidates",
       status: payload.ok ? "success" : "error",
       summary: payload.summary.headline,
     });

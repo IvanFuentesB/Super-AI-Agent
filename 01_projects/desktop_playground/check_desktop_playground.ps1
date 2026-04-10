@@ -90,6 +90,11 @@ $screenshotPath = Join-Path $repoRoot '05_logs\tmp\desktop\desktop-playground-ch
 $failed = 0
 $mode = if ($StatusOnly) { 'status' } else { 'check' }
 $clipboardSeed = 'desktop-playground-check'
+$handoffFixtureWindowsJson = @(
+    @{ Title = 'Codex - Task'; ProcessId = 1201; Active = $true },
+    @{ Title = 'ChatGPT - Browser'; ProcessId = 2202; Active = $false },
+    @{ Title = 'ChatGPT Notes'; ProcessId = 2203; Active = $false }
+) | ConvertTo-Json -Compress
 
 $powerShellVersion = $PSVersionTable.PSVersion.ToString()
 $powerShellAvailable = $true
@@ -196,6 +201,35 @@ if ($desktopActionScriptExists) {
     if ($terminalWindowLimitMatch.Success) { $terminalWindowLimit = [int]$terminalWindowLimitMatch.Groups[1].Value }
     if ($terminalProcessLimitMatch.Success) { $terminalProcessLimit = [int]$terminalProcessLimitMatch.Groups[1].Value }
     if ($ollamaPresentMatch.Success) { $ollamaPresent = $ollamaPresentMatch.Groups[1].Value }
+
+    $handoffCandidatesResult = Invoke-DesktopAction -Action 'list_windows' -Target 'chatgpt' -EnvOverrides @{
+        SUPER_AGENT_DESKTOP_TEST_WINDOW_FIXTURES = $handoffFixtureWindowsJson
+    }
+    $handoffCandidatesOk = $handoffCandidatesResult.ExitCode -eq 0 -and `
+        $handoffCandidatesResult.Output -match 'status:\s+succeeded' -and `
+        $handoffCandidatesResult.Output -match 'candidate=pid:2202' -and `
+        $handoffCandidatesResult.Output -match 'candidate=pid:2203'
+    Write-Check -Name 'Desktop bridge lists deterministic ChatGPT handoff candidates' -Passed $handoffCandidatesOk -Detail $handoffCandidatesResult.Output
+    if (-not $handoffCandidatesOk) { $failed++ }
+
+    $handoffAmbiguousFocus = Invoke-DesktopAction -Action 'focus_window' -Target 'chatgpt' -EnvOverrides @{
+        SUPER_AGENT_DESKTOP_TEST_WINDOW_FIXTURES = $handoffFixtureWindowsJson
+    }
+    $handoffAmbiguousFocusOk = $handoffAmbiguousFocus.ExitCode -eq 41 -and `
+        $handoffAmbiguousFocus.Output -match 'status:\s+blocked' -and `
+        $handoffAmbiguousFocus.Output -match 'guard_state:\s+manual_target_resolution_required'
+    Write-Check -Name 'Desktop bridge blocks ambiguous ChatGPT handoff target until manual selection' -Passed $handoffAmbiguousFocusOk -Detail $handoffAmbiguousFocus.Output
+    if (-not $handoffAmbiguousFocusOk) { $failed++ }
+
+    $handoffManualFocus = Invoke-DesktopAction -Action 'focus_window' -Target 'chatgpt#pid:2202' -EnvOverrides @{
+        SUPER_AGENT_DESKTOP_TEST_WINDOW_FIXTURES = $handoffFixtureWindowsJson
+    }
+    $handoffManualFocusOk = $handoffManualFocus.ExitCode -eq 0 -and `
+        $handoffManualFocus.Output -match 'status:\s+succeeded' -and `
+        $handoffManualFocus.Output -match 'window_candidate_id:\s+pid:2202' -and `
+        $handoffManualFocus.Output -match 'window_resolution_mode:\s+manual_selected'
+    Write-Check -Name 'Desktop bridge can focus a manually selected ChatGPT handoff candidate' -Passed $handoffManualFocusOk -Detail $handoffManualFocus.Output
+    if (-not $handoffManualFocusOk) { $failed++ }
 
     $activeWindowResult = Invoke-DesktopAction -Action 'get_active_window'
     $activeWindowOk = $activeWindowResult.ExitCode -eq 0 -and `

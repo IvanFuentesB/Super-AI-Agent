@@ -566,12 +566,24 @@ def main(argv: list[str] | None = None) -> int:
                 if task.executor_action_type == "run_operator_recipe":
                     recipe_source = task.executor_payload.get("recipe_source_window", "")
                     recipe_target = task.executor_payload.get("recipe_target_window", "")
+                    source_candidate = task.executor_payload.get("recipe_source_window_candidate_id", "")
+                    target_candidate = task.executor_payload.get("recipe_target_window_candidate_id", "")
+                    source_mode = task.executor_payload.get("handoff_source_selection_mode", "")
+                    target_mode = task.executor_payload.get("handoff_target_selection_mode", "")
                     payload_classification = task.executor_payload.get("handoff_payload_classification", "")
                     send_behavior = task.executor_payload.get("handoff_send_behavior", "")
                     if recipe_source:
                         recipe_bits.append(f"source_window={recipe_source}")
                     if recipe_target:
                         recipe_bits.append(f"target_window={recipe_target}")
+                    if source_candidate:
+                        recipe_bits.append(f"source_candidate={source_candidate}")
+                    if target_candidate:
+                        recipe_bits.append(f"target_candidate={target_candidate}")
+                    if source_mode:
+                        recipe_bits.append(f"source_mode={source_mode}")
+                    if target_mode:
+                        recipe_bits.append(f"target_mode={target_mode}")
                     if payload_classification:
                         recipe_bits.append(f"classification={payload_classification}")
                     if send_behavior:
@@ -609,7 +621,11 @@ def main(argv: list[str] | None = None) -> int:
             print(f"recipe_last_run_finished_at: {recipe_last_run.get('finished_at', 'none') if task.executor_action_type == 'run_operator_recipe' else 'none'}")
             print(f"recipe_source_window: {task.executor_payload.get('recipe_source_window', 'none') if task.executor_action_type == 'run_operator_recipe' else 'none'}")
             print(f"recipe_target_window: {task.executor_payload.get('recipe_target_window', 'none') if task.executor_action_type == 'run_operator_recipe' else 'none'}")
+            print(f"recipe_source_window_candidate_id: {task.executor_payload.get('recipe_source_window_candidate_id', 'none') if task.executor_action_type == 'run_operator_recipe' else 'none'}")
+            print(f"recipe_target_window_candidate_id: {task.executor_payload.get('recipe_target_window_candidate_id', 'none') if task.executor_action_type == 'run_operator_recipe' else 'none'}")
             print(f"recipe_clipboard_mode: {task.executor_payload.get('recipe_clipboard_mode', 'none') if task.executor_action_type == 'run_operator_recipe' else 'none'}")
+            print(f"handoff_source_selection_mode: {task.executor_payload.get('handoff_source_selection_mode', 'none') if task.executor_action_type == 'run_operator_recipe' else 'none'}")
+            print(f"handoff_target_selection_mode: {task.executor_payload.get('handoff_target_selection_mode', 'none') if task.executor_action_type == 'run_operator_recipe' else 'none'}")
             print(f"handoff_payload_classification: {task.executor_payload.get('handoff_payload_classification', 'none') if task.executor_action_type == 'run_operator_recipe' else 'none'}")
             print(f"handoff_payload_preview: {task.executor_payload.get('handoff_payload_preview', 'none') if task.executor_action_type == 'run_operator_recipe' else 'none'}")
             print(f"handoff_payload_reason: {task.executor_payload.get('handoff_payload_reason', 'none') if task.executor_action_type == 'run_operator_recipe' else 'none'}")
@@ -668,6 +684,7 @@ def main(argv: list[str] | None = None) -> int:
                         f"- {item.get('status', 'unknown')} | step={item.get('step', '?')} | "
                         f"action={item.get('action_type', 'unknown')} | "
                         f"target={item.get('target', 'none') or 'none'} | "
+                        f"bridge_target={item.get('bridge_target', 'none') or 'none'} | "
                         f"label={item.get('label', 'recipe step')} | "
                         f"attempts={item.get('attempt_count', 0)} | "
                         f"max_attempts={item.get('max_attempts', 0)} | "
@@ -679,6 +696,8 @@ def main(argv: list[str] | None = None) -> int:
                         f"clipboard={item.get('clipboard_preview', 'none') or 'none'} | "
                         f"classification={item.get('clipboard_classification', 'none') or 'none'} | "
                         f"window={item.get('window_alias', 'none') or 'none'} | "
+                        f"candidate={item.get('window_candidate_id', 'none') or 'none'} | "
+                        f"resolution_mode={item.get('window_resolution_mode', 'none') or 'none'} | "
                         f"coordinates={item.get('coordinates', 'none') or 'none'}"
                     )
             else:

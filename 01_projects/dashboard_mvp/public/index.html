@@ -493,6 +493,22 @@
                   <strong id="task-detail-recipe-target-window">-</strong>
                 </div>
               <div class="approval-detail-field">
+                <span>Source Selection</span>
+                <strong id="task-detail-recipe-source-selection-mode">-</strong>
+              </div>
+              <div class="approval-detail-field">
+                <span>Target Selection</span>
+                <strong id="task-detail-recipe-target-selection-mode">-</strong>
+              </div>
+              <div class="approval-detail-field">
+                <span>Source Candidate</span>
+                <strong id="task-detail-recipe-source-candidate">-</strong>
+              </div>
+              <div class="approval-detail-field">
+                <span>Target Candidate</span>
+                <strong id="task-detail-recipe-target-candidate">-</strong>
+              </div>
+              <div class="approval-detail-field">
                 <span>Clipboard Mode</span>
                 <strong id="task-detail-recipe-clipboard-mode">-</strong>
               </div>
@@ -1039,6 +1055,18 @@ This file was queued through the safe repo-local executor.
                     Wait Seconds
                     <input id="handoff-wait-seconds" type="number" min="0" max="10" value="1" />
                   </label>
+                  <label>
+                    Source Candidate
+                    <select id="handoff-source-candidate">
+                      <option value="" selected>Auto match</option>
+                    </select>
+                  </label>
+                  <label>
+                    Target Candidate
+                    <select id="handoff-target-candidate">
+                      <option value="" selected>Auto match</option>
+                    </select>
+                  </label>
                 </div>
                 <div class="compact-option-grid">
                   <label class="checkbox-row">
@@ -1049,6 +1077,10 @@ This file was queued through the safe repo-local executor.
                     <input id="handoff-allow-send" type="checkbox" />
                     Allow Enter after paste
                   </label>
+                </div>
+                <div class="compact-option-grid">
+                  <button id="refresh-handoff-targets" type="button">Refresh visible handoff targets</button>
+                  <p id="handoff-target-summary" class="recipe-safety-note">Using automatic matching until you select a visible Codex or ChatGPT candidate.</p>
                 </div>
                 <p class="recipe-safety-note">This handoff never falls back to terminal or PowerShell. If Codex or ChatGPT cannot be matched confidently, Ghoti blocks and asks for manual target resolution.</p>
               </form>

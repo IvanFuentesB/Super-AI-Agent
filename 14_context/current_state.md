@@ -82,6 +82,9 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Codex-to-ChatGPT handoff now blocks safely with manual target resolution required when the intended Codex or ChatGPT window cannot be resolved confidently
 - Repeated identical blocked handoff payloads are now counted, reported clearly, and stopped after the second explicit operator-approved retry path instead of looping
 - The dashboard handoff UI now exposes only Codex and ChatGPT targets for the handoff recipe and keeps paste-only as the default behavior
+- Real-window Codex and ChatGPT handoff targeting now exists with deterministic candidate discovery and manual candidate selection for the current run
+- The dashboard now exposes handoff target candidates, manual source and destination candidate selectors, and richer handoff detail for automatic vs manual matching
+- Runtime, dashboard, and desktop checkers now cover real-window handoff target matching, safe ambiguity blocking, and manual target-selection metadata
 - Compact chat handoff memory now exists at 14_context\chat_handoff_latest.md for new-thread continuity
 - Repo integration classification now exists at 08_research\repo_integration_map.md
 - Blueprint.am is now explicitly classified as external inspiration only, with a narrow internal hardware-builder-assist note under 08_research
@@ -108,8 +111,9 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 
 ## Immediate Focus
 - Refresh Ghoti handoff memory first when chats get long, then use the new cue, resource guard, retry ceiling, and no-terminal-fallback handoff path as the base for the next real cross-window loop
-- Manually test the Codex-to-ChatGPT handoff path with real Codex and ChatGPT windows only, now that terminal fallback is blocked by design
-- Tighten real Codex and ChatGPT target matching so manual target resolution is needed less often without widening into unsafe target guessing
+- Real-window handoff targeting is now implemented for the current MVP
+- Manual target resolution exists, but it is still current-run only and not yet remembered across runs
+- The next practical step is live manual-assisted Codex and ChatGPT handoff testing with the new candidate picker, then deciding whether safe remembered target preferences are justified
 - Improve operator-facing task filtering and recent views instead of adding any task deletion path
 - Keep the operator stack swappable from the provider brain so later model changes do not require a rewrite
 - Decide the next narrow desktop-control implementation path only if it directly supports the real handoff loop
@@ -132,6 +136,7 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Window matching still depends on visible titles and allowed aliases, so some cross-window flows can remain brittle until the target set is tightened
 - Terminal or PowerShell must not be used as a substitute target for Codex-to-ChatGPT handoff
 - The handoff bugfix now blocks bad fallback paths safely, but real Codex and ChatGPT window resolution is still title-dependent and can still stop at manual target resolution
+- Real Codex and ChatGPT window targeting is better, but remembered preferred target selection still does not exist
 - Some focus-sensitive desktop actions still depend on what the current Windows session allows; in non-interactive checker sessions they may stop safely with manual-focus-required instead of pretending success
 - Desktop screenshot capture can still be unavailable in some Windows sessions, so manual capture remains the honest fallback there
 - Task history is large and noisy even after the first filter pass, and the operator console still needs better operator-facing filtering so stale failures do not crowd current work

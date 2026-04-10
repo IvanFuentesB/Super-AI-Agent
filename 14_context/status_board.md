@@ -45,16 +45,16 @@
 - Codex for execution and Git workflow
 
 ## Current Branch
-- fix/codex-handoff-no-terminal-fallback
+- feat/real-window-handoff-targeting
 
 ## Current Phase
-- Handoff hardening complete: terminal fallback blocked and repeated junk payload retries capped safely
+- Real-window handoff targeting complete on the current branch; next step is live manual-assisted handoff validation and possible safe remembered target preferences
 
 ## Next Milestones
-- manually test the Codex-to-ChatGPT handoff MVP with real Codex and ChatGPT windows now that terminal fallback is blocked
-- tighten real Codex and ChatGPT target matching so manual target resolution is needed less often
+- manually validate real Codex and ChatGPT handoff with the new candidate picker
+- decide whether safe remembered target preferences are justified for repeated Codex and ChatGPT handoff runs
+- tighten real Codex and ChatGPT target matching only if it reduces manual picks without unsafe guessing
 - keep repeated junk payload retry handling capped at two attempts and visible to the operator
-- tighten real Codex and ChatGPT target matching so the handoff recipe is less title-brittle
 - improve operator-facing task-history filtering so stale failures stay visible without crowding current work
 - test the safe repo executor manually from the operator console
 - test the desktop bridge hand layer manually from the operator console

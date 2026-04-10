@@ -336,6 +336,38 @@ def _split_alias_payload(target: str) -> tuple[str, str]:
     return alias.strip(), payload.strip()
 
 
+WINDOW_CANDIDATE_ID_PATTERN = re.compile(r"^(pid:\d+|title:[a-f0-9]{12})$")
+
+
+def _split_window_candidate_target(raw_target: str) -> tuple[str, str]:
+    normalized = (raw_target or "").strip().lower()
+    if "#" not in normalized:
+        return normalized, ""
+    alias, candidate_id = normalized.split("#", 1)
+    return alias.strip(), candidate_id.strip()
+
+
+def _normalize_window_candidate_id(raw_value: str, *, label: str) -> str:
+    normalized = (raw_value or "").strip().lower()
+    if not normalized:
+        return ""
+    if not WINDOW_CANDIDATE_ID_PATTERN.fullmatch(normalized):
+        raise ValueError(f"{label} must look like pid:1234.")
+    return normalized
+
+
+def _build_window_target_spec(alias: str, candidate_id: str = "") -> str:
+    normalized_alias = (alias or "").strip().lower()
+    normalized_candidate = (candidate_id or "").strip().lower()
+    if not normalized_alias:
+        return ""
+    return (
+        f"{normalized_alias}#{normalized_candidate}"
+        if normalized_candidate
+        else normalized_alias
+    )
+
+
 def _require_positive_int(
     raw_value: str,
     *,
@@ -358,48 +390,64 @@ def _normalize_optional_window_target(
     *,
     action_type: str,
 ) -> str:
-    normalized = (raw_target or "").strip().lower()
-    if not normalized:
+    alias, candidate_id = _split_window_candidate_target(raw_target)
+    if not alias:
         return ""
-    if normalized not in ALLOWED_DESKTOP_FOCUS_TARGETS:
+    if alias not in ALLOWED_DESKTOP_FOCUS_TARGETS:
         raise ValueError(
             f"{action_type} target must be blank or one of: "
             + ", ".join(sorted(ALLOWED_DESKTOP_FOCUS_TARGETS))
         )
-    return normalized
+    normalized_candidate = _normalize_window_candidate_id(
+        candidate_id,
+        label=f"{action_type} candidate",
+    )
+    return _build_window_target_spec(alias, normalized_candidate)
 
 
 def _normalize_hotkey_target(raw_target: str) -> str:
-    alias, hotkey = _split_alias_payload(raw_target)
+    alias_target, hotkey = _split_alias_payload(raw_target)
     if not hotkey:
         raise ValueError(
             "send_hotkey target must be one of: "
             + ", ".join(sorted(ALLOWED_DESKTOP_HOTKEYS))
         )
+    alias, candidate_id = _split_window_candidate_target(alias_target)
     if alias and alias not in ALLOWED_DESKTOP_FOCUS_TARGETS:
         raise ValueError(
             "send_hotkey alias must be blank or one of: "
             + ", ".join(sorted(ALLOWED_DESKTOP_FOCUS_TARGETS))
         )
+    normalized_candidate = _normalize_window_candidate_id(
+        candidate_id,
+        label="send_hotkey candidate",
+    )
     if hotkey not in ALLOWED_DESKTOP_HOTKEYS:
         raise ValueError(
             "send_hotkey target must be one of: "
             + ", ".join(sorted(ALLOWED_DESKTOP_HOTKEYS))
         )
-    return f"{alias}|{hotkey}" if alias else hotkey
+    if alias:
+        return f"{_build_window_target_spec(alias, normalized_candidate)}|{hotkey}"
+    return hotkey
 
 
 def _normalize_wait_for_window_target(raw_target: str) -> str:
-    alias, timeout_text = _split_alias_payload(raw_target)
-    if not alias:
-        alias = (raw_target or "").strip().lower()
+    alias_target, timeout_text = _split_alias_payload(raw_target)
+    if not alias_target:
+        alias_target = (raw_target or "").strip().lower()
         timeout_text = ""
+    alias, candidate_id = _split_window_candidate_target(alias_target)
     if alias not in ALLOWED_DESKTOP_FOCUS_TARGETS:
         raise ValueError(
             "wait_for_window target must be one of: "
             + ", ".join(sorted(ALLOWED_DESKTOP_FOCUS_TARGETS))
             + " with an optional |timeoutSeconds suffix."
         )
+    normalized_candidate = _normalize_window_candidate_id(
+        candidate_id,
+        label="wait_for_window candidate",
+    )
     if timeout_text:
         timeout_value = _require_positive_int(
             timeout_text,
@@ -407,8 +455,8 @@ def _normalize_wait_for_window_target(raw_target: str) -> str:
             minimum=1,
             maximum=120,
         )
-        return f"{alias}|{timeout_value}"
-    return alias
+        return f"{_build_window_target_spec(alias, normalized_candidate)}|{timeout_value}"
+    return _build_window_target_spec(alias, normalized_candidate)
 
 
 def _require_allowed_window_alias(raw_value: str, *, label: str) -> str:
@@ -517,6 +565,7 @@ def _build_recipe_step(
     action_type: str,
     label: str,
     target: str = "",
+    bridge_target: str = "",
     text_content: str = "",
     required: bool = True,
     max_attempts: int = DEFAULT_DESKTOP_MAX_ATTEMPTS,
@@ -525,6 +574,7 @@ def _build_recipe_step(
         "action_type": action_type,
         "label": label,
         "target": target,
+        "bridge_target": bridge_target,
         "text_content": text_content,
         "required": required,
         "max_attempts": max_attempts,
@@ -751,6 +801,28 @@ def _recipe_codex_to_chatgpt_handoff_mvp(options: dict) -> dict:
         default=False,
         label="codex_to_chatgpt_handoff_mvp allowSend",
     )
+    source_candidate_id = _normalize_window_candidate_id(
+        _recipe_option_text(
+            options,
+            "sourceWindowCandidateId",
+            "source_window_candidate_id",
+            "sourceWindowCandidate",
+            "source_window_candidate",
+        ),
+        label="codex_to_chatgpt_handoff_mvp sourceWindowCandidateId",
+    )
+    target_candidate_id = _normalize_window_candidate_id(
+        _recipe_option_text(
+            options,
+            "targetWindowCandidateId",
+            "target_window_candidate_id",
+            "targetWindowCandidate",
+            "target_window_candidate",
+        ),
+        label="codex_to_chatgpt_handoff_mvp targetWindowCandidateId",
+    )
+    source_bridge_target = _build_window_target_spec(source_window, source_candidate_id)
+    target_bridge_target = _build_window_target_spec(target_window, target_candidate_id)
 
     steps: list[dict] = []
     if not use_prepared_clipboard:
@@ -759,11 +831,13 @@ def _recipe_codex_to_chatgpt_handoff_mvp(options: dict) -> dict:
                 _build_recipe_step(
                     action_type="focus_window",
                     target=source_window,
+                    bridge_target=source_bridge_target,
                     label=f"Focus {source_window}",
                 ),
                 _build_recipe_step(
                     action_type="copy_selection",
                     target=source_window,
+                    bridge_target=source_bridge_target,
                     label=f"Copy selection from {source_window}",
                 ),
             ]
@@ -794,11 +868,13 @@ def _recipe_codex_to_chatgpt_handoff_mvp(options: dict) -> dict:
             _build_recipe_step(
                 action_type="focus_window",
                 target=target_window,
+                bridge_target=target_bridge_target,
                 label=f"Focus {target_window}",
             ),
             _build_recipe_step(
                 action_type="paste_clipboard",
                 target=target_window,
+                bridge_target=target_bridge_target,
                 label=f"Paste clipboard into {target_window}",
             ),
         ]
@@ -809,6 +885,7 @@ def _recipe_codex_to_chatgpt_handoff_mvp(options: dict) -> dict:
             _build_recipe_step(
                 action_type="send_hotkey",
                 target=f"{target_window}|enter",
+                bridge_target=f"{target_bridge_target}|enter",
                 label=f"Explicitly send pasted handoff in {target_window}",
             )
         )
@@ -820,7 +897,15 @@ def _recipe_codex_to_chatgpt_handoff_mvp(options: dict) -> dict:
         "metadata": {
             "recipe_source_window": source_window,
             "recipe_target_window": target_window,
+            "recipe_source_window_candidate_id": source_candidate_id or "auto",
+            "recipe_target_window_candidate_id": target_candidate_id or "auto",
             "recipe_clipboard_mode": "prepared_clipboard" if use_prepared_clipboard else "copy_selection",
+            "handoff_source_selection_mode": (
+                "manual_candidate_selected" if source_candidate_id else "automatic_match"
+            ),
+            "handoff_target_selection_mode": (
+                "manual_candidate_selected" if target_candidate_id else "automatic_match"
+            ),
             "handoff_send_behavior": "explicit_enter_after_paste" if allow_send else "paste_only",
             "handoff_send_allowed": "explicit_after_paste" if allow_send else "blocked_by_default",
             "handoff_paste_allowed": "pending_classification",
@@ -828,7 +913,9 @@ def _recipe_codex_to_chatgpt_handoff_mvp(options: dict) -> dict:
             "handoff_payload_preview": "none",
             "handoff_payload_reason": "Clipboard has not been classified yet.",
             "handoff_fallback_denied": "terminal_shell_fallback_blocked",
-            "handoff_target_resolution_status": "pending_window_match",
+            "handoff_target_resolution_status": (
+                "pending_manual_candidate_match" if target_candidate_id else "pending_window_match"
+            ),
             "handoff_manual_target_resolution": "not_needed",
             "handoff_source_match": (
                 "clipboard_prepared_manually" if use_prepared_clipboard else "pending_source_match"
@@ -880,6 +967,7 @@ def _build_operator_recipe_definition(recipe_name: str, options: dict | None = N
                 "label": str(step.get("label", f"Step {index}")).strip() or f"Step {index}",
                 "action_type": action_type,
                 "target": str(step.get("target", "")).strip(),
+                "bridge_target": str(step.get("bridge_target", "")).strip(),
                 "text_content": str(step.get("text_content", "")),
                 "required": bool(step.get("required", True)),
                 "max_attempts": max(
@@ -1547,27 +1635,43 @@ def _update_handoff_window_match_metadata(task: Task, *, step_result: dict) -> N
     target = str(step_result.get("target", "")).strip().lower()
     alias = str(step_result.get("window_alias", "")).strip().lower()
     title = str(step_result.get("window_title", "")).strip()
+    candidate_id = str(step_result.get("window_candidate_id", "")).strip().lower()
+    resolution_mode = str(step_result.get("window_resolution_mode", "")).strip().lower()
     if not alias:
         return
 
-    match_value = alias if not title else f"{alias} | {title}"
+    match_bits = [alias]
+    if title:
+        match_bits.append(title)
+    if candidate_id:
+        match_bits.append(candidate_id)
+    match_value = " | ".join(match_bits)
     source_window = str(task.executor_payload.get("recipe_source_window", "")).strip().lower()
     target_window = str(task.executor_payload.get("recipe_target_window", "")).strip().lower()
 
     if action_type in {"focus_window", "copy_selection"} and target == source_window:
         task.executor_payload["handoff_source_match"] = match_value
+        if resolution_mode:
+            task.executor_payload["handoff_source_selection_mode"] = resolution_mode
 
     if action_type in {"focus_window", "paste_clipboard", "send_hotkey"} and (
         target == target_window or target.startswith(f"{target_window}|")
     ):
         task.executor_payload["handoff_target_match"] = match_value
+        if resolution_mode:
+            task.executor_payload["handoff_target_selection_mode"] = resolution_mode
 
     if (
         str(task.executor_payload.get("handoff_source_match", "")).strip()
         and str(task.executor_payload.get("handoff_target_match", "")).strip()
         and task.executor_payload.get("handoff_target_match") != "pending_target_match"
     ):
-        task.executor_payload["handoff_target_resolution_status"] = "resolved"
+        target_mode = str(task.executor_payload.get("handoff_target_selection_mode", "")).strip().lower()
+        task.executor_payload["handoff_target_resolution_status"] = (
+            "resolved_manual_candidate"
+            if target_mode == "manual_selected"
+            else "resolved_automatic_match"
+        )
         task.executor_payload["handoff_manual_target_resolution"] = "not_needed"
 
 
@@ -1600,7 +1704,10 @@ def _apply_handoff_blocked_metadata(
     ):
         task.executor_payload["handoff_paste_allowed"] = "no"
 
-    needs_manual_resolution = guard_state == "manual_focus_required" or any(
+    needs_manual_resolution = guard_state in {
+        "manual_focus_required",
+        "manual_target_resolution_required",
+    } or any(
         phrase in lowered_message
         for phrase in (
             "no visible allowlisted window found",
@@ -1608,6 +1715,9 @@ def _apply_handoff_blocked_metadata(
             "did not move focus",
             "requested allowlisted window",
             "target is unclear",
+            "manual target resolution is required",
+            "multiple candidate windows matched allowlisted target",
+            "manual target resolution candidate",
         )
     )
     if not needs_manual_resolution:
@@ -1620,8 +1730,10 @@ def _apply_handoff_blocked_metadata(
 
     if target == source_window:
         task.executor_payload["handoff_source_match"] = "not_resolved"
+        task.executor_payload["handoff_source_selection_mode"] = "manual_selection_required"
     if target == target_window or target.startswith(f"{target_window}|"):
         task.executor_payload["handoff_target_match"] = "not_resolved"
+        task.executor_payload["handoff_target_selection_mode"] = "manual_selection_required"
 
 
 def _handoff_manual_resolution_failure(failure_message: str) -> bool:
@@ -1634,6 +1746,9 @@ def _handoff_manual_resolution_failure(failure_message: str) -> bool:
             "did not move focus",
             "requested allowlisted window",
             "target is unclear",
+            "manual target resolution is required",
+            "multiple candidate windows matched allowlisted target",
+            "manual target resolution candidate",
         )
     )
 
@@ -1718,6 +1833,7 @@ def _run_operator_recipe(task: Task) -> tuple[str, str]:
         action_type = str(step.get("action_type", "")).strip().lower()
         label = str(step.get("label", action_type or "recipe step")).strip() or "recipe step"
         target = str(step.get("target", "")).strip()
+        bridge_target = str(step.get("bridge_target", "")).strip()
         text_content = str(step.get("text_content", ""))
         required = bool(step.get("required", True))
         max_attempts = max(
@@ -1733,6 +1849,7 @@ def _run_operator_recipe(task: Task) -> tuple[str, str]:
             "label": label,
             "action_type": action_type,
             "target": target,
+            "bridge_target": bridge_target,
             "started_at": step_started_at,
             "status": "started",
             "summary": "",
@@ -1741,6 +1858,8 @@ def _run_operator_recipe(task: Task) -> tuple[str, str]:
             "clipboard_classification": "",
             "window_alias": "",
             "window_title": "",
+            "window_candidate_id": "",
+            "window_resolution_mode": "",
             "coordinates": "",
             "finished_at": "",
             "attempt_count": 0,
@@ -1758,7 +1877,7 @@ def _run_operator_recipe(task: Task) -> tuple[str, str]:
 
                 result = _invoke_desktop_bridge_action(
                     action_type=action_type,
-                    target=target,
+                    target=bridge_target or target,
                     artifact_path=str(step.get("artifact_path", "")),
                     text_content=text_content,
                 )
@@ -1787,6 +1906,8 @@ def _run_operator_recipe(task: Task) -> tuple[str, str]:
                     or values.get("matched_window_title")
                     or ""
                 )
+                step_result["window_candidate_id"] = str(values.get("window_candidate_id", ""))
+                step_result["window_resolution_mode"] = str(values.get("window_resolution_mode", ""))
                 step_result["coordinates"] = str(values.get("coordinates", ""))
                 if recipe_name == "codex_to_chatgpt_handoff_mvp":
                     _apply_handoff_recipe_step_metadata(

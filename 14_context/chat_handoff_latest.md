@@ -25,8 +25,9 @@
 - `feat/operator-recipes-handoff-memory`
 - `feat/ghoti-visual-cue-resource-guard`
 - `feat/codex-chatgpt-handoff-mvp`
-- current hardening branch:
-  `fix/codex-handoff-no-terminal-fallback`
+- `fix/codex-handoff-no-terminal-fallback`
+- current branch:
+  `feat/real-window-handoff-targeting`
 
 ## 4. Current Working Capabilities
 - Approval queue UI with approve, deny, and defer.
@@ -42,6 +43,9 @@
 - Clipboard guard that blocks checker or recipe junk before it reaches terminal or handoff targets.
 - First reusable operator recipe layer.
 - First narrow supervised Codex-to-ChatGPT handoff MVP recipe.
+- Real-window handoff target discovery now exists for Codex and ChatGPT candidate windows.
+- Manual target resolution now exists in the dashboard for the current handoff run through explicit candidate selection.
+- Handoff detail now shows matched source and destination windows, whether selection was automatic or manual, and why matching failed when it stops safely.
 - Operator-facing task filtering for noisy task history:
   recent-only and visibility filters are now present in the dashboard.
 
@@ -97,16 +101,21 @@
   terminal or PowerShell fallback is rejected for this recipe,
   unresolved targets now stop with manual target resolution required,
   and repeated identical blocked payloads are counted and reported instead of looping.
+- Current targeting result:
+  the dashboard can list real Codex and ChatGPT window candidates,
+  ambiguous ChatGPT matches now block safely,
+  and the operator can choose a specific candidate for the current run when needed.
 
 ## 8. Known Weird Behaviors / Current Issues
 - Chat context still fills quickly, so the handoff files matter.
-- Window matching still depends on visible titles and narrow aliases, so real Codex/ChatGPT targeting is still somewhat brittle.
+- Window matching still depends on visible titles and narrow aliases, so real Codex/ChatGPT targeting is improved but still somewhat brittle.
 - The terminal-fallback bug is now blocked in the recipe path, but real Codex and ChatGPT window matching can still stop at manual target resolution if the title match is unclear.
 - Terminal or PowerShell must not be used as a fallback target for Codex-to-ChatGPT handoff, and the current recipe now enforces that.
 - Some focus-sensitive desktop actions can still hit `manual_focus_required` depending on the Windows session.
 - Desktop screenshot capture can still hit `desktop_capture_unavailable` in some sessions.
 - PowerShell or Node windows can still appear during some checks or desktop actions, although focus-first reuse and resource guards reduce this.
 - Task history is large and noisy even with the new filters; operator-facing filtering still needs another pass.
+- Manual target resolution is current-run only; there is no durable remembered preferred Codex or ChatGPT target yet.
 - Older failed checker tasks still exist and should not be over-weighted without checking the latest checker results.
 
 ## 9. Repo Integration Map Summary
@@ -122,8 +131,8 @@
   leak-style extraction repos, abuse-oriented automation, and unrelated side tools.
 
 ## 10. Exact Next Recommended Step
-- Manually test `codex_to_chatgpt_handoff_mvp` with real Codex and ChatGPT windows, now that terminal fallback is blocked and repeated junk payload retries are capped safely.
-- After that, tighten real Codex and ChatGPT target matching without introducing any terminal or shell substitute path.
+- Run live manual-assisted Codex-to-ChatGPT handoff tests with real windows using the new candidate picker.
+- If that live loop feels stable, add a narrow remembered-target preference or safe sticky target profile so the operator does not need to re-pick the same windows every run.
 
 ## 11. What Still Does NOT Exist Yet
 - No durable real ChatGPT-specific target resolver.
@@ -140,6 +149,8 @@
 - Valid paste and allowlisted hotkey actions can succeed.
 - The first narrow supervised Codex-to-ChatGPT handoff workflow now blocks terminal fallback by design and remains paste-only by default.
 - Repeated identical blocked handoff payloads now stop after the second explicit operator-approved retry path instead of looping.
+- Real-window targeting is now strong enough to list Codex and ChatGPT candidates and require explicit manual choice when matching is ambiguous.
+- Runtime, dashboard, and desktop checkers now cover the real-window targeting path honestly.
 - Task history is large and noisy and needs better operator-facing filtering rather than deletion.
 
 ## 13. 14_context Files To Read First In A New Thread
