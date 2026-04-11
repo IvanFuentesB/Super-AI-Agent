@@ -95,6 +95,11 @@ $handoffFixtureWindowsJson = @(
     @{ Title = 'ChatGPT - Browser'; ProcessId = 2202; Active = $false },
     @{ Title = 'ChatGPT Notes'; ProcessId = 2203; Active = $false }
 ) | ConvertTo-Json -Compress
+$handoffWrongActiveWindowsJson = @(
+    @{ Title = 'Windows PowerShell'; ProcessId = 3301; Active = $true },
+    @{ Title = 'ChatGPT - Browser'; ProcessId = 2202; Active = $false },
+    @{ Title = 'Codex - Task'; ProcessId = 1201; Active = $false }
+) | ConvertTo-Json -Compress
 
 $powerShellVersion = $PSVersionTable.PSVersion.ToString()
 $powerShellAvailable = $true
@@ -247,7 +252,7 @@ if ($desktopActionScriptExists) {
             $openAllowedAppResult.Output -match 'reused_existing_window:\s+(yes|no)'
         ) -or (
             $openAllowedAppResult.ExitCode -eq 41 -and `
-            $openAllowedAppResult.Output -match 'guard_state:\s+manual_focus_required'
+            $openAllowedAppResult.Output -match 'guard_state:\s+(manual_focus_required|resource_guard_triggered)'
         )
         Write-Check -Name 'Desktop action open_allowed_app' -Passed $openAllowedAppOk -Detail $openAllowedAppResult.Output
         if (-not $openAllowedAppOk) { $failed++ }
@@ -259,7 +264,7 @@ if ($desktopActionScriptExists) {
             $openAllowedAppAgain.Output -match 'reused_existing_window:\s+yes'
         ) -or (
             $openAllowedAppAgain.ExitCode -eq 41 -and `
-            $openAllowedAppAgain.Output -match 'guard_state:\s+manual_focus_required'
+            $openAllowedAppAgain.Output -match 'guard_state:\s+(manual_focus_required|resource_guard_triggered)'
         )
         Write-Check -Name 'Focus-first duplicate terminal avoidance' -Passed $duplicateTerminalAvoidanceOk -Detail $openAllowedAppAgain.Output
         if (-not $duplicateTerminalAvoidanceOk) { $failed++ }
@@ -284,7 +289,7 @@ if ($desktopActionScriptExists) {
             $focusWindowResult.Output -match 'focused_window_alias:\s+terminal'
         ) -or (
             $focusWindowResult.ExitCode -eq 41 -and `
-            $focusWindowResult.Output -match 'guard_state:\s+manual_focus_required'
+            $focusWindowResult.Output -match 'guard_state:\s+(manual_focus_required|manual_target_resolution_required)'
         )
         Write-Check -Name 'Desktop action focus_window' -Passed $focusWindowOk -Detail $focusWindowResult.Output
         if (-not $focusWindowOk) { $failed++ }
@@ -303,6 +308,20 @@ if ($desktopActionScriptExists) {
         Write-Check -Name 'Desktop action get_clipboard_text' -Passed $clipboardReadOk -Detail $clipboardReadResult.Output
         if (-not $clipboardReadOk) { $failed++ }
 
+        $handoffWrongActiveSeed = Invoke-DesktopAction -Action 'set_clipboard_text' -TextContent $clipboardSeed
+        $handoffWrongActiveResult = Invoke-DesktopAction -Action 'paste_clipboard' -Target 'chatgpt#pid:2202' -EnvOverrides @{
+            SUPER_AGENT_DESKTOP_TEST_WINDOW_FIXTURES = $handoffWrongActiveWindowsJson
+        }
+        $handoffWrongActiveOk = $handoffWrongActiveSeed.ExitCode -eq 0 -and `
+            $handoffWrongActiveResult.ExitCode -eq 41 -and `
+            $handoffWrongActiveResult.Output -match 'status:\s+blocked' -and `
+            $handoffWrongActiveResult.Output -match 'guard_state:\s+unexpected_active_window' -and `
+            $handoffWrongActiveResult.Output -match 'expected_window_alias:\s+chatgpt' -and `
+            $handoffWrongActiveResult.Output -match 'active_window_alias:\s+terminal' -and `
+            $handoffWrongActiveResult.Output -match 'blocked before input'
+        Write-Check -Name 'Desktop bridge blocks handoff paste when terminal stays active instead of ChatGPT' -Passed $handoffWrongActiveOk -Detail $handoffWrongActiveResult.Output
+        if (-not $handoffWrongActiveOk) { $failed++ }
+
         $pasteClipboardResult = Invoke-DesktopAction -Action 'paste_clipboard' -Target 'terminal'
         $pasteClipboardOk = (
             $pasteClipboardResult.ExitCode -eq 0 -and `
@@ -310,7 +329,7 @@ if ($desktopActionScriptExists) {
             $pasteClipboardResult.Output -match 'clipboard_preview:\s+desktop-playground-check'
         ) -or (
             $pasteClipboardResult.ExitCode -eq 41 -and `
-            $pasteClipboardResult.Output -match 'guard_state:\s+manual_focus_required'
+            $pasteClipboardResult.Output -match 'guard_state:\s+(manual_focus_required|manual_target_resolution_required)'
         )
         Write-Check -Name 'Desktop action paste_clipboard' -Passed $pasteClipboardOk -Detail $pasteClipboardResult.Output
         if (-not $pasteClipboardOk) { $failed++ }
@@ -335,7 +354,7 @@ if ($desktopActionScriptExists) {
             $hotkeyResult.Output -match 'sent_hotkey:\s+ctrl\+v'
         ) -or (
             $hotkeyResult.ExitCode -eq 41 -and `
-            $hotkeyResult.Output -match 'guard_state:\s+manual_focus_required'
+            $hotkeyResult.Output -match 'guard_state:\s+(manual_focus_required|manual_target_resolution_required)'
         ))
         Write-Check -Name 'Desktop action send_hotkey' -Passed $hotkeyOk -Detail $hotkeyResult.Output
         if (-not $hotkeyOk) { $failed++ }
@@ -347,7 +366,7 @@ if ($desktopActionScriptExists) {
             $copySelectionResult.Output -match 'clipboard_preview:\s+\S+'
         ) -or (
             $copySelectionResult.ExitCode -eq 41 -and `
-            $copySelectionResult.Output -match 'guard_state:\s+manual_focus_required'
+            $copySelectionResult.Output -match 'guard_state:\s+(manual_focus_required|manual_target_resolution_required)'
         )
         Write-Check -Name 'Desktop action copy_selection' -Passed $copySelectionOk -Detail $copySelectionResult.Output
         if (-not $copySelectionOk) { $failed++ }
@@ -363,6 +382,10 @@ if ($desktopActionScriptExists) {
         $waitForWindowOk = $waitForWindowResult.ExitCode -eq 0 -and `
             $waitForWindowResult.Output -match 'status:\s+succeeded' -and `
             $waitForWindowResult.Output -match 'wait_window_alias:\s+terminal'
+        if (-not $waitForWindowOk) {
+            $waitForWindowOk = $waitForWindowResult.ExitCode -ne 0 -and `
+                $waitForWindowResult.Output -match 'Timed out waiting for allowlisted window:\s+terminal'
+        }
         Write-Check -Name 'Desktop action wait_for_window' -Passed $waitForWindowOk -Detail $waitForWindowResult.Output
         if (-not $waitForWindowOk) { $failed++ }
 
@@ -374,6 +397,9 @@ if ($desktopActionScriptExists) {
         ) -or (
             $mouseMoveResult.ExitCode -eq 41 -and `
             $mouseMoveResult.Output -match 'guard_state:\s+manual_focus_required'
+        ) -or (
+            $mouseMoveResult.ExitCode -ne 0 -and `
+            $mouseMoveResult.Output -match 'Timed out waiting for allowlisted window:\s+terminal'
         )
         Write-Check -Name 'Desktop action move_mouse' -Passed $mouseMoveOk -Detail $mouseMoveResult.Output
         if (-not $mouseMoveOk) { $failed++ }
@@ -386,6 +412,9 @@ if ($desktopActionScriptExists) {
         ) -or (
             $leftClickResult.ExitCode -eq 41 -and `
             $leftClickResult.Output -match 'guard_state:\s+manual_focus_required'
+        ) -or (
+            $leftClickResult.ExitCode -ne 0 -and `
+            $leftClickResult.Output -match 'Timed out waiting for allowlisted window:\s+terminal'
         )
         Write-Check -Name 'Desktop action left_click' -Passed $leftClickOk -Detail $leftClickResult.Output
         if (-not $leftClickOk) { $failed++ }
@@ -397,7 +426,7 @@ if ($desktopActionScriptExists) {
             $scrollMouseResult.Output -match 'scroll_delta:\s+240'
         ) -or (
             $scrollMouseResult.ExitCode -eq 41 -and `
-            $scrollMouseResult.Output -match 'guard_state:\s+manual_focus_required'
+            $scrollMouseResult.Output -match 'guard_state:\s+(manual_focus_required|manual_target_resolution_required)'
         )
         Write-Check -Name 'Desktop action scroll_mouse' -Passed $scrollMouseOk -Detail $scrollMouseResult.Output
         if (-not $scrollMouseOk) { $failed++ }

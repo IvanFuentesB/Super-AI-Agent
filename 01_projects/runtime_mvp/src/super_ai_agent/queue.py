@@ -368,6 +368,15 @@ def _build_window_target_spec(alias: str, candidate_id: str = "") -> str:
     )
 
 
+def _extract_window_alias_from_target_spec(raw_target: str) -> str:
+    normalized = (raw_target or "").strip().lower()
+    if not normalized:
+        return ""
+    alias_target = normalized.split("|", 1)[0]
+    alias, _candidate_id = _split_window_candidate_target(alias_target)
+    return alias.strip().lower()
+
+
 def _require_positive_int(
     raw_value: str,
     *,
@@ -1630,6 +1639,40 @@ def _handoff_payload_fingerprint(raw_text: str) -> str:
     return hashlib.sha1(normalized.encode("utf-8")).hexdigest()[:12]
 
 
+def _assert_safe_handoff_input_step(
+    task: Task,
+    *,
+    action_type: str,
+    target: str,
+    bridge_target: str,
+) -> None:
+    normalized_action = (action_type or "").strip().lower()
+    if normalized_action not in {"copy_selection", "paste_clipboard", "send_hotkey"}:
+        return
+
+    source_window = str(task.executor_payload.get("recipe_source_window", "")).strip().lower()
+    target_window = str(task.executor_payload.get("recipe_target_window", "")).strip().lower()
+    expected_alias = source_window if normalized_action == "copy_selection" else target_window
+    effective_target = bridge_target or target
+    resolved_alias = _extract_window_alias_from_target_spec(effective_target)
+    allowed_aliases = {source_window, target_window} - {""}
+
+    if not resolved_alias or resolved_alias not in allowed_aliases or resolved_alias != expected_alias:
+        raise DesktopActionBlocked(
+            _shorten_output(
+                f"Handoff input target gate blocked {normalized_action}. Expected {expected_alias or 'codex/chatgpt'} but got {resolved_alias or 'none'}. Only explicit Codex and ChatGPT window targets are allowed before input.",
+                limit=320,
+            ),
+            values={
+                "guard_state": "handoff_target_gate_blocked",
+                "expected_window_alias": expected_alias or "none",
+                "active_window_alias": resolved_alias or "none",
+                "active_window_title": "none",
+                "active_window_candidate_id": "none",
+            },
+        )
+
+
 def _update_handoff_window_match_metadata(task: Task, *, step_result: dict) -> None:
     action_type = str(step_result.get("action_type", "")).strip().lower()
     target = str(step_result.get("target", "")).strip().lower()
@@ -1703,6 +1746,46 @@ def _apply_handoff_blocked_metadata(
         )
     ):
         task.executor_payload["handoff_paste_allowed"] = "no"
+
+    target_verification_failed = guard_state in {
+        "unexpected_active_window",
+        "handoff_target_gate_blocked",
+    } or any(
+        phrase in lowered_message
+        for phrase in (
+            "active window verification failed before",
+            "only explicit codex and chatgpt window targets are allowed before input",
+            "the action was blocked before input",
+        )
+    )
+    if target_verification_failed:
+        task.executor_payload["handoff_target_resolution_status"] = "blocked_wrong_active_window"
+        task.executor_payload["handoff_manual_target_resolution"] = "required"
+        task.executor_payload["handoff_fallback_denied"] = "yes"
+        task.executor_payload["handoff_paste_allowed"] = "no"
+        task.executor_payload["handoff_send_allowed"] = "no"
+        expected_alias = str(blocked_values.get("expected_window_alias", "")).strip().lower()
+        active_alias = str(blocked_values.get("active_window_alias", "")).strip().lower()
+        active_title = str(blocked_values.get("active_window_title", "")).strip()
+        active_candidate_id = str(blocked_values.get("active_window_candidate_id", "")).strip().lower()
+
+        if target == source_window:
+            task.executor_payload["handoff_source_match"] = "blocked_wrong_active_window"
+            task.executor_payload["handoff_source_selection_mode"] = "manual_selection_required"
+        if target == target_window or target.startswith(f"{target_window}|"):
+            mismatch_bits = []
+            if expected_alias:
+                mismatch_bits.append(f"expected {expected_alias}")
+            if active_alias:
+                mismatch_bits.append(f"active {active_alias}")
+            if active_title:
+                mismatch_bits.append(active_title)
+            if active_candidate_id:
+                mismatch_bits.append(active_candidate_id)
+            task.executor_payload["handoff_target_match"] = (
+                " | ".join(mismatch_bits) if mismatch_bits else "blocked_wrong_active_window"
+            )
+        return
 
     needs_manual_resolution = guard_state in {
         "manual_focus_required",
@@ -1874,6 +1957,13 @@ def _run_operator_recipe(task: Task) -> tuple[str, str]:
             try:
                 if action_type not in DESKTOP_EXECUTOR_ACTIONS:
                     raise RuntimeError(f"Recipe step action is not allowlisted: {action_type}")
+                if recipe_name == "codex_to_chatgpt_handoff_mvp":
+                    _assert_safe_handoff_input_step(
+                        task,
+                        action_type=action_type,
+                        target=target,
+                        bridge_target=bridge_target,
+                    )
 
                 result = _invoke_desktop_bridge_action(
                     action_type=action_type,

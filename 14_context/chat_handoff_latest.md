@@ -3,6 +3,7 @@
 ## 1. Project Purpose
 - Build Ghoti: a supervised, local-first Windows operator that can help think, plan, build, document, and perform narrow approved actions on the machine.
 - Keep the operator stack separate from the brain/provider layer so ChatGPT, Claude, Gemini, Gemma local, or later models can be swapped without rewriting approvals, memory, recipes, dashboard, or integrations.
+- Keep the operator stack compatible with later OpenClaw-style channel, browser-assisted, messaging, and long-running operator components without turning OpenClaw into a hard dependency now.
 - Stay practical: explicit actions, visible state, approval gates, compact durable memory, and clean handoff when chats get long.
 
 ## 2. Repo Root And Boundary Rules
@@ -45,7 +46,9 @@
 - First narrow supervised Codex-to-ChatGPT handoff MVP recipe.
 - Real-window handoff target discovery now exists for Codex and ChatGPT candidate windows.
 - Manual target resolution now exists in the dashboard for the current handoff run through explicit candidate selection.
+- The dashboard can now optionally remember selected visible Codex and ChatGPT candidate IDs locally in the browser and clear stale remembered picks when the exact windows disappear.
 - Handoff detail now shows matched source and destination windows, whether selection was automatic or manual, and why matching failed when it stops safely.
+- Codex-to-ChatGPT handoff now re-verifies the active destination immediately before paste or send and blocks safely if the foreground window does not still match the intended explicit Codex or ChatGPT target.
 - Operator-facing task filtering for noisy task history:
   recent-only and visibility filters are now present in the dashboard.
 
@@ -61,6 +64,8 @@
 - Handoff defaults to paste-only. Auto-send is blocked unless the recipe explicitly allows it.
 - Codex-to-ChatGPT handoff must not fall back to terminal or PowerShell targets.
 - If the intended source or target window cannot be resolved confidently, block safely instead of pasting anywhere.
+- If the active window changes unexpectedly or does not still match the intended Codex or ChatGPT destination at execution time, block safely before input.
+- Explicit terminal-targeted actions remain valid when the operator intentionally targets a terminal; the no-terminal rule applies to Codex-to-ChatGPT handoff destinations.
 - If the same action or payload fails 2 times, stop retrying it and clearly report the problem.
 - No task should be deleted without the user's explicit approval; prefer archive, filter, and history visibility instead.
 
@@ -100,29 +105,31 @@
 - Current hardening result:
   terminal or PowerShell fallback is rejected for this recipe,
   unresolved targets now stop with manual target resolution required,
+  wrong-active-window execution now stops before any paste or send step,
   and repeated identical blocked payloads are counted and reported instead of looping.
 - Current targeting result:
   the dashboard can list real Codex and ChatGPT window candidates,
   ambiguous ChatGPT matches now block safely,
-  and the operator can choose a specific candidate for the current run when needed.
+  the operator can choose a specific candidate for the current run when needed,
+  and the dashboard can optionally remember those exact candidate IDs locally for later runs.
 
 ## 8. Known Weird Behaviors / Current Issues
 - Chat context still fills quickly, so the handoff files matter.
 - Window matching still depends on visible titles and narrow aliases, so real Codex/ChatGPT targeting is improved but still somewhat brittle.
-- The terminal-fallback bug is now blocked in the recipe path, but real Codex and ChatGPT window matching can still stop at manual target resolution if the title match is unclear.
-- Terminal or PowerShell must not be used as a fallback target for Codex-to-ChatGPT handoff, and the current recipe now enforces that.
+- The wrong-destination input bug is now blocked in the recipe path, so a foreground terminal or other mismatched window should stop the handoff before input.
+- Terminal or PowerShell must not be used as a fallback target for Codex-to-ChatGPT handoff, although explicit terminal-targeted actions elsewhere are still allowed.
 - Some focus-sensitive desktop actions can still hit `manual_focus_required` depending on the Windows session.
 - Desktop screenshot capture can still hit `desktop_capture_unavailable` in some sessions.
 - PowerShell or Node windows can still appear during some checks or desktop actions, although focus-first reuse and resource guards reduce this.
 - Task history is large and noisy even with the new filters; operator-facing filtering still needs another pass.
-- Manual target resolution is current-run only; there is no durable remembered preferred Codex or ChatGPT target yet.
+- Remembered candidate selection now exists only as an opt-in browser-local dashboard preference; there is still no broader runtime-stored durable target profile.
 - Older failed checker tasks still exist and should not be over-weighted without checking the latest checker results.
 
 ## 9. Repo Integration Map Summary
 - Core now:
   this repo, runtime MVP, dashboard MVP, browser playground, desktop playground, supervisor flow, approval flow, workspace policy, allowlisted executor, and narrow operator recipes.
 - DNA/reference:
-  Codex, Claude Code, OpenClaw, official Playwright, Windows-Use, Windows-MCP, Open Interpreter, Open Computer Use, browser-use, Stagehand, and Blueprint.am as product inspiration only.
+  Codex, Claude Code, OpenClaw, official Playwright, Windows-Use, Windows-MCP, Open Interpreter, Open Computer Use, browser-use, Stagehand, and Blueprint.am as product inspiration, with OpenClaw now treated as a major strategic reference for future control-surface and remote-assistant design.
 - Later experiment:
   OpenHands or OpenHarness style systems, Claw Code, Kronos, MiroFish, and future local model routing and eval layers.
 - Use-only / optional utility:
@@ -131,11 +138,12 @@
   leak-style extraction repos, abuse-oriented automation, and unrelated side tools.
 
 ## 10. Exact Next Recommended Step
-- Run live manual-assisted Codex-to-ChatGPT handoff tests with real windows using the new candidate picker.
-- If that live loop feels stable, add a narrow remembered-target preference or safe sticky target profile so the operator does not need to re-pick the same windows every run.
+- Run live manual-assisted Codex-to-ChatGPT handoff tests with real windows using the new candidate picker and remembered candidate toggle, specifically proving that a foreground terminal blocks before input.
+- Confirm separately that explicit terminal-targeted actions still behave honestly as terminal actions when the operator intentionally chooses them.
+- If that live loop feels stable, decide later whether anything broader than the browser-local remembered candidate option is justified.
 
 ## 11. What Still Does NOT Exist Yet
-- No durable real ChatGPT-specific target resolver.
+- No runtime-stored durable Codex or ChatGPT target profile beyond the browser-local remembered candidate toggle.
 - No unrestricted desktop control, freeform typing, drag-and-drop, or free-roaming automation.
 - No full browser executor loop.
 - No full Windows app executor.
@@ -150,7 +158,9 @@
 - The first narrow supervised Codex-to-ChatGPT handoff workflow now blocks terminal fallback by design and remains paste-only by default.
 - Repeated identical blocked handoff payloads now stop after the second explicit operator-approved retry path instead of looping.
 - Real-window targeting is now strong enough to list Codex and ChatGPT candidates and require explicit manual choice when matching is ambiguous.
-- Runtime, dashboard, and desktop checkers now cover the real-window targeting path honestly.
+- Browser-local remembered candidate selection now exists and restores only exact visible candidate IDs.
+- Runtime, dashboard, and desktop checkers now cover the real-window targeting path honestly, including the wrong-active-window block before input.
+- Explicit terminal-targeted actions still remain possible for terminal recipes or actions outside the Codex-to-ChatGPT handoff path.
 - Task history is large and noisy and needs better operator-facing filtering rather than deletion.
 
 ## 13. 14_context Files To Read First In A New Thread

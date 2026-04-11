@@ -1,7 +1,10 @@
 # Next Actions
 
-- Manually re-test `codex_to_chatgpt_handoff_mvp` with real Codex and ChatGPT windows using the new candidate picker
-- Decide whether a safe remembered target preference should be added for Codex and ChatGPT so the operator does not need to re-pick the same windows every run
+- Manually re-test `codex_to_chatgpt_handoff_mvp` with real Codex and ChatGPT windows using the new candidate picker and remembered candidate toggle
+- Validate that a foreground terminal or other wrong active window blocks the handoff before any paste or send step
+- Validate that explicit terminal-targeted actions still behave honestly as terminal actions when the operator intentionally targets a terminal
+- Validate that the browser-local remembered Codex and ChatGPT candidate selections restore only exact visible windows and clear stale picks safely
+- Decide later whether anything broader than the browser-local remembered candidate option is justified so the operator does not need to re-pick the same windows every run
 - Tighten Codex and ChatGPT target resolution further only if it reduces manual picks without widening into unsafe guessing
 - Add a small operator-confirmed handoff review step later only if it improves safety without reintroducing terminal or shell fallback
 - Keep repeated identical blocked handoff payloads from being re-run beyond the current two-attempt ceiling
@@ -10,6 +13,7 @@
 - Keep no-task-deletion as an explicit policy and use filter/archive/history instead
 - Keep the recipe library narrow, composable, approval-aware, and ready for later provider swapping
 - Keep the operator stack separate from the brain/provider layer so future ChatGPT, Claude, Gemini, or Gemma routing does not force a core rewrite
+- Capture the OpenClaw patterns that are most useful for later channel, browser-assist, and long-running operator evolution without introducing a hard dependency
 - Test the safe repo executor manually from the operator console, including read, artifact, checker, and failure visibility paths
 - Test the desktop bridge hand layer manually from the operator console, including focus, clipboard read/write, paste, hotkeys, mouse actions, waits, and the Ctrl+8 failsafe
 - Test the workspace-boundary flow manually from the operator console

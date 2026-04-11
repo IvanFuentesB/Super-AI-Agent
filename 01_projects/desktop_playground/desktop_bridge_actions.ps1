@@ -282,7 +282,8 @@ function Stop-BlockedAction {
     param(
         [string]$Reason,
         [string]$GuardState = 'blocked',
-        [string]$TargetValue = ''
+        [string]$TargetValue = '',
+        [hashtable]$DetailFields = @{}
     )
 
     $snapshot = Get-ResourceGuardSnapshot
@@ -299,6 +300,11 @@ function Stop-BlockedAction {
     Write-Field 'guard_state' $GuardState
     Write-Field 'failure_reason' $Reason
     Write-Field 'headline' $Reason
+    foreach ($entry in $DetailFields.GetEnumerator() | Sort-Object Name) {
+        if (-not [string]::IsNullOrWhiteSpace([string]$entry.Key)) {
+            Write-Field ([string]$entry.Key) ([string]$entry.Value)
+        }
+    }
     Write-ResourceGuardSnapshot -Snapshot $snapshot
     exit 41
 }
@@ -702,6 +708,94 @@ function Get-AllowedAliasByTitle {
     return 'unsupported'
 }
 
+function Get-WindowCandidateIdFromInfo {
+    param(
+        [object]$WindowInfo
+    )
+
+    if ($null -eq $WindowInfo) {
+        return ''
+    }
+
+    if (
+        $WindowInfo.PSObject.Properties.Name -contains 'CandidateId' -and
+        -not [string]::IsNullOrWhiteSpace([string]$WindowInfo.CandidateId)
+    ) {
+        return [string]$WindowInfo.CandidateId
+    }
+
+    return New-WindowCandidateId -ProcessId ([int]$WindowInfo.ProcessId) -Title ([string]$WindowInfo.Title)
+}
+
+function Format-WindowIdentity {
+    param(
+        [object]$WindowInfo
+    )
+
+    if ($null -eq $WindowInfo) {
+        return 'none'
+    }
+
+    $alias = ([string]$WindowInfo.Alias).Trim()
+    $title = ([string]$WindowInfo.Title).Trim()
+    $candidateId = Get-WindowCandidateIdFromInfo -WindowInfo $WindowInfo
+    return "{0} | {1} | {2}" -f `
+        $(if ([string]::IsNullOrWhiteSpace($alias)) { 'none' } else { $alias }), `
+        $(if ([string]::IsNullOrWhiteSpace($title)) { 'none' } else { $title }), `
+        $(if ([string]::IsNullOrWhiteSpace($candidateId)) { 'none' } else { $candidateId })
+}
+
+function Test-ActiveWindowMatchesResolvedContext {
+    param(
+        [object]$ActiveWindow,
+        [object]$ResolvedContext,
+        [string]$ExpectedAlias = ''
+    )
+
+    if ($null -eq $ActiveWindow -or $null -eq $ResolvedContext) {
+        return $false
+    }
+
+    if ($ActiveWindow.Handle -eq [System.IntPtr]::Zero) {
+        return $false
+    }
+
+    $effectiveAlias = ([string]$ExpectedAlias).Trim().ToLowerInvariant()
+    if ([string]::IsNullOrWhiteSpace($effectiveAlias)) {
+        if ($ResolvedContext.PSObject.Properties.Name -contains 'Alias') {
+            $effectiveAlias = ([string]$ResolvedContext.Alias).Trim().ToLowerInvariant()
+        }
+        elseif ($ResolvedContext.PSObject.Properties.Name -contains 'ActiveAlias') {
+            $effectiveAlias = ([string]$ResolvedContext.ActiveAlias).Trim().ToLowerInvariant()
+        }
+    }
+
+    $expectedHandle = if ($ResolvedContext.PSObject.Properties.Name -contains 'Handle') {
+        $ResolvedContext.Handle
+    }
+    else {
+        [System.IntPtr]::Zero
+    }
+    $expectedCandidateId = if ($ResolvedContext.PSObject.Properties.Name -contains 'CandidateId') {
+        ([string]$ResolvedContext.CandidateId).Trim().ToLowerInvariant()
+    }
+    else {
+        ''
+    }
+    $activeCandidateId = (Get-WindowCandidateIdFromInfo -WindowInfo $ActiveWindow).Trim().ToLowerInvariant()
+    $aliasMatches = -not [string]::IsNullOrWhiteSpace($effectiveAlias) -and (
+        [string]::Equals(
+            ([string]$ActiveWindow.Alias).Trim().ToLowerInvariant(),
+            $effectiveAlias,
+            [System.StringComparison]::OrdinalIgnoreCase
+        )
+    )
+    $handleMatches = $expectedHandle -ne [System.IntPtr]::Zero -and $ActiveWindow.Handle -eq $expectedHandle
+    $candidateMatches = -not [string]::IsNullOrWhiteSpace($expectedCandidateId) -and $activeCandidateId -eq $expectedCandidateId
+
+    return $aliasMatches -and ($handleMatches -or $candidateMatches)
+}
+
 function Parse-WindowTargetSpec {
     param(
         [string]$Value
@@ -940,6 +1034,7 @@ function Get-ActiveWindowInfo {
                 Title = $fixture.Title
                 Alias = $fixture.Aliases[0]
                 ProcessId = [int]$fixture.ProcessId
+                CandidateId = [string]$fixture.CandidateId
             }
         }
         if ($fixtureWindows.Count -eq 1) {
@@ -949,6 +1044,7 @@ function Get-ActiveWindowInfo {
                 Title = $fixture.Title
                 Alias = $fixture.Aliases[0]
                 ProcessId = [int]$fixture.ProcessId
+                CandidateId = [string]$fixture.CandidateId
             }
         }
     }
@@ -960,6 +1056,7 @@ function Get-ActiveWindowInfo {
             Title = ''
             Alias = 'none'
             ProcessId = 0
+            CandidateId = ''
         }
     }
 
@@ -973,7 +1070,68 @@ function Get-ActiveWindowInfo {
         Title = $title
         Alias = $alias
         ProcessId = [int]$processId
+        CandidateId = New-WindowCandidateId -ProcessId ([int]$processId) -Title $title
     }
+}
+
+function Confirm-ResolvedInputWindowContextOrBlock {
+    param(
+        [object]$Context,
+        [string]$TargetSpec = '',
+        [string]$ActionLabel = 'desktop input action'
+    )
+
+    $windowSpec = Parse-WindowTargetSpec -Value $TargetSpec
+    $expectedAlias = ([string]$windowSpec.Alias).Trim().ToLowerInvariant()
+    if ([string]::IsNullOrWhiteSpace($expectedAlias)) {
+        $expectedAlias = if ($Context.PSObject.Properties.Name -contains 'Alias') {
+            ([string]$Context.Alias).Trim().ToLowerInvariant()
+        }
+        else {
+            ([string]$Context.ActiveAlias).Trim().ToLowerInvariant()
+        }
+    }
+    $expectedCandidateId = ([string]$windowSpec.CandidateId).Trim().ToLowerInvariant()
+    if ([string]::IsNullOrWhiteSpace($expectedCandidateId) -and $Context.PSObject.Properties.Name -contains 'CandidateId') {
+        $expectedCandidateId = ([string]$Context.CandidateId).Trim().ToLowerInvariant()
+    }
+    $expectedTargetText = if ([string]::IsNullOrWhiteSpace($expectedCandidateId)) {
+        $expectedAlias
+    }
+    else {
+        "{0}#{1}" -f $expectedAlias, $expectedCandidateId
+    }
+
+    $activeWindow = Get-ActiveWindowInfo
+    if ($activeWindow.Handle -eq [System.IntPtr]::Zero) {
+        Stop-BlockedAction `
+            -Reason ("Foreground desktop access is unavailable in this session, so {0} requires manual operator focus for target: {1}." -f $ActionLabel, $expectedTargetText) `
+            -GuardState 'manual_focus_required' `
+            -TargetValue $expectedTargetText `
+            -DetailFields @{
+                expected_window_alias = $expectedAlias
+                expected_window_candidate_id = $expectedCandidateId
+                active_window_alias = 'none'
+                active_window_title = 'none'
+                active_window_candidate_id = 'none'
+            }
+    }
+
+    if (-not (Test-ActiveWindowMatchesResolvedContext -ActiveWindow $activeWindow -ResolvedContext $Context -ExpectedAlias $expectedAlias)) {
+        Stop-BlockedAction `
+            -Reason ("Active window verification failed before {0}. Expected allowlisted target {1}, but the foreground window is {2}. The action was blocked before input." -f $ActionLabel, $expectedTargetText, (Format-WindowIdentity -WindowInfo $activeWindow)) `
+            -GuardState 'unexpected_active_window' `
+            -TargetValue $expectedTargetText `
+            -DetailFields @{
+                expected_window_alias = $expectedAlias
+                expected_window_candidate_id = $expectedCandidateId
+                active_window_alias = ([string]$activeWindow.Alias)
+                active_window_title = ([string]$activeWindow.Title)
+                active_window_candidate_id = (Get-WindowCandidateIdFromInfo -WindowInfo $activeWindow)
+            }
+    }
+
+    return $activeWindow
 }
 
 function Focus-AllowedWindowInternal {
@@ -1005,7 +1163,7 @@ function Focus-AllowedWindowInternal {
         }
     }
 
-    if ($activeBefore.Handle -eq $window.Handle -or $activeBefore.Alias -eq $Alias -or $activeBefore.Title -eq $window.Title) {
+    if (Test-ActiveWindowMatchesResolvedContext -ActiveWindow $activeBefore -ResolvedContext $window -ExpectedAlias $Alias) {
         return [pscustomobject]@{
             Alias = $Alias
             Title = $window.Title
@@ -1052,13 +1210,13 @@ function Focus-AllowedWindowInternal {
 
         Wait-WithInterrupt -Milliseconds 220 -Phase "verifying focus for $Alias"
         $activeWindow = Get-ActiveWindowInfo
-        if ($activeWindow.Handle -eq $window.Handle -or $activeWindow.Alias -eq $Alias -or $activeWindow.Title -eq $window.Title) {
+        if (Test-ActiveWindowMatchesResolvedContext -ActiveWindow $activeWindow -ResolvedContext $window -ExpectedAlias $Alias) {
             $focusOk = $true
             break
         }
     }
 
-    if (-not ($activeWindow.Handle -eq $window.Handle -or $activeWindow.Alias -eq $Alias -or $activeWindow.Title -eq $window.Title)) {
+    if (-not (Test-ActiveWindowMatchesResolvedContext -ActiveWindow $activeWindow -ResolvedContext $window -ExpectedAlias $Alias)) {
         throw "Windows did not move focus to the requested allowlisted window: $Alias"
     }
 
@@ -1214,7 +1372,8 @@ function Resolve-InputWindowContextOrBlock {
             $message -like 'Windows did not move focus to the requested allowlisted window:*' -or
             $message -like 'Desktop input actions require a focused allowlisted window or an explicit allowed target.' -or
             $message -like 'Multiple candidate windows matched allowlisted target*' -or
-            $message -like 'Manual target resolution candidate*'
+            $message -like 'Manual target resolution candidate*' -or
+            $message -like 'No visible allowlisted window found for target:*'
         ) {
             $effectiveTarget = if ([string]::IsNullOrWhiteSpace($windowSpec.Alias)) { 'active_allowlisted_window' } else { $TargetSpec }
             $activeWindow = Get-ActiveWindowInfo
@@ -1227,10 +1386,23 @@ function Resolve-InputWindowContextOrBlock {
             elseif ($message -like 'Manual target resolution candidate*') {
                 $message
             }
+            elseif ($message -like 'No visible allowlisted window found for target:*') {
+                "No visible allowlisted window matched target $effectiveTarget, so manual target resolution is required."
+            }
             else {
                 "Desktop input focus could not be verified for target $effectiveTarget, so $ActionLabel requires manual operator focus."
             }
-            Stop-BlockedAction -Reason $reason -GuardState 'manual_focus_required' -TargetValue $effectiveTarget
+            $guardState = if (
+                $message -like 'Multiple candidate windows matched allowlisted target*' -or
+                $message -like 'Manual target resolution candidate*' -or
+                $message -like 'No visible allowlisted window found for target:*'
+            ) {
+                'manual_target_resolution_required'
+            }
+            else {
+                'manual_focus_required'
+            }
+            Stop-BlockedAction -Reason $reason -GuardState $guardState -TargetValue $effectiveTarget
         }
 
         throw
@@ -1691,7 +1863,8 @@ function Invoke-DesktopAction {
             }
 
             $context = Resolve-InputWindowContextOrBlock -TargetSpec $Target -ActionLabel 'copying a selection'
-            Assert-NotInterrupted -Phase "copying selection from $($context.ActiveAlias)"
+            $verifiedWindow = Confirm-ResolvedInputWindowContextOrBlock -Context $context -TargetSpec $Target -ActionLabel 'copying a selection'
+            Assert-NotInterrupted -Phase "copying selection from $($verifiedWindow.Alias)"
             [System.Windows.Forms.SendKeys]::SendWait('^c')
             Wait-WithInterrupt -Milliseconds 450 -Phase 'waiting for clipboard copy'
             $clipboardText = Get-ClipboardTextSafe
@@ -1701,10 +1874,10 @@ function Invoke-DesktopAction {
             Write-Field 'action_type' 'copy_selection'
             Write-Field 'status' 'succeeded'
             Write-Field 'target' ($(if ($alias) { $(if ([string]::IsNullOrWhiteSpace($targetSpec.CandidateId)) { $alias } else { "{0}#{1}" -f $alias, $targetSpec.CandidateId }) } else { $context.ActiveAlias }))
-            Write-Field 'headline' ("Copied selection from allowlisted window: {0}" -f $context.ActiveAlias)
-            Write-Field 'active_window_alias' $context.ActiveAlias
-            Write-Field 'active_window_title' $context.ActiveTitle
-            Write-Field 'window_candidate_id' $context.CandidateId
+            Write-Field 'headline' ("Copied selection from allowlisted window: {0}" -f $verifiedWindow.Alias)
+            Write-Field 'active_window_alias' $verifiedWindow.Alias
+            Write-Field 'active_window_title' $verifiedWindow.Title
+            Write-Field 'window_candidate_id' $verifiedWindow.CandidateId
             Write-Field 'window_resolution_mode' $context.ResolutionMode
             Write-Field 'clipboard_preview' (Short-Preview -Text $clipboardText)
             Write-Field 'clipboard_classification' $clipboardClassification.Classification
@@ -1738,17 +1911,18 @@ function Invoke-DesktopAction {
                     -GuardState 'clipboard_guard_triggered' `
                     -TargetValue $context.ActiveAlias
             }
-            Assert-NotInterrupted -Phase "pasting clipboard into $($context.ActiveAlias)"
+            $verifiedWindow = Confirm-ResolvedInputWindowContextOrBlock -Context $context -TargetSpec $Target -ActionLabel 'pasting clipboard text'
+            Assert-NotInterrupted -Phase "pasting clipboard into $($verifiedWindow.Alias)"
             [System.Windows.Forms.SendKeys]::SendWait('^v')
             Wait-WithInterrupt -Milliseconds 250 -Phase 'waiting after clipboard paste'
 
             Write-Field 'action_type' 'paste_clipboard'
             Write-Field 'status' 'succeeded'
             Write-Field 'target' ($(if ($alias) { $(if ([string]::IsNullOrWhiteSpace($targetSpec.CandidateId)) { $alias } else { "{0}#{1}" -f $alias, $targetSpec.CandidateId }) } else { $context.ActiveAlias }))
-            Write-Field 'headline' ("Pasted clipboard into allowlisted window: {0}" -f $context.ActiveAlias)
-            Write-Field 'active_window_alias' $context.ActiveAlias
-            Write-Field 'active_window_title' $context.ActiveTitle
-            Write-Field 'window_candidate_id' $context.CandidateId
+            Write-Field 'headline' ("Pasted clipboard into allowlisted window: {0}" -f $verifiedWindow.Alias)
+            Write-Field 'active_window_alias' $verifiedWindow.Alias
+            Write-Field 'active_window_title' $verifiedWindow.Title
+            Write-Field 'window_candidate_id' $verifiedWindow.CandidateId
             Write-Field 'window_resolution_mode' $context.ResolutionMode
             Write-Field 'clipboard_preview' $clipboardPreview
             Write-Field 'clipboard_classification' $clipboardClassification.Classification
@@ -1775,6 +1949,7 @@ function Invoke-DesktopAction {
             }
             $hotkeyTargetSpec = $(if ([string]::IsNullOrWhiteSpace($spec.Alias)) { '' } elseif ([string]::IsNullOrWhiteSpace($spec.CandidateId)) { $spec.Alias } else { "{0}#{1}" -f $spec.Alias, $spec.CandidateId })
             $context = Resolve-InputWindowContextOrBlock -TargetSpec $hotkeyTargetSpec -ActionLabel ("sending hotkey {0}" -f $spec.Hotkey)
+            $verifiedWindow = Confirm-ResolvedInputWindowContextOrBlock -Context $context -TargetSpec $hotkeyTargetSpec -ActionLabel ("sending hotkey {0}" -f $spec.Hotkey)
             Assert-NotInterrupted -Phase "sending hotkey $($spec.Hotkey)"
             [System.Windows.Forms.SendKeys]::SendWait($spec.SendKeys)
             Wait-WithInterrupt -Milliseconds 220 -Phase "waiting after hotkey $($spec.Hotkey)"
@@ -1782,10 +1957,10 @@ function Invoke-DesktopAction {
             Write-Field 'action_type' 'send_hotkey'
             Write-Field 'status' 'succeeded'
             Write-Field 'target' $spec.Hotkey
-            Write-Field 'headline' ("Sent allowlisted hotkey {0} to {1}" -f $spec.Hotkey, $context.ActiveAlias)
-            Write-Field 'active_window_alias' $context.ActiveAlias
-            Write-Field 'active_window_title' $context.ActiveTitle
-            Write-Field 'window_candidate_id' $context.CandidateId
+            Write-Field 'headline' ("Sent allowlisted hotkey {0} to {1}" -f $spec.Hotkey, $verifiedWindow.Alias)
+            Write-Field 'active_window_alias' $verifiedWindow.Alias
+            Write-Field 'active_window_title' $verifiedWindow.Title
+            Write-Field 'window_candidate_id' $verifiedWindow.CandidateId
             Write-Field 'window_resolution_mode' $context.ResolutionMode
             Write-Field 'sent_hotkey' $spec.Hotkey
             if ($spec.Hotkey -eq 'ctrl+v') {

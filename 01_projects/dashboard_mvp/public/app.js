@@ -8,6 +8,7 @@ const uiState = {
   executorTasksPayload: null,
   handoffTargetsPayload: null,
 };
+const HANDOFF_TARGET_PREFERENCES_KEY = "ghoti.handoffTargetPreferences.v1";
 
 const desktopActionTypes = new Set([
   "list_windows",
@@ -79,6 +80,55 @@ function setValue(id, value) {
   }
 }
 
+function loadHandoffTargetPreferences() {
+  try {
+    const raw = window.localStorage.getItem(HANDOFF_TARGET_PREFERENCES_KEY);
+    if (!raw) {
+      return {
+        rememberSelectedCandidates: false,
+        sourceCandidateId: "",
+        targetCandidateId: "",
+      };
+    }
+
+    const parsed = JSON.parse(raw);
+    return {
+      rememberSelectedCandidates: Boolean(parsed?.rememberSelectedCandidates),
+      sourceCandidateId: String(parsed?.sourceCandidateId || ""),
+      targetCandidateId: String(parsed?.targetCandidateId || ""),
+    };
+  } catch (error) {
+    return {
+      rememberSelectedCandidates: false,
+      sourceCandidateId: "",
+      targetCandidateId: "",
+    };
+  }
+}
+
+function saveHandoffTargetPreferences(preferences) {
+  try {
+    window.localStorage.setItem(
+      HANDOFF_TARGET_PREFERENCES_KEY,
+      JSON.stringify({
+        rememberSelectedCandidates: Boolean(preferences?.rememberSelectedCandidates),
+        sourceCandidateId: String(preferences?.sourceCandidateId || ""),
+        targetCandidateId: String(preferences?.targetCandidateId || ""),
+      }),
+    );
+  } catch (error) {
+    // Ignore local storage errors and keep the handoff flow usable.
+  }
+}
+
+function clearHandoffTargetPreferences() {
+  try {
+    window.localStorage.removeItem(HANDOFF_TARGET_PREFERENCES_KEY);
+  } catch (error) {
+    // Ignore local storage errors and keep the handoff flow usable.
+  }
+}
+
 function setSelectOptions(id, options, preferredValue = "") {
   const element = document.getElementById(id);
   if (!element) {
@@ -102,6 +152,69 @@ function getInputValue(id) {
 function isChecked(id) {
   const element = document.getElementById(id);
   return Boolean(element?.checked);
+}
+
+function shouldRememberHandoffTargetSelections() {
+  return isChecked("handoff-remember-targets");
+}
+
+function persistHandoffTargetPreferences() {
+  if (!shouldRememberHandoffTargetSelections()) {
+    clearHandoffTargetPreferences();
+    return;
+  }
+
+  saveHandoffTargetPreferences({
+    rememberSelectedCandidates: true,
+    sourceCandidateId: getInputValue("handoff-source-candidate"),
+    targetCandidateId: getInputValue("handoff-target-candidate"),
+  });
+}
+
+function updateHandoffTargetPreferenceNote(options = {}) {
+  if (!shouldRememberHandoffTargetSelections()) {
+    setText(
+      "handoff-target-memory-note",
+      "Remembered target picks are off. Ghoti will use only the current visible selector values.",
+    );
+    return;
+  }
+
+  const restored = [];
+  const cleared = [];
+  if (options.restoredSource) {
+    restored.push("Codex");
+  }
+  if (options.restoredTarget) {
+    restored.push("ChatGPT");
+  }
+  if (options.clearedSource) {
+    cleared.push("Codex");
+  }
+  if (options.clearedTarget) {
+    cleared.push("ChatGPT");
+  }
+
+  let message = "Remembered target picks are on for this browser.";
+  if (restored.length > 0) {
+    message += ` Restored ${restored.join(" and ")} candidate selection.`;
+  }
+  if (cleared.length > 0) {
+    message += ` Cleared stale ${cleared.join(" and ")} candidate selection because the exact window is no longer visible.`;
+  }
+  setText("handoff-target-memory-note", message);
+}
+
+function getPreferredCandidateValue(selectId, options, rememberedValue = "") {
+  const currentValue = getInputValue(selectId);
+  const availableValues = new Set(options.map((item) => item.value));
+  if (currentValue && availableValues.has(currentValue)) {
+    return currentValue;
+  }
+  if (rememberedValue && availableValues.has(rememberedValue)) {
+    return rememberedValue;
+  }
+  return "";
 }
 
 function buildHotkeyTarget() {
@@ -177,6 +290,8 @@ function renderHandoffTargetCandidates(payload) {
   const summary = payload?.summary || {};
   const codexCandidates = Array.isArray(summary.codexCandidates) ? summary.codexCandidates : [];
   const chatgptCandidates = Array.isArray(summary.chatgptCandidates) ? summary.chatgptCandidates : [];
+  const currentSourceValue = getInputValue("handoff-source-candidate");
+  const currentTargetValue = getInputValue("handoff-target-candidate");
   const sourceOptions = [{ value: "", label: "Auto match" }].concat(
     codexCandidates.map((item) => ({
       value: item.candidateId || "",
@@ -190,8 +305,43 @@ function renderHandoffTargetCandidates(payload) {
     })),
   );
 
-  setSelectOptions("handoff-source-candidate", sourceOptions);
-  setSelectOptions("handoff-target-candidate", targetOptions);
+  const preferences = loadHandoffTargetPreferences();
+  const sourceCandidateAvailable = Boolean(
+    preferences.sourceCandidateId && sourceOptions.some((item) => item.value === preferences.sourceCandidateId),
+  );
+  const targetCandidateAvailable = Boolean(
+    preferences.targetCandidateId && targetOptions.some((item) => item.value === preferences.targetCandidateId),
+  );
+  const sourcePreferredValue = getPreferredCandidateValue(
+    "handoff-source-candidate",
+    sourceOptions,
+    preferences.rememberSelectedCandidates ? preferences.sourceCandidateId : "",
+  );
+  const targetPreferredValue = getPreferredCandidateValue(
+    "handoff-target-candidate",
+    targetOptions,
+    preferences.rememberSelectedCandidates ? preferences.targetCandidateId : "",
+  );
+
+  setSelectOptions("handoff-source-candidate", sourceOptions, sourcePreferredValue);
+  setSelectOptions("handoff-target-candidate", targetOptions, targetPreferredValue);
+  if (preferences.rememberSelectedCandidates) {
+    persistHandoffTargetPreferences();
+  }
+  updateHandoffTargetPreferenceNote({
+    restoredSource:
+      preferences.rememberSelectedCandidates
+      && Boolean(preferences.sourceCandidateId)
+      && sourcePreferredValue === preferences.sourceCandidateId
+      && currentSourceValue !== preferences.sourceCandidateId,
+    restoredTarget:
+      preferences.rememberSelectedCandidates
+      && Boolean(preferences.targetCandidateId)
+      && targetPreferredValue === preferences.targetCandidateId
+      && currentTargetValue !== preferences.targetCandidateId,
+    clearedSource: preferences.rememberSelectedCandidates && Boolean(preferences.sourceCandidateId) && !sourceCandidateAvailable,
+    clearedTarget: preferences.rememberSelectedCandidates && Boolean(preferences.targetCandidateId) && !targetCandidateAvailable,
+  });
   setText(
     "handoff-target-summary",
     summary.headline || "Visible Codex and ChatGPT window candidates are ready for manual selection.",
@@ -2445,6 +2595,7 @@ document.getElementById("queue-recipe-wait-step").addEventListener("click", asyn
 });
 
 document.getElementById("queue-recipe-codex-handoff").addEventListener("click", async (event) => {
+  persistHandoffTargetPreferences();
   await runExecutorQueue(
     buildRecipeQueuePayload("codex_to_chatgpt_handoff_mvp", buildCodexChatGptHandoffOptions()),
     "Queue Codex to ChatGPT handoff recipe",
@@ -2464,6 +2615,25 @@ document.getElementById("refresh-handoff-targets").addEventListener("click", asy
     },
     { panelId: "recipe-action-summary" },
   );
+});
+
+document.getElementById("handoff-remember-targets").addEventListener("change", () => {
+  persistHandoffTargetPreferences();
+  updateHandoffTargetPreferenceNote();
+});
+
+document.getElementById("handoff-source-candidate").addEventListener("change", () => {
+  if (shouldRememberHandoffTargetSelections()) {
+    persistHandoffTargetPreferences();
+    updateHandoffTargetPreferenceNote();
+  }
+});
+
+document.getElementById("handoff-target-candidate").addEventListener("change", () => {
+  if (shouldRememberHandoffTargetSelections()) {
+    persistHandoffTargetPreferences();
+    updateHandoffTargetPreferenceNote();
+  }
 });
 
 document.getElementById("run-browser-visible").addEventListener("click", async (event) => {
@@ -2701,6 +2871,8 @@ document.getElementById("task-execute").addEventListener("click", async (event) 
 
 clearApprovalDetail("Select a pending approval to inspect it.");
 clearTaskDetail("Select a stopped, interrupted, or executor task to inspect it.");
+document.getElementById("handoff-remember-targets").checked = loadHandoffTargetPreferences().rememberSelectedCandidates;
+updateHandoffTargetPreferenceNote();
 
 refreshConsole().catch((error) => {
   setText("operator-headline", "Console load failed.");

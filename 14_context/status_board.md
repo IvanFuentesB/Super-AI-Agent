@@ -48,13 +48,17 @@
 - feat/real-window-handoff-targeting
 
 ## Current Phase
-- Real-window handoff targeting complete on the current branch; next step is live manual-assisted handoff validation and possible safe remembered target preferences
+- Real-window handoff targeting, wrong-active-window input blocking, and the browser-local remembered candidate toggle are complete on the current branch; next step is live manual-assisted validation and follow-on architecture capture
 
 ## Next Milestones
 - manually validate real Codex and ChatGPT handoff with the new candidate picker
-- decide whether safe remembered target preferences are justified for repeated Codex and ChatGPT handoff runs
+- manually validate that a foreground terminal or other wrong active window blocks Codex-to-ChatGPT handoff before any input
+- manually validate that explicit terminal-targeted actions still work as intentional terminal actions
+- validate the new browser-local remembered candidate option for repeated Codex and ChatGPT handoff runs
+- decide later whether anything broader than browser-local remembered candidates is justified
 - tighten real Codex and ChatGPT target matching only if it reduces manual picks without unsafe guessing
 - keep repeated junk payload retry handling capped at two attempts and visible to the operator
+- capture the OpenClaw patterns that fit later Ghoti channel, browser-assist, and long-running operator work without making it a hard dependency now
 - improve operator-facing task-history filtering so stale failures stay visible without crowding current work
 - test the safe repo executor manually from the operator console
 - test the desktop bridge hand layer manually from the operator console
@@ -89,9 +93,10 @@
 - some focus-sensitive desktop actions still depend on what the active Windows session allows, so manual-focus-required remains the honest fallback in some checker sessions
 - desktop screenshot capture can still be unavailable in some Windows sessions, so manual capture remains the honest fallback there
 - no task deletion flow exists, and old task noise should be handled through filtering, recent views, or archive-style visibility instead
-- Codex-to-ChatGPT handoff is not allowed to fall back to terminal or PowerShell targets
+- Codex-to-ChatGPT handoff is not allowed to fall back to terminal or PowerShell targets, although explicit terminal-targeted actions elsewhere remain valid
 - if the same action or payload fails twice, Ghoti should stop retrying it and clearly report the problem
 - the operator stack should stay separable from the provider brain so future model changes do not require a rewrite
+- OpenClaw is now a major strategic reference, so new operator-core decisions should stay compatible with later OpenClaw-style channel and control-surface integration
 
 ## Last Reviewed
-- 2026-04-10
+- 2026-04-11

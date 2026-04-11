@@ -10,8 +10,12 @@
 - Risky actions require approval
 - Durable memory stays compact and summarized
 - Operator stack and provider brain should stay separable so future model or provider swaps do not require rewriting the whole system
+- OpenClaw is a major strategic reference for future Ghoti channel, browser-assist, and control-surface evolution, but it must remain a reference and compatibility target rather than a hard dependency for now
 - Codex-to-ChatGPT handoff must not fall back to terminal, PowerShell, or command-shell targets
+- Explicit terminal-targeted actions remain allowed for terminal recipes or actions that intentionally target a terminal; the no-terminal restriction applies to Codex-to-ChatGPT handoff destinations
 - If the intended handoff source or destination window cannot be resolved confidently, block safely instead of pasting anywhere
+- Codex-to-ChatGPT handoff must re-verify the active destination immediately before paste or send, and any foreground mismatch must block safely before input
+- Remembered Codex-to-ChatGPT handoff target preferences must stay local to the dashboard browser and may only restore exact visible candidate IDs
 - Junk, checker, recipe-label, or repeated concatenated payloads must never be pasted into terminal, chat, or app targets
 - Continue is the current local control layer
 - Codex is the current execution layer

@@ -20,9 +20,9 @@
 - current use: operator-facing execution partner, not the only long-term model
 
 ### OpenClaw
-- status: reference only
-- why: useful for later control-plane and browser-channel ideas
-- current use: DNA and comparison source, not a near-term dependency
+- status: major strategic reference and pattern source
+- why: high-value input for later remote-assistant channels, browser-assisted workflows, managed operator patterns, long-running assistant behavior, messaging/control surfaces, and eventual computer-use evolution
+- current use: architecture and comparison source only for now, with Ghoti kept compatible for later OpenClaw-style integration but without making OpenClaw a hard dependency
 
 ### Official Playwright
 - status: reference plus local browser playground dependency
@@ -112,3 +112,4 @@
 - Only this repo is core.
 - Third-party repos are for patterns, evaluation, and narrow justified extraction.
 - Nothing should be described as integrated unless it is actually wired into the runtime, dashboard, or checkers here.
+- Ghoti should stay compatible with later OpenClaw-style channel and control-surface integration without forcing a rewrite of the operator core.

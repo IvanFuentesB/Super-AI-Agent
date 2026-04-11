@@ -1121,6 +1121,7 @@ try {
                  $desktopHotkeyExecute.task.status -eq 'failed') -and `
                 $desktopHotkeyExecute.task.lastExecutionStatus -eq 'failed' -and `
                 ($desktopHotkeyExecute.summary.headline -match 'manual operator focus' -or `
+                 $desktopHotkeyExecute.summary.headline -match 'manual target resolution is required' -or `
                  $desktopHotkeyExecute.summary.headline -match 'Failed after 2 attempt')`
             )))
         Write-Check -Name 'Desktop send_hotkey execution endpoint' -Passed $desktopHotkeyExecuteOk -Detail ($(if ($desktopHotkeyExecuteOk) { $desktopHotkeyExecute.summary.headline } else { 'desktop send_hotkey execute failed' }))
@@ -1506,7 +1507,7 @@ try {
     $handoffBlockedPayload = @{
         actionType = 'run_operator_recipe'
         target = 'codex_to_chatgpt_handoff_mvp'
-        content = '{"sourceWindow":"codex","targetWindow":"chatgpt","usePreparedClipboard":true,"waitSeconds":0}'
+        content = '{"sourceWindow":"codex","targetWindow":"chatgpt","targetWindowCandidateId":"pid:2202","usePreparedClipboard":true,"waitSeconds":0}'
     } | ConvertTo-Json -Compress
     $handoffBlockedQueue = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/executor/queue" -Method Post -ContentType 'application/json' -Body $handoffBlockedPayload -TimeoutSec 30
     $handoffBlockedQueueOk = $handoffBlockedQueue.ok -and `

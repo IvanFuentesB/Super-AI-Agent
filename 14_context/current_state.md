@@ -22,6 +22,7 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - First-wave third-party repos are cloned locally for evaluation only
 - Career-ops and related reference repos are now cloned locally for evaluation
 - Official Claude Code and OpenClaw are now cloned locally for evaluation and reference
+- OpenClaw is now a major strategic reference for later remote-assistant, browser-assisted, managed-operator, and control-surface evolution, but it is still reference material rather than a hard runtime dependency
 - Windows-Use, Windows-MCP, Open Interpreter, Open Computer Use, and official Playwright are now cloned locally for evaluation and reference
 - Provider adapter roadmap now exists
 - Integration adapter foundation now exists
@@ -84,7 +85,10 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - The dashboard handoff UI now exposes only Codex and ChatGPT targets for the handoff recipe and keeps paste-only as the default behavior
 - Real-window Codex and ChatGPT handoff targeting now exists with deterministic candidate discovery and manual candidate selection for the current run
 - The dashboard now exposes handoff target candidates, manual source and destination candidate selectors, and richer handoff detail for automatic vs manual matching
+- The dashboard can now optionally remember selected visible Codex and ChatGPT handoff candidates locally in the browser and clear stale remembered selections safely when the exact window is no longer visible
 - Runtime, dashboard, and desktop checkers now cover real-window handoff target matching, safe ambiguity blocking, and manual target-selection metadata
+- Codex-to-ChatGPT handoff now re-verifies the active destination immediately before any paste or send step and blocks safely if the wrong window, including a terminal, stays foreground
+- Explicit terminal-targeted desktop actions remain allowed for terminal recipes or actions that intentionally target a terminal; the no-terminal rule applies specifically to Codex-to-ChatGPT handoff destinations
 - Compact chat handoff memory now exists at 14_context\chat_handoff_latest.md for new-thread continuity
 - Repo integration classification now exists at 08_research\repo_integration_map.md
 - Blueprint.am is now explicitly classified as external inspiration only, with a narrow internal hardware-builder-assist note under 08_research
@@ -110,12 +114,13 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Claw Code remains temporary reference, not foundation
 
 ## Immediate Focus
-- Refresh Ghoti handoff memory first when chats get long, then use the new cue, resource guard, retry ceiling, and no-terminal-fallback handoff path as the base for the next real cross-window loop
-- Real-window handoff targeting is now implemented for the current MVP
-- Manual target resolution exists, but it is still current-run only and not yet remembered across runs
-- The next practical step is live manual-assisted Codex and ChatGPT handoff testing with the new candidate picker, then deciding whether safe remembered target preferences are justified
+- Refresh Ghoti handoff memory first when chats get long, then use the new cue, resource guard, retry ceiling, wrong-active-window guard, and paste-only handoff path as the base for the next real cross-window loop
+- Real-window handoff targeting and final pre-input destination verification are now implemented for the current MVP
+- Manual target resolution now has an operator-enabled browser-local remembered candidate option for repeated runs
+- The next practical step is live manual-assisted Codex and ChatGPT handoff testing that proves a foreground terminal blocks safely before input while a real ChatGPT target still accepts the paste-only path
 - Improve operator-facing task filtering and recent views instead of adding any task deletion path
 - Keep the operator stack swappable from the provider brain so later model changes do not require a rewrite
+- Keep the operator stack compatible with later OpenClaw-style channel, browser-assist, and control-surface integration without making OpenClaw a hard dependency now
 - Decide the next narrow desktop-control implementation path only if it directly supports the real handoff loop
 - Keep GitHub remote actions explicit and approval-gated
 - Prepare one internship-facing live demo from the current runtime outputs
@@ -132,11 +137,11 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - The safe repo executor is intentionally narrow and repo-bound; it is not a generic shell runner, desktop controller, or autonomy layer
 - The desktop bridge is intentionally narrow and allowlisted; it is not arbitrary desktop control, click or type automation, clipboard orchestration, or a background daemon
 - The new desktop hand layer is useful but still narrow; it only supports explicit allowlisted clipboard, hotkey, wait, and mouse actions, and it still has no freeform typing, drag-and-drop, or arbitrary UI-state inference
-- The first operator recipe layer is intentionally small and still prototype-grade; the current handoff recipe is an MVP and is still being hardened for safe real-world use
+- The first operator recipe layer is intentionally small and still prototype-grade; the current handoff recipe is an MVP even though the wrong-destination input bug is now blocked before paste
 - Window matching still depends on visible titles and allowed aliases, so some cross-window flows can remain brittle until the target set is tightened
-- Terminal or PowerShell must not be used as a substitute target for Codex-to-ChatGPT handoff
-- The handoff bugfix now blocks bad fallback paths safely, but real Codex and ChatGPT window resolution is still title-dependent and can still stop at manual target resolution
-- Real Codex and ChatGPT window targeting is better, but remembered preferred target selection still does not exist
+- Terminal or PowerShell must not be used as a substitute target for Codex-to-ChatGPT handoff, even though explicit terminal-targeted actions elsewhere remain allowed
+- The handoff bugfix now blocks bad fallback paths and wrong-active-window pastes safely, but real Codex and ChatGPT window resolution is still title-dependent and can still stop at manual target resolution
+- Real Codex and ChatGPT window targeting is better, and remembered preferred target selection now exists only as an operator-enabled dashboard-browser preference; there is still no broader runtime-stored target profile
 - Some focus-sensitive desktop actions still depend on what the current Windows session allows; in non-interactive checker sessions they may stop safely with manual-focus-required instead of pretending success
 - Desktop screenshot capture can still be unavailable in some Windows sessions, so manual capture remains the honest fallback there
 - Task history is large and noisy even after the first filter pass, and the operator console still needs better operator-facing filtering so stale failures do not crowd current work

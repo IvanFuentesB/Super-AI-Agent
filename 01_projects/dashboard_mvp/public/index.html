@@ -1077,11 +1077,16 @@ This file was queued through the safe repo-local executor.
                     <input id="handoff-allow-send" type="checkbox" />
                     Allow Enter after paste
                   </label>
+                  <label class="checkbox-row">
+                    <input id="handoff-remember-targets" type="checkbox" />
+                    Remember selected visible Codex and ChatGPT candidates on this browser
+                  </label>
                 </div>
                 <div class="compact-option-grid">
                   <button id="refresh-handoff-targets" type="button">Refresh visible handoff targets</button>
                   <p id="handoff-target-summary" class="recipe-safety-note">Using automatic matching until you select a visible Codex or ChatGPT candidate.</p>
                 </div>
+                <p id="handoff-target-memory-note" class="recipe-safety-note">Remembered target picks are off. Ghoti will use only the current visible selector values.</p>
                 <p class="recipe-safety-note">This handoff never falls back to terminal or PowerShell. If Codex or ChatGPT cannot be matched confidently, Ghoti blocks and asks for manual target resolution.</p>
               </form>
               <button id="queue-recipe-codex-handoff" type="button">Queue Codex To ChatGPT Handoff</button>

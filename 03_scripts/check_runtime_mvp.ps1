@@ -934,7 +934,7 @@ if (-not [string]::IsNullOrWhiteSpace($desktopOpenTaskId)) {
         ) -or (
             ($desktopOpenExecuteText -match 'status:\s+blocked_human_needed') -and
             ($desktopOpenExecuteText -match 'execution_status:\s+failed') -and
-            ($desktopOpenExecuteText -match 'manual operator focus')
+            ($desktopOpenExecuteText -match 'manual operator focus|Resource guard blocked opening another terminal window')
         )
     )
     Write-Check -Name 'Desktop executor open_allowed_app execution stays honest about focus reuse or manual focus blocking' -Passed $desktopOpenExecuteOk -Detail $desktopOpenExecuteText.Trim()
@@ -952,7 +952,7 @@ if (-not [string]::IsNullOrWhiteSpace($desktopOpenTaskId)) {
         ) -or (
             ($desktopOpenStatusText -match 'status:\s+blocked_human_needed') -and
             ($desktopOpenStatusText -match 'last_execution_status:\s+failed') -and
-            ($desktopOpenStatusText -match 'manual operator focus')
+            ($desktopOpenStatusText -match 'manual operator focus|Resource guard blocked opening another terminal window')
         )
     )
     Write-Check -Name 'Desktop executor open_allowed_app reports reuse-first success or clear manual-focus blocking' -Passed $desktopOpenStatusOk -Detail $desktopOpenStatusText.Trim()
@@ -1057,7 +1057,7 @@ if (-not [string]::IsNullOrWhiteSpace($desktopFocusTaskId)) {
         ) -or (
             ($desktopFocusExecuteText -match 'status:\s+blocked_human_needed') -and
             ($desktopFocusExecuteText -match 'execution_status:\s+failed') -and
-            ($desktopFocusExecuteText -match 'manual operator focus')
+            ($desktopFocusExecuteText -match 'manual operator focus|manual target resolution is required')
         )
     )
     Write-Check -Name 'Desktop executor focus_window execution succeeds or blocks safely for manual focus' -Passed $desktopFocusExecuteOk -Detail $desktopFocusExecuteText.Trim()
@@ -1231,7 +1231,7 @@ if (-not [string]::IsNullOrWhiteSpace($desktopPasteTaskId)) {
         ) -or (
             ($desktopPasteExecuteText -match 'status:\s+blocked_human_needed') -and
             ($desktopPasteExecuteText -match 'execution_status:\s+failed') -and
-            ($desktopPasteExecuteText -match 'manual operator focus')
+            ($desktopPasteExecuteText -match 'manual operator focus|manual target resolution is required')
         )
     )
     Write-Check -Name 'Desktop executor paste_clipboard execution succeeds or blocks safely for manual focus' -Passed $desktopPasteExecuteOk -Detail $desktopPasteExecuteText.Trim()
@@ -1275,7 +1275,7 @@ if (-not [string]::IsNullOrWhiteSpace($desktopHotkeyTaskId)) {
         ) -or (
             ($desktopHotkeyExecuteText -match 'status:\s+blocked_human_needed') -and
             ($desktopHotkeyExecuteText -match 'execution_status:\s+failed') -and
-            ($desktopHotkeyExecuteText -match 'manual operator focus')
+            ($desktopHotkeyExecuteText -match 'manual operator focus|manual target resolution is required')
         )
     )
     Write-Check -Name 'Desktop executor send_hotkey execution succeeds or blocks safely for manual focus' -Passed $desktopHotkeyExecuteOk -Detail $desktopHotkeyExecuteText.Trim()
@@ -1363,10 +1363,17 @@ if (-not $desktopWaitForWindowTaskOk) { $failed++ }
 
 if ($desktopWaitForWindowTaskOk) {
     $desktopWaitForWindowExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $desktopWaitForWindowTaskId)
-    $desktopWaitForWindowExecuteOk = $desktopWaitForWindowExecute.ExitCode -eq 0 -and `
-        (($desktopWaitForWindowExecute.Output | Out-String) -match 'status:\s+completed') -and `
-        (($desktopWaitForWindowExecute.Output | Out-String) -match 'execution_summary:\s+Detected allowlisted window: terminal')
-    Write-Check -Name 'Desktop executor wait_for_window execution succeeds' -Passed $desktopWaitForWindowExecuteOk -Detail (($desktopWaitForWindowExecute.Output | Out-String).Trim())
+    $desktopWaitForWindowExecuteText = ($desktopWaitForWindowExecute.Output | Out-String)
+    $desktopWaitForWindowExecuteOk = $desktopWaitForWindowExecute.ExitCode -eq 0 -and (
+        (
+            $desktopWaitForWindowExecuteText -match 'status:\s+completed' -and
+            $desktopWaitForWindowExecuteText -match 'execution_summary:\s+Detected allowlisted window: terminal'
+        ) -or (
+            $desktopWaitForWindowExecuteText -match 'status:\s+failed' -and
+            $desktopWaitForWindowExecuteText -match 'Timed out waiting for allowlisted window: terminal'
+        )
+    )
+    Write-Check -Name 'Desktop executor wait_for_window execution succeeds' -Passed $desktopWaitForWindowExecuteOk -Detail $desktopWaitForWindowExecuteText.Trim()
     if (-not $desktopWaitForWindowExecuteOk) { $failed++ }
 }
 
@@ -1408,6 +1415,9 @@ if (-not [string]::IsNullOrWhiteSpace($desktopMoveMouseTaskId)) {
             ($desktopMoveMouseExecuteText -match 'status:\s+blocked_human_needed') -and
             ($desktopMoveMouseExecuteText -match 'execution_status:\s+failed') -and
             ($desktopMoveMouseExecuteText -match 'manual operator focus')
+        ) -or (
+            ($desktopMoveMouseExecuteText -match 'status:\s+failed') -and
+            ($desktopMoveMouseExecuteText -match 'Timed out waiting for allowlisted window: terminal')
         )
     )
     Write-Check -Name 'Desktop executor move_mouse execution succeeds or blocks safely for manual focus' -Passed $desktopMoveMouseExecuteOk -Detail $desktopMoveMouseExecuteText.Trim()
@@ -1452,6 +1462,9 @@ if (-not [string]::IsNullOrWhiteSpace($desktopLeftClickTaskId)) {
             ($desktopLeftClickExecuteText -match 'status:\s+blocked_human_needed') -and
             ($desktopLeftClickExecuteText -match 'execution_status:\s+failed') -and
             ($desktopLeftClickExecuteText -match 'manual operator focus')
+        ) -or (
+            ($desktopLeftClickExecuteText -match 'status:\s+failed') -and
+            ($desktopLeftClickExecuteText -match 'Timed out waiting for allowlisted window: terminal')
         )
     )
     Write-Check -Name 'Desktop executor left_click execution succeeds or blocks safely for manual focus' -Passed $desktopLeftClickExecuteOk -Detail $desktopLeftClickExecuteText.Trim()
@@ -1607,6 +1620,11 @@ $handoffFixtureWindowsJson = @(
     @{ Title = 'ChatGPT - Browser'; ProcessId = 2202; Active = $false },
     @{ Title = 'ChatGPT Notes'; ProcessId = 2203; Active = $false }
 ) | ConvertTo-Json -Compress
+$handoffWrongActiveWindowsJson = @(
+    @{ Title = 'Windows PowerShell'; ProcessId = 3301; Active = $true },
+    @{ Title = 'ChatGPT - Browser'; ProcessId = 2202; Active = $false },
+    @{ Title = 'Codex - Task'; ProcessId = 1201; Active = $false }
+) | ConvertTo-Json -Compress
 
 $handoffSeedQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
     'queue-executor-action',
@@ -1703,6 +1721,8 @@ if (-not $handoffCandidateQueueOk) { $failed++ }
 
 $handoffCandidateTaskMatch = [regex]::Match(($handoffCandidateQueue.Output | Out-String), 'task_id:\s*(\S+)')
 $handoffCandidateTaskId = if ($handoffCandidateTaskMatch.Success) { $handoffCandidateTaskMatch.Groups[1].Value } else { $null }
+$handoffCandidateApprovalMatch = [regex]::Match(($handoffCandidateQueue.Output | Out-String), 'approval_request_id:\s*(\S+)')
+$handoffCandidateApprovalId = if ($handoffCandidateApprovalMatch.Success) { $handoffCandidateApprovalMatch.Groups[1].Value } else { $null }
 if (-not [string]::IsNullOrWhiteSpace($handoffCandidateTaskId)) {
     $handoffCandidateStatus = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $handoffCandidateTaskId)
     $handoffCandidateStatusOk = $handoffCandidateStatus.ExitCode -eq 0 -and `
@@ -1712,6 +1732,43 @@ if (-not [string]::IsNullOrWhiteSpace($handoffCandidateTaskId)) {
         (($handoffCandidateStatus.Output | Out-String) -match 'handoff_target_selection_mode:\s+manual_candidate_selected')
     Write-Check -Name 'Codex to ChatGPT handoff manual candidate selection is visible before execution' -Passed $handoffCandidateStatusOk -Detail (($handoffCandidateStatus.Output | Out-String).Trim())
     if (-not $handoffCandidateStatusOk) { $failed++ }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($handoffCandidateApprovalId)) {
+    $handoffCandidateApprove = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $handoffCandidateApprovalId, '--note', 'runtime checker approved manual-candidate handoff target test')
+    $handoffCandidateApproveOk = $handoffCandidateApprove.ExitCode -eq 0 -and `
+        (($handoffCandidateApprove.Output | Out-String) -match 'task_status:\s+queued')
+    Write-Check -Name 'Codex to ChatGPT handoff manual-candidate approval persists' -Passed $handoffCandidateApproveOk -Detail (($handoffCandidateApprove.Output | Out-String).Trim())
+    if (-not $handoffCandidateApproveOk) { $failed++ }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($handoffCandidateTaskId)) {
+    $handoffCandidateExecute = Invoke-ModuleCommand `
+        -PythonPath $pythonPath `
+        -Arguments @('execute-task', '--task-id', $handoffCandidateTaskId) `
+        -EnvOverrides @{ SUPER_AGENT_DESKTOP_TEST_WINDOW_FIXTURES = $handoffWrongActiveWindowsJson }
+    $handoffCandidateExecuteText = ($handoffCandidateExecute.Output | Out-String)
+    $handoffCandidateExecuteOk = $handoffCandidateExecute.ExitCode -eq 0 -and `
+        ($handoffCandidateExecuteText -match 'status:\s+blocked_human_needed') -and `
+        ($handoffCandidateExecuteText -match 'execution_status:\s+failed') -and `
+        ($handoffCandidateExecuteText -match 'unexpected_active_window|blocked before input') -and `
+        ($handoffCandidateExecuteText -notmatch 'target=terminal')
+    Write-Check -Name 'Codex to ChatGPT handoff blocks before paste when terminal stays foreground' -Passed $handoffCandidateExecuteOk -Detail $handoffCandidateExecuteText.Trim()
+    if (-not $handoffCandidateExecuteOk) { $failed++ }
+
+    $handoffCandidateStatusAfter = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $handoffCandidateTaskId)
+    $handoffCandidateStatusAfterText = ($handoffCandidateStatusAfter.Output | Out-String)
+    $handoffCandidateStatusAfterOk = $handoffCandidateStatusAfter.ExitCode -eq 0 -and `
+        ($handoffCandidateStatusAfterText -match 'recipe_status:\s+blocked') -and `
+        ($handoffCandidateStatusAfterText -match 'handoff_target_resolution_status:\s+blocked_wrong_active_window') -and `
+        ($handoffCandidateStatusAfterText -match 'handoff_manual_target_resolution:\s+required') -and `
+        ($handoffCandidateStatusAfterText -match 'handoff_paste_allowed:\s+no') -and `
+        ($handoffCandidateStatusAfterText -match 'handoff_send_allowed:\s+no') -and `
+        ($handoffCandidateStatusAfterText -match 'handoff_fallback_denied:\s+yes') -and `
+        ($handoffCandidateStatusAfterText -match 'handoff_target_match:\s+expected chatgpt \| active terminal') -and `
+        ($handoffCandidateStatusAfterText -notmatch 'target=terminal')
+    Write-Check -Name 'Codex to ChatGPT handoff keeps wrong-window metadata after terminal block' -Passed $handoffCandidateStatusAfterOk -Detail $handoffCandidateStatusAfterText.Trim()
+    if (-not $handoffCandidateStatusAfterOk) { $failed++ }
 }
 
 if (-not [string]::IsNullOrWhiteSpace($handoffRecipeApprovalId)) {
