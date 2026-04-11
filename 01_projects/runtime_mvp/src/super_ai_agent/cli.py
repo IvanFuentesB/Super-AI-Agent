@@ -245,6 +245,212 @@ def _print_ghoti_task_lines(tasks, limit: int = 5) -> None:
         )
 
 
+def _parse_iso_timestamp(value: str) -> datetime | None:
+    normalized = str(value or "").strip()
+    if not normalized:
+        return None
+    if normalized.endswith("Z"):
+        normalized = f"{normalized[:-1]}+00:00"
+    try:
+        parsed = datetime.fromisoformat(normalized)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _task_age_minutes(task) -> int | None:
+    parsed = _parse_iso_timestamp(
+        getattr(task, "updated_at", "") or getattr(task, "created_at", "")
+    )
+    if not parsed:
+        return None
+    return max(0, int(round((datetime.now(timezone.utc) - parsed).total_seconds() / 60)))
+
+
+def _task_summary_haystack(task) -> str:
+    payload = dict(getattr(task, "executor_payload", {}) or {})
+    execution_records = list(getattr(task, "execution_records", []) or [])
+    last_record = execution_records[-1] if execution_records else None
+    parts = [
+        getattr(task, "title", ""),
+        getattr(task, "description", ""),
+        getattr(task, "executor_target", ""),
+        getattr(task, "blocked_reason", ""),
+        getattr(task, "waiting_for", ""),
+        getattr(task, "last_note", ""),
+        payload.get("recipe_name", ""),
+        payload.get("recipe_source_window", ""),
+        payload.get("recipe_target_window", ""),
+        payload.get("handoff_target_resolution_status", ""),
+        payload.get("handoff_stop_reason", ""),
+        payload.get("handoff_source_match", ""),
+        payload.get("handoff_target_match", ""),
+        getattr(last_record, "summary", "") if last_record else "",
+        getattr(last_record, "reason", "") if last_record else "",
+    ]
+    return " ".join(str(part or "").strip().lower() for part in parts if str(part or "").strip())
+
+
+def _task_wrong_window_block(task) -> bool:
+    haystack = _task_summary_haystack(task)
+    return any(
+        needle in haystack
+        for needle in (
+            "wrong active window",
+            "active window mismatch",
+            "terminal stayed foreground",
+            "manual target resolution is required",
+            "powershell",
+        )
+    )
+
+
+def _is_task_stalled(task) -> bool:
+    status = str(getattr(task, "status", "") or "").lower()
+    if status not in {"queued", "running", "waiting"}:
+        return False
+    age_minutes = _task_age_minutes(task)
+    if age_minutes is None:
+        return False
+    threshold = 15 if status == "running" else 20
+    return age_minutes >= threshold
+
+
+def _describe_overlay_target(task) -> tuple[str, str]:
+    if not task:
+        return (
+            "No visible target",
+            "Queue or inspect one narrow task to show Ghoti's next local target.",
+        )
+
+    action_type = str(getattr(task, "executor_action_type", "") or "").lower()
+    task_type = _classify_executor_task(task)
+    target = str(getattr(task, "executor_target", "") or "").strip()
+    payload = dict(getattr(task, "executor_payload", {}) or {})
+    fallback_detail = target or _short_description(getattr(task, "title", ""), limit=100)
+
+    if task_type == "handoff":
+        source_window = str(payload.get("recipe_source_window", "codex") or "codex").strip()
+        target_window = str(payload.get("recipe_target_window", "chatgpt") or "chatgpt").strip()
+        detail = f"{source_window} -> {target_window}"
+        if target:
+            detail = f"{detail} | {target}"
+        return ("Handoff target", detail)
+
+    if action_type in {"move_mouse", "left_click", "double_click", "right_click", "scroll_mouse"}:
+        return ("Pointer target", fallback_detail or "Pointer action is queued without extra target detail.")
+
+    if action_type in {"focus_window", "open_allowed_app", "wait_for_window", "get_active_window"}:
+        return ("Window target", fallback_detail or "Window-targeted desktop action.")
+
+    if action_type in {"paste_clipboard", "copy_selection", "set_clipboard_text", "send_hotkey", "get_clipboard_text"}:
+        return ("Input target", fallback_detail or "Input-targeted desktop action.")
+
+    return ("Current task target", fallback_detail or "No specific target recorded yet.")
+
+
+def _build_ghoti_watchdog(state, tasks, active_task) -> dict:
+    sorted_tasks = _sort_tasks_by_recent(tasks)
+    failure_tasks = [
+        task for task in sorted_tasks if str(getattr(task, "status", "") or "").lower() in GHOTI_FAILURE_STATUSES
+    ]
+    wrong_window_blocks = [task for task in failure_tasks if _task_wrong_window_block(task)]
+    stalled_tasks = [task for task in sorted_tasks if _is_task_stalled(task)]
+    waiting_count = int(getattr(state, "waiting_count", 0) or 0) + int(getattr(state, "ready_to_resume_count", 0) or 0)
+    pending_approval_count = int(getattr(state, "pending_approval_count", 0) or 0)
+    blocked_count = int(getattr(state, "blocked_human_needed_count", 0) or 0)
+    interrupted_count = int(getattr(state, "interrupted_count", 0) or 0)
+    running_count = int(getattr(state, "running_count", 0) or 0)
+    did_not_complete_count = len(failure_tasks)
+
+    status = "idle"
+    headline = "Ghoti is visible and waiting for the next narrow local action."
+    if pending_approval_count > 0:
+        status = "approval_needed"
+        headline = f"{pending_approval_count} approval request(s) need review before more guarded work can proceed."
+    elif wrong_window_blocks:
+        status = "blocked"
+        headline = f"Blocked before input on {len(wrong_window_blocks)} wrong-window handoff attempt(s)."
+    elif blocked_count > 0 or did_not_complete_count > 0:
+        status = "blocked"
+        headline = (
+            f"{blocked_count} task(s) are blocked and need manual intervention."
+            if blocked_count > 0
+            else f"{did_not_complete_count} recent task(s) did not complete cleanly."
+        )
+    elif interrupted_count > 0:
+        status = "interrupted"
+        headline = f"{interrupted_count} task(s) were interrupted and must be reviewed before re-queue."
+    elif running_count > 0 or str(getattr(active_task, "status", "") or "").lower() == "running":
+        status = "active"
+        headline = (
+            f"{getattr(active_task, 'task_id', 'current task')} is active."
+            if active_task
+            else "Ghoti is actively running a local task."
+        )
+    elif waiting_count > 0 or stalled_tasks:
+        status = "waiting"
+        headline = (
+            f"{waiting_count} task(s) are waiting or ready to resume."
+            if waiting_count > 0
+            else f"{len(stalled_tasks)} task(s) look stalled and need operator attention."
+        )
+
+    alerts = []
+    if wrong_window_blocks:
+        alerts.append(
+            f"{len(wrong_window_blocks)} recent handoff block(s) stopped before input because the active window did not match the intended Codex or ChatGPT destination."
+        )
+    if stalled_tasks:
+        alerts.append(
+            f"{len(stalled_tasks)} queued, running, or waiting task(s) have been unchanged for 15-20+ minutes."
+        )
+    if did_not_complete_count > 0:
+        alerts.append(
+            f"{did_not_complete_count} recent task(s) ended blocked, interrupted, or failed and still need review."
+        )
+    if pending_approval_count > 0:
+        alerts.append(f"{pending_approval_count} approval request(s) are waiting on the operator.")
+    if blocked_count > 0:
+        alerts.append(f"{blocked_count} human-needed task(s) remain blocked in the current queue state.")
+    if interrupted_count > 0:
+        alerts.append(f"{interrupted_count} interrupted task(s) are visible and require review before any re-queue.")
+
+    focus_task = (
+        active_task
+        or (wrong_window_blocks[0] if wrong_window_blocks else None)
+        or (stalled_tasks[0] if stalled_tasks else None)
+        or next(
+            (
+                task
+                for task in sorted_tasks
+                if str(getattr(task, "status", "") or "").lower() in GHOTI_ACTIONABLE_STATUSES
+            ),
+            None,
+        )
+    )
+    overlay_target, overlay_target_detail = _describe_overlay_target(focus_task)
+    handoff_hint = (
+        "Codex-to-ChatGPT handoff stays paste-only by default and blocks before input whenever the wrong window stays foreground or the destination is not confident."
+        if wrong_window_blocks or _classify_executor_task(focus_task) == "handoff"
+        else "Ctrl+8 is still the emergency stop if a desktop action or operator recipe needs immediate interruption."
+    )
+
+    return {
+        "status": status,
+        "headline": headline,
+        "alerts": alerts,
+        "wrong_window_block_count": len(wrong_window_blocks),
+        "stalled_task_count": len(stalled_tasks),
+        "did_not_complete_count": did_not_complete_count,
+        "overlay_target": overlay_target,
+        "overlay_target_detail": overlay_target_detail,
+        "handoff_hint": handoff_hint,
+    }
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="super-agent")
     subparsers = parser.add_subparsers(dest="command")
@@ -595,6 +801,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"- start from repo root: node {_repo_root() / '01_projects' / 'dashboard_mvp' / 'server.js'}")
             print(f"- open in browser: {_dashboard_url()}")
             print("- use the Ghoti control center to see state, approvals, blocked tasks, recent actionable work, failures, and artifacts")
+            print("- keep the floating Ghoti overlay visible for watchdog alerts, target focus, and the Ctrl+8 reminder")
             print("cli_mode:")
             print("- python -m super_ai_agent.cli ghoti-status")
             print("- python -m super_ai_agent.cli ghoti-hotkeys")
@@ -626,6 +833,7 @@ def main(argv: list[str] | None = None) -> int:
             print("scope: stops the current desktop action or operator recipe run")
             print("after_interrupt: the task is marked interrupted and requires operator review before re-queue")
             print("dashboard_visibility: the interrupt reason appears in the dashboard task detail and supervisor views")
+            print("overlay_visibility: the floating Ghoti overlay keeps the stop reminder and current target summary visible")
             print("handoff_safety: Codex-to-ChatGPT handoff blocks before input if the wrong window stays active")
             return 0
 
@@ -646,6 +854,7 @@ def main(argv: list[str] | None = None) -> int:
                 for capability in build_capability_summary()
                 if capability.state == "available"
             ]
+            watchdog = _build_ghoti_watchdog(state, tasks, active_task)
             print("ghoti_status: local operator control snapshot")
             print(f"branch: {_get_current_branch() or 'unknown'}")
             print(f"dashboard_url: {_dashboard_url()}")
@@ -673,10 +882,24 @@ def main(argv: list[str] | None = None) -> int:
             print(f"recent_actionable_count: {len(actionable_tasks)}")
             print(f"recent_failure_count: {len(failure_tasks)}")
             print(f"recent_artifact_count: {len(_iter_recent_artifacts(limit=6))}")
+            print(f"watchdog_status: {watchdog['status']}")
+            print(f"watchdog_headline: {watchdog['headline']}")
+            print(f"watchdog_wrong_window_blocks: {watchdog['wrong_window_block_count']}")
+            print(f"watchdog_stalled_tasks: {watchdog['stalled_task_count']}")
+            print(f"watchdog_did_not_complete: {watchdog['did_not_complete_count']}")
+            print(f"overlay_target: {watchdog['overlay_target']}")
+            print(f"overlay_target_detail: {watchdog['overlay_target_detail']}")
+            print(f"watchdog_handoff_hint: {watchdog['handoff_hint']}")
             print("recent_actionable_tasks:")
             _print_ghoti_task_lines(actionable_tasks, limit=5)
             print("recent_failures:")
             _print_ghoti_task_lines(failure_tasks, limit=5)
+            print("watchdog_alerts:")
+            if watchdog["alerts"]:
+                for alert in watchdog["alerts"]:
+                    print(f"- {alert}")
+            else:
+                print("- none")
             print("what_ghoti_can_do_now:")
             if available_capabilities:
                 for capability_id in available_capabilities[:5]:
@@ -709,13 +932,26 @@ def main(argv: list[str] | None = None) -> int:
                 task for task in tasks if str(task.status or "").lower() in GHOTI_FAILURE_STATUSES
             ]
             pending_requests = list_pending_approvals()
+            state = get_supervisor_state()
+            active_task = get_task(state.active_task_id) if state.active_task_id else None
+            watchdog = _build_ghoti_watchdog(state, tasks, active_task)
             print("ghoti_recent: recent actionable work, failures, approvals, and artifacts")
+            print(f"watchdog_status: {watchdog['status']}")
+            print(f"watchdog_headline: {watchdog['headline']}")
+            print(f"overlay_target: {watchdog['overlay_target']}")
+            print(f"overlay_target_detail: {watchdog['overlay_target_detail']}")
             print("recent_actionable_tasks:")
             _print_ghoti_task_lines(actionable_tasks, limit=6)
             print("active_only_tasks:")
             _print_ghoti_task_lines(active_tasks, limit=6)
             print("recent_failures:")
             _print_ghoti_task_lines(failure_tasks, limit=6)
+            print("watchdog_alerts:")
+            if watchdog["alerts"]:
+                for alert in watchdog["alerts"]:
+                    print(f"- {alert}")
+            else:
+                print("- none")
             print("pending_approvals:")
             if pending_requests:
                 for request in pending_requests[:5]:

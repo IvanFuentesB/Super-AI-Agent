@@ -32,7 +32,24 @@
         <strong id="ghoti-indicator-state">idle</strong>
       </div>
       <p id="ghoti-indicator-note">Waiting for local operator state.</p>
+      <div class="ghoti-indicator-watchdog">
+        <div class="ghoti-indicator-watchdog-topline">
+          <span id="ghoti-overlay-watchdog-pill" class="state-pill state-neutral">watching</span>
+          <strong id="ghoti-overlay-watchdog-count">0 alerts</strong>
+        </div>
+        <p id="ghoti-overlay-watchdog-summary">No operator watchdog alerts are visible yet.</p>
+        <p id="ghoti-overlay-target-label" class="ghoti-overlay-target-label">No visible target</p>
+        <p id="ghoti-overlay-target-detail" class="ghoti-overlay-target-detail">Queue or inspect one narrow task to show Ghoti's next local target.</p>
+        <p id="ghoti-overlay-hotkey" class="ghoti-overlay-hotkey">Ctrl+8 stops the active desktop action or operator recipe immediately.</p>
+      </div>
     </aside>
+    <div id="ghoti-target-marker" class="ghoti-target-marker is-neutral" aria-live="polite">
+      <span class="ghoti-target-marker-dot" aria-hidden="true"></span>
+      <div>
+        <strong id="ghoti-target-marker-label">No visible target</strong>
+        <p id="ghoti-target-marker-detail">Ghoti is idle until you queue or inspect a narrow local task.</p>
+      </div>
+    </div>
 
     <main class="page-shell">
       <section class="summary-grid">
@@ -206,6 +223,33 @@
               <p>The smallest useful view into blocked, failed, or interrupted work that still needs operator attention.</p>
             </div>
             <div id="ghoti-failure-task-list" class="approval-list">Waiting for recent failure visibility.</div>
+          </article>
+          <article class="status-card">
+            <div class="subsection-heading">
+              <h3>Operator Watchdog</h3>
+              <p>Small local-only visibility for manual intervention, wrong-window blocks, stalled tasks, and did-not-complete states.</p>
+            </div>
+            <div class="metric-grid ghoti-watchdog-metrics">
+              <article class="metric-card">
+                <span>Watchdog State</span>
+                <strong id="ghoti-watchdog-state">watching</strong>
+              </article>
+              <article class="metric-card">
+                <span>Wrong-Window Blocks</span>
+                <strong id="ghoti-watchdog-wrong-window">0</strong>
+              </article>
+              <article class="metric-card">
+                <span>Stalled Tasks</span>
+                <strong id="ghoti-watchdog-stalled">0</strong>
+              </article>
+              <article class="metric-card">
+                <span>Did Not Complete</span>
+                <strong id="ghoti-watchdog-did-not-complete">0</strong>
+              </article>
+            </div>
+            <p id="ghoti-watchdog-headline" class="summary-note">Waiting for local watchdog visibility.</p>
+            <ul id="ghoti-watchdog-alerts" class="status-list"></ul>
+            <p id="ghoti-watchdog-handoff-hint" class="summary-note">Handoff safety hints will appear here when relevant.</p>
           </article>
           <article class="status-card">
             <div class="subsection-heading">

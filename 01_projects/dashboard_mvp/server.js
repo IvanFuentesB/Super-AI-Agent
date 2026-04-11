@@ -1203,6 +1203,7 @@ async function buildGhotiControlCenterResponse(filters = {}) {
   const currentTask = sortedTasks.find((item) => item.taskId === supervisor.activeTaskId)
     || sortedTasks.find((item) => String(item.status || "").toLowerCase() === "running")
     || null;
+  const watchdog = buildGhotiWatchdogSummary(supervisor, sortedTasks, currentTask);
   const recentFailures = sortedTasks
     .filter((item) => ghotiFailureStatuses.has(String(item.status || "").toLowerCase()))
     .slice(0, 5);
@@ -1250,6 +1251,8 @@ async function buildGhotiControlCenterResponse(filters = {}) {
       recentActionableCount: filteredTasks.filteredCount,
       recentFailureCount: recentFailures.length,
       recentArtifactCount: artifacts.length,
+      overlayTarget: watchdog.overlayTarget,
+      watchdog,
       recentActionableTasks: filteredTasks.items,
       recentFailures,
       whatGhotiCanDoNow: availableCapabilities.length > 0 ? availableCapabilities : operator.liveNow.slice(0, 6),
@@ -1338,6 +1341,208 @@ function parsePositiveIntQuery(value, fallback) {
 
 function isDesktopExecutorAction(actionType) {
   return ghotiDesktopActionTypes.has(String(actionType || "").toLowerCase());
+}
+
+function normalizeGhotiText(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function parseGhotiDate(value) {
+  const normalized = String(value || "").trim();
+  if (!normalized) {
+    return null;
+  }
+
+  const parsed = new Date(normalized);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function getGhotiTaskAgeMinutes(task) {
+  const timestamp = task?.updatedAt || task?.createdAt || "";
+  const parsed = parseGhotiDate(timestamp);
+  if (!parsed) {
+    return null;
+  }
+
+  return Math.max(0, Math.round((Date.now() - parsed.getTime()) / 60000));
+}
+
+function taskLooksLikeWrongActiveWindowBlock(task) {
+  const haystack = [
+    task?.detail,
+    task?.lastSummary,
+    task?.blockedReason,
+    task?.target,
+  ].map((item) => String(item || "").toLowerCase()).join(" ");
+
+  return (
+    haystack.includes("wrong active window")
+    || haystack.includes("active window mismatch")
+    || haystack.includes("terminal stayed foreground")
+    || haystack.includes("manual target resolution is required")
+    || haystack.includes("powershell")
+  );
+}
+
+function isLikelyStalledGhotiTask(task) {
+  const status = normalizeGhotiText(task?.status);
+  if (!["queued", "running", "waiting"].includes(status)) {
+    return false;
+  }
+
+  const ageMinutes = getGhotiTaskAgeMinutes(task);
+  if (!Number.isFinite(ageMinutes)) {
+    return false;
+  }
+
+  const thresholdMinutes = status === "running" ? 15 : 20;
+  return ageMinutes >= thresholdMinutes;
+}
+
+function buildGhotiOverlayTarget(task) {
+  if (!task) {
+    return {
+      kind: "none",
+      label: "No visible target",
+      detail: "Queue or inspect one narrow task to show Ghoti's next local target.",
+    };
+  }
+
+  const actionType = normalizeGhotiText(task.actionType);
+  const taskType = task.taskType || classifyGhotiTaskType(task);
+  const target = String(task.target || "").trim();
+  const targetDetail = target && target !== "none"
+    ? target
+    : task.detail || task.headline || "No specific target recorded yet.";
+
+  if (taskType === "handoff") {
+    const sourceWindow = String(task.sourceWindow || "codex").trim() || "codex";
+    const targetWindow = String(task.targetWindow || "chatgpt").trim() || "chatgpt";
+    const detail = target && target !== "none"
+      ? `${sourceWindow} -> ${targetWindow} | ${target}`
+      : `${sourceWindow} -> ${targetWindow}`;
+    return {
+      kind: "handoff",
+      label: "Handoff target",
+      detail,
+    };
+  }
+
+  if (["move_mouse", "left_click", "double_click", "right_click", "scroll_mouse"].includes(actionType)) {
+    return {
+      kind: "pointer",
+      label: "Pointer target",
+      detail: targetDetail,
+    };
+  }
+
+  if (["focus_window", "open_allowed_app", "wait_for_window", "get_active_window"].includes(actionType)) {
+    return {
+      kind: "window",
+      label: "Window target",
+      detail: targetDetail,
+    };
+  }
+
+  if (["paste_clipboard", "copy_selection", "set_clipboard_text", "send_hotkey", "get_clipboard_text"].includes(actionType)) {
+    return {
+      kind: "input",
+      label: "Input target",
+      detail: targetDetail,
+    };
+  }
+
+  return {
+    kind: taskType || "task",
+    label: `${task.taskTypeLabel || "Current task"} target`,
+    detail: targetDetail,
+  };
+}
+
+function buildGhotiWatchdogSummary(supervisor, sortedTasks, currentTask) {
+  const recentFailures = sortedTasks
+    .filter((item) => ghotiFailureStatuses.has(normalizeGhotiText(item.status)))
+    .slice(0, 6);
+  const wrongWindowBlocks = recentFailures.filter(taskLooksLikeWrongActiveWindowBlock);
+  const stalledTasks = sortedTasks.filter(isLikelyStalledGhotiTask).slice(0, 4);
+  const didNotCompleteTasks = recentFailures.filter((item) => normalizeGhotiText(item.status) !== "completed");
+  const waitingCount = Number(supervisor.waitingCount || 0) + Number(supervisor.readyToResumeCount || 0);
+  const pendingApprovalCount = Number(supervisor.pendingApprovalCount || 0);
+  const blockedCount = Number(supervisor.blockedHumanNeededCount || 0);
+  const interruptedCount = Number(supervisor.interruptedCount || 0);
+  const runningCount = Number(supervisor.runningCount || 0);
+
+  let status = "idle";
+  let headline = "Ghoti is visible and waiting for the next narrow local action.";
+
+  if (pendingApprovalCount > 0) {
+    status = "approval_needed";
+    headline = `${pendingApprovalCount} approval request(s) need review before more guarded work can proceed.`;
+  } else if (wrongWindowBlocks.length > 0) {
+    status = "blocked";
+    headline = `Blocked before input on ${wrongWindowBlocks.length} wrong-window handoff attempt(s).`;
+  } else if (blockedCount > 0 || didNotCompleteTasks.length > 0) {
+    status = "blocked";
+    headline = blockedCount > 0
+      ? `${blockedCount} task(s) are blocked and need manual intervention.`
+      : `${didNotCompleteTasks.length} recent task(s) did not complete cleanly.`;
+  } else if (interruptedCount > 0) {
+    status = "interrupted";
+    headline = `${interruptedCount} task(s) were interrupted and must be reviewed before re-queue.`;
+  } else if (runningCount > 0 || normalizeGhotiText(currentTask?.status) === "running") {
+    status = "active";
+    headline = currentTask
+      ? `${currentTask.taskTypeLabel || "Task"} ${currentTask.taskId || ""} is active.`.trim()
+      : "Ghoti is actively running a local task.";
+  } else if (waitingCount > 0 || stalledTasks.length > 0) {
+    status = "waiting";
+    headline = waitingCount > 0
+      ? `${waitingCount} task(s) are waiting or ready to resume.`
+      : `${stalledTasks.length} task(s) look stalled and need operator attention.`;
+  }
+
+  const alerts = [
+    wrongWindowBlocks.length > 0
+      ? `${wrongWindowBlocks.length} recent handoff block(s) stopped before input because the active window did not match the intended Codex or ChatGPT destination.`
+      : "",
+    stalledTasks.length > 0
+      ? `${stalledTasks.length} queued, running, or waiting task(s) have been unchanged for 15-20+ minutes.`
+      : "",
+    didNotCompleteTasks.length > 0
+      ? `${didNotCompleteTasks.length} recent task(s) ended blocked, interrupted, or failed and still need review.`
+      : "",
+    pendingApprovalCount > 0
+      ? `${pendingApprovalCount} approval request(s) are waiting on the operator.`
+      : "",
+    blockedCount > 0
+      ? `${blockedCount} human-needed task(s) remain blocked in the current queue state.`
+      : "",
+    interruptedCount > 0
+      ? `${interruptedCount} interrupted task(s) are visible and require review before any re-queue.`
+      : "",
+  ].filter(Boolean);
+
+  const focusTask = currentTask
+    || wrongWindowBlocks[0]
+    || stalledTasks[0]
+    || sortedTasks.find((item) => ghotiActionableStatuses.has(normalizeGhotiText(item.status)))
+    || null;
+  const overlayTarget = buildGhotiOverlayTarget(focusTask);
+  const handoffHint = wrongWindowBlocks.length > 0 || overlayTarget.kind === "handoff"
+    ? "Codex to ChatGPT handoff stays paste-only by default and blocks before input whenever the wrong window stays foreground or the destination is not confident."
+    : "Ctrl+8 is still the emergency stop if a desktop action or operator recipe needs immediate interruption.";
+
+  return {
+    status,
+    headline,
+    alerts,
+    wrongWindowBlockCount: wrongWindowBlocks.length,
+    stalledTaskCount: stalledTasks.length,
+    didNotCompleteCount: didNotCompleteTasks.length,
+    attentionRequired: alerts.length > 0,
+    handoffHint,
+    overlayTarget,
+  };
 }
 
 function classifyGhotiTaskType(task) {

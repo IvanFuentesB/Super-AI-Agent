@@ -37,6 +37,8 @@ The top-level Ghoti Control Center shows:
 
 - current Ghoti state and reason
 - Ctrl+8 emergency stop reminder
+- floating Ghoti overlay with the live state, watchdog summary, and current target reminder
+- visible target marker for the current handoff, focus, pointer, or input destination
 - current running task if one exists
 - pending approvals
 - blocked tasks
@@ -59,9 +61,9 @@ python -m super_ai_agent.cli ghoti-recent
 Use them like this:
 
 - `ghoti-help`: quick launch, stop, safety, and next-step overview
-- `ghoti-status`: current local state, current task, counts, recent actionable work, and recent failures
-- `ghoti-hotkeys`: the emergency stop path and what happens after interruption
-- `ghoti-recent`: recent actionable tasks, active-only work, failures, pending approvals, and recent artifacts
+- `ghoti-status`: current local state, current task, watchdog summary, overlay target, recent actionable work, and recent failures
+- `ghoti-hotkeys`: the emergency stop path, overlay reminder, and what happens after interruption
+- `ghoti-recent`: recent actionable tasks, active-only work, failures, pending approvals, recent artifacts, and the current watchdog summary
 
 ## Stop Ghoti Safely
 
@@ -88,6 +90,8 @@ Use the Ghoti Control Center first:
 - `Refresh Ghoti State`
 - `Show Pending Approvals`
 - `Show Active / Recent Tasks`
+- the floating overlay and target marker for the current state and next local destination
+- the `Operator Watchdog` card for wrong-window blocks, stalled work, and did-not-complete summaries
 - task filters for recent-only, active-only, type, and status
 - `Recent Actionable Tasks`
 - `Recent Failures`
@@ -154,6 +158,18 @@ The dashboard control center keeps a narrow practical set of operator actions:
 - run dashboard checker
 
 These actions keep the existing approval-aware and workspace-boundary model intact. They do not add free-roaming autonomy.
+
+## Operator Watchdog
+
+Ghoti now surfaces a small watchdog summary instead of silently leaving the operator to infer trouble from raw task history. The watchdog is intentionally narrow and local:
+
+- it shows `idle`, `active`, `waiting`, `approval_needed`, `interrupted`, or `blocked`
+- it highlights wrong-active-window handoff blocks before any input is sent
+- it surfaces stalled or did-not-complete work so the operator can decide what to inspect next
+- it shows the current visible target reminder for focus, handoff, pointer, and input-oriented actions
+- it can hint when a clean human handoff is likely needed because the current state is blocked or overloaded
+
+This is not a daemon or autonomous recovery loop. It is an operator-facing visibility layer that keeps the current supervised model intact.
 
 ## Handoff Safety Reminder
 

@@ -28,8 +28,9 @@
 - `feat/codex-chatgpt-handoff-mvp`
 - `fix/codex-handoff-no-terminal-fallback`
 - `feat/real-window-handoff-targeting`
+- `feat/ghoti-control-center`
 - current branch:
-  `feat/ghoti-control-center`
+  `feat/ghoti-visible-operator-stack`
 
 ## 4. Current Working Capabilities
 - Approval queue UI with approve, deny, and defer.
@@ -55,6 +56,9 @@
 - A top-level Ghoti control center now exists in the dashboard with live state, hotkey visibility, current task, pending approvals, blocked tasks, recent actionable work, recent failures, quick actions, capabilities, artifacts, and next-step guidance.
 - CLI operator visibility now exists through `ghoti-help`, `ghoti-status`, `ghoti-hotkeys`, and `ghoti-recent`.
 - A compact operator usage doc now exists at `04_docs/ghoti_control_center.md`.
+- A lightweight floating Ghoti overlay now exists in the dashboard with live state, watchdog summary, Ctrl+8 reminder, and current target visibility.
+- A visible target marker now exists for the current local focus, pointer, handoff, or input destination summary.
+- An Operator Watchdog summary now exists in both dashboard and CLI so wrong-window blocks, stalled work, did-not-complete work, and manual-intervention pressure are easier to spot.
 
 ## 5. Current Safety Model
 - Risky actions require approval.
@@ -165,6 +169,7 @@
 - Browser-local remembered candidate selection now exists and restores only exact visible candidate IDs.
 - Runtime, dashboard, and desktop checkers now cover the real-window targeting path honestly, including the wrong-active-window block before input.
 - The dashboard and CLI now provide a real operator-facing Ghoti control center, so current state, hotkeys, actionable work, failures, and recent artifacts are much easier to inspect.
+- The visible overlay, target marker, and watchdog summary now make Ghoti feel much more present during real operator use without adding hidden autonomy.
 - Explicit terminal-targeted actions still remain possible for terminal recipes or actions outside the Codex-to-ChatGPT handoff path.
 - Task history is still large, so further cleanup should continue to prefer filtering, recent views, and history visibility rather than deletion.
 

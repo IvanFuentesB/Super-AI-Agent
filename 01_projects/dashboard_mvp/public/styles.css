@@ -118,6 +118,101 @@ code {
   line-height: 1.5;
 }
 
+.ghoti-indicator-watchdog {
+  margin-top: 0.8rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid #e1e8f2;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.ghoti-indicator-watchdog-topline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.ghoti-overlay-target-label,
+.ghoti-overlay-hotkey,
+.ghoti-overlay-target-detail {
+  margin: 0;
+}
+
+.ghoti-overlay-target-label {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.ghoti-overlay-target-detail,
+.ghoti-overlay-hotkey {
+  color: var(--muted);
+  font-size: 0.92rem;
+  overflow-wrap: anywhere;
+}
+
+.ghoti-target-marker {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 29;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  width: min(18rem, calc(100vw - 2rem));
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+}
+
+.ghoti-target-marker strong {
+  display: block;
+  font-size: 0.96rem;
+  line-height: 1.35;
+}
+
+.ghoti-target-marker p {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.ghoti-target-marker-dot {
+  width: 0.9rem;
+  height: 0.9rem;
+  margin-top: 0.2rem;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 0 5px rgba(29, 94, 204, 0.14);
+  flex: 0 0 auto;
+}
+
+.ghoti-target-marker.is-loading .ghoti-target-marker-dot {
+  background: var(--warning);
+  box-shadow: 0 0 0 5px rgba(139, 101, 20, 0.16);
+}
+
+.ghoti-target-marker.is-error .ghoti-target-marker-dot {
+  background: var(--danger);
+  box-shadow: 0 0 0 5px rgba(165, 57, 57, 0.16);
+}
+
+.ghoti-target-marker.is-success .ghoti-target-marker-dot {
+  background: var(--success);
+  box-shadow: 0 0 0 5px rgba(31, 122, 77, 0.15);
+}
+
+.ghoti-target-marker.is-neutral .ghoti-target-marker-dot {
+  background: #486482;
+  box-shadow: 0 0 0 5px rgba(72, 100, 130, 0.14);
+}
+
 .ghoti-state-panel {
   margin: 1rem 0;
   padding: 1rem;
@@ -413,6 +508,10 @@ button.is-busy {
 
 .ghoti-control-panel .status-card {
   background: rgba(255, 255, 255, 0.94);
+}
+
+.ghoti-watchdog-metrics {
+  margin-top: 0.8rem;
 }
 
 .quick-action-card button,
@@ -890,6 +989,12 @@ code {
 @media (max-width: 860px) {
   .hero {
     padding: 1.5rem 0.85rem 1.2rem;
+  }
+
+  .ghoti-target-marker {
+    top: 0.5rem;
+    right: 0.5rem;
+    width: min(16rem, calc(100vw - 1rem));
   }
 
   .ghoti-state-indicator {

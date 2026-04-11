@@ -235,7 +235,8 @@ $ghotiHelpOk = $ghotiHelpResult.ExitCode -eq 0 -and `
     (($ghotiHelpResult.Output | Out-String) -match 'dashboard_url:\s+http://127\.0\.0\.1:3210') -and `
     (($ghotiHelpResult.Output | Out-String) -match 'control_center_doc:\s+.*04_docs[\\/]+ghoti_control_center\.md') -and `
     (($ghotiHelpResult.Output | Out-String) -match 'Ctrl\+8') -and `
-    (($ghotiHelpResult.Output | Out-String) -match 'no task deletion without explicit user approval')
+    (($ghotiHelpResult.Output | Out-String) -match 'no task deletion without explicit user approval') -and `
+    (($ghotiHelpResult.Output | Out-String) -match 'floating Ghoti overlay')
 Write-Check -Name 'CLI ghoti-help' -Passed $ghotiHelpOk -Detail (($ghotiHelpResult.Output | Out-String).Trim())
 if (-not $ghotiHelpOk) { $failed++ }
 
@@ -243,7 +244,8 @@ $ghotiHotkeysResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
 $ghotiHotkeysOk = $ghotiHotkeysResult.ExitCode -eq 0 -and `
     (($ghotiHotkeysResult.Output | Out-String) -match 'primary_hotkey:\s+Ctrl\+8') -and `
     (($ghotiHotkeysResult.Output | Out-String) -match 'after_interrupt:\s+') -and `
-    (($ghotiHotkeysResult.Output | Out-String) -match 'handoff_safety:\s+')
+    (($ghotiHotkeysResult.Output | Out-String) -match 'handoff_safety:\s+') -and `
+    (($ghotiHotkeysResult.Output | Out-String) -match 'overlay_visibility:\s+')
 Write-Check -Name 'CLI ghoti-hotkeys' -Passed $ghotiHotkeysOk -Detail (($ghotiHotkeysResult.Output | Out-String).Trim())
 if (-not $ghotiHotkeysOk) { $failed++ }
 
@@ -253,6 +255,10 @@ $ghotiStatusOk = $ghotiStatusResult.ExitCode -eq 0 -and `
     (($ghotiStatusResult.Output | Out-String) -match 'dashboard_url:\s+http://127\.0\.0\.1:3210') -and `
     (($ghotiStatusResult.Output | Out-String) -match 'control_center_doc:\s+.*04_docs[\\/]+ghoti_control_center\.md') -and `
     (($ghotiStatusResult.Output | Out-String) -match 'ghoti_state:\s+\S+') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'watchdog_status:\s+\S+') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'watchdog_headline:\s+') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'overlay_target:\s+') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'watchdog_alerts:') -and `
     (($ghotiStatusResult.Output | Out-String) -match 'recent_actionable_tasks:') -and `
     (($ghotiStatusResult.Output | Out-String) -match 'recent_failures:') -and `
     (($ghotiStatusResult.Output | Out-String) -match 'what_to_do_next:')
@@ -262,9 +268,13 @@ if (-not $ghotiStatusOk) { $failed++ }
 $ghotiRecentResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('ghoti-recent')
 $ghotiRecentOk = $ghotiRecentResult.ExitCode -eq 0 -and `
     (($ghotiRecentResult.Output | Out-String) -match 'ghoti_recent:\s+recent actionable work, failures, approvals, and artifacts') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'watchdog_status:\s+\S+') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'watchdog_headline:\s+') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'overlay_target:\s+') -and `
     (($ghotiRecentResult.Output | Out-String) -match 'recent_actionable_tasks:') -and `
     (($ghotiRecentResult.Output | Out-String) -match 'active_only_tasks:') -and `
     (($ghotiRecentResult.Output | Out-String) -match 'recent_failures:') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'watchdog_alerts:') -and `
     (($ghotiRecentResult.Output | Out-String) -match 'pending_approvals:') -and `
     (($ghotiRecentResult.Output | Out-String) -match 'recent_artifacts:')
 Write-Check -Name 'CLI ghoti-recent' -Passed $ghotiRecentOk -Detail (($ghotiRecentResult.Output | Out-String).Trim())

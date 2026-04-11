@@ -346,6 +346,9 @@ try {
         $ghotiControlCenter.localOnly -and `
         $ghotiControlCenter.summary.ghotiState -and `
         $ghotiControlCenter.summary.emergencyStopHotkey -eq 'Ctrl+8' -and `
+        $ghotiControlCenter.summary.watchdog.status -and `
+        $ghotiControlCenter.summary.overlayTarget.label -and `
+        $null -ne $ghotiControlCenter.summary.watchdog.alerts -and `
         $ghotiControlCenter.summary.cliCommands.Count -ge 4 -and `
         $ghotiControlCenter.summary.whatGhotiCanDoNow.Count -gt 0 -and `
         $ghotiControlCenter.summary.whatOperatorShouldDoNext.Count -gt 0 -and `
@@ -1636,6 +1639,10 @@ try {
         $dashboardHtml -match 'task-visibility-filter' -and `
         $dashboardHtml -match 'task-recency-filter' -and `
         $dashboardHtml -match 'ghoti-control-center' -and `
+        $dashboardHtml -match 'ghoti-target-marker' -and `
+        $dashboardHtml -match 'ghoti-overlay-watchdog-pill' -and `
+        $dashboardHtml -match 'ghoti-watchdog-state' -and `
+        $dashboardHtml -match 'Operator Watchdog' -and `
         $dashboardHtml -match 'ghoti-task-visibility-filter' -and `
         $dashboardHtml -match 'ghoti-show-active-tasks' -and `
         $dashboardHtml -match 'ghoti-queue-focus-window' -and `

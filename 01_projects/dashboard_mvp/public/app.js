@@ -365,10 +365,10 @@ function normalizeState(status) {
   if (["ok", "success", "available", "ready", "yes", "approved", "completed", "succeeded", "ready_to_resume"].includes(value)) {
     return "success";
   }
-  if (["blocked", "error", "fail", "failed", "denied", "rejected", "interrupted", "resource_guard_triggered", "blocked_human_needed"].includes(value)) {
+  if (["blocked", "error", "fail", "failed", "denied", "rejected", "interrupted", "resource_guard_triggered", "blocked_human_needed", "manual_intervention_required", "attention_needed"].includes(value)) {
     return "error";
   }
-  if (["pending", "loading", "running", "not_run", "deferred", "waiting", "active", "approval_needed", "queued", "pending_approval"].includes(value)) {
+  if (["pending", "loading", "running", "not_run", "deferred", "waiting", "active", "approval_needed", "queued", "pending_approval", "active_watch"].includes(value)) {
     return "loading";
   }
   return "neutral";
@@ -508,6 +508,62 @@ function renderGhotiState(summary = {}) {
   }
 }
 
+function renderGhotiOverlay(summary = {}) {
+  const watchdog = summary.watchdog || {};
+  const overlayTarget = summary.overlayTarget || watchdog.overlayTarget || {};
+  const normalized = normalizeState(watchdog.status || summary.ghotiState || "neutral");
+  const alertCount = Array.isArray(watchdog.alerts) ? watchdog.alerts.length : 0;
+  const watchdogState = String(watchdog.status || "watching").replaceAll("_", " ");
+
+  const pill = document.getElementById("ghoti-overlay-watchdog-pill");
+  if (pill) {
+    pill.className = `state-pill state-${normalized}`;
+    pill.textContent = watchdogState;
+  }
+
+  setText("ghoti-overlay-watchdog-count", `${alertCount} ${alertCount === 1 ? "alert" : "alerts"}`);
+  setText(
+    "ghoti-overlay-watchdog-summary",
+    watchdog.headline || summary.ghotiReason || "No operator watchdog alerts are visible yet.",
+  );
+  setText("ghoti-overlay-target-label", overlayTarget.label || "No visible target");
+  setText(
+    "ghoti-overlay-target-detail",
+    overlayTarget.detail || "Queue or inspect one narrow task to show Ghoti's next local target.",
+  );
+  setText(
+    "ghoti-overlay-hotkey",
+    watchdog.handoffHint || "Ctrl+8 stops the active desktop action or operator recipe immediately.",
+  );
+
+  const marker = document.getElementById("ghoti-target-marker");
+  if (marker) {
+    marker.className = `ghoti-target-marker is-${normalized}`;
+  }
+  setText("ghoti-target-marker-label", overlayTarget.label || "No visible target");
+  setText(
+    "ghoti-target-marker-detail",
+    overlayTarget.detail || "Ghoti is idle until you queue or inspect a narrow local task.",
+  );
+}
+
+function renderGhotiWatchdog(summary = {}) {
+  const watchdog = summary.watchdog || {};
+  setText("ghoti-watchdog-state", String(watchdog.status || "watching").replaceAll("_", " "));
+  setText("ghoti-watchdog-wrong-window", String(watchdog.wrongWindowBlockCount ?? 0));
+  setText("ghoti-watchdog-stalled", String(watchdog.stalledTaskCount ?? 0));
+  setText("ghoti-watchdog-did-not-complete", String(watchdog.didNotCompleteCount ?? 0));
+  setText(
+    "ghoti-watchdog-headline",
+    watchdog.headline || "No operator watchdog summary is available yet.",
+  );
+  renderStatusList("ghoti-watchdog-alerts", watchdog.alerts || []);
+  setText(
+    "ghoti-watchdog-handoff-hint",
+    watchdog.handoffHint || "Handoff safety hints will appear here when relevant.",
+  );
+}
+
 function renderGhotiControlTaskList(containerId, items, emptyText, inspectLabel = "Inspect Task") {
   const container = document.getElementById(containerId);
   if (!container) {
@@ -564,6 +620,9 @@ function renderGhotiControlCenter(payload) {
   const actionableTasks = summary.recentActionableTasks || [];
   const recentFailures = summary.recentFailures || [];
 
+  renderGhotiOverlay(summary);
+  renderGhotiWatchdog(summary);
+
   setText("ghoti-control-state", String(summary.ghotiState || "idle").replaceAll("_", " "));
   setText("ghoti-control-reason", summary.ghotiReason || "No current state reason reported.");
   setText("ghoti-control-hotkey", summary.emergencyStopHotkey || "Ctrl+8");
@@ -594,6 +653,7 @@ function renderGhotiControlCenter(payload) {
     [
       summary.filters?.visibility === "all" ? "Showing all task statuses." : "Completed tasks stay hidden by default.",
       summary.filters?.activeOnly ? "Active-only filter is on." : "Recent actionable tasks are shown by default.",
+      summary.watchdog?.attentionRequired ? "Watchdog alerts are visible below." : "No watchdog alert is currently forcing manual attention.",
       `Limit: ${summary.filters?.limit || 6}.`,
     ].join(" "),
   );
@@ -615,6 +675,7 @@ function renderGhotiControlCenter(payload) {
     "No recent failures are visible in the current executor task history.",
     "Inspect Failure",
   );
+  renderStatusList("ghoti-watchdog-alerts", summary.watchdog?.alerts || []);
   renderStatusList("ghoti-can-do-list", summary.whatGhotiCanDoNow || []);
   renderStatusList("ghoti-next-step-list", summary.whatOperatorShouldDoNext || []);
   renderStatusList("ghoti-cli-command-list", summary.cliCommands || []);

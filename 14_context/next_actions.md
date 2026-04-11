@@ -1,13 +1,15 @@
 # Next Actions
 
-- Use the new Ghoti control center in dashboard and CLI for the next manual operator-validation pass instead of adding new surface area
+- Use the visible Ghoti operator stack in dashboard and CLI for the next manual operator-validation pass instead of adding new surface area
+- Keep the floating overlay, target marker, and Operator Watchdog visible during manual desktop and handoff validation so wrong-window blocks and stalled work are obvious immediately
 - Manually re-test `codex_to_chatgpt_handoff_mvp` with real Codex and ChatGPT windows using the new candidate picker and remembered candidate toggle
 - Validate that a foreground terminal or other wrong active window blocks the handoff before any paste or send step
 - Validate that explicit terminal-targeted actions still behave honestly as terminal actions when the operator intentionally targets a terminal
 - Validate that the browser-local remembered Codex and ChatGPT candidate selections restore only exact visible windows and clear stale picks safely
-- Walk through the new dashboard control center and `ghoti-*` CLI commands as the default first operator view for approvals, active work, failures, and artifacts
+- Walk through the dashboard control center, floating overlay, Operator Watchdog, and `ghoti-*` CLI commands as the default first operator view for approvals, active work, failures, and artifacts
 - Keep 04_docs\ghoti_control_center.md aligned with the real launch path, stop path, and operator workflow
 - Improve operator-facing task filtering and recent views further only if it reduces noise without adding any deletion path
+- Add a clean usage-exhaustion or handoff-point note later only if it helps the operator decide when to refresh context without widening autonomy
 - Decide later whether anything broader than the browser-local remembered candidate option is justified so the operator does not need to re-pick the same windows every run
 - Tighten Codex and ChatGPT target resolution further only if it reduces manual picks without widening into unsafe guessing
 - Add a small operator-confirmed handoff review step later only if it improves safety without reintroducing terminal or shell fallback

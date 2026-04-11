@@ -4,7 +4,7 @@
 
 ### This Repo
 - role: actual operator foundation
-- includes: runtime MVP, dashboard MVP, browser playground, desktop playground, supervisor flow, approval flow, workspace policy, allowlisted executor, and narrow operator recipes
+- includes: runtime MVP, dashboard MVP, browser playground, desktop playground, supervisor flow, approval flow, workspace policy, allowlisted executor, narrow operator recipes, and the operator-facing Ghoti control-center and visible overlay/watchdog layer
 - rule: this is the only place where core behavior should be implemented
 
 ## DNA / Reference

@@ -99,6 +99,10 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - CLI now has `ghoti-help`, `ghoti-status`, `ghoti-hotkeys`, and `ghoti-recent` so the same operator state is visible outside the dashboard
 - Compact usage guidance for the operator-facing control center now exists at 04_docs\ghoti_control_center.md
 - Runtime, dashboard, and desktop checkers now cover the Ghoti control center, the Ghoti CLI help/status path, hotkey visibility, and recent-actionable filtering honestly
+- Ghoti now also has a lightweight floating dashboard overlay with live state, watchdog summary, Ctrl+8 reminder, and current target visibility
+- The dashboard now shows an Operator Watchdog card and target marker so wrong-window blocks, stalled work, manual intervention, and did-not-complete states are easier to see without digging through raw task history
+- CLI `ghoti-status` and `ghoti-recent` now surface watchdog summaries and the current overlay-target hint so the same visibility exists outside the browser
+- Runtime, dashboard, and desktop checkers now cover the visible Ghoti overlay/watchdog slice honestly
 - Resource/process guardrails now exist for duplicate terminal and process pressure
 - Desktop and recipe steps now stop after two failed attempts instead of retrying indefinitely
 - Checker and recipe label text is now blocked from being pasted into terminals by the clipboard guard
@@ -121,10 +125,11 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 
 ## Immediate Focus
 - Refresh Ghoti handoff memory first when chats get long, then use the new cue, resource guard, retry ceiling, wrong-active-window guard, and paste-only handoff path as the safe base
-- The current branch is now `feat/ghoti-control-center`
-- The new operator-facing control center now exists in both dashboard and CLI, so the next practical step is to use it for real manual validation and tighter operator workflows instead of widening execution scope
+- The current branch is now `feat/ghoti-visible-operator-stack`
+- The visible operator stack now exists in both dashboard and CLI, so the next practical step is to use the overlay, watchdog, control center, and `ghoti-*` commands for real manual validation instead of widening execution scope
 - Real-window handoff targeting and final pre-input destination verification are already implemented for the current MVP and must remain intact while the new control center is exercised
 - Manual target resolution now has an operator-enabled browser-local remembered candidate option for repeated runs and should stay compatible with the clearer control surface
+- Keep the overlay/watchdog layer operator-facing only; use it to surface intervention points, not to auto-recover silently
 - Improve operator-facing task filtering further only if it reduces noise without introducing any deletion path
 - Keep the operator stack swappable from the provider brain so later model changes do not require a rewrite
 - Keep the operator stack compatible with later OpenClaw-style channel, browser-assist, and control-surface integration without making OpenClaw a hard dependency now
