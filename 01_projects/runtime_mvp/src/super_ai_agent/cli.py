@@ -4,6 +4,7 @@ import argparse
 import subprocess
 import sys
 from datetime import datetime, timezone
+from pathlib import Path
 
 from .council import build_council_plan
 from .environment import build_capability_summary, diagnose_environment
@@ -128,6 +129,122 @@ def _workspace_reason(text: str, limit: int = 140) -> str:
     return f"{value[: limit - 3].rstrip()}..."
 
 
+DESKTOP_EXECUTOR_ACTIONS = {
+    "list_windows",
+    "get_active_window",
+    "focus_window",
+    "open_allowed_app",
+    "capture_desktop_screenshot",
+    "get_clipboard_text",
+    "set_clipboard_text",
+    "copy_selection",
+    "paste_clipboard",
+    "send_hotkey",
+    "wait_seconds",
+    "wait_for_window",
+    "move_mouse",
+    "left_click",
+    "double_click",
+    "right_click",
+    "scroll_mouse",
+}
+
+GHOTI_ACTIONABLE_STATUSES = {
+    "queued",
+    "running",
+    "waiting",
+    "pending_approval",
+    "blocked_human_needed",
+    "interrupted",
+    "ready_to_resume",
+    "failed",
+}
+
+GHOTI_ACTIVE_STATUSES = {
+    "queued",
+    "running",
+    "waiting",
+    "pending_approval",
+    "blocked_human_needed",
+    "interrupted",
+    "ready_to_resume",
+}
+
+GHOTI_FAILURE_STATUSES = {
+    "failed",
+    "blocked_human_needed",
+    "interrupted",
+}
+
+
+def _repo_root() -> Path:
+    return get_project_root().parents[1]
+
+
+def _dashboard_url() -> str:
+    return "http://127.0.0.1:3210"
+
+
+def _control_center_doc_path() -> Path:
+    return _repo_root() / "04_docs" / "ghoti_control_center.md"
+
+
+def _classify_executor_task(task) -> str:
+    action_type = str(task.executor_action_type or "").strip().lower()
+    if action_type == "run_operator_recipe":
+        recipe_name = str(task.executor_payload.get("recipe_name", "")).strip().lower()
+        if recipe_name == "codex_to_chatgpt_handoff_mvp":
+            return "handoff"
+        return "recipe"
+    if action_type in DESKTOP_EXECUTOR_ACTIONS:
+        return "desktop"
+    return "repo"
+
+
+def _sort_tasks_by_recent(tasks):
+    return sorted(
+        tasks,
+        key=lambda task: (
+            str(getattr(task, "updated_at", "") or ""),
+            str(getattr(task, "created_at", "") or ""),
+            str(getattr(task, "task_id", "") or ""),
+        ),
+        reverse=True,
+    )
+
+
+def _iter_recent_artifacts(limit: int = 6) -> list[Path]:
+    repo_root = _repo_root()
+    artifact_dirs = [
+        repo_root / "11_exports" / "personal_ops",
+        repo_root / "11_exports" / "github",
+        repo_root / "01_projects" / "browser_playground" / "artifacts",
+        repo_root / "05_logs" / "tmp" / "desktop",
+        repo_root / "01_projects" / "runtime_mvp" / "runtime_data",
+    ]
+
+    files: list[Path] = []
+    for directory in artifact_dirs:
+        if not directory.exists():
+            continue
+        files.extend(path for path in directory.rglob("*") if path.is_file())
+
+    files.sort(key=lambda path: (path.stat().st_mtime, str(path)), reverse=True)
+    return files[:limit]
+
+
+def _print_ghoti_task_lines(tasks, limit: int = 5) -> None:
+    if not tasks:
+        print("- none")
+        return
+
+    for task in _sort_tasks_by_recent(tasks)[:limit]:
+        print(
+            f"- {task.task_id} | {task.status} | {_classify_executor_task(task)} | "
+            f"{_short_description(task.title, limit=90)}"
+        )
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="super-agent")
     subparsers = parser.add_subparsers(dest="command")
@@ -151,6 +268,10 @@ def _build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("pending-approvals")
     subparsers.add_parser("supervisor-status")
     subparsers.add_parser("list-executor-tasks")
+    subparsers.add_parser("ghoti-help")
+    subparsers.add_parser("ghoti-status")
+    subparsers.add_parser("ghoti-hotkeys")
+    subparsers.add_parser("ghoti-recent")
 
     enqueue_parser = subparsers.add_parser("enqueue")
     enqueue_parser.add_argument("--title", required=True)
@@ -460,6 +581,161 @@ def main(argv: list[str] | None = None) -> int:
             print(f"runtime_data: {runtime_dir}")
             return 0
 
+        if args.command == "ghoti-help":
+            available_capabilities = [
+                capability.capability_id
+                for capability in build_capability_summary()
+                if capability.state == "available"
+            ]
+            print("ghoti_help: supervised local-first operator control overview")
+            print(f"branch: {_get_current_branch() or 'unknown'}")
+            print(f"dashboard_url: {_dashboard_url()}")
+            print(f"control_center_doc: {_control_center_doc_path()}")
+            print("dashboard_mode:")
+            print(f"- start from repo root: node {_repo_root() / '01_projects' / 'dashboard_mvp' / 'server.js'}")
+            print(f"- open in browser: {_dashboard_url()}")
+            print("- use the Ghoti control center to see state, approvals, blocked tasks, recent actionable work, failures, and artifacts")
+            print("cli_mode:")
+            print("- python -m super_ai_agent.cli ghoti-status")
+            print("- python -m super_ai_agent.cli ghoti-hotkeys")
+            print("- python -m super_ai_agent.cli ghoti-recent")
+            print("stop:")
+            print("- Ctrl+8 stops the current desktop action or operator recipe run")
+            print("- after interruption, the task stays interrupted until the operator reviews it and re-queues it manually")
+            print("what_ghoti_can_do_now:")
+            if available_capabilities:
+                for capability_id in available_capabilities[:6]:
+                    print(f"- {capability_id}")
+            else:
+                print("- no available capability summary returned")
+            print("safety:")
+            print(f"- allowed workspace root: {get_allowed_workspace_root()}")
+            print("- no arbitrary shell passthrough")
+            print("- no unrestricted desktop control")
+            print("- no admin automation")
+            print("- no task deletion without explicit user approval; prefer archive, filter, and history visibility instead")
+            print("- Codex-to-ChatGPT handoff never falls back to terminal or PowerShell")
+            print("next:")
+            print("- run ghoti-status to see the live local state and next operator step")
+            print("- open the dashboard if you want the visual control center and recent artifact view")
+            print("- run ghoti-recent when you want the shortest read on actionable tasks, failures, approvals, and artifacts")
+            return 0
+
+        if args.command == "ghoti-hotkeys":
+            print("primary_hotkey: Ctrl+8")
+            print("scope: stops the current desktop action or operator recipe run")
+            print("after_interrupt: the task is marked interrupted and requires operator review before re-queue")
+            print("dashboard_visibility: the interrupt reason appears in the dashboard task detail and supervisor views")
+            print("handoff_safety: Codex-to-ChatGPT handoff blocks before input if the wrong window stays active")
+            return 0
+
+        if args.command == "ghoti-status":
+            ensure_runtime_files()
+            state = get_supervisor_state()
+            summary = get_status_summary()
+            tasks = list_executor_tasks()
+            actionable_tasks = [
+                task for task in tasks if str(task.status or "").lower() in GHOTI_ACTIONABLE_STATUSES
+            ]
+            failure_tasks = [
+                task for task in tasks if str(task.status or "").lower() in GHOTI_FAILURE_STATUSES
+            ]
+            active_task = get_task(state.active_task_id) if state.active_task_id else None
+            available_capabilities = [
+                capability.capability_id
+                for capability in build_capability_summary()
+                if capability.state == "available"
+            ]
+            print("ghoti_status: local operator control snapshot")
+            print(f"branch: {_get_current_branch() or 'unknown'}")
+            print(f"dashboard_url: {_dashboard_url()}")
+            print(f"control_center_doc: {_control_center_doc_path()}")
+            print(f"allowed_workspace_root: {get_allowed_workspace_root()}")
+            print(f"ghoti_state: {state.ghoti_state}")
+            print(f"ghoti_reason: {state.ghoti_reason or 'none'}")
+            print(f"active_task_id: {state.active_task_id or 'none'}")
+            print(
+                "current_task: "
+                + (
+                    f"{active_task.task_id} | {_classify_executor_task(active_task)} | "
+                    f"{_short_description(active_task.title, limit=90)}"
+                    if active_task
+                    else "none"
+                )
+            )
+            print(f"queued_tasks: {summary.queued_tasks}")
+            print(f"running_tasks: {summary.running_tasks}")
+            print(f"pending_approvals: {state.pending_approval_count}")
+            print(f"blocked_tasks: {state.blocked_human_needed_count}")
+            print(f"waiting_tasks: {state.waiting_count}")
+            print(f"ready_to_resume_tasks: {state.ready_to_resume_count}")
+            print(f"interrupted_tasks: {state.interrupted_count}")
+            print(f"recent_actionable_count: {len(actionable_tasks)}")
+            print(f"recent_failure_count: {len(failure_tasks)}")
+            print(f"recent_artifact_count: {len(_iter_recent_artifacts(limit=6))}")
+            print("recent_actionable_tasks:")
+            _print_ghoti_task_lines(actionable_tasks, limit=5)
+            print("recent_failures:")
+            _print_ghoti_task_lines(failure_tasks, limit=5)
+            print("what_ghoti_can_do_now:")
+            if available_capabilities:
+                for capability_id in available_capabilities[:5]:
+                    print(f"- {capability_id}")
+            else:
+                print("- no available capability summary returned")
+            print("what_to_do_next:")
+            print(f"- {state.operator_next_step or 'Review the dashboard control center or queue a narrow local action.'}")
+            print("- use Ctrl+8 if a desktop action or recipe needs to stop immediately")
+            if state.pending_approval_count > 0:
+                print("- review pending approvals before trying to run blocked work")
+            elif state.blocked_human_needed_count > 0:
+                print("- inspect blocked human-needed tasks and decide whether to review, resume, or re-queue them")
+            elif state.interrupted_count > 0:
+                print("- inspect interrupted tasks before any re-queue")
+            else:
+                print("- queue one narrow repo, desktop, or recipe action from the dashboard or CLI")
+            return 0
+
+        if args.command == "ghoti-recent":
+            ensure_runtime_files()
+            tasks = list_executor_tasks()
+            actionable_tasks = [
+                task for task in tasks if str(task.status or "").lower() in GHOTI_ACTIONABLE_STATUSES
+            ]
+            active_tasks = [
+                task for task in tasks if str(task.status or "").lower() in GHOTI_ACTIVE_STATUSES
+            ]
+            failure_tasks = [
+                task for task in tasks if str(task.status or "").lower() in GHOTI_FAILURE_STATUSES
+            ]
+            pending_requests = list_pending_approvals()
+            print("ghoti_recent: recent actionable work, failures, approvals, and artifacts")
+            print("recent_actionable_tasks:")
+            _print_ghoti_task_lines(actionable_tasks, limit=6)
+            print("active_only_tasks:")
+            _print_ghoti_task_lines(active_tasks, limit=6)
+            print("recent_failures:")
+            _print_ghoti_task_lines(failure_tasks, limit=6)
+            print("pending_approvals:")
+            if pending_requests:
+                for request in pending_requests[:5]:
+                    print(
+                        f"- {request.approval_id} | {request.status} | "
+                        f"{request.action_label} | {_approval_target(request.scope, request.task_id)}"
+                    )
+            else:
+                print("- none")
+            print("recent_artifacts:")
+            recent_artifacts = _iter_recent_artifacts(limit=6)
+            if recent_artifacts:
+                repo_root = _repo_root()
+                for artifact_path in recent_artifacts:
+                    relative_path = artifact_path.relative_to(repo_root)
+                    print(f"- {relative_path} | modified={datetime.fromtimestamp(artifact_path.stat().st_mtime, tz=timezone.utc).isoformat().replace('+00:00', 'Z')}")
+            else:
+                print("- none")
+            return 0
+
         if args.command == "status":
             ensure_runtime_files()
             summary = get_status_summary()
@@ -562,8 +838,10 @@ def main(argv: list[str] | None = None) -> int:
             for task in tasks:
                 last_execution = task.execution_records[-1] if task.execution_records else None
                 last_summary = last_execution.output_summary if last_execution else "not_run"
+                task_type = _classify_executor_task(task)
                 recipe_bits = []
                 if task.executor_action_type == "run_operator_recipe":
+                    recipe_name = task.executor_payload.get("recipe_name", "")
                     recipe_source = task.executor_payload.get("recipe_source_window", "")
                     recipe_target = task.executor_payload.get("recipe_target_window", "")
                     source_candidate = task.executor_payload.get("recipe_source_window_candidate_id", "")
@@ -572,6 +850,8 @@ def main(argv: list[str] | None = None) -> int:
                     target_mode = task.executor_payload.get("handoff_target_selection_mode", "")
                     payload_classification = task.executor_payload.get("handoff_payload_classification", "")
                     send_behavior = task.executor_payload.get("handoff_send_behavior", "")
+                    if recipe_name:
+                        recipe_bits.append(f"recipe={recipe_name}")
                     if recipe_source:
                         recipe_bits.append(f"source_window={recipe_source}")
                     if recipe_target:
@@ -592,6 +872,8 @@ def main(argv: list[str] | None = None) -> int:
                     f"- {task.task_id} | {task.status} | action={task.executor_action_type} | "
                     f"target={task.executor_target or 'none'} | approval={task.approval_state} | "
                     f"workspace={task.workspace_scope} | policy={task.workspace_policy} | "
+                    f"type={task_type} | title={_short_description(task.title, limit=80)} | "
+                    f"updated={task.updated_at or 'none'} | "
                     f"last={_short_description(last_summary, limit=100)}"
                     + (f" | {' | '.join(recipe_bits)}" if recipe_bits else "")
                 )

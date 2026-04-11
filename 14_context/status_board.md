@@ -39,27 +39,29 @@
 - [x] Ghoti visual cue, resource guard, retry limits, and clipboard guard exist
 - [x] First supervised Codex-to-ChatGPT handoff MVP exists
 - [x] Operator task-history filtering exists
+- [x] Ghoti dashboard and CLI control center now exist
 
 ## Current Control Layer
 - Continue for local context/rules
 - Codex for execution and Git workflow
 
 ## Current Branch
-- feat/real-window-handoff-targeting
+- feat/ghoti-control-center
 
 ## Current Phase
-- Real-window handoff targeting, wrong-active-window input blocking, and the browser-local remembered candidate toggle are complete on the current branch; next step is live manual-assisted validation and follow-on architecture capture
+- Real-window handoff targeting, wrong-active-window input blocking, the browser-local remembered candidate toggle, and the new Ghoti control center are complete; the next step is manual validation and operator use of the clearer surface without widening the safety boundary
 
 ## Next Milestones
 - manually validate real Codex and ChatGPT handoff with the new candidate picker
 - manually validate that a foreground terminal or other wrong active window blocks Codex-to-ChatGPT handoff before any input
 - manually validate that explicit terminal-targeted actions still work as intentional terminal actions
+- use the new dashboard control center and `ghoti-*` CLI commands as the first operator view during manual validation
 - validate the new browser-local remembered candidate option for repeated Codex and ChatGPT handoff runs
 - decide later whether anything broader than browser-local remembered candidates is justified
 - tighten real Codex and ChatGPT target matching only if it reduces manual picks without unsafe guessing
 - keep repeated junk payload retry handling capped at two attempts and visible to the operator
 - capture the OpenClaw patterns that fit later Ghoti channel, browser-assist, and long-running operator work without making it a hard dependency now
-- improve operator-facing task-history filtering so stale failures stay visible without crowding current work
+- improve operator-facing task-history filtering further only if stale failures still crowd current work
 - test the safe repo executor manually from the operator console
 - test the desktop bridge hand layer manually from the operator console
 - test the workspace-boundary flow manually from the operator console

@@ -139,6 +139,7 @@ $expectedFiles = @(
     '01_projects/runtime_mvp/src/super_ai_agent/cli.py',
     '01_projects/runtime_mvp/runtime_data/.gitkeep',
     '04_docs/runtime_mvp.md',
+    '04_docs/ghoti_control_center.md',
     '04_docs/showcase_plan.md',
     '04_docs/internship_showcase_strategy.md',
     '04_docs/claude_openclaw_fit.md',
@@ -227,6 +228,47 @@ $initResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('init-da
 $initOk = $initResult.ExitCode -eq 0
 Write-Check -Name 'CLI init-data' -Passed $initOk -Detail (($initResult.Output | Out-String).Trim())
 if (-not $initOk) { $failed++ }
+
+$ghotiHelpResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('ghoti-help')
+$ghotiHelpOk = $ghotiHelpResult.ExitCode -eq 0 -and `
+    (($ghotiHelpResult.Output | Out-String) -match 'ghoti_help:\s+supervised local-first operator control overview') -and `
+    (($ghotiHelpResult.Output | Out-String) -match 'dashboard_url:\s+http://127\.0\.0\.1:3210') -and `
+    (($ghotiHelpResult.Output | Out-String) -match 'control_center_doc:\s+.*04_docs[\\/]+ghoti_control_center\.md') -and `
+    (($ghotiHelpResult.Output | Out-String) -match 'Ctrl\+8') -and `
+    (($ghotiHelpResult.Output | Out-String) -match 'no task deletion without explicit user approval')
+Write-Check -Name 'CLI ghoti-help' -Passed $ghotiHelpOk -Detail (($ghotiHelpResult.Output | Out-String).Trim())
+if (-not $ghotiHelpOk) { $failed++ }
+
+$ghotiHotkeysResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('ghoti-hotkeys')
+$ghotiHotkeysOk = $ghotiHotkeysResult.ExitCode -eq 0 -and `
+    (($ghotiHotkeysResult.Output | Out-String) -match 'primary_hotkey:\s+Ctrl\+8') -and `
+    (($ghotiHotkeysResult.Output | Out-String) -match 'after_interrupt:\s+') -and `
+    (($ghotiHotkeysResult.Output | Out-String) -match 'handoff_safety:\s+')
+Write-Check -Name 'CLI ghoti-hotkeys' -Passed $ghotiHotkeysOk -Detail (($ghotiHotkeysResult.Output | Out-String).Trim())
+if (-not $ghotiHotkeysOk) { $failed++ }
+
+$ghotiStatusResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('ghoti-status')
+$ghotiStatusOk = $ghotiStatusResult.ExitCode -eq 0 -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'ghoti_status:\s+local operator control snapshot') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'dashboard_url:\s+http://127\.0\.0\.1:3210') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'control_center_doc:\s+.*04_docs[\\/]+ghoti_control_center\.md') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'ghoti_state:\s+\S+') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'recent_actionable_tasks:') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'recent_failures:') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'what_to_do_next:')
+Write-Check -Name 'CLI ghoti-status' -Passed $ghotiStatusOk -Detail (($ghotiStatusResult.Output | Out-String).Trim())
+if (-not $ghotiStatusOk) { $failed++ }
+
+$ghotiRecentResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('ghoti-recent')
+$ghotiRecentOk = $ghotiRecentResult.ExitCode -eq 0 -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'ghoti_recent:\s+recent actionable work, failures, approvals, and artifacts') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'recent_actionable_tasks:') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'active_only_tasks:') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'recent_failures:') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'pending_approvals:') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'recent_artifacts:')
+Write-Check -Name 'CLI ghoti-recent' -Passed $ghotiRecentOk -Detail (($ghotiRecentResult.Output | Out-String).Trim())
+if (-not $ghotiRecentOk) { $failed++ }
 
 $envDiagnoseResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('env-diagnose')
 $envDiagnoseOk = $envDiagnoseResult.ExitCode -eq 0

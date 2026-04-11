@@ -398,6 +398,23 @@ button.is-busy {
   background: linear-gradient(180deg, #f9fbff 0%, #eef4ff 100%);
 }
 
+.ghoti-control-panel {
+  border-color: #bdd3f8;
+  background: linear-gradient(180deg, #ffffff 0%, #f3f8ff 100%);
+}
+
+.ghoti-control-toolbar {
+  margin-top: 1rem;
+}
+
+.ghoti-control-panel .metric-card {
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.ghoti-control-panel .status-card {
+  background: rgba(255, 255, 255, 0.94);
+}
+
 .quick-action-card button,
 .action-card > button,
 .stacked-form button,

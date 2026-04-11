@@ -1,15 +1,18 @@
 # Next Actions
 
+- Use the new Ghoti control center in dashboard and CLI for the next manual operator-validation pass instead of adding new surface area
 - Manually re-test `codex_to_chatgpt_handoff_mvp` with real Codex and ChatGPT windows using the new candidate picker and remembered candidate toggle
 - Validate that a foreground terminal or other wrong active window blocks the handoff before any paste or send step
 - Validate that explicit terminal-targeted actions still behave honestly as terminal actions when the operator intentionally targets a terminal
 - Validate that the browser-local remembered Codex and ChatGPT candidate selections restore only exact visible windows and clear stale picks safely
+- Walk through the new dashboard control center and `ghoti-*` CLI commands as the default first operator view for approvals, active work, failures, and artifacts
+- Keep 04_docs\ghoti_control_center.md aligned with the real launch path, stop path, and operator workflow
+- Improve operator-facing task filtering and recent views further only if it reduces noise without adding any deletion path
 - Decide later whether anything broader than the browser-local remembered candidate option is justified so the operator does not need to re-pick the same windows every run
 - Tighten Codex and ChatGPT target resolution further only if it reduces manual picks without widening into unsafe guessing
 - Add a small operator-confirmed handoff review step later only if it improves safety without reintroducing terminal or shell fallback
 - Keep repeated identical blocked handoff payloads from being re-run beyond the current two-attempt ceiling
 - Keep paste-only as the default and only add an operator-reviewed send step if real target matching becomes reliable
-- Improve operator-facing task-history filtering and recent views instead of adding any deletion path
 - Keep no-task-deletion as an explicit policy and use filter/archive/history instead
 - Keep the recipe library narrow, composable, approval-aware, and ready for later provider swapping
 - Keep the operator stack separate from the brain/provider layer so future ChatGPT, Claude, Gemini, or Gemma routing does not force a core rewrite
@@ -18,7 +21,7 @@
 - Test the desktop bridge hand layer manually from the operator console, including focus, clipboard read/write, paste, hotkeys, mouse actions, waits, and the Ctrl+8 failsafe
 - Test the workspace-boundary flow manually from the operator console
 - Test the manual supervisor loop from the operator console, including review, resume, re-queue, repo executor actions, and desktop executor actions
-- Manually test the new Ghoti state cue, resource guard warnings, retry ceiling, and interrupted-task messaging from the dashboard
+- Manually test the new Ghoti state cue, control center summaries, resource guard warnings, retry ceiling, and interrupted-task messaging from the dashboard
 - Add a narrow hardware-builder-assist experiment later only as a local-first research module, not as a Blueprint.am dependency
 - Design an explicit allowlist-expansion or workspace-override path later
 - Choose the next narrow desktop-control addition, such as safe text insertion or known-target clicks, only if it stays approval-aware

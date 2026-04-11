@@ -93,6 +93,12 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Repo integration classification now exists at 08_research\repo_integration_map.md
 - Blueprint.am is now explicitly classified as external inspiration only, with a narrow internal hardware-builder-assist note under 08_research
 - Ghoti now has a visible dashboard state cue for idle, active, waiting, approval-needed, interrupted, and resource-guard-triggered states
+- Dashboard now has a top-level Ghoti control center that shows live Ghoti state, emergency stop guidance, current task, pending approvals, blocked tasks, recent actionable work, recent failures, current capabilities, recent artifacts, and next steps
+- Dashboard now exposes narrow Ghoti quick actions for refresh, approvals, active or recent tasks, artifacts, desktop observation, clipboard read and write, focus window, handoff, and checker runs
+- Dashboard control-center filters now default to recent actionable work, can switch to active-only or all-task visibility, and can filter by task type and status without deleting history
+- CLI now has `ghoti-help`, `ghoti-status`, `ghoti-hotkeys`, and `ghoti-recent` so the same operator state is visible outside the dashboard
+- Compact usage guidance for the operator-facing control center now exists at 04_docs\ghoti_control_center.md
+- Runtime, dashboard, and desktop checkers now cover the Ghoti control center, the Ghoti CLI help/status path, hotkey visibility, and recent-actionable filtering honestly
 - Resource/process guardrails now exist for duplicate terminal and process pressure
 - Desktop and recipe steps now stop after two failed attempts instead of retrying indefinitely
 - Checker and recipe label text is now blocked from being pasted into terminals by the clipboard guard
@@ -114,11 +120,12 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Claw Code remains temporary reference, not foundation
 
 ## Immediate Focus
-- Refresh Ghoti handoff memory first when chats get long, then use the new cue, resource guard, retry ceiling, wrong-active-window guard, and paste-only handoff path as the base for the next real cross-window loop
-- Real-window handoff targeting and final pre-input destination verification are now implemented for the current MVP
-- Manual target resolution now has an operator-enabled browser-local remembered candidate option for repeated runs
-- The next practical step is live manual-assisted Codex and ChatGPT handoff testing that proves a foreground terminal blocks safely before input while a real ChatGPT target still accepts the paste-only path
-- Improve operator-facing task filtering and recent views instead of adding any task deletion path
+- Refresh Ghoti handoff memory first when chats get long, then use the new cue, resource guard, retry ceiling, wrong-active-window guard, and paste-only handoff path as the safe base
+- The current branch is now `feat/ghoti-control-center`
+- The new operator-facing control center now exists in both dashboard and CLI, so the next practical step is to use it for real manual validation and tighter operator workflows instead of widening execution scope
+- Real-window handoff targeting and final pre-input destination verification are already implemented for the current MVP and must remain intact while the new control center is exercised
+- Manual target resolution now has an operator-enabled browser-local remembered candidate option for repeated runs and should stay compatible with the clearer control surface
+- Improve operator-facing task filtering further only if it reduces noise without introducing any deletion path
 - Keep the operator stack swappable from the provider brain so later model changes do not require a rewrite
 - Keep the operator stack compatible with later OpenClaw-style channel, browser-assist, and control-surface integration without making OpenClaw a hard dependency now
 - Decide the next narrow desktop-control implementation path only if it directly supports the real handoff loop
@@ -142,6 +149,7 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Terminal or PowerShell must not be used as a substitute target for Codex-to-ChatGPT handoff, even though explicit terminal-targeted actions elsewhere remain allowed
 - The handoff bugfix now blocks bad fallback paths and wrong-active-window pastes safely, but real Codex and ChatGPT window resolution is still title-dependent and can still stop at manual target resolution
 - Real Codex and ChatGPT window targeting is better, and remembered preferred target selection now exists only as an operator-enabled dashboard-browser preference; there is still no broader runtime-stored target profile
+- Ghoti is much easier to inspect now, but task history is still inherently large, so the operator still needs recent and status filters to stay focused
 - Some focus-sensitive desktop actions still depend on what the current Windows session allows; in non-interactive checker sessions they may stop safely with manual-focus-required instead of pretending success
 - Desktop screenshot capture can still be unavailable in some Windows sessions, so manual capture remains the honest fallback there
 - Task history is large and noisy even after the first filter pass, and the operator console still needs better operator-facing filtering so stale failures do not crowd current work

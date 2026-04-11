@@ -791,6 +791,10 @@ function parseExecutorTaskLine(line) {
     status: parts[1] || "unknown",
     actionType: labeled.action || "unknown",
     target: labeled.target || "none",
+    taskType: labeled.type || "repo",
+    title: labeled.title || "Executor task",
+    updatedAt: labeled.updated || "",
+    recipeName: labeled.recipe || "none",
     approvalState: labeled.approval || "unknown",
     workspaceScope: labeled.workspace || "no_path_detected",
     workspacePolicy: labeled.policy || "allowed",
@@ -1137,6 +1141,15 @@ function buildOperatorStatus() {
   return {
     localOnly: true,
     headline: "Local operator console for safe, visible, reviewable actions.",
+    dashboardUrl: `http://127.0.0.1:${dashboardPort}`,
+    emergencyStopHotkey: "Ctrl+8",
+    controlCenterDoc: relativeRepoPath(path.join(repoRoot, "04_docs", "ghoti_control_center.md")),
+    cliCommands: [
+      "python -m super_ai_agent.cli ghoti-help",
+      "python -m super_ai_agent.cli ghoti-status",
+      "python -m super_ai_agent.cli ghoti-hotkeys",
+      "python -m super_ai_agent.cli ghoti-recent",
+    ],
     liveNow: [
       "Capability summary and environment-aware status",
       "GitHub read status and remote-capability visibility",
@@ -1150,6 +1163,8 @@ function buildOperatorStatus() {
       "Supervisor status and approval inbox visibility",
       "Approval queue review with local approve, deny, and defer actions",
       "Manual task review, resume, re-queue, and failsafe interruption visibility",
+      "CLI Ghoti help, status, hotkey, and recent-work summaries",
+      "Safe real-window Codex-to-ChatGPT handoff with explicit target verification",
       "Recent artifacts and recent-action log",
     ],
     scaffoldOnly: [
@@ -1157,17 +1172,268 @@ function buildOperatorStatus() {
       "Mail, Notion, and LinkedIn remain planning-only",
       "Personal ops packs are generated outputs, not live send or publish flows",
       "Desktop bridge actions and recipes are still narrow, allowlisted, and operator-triggered",
-      "The Codex-to-dashboard handoff recipe is only a prototype, not a real ChatGPT-specific workflow yet",
+      "The handoff workflow remains paste-only by default and still stops for manual target resolution when real window matching is not confident",
       "Notifications are local dashboard summaries only",
     ],
     notImplementedYet: [
       "Full browser executor loop",
       "Arbitrary desktop or Windows app control",
       "Freeform typing, drag-and-drop, or unrestricted mouse automation",
-      "Durable real-window Codex to ChatGPT handoff workflows",
+      "Runtime-stored durable Codex or ChatGPT target profiles beyond browser-local remembered candidate picks",
       "Live mail, Notion, and LinkedIn adapters",
     ],
-    nextStep: "Queue a narrow operator recipe or desktop hand action, approve it if needed, run it manually, and inspect the per-step result history in the selected task panel.",
+    nextStep: "Use the Ghoti control center or the new ghoti-* CLI commands to spot the next actionable task, review approvals, and inspect artifacts before queueing another narrow local action.",
+  };
+}
+
+async function buildGhotiControlCenterResponse(filters = {}) {
+  const [capabilityPayload, supervisorPayload, executorPayload] = await Promise.all([
+    buildCapabilityResponse(),
+    buildSupervisorResponse(),
+    buildExecutorTasksResponse(),
+  ]);
+
+  const operator = buildOperatorStatus();
+  const supervisor = supervisorPayload.summary || {};
+  const executorSummary = executorPayload.summary || {};
+  const capabilitySummary = capabilityPayload.summary || {};
+  const tasks = executorSummary.tasks || [];
+  const filteredTasks = filterGhotiTasks(tasks, filters);
+  const sortedTasks = sortGhotiTasks(tasks).map(decorateGhotiTask);
+  const currentTask = sortedTasks.find((item) => item.taskId === supervisor.activeTaskId)
+    || sortedTasks.find((item) => String(item.status || "").toLowerCase() === "running")
+    || null;
+  const recentFailures = sortedTasks
+    .filter((item) => ghotiFailureStatuses.has(String(item.status || "").toLowerCase()))
+    .slice(0, 5);
+  const artifacts = listRecentArtifacts();
+  const availableCapabilities = (capabilitySummary.capabilities || [])
+    .filter((item) => String(item.state || "").toLowerCase() === "available")
+    .map((item) => item.capabilityId)
+    .slice(0, 6);
+  const nextSteps = [
+    supervisor.operatorNextStep || operator.nextStep,
+    "Use Ctrl+8 if a desktop action or recipe needs to stop immediately.",
+    supervisor.pendingApprovalCount > 0
+      ? "Review pending approvals before trying to run blocked work."
+      : "",
+    supervisor.blockedHumanNeededCount > 0
+      ? "Inspect blocked human-needed tasks and decide whether to review, resume, or re-queue them."
+      : "",
+    `Open ${operator.controlCenterDoc} for the compact dashboard and CLI usage path.`,
+  ].filter(Boolean);
+
+  return {
+    ok: capabilityPayload.ok && supervisorPayload.ok && executorPayload.ok,
+    summary: {
+      headline: `${supervisor.ghotiState || "idle"} | ${supervisor.headline || "Ghoti control center ready."}`,
+      ghotiState: supervisor.ghotiState || "idle",
+      ghotiReason: supervisor.ghotiReason || "none",
+      operatorNextStep: supervisor.operatorNextStep || operator.nextStep,
+      emergencyStopHotkey: operator.emergencyStopHotkey,
+      currentTask: currentTask
+        ? {
+            taskId: currentTask.taskId,
+            headline: currentTask.headline,
+            status: currentTask.status,
+            taskType: currentTask.taskType,
+            taskTypeLabel: currentTask.taskTypeLabel,
+            detail: currentTask.detail,
+            nextAction: currentTask.nextAction || "Inspect the task detail.",
+          }
+        : null,
+      pendingApprovalCount: Number(supervisor.pendingApprovalCount || 0),
+      blockedTaskCount: Number(supervisor.blockedHumanNeededCount || 0),
+      interruptedCount: Number(supervisor.interruptedCount || 0),
+      waitingCount: Number(supervisor.waitingCount || 0),
+      readyToResumeCount: Number(supervisor.readyToResumeCount || 0),
+      recentActionableCount: filteredTasks.filteredCount,
+      recentFailureCount: recentFailures.length,
+      recentArtifactCount: artifacts.length,
+      recentActionableTasks: filteredTasks.items,
+      recentFailures,
+      whatGhotiCanDoNow: availableCapabilities.length > 0 ? availableCapabilities : operator.liveNow.slice(0, 6),
+      whatOperatorShouldDoNext: nextSteps,
+      filters: {
+        visibility: filteredTasks.visibility,
+        taskType: filteredTasks.taskType,
+        taskStatus: filteredTasks.taskStatus,
+        activeOnly: filteredTasks.activeOnly,
+        limit: filteredTasks.limit,
+      },
+      dashboardUrl: operator.dashboardUrl,
+      controlCenterDoc: operator.controlCenterDoc,
+      cliCommands: operator.cliCommands,
+      hideCompletedByDefault: filteredTasks.visibility !== "all",
+      noDeletionPolicy: "No task deletion without explicit approval. Prefer archive, filter, and history visibility instead.",
+      availableCapabilitiesCount: Number(capabilitySummary.availableCount || 0),
+    },
+    raw: {
+      capability: capabilityPayload.raw,
+      supervisor: supervisorPayload.raw,
+      executor: executorPayload.raw,
+    },
+    localOnly: true,
+  };
+}
+
+const ghotiActionableStatuses = new Set([
+  "queued",
+  "running",
+  "waiting",
+  "pending_approval",
+  "blocked_human_needed",
+  "interrupted",
+  "ready_to_resume",
+  "failed",
+]);
+
+const ghotiActiveStatuses = new Set([
+  "queued",
+  "running",
+  "waiting",
+  "pending_approval",
+  "blocked_human_needed",
+  "interrupted",
+  "ready_to_resume",
+]);
+
+const ghotiFailureStatuses = new Set([
+  "failed",
+  "blocked_human_needed",
+  "interrupted",
+]);
+
+const ghotiDesktopActionTypes = new Set([
+  "list_windows",
+  "get_active_window",
+  "focus_window",
+  "open_allowed_app",
+  "capture_desktop_screenshot",
+  "get_clipboard_text",
+  "set_clipboard_text",
+  "copy_selection",
+  "paste_clipboard",
+  "send_hotkey",
+  "wait_seconds",
+  "wait_for_window",
+  "move_mouse",
+  "left_click",
+  "double_click",
+  "right_click",
+  "scroll_mouse",
+]);
+
+function parseBooleanQuery(value, fallback = false) {
+  if (value === null || value === undefined || value === "") {
+    return fallback;
+  }
+  return ["1", "true", "yes", "on"].includes(String(value).toLowerCase());
+}
+
+function parsePositiveIntQuery(value, fallback) {
+  const parsed = Number.parseInt(String(value || ""), 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function isDesktopExecutorAction(actionType) {
+  return ghotiDesktopActionTypes.has(String(actionType || "").toLowerCase());
+}
+
+function classifyGhotiTaskType(task) {
+  const actionType = String(task?.actionType || "").toLowerCase();
+  const recipeName = String(task?.recipeName || "").toLowerCase();
+  const sourceWindow = String(task?.sourceWindow || "").toLowerCase();
+  const targetWindow = String(task?.targetWindow || "").toLowerCase();
+
+  if (actionType === "run_operator_recipe") {
+    if (
+      recipeName === "codex_to_chatgpt_handoff_mvp"
+      || (sourceWindow === "codex" && targetWindow === "chatgpt")
+    ) {
+      return "handoff";
+    }
+    return "recipe";
+  }
+
+  if (isDesktopExecutorAction(actionType)) {
+    return "desktop";
+  }
+
+  return "repo";
+}
+
+function humanizeGhotiTaskType(taskType) {
+  const mapping = {
+    repo: "Repo action",
+    desktop: "Desktop action",
+    recipe: "Operator recipe",
+    handoff: "Codex to ChatGPT handoff",
+  };
+  return mapping[taskType] || "Task";
+}
+
+function sortGhotiTasks(tasks) {
+  return [...(tasks || [])].sort((left, right) => {
+    const leftUpdated = String(left?.updatedAt || "");
+    const rightUpdated = String(right?.updatedAt || "");
+    const byUpdated = rightUpdated.localeCompare(leftUpdated);
+    if (byUpdated !== 0) {
+      return byUpdated;
+    }
+    return String(right?.taskId || "").localeCompare(String(left?.taskId || ""));
+  });
+}
+
+function decorateGhotiTask(task) {
+  const taskType = classifyGhotiTaskType(task);
+  const headline = task.title && task.title !== "Executor task"
+    ? task.title
+    : `${humanizeGhotiTaskType(taskType)} ${task.taskId || ""}`.trim();
+  return {
+    ...task,
+    taskType,
+    taskTypeLabel: humanizeGhotiTaskType(taskType),
+    headline,
+    detail: task.lastSummary || task.detail || "No recent summary.",
+  };
+}
+
+function filterGhotiTasks(tasks, filters = {}) {
+  const visibility = String(filters.visibility || "actionable").toLowerCase();
+  const requestedType = String(filters.taskType || "all").toLowerCase();
+  const requestedStatus = String(filters.taskStatus || "all").toLowerCase();
+  const activeOnly = Boolean(filters.activeOnly);
+  const limit = parsePositiveIntQuery(filters.limit, 8);
+
+  let items = sortGhotiTasks((tasks || []).map(decorateGhotiTask));
+  const totalCount = items.length;
+
+  if (visibility !== "all") {
+    items = items.filter((item) => ghotiActionableStatuses.has(String(item.status || "").toLowerCase()));
+  }
+
+  if (activeOnly) {
+    items = items.filter((item) => ghotiActiveStatuses.has(String(item.status || "").toLowerCase()));
+  }
+
+  if (requestedType !== "all") {
+    items = items.filter((item) => item.taskType === requestedType);
+  }
+
+  if (requestedStatus !== "all") {
+    items = items.filter((item) => String(item.status || "").toLowerCase() === requestedStatus);
+  }
+
+  return {
+    items: items.slice(0, limit),
+    totalCount,
+    filteredCount: items.length,
+    visibility,
+    taskType: requestedType,
+    taskStatus: requestedStatus,
+    activeOnly,
+    limit,
   };
 }
 
@@ -1425,6 +1691,24 @@ async function handleApiRequest(request, response, requestUrl) {
       summary: "Loaded the local operator-mode status summary.",
     });
     sendJson(response, 200, payload);
+    return;
+  }
+
+  if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/control-center") {
+    const payload = await buildGhotiControlCenterResponse({
+      visibility: requestUrl.searchParams.get("visibility") || "actionable",
+      taskType: requestUrl.searchParams.get("taskType") || "all",
+      taskStatus: requestUrl.searchParams.get("taskStatus") || "all",
+      activeOnly: parseBooleanQuery(requestUrl.searchParams.get("activeOnly"), false),
+      limit: parsePositiveIntQuery(requestUrl.searchParams.get("limit"), 8),
+    });
+    pushAction({
+      actionType: "status",
+      label: "Viewed Ghoti control center",
+      status: payload.ok ? "success" : "error",
+      summary: payload.summary.headline,
+    });
+    sendJson(response, payload.ok ? 200 : 500, payload);
     return;
   }
 

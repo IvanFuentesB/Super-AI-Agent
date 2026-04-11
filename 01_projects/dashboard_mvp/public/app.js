@@ -5,6 +5,7 @@ const uiState = {
   selectedArtifactPath: "",
   selectedApprovalId: "",
   selectedTaskId: "",
+  controlCenterPayload: null,
   executorTasksPayload: null,
   handoffTargetsPayload: null,
 };
@@ -397,6 +398,26 @@ function getTaskRecencyLimit() {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 12;
 }
 
+function getGhotiControlCenterFilters() {
+  return {
+    visibility: document.getElementById("ghoti-task-visibility-filter")?.value || "actionable",
+    taskType: document.getElementById("ghoti-task-type-filter")?.value || "all",
+    taskStatus: document.getElementById("ghoti-task-status-filter")?.value || "all",
+    activeOnly: Boolean(document.getElementById("ghoti-task-active-only")?.checked),
+    limit: document.getElementById("ghoti-task-limit-filter")?.value || "6",
+  };
+}
+
+function scrollToElement(targetId) {
+  const element = document.getElementById(targetId);
+  if (element) {
+    element.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }
+}
+
 function applyTaskListFilters(items) {
   const allItems = Array.isArray(items) ? items : [];
   const visibility = getTaskVisibilityFilter();
@@ -485,6 +506,118 @@ function renderGhotiState(summary = {}) {
       ? events.map((item) => `<article class="log-item"><p>${escapeHtml(item)}</p></article>`).join("")
       : "<p class=\"empty-state\">No recent resource guard events.</p>";
   }
+}
+
+function renderGhotiControlTaskList(containerId, items, emptyText, inspectLabel = "Inspect Task") {
+  const container = document.getElementById(containerId);
+  if (!container) {
+    return;
+  }
+
+  if (!items || items.length === 0) {
+    container.innerHTML = `<p class="empty-state">${escapeHtml(emptyText)}</p>`;
+    return;
+  }
+
+  container.innerHTML = items
+    .map((item) => {
+      const state = normalizeState(item.status);
+      const isSelected = item.taskId && item.taskId === uiState.selectedTaskId;
+      const detailText = [
+        item.taskTypeLabel ? `Type: ${item.taskTypeLabel}` : "",
+        item.detail && item.detail !== "not_run" ? item.detail : "",
+        item.nextAction ? `Next: ${item.nextAction}` : "",
+      ].filter(Boolean).join(" | ");
+      return `
+        <article class="approval-item ${isSelected ? "is-selected" : ""}">
+          <div class="approval-topline">
+            <strong>${escapeHtml(item.headline || item.taskId || "task")}</strong>
+            <span class="state-pill state-${state}">${escapeHtml(item.status || state)}</span>
+          </div>
+          <div class="approval-summary-grid">
+            <p><span>Task</span><strong>${escapeHtml(item.taskId || "none")}</strong></p>
+            <p><span>Type</span><strong>${escapeHtml(item.taskTypeLabel || item.taskType || "task")}</strong></p>
+            <p><span>Approval</span><strong>${escapeHtml(item.approvalState || "unknown")}</strong></p>
+            <p><span>Updated</span><strong>${escapeHtml(item.updatedAt ? formatTimeStamp(item.updatedAt) : "unknown")}</strong></p>
+          </div>
+          <p class="approval-description"><span>Detail</span>${escapeHtml(detailText || "No recent detail recorded.")}</p>
+          <div class="approval-actions">
+            <button
+              class="button-secondary task-action-button"
+              type="button"
+              data-task-action="inspect"
+              data-task-id="${escapeHtml(item.taskId || "")}"
+            >
+              ${isSelected ? "Viewing Task" : inspectLabel}
+            </button>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+function renderGhotiControlCenter(payload) {
+  uiState.controlCenterPayload = payload;
+  const summary = payload.summary || {};
+  const currentTask = summary.currentTask || null;
+  const actionableTasks = summary.recentActionableTasks || [];
+  const recentFailures = summary.recentFailures || [];
+
+  setText("ghoti-control-state", String(summary.ghotiState || "idle").replaceAll("_", " "));
+  setText("ghoti-control-reason", summary.ghotiReason || "No current state reason reported.");
+  setText("ghoti-control-hotkey", summary.emergencyStopHotkey || "Ctrl+8");
+  setText(
+    "ghoti-control-hotkey-note",
+    "Ctrl+8 stops the current desktop action or operator recipe, marks it interrupted, and requires operator review before any re-queue.",
+  );
+  setText(
+    "ghoti-control-current-task",
+    currentTask
+      ? `${currentTask.taskId} | ${currentTask.taskTypeLabel || currentTask.taskType || "task"}`
+      : "No running task right now.",
+  );
+  setText(
+    "ghoti-control-current-task-note",
+    currentTask
+      ? `${currentTask.headline || currentTask.taskId} | ${currentTask.detail || currentTask.nextAction || "Inspect the task detail."}`
+      : "Ghoti is not currently running a task. Queue a narrow local action when you are ready.",
+  );
+  setText("ghoti-control-pending", String(summary.pendingApprovalCount ?? 0));
+  setText("ghoti-control-blocked", String(summary.blockedTaskCount ?? 0));
+  setText("ghoti-control-actionable", String(summary.recentActionableCount ?? actionableTasks.length));
+  setText("ghoti-control-failures", String(summary.recentFailureCount ?? recentFailures.length));
+  setText("ghoti-control-capabilities", String(summary.availableCapabilitiesCount ?? 0));
+  setText("ghoti-control-artifacts", String(summary.recentArtifactCount ?? 0));
+  setText(
+    "ghoti-control-filter-note",
+    [
+      summary.filters?.visibility === "all" ? "Showing all task statuses." : "Completed tasks stay hidden by default.",
+      summary.filters?.activeOnly ? "Active-only filter is on." : "Recent actionable tasks are shown by default.",
+      `Limit: ${summary.filters?.limit || 6}.`,
+    ].join(" "),
+  );
+  setText(
+    "ghoti-control-next-step-copy",
+    summary.operatorNextStep || "Review the next local step from the control center.",
+  );
+  setText("ghoti-control-no-delete-note", summary.noDeletionPolicy || "No deletion policy summary available.");
+
+  renderGhotiControlTaskList(
+    "ghoti-actionable-task-list",
+    actionableTasks,
+    "No recent actionable tasks match the current Ghoti control-center filter.",
+    "Inspect Actionable Task",
+  );
+  renderGhotiControlTaskList(
+    "ghoti-failure-task-list",
+    recentFailures,
+    "No recent failures are visible in the current executor task history.",
+    "Inspect Failure",
+  );
+  renderStatusList("ghoti-can-do-list", summary.whatGhotiCanDoNow || []);
+  renderStatusList("ghoti-next-step-list", summary.whatOperatorShouldDoNext || []);
+  renderStatusList("ghoti-cli-command-list", summary.cliCommands || []);
 }
 
 function formatTimeStamp(value) {
@@ -1756,6 +1889,20 @@ async function refreshOperatorStatus() {
   renderOperatorStatus(payload);
 }
 
+async function refreshGhotiControlCenter() {
+  const filters = getGhotiControlCenterFilters();
+  const query = new URLSearchParams({
+    visibility: filters.visibility,
+    taskType: filters.taskType,
+    taskStatus: filters.taskStatus,
+    activeOnly: filters.activeOnly ? "true" : "false",
+    limit: String(filters.limit || "6"),
+  });
+  const payload = await requestJson(`/api/ghoti/control-center?${query.toString()}`);
+  renderGhotiControlCenter(payload);
+  return payload;
+}
+
 async function refreshCapabilities() {
   const payload = await requestJson("/api/capability-summary");
   renderCapabilitySummary(payload);
@@ -1911,7 +2058,7 @@ async function submitApprovalDecision(decision, button) {
       result.summary?.approvalId || approvalId,
     );
     updateLocalAction(actionId, "success", result.summary?.headline || "Approval decision saved.");
-    await Promise.all([refreshSupervisorStatus(), refreshPendingApprovals(), refreshRecentActions()]);
+    await Promise.all([refreshSupervisorStatus(), refreshPendingApprovals(), refreshGhotiControlCenter(), refreshRecentActions()]);
     return result;
   } catch (error) {
     setResultPanel("approval-action-result", "error", "Approval decision failed.", error.message);
@@ -1966,7 +2113,7 @@ async function submitTaskAction(action, button) {
       result.summary?.taskId || taskId,
     );
     updateLocalAction(actionId, "success", result.summary?.headline || "Task action saved.");
-    await Promise.all([refreshSupervisorStatus(), refreshExecutorTasks(), refreshArtifacts(), refreshRecentActions()]);
+    await Promise.all([refreshSupervisorStatus(), refreshExecutorTasks(), refreshArtifacts(), refreshGhotiControlCenter(), refreshRecentActions()]);
     return result;
   } catch (error) {
     setResultPanel("task-action-result", "error", "Task action failed.", error.message);
@@ -2015,6 +2162,7 @@ async function refreshHandoffTargetCandidates() {
 async function refreshConsole() {
   await Promise.all([
     refreshOperatorStatus(),
+    refreshGhotiControlCenter(),
     refreshCapabilities(),
     refreshGithubUpdates(),
     refreshSupervisorStatus(),
@@ -2065,7 +2213,7 @@ async function runScaffold(formId, endpoint, summaryId, rawId, actionLabel, butt
     setResultPanel(summaryId, "success", result.summary?.headline || "Action complete.", outputPath);
     renderRaw(rawId, result);
     updateLocalAction(actionId, "success", result.summary?.headline || "Scaffold created.");
-    await Promise.all([refreshArtifacts(), refreshRecentActions()]);
+    await Promise.all([refreshArtifacts(), refreshGhotiControlCenter(), refreshRecentActions()]);
     return result;
   } catch (error) {
     setResultPanel(summaryId, "error", "Action failed.", error.message);
@@ -2102,7 +2250,7 @@ async function runExecutorQueue(payload, actionLabel, button, options = {}) {
       result.summary?.taskId || "task created",
     );
     updateLocalAction(actionId, "success", result.summary?.headline || "Executor task queued.");
-    await Promise.all([refreshSupervisorStatus(), refreshExecutorTasks(), refreshArtifacts(), refreshRecentActions()]);
+    await Promise.all([refreshSupervisorStatus(), refreshExecutorTasks(), refreshArtifacts(), refreshGhotiControlCenter(), refreshRecentActions()]);
     return result;
   } catch (error) {
     setResultPanel(panelId, "error", "Executor task queue failed.", error.message);
@@ -2127,7 +2275,7 @@ async function runBrowserAction(endpoint, summaryId, rawId, actionLabel, button,
     setResultPanel(summaryId, "success", result.summary?.headline || "Browser action complete.", detail);
     renderRaw(rawId, result);
     updateLocalAction(actionId, "success", result.summary?.headline || "Browser action completed.");
-    await Promise.all([refreshArtifacts(), refreshRecentActions()]);
+    await Promise.all([refreshArtifacts(), refreshGhotiControlCenter(), refreshRecentActions()]);
     return result;
   } catch (error) {
     setResultPanel(summaryId, "error", "Browser action failed.", error.message);
@@ -2162,6 +2310,10 @@ async function runDesktopBridgeCheck(button) {
   }
 }
 
+async function runGhotiQuickQueue(payload, actionLabel, button) {
+  return runExecutorQueue(payload, actionLabel, button, { panelId: "ghoti-control-action-summary" });
+}
+
 document.getElementById("refresh-console").addEventListener("click", async (event) => {
   await runRefresh(
     event.currentTarget,
@@ -2172,6 +2324,19 @@ document.getElementById("refresh-console").addEventListener("click", async (even
       setText("operator-headline", "Console refresh failed.");
       setText("operator-next-step", error.message);
     },
+  );
+});
+
+document.getElementById("ghoti-refresh-state").addEventListener("click", async (event) => {
+  await runRefresh(
+    event.currentTarget,
+    "Refresh Ghoti control center",
+    "Refreshing...",
+    () => Promise.all([refreshGhotiControlCenter(), refreshSupervisorStatus(), refreshExecutorTasks(), refreshArtifacts(), refreshRecentActions()]),
+    (error) => {
+      setResultPanel("ghoti-control-action-summary", "error", "Ghoti control-center refresh failed.", error.message);
+    },
+    { panelId: "ghoti-control-action-summary" },
   );
 });
 
@@ -2206,7 +2371,7 @@ document.getElementById("refresh-supervisor").addEventListener("click", async (e
     event.currentTarget,
     "Refresh supervisor status",
     "Refreshing...",
-    () => Promise.all([refreshSupervisorStatus(), refreshPendingApprovals(), refreshRecentActions()]),
+    () => Promise.all([refreshSupervisorStatus(), refreshPendingApprovals(), refreshGhotiControlCenter(), refreshRecentActions()]),
     (error) => {
       setText("supervisor-headline", "Supervisor refresh failed.");
       setText("supervisor-quick-note", error.message);
@@ -2219,7 +2384,7 @@ document.getElementById("refresh-executor-tasks").addEventListener("click", asyn
     event.currentTarget,
     "Refresh executor tasks",
     "Refreshing...",
-    () => Promise.all([refreshExecutorTasks(), refreshRecentActions()]),
+    () => Promise.all([refreshExecutorTasks(), refreshGhotiControlCenter(), refreshRecentActions()]),
     () => {
       setResultPanel("executor-queue-summary", "error", "Executor task refresh failed.", "Try the refresh again.");
     },
@@ -2232,6 +2397,22 @@ document.getElementById("task-visibility-filter").addEventListener("change", () 
 
 document.getElementById("task-recency-filter").addEventListener("change", () => {
   rerenderTaskListsFromState();
+});
+
+[
+  "ghoti-task-visibility-filter",
+  "ghoti-task-limit-filter",
+  "ghoti-task-type-filter",
+  "ghoti-task-status-filter",
+  "ghoti-task-active-only",
+].forEach((id) => {
+  document.getElementById(id).addEventListener("change", async () => {
+    try {
+      await refreshGhotiControlCenter();
+    } catch (error) {
+      setResultPanel("ghoti-control-action-summary", "error", "Ghoti task filter refresh failed.", error.message);
+    }
+  });
 });
 
 document.getElementById("refresh-capabilities-panel").addEventListener("click", async (event) => {
@@ -2265,10 +2446,126 @@ document.getElementById("refresh-artifacts").addEventListener("click", async (ev
     event.currentTarget,
     "Refresh recent artifacts",
     "Refreshing...",
-    () => Promise.all([refreshArtifacts(), refreshRecentActions()]),
+    () => Promise.all([refreshArtifacts(), refreshGhotiControlCenter(), refreshRecentActions()]),
     () => {
       clearArtifactPreview("Artifact refresh failed.");
     },
+  );
+});
+
+document.getElementById("ghoti-show-approvals").addEventListener("click", async (event) => {
+  await runRefresh(
+    event.currentTarget,
+    "Show pending approvals",
+    "Refreshing...",
+    async () => {
+      await Promise.all([refreshSupervisorStatus(), refreshPendingApprovals(), refreshGhotiControlCenter(), refreshRecentActions()]);
+      scrollToElement("pending-approvals-list");
+    },
+    (error) => {
+      setResultPanel("ghoti-control-action-summary", "error", "Pending approval refresh failed.", error.message);
+    },
+    { panelId: "ghoti-control-action-summary" },
+  );
+});
+
+document.getElementById("ghoti-show-active-tasks").addEventListener("click", async (event) => {
+  document.getElementById("ghoti-task-visibility-filter").value = "actionable";
+  document.getElementById("ghoti-task-type-filter").value = "all";
+  document.getElementById("ghoti-task-status-filter").value = "all";
+  document.getElementById("ghoti-task-limit-filter").value = "12";
+  document.getElementById("ghoti-task-active-only").checked = true;
+  await runRefresh(
+    event.currentTarget,
+    "Show active and recent tasks",
+    "Refreshing...",
+    async () => {
+      await Promise.all([refreshGhotiControlCenter(), refreshExecutorTasks(), refreshRecentActions()]);
+      scrollToElement("ghoti-actionable-task-list");
+    },
+    (error) => {
+      setResultPanel("ghoti-control-action-summary", "error", "Active task refresh failed.", error.message);
+    },
+    { panelId: "ghoti-control-action-summary" },
+  );
+});
+
+document.getElementById("ghoti-show-artifacts").addEventListener("click", async (event) => {
+  await runRefresh(
+    event.currentTarget,
+    "Show recent artifacts",
+    "Refreshing...",
+    async () => {
+      await Promise.all([refreshArtifacts(), refreshGhotiControlCenter(), refreshRecentActions()]);
+      scrollToElement("artifacts-output");
+    },
+    (error) => {
+      setResultPanel("ghoti-control-action-summary", "error", "Artifact refresh failed.", error.message);
+    },
+    { panelId: "ghoti-control-action-summary" },
+  );
+});
+
+document.getElementById("ghoti-queue-observe-desktop").addEventListener("click", async (event) => {
+  await runGhotiQuickQueue(
+    buildRecipeQueuePayload("observe_desktop_state"),
+    "Queue desktop observation",
+    event.currentTarget,
+  );
+});
+
+document.getElementById("ghoti-queue-clipboard-read").addEventListener("click", async (event) => {
+  await runGhotiQuickQueue(
+    { actionType: "get_clipboard_text" },
+    "Queue clipboard read",
+    event.currentTarget,
+  );
+});
+
+document.getElementById("ghoti-queue-clipboard-write").addEventListener("click", async (event) => {
+  await runGhotiQuickQueue(
+    {
+      actionType: "set_clipboard_text",
+      content: getInputValue("ghoti-quick-clipboard-text"),
+    },
+    "Queue clipboard write",
+    event.currentTarget,
+  );
+});
+
+document.getElementById("ghoti-queue-focus-window").addEventListener("click", async (event) => {
+  await runGhotiQuickQueue(
+    {
+      actionType: "focus_window",
+      target: getInputValue("ghoti-quick-focus-window") || "terminal",
+    },
+    "Queue focus window",
+    event.currentTarget,
+  );
+});
+
+document.getElementById("ghoti-run-runtime-checker").addEventListener("click", async (event) => {
+  await runGhotiQuickQueue(
+    { actionType: "run_checker", target: "runtime" },
+    "Queue runtime checker",
+    event.currentTarget,
+  );
+});
+
+document.getElementById("ghoti-run-dashboard-checker").addEventListener("click", async (event) => {
+  await runGhotiQuickQueue(
+    { actionType: "run_checker", target: "dashboard" },
+    "Queue dashboard checker",
+    event.currentTarget,
+  );
+});
+
+document.getElementById("ghoti-queue-handoff").addEventListener("click", async (event) => {
+  persistHandoffTargetPreferences();
+  await runGhotiQuickQueue(
+    buildRecipeQueuePayload("codex_to_chatgpt_handoff_mvp", buildCodexChatGptHandoffOptions()),
+    "Queue Codex to ChatGPT handoff",
+    event.currentTarget,
   );
 });
 
@@ -2751,7 +3048,14 @@ document.getElementById("pending-approvals-list").addEventListener("click", asyn
   await refreshRecentActions();
 });
 
-["human-needed-list", "interrupted-tasks-list", "waiting-tasks-list", "ready-to-resume-list"].forEach((containerId) => {
+[
+  "human-needed-list",
+  "interrupted-tasks-list",
+  "waiting-tasks-list",
+  "ready-to-resume-list",
+  "ghoti-actionable-task-list",
+  "ghoti-failure-task-list",
+].forEach((containerId) => {
   document.getElementById(containerId).addEventListener("click", async (event) => {
     const button = event.target.closest("button[data-task-action='inspect']");
     if (!button) {

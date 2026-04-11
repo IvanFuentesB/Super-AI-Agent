@@ -195,6 +195,7 @@ $expectedFiles = @(
     '04_docs/browser_control_playground.md',
     '04_docs/artifact_ux_plan.md',
     '04_docs/desktop_bridge_foundation.md',
+    '04_docs/ghoti_control_center.md',
     '04_docs/supervisor_foundation.md',
     '04_docs/approval_inbox_plan.md',
     '04_docs/notification_adapter_plan.md',
@@ -340,10 +341,48 @@ try {
     Write-Check -Name 'Executor task list endpoint' -Passed $executorListOk -Detail ($(if ($executorListOk) { $executorList.summary.headline } else { 'executor task list missing structured output' }))
     if (-not $executorListOk) { $failed++ }
 
+    $ghotiControlCenter = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/ghoti/control-center" -Method Get -TimeoutSec 30
+    $ghotiControlCenterOk = $ghotiControlCenter.ok -and `
+        $ghotiControlCenter.localOnly -and `
+        $ghotiControlCenter.summary.ghotiState -and `
+        $ghotiControlCenter.summary.emergencyStopHotkey -eq 'Ctrl+8' -and `
+        $ghotiControlCenter.summary.cliCommands.Count -ge 4 -and `
+        $ghotiControlCenter.summary.whatGhotiCanDoNow.Count -gt 0 -and `
+        $ghotiControlCenter.summary.whatOperatorShouldDoNext.Count -gt 0 -and `
+        $ghotiControlCenter.summary.hideCompletedByDefault -and `
+        ($ghotiControlCenter.summary.noDeletionPolicy -match 'No task deletion') -and `
+        $null -ne $ghotiControlCenter.summary.recentActionableTasks
+    Write-Check -Name 'Ghoti control-center endpoint' -Passed $ghotiControlCenterOk -Detail ($(if ($ghotiControlCenterOk) { $ghotiControlCenter.summary.headline } else { 'Ghoti control-center summary missing expected operator fields' }))
+    if (-not $ghotiControlCenterOk) { $failed++ }
+
     if ($RuntimeLockSafe) {
         Write-Check -Name 'Runtime-lock-safe dashboard mode' -Passed $true -Detail 'Skipped dashboard actions that mutate runtime state because this checker is running inside the repo executor lock.'
     }
     else {
+    $ghotiFilterSeedPayload = @{
+        actionType = 'get_clipboard_text'
+    } | ConvertTo-Json
+    $ghotiFilterSeedQueue = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/executor/queue" -Method Post -ContentType 'application/json' -Body $ghotiFilterSeedPayload -TimeoutSec 30
+    $ghotiFilterSeedQueueOk = $ghotiFilterSeedQueue.ok -and `
+        $ghotiFilterSeedQueue.localOnly -and `
+        $ghotiFilterSeedQueue.task.status -eq 'queued' -and `
+        $ghotiFilterSeedQueue.task.executorActionType -eq 'get_clipboard_text'
+    Write-Check -Name 'Seed Ghoti control-center desktop filter task' -Passed $ghotiFilterSeedQueueOk -Detail ($(if ($ghotiFilterSeedQueueOk) { $ghotiFilterSeedQueue.summary.headline } else { 'Ghoti desktop filter seed queue failed' }))
+    if (-not $ghotiFilterSeedQueueOk) { $failed++ }
+
+    $ghotiControlCenterDesktopFilter = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/ghoti/control-center?visibility=all&taskType=desktop&taskStatus=queued&activeOnly=true&limit=12" -Method Get -TimeoutSec 30
+    $ghotiFilteredTasks = @($ghotiControlCenterDesktopFilter.summary.recentActionableTasks)
+    $ghotiControlCenterDesktopFilterOk = $ghotiControlCenterDesktopFilter.ok -and `
+        $ghotiControlCenterDesktopFilter.localOnly -and `
+        $ghotiControlCenterDesktopFilter.summary.filters.visibility -eq 'all' -and `
+        $ghotiControlCenterDesktopFilter.summary.filters.taskType -eq 'desktop' -and `
+        $ghotiControlCenterDesktopFilter.summary.filters.taskStatus -eq 'queued' -and `
+        $ghotiControlCenterDesktopFilter.summary.filters.activeOnly -eq $true -and `
+        $ghotiFilteredTasks.Count -ge 1 -and `
+        (@($ghotiFilteredTasks | Where-Object { $_.taskType -ne 'desktop' -or $_.status -ne 'queued' }).Count -eq 0)
+    Write-Check -Name 'Ghoti control-center filters recent active desktop tasks honestly' -Passed $ghotiControlCenterDesktopFilterOk -Detail ($(if ($ghotiControlCenterDesktopFilterOk) { "$($ghotiFilteredTasks.Count) filtered desktop task(s) visible" } else { 'Ghoti control-center filter output did not match the requested desktop queued active-only view' }))
+    if (-not $ghotiControlCenterDesktopFilterOk) { $failed++ }
+
     $approvalQueueSeed = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('enqueue', '--title', 'dashboard checker approval task', '--description', 'Validate dashboard approval queue actions.', '--risk', 'ask')
     $approvalQueueSeedOk = $approvalQueueSeed.ExitCode -eq 0
     Write-Check -Name 'Seed approval for dashboard test' -Passed $approvalQueueSeedOk -Detail (($approvalQueueSeed.Output | Out-String).Trim())
@@ -1596,10 +1635,25 @@ try {
     $taskFilterUiOk = -not [string]::IsNullOrWhiteSpace($dashboardHtml) -and `
         $dashboardHtml -match 'task-visibility-filter' -and `
         $dashboardHtml -match 'task-recency-filter' -and `
+        $dashboardHtml -match 'ghoti-control-center' -and `
+        $dashboardHtml -match 'ghoti-task-visibility-filter' -and `
+        $dashboardHtml -match 'ghoti-show-active-tasks' -and `
+        $dashboardHtml -match 'ghoti-queue-focus-window' -and `
+        $dashboardHtml -match 'ghoti-run-runtime-checker' -and `
+        $dashboardHtml -match 'ghoti-cli-command-list' -and `
+        $dashboardHtml -match 'ghoti-control-hotkey' -and `
+        $dashboardHtml -match 'Ctrl\+8' -and `
         $dashboardHtml -match 'queue-recipe-codex-handoff' -and `
         $dashboardHtml -match 'This handoff never falls back to terminal or PowerShell'
     Write-Check -Name 'Dashboard task filter controls are present for noise reduction' -Passed $taskFilterUiOk -Detail ($(if ($taskFilterUiOk) { 'task filter controls found in dashboard HTML' } else { 'task filter controls missing from dashboard HTML' }))
     if (-not $taskFilterUiOk) { $failed++ }
+
+    $noDeleteUiOk = -not [string]::IsNullOrWhiteSpace($dashboardHtml) -and `
+        $dashboardHtml -match 'No task deletion without explicit approval' -and `
+        $dashboardHtml -notmatch 'delete-task' -and `
+        $dashboardHtml -notmatch '>\s*Delete Task\s*<'
+    Write-Check -Name 'Dashboard control center keeps no-delete policy explicit' -Passed $noDeleteUiOk -Detail ($(if ($noDeleteUiOk) { 'dashboard HTML shows the no-delete policy and exposes no delete-task control' } else { 'dashboard HTML is missing the no-delete policy or exposes a delete-task control' }))
+    if (-not $noDeleteUiOk) { $failed++ }
 
     $approvalAwareRecipePayload = @{
         actionType = 'run_operator_recipe'

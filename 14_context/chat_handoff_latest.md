@@ -27,8 +27,9 @@
 - `feat/ghoti-visual-cue-resource-guard`
 - `feat/codex-chatgpt-handoff-mvp`
 - `fix/codex-handoff-no-terminal-fallback`
+- `feat/real-window-handoff-targeting`
 - current branch:
-  `feat/real-window-handoff-targeting`
+  `feat/ghoti-control-center`
 
 ## 4. Current Working Capabilities
 - Approval queue UI with approve, deny, and defer.
@@ -51,6 +52,9 @@
 - Codex-to-ChatGPT handoff now re-verifies the active destination immediately before paste or send and blocks safely if the foreground window does not still match the intended explicit Codex or ChatGPT target.
 - Operator-facing task filtering for noisy task history:
   recent-only and visibility filters are now present in the dashboard.
+- A top-level Ghoti control center now exists in the dashboard with live state, hotkey visibility, current task, pending approvals, blocked tasks, recent actionable work, recent failures, quick actions, capabilities, artifacts, and next-step guidance.
+- CLI operator visibility now exists through `ghoti-help`, `ghoti-status`, `ghoti-hotkeys`, and `ghoti-recent`.
+- A compact operator usage doc now exists at `04_docs/ghoti_control_center.md`.
 
 ## 5. Current Safety Model
 - Risky actions require approval.
@@ -121,7 +125,7 @@
 - Some focus-sensitive desktop actions can still hit `manual_focus_required` depending on the Windows session.
 - Desktop screenshot capture can still hit `desktop_capture_unavailable` in some sessions.
 - PowerShell or Node windows can still appear during some checks or desktop actions, although focus-first reuse and resource guards reduce this.
-- Task history is large and noisy even with the new filters; operator-facing filtering still needs another pass.
+- Task history is still large, but the new control center and filters make the current work much easier to spot than the older raw task lists alone.
 - Remembered candidate selection now exists only as an opt-in browser-local dashboard preference; there is still no broader runtime-stored durable target profile.
 - Older failed checker tasks still exist and should not be over-weighted without checking the latest checker results.
 
@@ -138,9 +142,9 @@
   leak-style extraction repos, abuse-oriented automation, and unrelated side tools.
 
 ## 10. Exact Next Recommended Step
-- Run live manual-assisted Codex-to-ChatGPT handoff tests with real windows using the new candidate picker and remembered candidate toggle, specifically proving that a foreground terminal blocks before input.
-- Confirm separately that explicit terminal-targeted actions still behave honestly as terminal actions when the operator intentionally chooses them.
-- If that live loop feels stable, decide later whether anything broader than the browser-local remembered candidate option is justified.
+- Use the new dashboard control center and `ghoti-*` CLI commands for the next manual operator-validation pass.
+- Re-test real Codex-to-ChatGPT handoff with the candidate picker and remembered candidate toggle, confirm wrong-active-window blocking again in live use, and confirm explicit terminal-targeted actions still behave honestly when intentionally chosen.
+- Keep the current handoff safety, workspace boundary, approval model, Ctrl+8 failsafe, and no-delete policy intact while validating the clearer operator surface.
 
 ## 11. What Still Does NOT Exist Yet
 - No runtime-stored durable Codex or ChatGPT target profile beyond the browser-local remembered candidate toggle.
@@ -160,8 +164,9 @@
 - Real-window targeting is now strong enough to list Codex and ChatGPT candidates and require explicit manual choice when matching is ambiguous.
 - Browser-local remembered candidate selection now exists and restores only exact visible candidate IDs.
 - Runtime, dashboard, and desktop checkers now cover the real-window targeting path honestly, including the wrong-active-window block before input.
+- The dashboard and CLI now provide a real operator-facing Ghoti control center, so current state, hotkeys, actionable work, failures, and recent artifacts are much easier to inspect.
 - Explicit terminal-targeted actions still remain possible for terminal recipes or actions outside the Codex-to-ChatGPT handoff path.
-- Task history is large and noisy and needs better operator-facing filtering rather than deletion.
+- Task history is still large, so further cleanup should continue to prefer filtering, recent views, and history visibility rather than deletion.
 
 ## 13. 14_context Files To Read First In A New Thread
 - `14_context/chat_handoff_latest.md`
