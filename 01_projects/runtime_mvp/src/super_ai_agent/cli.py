@@ -6,6 +6,12 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .brain import (
+    BrainInferenceError,
+    get_brain_status,
+    run_brain_inference,
+    save_brain_config_override,
+)
 from .council import build_council_plan
 from .environment import build_capability_summary, diagnose_environment
 from .github_actions import (
@@ -78,6 +84,8 @@ from .report_builder import build_report_scaffold
 from .storage import (
     APPROVALS_PATH,
     APPROVAL_REQUESTS_PATH,
+    RUNTIME_BRAIN_CONFIG_PATH,
+    RUNTIME_BRAIN_STATE_PATH,
     SUPERVISOR_STATE_PATH,
     TASKS_PATH,
     ensure_runtime_files,
@@ -127,6 +135,53 @@ def _workspace_reason(text: str, limit: int = 140) -> str:
     if len(value) <= limit:
         return value or "none"
     return f"{value[: limit - 3].rstrip()}..."
+
+
+def _task_model_usage(task) -> tuple[bool, str, str, str]:
+    if not task or not getattr(task, "execution_records", None):
+        return (False, "none", "none", "not_used")
+    last_execution = task.execution_records[-1]
+    used = bool(getattr(last_execution, "used_model_inference", False))
+    provider = str(getattr(last_execution, "model_provider", "") or "none")
+    model = str(getattr(last_execution, "model_name", "") or "none")
+    call_status = str(getattr(last_execution, "model_call_status", "") or ("succeeded" if used else "not_used"))
+    return (used, provider, model, call_status)
+
+
+def _print_brain_status_block(*, active_task=None) -> None:
+    status = get_brain_status()
+    used_inference, task_provider, task_model, task_call_status = _task_model_usage(active_task)
+    print(f"active_brain_provider: {status.active_provider}")
+    print(f"active_brain_model: {status.active_model or 'none'}")
+    print(f"brain_config_source: {status.config_source}")
+    print(f"brain_provider_ready: {'yes' if status.provider_ready else 'no'}")
+    print(f"brain_inference_ready: {'yes' if status.inference_ready else 'no'}")
+    print(f"brain_live_call_path: {status.live_call_path}")
+    print(f"brain_ollama_base_url: {status.ollama_base_url}")
+    print(f"brain_ollama_available: {'yes' if status.ollama_available else 'no'}")
+    print(f"brain_model_installed: {'yes' if status.model_installed else 'no'}")
+    print(f"current_task_used_model_inference: {'yes' if used_inference else 'no'}")
+    print(f"current_task_model_provider: {task_provider}")
+    print(f"current_task_model_name: {task_model}")
+    print(f"current_task_model_call_status: {task_call_status}")
+    print(f"last_model_call_status: {status.last_call_status}")
+    print(f"last_model_call_at: {status.last_called_at or 'none'}")
+    print(f"last_model_call_source: {status.last_call_source or 'none'}")
+    print(f"last_model_call_task_id: {status.last_task_id or 'none'}")
+    print(f"last_model_call_error: {status.last_error or 'none'}")
+    print(f"last_model_response_preview: {status.last_response_preview or 'none'}")
+    print("brain_notes:")
+    if status.notes:
+        for note in status.notes:
+            print(f"- {note}")
+    else:
+        print("- none")
+    print("brain_installed_models:")
+    if status.installed_models:
+        for model_name in status.installed_models:
+            print(f"- {model_name}")
+    else:
+        print("- none")
 
 
 DESKTOP_EXECUTOR_ACTIONS = {
@@ -460,6 +515,7 @@ def _build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("list")
     subparsers.add_parser("snapshot")
     subparsers.add_parser("list-providers")
+    subparsers.add_parser("brain-status")
     subparsers.add_parser("list-workflows")
     subparsers.add_parser("publish-check")
     subparsers.add_parser("list-personal-workflows")
@@ -478,6 +534,16 @@ def _build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("ghoti-status")
     subparsers.add_parser("ghoti-hotkeys")
     subparsers.add_parser("ghoti-recent")
+
+    brain_set_parser = subparsers.add_parser("brain-set-active")
+    brain_set_parser.add_argument("--provider", required=True)
+    brain_set_parser.add_argument("--model", required=True)
+    brain_set_parser.add_argument("--ollama-base-url", default="")
+
+    brain_infer_parser = subparsers.add_parser("brain-infer")
+    brain_infer_parser.add_argument("--prompt", required=True)
+    brain_infer_parser.add_argument("--task-id", default="")
+    brain_infer_parser.add_argument("--source", default="cli")
 
     enqueue_parser = subparsers.add_parser("enqueue")
     enqueue_parser.add_argument("--title", required=True)
@@ -804,6 +870,7 @@ def main(argv: list[str] | None = None) -> int:
             print("- keep the floating Ghoti overlay visible for watchdog alerts, target focus, and the Ctrl+8 reminder")
             print("cli_mode:")
             print("- python -m super_ai_agent.cli ghoti-status")
+            print("- python -m super_ai_agent.cli brain-status")
             print("- python -m super_ai_agent.cli ghoti-hotkeys")
             print("- python -m super_ai_agent.cli ghoti-recent")
             print("stop:")
@@ -824,6 +891,7 @@ def main(argv: list[str] | None = None) -> int:
             print("- Codex-to-ChatGPT handoff never falls back to terminal or PowerShell")
             print("next:")
             print("- run ghoti-status to see the live local state and next operator step")
+            print("- run brain-status to verify whether Ghoti is using Gemma/Ollama or only local rules")
             print("- open the dashboard if you want the visual control center and recent artifact view")
             print("- run ghoti-recent when you want the shortest read on actionable tasks, failures, approvals, and artifacts")
             return 0
@@ -890,6 +958,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"overlay_target: {watchdog['overlay_target']}")
             print(f"overlay_target_detail: {watchdog['overlay_target_detail']}")
             print(f"watchdog_handoff_hint: {watchdog['handoff_hint']}")
+            _print_brain_status_block(active_task=active_task)
             print("recent_actionable_tasks:")
             _print_ghoti_task_lines(actionable_tasks, limit=5)
             print("recent_failures:")
@@ -940,6 +1009,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"watchdog_headline: {watchdog['headline']}")
             print(f"overlay_target: {watchdog['overlay_target']}")
             print(f"overlay_target_detail: {watchdog['overlay_target_detail']}")
+            _print_brain_status_block(active_task=active_task)
             print("recent_actionable_tasks:")
             _print_ghoti_task_lines(actionable_tasks, limit=6)
             print("active_only_tasks:")
@@ -970,6 +1040,42 @@ def main(argv: list[str] | None = None) -> int:
                     print(f"- {relative_path} | modified={datetime.fromtimestamp(artifact_path.stat().st_mtime, tz=timezone.utc).isoformat().replace('+00:00', 'Z')}")
             else:
                 print("- none")
+            return 0
+
+        if args.command == "brain-status":
+            ensure_runtime_files()
+            state = get_supervisor_state()
+            active_task = get_task(state.active_task_id) if state.active_task_id else None
+            print("brain_status: local brain/provider snapshot")
+            print(f"runtime_brain_config_file: {RUNTIME_BRAIN_CONFIG_PATH}")
+            print(f"runtime_brain_state_file: {RUNTIME_BRAIN_STATE_PATH}")
+            _print_brain_status_block(active_task=active_task)
+            return 0
+
+        if args.command == "brain-set-active":
+            config = save_brain_config_override(
+                provider=args.provider,
+                model=args.model,
+                ollama_base_url=args.ollama_base_url or None,
+            )
+            print(f"active_brain_provider: {config.active_provider}")
+            print(f"active_brain_model: {config.active_model}")
+            print(f"brain_ollama_base_url: {config.ollama_base_url}")
+            print(f"brain_config_source: {config.config_source}")
+            print(f"runtime_brain_config_file: {RUNTIME_BRAIN_CONFIG_PATH}")
+            return 0
+
+        if args.command == "brain-infer":
+            result = run_brain_inference(
+                args.prompt,
+                source=args.source,
+                task_id=args.task_id,
+            )
+            print("brain_infer: succeeded")
+            print(f"provider: {get_brain_status().active_provider}")
+            print(f"model: {get_brain_status().active_model}")
+            print(f"task_id: {args.task_id or 'none'}")
+            print(f"response: {result}")
             return 0
 
         if args.command == "status":
@@ -1110,7 +1216,11 @@ def main(argv: list[str] | None = None) -> int:
                     f"workspace={task.workspace_scope} | policy={task.workspace_policy} | "
                     f"type={task_type} | title={_short_description(task.title, limit=80)} | "
                     f"updated={task.updated_at or 'none'} | "
-                    f"last={_short_description(last_summary, limit=100)}"
+                    f"last={_short_description(last_summary, limit=100)} | "
+                    f"inference={'yes' if (last_execution.used_model_inference if last_execution else False) else 'no'} | "
+                    f"model_provider={(last_execution.model_provider if last_execution and last_execution.model_provider else 'none')} | "
+                    f"model_name={(last_execution.model_name if last_execution and last_execution.model_name else 'none')} | "
+                    f"model_status={(last_execution.model_call_status if last_execution and last_execution.model_call_status else 'not_used')}"
                     + (f" | {' | '.join(recipe_bits)}" if recipe_bits else "")
                 )
             return 0
@@ -1177,6 +1287,10 @@ def main(argv: list[str] | None = None) -> int:
             print(f"last_failure_reason: {last_execution.failure_reason if last_execution and last_execution.failure_reason else 'none'}")
             print(f"last_interruption_reason: {last_execution.interruption_reason if last_execution and last_execution.interruption_reason else 'none'}")
             print(f"last_resource_guard_reason: {last_execution.resource_guard_reason if last_execution and last_execution.resource_guard_reason else 'none'}")
+            print(f"last_used_model_inference: {'yes' if last_execution and last_execution.used_model_inference else 'no'}")
+            print(f"last_model_provider: {last_execution.model_provider if last_execution and last_execution.model_provider else 'none'}")
+            print(f"last_model_name: {last_execution.model_name if last_execution and last_execution.model_name else 'none'}")
+            print(f"last_model_call_status: {last_execution.model_call_status if last_execution and last_execution.model_call_status else 'not_used'}")
             print(f"retry_limit: {task.executor_payload.get('last_retry_limit', task.executor_payload.get('max_attempts', 0)) or 0}")
             print("target_paths:")
             if task.target_paths:
@@ -1237,7 +1351,11 @@ def main(argv: list[str] | None = None) -> int:
                         f"- {item.status} | started={item.started_at} | "
                         f"finished={item.finished_at or 'none'} | target={item.target or 'none'} | "
                         f"attempts={item.attempt_count} | summary={item.output_summary or 'none'} | "
-                        f"artifact={item.artifact_path or 'none'} | reason={item.failure_reason or item.interruption_reason or item.resource_guard_reason or 'none'}"
+                        f"artifact={item.artifact_path or 'none'} | reason={item.failure_reason or item.interruption_reason or item.resource_guard_reason or 'none'} | "
+                        f"inference={'yes' if item.used_model_inference else 'no'} | "
+                        f"model_provider={item.model_provider or 'none'} | "
+                        f"model_name={item.model_name or 'none'} | "
+                        f"model_status={item.model_call_status or 'not_used'}"
                     )
             else:
                 print("- none")

@@ -1,6 +1,9 @@
 # Next Actions
 
 - Use the visible Ghoti operator stack in dashboard and CLI for the next manual operator-validation pass instead of adding new surface area
+- Pull the configured Gemma model into Ollama and rerun `python -m super_ai_agent.cli brain-status` until `brain_inference_ready: yes` is true
+- Choose one narrow approval-aware task path later that should explicitly call the local brain so `current_task_used_model_inference` can become true for real work instead of remaining a dashboard-only truth field
+- Keep the provider/model layer swappable so Gemma local can be the default local brain without locking the operator core to a single vendor or model
 - Keep the floating overlay, target marker, and Operator Watchdog visible during manual desktop and handoff validation so wrong-window blocks and stalled work are obvious immediately
 - Manually re-test `codex_to_chatgpt_handoff_mvp` with real Codex and ChatGPT windows using the new candidate picker and remembered candidate toggle
 - Validate that a foreground terminal or other wrong active window blocks the handoff before any paste or send step
@@ -19,6 +22,7 @@
 - Keep the recipe library narrow, composable, approval-aware, and ready for later provider swapping
 - Keep the operator stack separate from the brain/provider layer so future ChatGPT, Claude, Gemini, or Gemma routing does not force a core rewrite
 - Capture the OpenClaw patterns that are most useful for later channel, browser-assist, and long-running operator evolution without introducing a hard dependency
+- Capture the OpenClaw patterns that matter most for later brain-routing, channel, and control-surface evolution without replacing the current local operator core
 - Test the safe repo executor manually from the operator console, including read, artifact, checker, and failure visibility paths
 - Test the desktop bridge hand layer manually from the operator console, including focus, clipboard read/write, paste, hotkeys, mouse actions, waits, and the Ctrl+8 failsafe
 - Test the workspace-boundary flow manually from the operator console

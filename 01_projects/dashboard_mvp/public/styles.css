@@ -514,6 +514,10 @@ button.is-busy {
   margin-top: 0.8rem;
 }
 
+.ghoti-brain-metrics {
+  margin-top: 0.8rem;
+}
+
 .quick-action-card button,
 .action-card > button,
 .stacked-form button,

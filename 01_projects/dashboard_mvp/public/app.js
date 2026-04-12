@@ -619,6 +619,7 @@ function renderGhotiControlCenter(payload) {
   const currentTask = summary.currentTask || null;
   const actionableTasks = summary.recentActionableTasks || [];
   const recentFailures = summary.recentFailures || [];
+  const brain = summary.brain || {};
 
   renderGhotiOverlay(summary);
   renderGhotiWatchdog(summary);
@@ -636,12 +637,38 @@ function renderGhotiControlCenter(payload) {
       ? `${currentTask.taskId} | ${currentTask.taskTypeLabel || currentTask.taskType || "task"}`
       : "No running task right now.",
   );
-  setText(
-    "ghoti-control-current-task-note",
-    currentTask
-      ? `${currentTask.headline || currentTask.taskId} | ${currentTask.detail || currentTask.nextAction || "Inspect the task detail."}`
-      : "Ghoti is not currently running a task. Queue a narrow local action when you are ready.",
-  );
+    setText(
+      "ghoti-control-current-task-note",
+      currentTask
+        ? `${currentTask.headline || currentTask.taskId} | ${currentTask.detail || currentTask.nextAction || "Inspect the task detail."}`
+        : "Ghoti is not currently running a task. Queue a narrow local action when you are ready.",
+    );
+    setText("ghoti-brain-provider", brain.activeProvider || "unknown");
+    setText("ghoti-brain-model", brain.activeModel || "none");
+    setText("ghoti-brain-ready", brain.inferenceReady ? "yes" : "no");
+    setText("ghoti-brain-current-task-use", brain.currentTaskUsedModelInference ? "yes" : "no");
+    setText("ghoti-brain-last-call", brain.lastModelCallStatus || "never_called");
+    setText(
+      "ghoti-brain-current-task-detail",
+      currentTask
+        ? [
+            brain.currentTaskUsedModelInference ? "Current task used model inference." : "Current task is using local rules only right now.",
+            `provider=${brain.currentTaskModelProvider || "none"}`,
+            `model=${brain.currentTaskModelName || "none"}`,
+            `status=${brain.currentTaskModelCallStatus || "not_used"}`,
+          ].join(" | ")
+        : "No active task is currently claiming model inference.",
+    );
+    setText(
+      "ghoti-brain-note",
+      [
+        `${brain.activeProvider || "unknown"} / ${brain.activeModel || "none"}`,
+        brain.inferenceReady
+          ? `ready via ${brain.liveCallPath || "configured local call path"}`
+          : `not ready yet via ${brain.liveCallPath || "configured local call path"}`,
+        `last=${brain.lastModelCallStatus || "never_called"}`,
+      ].join(" | "),
+    );
   setText("ghoti-control-pending", String(summary.pendingApprovalCount ?? 0));
   setText("ghoti-control-blocked", String(summary.blockedTaskCount ?? 0));
   setText("ghoti-control-actionable", String(summary.recentActionableCount ?? actionableTasks.length));
@@ -675,8 +702,9 @@ function renderGhotiControlCenter(payload) {
     "No recent failures are visible in the current executor task history.",
     "Inspect Failure",
   );
-  renderStatusList("ghoti-watchdog-alerts", summary.watchdog?.alerts || []);
-  renderStatusList("ghoti-can-do-list", summary.whatGhotiCanDoNow || []);
+    renderStatusList("ghoti-watchdog-alerts", summary.watchdog?.alerts || []);
+    renderStatusList("ghoti-brain-notes", brain.notes || []);
+    renderStatusList("ghoti-can-do-list", summary.whatGhotiCanDoNow || []);
   renderStatusList("ghoti-next-step-list", summary.whatOperatorShouldDoNext || []);
   renderStatusList("ghoti-cli-command-list", summary.cliCommands || []);
 }

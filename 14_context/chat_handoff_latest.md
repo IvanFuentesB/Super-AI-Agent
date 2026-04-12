@@ -55,6 +55,8 @@
   recent-only and visibility filters are now present in the dashboard.
 - A top-level Ghoti control center now exists in the dashboard with live state, hotkey visibility, current task, pending approvals, blocked tasks, recent actionable work, recent failures, quick actions, capabilities, artifacts, and next-step guidance.
 - CLI operator visibility now exists through `ghoti-help`, `ghoti-status`, `ghoti-hotkeys`, and `ghoti-recent`.
+- A real local brain/provider foundation now exists through `super_ai_agent.brain`, with `gemma_local` as the default local-first provider target and Ollama as the live local call path when the configured Gemma model is installed.
+- Dashboard and CLI now expose active brain provider, active model, current-task model-use truth, and last model-call status so the operator can see whether Ghoti is actually using Gemma or only local rules.
 - A compact operator usage doc now exists at `04_docs/ghoti_control_center.md`.
 - A lightweight floating Ghoti overlay now exists in the dashboard with live state, watchdog summary, Ctrl+8 reminder, and current target visibility.
 - A visible target marker now exists for the current local focus, pointer, handoff, or input destination summary.
@@ -126,6 +128,7 @@
 - Window matching still depends on visible titles and narrow aliases, so real Codex/ChatGPT targeting is improved but still somewhat brittle.
 - The wrong-destination input bug is now blocked in the recipe path, so a foreground terminal or other mismatched window should stop the handoff before input.
 - Terminal or PowerShell must not be used as a fallback target for Codex-to-ChatGPT handoff, although explicit terminal-targeted actions elsewhere are still allowed.
+- Honest current brain truth: Gemma is now wired as the default local brain path, but `ollama list` is currently empty in this environment and no broad operator task path automatically uses model inference yet.
 - Some focus-sensitive desktop actions can still hit `manual_focus_required` depending on the Windows session.
 - Desktop screenshot capture can still hit `desktop_capture_unavailable` in some sessions.
 - PowerShell or Node windows can still appear during some checks or desktop actions, although focus-first reuse and resource guards reduce this.
@@ -158,6 +161,7 @@
 - No external notifications or remote replies.
 - No live Notion, mail-send, or LinkedIn execution adapters.
 - No multi-model council/router execution layer yet.
+- No broad task-routing layer yet that automatically sends operator work through the local Gemma brain.
 - No task deletion flow, and none should be added without explicit user approval.
 
 ## 12. Current Practical Conclusions

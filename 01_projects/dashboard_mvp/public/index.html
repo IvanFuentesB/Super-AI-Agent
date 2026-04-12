@@ -219,6 +219,37 @@
           </article>
           <article class="status-card">
             <div class="subsection-heading">
+              <h3>Brain / Provider Truth</h3>
+              <p>Shows the configured local brain, whether it is actually ready, and whether the current task used model inference or only local rules.</p>
+            </div>
+            <div class="metric-grid ghoti-brain-metrics">
+              <article class="metric-card">
+                <span>Active Provider</span>
+                <strong id="ghoti-brain-provider">unknown</strong>
+              </article>
+              <article class="metric-card">
+                <span>Active Model</span>
+                <strong id="ghoti-brain-model">none</strong>
+              </article>
+              <article class="metric-card">
+                <span>Inference Ready</span>
+                <strong id="ghoti-brain-ready">no</strong>
+              </article>
+              <article class="metric-card">
+                <span>Current Task Used Model</span>
+                <strong id="ghoti-brain-current-task-use">no</strong>
+              </article>
+              <article class="metric-card">
+                <span>Last Model Call</span>
+                <strong id="ghoti-brain-last-call">never_called</strong>
+              </article>
+            </div>
+            <p id="ghoti-brain-current-task-detail" class="summary-note">The current task model-use summary will appear here.</p>
+            <p id="ghoti-brain-note" class="summary-note">Waiting for the live brain/provider status.</p>
+            <ul id="ghoti-brain-notes" class="status-list"></ul>
+          </article>
+          <article class="status-card">
+            <div class="subsection-heading">
               <h3>Recent Failures</h3>
               <p>The smallest useful view into blocked, failed, or interrupted work that still needs operator attention.</p>
             </div>

@@ -10,6 +10,8 @@
 - Risky actions require approval
 - Durable memory stays compact and summarized
 - Operator stack and provider brain should stay separable so future model or provider swaps do not require rewriting the whole system
+- `gemma_local` should be treated as the default local-first brain target, but the provider layer must stay swappable so later ChatGPT, Claude, Gemini, council, or router paths do not require a rewrite of approvals, recipes, dashboard, or executor control
+- Brain/provider truth must stay explicit in operator-facing surfaces; Ghoti should say plainly when it is using only local rules versus real model inference
 - OpenClaw is a major strategic reference for future Ghoti channel, browser-assist, and control-surface evolution, but it must remain a reference and compatibility target rather than a hard dependency for now
 - Ghoti control-center work should improve visibility, guidance, and filtering without widening the executor boundary or weakening the existing safety model
 - Ghoti overlay and watchdog work should stay an operator-facing visibility layer only; it should surface blocked or stalled state clearly without turning into an autonomous daemon or silent recovery loop

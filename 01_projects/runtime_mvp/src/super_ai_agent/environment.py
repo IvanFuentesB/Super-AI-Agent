@@ -7,6 +7,7 @@ import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from .brain import get_brain_status
 from .storage import get_project_root
 
 REPO_ROOT = get_project_root().parents[1]
@@ -215,6 +216,7 @@ def build_capability_summary(
     diagnosis: EnvironmentDiagnosis | None = None,
 ) -> list[CapabilityStatus]:
     diagnosis = diagnosis or diagnose_environment()
+    brain_status = get_brain_status()
     github_read_only_block = None if diagnosis.git.found else "git is not available to the runtime."
 
     if not diagnosis.git.found:
@@ -227,6 +229,19 @@ def build_capability_summary(
         github_remote_write_block = None
 
     return [
+        CapabilityStatus(
+            capability_id="local_brain_inference",
+            required_tools=["ollama", brain_status.active_model],
+            state="available" if brain_status.inference_ready else "blocked",
+            blocking_issue=None
+            if brain_status.inference_ready
+            else (
+                brain_status.last_error
+                or (
+                    f"Configured brain {brain_status.active_provider}/{brain_status.active_model} is not ready yet."
+                )
+            ),
+        ),
         CapabilityStatus(
             capability_id="github_read_only",
             required_tools=["git"],

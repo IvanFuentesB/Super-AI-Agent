@@ -129,6 +129,7 @@ $expectedFiles = @(
     '01_projects/runtime_mvp/src/super_ai_agent/queue.py',
     '01_projects/runtime_mvp/src/super_ai_agent/notification_adapter.py',
     '01_projects/runtime_mvp/src/super_ai_agent/handoff.py',
+    '01_projects/runtime_mvp/src/super_ai_agent/brain.py',
     '01_projects/runtime_mvp/src/super_ai_agent/personal_ops.py',
     '01_projects/runtime_mvp/src/super_ai_agent/providers.py',
     '01_projects/runtime_mvp/src/super_ai_agent/council.py',
@@ -193,6 +194,7 @@ $expectedFiles = @(
     '23_configs/tool_detection_policy.example.json',
     '23_configs/repo_manifest.example.json',
     '23_configs/provider_profiles.example.json',
+    '23_configs/brain_provider.example.json',
     '23_configs/council_policy.example.json',
     '23_configs/personal_workflow_catalog.example.json',
     '23_configs/owned_account_policy.example.json',
@@ -255,6 +257,10 @@ $ghotiStatusOk = $ghotiStatusResult.ExitCode -eq 0 -and `
     (($ghotiStatusResult.Output | Out-String) -match 'dashboard_url:\s+http://127\.0\.0\.1:3210') -and `
     (($ghotiStatusResult.Output | Out-String) -match 'control_center_doc:\s+.*04_docs[\\/]+ghoti_control_center\.md') -and `
     (($ghotiStatusResult.Output | Out-String) -match 'ghoti_state:\s+\S+') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'active_brain_provider:\s+\S+') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'active_brain_model:\s+\S+') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'current_task_used_model_inference:\s+(yes|no)') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'last_model_call_status:\s+\S+') -and `
     (($ghotiStatusResult.Output | Out-String) -match 'watchdog_status:\s+\S+') -and `
     (($ghotiStatusResult.Output | Out-String) -match 'watchdog_headline:\s+') -and `
     (($ghotiStatusResult.Output | Out-String) -match 'overlay_target:\s+') -and `
@@ -268,6 +274,10 @@ if (-not $ghotiStatusOk) { $failed++ }
 $ghotiRecentResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('ghoti-recent')
 $ghotiRecentOk = $ghotiRecentResult.ExitCode -eq 0 -and `
     (($ghotiRecentResult.Output | Out-String) -match 'ghoti_recent:\s+recent actionable work, failures, approvals, and artifacts') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'active_brain_provider:\s+\S+') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'active_brain_model:\s+\S+') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'current_task_used_model_inference:\s+(yes|no)') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'last_model_call_status:\s+\S+') -and `
     (($ghotiRecentResult.Output | Out-String) -match 'watchdog_status:\s+\S+') -and `
     (($ghotiRecentResult.Output | Out-String) -match 'watchdog_headline:\s+') -and `
     (($ghotiRecentResult.Output | Out-String) -match 'overlay_target:\s+') -and `
@@ -320,6 +330,17 @@ $providersResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('li
 $providersOk = $providersResult.ExitCode -eq 0
 Write-Check -Name 'CLI list-providers' -Passed $providersOk -Detail (($providersResult.Output | Out-String).Trim())
 if (-not $providersOk) { $failed++ }
+
+$brainStatusResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('brain-status')
+$brainStatusOk = $brainStatusResult.ExitCode -eq 0 -and `
+    (($brainStatusResult.Output | Out-String) -match 'brain_status:\s+local brain/provider snapshot') -and `
+    (($brainStatusResult.Output | Out-String) -match 'active_brain_provider:\s+\S+') -and `
+    (($brainStatusResult.Output | Out-String) -match 'active_brain_model:\s+\S+') -and `
+    (($brainStatusResult.Output | Out-String) -match 'brain_inference_ready:\s+(yes|no)') -and `
+    (($brainStatusResult.Output | Out-String) -match 'current_task_used_model_inference:\s+(yes|no)') -and `
+    (($brainStatusResult.Output | Out-String) -match 'last_model_call_status:\s+\S+')
+Write-Check -Name 'CLI brain-status' -Passed $brainStatusOk -Detail (($brainStatusResult.Output | Out-String).Trim())
+if (-not $brainStatusOk) { $failed++ }
 
 $councilResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('council-plan', '--goal-type', 'planning', '--privacy', 'balanced', '--speed', 'balanced', '--require-reviewer')
 $councilOk = $councilResult.ExitCode -eq 0

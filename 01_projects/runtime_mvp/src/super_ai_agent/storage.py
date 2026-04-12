@@ -18,6 +18,8 @@ TASKS_PATH = RUNTIME_DATA_DIR / "tasks.json"
 APPROVALS_PATH = RUNTIME_DATA_DIR / "approvals.json"
 APPROVAL_REQUESTS_PATH = RUNTIME_DATA_DIR / "approval_requests.json"
 SUPERVISOR_STATE_PATH = RUNTIME_DATA_DIR / "supervisor_state.json"
+RUNTIME_BRAIN_CONFIG_PATH = RUNTIME_DATA_DIR / "brain_config.json"
+RUNTIME_BRAIN_STATE_PATH = RUNTIME_DATA_DIR / "brain_state.json"
 RUNTIME_LOCK_PATH = RUNTIME_DATA_DIR / ".runtime_data.lock"
 
 
@@ -113,6 +115,16 @@ def _write_text(path: Path, text: str) -> None:
     os.replace(temp_path, path)
 
 
+def _initialize_file_if_missing(path: Path, text: str) -> None:
+    if path.exists():
+        return
+    try:
+        _write_text(path, text)
+    except OSError:
+        if not path.exists():
+            raise
+
+
 @contextmanager
 def runtime_data_lock(timeout_seconds: float = 30.0, poll_seconds: float = 0.05):
     ensure_runtime_files()
@@ -154,17 +166,34 @@ def get_runtime_data_dir() -> Path:
 
 def ensure_runtime_files() -> Path:
     runtime_dir = get_runtime_data_dir()
-    if not TASKS_PATH.exists():
-        _write_text(TASKS_PATH, "[]\n")
-    if not APPROVALS_PATH.exists():
-        _write_text(APPROVALS_PATH, "[]\n")
-    if not APPROVAL_REQUESTS_PATH.exists():
-        _write_text(APPROVAL_REQUESTS_PATH, "[]\n")
-    if not SUPERVISOR_STATE_PATH.exists():
-        _write_text(
-            SUPERVISOR_STATE_PATH,
-            json.dumps(_default_supervisor_state().to_dict(), indent=2) + "\n",
-        )
+    _initialize_file_if_missing(TASKS_PATH, "[]\n")
+    _initialize_file_if_missing(APPROVALS_PATH, "[]\n")
+    _initialize_file_if_missing(APPROVAL_REQUESTS_PATH, "[]\n")
+    _initialize_file_if_missing(
+        SUPERVISOR_STATE_PATH,
+        json.dumps(_default_supervisor_state().to_dict(), indent=2) + "\n",
+    )
+    _initialize_file_if_missing(
+        RUNTIME_BRAIN_CONFIG_PATH,
+        json.dumps({}, indent=2) + "\n",
+    )
+    _initialize_file_if_missing(
+        RUNTIME_BRAIN_STATE_PATH,
+        json.dumps(
+            {
+                "last_call_status": "never_called",
+                "last_called_at": "",
+                "last_provider": "",
+                "last_model": "",
+                "last_source": "",
+                "last_task_id": "",
+                "last_error": "",
+                "last_response_preview": "",
+                "last_inference_used": False,
+            },
+            indent=2,
+        ) + "\n",
+    )
     return runtime_dir
 
 

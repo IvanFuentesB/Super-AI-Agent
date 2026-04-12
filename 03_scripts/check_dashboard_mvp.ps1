@@ -347,6 +347,10 @@ try {
         $ghotiControlCenter.summary.ghotiState -and `
         $ghotiControlCenter.summary.emergencyStopHotkey -eq 'Ctrl+8' -and `
         $ghotiControlCenter.summary.watchdog.status -and `
+        $ghotiControlCenter.summary.brain.activeProvider -and `
+        $ghotiControlCenter.summary.brain.activeModel -and `
+        $ghotiControlCenter.summary.brain.lastModelCallStatus -and `
+        ($ghotiControlCenter.summary.brain.currentTaskUsedModelInference -in @($true, $false)) -and `
         $ghotiControlCenter.summary.overlayTarget.label -and `
         $null -ne $ghotiControlCenter.summary.watchdog.alerts -and `
         $ghotiControlCenter.summary.cliCommands.Count -ge 4 -and `
@@ -1642,6 +1646,10 @@ try {
         $dashboardHtml -match 'ghoti-target-marker' -and `
         $dashboardHtml -match 'ghoti-overlay-watchdog-pill' -and `
         $dashboardHtml -match 'ghoti-watchdog-state' -and `
+        $dashboardHtml -match 'ghoti-brain-provider' -and `
+        $dashboardHtml -match 'ghoti-brain-model' -and `
+        $dashboardHtml -match 'ghoti-brain-last-call' -and `
+        $dashboardHtml -match 'Brain / Provider Truth' -and `
         $dashboardHtml -match 'Operator Watchdog' -and `
         $dashboardHtml -match 'ghoti-task-visibility-filter' -and `
         $dashboardHtml -match 'ghoti-show-active-tasks' -and `

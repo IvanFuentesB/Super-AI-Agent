@@ -448,6 +448,41 @@ function parseDesktopBridge(stdout) {
   };
 }
 
+function parseBrainStatus(stdout) {
+  const parsed = parseKeyValueBlock(stdout);
+  const notes = (parsed.listSections.brain_notes || [])
+    .filter((item) => item !== "none");
+  const installedModels = (parsed.listSections.brain_installed_models || [])
+    .filter((item) => item !== "none");
+
+  return {
+    activeProvider: parsed.values.active_brain_provider || "unknown",
+    activeModel: parsed.values.active_brain_model || "none",
+    configSource: parsed.values.brain_config_source || "unknown",
+    providerReady: parsed.values.brain_provider_ready === "yes",
+    inferenceReady: parsed.values.brain_inference_ready === "yes",
+    liveCallPath: parsed.values.brain_live_call_path || "none",
+    ollamaBaseUrl: parsed.values.brain_ollama_base_url || "none",
+    ollamaAvailable: parsed.values.brain_ollama_available === "yes",
+    modelInstalled: parsed.values.brain_model_installed === "yes",
+    currentTaskUsedModelInference: parsed.values.current_task_used_model_inference === "yes",
+    currentTaskModelProvider: parsed.values.current_task_model_provider || "none",
+    currentTaskModelName: parsed.values.current_task_model_name || "none",
+    currentTaskModelCallStatus: parsed.values.current_task_model_call_status || "not_used",
+    lastModelCallStatus: parsed.values.last_model_call_status || "never_called",
+    lastModelCallAt: parsed.values.last_model_call_at || "none",
+    lastModelCallSource: parsed.values.last_model_call_source || "none",
+    lastModelCallTaskId: parsed.values.last_model_call_task_id || "none",
+    lastModelCallError: parsed.values.last_model_call_error || "none",
+    lastModelResponsePreview: parsed.values.last_model_response_preview || "none",
+    runtimeBrainConfigFile: parsed.values.runtime_brain_config_file || "none",
+    runtimeBrainStateFile: parsed.values.runtime_brain_state_file || "none",
+    notes,
+    installedModels,
+    headline: `${parsed.values.active_brain_provider || "unknown"} | ${parsed.values.active_brain_model || "none"} | ${parsed.values.last_model_call_status || "never_called"}`,
+  };
+}
+
 function parseApprovalRequestLine(line) {
   const parts = String(line)
     .split(" | ")
@@ -1187,16 +1222,18 @@ function buildOperatorStatus() {
 }
 
 async function buildGhotiControlCenterResponse(filters = {}) {
-  const [capabilityPayload, supervisorPayload, executorPayload] = await Promise.all([
+  const [capabilityPayload, supervisorPayload, executorPayload, brainPayload] = await Promise.all([
     buildCapabilityResponse(),
     buildSupervisorResponse(),
     buildExecutorTasksResponse(),
+    buildBrainStatusResponse(),
   ]);
 
   const operator = buildOperatorStatus();
   const supervisor = supervisorPayload.summary || {};
   const executorSummary = executorPayload.summary || {};
   const capabilitySummary = capabilityPayload.summary || {};
+  const brainSummary = brainPayload.summary || {};
   const tasks = executorSummary.tasks || [];
   const filteredTasks = filterGhotiTasks(tasks, filters);
   const sortedTasks = sortGhotiTasks(tasks).map(decorateGhotiTask);
@@ -1225,7 +1262,7 @@ async function buildGhotiControlCenterResponse(filters = {}) {
   ].filter(Boolean);
 
   return {
-    ok: capabilityPayload.ok && supervisorPayload.ok && executorPayload.ok,
+    ok: capabilityPayload.ok && supervisorPayload.ok && executorPayload.ok && brainPayload.ok,
     summary: {
       headline: `${supervisor.ghotiState || "idle"} | ${supervisor.headline || "Ghoti control center ready."}`,
       ghotiState: supervisor.ghotiState || "idle",
@@ -1241,8 +1278,13 @@ async function buildGhotiControlCenterResponse(filters = {}) {
             taskTypeLabel: currentTask.taskTypeLabel,
             detail: currentTask.detail,
             nextAction: currentTask.nextAction || "Inspect the task detail.",
+            usedModelInference: brainSummary.currentTaskUsedModelInference === true,
+            modelProvider: brainSummary.currentTaskModelProvider || "none",
+            modelName: brainSummary.currentTaskModelName || "none",
+            modelCallStatus: brainSummary.currentTaskModelCallStatus || "not_used",
           }
         : null,
+      brain: brainSummary,
       pendingApprovalCount: Number(supervisor.pendingApprovalCount || 0),
       blockedTaskCount: Number(supervisor.blockedHumanNeededCount || 0),
       interruptedCount: Number(supervisor.interruptedCount || 0),
@@ -1273,6 +1315,7 @@ async function buildGhotiControlCenterResponse(filters = {}) {
     },
     raw: {
       capability: capabilityPayload.raw,
+      brain: brainPayload.raw,
       supervisor: supervisorPayload.raw,
       executor: executorPayload.raw,
     },
@@ -1807,6 +1850,16 @@ async function buildCapabilityResponse() {
   };
 }
 
+async function buildBrainStatusResponse() {
+  const raw = await runRuntimeCli(["brain-status"]);
+  return {
+    ok: raw.ok,
+    summary: parseBrainStatus(raw.stdout),
+    raw,
+    localOnly: true,
+  };
+}
+
 async function buildGithubUpdatesResponse() {
   const statusRaw = await runRuntimeCli(["github-status"]);
   const capabilityRaw = await runRuntimeCli(["github-remote-capability"]);
@@ -1899,8 +1952,8 @@ async function handleApiRequest(request, response, requestUrl) {
     return;
   }
 
-  if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/control-center") {
-    const payload = await buildGhotiControlCenterResponse({
+    if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/control-center") {
+      const payload = await buildGhotiControlCenterResponse({
       visibility: requestUrl.searchParams.get("visibility") || "actionable",
       taskType: requestUrl.searchParams.get("taskType") || "all",
       taskStatus: requestUrl.searchParams.get("taskStatus") || "all",
@@ -1913,11 +1966,23 @@ async function handleApiRequest(request, response, requestUrl) {
       status: payload.ok ? "success" : "error",
       summary: payload.summary.headline,
     });
-    sendJson(response, payload.ok ? 200 : 500, payload);
-    return;
-  }
+      sendJson(response, payload.ok ? 200 : 500, payload);
+      return;
+    }
 
-  if (request.method === "GET" && requestUrl.pathname === "/api/supervisor/status") {
+    if (request.method === "GET" && requestUrl.pathname === "/api/brain/status") {
+      const payload = await buildBrainStatusResponse();
+      pushAction({
+        actionType: "status",
+        label: "Viewed brain status",
+        status: payload.ok ? "success" : "error",
+        summary: payload.summary.headline,
+      });
+      sendJson(response, payload.ok ? 200 : 500, payload);
+      return;
+    }
+
+    if (request.method === "GET" && requestUrl.pathname === "/api/supervisor/status") {
     const payload = await buildSupervisorResponse();
     pushAction({
       actionType: "supervisor",

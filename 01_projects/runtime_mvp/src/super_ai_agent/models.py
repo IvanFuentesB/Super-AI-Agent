@@ -84,6 +84,10 @@ class TaskExecutionRecord:
     failure_reason: str = ""
     interruption_reason: str = ""
     resource_guard_reason: str = ""
+    used_model_inference: bool = False
+    model_provider: str = ""
+    model_name: str = ""
+    model_call_status: str = ""
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -104,6 +108,10 @@ class TaskExecutionRecord:
             failure_reason=data.get("failure_reason", ""),
             interruption_reason=data.get("interruption_reason", ""),
             resource_guard_reason=data.get("resource_guard_reason", ""),
+            used_model_inference=bool(data.get("used_model_inference", False)),
+            model_provider=data.get("model_provider", ""),
+            model_name=data.get("model_name", ""),
+            model_call_status=data.get("model_call_status", ""),
         )
 
 

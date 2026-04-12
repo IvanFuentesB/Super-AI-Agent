@@ -17,6 +17,32 @@ This control surface stays inside the existing safety model:
 
 The operator core stays separate from the model / provider brain so future model swaps and later OpenClaw-style channel or control-surface integration do not require a rewrite of the local operator stack.
 
+## Brain / Provider Truth
+
+Ghoti now exposes the current brain/provider state directly in both dashboard and CLI.
+
+- Default local brain target: `gemma_local`
+- Default model target: `gemma3:4b`
+- Live local call path when ready: `cli -> super_ai_agent.brain -> Ollama /api/generate`
+- Honest current truth: Ghoti's operator stack is still mostly rules, approvals, queue logic, and recipes unless a task explicitly uses model inference
+
+Use these commands to inspect the real state:
+
+```powershell
+python -m super_ai_agent.cli brain-status
+python -m super_ai_agent.cli ghoti-status
+```
+
+The dashboard `Brain / Provider Truth` card and the CLI `brain-status` output show:
+
+- active brain provider
+- active model name
+- whether inference is actually ready
+- whether the current task used model inference
+- last model-call status and error
+
+If Ollama is installed but the configured Gemma model is not pulled yet, Ghoti should report that clearly instead of pretending Gemma is live.
+
 ## Launch Ghoti
 
 ### Dashboard mode

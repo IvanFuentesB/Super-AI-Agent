@@ -41,6 +41,7 @@
 - [x] Operator task-history filtering exists
 - [x] Ghoti dashboard and CLI control center now exist
 - [x] Ghoti visible operator stack with overlay, watchdog, and target marker now exists
+- [x] Gemma/Ollama local brain foundation now exists with provider/model visibility in dashboard and CLI
 
 ## Current Control Layer
 - Continue for local context/rules
@@ -50,7 +51,7 @@
 - feat/ghoti-visible-operator-stack
 
 ## Current Phase
-- Real-window handoff targeting, wrong-active-window input blocking, the browser-local remembered candidate toggle, the Ghoti control center, and the visible operator stack are complete; the next step is manual validation and operator use of the clearer surface without widening the safety boundary
+- Real-window handoff targeting, wrong-active-window input blocking, the browser-local remembered candidate toggle, the Ghoti control center, the visible operator stack, and the first honest Gemma/Ollama brain foundation are complete; the next step is to make real local inference ready without widening the safety boundary
 
 ## Next Milestones
 - manually validate real Codex and ChatGPT handoff with the new candidate picker
@@ -64,6 +65,8 @@
 - validate the overlay/target-marker state transitions for idle, active, waiting, approval-needed, interrupted, and blocked work during real operator use
 - decide later whether the watchdog should surface a cleaner usage-exhaustion handoff hint without becoming a daemon
 - capture the OpenClaw patterns that fit later Ghoti channel, browser-assist, and long-running operator work without making it a hard dependency now
+- pull the configured Gemma model into Ollama and confirm `brain_inference_ready` becomes true
+- choose the first narrow approval-aware task path that should intentionally call the local brain
 - improve operator-facing task-history filtering further only if stale failures still crowd current work
 - test the safe repo executor manually from the operator console
 - test the desktop bridge hand layer manually from the operator console
@@ -85,7 +88,8 @@
 - Continue context fills quickly
 - memory must stay compact
 - avoid bloated or messy setup
-- no live provider integrations yet
+- no live external provider integrations yet
+- no broad multi-provider routing layer yet
 - no real browser or app execution yet
 - no remote auth layer yet
 - third-party repos are intake material only, not core project code

@@ -72,9 +72,9 @@
 - current use: research only; not a core assistant dependency and not a required hosted service
 
 ### Gemma Local Routing / Eval Layers
-- status: later experiment
-- why: important for the future local model and council path
-- current use: not yet a routing layer inside this repo
+- status: active local-brain foundation plus later routing/eval experiment
+- why: important for the local-first brain path and for later provider-swappable council or router work
+- current use: a real `gemma_local` provider path now exists in the runtime through Ollama-backed `super_ai_agent.brain`, but it is not yet a broad task-routing layer and still depends on the configured local model actually being installed
 
 ## Use-Only / Optional Utility
 

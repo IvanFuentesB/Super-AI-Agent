@@ -42,7 +42,7 @@
       "privacy_mode": "local",
       "speed_bias": "fast",
       "cost_bias": "low",
-      "notes": "Example local profile. No live provider routing is implemented."
+      "notes": "Default local-first brain target. Live inference is wired through Ollama when the configured Gemma model is installed."
     }
   ]
 }

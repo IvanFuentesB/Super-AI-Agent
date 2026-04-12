@@ -103,6 +103,11 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - The dashboard now shows an Operator Watchdog card and target marker so wrong-window blocks, stalled work, manual intervention, and did-not-complete states are easier to see without digging through raw task history
 - CLI `ghoti-status` and `ghoti-recent` now surface watchdog summaries and the current overlay-target hint so the same visibility exists outside the browser
 - Runtime, dashboard, and desktop checkers now cover the visible Ghoti overlay/watchdog slice honestly
+- A real local brain/provider foundation now exists through `super_ai_agent.brain`, with `gemma_local` as the default local-first provider target and Ollama as the live local inference path
+- CLI now exposes `brain-status`, `brain-set-active`, and `brain-infer`, and both dashboard and CLI now show the active brain provider, active model, current-task model-use truth, and last model-call status
+- The runtime now persists local brain config and last-call state under `01_projects\runtime_mvp\runtime_data`
+- Environment capability reporting now includes `local_brain_inference` so Ghoti can say honestly whether the configured local brain is actually ready
+- Honest current model truth: Gemma is wired as the default local brain path, but no local Ollama model is currently installed on this machine and no broad operator task path automatically uses model inference yet
 - Resource/process guardrails now exist for duplicate terminal and process pressure
 - Desktop and recipe steps now stop after two failed attempts instead of retrying indefinitely
 - Checker and recipe label text is now blocked from being pasted into terminals by the clipboard guard
@@ -111,6 +116,7 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - No task deletion flow exists, and task cleanup should continue to prefer filtering, archive-style visibility, and history retention
 - No task should be deleted without the user's explicit approval
 - No live external provider APIs yet
+- No broad task-routing or council execution layer yet; the operator stack is still mostly local rules, approvals, queue logic, and recipes
 - No real browser or app executor beyond the local playground yet
 - No remote auth layer yet
 - Remote GitHub issue and PR execution still depends on gh presence and auth
@@ -126,7 +132,9 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 ## Immediate Focus
 - Refresh Ghoti handoff memory first when chats get long, then use the new cue, resource guard, retry ceiling, wrong-active-window guard, and paste-only handoff path as the safe base
 - The current branch is now `feat/ghoti-visible-operator-stack`
-- The visible operator stack now exists in both dashboard and CLI, so the next practical step is to use the overlay, watchdog, control center, and `ghoti-*` commands for real manual validation instead of widening execution scope
+- The visible operator stack now exists in both dashboard and CLI, and the next practical step is to validate the new Gemma/Ollama brain truth in that same operator surface instead of pretending the rules stack is already model-driven
+- Pull the configured Gemma model into Ollama before claiming live local inference readiness
+- Decide the first narrow task path that should intentionally call the local brain later, but keep the provider layer separable from approvals, dashboard, recipes, and executor control
 - Real-window handoff targeting and final pre-input destination verification are already implemented for the current MVP and must remain intact while the new control center is exercised
 - Manual target resolution now has an operator-enabled browser-local remembered candidate option for repeated runs and should stay compatible with the clearer control surface
 - Keep the overlay/watchdog layer operator-facing only; use it to surface intervention points, not to auto-recover silently
@@ -159,3 +167,4 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Desktop screenshot capture can still be unavailable in some Windows sessions, so manual capture remains the honest fallback there
 - Task history is large and noisy even after the first filter pass, and the operator console still needs better operator-facing filtering so stale failures do not crowd current work
 - Third-party intake repos are valuable comparison material, but most of their surface area is still too heavy to adopt directly
+- Ollama is available locally in this environment, but `ollama list` is currently empty, so the configured Gemma model cannot actually run yet
