@@ -57,6 +57,7 @@ DESKTOP_VISIBLE_ACTIONS = {
     "double_click",
     "right_click",
     "scroll_mouse",
+    "type_text",
 }
 DESKTOP_EXECUTOR_ACTIONS = DESKTOP_OBSERVATION_ACTIONS | DESKTOP_VISIBLE_ACTIONS
 ALLOWED_CHECKER_TARGETS = {
@@ -412,6 +413,71 @@ def _normalize_optional_window_target(
         label=f"{action_type} candidate",
     )
     return _build_window_target_spec(alias, normalized_candidate)
+
+
+def _normalize_required_window_target(
+    raw_target: str,
+    *,
+    action_type: str,
+) -> str:
+    normalized = _normalize_optional_window_target(raw_target, action_type=action_type)
+    if not normalized:
+        raise ValueError(
+            f"{action_type} target must be one of: "
+            + ", ".join(sorted(ALLOWED_DESKTOP_FOCUS_TARGETS))
+        )
+    return normalized
+
+
+def _sanitize_type_text_content(content: str) -> str:
+    normalized = str(content or "")
+    if not normalized.strip():
+        raise ValueError("type_text requires non-empty content.")
+    if any(char in normalized for char in ("\r", "\n", "\t")):
+        raise ValueError("type_text content must stay on one line without tabs or Enter.")
+    if len(normalized) > 280:
+        raise ValueError("type_text content must be 280 characters or fewer.")
+    if any(ord(char) < 32 for char in normalized):
+        raise ValueError("type_text content contains unsupported control characters.")
+    return normalized
+
+
+def _desktop_typing_enabled(action_type: str) -> str:
+    return "yes" if action_type == "type_text" else "no"
+
+
+def _extract_desktop_action_target(values: dict[str, str], fallback_target: str) -> str:
+    for key in ("target_description", "target", "headline"):
+        value = str(values.get(key, "") or "").strip()
+        if value and value.lower() != "none":
+            return value
+    return fallback_target or "none"
+
+
+def _set_desktop_action_truth_metadata(
+    task: Task,
+    *,
+    action_type: str,
+    target: str,
+    status: str,
+    values: dict[str, str] | None = None,
+) -> None:
+    payload = task.executor_payload
+    details = values or {}
+    desktop_target = _extract_desktop_action_target(details, target)
+    typing_enabled = details.get("typing_enabled") or _desktop_typing_enabled(action_type)
+    payload["desktop_current_action"] = action_type
+    payload["desktop_current_target"] = desktop_target
+    payload["desktop_current_typing_enabled"] = typing_enabled
+    payload["desktop_last_action"] = action_type
+    payload["desktop_last_target"] = desktop_target
+    payload["desktop_last_typing_enabled"] = typing_enabled
+    payload["desktop_last_action_status"] = status
+    payload["desktop_last_visual_cue_status"] = details.get("visual_cue_status", "not_reported")
+    payload["desktop_last_visual_cue_action"] = details.get("visual_cue_action", action_type)
+    payload["desktop_last_visual_cue_target"] = details.get("visual_cue_target", desktop_target)
+    payload["desktop_last_coordinates"] = details.get("coordinates", "none")
+    payload["desktop_last_text_preview"] = details.get("text_preview", "none")
 
 
 def _normalize_hotkey_target(raw_target: str) -> str:
@@ -1111,6 +1177,7 @@ def _build_executor_title(action_type: str, target: str) -> str:
         "copy_selection": "Copy selection from focused window",
         "paste_clipboard": "Paste clipboard into focused window",
         "send_hotkey": "Send allowlisted desktop hotkey",
+        "type_text": "Type allowlisted text into a focused target",
         "wait_seconds": "Wait for a visible operator pause",
         "wait_for_window": "Wait for an allowlisted window",
         "move_mouse": "Move mouse to a known target",
@@ -1144,6 +1211,7 @@ def _build_executor_description(action_type: str, target: str) -> str:
         "copy_selection": "Approval-aware desktop bridge action for copying the current selection from an allowed window.",
         "paste_clipboard": "Approval-aware desktop bridge action for pasting clipboard text into an allowed focused window.",
         "send_hotkey": "Approval-aware desktop bridge action for a narrow allowlisted hotkey only.",
+        "type_text": "Approval-aware desktop bridge action for explicit one-line typing into one resolved allowlisted window only.",
         "wait_seconds": "Allowlisted desktop bridge action for an explicit visible wait.",
         "wait_for_window": "Allowlisted desktop bridge action for waiting on one allowlisted window only.",
         "move_mouse": "Approval-aware desktop bridge action for moving the mouse to a known target only.",
@@ -1277,6 +1345,12 @@ def _prepare_executor_action(
     elif normalized_action == "send_hotkey":
         normalized_target = _normalize_hotkey_target(normalized_target)
         payload["bridge_target"] = normalized_target
+        payload["max_attempts"] = DEFAULT_DESKTOP_MAX_ATTEMPTS
+    elif normalized_action == "type_text":
+        normalized_target = _normalize_required_window_target(normalized_target, action_type="type_text")
+        payload["bridge_target"] = normalized_target
+        payload["text_content"] = _sanitize_type_text_content(content)
+        payload["typing_enabled"] = True
         payload["max_attempts"] = DEFAULT_DESKTOP_MAX_ATTEMPTS
     elif normalized_action == "wait_seconds":
         wait_seconds = _require_positive_int(
@@ -1446,6 +1520,12 @@ def _build_desktop_bridge_action_result(
         summary = headline or f"Sent allowlisted hotkey {hotkey} to {alias}."
         return {"summary": _shorten_output(summary, limit=320), "artifact_path": "", "values": values, "sections": sections}
 
+    if action_type == "type_text":
+        alias = values.get("active_window_alias") or target or "allowed_window"
+        preview = values.get("text_preview", "empty")
+        summary = headline or f"Typed one-line text into {alias}. Preview: {preview}"
+        return {"summary": _shorten_output(summary, limit=320), "artifact_path": "", "values": values, "sections": sections}
+
     if action_type == "wait_seconds":
         waited = values.get("waited_seconds", target or "0")
         summary = headline or f"Waited {waited} second(s)."
@@ -1501,7 +1581,7 @@ def _invoke_desktop_bridge_action(
         command.extend(["-Target", target])
     if artifact_path:
         command.extend(["-ArtifactPath", artifact_path])
-    if action_type == "set_clipboard_text":
+    if action_type in {"set_clipboard_text", "type_text"}:
         command.extend(["-TextContent", text_content])
 
     result = subprocess.run(
@@ -1569,6 +1649,13 @@ def _run_desktop_bridge_action(
                 artifact_path=artifact_path,
                 text_content=text_content,
             )
+            _set_desktop_action_truth_metadata(
+                task,
+                action_type=action_type,
+                target=target,
+                status="succeeded",
+                values=dict(result.get("values", {}) or {}),
+            )
             _set_desktop_execution_metadata(
                 task,
                 attempt_count=attempt,
@@ -1579,6 +1666,12 @@ def _run_desktop_bridge_action(
                 summary = _shorten_output(f"Succeeded on attempt {attempt}/{max_attempts}. {summary}", limit=320)
             return summary, str(result["artifact_path"] or "")
         except DesktopActionInterrupted as exc:
+            _set_desktop_action_truth_metadata(
+                task,
+                action_type=action_type,
+                target=target,
+                status="interrupted",
+            )
             _set_desktop_execution_metadata(
                 task,
                 attempt_count=attempt,
@@ -1587,6 +1680,13 @@ def _run_desktop_bridge_action(
             )
             raise
         except DesktopActionBlocked as exc:
+            _set_desktop_action_truth_metadata(
+                task,
+                action_type=action_type,
+                target=target,
+                status="blocked",
+                values=dict(getattr(exc, "values", {}) or {}),
+            )
             _set_desktop_execution_metadata(
                 task,
                 attempt_count=attempt,
@@ -1597,6 +1697,12 @@ def _run_desktop_bridge_action(
             raise
         except Exception as exc:  # noqa: BLE001
             last_error = _shorten_output(str(exc), limit=320)
+            _set_desktop_action_truth_metadata(
+                task,
+                action_type=action_type,
+                target=target,
+                status="failed",
+            )
             _set_desktop_execution_metadata(
                 task,
                 attempt_count=attempt,

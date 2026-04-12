@@ -103,6 +103,11 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - The dashboard now shows an Operator Watchdog card and target marker so wrong-window blocks, stalled work, manual intervention, and did-not-complete states are easier to see without digging through raw task history
 - CLI `ghoti-status` and `ghoti-recent` now surface watchdog summaries and the current overlay-target hint so the same visibility exists outside the browser
 - Runtime, dashboard, and desktop checkers now cover the visible Ghoti overlay/watchdog slice honestly
+- Desktop bridge actions now also surface a lightweight live action cue and target marker for aiming, clicking, typing, and waiting steps
+- Controlled one-line `type_text` support now exists for explicit allowlisted desktop targets only, with no auto-submit and no freeform broad typing path
+- Runtime and CLI now persist and expose desktop action truth such as current action, target, typing-enabled state, last action status, cue status, and text preview
+- The dashboard Ghoti control center now surfaces desktop-action truth for the current task so the operator can tell whether Ghoti is aiming, clicking, typing, waiting, or blocked
+- Desktop, runtime, and dashboard checkers now cover the visible desktop action cue, controlled typing path, and desktop-action truth honestly
 - A real local brain/provider foundation now exists through `super_ai_agent.brain`, with `gemma_local` as the default local-first provider target and Ollama as the live local inference path
 - CLI now exposes `brain-status`, `brain-set-active`, and `brain-infer`, and both dashboard and CLI now show the active brain provider, active model, current-task model-use truth, and last model-call status
 - The runtime now persists local brain config and last-call state under `01_projects\runtime_mvp\runtime_data`
@@ -133,6 +138,7 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Refresh Ghoti handoff memory first when chats get long, then use the new cue, resource guard, retry ceiling, wrong-active-window guard, and paste-only handoff path as the safe base
 - The current branch is now `feat/ghoti-visible-operator-stack`
 - The visible operator stack now exists in both dashboard and CLI, and the next practical step is to validate the new Gemma/Ollama brain truth in that same operator surface instead of pretending the rules stack is already model-driven
+- The visible supervised desktop-operator foundation now exists, so the next practical step is to validate real operator use of the target marker, controlled typing, and desktop-action truth before widening autonomy
 - Pull the configured Gemma model into Ollama before claiming live local inference readiness
 - Decide the first narrow task path that should intentionally call the local brain later, but keep the provider layer separable from approvals, dashboard, recipes, and executor control
 - Real-window handoff targeting and final pre-input destination verification are already implemented for the current MVP and must remain intact while the new control center is exercised
@@ -156,7 +162,7 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Workspace policy blocks out-of-scope targets cleanly now, but there is still no explicit allowlist expansion flow yet
 - The safe repo executor is intentionally narrow and repo-bound; it is not a generic shell runner, desktop controller, or autonomy layer
 - The desktop bridge is intentionally narrow and allowlisted; it is not arbitrary desktop control, click or type automation, clipboard orchestration, or a background daemon
-- The new desktop hand layer is useful but still narrow; it only supports explicit allowlisted clipboard, hotkey, wait, and mouse actions, and it still has no freeform typing, drag-and-drop, or arbitrary UI-state inference
+- The new desktop hand layer is useful but still narrow; it supports explicit allowlisted clipboard, hotkey, wait, mouse, and one-line typing actions, and it still has no freeform typing, drag-and-drop, or arbitrary UI-state inference
 - The first operator recipe layer is intentionally small and still prototype-grade; the current handoff recipe is an MVP even though the wrong-destination input bug is now blocked before paste
 - Window matching still depends on visible titles and allowed aliases, so some cross-window flows can remain brittle until the target set is tightened
 - Terminal or PowerShell must not be used as a substitute target for Codex-to-ChatGPT handoff, even though explicit terminal-targeted actions elsewhere remain allowed

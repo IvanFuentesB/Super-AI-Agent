@@ -42,6 +42,7 @@
 - [x] Ghoti dashboard and CLI control center now exist
 - [x] Ghoti visible operator stack with overlay, watchdog, and target marker now exists
 - [x] Gemma/Ollama local brain foundation now exists with provider/model visibility in dashboard and CLI
+- [x] Visible supervised desktop action cue, target marker, controlled typing, and desktop-action truth now exist
 
 ## Current Control Layer
 - Continue for local context/rules
@@ -51,7 +52,7 @@
 - feat/ghoti-visible-operator-stack
 
 ## Current Phase
-- Real-window handoff targeting, wrong-active-window input blocking, the browser-local remembered candidate toggle, the Ghoti control center, the visible operator stack, and the first honest Gemma/Ollama brain foundation are complete; the next step is to make real local inference ready without widening the safety boundary
+- Real-window handoff targeting, wrong-active-window input blocking, the browser-local remembered candidate toggle, the Ghoti control center, the visible operator stack, the first honest Gemma/Ollama brain foundation, and the first visible supervised desktop-action layer are complete; the next step is to validate real operator use and make local inference ready without widening the safety boundary
 
 ## Next Milestones
 - manually validate real Codex and ChatGPT handoff with the new candidate picker
@@ -63,6 +64,7 @@
 - tighten real Codex and ChatGPT target matching only if it reduces manual picks without unsafe guessing
 - keep repeated junk payload retry handling capped at two attempts and visible to the operator
 - validate the overlay/target-marker state transitions for idle, active, waiting, approval-needed, interrupted, and blocked work during real operator use
+- validate the new desktop action cue and one-line typing path during real operator use
 - decide later whether the watchdog should surface a cleaner usage-exhaustion handoff hint without becoming a daemon
 - capture the OpenClaw patterns that fit later Ghoti channel, browser-assist, and long-running operator work without making it a hard dependency now
 - pull the configured Gemma model into Ollama and confirm `brain_inference_ready` becomes true
@@ -108,4 +110,4 @@
 - OpenClaw is now a major strategic reference, so new operator-core decisions should stay compatible with later OpenClaw-style channel and control-surface integration
 
 ## Last Reviewed
-- 2026-04-11
+- 2026-04-12

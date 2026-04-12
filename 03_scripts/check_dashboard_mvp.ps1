@@ -347,6 +347,10 @@ try {
         $ghotiControlCenter.summary.ghotiState -and `
         $ghotiControlCenter.summary.emergencyStopHotkey -eq 'Ctrl+8' -and `
         $ghotiControlCenter.summary.watchdog.status -and `
+        $ghotiControlCenter.summary.desktopActionTruth.currentAction -and `
+        $ghotiControlCenter.summary.desktopActionTruth.currentTarget -ne $null -and `
+        ($ghotiControlCenter.summary.desktopActionTruth.typingEnabled -in @('yes', 'no')) -and `
+        $ghotiControlCenter.summary.desktopActionTruth.cueStatus -and `
         $ghotiControlCenter.summary.brain.activeProvider -and `
         $ghotiControlCenter.summary.brain.activeModel -and `
         $ghotiControlCenter.summary.brain.lastModelCallStatus -and `

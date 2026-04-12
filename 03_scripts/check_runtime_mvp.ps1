@@ -264,6 +264,10 @@ $ghotiStatusOk = $ghotiStatusResult.ExitCode -eq 0 -and `
     (($ghotiStatusResult.Output | Out-String) -match 'watchdog_status:\s+\S+') -and `
     (($ghotiStatusResult.Output | Out-String) -match 'watchdog_headline:\s+') -and `
     (($ghotiStatusResult.Output | Out-String) -match 'overlay_target:\s+') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'desktop_current_action:\s+\S+') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'desktop_current_target:\s+') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'desktop_current_typing_enabled:\s+(yes|no)') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'desktop_visual_cue_status:\s+\S+') -and `
     (($ghotiStatusResult.Output | Out-String) -match 'watchdog_alerts:') -and `
     (($ghotiStatusResult.Output | Out-String) -match 'recent_actionable_tasks:') -and `
     (($ghotiStatusResult.Output | Out-String) -match 'recent_failures:') -and `
@@ -281,6 +285,8 @@ $ghotiRecentOk = $ghotiRecentResult.ExitCode -eq 0 -and `
     (($ghotiRecentResult.Output | Out-String) -match 'watchdog_status:\s+\S+') -and `
     (($ghotiRecentResult.Output | Out-String) -match 'watchdog_headline:\s+') -and `
     (($ghotiRecentResult.Output | Out-String) -match 'overlay_target:\s+') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'desktop_current_action:\s+\S+') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'desktop_current_typing_enabled:\s+(yes|no)') -and `
     (($ghotiRecentResult.Output | Out-String) -match 'recent_actionable_tasks:') -and `
     (($ghotiRecentResult.Output | Out-String) -match 'active_only_tasks:') -and `
     (($ghotiRecentResult.Output | Out-String) -match 'recent_failures:') -and `

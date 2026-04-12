@@ -61,6 +61,8 @@
 - A lightweight floating Ghoti overlay now exists in the dashboard with live state, watchdog summary, Ctrl+8 reminder, and current target visibility.
 - A visible target marker now exists for the current local focus, pointer, handoff, or input destination summary.
 - An Operator Watchdog summary now exists in both dashboard and CLI so wrong-window blocks, stalled work, did-not-complete work, and manual-intervention pressure are easier to spot.
+- The desktop bridge now shows a lightweight live action cue for aiming, clicking, typing, and waiting, including the target description and Ctrl+8 stop reminder.
+- Controlled one-line `type_text` now exists for explicit allowlisted desktop targets, and dashboard plus CLI surfaces now expose whether typing is enabled for the current or last desktop action.
 
 ## 5. Current Safety Model
 - Risky actions require approval.
@@ -97,6 +99,7 @@
 - `double_click`
 - `right_click`
 - `scroll_mouse`
+- `type_text`
 - `Ctrl+8` interrupt path with persisted interrupted state
 
 ## 7. Current Handoff MVP
@@ -155,7 +158,7 @@
 
 ## 11. What Still Does NOT Exist Yet
 - No runtime-stored durable Codex or ChatGPT target profile beyond the browser-local remembered candidate toggle.
-- No unrestricted desktop control, freeform typing, drag-and-drop, or free-roaming automation.
+- No unrestricted desktop control, freeform broad typing, drag-and-drop, or free-roaming automation.
 - No full browser executor loop.
 - No full Windows app executor.
 - No external notifications or remote replies.
@@ -174,6 +177,7 @@
 - Runtime, dashboard, and desktop checkers now cover the real-window targeting path honestly, including the wrong-active-window block before input.
 - The dashboard and CLI now provide a real operator-facing Ghoti control center, so current state, hotkeys, actionable work, failures, and recent artifacts are much easier to inspect.
 - The visible overlay, target marker, and watchdog summary now make Ghoti feel much more present during real operator use without adding hidden autonomy.
+- The new desktop action cue, target marker, and desktop-action truth make aiming, clicking, waiting, and controlled typing visible to the operator instead of hidden in raw task logs.
 - Explicit terminal-targeted actions still remain possible for terminal recipes or actions outside the Codex-to-ChatGPT handoff path.
 - Task history is still large, so further cleanup should continue to prefer filtering, recent views, and history visibility rather than deletion.
 

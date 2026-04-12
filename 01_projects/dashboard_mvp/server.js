@@ -793,6 +793,17 @@ function parseTaskDetail(stdout) {
     lastFailureReason: parsed.values.last_failure_reason || "none",
     lastInterruptionReason: parsed.values.last_interruption_reason || "none",
     lastResourceGuardReason: parsed.values.last_resource_guard_reason || "none",
+    desktopCurrentAction: parsed.values.desktop_current_action || "none",
+    desktopCurrentTarget: parsed.values.desktop_current_target || "none",
+    desktopCurrentTypingEnabled: parsed.values.desktop_current_typing_enabled || "no",
+    desktopLastAction: parsed.values.desktop_last_action || "none",
+    desktopLastTarget: parsed.values.desktop_last_target || "none",
+    desktopLastTypingEnabled: parsed.values.desktop_last_typing_enabled || "no",
+    desktopLastActionStatus: parsed.values.desktop_last_action_status || "not_run",
+    desktopVisualCueStatus: parsed.values.desktop_visual_cue_status || "not_reported",
+    desktopVisualCueAction: parsed.values.desktop_visual_cue_action || "none",
+    desktopVisualCueTarget: parsed.values.desktop_visual_cue_target || "none",
+    desktopLastTextPreview: parsed.values.desktop_last_text_preview || "none",
     retryLimit: Number.parseInt(parsed.values.retry_limit || "0", 10),
     targetPaths: (parsed.listSections.target_paths || []).filter((item) => item !== "none"),
     recipeSteps,
@@ -838,6 +849,11 @@ function parseExecutorTaskLine(line) {
     targetWindow: labeled.target_window || "none",
     payloadClassification: labeled.classification || "none",
     sendBehavior: labeled.send_behavior || "none",
+    desktopAction: labeled.desktop_action || "none",
+    desktopTarget: labeled.desktop_target || "none",
+    typingEnabled: labeled.typing_enabled || "no",
+    desktopStatus: labeled.desktop_status || "not_run",
+    cueStatus: labeled.cue_status || "not_reported",
     detail: [
       labeled.action ? `action=${labeled.action}` : "",
       labeled.target ? `target=${labeled.target}` : "",
@@ -848,6 +864,11 @@ function parseExecutorTaskLine(line) {
       labeled.source_window ? `source=${labeled.source_window}` : "",
       labeled.target_window ? `target_window=${labeled.target_window}` : "",
       labeled.classification ? `classification=${labeled.classification}` : "",
+      labeled.desktop_action ? `desktop_action=${labeled.desktop_action}` : "",
+      labeled.desktop_target ? `desktop_target=${labeled.desktop_target}` : "",
+      labeled.typing_enabled ? `typing_enabled=${labeled.typing_enabled}` : "",
+      labeled.desktop_status ? `desktop_status=${labeled.desktop_status}` : "",
+      labeled.cue_status ? `cue_status=${labeled.cue_status}` : "",
     ].filter(Boolean).join(" | "),
   };
 }
@@ -1282,8 +1303,28 @@ async function buildGhotiControlCenterResponse(filters = {}) {
             modelProvider: brainSummary.currentTaskModelProvider || "none",
             modelName: brainSummary.currentTaskModelName || "none",
             modelCallStatus: brainSummary.currentTaskModelCallStatus || "not_used",
+            desktopAction: currentTask.desktopAction || "none",
+            desktopTarget: currentTask.desktopTarget || "none",
+            typingEnabled: currentTask.typingEnabled || "no",
+            desktopStatus: currentTask.desktopStatus || "not_run",
+            cueStatus: currentTask.cueStatus || "not_reported",
           }
         : null,
+      desktopActionTruth: currentTask
+        ? {
+            currentAction: currentTask.desktopAction || "none",
+            currentTarget: currentTask.desktopTarget || "none",
+            typingEnabled: currentTask.typingEnabled || "no",
+            lastStatus: currentTask.desktopStatus || "not_run",
+            cueStatus: currentTask.cueStatus || "not_reported",
+          }
+        : {
+            currentAction: "none",
+            currentTarget: "none",
+            typingEnabled: "no",
+            lastStatus: "not_run",
+            cueStatus: "not_reported",
+          },
       brain: brainSummary,
       pendingApprovalCount: Number(supervisor.pendingApprovalCount || 0),
       blockedTaskCount: Number(supervisor.blockedHumanNeededCount || 0),
@@ -1487,7 +1528,7 @@ function buildGhotiOverlayTarget(task) {
     };
   }
 
-  if (["paste_clipboard", "copy_selection", "set_clipboard_text", "send_hotkey", "get_clipboard_text"].includes(actionType)) {
+  if (["paste_clipboard", "copy_selection", "set_clipboard_text", "send_hotkey", "get_clipboard_text", "type_text"].includes(actionType)) {
     return {
       kind: "input",
       label: "Input target",

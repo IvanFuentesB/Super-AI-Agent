@@ -65,6 +65,7 @@ The top-level Ghoti Control Center shows:
 - Ctrl+8 emergency stop reminder
 - floating Ghoti overlay with the live state, watchdog summary, and current target reminder
 - visible target marker for the current handoff, focus, pointer, or input destination
+- current desktop action truth for aiming, clicking, typing, waiting, or blocked work when a desktop task is active
 - current running task if one exists
 - pending approvals
 - blocked tasks
@@ -184,6 +185,29 @@ The dashboard control center keeps a narrow practical set of operator actions:
 - run dashboard checker
 
 These actions keep the existing approval-aware and workspace-boundary model intact. They do not add free-roaming autonomy.
+
+## Visible Desktop Actions
+
+Ghoti now exposes a small visible supervised desktop-action layer instead of hiding those steps in logs.
+
+- `move_mouse` can aim at coordinates or a named allowlisted target and show a visible target marker first
+- `left_click` uses the same visible target cue before clicking
+- `wait_seconds` shows that Ghoti is intentionally waiting rather than stuck
+- `type_text` is now available only for explicit allowlisted targets and only for narrow one-line text
+
+Both dashboard and CLI expose desktop action truth:
+
+- current desktop action
+- current target
+- whether typing is enabled for that action
+- last desktop action status
+- cue visibility status
+
+Typing is still intentionally narrow:
+
+- no freeform typing into arbitrary contexts
+- no auto-Enter or submit by default
+- no bypass of approval, workspace, or handoff safety rules
 
 ## Operator Watchdog
 

@@ -195,6 +195,7 @@ DESKTOP_EXECUTOR_ACTIONS = {
     "copy_selection",
     "paste_clipboard",
     "send_hotkey",
+    "type_text",
     "wait_seconds",
     "wait_for_window",
     "move_mouse",
@@ -400,10 +401,69 @@ def _describe_overlay_target(task) -> tuple[str, str]:
     if action_type in {"focus_window", "open_allowed_app", "wait_for_window", "get_active_window"}:
         return ("Window target", fallback_detail or "Window-targeted desktop action.")
 
-    if action_type in {"paste_clipboard", "copy_selection", "set_clipboard_text", "send_hotkey", "get_clipboard_text"}:
+    if action_type in {"paste_clipboard", "copy_selection", "set_clipboard_text", "send_hotkey", "get_clipboard_text", "type_text"}:
         return ("Input target", fallback_detail or "Input-targeted desktop action.")
 
     return ("Current task target", fallback_detail or "No specific target recorded yet.")
+
+
+def _desktop_action_truth(task) -> dict[str, str]:
+    payload = dict(getattr(task, "executor_payload", {}) or {})
+    action_type = str(getattr(task, "executor_action_type", "") or "").lower()
+    if action_type not in DESKTOP_EXECUTOR_ACTIONS:
+        return {
+            "current_action": "none",
+            "current_target": "none",
+            "current_typing_enabled": "no",
+            "last_action": "none",
+            "last_target": "none",
+            "last_typing_enabled": "no",
+            "last_status": "not_run",
+            "cue_status": "not_reported",
+            "cue_action": "none",
+            "cue_target": "none",
+            "text_preview": "none",
+        }
+    return {
+        "current_action": str(payload.get("desktop_current_action") or action_type or "none"),
+        "current_target": str(payload.get("desktop_current_target") or getattr(task, "executor_target", "") or "none"),
+        "current_typing_enabled": str(payload.get("desktop_current_typing_enabled") or ("yes" if action_type == "type_text" else "no")),
+        "last_action": str(payload.get("desktop_last_action") or action_type or "none"),
+        "last_target": str(payload.get("desktop_last_target") or getattr(task, "executor_target", "") or "none"),
+        "last_typing_enabled": str(payload.get("desktop_last_typing_enabled") or ("yes" if action_type == "type_text" else "no")),
+        "last_status": str(payload.get("desktop_last_action_status") or "not_run"),
+        "cue_status": str(payload.get("desktop_last_visual_cue_status") or "not_reported"),
+        "cue_action": str(payload.get("desktop_last_visual_cue_action") or action_type or "none"),
+        "cue_target": str(payload.get("desktop_last_visual_cue_target") or payload.get("desktop_last_target") or getattr(task, "executor_target", "") or "none"),
+        "text_preview": str(payload.get("desktop_last_text_preview") or "none"),
+    }
+
+
+def _print_desktop_action_block(*, active_task=None) -> None:
+    truth = _desktop_action_truth(active_task) if active_task else {
+        "current_action": "none",
+        "current_target": "none",
+        "current_typing_enabled": "no",
+        "last_action": "none",
+        "last_target": "none",
+        "last_typing_enabled": "no",
+        "last_status": "not_run",
+        "cue_status": "not_reported",
+        "cue_action": "none",
+        "cue_target": "none",
+        "text_preview": "none",
+    }
+    print(f"desktop_current_action: {truth['current_action']}")
+    print(f"desktop_current_target: {truth['current_target']}")
+    print(f"desktop_current_typing_enabled: {truth['current_typing_enabled']}")
+    print(f"desktop_last_action: {truth['last_action']}")
+    print(f"desktop_last_target: {truth['last_target']}")
+    print(f"desktop_last_typing_enabled: {truth['last_typing_enabled']}")
+    print(f"desktop_last_action_status: {truth['last_status']}")
+    print(f"desktop_visual_cue_status: {truth['cue_status']}")
+    print(f"desktop_visual_cue_action: {truth['cue_action']}")
+    print(f"desktop_visual_cue_target: {truth['cue_target']}")
+    print(f"desktop_last_text_preview: {truth['text_preview']}")
 
 
 def _build_ghoti_watchdog(state, tasks, active_task) -> dict:
@@ -959,6 +1019,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"overlay_target_detail: {watchdog['overlay_target_detail']}")
             print(f"watchdog_handoff_hint: {watchdog['handoff_hint']}")
             _print_brain_status_block(active_task=active_task)
+            _print_desktop_action_block(active_task=active_task)
             print("recent_actionable_tasks:")
             _print_ghoti_task_lines(actionable_tasks, limit=5)
             print("recent_failures:")
@@ -1010,6 +1071,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"overlay_target: {watchdog['overlay_target']}")
             print(f"overlay_target_detail: {watchdog['overlay_target_detail']}")
             _print_brain_status_block(active_task=active_task)
+            _print_desktop_action_block(active_task=active_task)
             print("recent_actionable_tasks:")
             _print_ghoti_task_lines(actionable_tasks, limit=6)
             print("active_only_tasks:")
@@ -1181,6 +1243,7 @@ def main(argv: list[str] | None = None) -> int:
                 last_execution = task.execution_records[-1] if task.execution_records else None
                 last_summary = last_execution.output_summary if last_execution else "not_run"
                 task_type = _classify_executor_task(task)
+                desktop_truth = _desktop_action_truth(task)
                 recipe_bits = []
                 if task.executor_action_type == "run_operator_recipe":
                     recipe_name = task.executor_payload.get("recipe_name", "")
@@ -1217,6 +1280,11 @@ def main(argv: list[str] | None = None) -> int:
                     f"type={task_type} | title={_short_description(task.title, limit=80)} | "
                     f"updated={task.updated_at or 'none'} | "
                     f"last={_short_description(last_summary, limit=100)} | "
+                    f"desktop_action={desktop_truth['last_action']} | "
+                    f"desktop_target={desktop_truth['last_target']} | "
+                    f"typing_enabled={desktop_truth['last_typing_enabled']} | "
+                    f"desktop_status={desktop_truth['last_status']} | "
+                    f"cue_status={desktop_truth['cue_status']} | "
                     f"inference={'yes' if (last_execution.used_model_inference if last_execution else False) else 'no'} | "
                     f"model_provider={(last_execution.model_provider if last_execution and last_execution.model_provider else 'none')} | "
                     f"model_name={(last_execution.model_name if last_execution and last_execution.model_name else 'none')} | "
@@ -1229,6 +1297,7 @@ def main(argv: list[str] | None = None) -> int:
             task = get_task(args.task_id)
             history = get_task_history(args.task_id)
             last_execution = task.execution_records[-1] if task.execution_records else None
+            desktop_truth = _desktop_action_truth(task)
             print(f"task_id: {task.task_id}")
             print(f"title: {task.title}")
             print(f"description: {task.description}")
@@ -1291,6 +1360,17 @@ def main(argv: list[str] | None = None) -> int:
             print(f"last_model_provider: {last_execution.model_provider if last_execution and last_execution.model_provider else 'none'}")
             print(f"last_model_name: {last_execution.model_name if last_execution and last_execution.model_name else 'none'}")
             print(f"last_model_call_status: {last_execution.model_call_status if last_execution and last_execution.model_call_status else 'not_used'}")
+            print(f"desktop_current_action: {desktop_truth['current_action']}")
+            print(f"desktop_current_target: {desktop_truth['current_target']}")
+            print(f"desktop_current_typing_enabled: {desktop_truth['current_typing_enabled']}")
+            print(f"desktop_last_action: {desktop_truth['last_action']}")
+            print(f"desktop_last_target: {desktop_truth['last_target']}")
+            print(f"desktop_last_typing_enabled: {desktop_truth['last_typing_enabled']}")
+            print(f"desktop_last_action_status: {desktop_truth['last_status']}")
+            print(f"desktop_visual_cue_status: {desktop_truth['cue_status']}")
+            print(f"desktop_visual_cue_action: {desktop_truth['cue_action']}")
+            print(f"desktop_visual_cue_target: {desktop_truth['cue_target']}")
+            print(f"desktop_last_text_preview: {desktop_truth['text_preview']}")
             print(f"retry_limit: {task.executor_payload.get('last_retry_limit', task.executor_payload.get('max_attempts', 0)) or 0}")
             print("target_paths:")
             if task.target_paths:

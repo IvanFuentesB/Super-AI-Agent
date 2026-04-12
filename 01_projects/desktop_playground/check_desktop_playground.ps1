@@ -170,6 +170,7 @@ $waitSecondsOk = $StatusOnly
 $waitForWindowOk = $StatusOnly
 $mouseMoveOk = $StatusOnly
 $leftClickOk = $StatusOnly
+$typeTextOk = $StatusOnly
 $scrollMouseOk = $StatusOnly
 $resourceGuardOk = $StatusOnly
 $clipboardGuardOk = $StatusOnly
@@ -374,7 +375,8 @@ if ($desktopActionScriptExists) {
         $waitSecondsResult = Invoke-DesktopAction -Action 'wait_seconds' -Target '1'
         $waitSecondsOk = $waitSecondsResult.ExitCode -eq 0 -and `
             $waitSecondsResult.Output -match 'status:\s+succeeded' -and `
-            $waitSecondsResult.Output -match 'waited_seconds:\s+1'
+            $waitSecondsResult.Output -match 'waited_seconds:\s+1' -and `
+            $waitSecondsResult.Output -match 'visual_cue_action:\s+waiting'
         Write-Check -Name 'Desktop action wait_seconds' -Passed $waitSecondsOk -Detail $waitSecondsResult.Output
         if (-not $waitSecondsOk) { $failed++ }
 
@@ -400,6 +402,9 @@ if ($desktopActionScriptExists) {
         ) -or (
             $mouseMoveResult.ExitCode -ne 0 -and `
             $mouseMoveResult.Output -match 'Timed out waiting for allowlisted window:\s+terminal'
+        ) -or (
+            $mouseMoveResult.ExitCode -ne 0 -and `
+            $mouseMoveResult.Output -match 'Windows did not place the mouse at the requested coordinates'
         )
         Write-Check -Name 'Desktop action move_mouse' -Passed $mouseMoveOk -Detail $mouseMoveResult.Output
         if (-not $mouseMoveOk) { $failed++ }
@@ -408,7 +413,8 @@ if ($desktopActionScriptExists) {
         $leftClickOk = (
             $leftClickResult.ExitCode -eq 0 -and `
             $leftClickResult.Output -match 'status:\s+succeeded' -and `
-            $leftClickResult.Output -match 'coordinates:\s+\d+,\d+'
+            $leftClickResult.Output -match 'coordinates:\s+\d+,\d+' -and `
+            $leftClickResult.Output -match 'visual_cue_action:\s+clicking'
         ) -or (
             $leftClickResult.ExitCode -eq 41 -and `
             $leftClickResult.Output -match 'guard_state:\s+manual_focus_required'
@@ -418,6 +424,23 @@ if ($desktopActionScriptExists) {
         )
         Write-Check -Name 'Desktop action left_click' -Passed $leftClickOk -Detail $leftClickResult.Output
         if (-not $leftClickOk) { $failed++ }
+
+        $typeTextResult = Invoke-DesktopAction -Action 'type_text' -Target 'terminal' -TextContent 'ghoti visible typing check'
+        $typeTextOk = (
+            $typeTextResult.ExitCode -eq 0 -and `
+            $typeTextResult.Output -match 'status:\s+succeeded' -and `
+            $typeTextResult.Output -match 'typing_enabled:\s+yes' -and `
+            $typeTextResult.Output -match 'text_preview:\s+ghoti visible typing check' -and `
+            $typeTextResult.Output -match 'visual_cue_action:\s+typing'
+        ) -or (
+            $typeTextResult.ExitCode -eq 41 -and `
+            $typeTextResult.Output -match 'guard_state:\s+(manual_focus_required|manual_target_resolution_required|unexpected_active_window)'
+        ) -or (
+            $typeTextResult.ExitCode -ne 0 -and `
+            $typeTextResult.Output -match 'Timed out waiting for allowlisted window:\s+terminal'
+        )
+        Write-Check -Name 'Desktop action type_text' -Passed $typeTextOk -Detail $typeTextResult.Output
+        if (-not $typeTextOk) { $failed++ }
 
         $scrollMouseResult = Invoke-DesktopAction -Action 'scroll_mouse' -Target 'terminal|240'
         $scrollMouseOk = (
@@ -502,6 +525,7 @@ Write-Output "wait_seconds_ok: $(if ($waitSecondsOk) { 'yes' } else { 'no' })"
 Write-Output "wait_for_window_ok: $(if ($waitForWindowOk) { 'yes' } else { 'no' })"
 Write-Output "move_mouse_ok: $(if ($mouseMoveOk) { 'yes' } else { 'no' })"
 Write-Output "left_click_ok: $(if ($leftClickOk) { 'yes' } else { 'no' })"
+Write-Output "type_text_ok: $(if ($typeTextOk) { 'yes' } else { 'no' })"
 Write-Output "scroll_mouse_ok: $(if ($scrollMouseOk) { 'yes' } else { 'no' })"
 Write-Output "resource_guard_ok: $(if ($resourceGuardOk) { 'yes' } else { 'no' })"
 Write-Output "clipboard_guard_ok: $(if ($clipboardGuardOk) { 'yes' } else { 'no' })"
@@ -523,6 +547,7 @@ Write-Output "- wait_seconds"
 Write-Output "- wait_for_window"
 Write-Output "- move_mouse"
 Write-Output "- left_click"
+Write-Output "- type_text"
 Write-Output "- double_click"
 Write-Output "- right_click"
 Write-Output "- scroll_mouse"
@@ -533,6 +558,7 @@ Write-Output "- Focus existing allowlisted windows before opening duplicates"
 Write-Output "- Open allowlisted local apps when no reusable window exists"
 Write-Output "- Clipboard read, set, copy, and paste actions"
 Write-Output "- Narrow allowlisted hotkeys"
+Write-Output "- Narrow explicit one-line typing into an allowlisted target"
 Write-Output "- Explicit waits and window waits"
 Write-Output "- Narrow mouse move, click, and scroll actions"
 Write-Output "- Repo-local desktop screenshot artifacts"

@@ -15,6 +15,8 @@
 - OpenClaw is a major strategic reference for future Ghoti channel, browser-assist, and control-surface evolution, but it must remain a reference and compatibility target rather than a hard dependency for now
 - Ghoti control-center work should improve visibility, guidance, and filtering without widening the executor boundary or weakening the existing safety model
 - Ghoti overlay and watchdog work should stay an operator-facing visibility layer only; it should surface blocked or stalled state clearly without turning into an autonomous daemon or silent recovery loop
+- Visible desktop action cues and target markers should stay operator-facing and local-only; they exist to show intent before action, not to widen autonomy
+- Desktop typing must stay narrow and supervised: explicit allowlisted target, one-line content, no broad freeform typing path, and no auto-submit unless a later recipe explicitly opts in
 - Codex-to-ChatGPT handoff must not fall back to terminal, PowerShell, or command-shell targets
 - Explicit terminal-targeted actions remain allowed for terminal recipes or actions that intentionally target a terminal; the no-terminal restriction applies to Codex-to-ChatGPT handoff destinations
 - If the intended handoff source or destination window cannot be resolved confidently, block safely instead of pasting anywhere

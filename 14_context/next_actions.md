@@ -1,6 +1,9 @@
 # Next Actions
 
 - Use the visible Ghoti operator stack in dashboard and CLI for the next manual operator-validation pass instead of adding new surface area
+- Use the new desktop action cue, target marker, and desktop-action truth as the default operator view during real desktop validation
+- Manually validate visible mouse aiming, clicking, waiting, and controlled one-line typing with the new overlay cue before adding broader desktop behaviors
+- Confirm that `type_text` stays narrow: explicit allowlisted target only, no freeform broad typing, and no auto-submit unless a later recipe explicitly opts in
 - Pull the configured Gemma model into Ollama and rerun `python -m super_ai_agent.cli brain-status` until `brain_inference_ready: yes` is true
 - Choose one narrow approval-aware task path later that should explicitly call the local brain so `current_task_used_model_inference` can become true for real work instead of remaining a dashboard-only truth field
 - Keep the provider/model layer swappable so Gemma local can be the default local brain without locking the operator core to a single vendor or model
@@ -30,6 +33,6 @@
 - Manually test the new Ghoti state cue, control center summaries, resource guard warnings, retry ceiling, and interrupted-task messaging from the dashboard
 - Add a narrow hardware-builder-assist experiment later only as a local-first research module, not as a Blueprint.am dependency
 - Design an explicit allowlist-expansion or workspace-override path later
-- Choose the next narrow desktop-control addition, such as safe text insertion or known-target clicks, only if it stays approval-aware
+- Choose the next narrow desktop-control addition only if it stays approval-aware and builds directly on the visible cue and target-marker layer
 - Add a real notification channel later
 - Expand the executor layer later only if each new action stays allowlisted, workspace-bound, and approval-aware

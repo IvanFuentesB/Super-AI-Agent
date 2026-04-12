@@ -12,6 +12,7 @@ param(
         'copy_selection',
         'paste_clipboard',
         'send_hotkey',
+        'type_text',
         'wait_seconds',
         'wait_for_window',
         'move_mouse',
@@ -196,6 +197,149 @@ function Short-Preview {
     }
 
     return ($normalized.Substring(0, $Limit - 3).TrimEnd() + '...')
+}
+
+function ConvertTo-SendKeysLiteral {
+    param(
+        [string]$Text
+    )
+
+    $value = [string]$Text
+    $escaped = $value.Replace('{', '{{}')
+    $escaped = $escaped.Replace('}', '{}}')
+    foreach ($special in @('+', '^', '%', '~', '(', ')')) {
+        $escaped = $escaped.Replace($special, ('{' + $special + '}'))
+    }
+    return $escaped
+}
+
+function Get-TypeTextSpec {
+    param(
+        [string]$Value
+    )
+
+    $normalized = [string]$Value
+    if ([string]::IsNullOrWhiteSpace($normalized)) {
+        throw 'type_text requires non-empty text content.'
+    }
+    if ($normalized.Contains("`r") -or $normalized.Contains("`n") -or $normalized.Contains("`t")) {
+        throw 'type_text content must stay on one line without tab or Enter characters.'
+    }
+    if ($normalized.Length -gt 280) {
+        throw 'type_text content must be 280 characters or fewer.'
+    }
+    foreach ($character in $normalized.ToCharArray()) {
+        if ([int][char]$character -lt 32) {
+            throw 'type_text content contains unsupported control characters.'
+        }
+    }
+
+    return [pscustomobject]@{
+        Text = $normalized
+        Preview = Short-Preview -Text $normalized -Limit 80
+        SendKeys = ConvertTo-SendKeysLiteral -Text $normalized
+    }
+}
+
+function Show-DesktopActionCue {
+    param(
+        [string]$ActionLabel,
+        [string]$TargetDescription = '',
+        [string]$Coordinates = '',
+        [int]$DurationMilliseconds = 650
+    )
+
+    $forms = @()
+    try {
+        $statusForm = New-Object System.Windows.Forms.Form
+        $statusForm.FormBorderStyle = 'None'
+        $statusForm.StartPosition = 'Manual'
+        $statusForm.ShowInTaskbar = $false
+        $statusForm.TopMost = $true
+        $statusForm.BackColor = [System.Drawing.Color]::FromArgb(255, 255, 248, 229)
+        $statusForm.Size = New-Object System.Drawing.Size(320, 104)
+        $statusForm.Location = New-Object System.Drawing.Point(
+            ([Math]::Max(0, [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea.Width - 340)),
+            24
+        )
+
+        $actionText = New-Object System.Windows.Forms.Label
+        $actionText.AutoSize = $false
+        $actionText.Location = New-Object System.Drawing.Point(14, 12)
+        $actionText.Size = New-Object System.Drawing.Size(292, 20)
+        $actionText.Font = New-Object System.Drawing.Font('Segoe UI', 10, [System.Drawing.FontStyle]::Bold)
+        $actionText.Text = "Ghoti: $ActionLabel"
+        [void]$statusForm.Controls.Add($actionText)
+
+        $targetText = New-Object System.Windows.Forms.Label
+        $targetText.AutoSize = $false
+        $targetText.Location = New-Object System.Drawing.Point(14, 38)
+        $targetText.Size = New-Object System.Drawing.Size(292, 34)
+        $targetText.Font = New-Object System.Drawing.Font('Segoe UI', 8.8)
+        $targetText.Text = if ([string]::IsNullOrWhiteSpace($TargetDescription)) { 'Target: none recorded' } else { "Target: $TargetDescription" }
+        [void]$statusForm.Controls.Add($targetText)
+
+        $stopText = New-Object System.Windows.Forms.Label
+        $stopText.AutoSize = $false
+        $stopText.Location = New-Object System.Drawing.Point(14, 76)
+        $stopText.Size = New-Object System.Drawing.Size(292, 18)
+        $stopText.Font = New-Object System.Drawing.Font('Segoe UI', 8.2)
+        $stopText.ForeColor = [System.Drawing.Color]::FromArgb(255, 122, 74, 12)
+        $stopText.Text = 'Ctrl+8 stops the current desktop action immediately.'
+        [void]$statusForm.Controls.Add($stopText)
+
+        $forms += $statusForm
+
+        if (-not [string]::IsNullOrWhiteSpace($Coordinates) -and $Coordinates -match '^(\d+),(\d+)$') {
+            $markerX = [int]$Matches[1]
+            $markerY = [int]$Matches[2]
+            $markerForm = New-Object System.Windows.Forms.Form
+            $markerForm.FormBorderStyle = 'None'
+            $markerForm.StartPosition = 'Manual'
+            $markerForm.ShowInTaskbar = $false
+            $markerForm.TopMost = $true
+            $markerForm.BackColor = [System.Drawing.Color]::Magenta
+            $markerForm.TransparencyKey = [System.Drawing.Color]::Magenta
+            $markerForm.Size = New-Object System.Drawing.Size(46, 46)
+            $markerForm.Location = New-Object System.Drawing.Point([Math]::Max(0, $markerX - 23), [Math]::Max(0, $markerY - 23))
+
+            $markerPanel = New-Object System.Windows.Forms.Panel
+            $markerPanel.Size = New-Object System.Drawing.Size(46, 46)
+            $markerPanel.BackColor = [System.Drawing.Color]::Transparent
+            $markerPanel.add_Paint({
+                param($sender, $args)
+                $pen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(235, 215, 63, 23), 3)
+                $args.Graphics.DrawEllipse($pen, 4, 4, 36, 36)
+                $args.Graphics.DrawLine($pen, 22, 0, 22, 12)
+                $args.Graphics.DrawLine($pen, 22, 34, 22, 46)
+                $args.Graphics.DrawLine($pen, 0, 22, 12, 22)
+                $args.Graphics.DrawLine($pen, 34, 22, 46, 22)
+                $pen.Dispose()
+            })
+            [void]$markerForm.Controls.Add($markerPanel)
+            $forms += $markerForm
+        }
+
+        foreach ($form in $forms) {
+            $form.Show()
+            $form.Refresh()
+        }
+        Wait-WithInterrupt -Milliseconds $DurationMilliseconds -Phase ("showing visible cue for {0}" -f $ActionLabel)
+        return 'shown'
+    }
+    catch {
+        return 'unavailable'
+    }
+    finally {
+        foreach ($form in $forms) {
+            try {
+                $form.Close()
+                $form.Dispose()
+            }
+            catch {
+            }
+        }
+    }
 }
 
 function Get-EnvOverrideInt {
@@ -1973,6 +2117,41 @@ function Invoke-DesktopAction {
             return
         }
 
+        'type_text' {
+            $targetSpec = Parse-WindowTargetSpec -Value $Target
+            $alias = $targetSpec.Alias
+            if ([string]::IsNullOrWhiteSpace($alias) -or -not $allowedWindowTargets.Contains($alias)) {
+                throw 'type_text requires an explicit allowlisted window target.'
+            }
+
+            $textSpec = Get-TypeTextSpec -Value $TextContent
+            $context = Resolve-InputWindowContextOrBlock -TargetSpec $Target -ActionLabel 'typing one-line text'
+            $verifiedWindow = Confirm-ResolvedInputWindowContextOrBlock -Context $context -TargetSpec $Target -ActionLabel 'typing one-line text'
+            $targetDescription = "{0} | {1}" -f $verifiedWindow.Alias, $verifiedWindow.Title
+            $cueStatus = Show-DesktopActionCue -ActionLabel 'typing' -TargetDescription $targetDescription -DurationMilliseconds 720
+            Assert-NotInterrupted -Phase "typing text into $($verifiedWindow.Alias)"
+            [System.Windows.Forms.SendKeys]::SendWait($textSpec.SendKeys)
+            Wait-WithInterrupt -Milliseconds 180 -Phase 'waiting after controlled typing'
+
+            Write-Field 'action_type' 'type_text'
+            Write-Field 'status' 'succeeded'
+            Write-Field 'target' $Target
+            Write-Field 'headline' ("Typed one-line text into allowlisted window: {0}" -f $verifiedWindow.Alias)
+            Write-Field 'active_window_alias' $verifiedWindow.Alias
+            Write-Field 'active_window_title' $verifiedWindow.Title
+            Write-Field 'window_candidate_id' $verifiedWindow.CandidateId
+            Write-Field 'window_resolution_mode' $context.ResolutionMode
+            Write-Field 'text_preview' $textSpec.Preview
+            Write-Field 'typing_enabled' 'yes'
+            Write-Field 'current_action' 'typing'
+            Write-Field 'target_description' $targetDescription
+            Write-Field 'visual_cue_status' $cueStatus
+            Write-Field 'visual_cue_action' 'typing'
+            Write-Field 'visual_cue_target' $targetDescription
+            Write-Field 'stop_reminder' 'Ctrl+8'
+            return
+        }
+
         'wait_seconds' {
             $seconds = 0
             if (-not [int]::TryParse($Target.Trim(), [ref]$seconds)) {
@@ -1982,12 +2161,20 @@ function Invoke-DesktopAction {
                 throw 'wait_seconds target must be between 1 and 60 seconds.'
             }
 
+            $cueStatus = Show-DesktopActionCue -ActionLabel 'waiting' -TargetDescription ("Waiting for {0} second(s)" -f $seconds) -DurationMilliseconds 500
             Wait-WithInterrupt -Milliseconds ($seconds * 1000) -Phase "waiting $seconds second(s)"
             Write-Field 'action_type' 'wait_seconds'
             Write-Field 'status' 'succeeded'
             Write-Field 'target' $seconds
             Write-Field 'headline' ("Waited {0} second(s)." -f $seconds)
             Write-Field 'waited_seconds' $seconds
+            Write-Field 'typing_enabled' 'no'
+            Write-Field 'current_action' 'waiting'
+            Write-Field 'target_description' ("Waiting for {0} second(s)" -f $seconds)
+            Write-Field 'visual_cue_status' $cueStatus
+            Write-Field 'visual_cue_action' 'waiting'
+            Write-Field 'visual_cue_target' ("{0} second(s)" -f $seconds)
+            Write-Field 'stop_reminder' 'Ctrl+8'
             return
         }
 
@@ -2015,6 +2202,8 @@ function Invoke-DesktopAction {
                 [void](Resolve-InputWindowContextOrBlock -ActionLabel 'moving the mouse')
             }
 
+            $targetDescription = if ([string]::IsNullOrWhiteSpace($point.Alias)) { $point.Coordinates } else { "{0} | {1}" -f $point.Alias, $point.Coordinates }
+            $cueStatus = Show-DesktopActionCue -ActionLabel 'aiming' -TargetDescription $targetDescription -Coordinates $point.Coordinates -DurationMilliseconds 650
             Assert-NotInterrupted -Phase "moving mouse to $($point.Coordinates)"
             if (-not [DesktopBridgeNative]::SetCursorPos($point.X, $point.Y)) {
                 throw "Windows could not move the mouse to $($point.Coordinates)"
@@ -2033,6 +2222,13 @@ function Invoke-DesktopAction {
             Write-Field 'headline' ("Moved mouse to {0}" -f $point.Coordinates)
             Write-Field 'coordinates' $point.Coordinates
             Write-Field 'actual_coordinates' ("{0},{1}" -f $cursor.X, $cursor.Y)
+            Write-Field 'typing_enabled' 'no'
+            Write-Field 'current_action' 'aiming'
+            Write-Field 'target_description' $targetDescription
+            Write-Field 'visual_cue_status' $cueStatus
+            Write-Field 'visual_cue_action' 'aiming'
+            Write-Field 'visual_cue_target' $targetDescription
+            Write-Field 'stop_reminder' 'Ctrl+8'
             return
         }
 
@@ -2045,6 +2241,8 @@ function Invoke-DesktopAction {
                 [void](Resolve-InputWindowContextOrBlock -ActionLabel 'left clicking')
             }
 
+            $targetDescription = if ([string]::IsNullOrWhiteSpace($point.Alias)) { $point.Coordinates } else { "{0} | {1}" -f $point.Alias, $point.Coordinates }
+            $cueStatus = Show-DesktopActionCue -ActionLabel 'clicking' -TargetDescription $targetDescription -Coordinates $point.Coordinates -DurationMilliseconds 650
             if (-not [DesktopBridgeNative]::SetCursorPos($point.X, $point.Y)) {
                 throw "Windows could not move the mouse to $($point.Coordinates)"
             }
@@ -2056,6 +2254,13 @@ function Invoke-DesktopAction {
             Write-Field 'target' $Target
             Write-Field 'headline' ("Left click completed at {0}" -f $point.Coordinates)
             Write-Field 'coordinates' $point.Coordinates
+            Write-Field 'typing_enabled' 'no'
+            Write-Field 'current_action' 'clicking'
+            Write-Field 'target_description' $targetDescription
+            Write-Field 'visual_cue_status' $cueStatus
+            Write-Field 'visual_cue_action' 'clicking'
+            Write-Field 'visual_cue_target' $targetDescription
+            Write-Field 'stop_reminder' 'Ctrl+8'
             return
         }
 
@@ -2068,6 +2273,8 @@ function Invoke-DesktopAction {
                 [void](Resolve-InputWindowContextOrBlock -ActionLabel 'double clicking')
             }
 
+            $targetDescription = if ([string]::IsNullOrWhiteSpace($point.Alias)) { $point.Coordinates } else { "{0} | {1}" -f $point.Alias, $point.Coordinates }
+            $cueStatus = Show-DesktopActionCue -ActionLabel 'clicking' -TargetDescription $targetDescription -Coordinates $point.Coordinates -DurationMilliseconds 650
             if (-not [DesktopBridgeNative]::SetCursorPos($point.X, $point.Y)) {
                 throw "Windows could not move the mouse to $($point.Coordinates)"
             }
@@ -2079,6 +2286,13 @@ function Invoke-DesktopAction {
             Write-Field 'target' $Target
             Write-Field 'headline' ("Double click completed at {0}" -f $point.Coordinates)
             Write-Field 'coordinates' $point.Coordinates
+            Write-Field 'typing_enabled' 'no'
+            Write-Field 'current_action' 'clicking'
+            Write-Field 'target_description' $targetDescription
+            Write-Field 'visual_cue_status' $cueStatus
+            Write-Field 'visual_cue_action' 'clicking'
+            Write-Field 'visual_cue_target' $targetDescription
+            Write-Field 'stop_reminder' 'Ctrl+8'
             return
         }
 
@@ -2091,6 +2305,8 @@ function Invoke-DesktopAction {
                 [void](Resolve-InputWindowContextOrBlock -ActionLabel 'right clicking')
             }
 
+            $targetDescription = if ([string]::IsNullOrWhiteSpace($point.Alias)) { $point.Coordinates } else { "{0} | {1}" -f $point.Alias, $point.Coordinates }
+            $cueStatus = Show-DesktopActionCue -ActionLabel 'clicking' -TargetDescription $targetDescription -Coordinates $point.Coordinates -DurationMilliseconds 650
             if (-not [DesktopBridgeNative]::SetCursorPos($point.X, $point.Y)) {
                 throw "Windows could not move the mouse to $($point.Coordinates)"
             }
@@ -2102,6 +2318,13 @@ function Invoke-DesktopAction {
             Write-Field 'target' $Target
             Write-Field 'headline' ("Right click completed at {0}" -f $point.Coordinates)
             Write-Field 'coordinates' $point.Coordinates
+            Write-Field 'typing_enabled' 'no'
+            Write-Field 'current_action' 'clicking'
+            Write-Field 'target_description' $targetDescription
+            Write-Field 'visual_cue_status' $cueStatus
+            Write-Field 'visual_cue_action' 'clicking'
+            Write-Field 'visual_cue_target' $targetDescription
+            Write-Field 'stop_reminder' 'Ctrl+8'
             return
         }
 

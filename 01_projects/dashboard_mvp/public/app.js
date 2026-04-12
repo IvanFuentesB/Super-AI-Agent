@@ -620,6 +620,7 @@ function renderGhotiControlCenter(payload) {
   const actionableTasks = summary.recentActionableTasks || [];
   const recentFailures = summary.recentFailures || [];
   const brain = summary.brain || {};
+  const desktopTruth = summary.desktopActionTruth || {};
 
   renderGhotiOverlay(summary);
   renderGhotiWatchdog(summary);
@@ -640,7 +641,15 @@ function renderGhotiControlCenter(payload) {
     setText(
       "ghoti-control-current-task-note",
       currentTask
-        ? `${currentTask.headline || currentTask.taskId} | ${currentTask.detail || currentTask.nextAction || "Inspect the task detail."}`
+        ? [
+            currentTask.headline || currentTask.taskId,
+            currentTask.detail || currentTask.nextAction || "Inspect the task detail.",
+            `desktop_action=${currentTask.desktopAction || desktopTruth.currentAction || "none"}`,
+            `desktop_target=${currentTask.desktopTarget || desktopTruth.currentTarget || "none"}`,
+            `typing_enabled=${currentTask.typingEnabled || desktopTruth.typingEnabled || "no"}`,
+            `desktop_status=${currentTask.desktopStatus || desktopTruth.lastStatus || "not_run"}`,
+            `cue_status=${currentTask.cueStatus || desktopTruth.cueStatus || "not_reported"}`,
+          ].join(" | ")
         : "Ghoti is not currently running a task. Queue a narrow local action when you are ready.",
     );
     setText("ghoti-brain-provider", brain.activeProvider || "unknown");
