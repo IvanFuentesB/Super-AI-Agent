@@ -483,6 +483,68 @@ function parseBrainStatus(stdout) {
   };
 }
 
+function parseAgentRoleStatus(stdout) {
+  const parsed = parseKeyValueBlock(stdout);
+  const roles = (parsed.listSections.roles || [])
+    .filter((item) => item !== "none");
+
+  return {
+    currentRoleId: parsed.values.current_specialist_role || "supervisor",
+    currentRolePurpose: parsed.values.current_specialist_role_purpose || "none",
+    currentRoleProvider: parsed.values.current_specialist_role_provider || "none",
+    currentRoleSensitivity: parsed.values.current_specialist_role_sensitivity || "unknown",
+    currentRoleReason: parsed.values.current_specialist_role_reason || "none",
+    registryCount: Number.parseInt(parsed.values.specialist_role_registry_count || String(roles.length), 10),
+    roles,
+    headline: `${parsed.values.current_specialist_role || "supervisor"} | ${parsed.values.specialist_role_registry_count || roles.length} role(s)` ,
+  };
+}
+
+function parseBrowserStatus(stdout) {
+  const parsed = parseKeyValueBlock(stdout);
+  const notes = (parsed.listSections.browser_notes || [])
+    .filter((item) => item !== "none");
+
+  return {
+    browserUseInstalled: parsed.values.browser_use_installed === "yes",
+    browserUseVersion: parsed.values.browser_use_version || "none",
+    browserUseReady: parsed.values.browser_use_ready === "yes",
+    browserSessionSupport: parsed.values.browser_session_support || "not_available",
+    browserTaskSupport: parsed.values.browser_task_support || "not_available",
+    playwrightInstalled: parsed.values.playwright_installed === "yes",
+    playwrightVersion: parsed.values.playwright_version || "none",
+    playwrightCliAvailable: parsed.values.playwright_cli_available === "yes",
+    playwrightBrowserBinariesInstalled: parsed.values.playwright_browser_binaries_installed === "yes",
+    playwrightReady: parsed.values.playwright_ready === "yes",
+    currentBrowserRole: parsed.values.current_browser_role || "none",
+    currentBrowserAction: parsed.values.current_browser_action || "none",
+    currentBrowserSessionId: parsed.values.current_browser_session_id || "none",
+    lastBrowserStatus: parsed.values.last_browser_status || "not_used",
+    runtimeBrowserStateFile: parsed.values.runtime_browser_state_file || "none",
+    notes,
+    headline: `${parsed.values.browser_use_installed || "no"} browser_use | ${parsed.values.playwright_ready || "no"} playwright_ready`,
+  };
+}
+
+function parseMemoryStatus(stdout) {
+  const parsed = parseKeyValueBlock(stdout);
+  const notes = (parsed.listSections.compact_memory_notes || [])
+    .filter((item) => item !== "none");
+  const missingFiles = (parsed.listSections.compact_memory_missing_files || [])
+    .filter((item) => item !== "none");
+
+  return {
+    ready: parsed.values.compact_memory_ready === "yes",
+    root: parsed.values.compact_memory_root || "none",
+    obsidianMarkdownReady: parsed.values.compact_memory_obsidian_markdown_ready === "yes",
+    fileCount: Number.parseInt(parsed.values.compact_memory_file_count || "0", 10),
+    newestModifiedAt: parsed.values.compact_memory_newest_modified_at || "none",
+    missingFiles,
+    notes,
+    headline: `${parsed.values.compact_memory_ready || "no"} compact_memory | files=${parsed.values.compact_memory_file_count || "0"}`,
+  };
+}
+
 function parseApprovalRequestLine(line) {
   const parts = String(line)
     .split(" | ")
@@ -1205,6 +1267,9 @@ function buildOperatorStatus() {
       "python -m super_ai_agent.cli ghoti-status",
       "python -m super_ai_agent.cli ghoti-hotkeys",
       "python -m super_ai_agent.cli ghoti-recent",
+      "python -m super_ai_agent.cli list-agent-roles",
+      "python -m super_ai_agent.cli browser-status",
+      "python -m super_ai_agent.cli memory-status",
     ],
     liveNow: [
       "Capability summary and environment-aware status",
@@ -1220,6 +1285,9 @@ function buildOperatorStatus() {
       "Approval queue review with local approve, deny, and defer actions",
       "Manual task review, resume, re-queue, and failsafe interruption visibility",
       "CLI Ghoti help, status, hotkey, and recent-work summaries",
+      "Specialist-agent registry with role/provider/approval sensitivity truth",
+      "Browser Use and Playwright readiness visibility",
+      "Compact markdown memory scaffold visibility",
       "Safe real-window Codex-to-ChatGPT handoff with explicit target verification",
       "Recent artifacts and recent-action log",
     ],
@@ -1228,6 +1296,7 @@ function buildOperatorStatus() {
       "Mail, Notion, and LinkedIn remain planning-only",
       "Personal ops packs are generated outputs, not live send or publish flows",
       "Desktop bridge actions and recipes are still narrow, allowlisted, and operator-triggered",
+      "Business outreach remains draft-and-review scaffolding only",
       "The handoff workflow remains paste-only by default and still stops for manual target resolution when real window matching is not confident",
       "Notifications are local dashboard summaries only",
     ],
@@ -1236,6 +1305,8 @@ function buildOperatorStatus() {
       "Arbitrary desktop or Windows app control",
       "Freeform typing, drag-and-drop, or unrestricted mouse automation",
       "Runtime-stored durable Codex or ChatGPT target profiles beyond browser-local remembered candidate picks",
+      "A live Browser Use executor path or autonomous browser sessions",
+      "Live outreach send, pricing, or negotiation actions",
       "Live mail, Notion, and LinkedIn adapters",
     ],
     nextStep: "Use the Ghoti control center or the new ghoti-* CLI commands to spot the next actionable task, review approvals, and inspect artifacts before queueing another narrow local action.",
@@ -1243,11 +1314,14 @@ function buildOperatorStatus() {
 }
 
 async function buildGhotiControlCenterResponse(filters = {}) {
-  const [capabilityPayload, supervisorPayload, executorPayload, brainPayload] = await Promise.all([
+  const [capabilityPayload, supervisorPayload, executorPayload, brainPayload, rolePayload, browserPayload, memoryPayload] = await Promise.all([
     buildCapabilityResponse(),
     buildSupervisorResponse(),
     buildExecutorTasksResponse(),
     buildBrainStatusResponse(),
+    buildAgentRoleResponse(),
+    buildBrowserStatusResponse(),
+    buildMemoryStatusResponse(),
   ]);
 
   const operator = buildOperatorStatus();
@@ -1255,6 +1329,9 @@ async function buildGhotiControlCenterResponse(filters = {}) {
   const executorSummary = executorPayload.summary || {};
   const capabilitySummary = capabilityPayload.summary || {};
   const brainSummary = brainPayload.summary || {};
+  const roleSummary = rolePayload.summary || {};
+  const browserSummary = browserPayload.summary || {};
+  const memorySummary = memoryPayload.summary || {};
   const tasks = executorSummary.tasks || [];
   const filteredTasks = filterGhotiTasks(tasks, filters);
   const sortedTasks = sortGhotiTasks(tasks).map(decorateGhotiTask);
@@ -1283,7 +1360,7 @@ async function buildGhotiControlCenterResponse(filters = {}) {
   ].filter(Boolean);
 
   return {
-    ok: capabilityPayload.ok && supervisorPayload.ok && executorPayload.ok && brainPayload.ok,
+    ok: capabilityPayload.ok && supervisorPayload.ok && executorPayload.ok && brainPayload.ok && rolePayload.ok && browserPayload.ok && memoryPayload.ok,
     summary: {
       headline: `${supervisor.ghotiState || "idle"} | ${supervisor.headline || "Ghoti control center ready."}`,
       ghotiState: supervisor.ghotiState || "idle",
@@ -1308,6 +1385,7 @@ async function buildGhotiControlCenterResponse(filters = {}) {
             typingEnabled: currentTask.typingEnabled || "no",
             desktopStatus: currentTask.desktopStatus || "not_run",
             cueStatus: currentTask.cueStatus || "not_reported",
+            specialistRole: roleSummary.currentRoleId || "supervisor",
           }
         : null,
       desktopActionTruth: currentTask
@@ -1317,6 +1395,7 @@ async function buildGhotiControlCenterResponse(filters = {}) {
             typingEnabled: currentTask.typingEnabled || "no",
             lastStatus: currentTask.desktopStatus || "not_run",
             cueStatus: currentTask.cueStatus || "not_reported",
+            specialistRole: roleSummary.currentRoleId || "supervisor",
           }
         : {
             currentAction: "none",
@@ -1324,8 +1403,12 @@ async function buildGhotiControlCenterResponse(filters = {}) {
             typingEnabled: "no",
             lastStatus: "not_run",
             cueStatus: "not_reported",
+            specialistRole: roleSummary.currentRoleId || "supervisor",
           },
       brain: brainSummary,
+      specialistRole: roleSummary,
+      browser: browserSummary,
+      memory: memorySummary,
       pendingApprovalCount: Number(supervisor.pendingApprovalCount || 0),
       blockedTaskCount: Number(supervisor.blockedHumanNeededCount || 0),
       interruptedCount: Number(supervisor.interruptedCount || 0),
@@ -1357,6 +1440,9 @@ async function buildGhotiControlCenterResponse(filters = {}) {
     raw: {
       capability: capabilityPayload.raw,
       brain: brainPayload.raw,
+      role: rolePayload.raw,
+      browser: browserPayload.raw,
+      memory: memoryPayload.raw,
       supervisor: supervisorPayload.raw,
       executor: executorPayload.raw,
     },
@@ -1896,6 +1982,36 @@ async function buildBrainStatusResponse() {
   return {
     ok: raw.ok,
     summary: parseBrainStatus(raw.stdout),
+    raw,
+    localOnly: true,
+  };
+}
+
+async function buildAgentRoleResponse() {
+  const raw = await runRuntimeCli(["list-agent-roles"]);
+  return {
+    ok: raw.ok,
+    summary: parseAgentRoleStatus(raw.stdout),
+    raw,
+    localOnly: true,
+  };
+}
+
+async function buildBrowserStatusResponse() {
+  const raw = await runRuntimeCli(["browser-status"]);
+  return {
+    ok: raw.ok,
+    summary: parseBrowserStatus(raw.stdout),
+    raw,
+    localOnly: true,
+  };
+}
+
+async function buildMemoryStatusResponse() {
+  const raw = await runRuntimeCli(["memory-status"]);
+  return {
+    ok: raw.ok,
+    summary: parseMemoryStatus(raw.stdout),
     raw,
     localOnly: true,
   };
@@ -2730,3 +2846,14 @@ const server = http.createServer((request, response) => {
 server.listen(dashboardPort, "127.0.0.1", () => {
   console.log(`dashboard_url: http://127.0.0.1:${dashboardPort}`);
 });
+
+
+
+
+
+
+
+
+
+
+

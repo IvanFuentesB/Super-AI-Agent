@@ -259,6 +259,11 @@ $ghotiStatusOk = $ghotiStatusResult.ExitCode -eq 0 -and `
     (($ghotiStatusResult.Output | Out-String) -match 'ghoti_state:\s+\S+') -and `
     (($ghotiStatusResult.Output | Out-String) -match 'active_brain_provider:\s+\S+') -and `
     (($ghotiStatusResult.Output | Out-String) -match 'active_brain_model:\s+\S+') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'current_specialist_role:\s+\S+') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'current_specialist_role_provider:\s+\S+') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'browser_use_installed:\s+(yes|no)') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'playwright_ready:\s+(yes|no)') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'compact_memory_ready:\s+(yes|no)') -and `
     (($ghotiStatusResult.Output | Out-String) -match 'current_task_used_model_inference:\s+(yes|no)') -and `
     (($ghotiStatusResult.Output | Out-String) -match 'last_model_call_status:\s+\S+') -and `
     (($ghotiStatusResult.Output | Out-String) -match 'watchdog_status:\s+\S+') -and `
@@ -280,6 +285,10 @@ $ghotiRecentOk = $ghotiRecentResult.ExitCode -eq 0 -and `
     (($ghotiRecentResult.Output | Out-String) -match 'ghoti_recent:\s+recent actionable work, failures, approvals, and artifacts') -and `
     (($ghotiRecentResult.Output | Out-String) -match 'active_brain_provider:\s+\S+') -and `
     (($ghotiRecentResult.Output | Out-String) -match 'active_brain_model:\s+\S+') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'current_specialist_role:\s+\S+') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'browser_use_installed:\s+(yes|no)') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'playwright_ready:\s+(yes|no)') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'compact_memory_ready:\s+(yes|no)') -and `
     (($ghotiRecentResult.Output | Out-String) -match 'current_task_used_model_inference:\s+(yes|no)') -and `
     (($ghotiRecentResult.Output | Out-String) -match 'last_model_call_status:\s+\S+') -and `
     (($ghotiRecentResult.Output | Out-String) -match 'watchdog_status:\s+\S+') -and `
@@ -347,6 +356,38 @@ $brainStatusOk = $brainStatusResult.ExitCode -eq 0 -and `
     (($brainStatusResult.Output | Out-String) -match 'last_model_call_status:\s+\S+')
 Write-Check -Name 'CLI brain-status' -Passed $brainStatusOk -Detail (($brainStatusResult.Output | Out-String).Trim())
 if (-not $brainStatusOk) { $failed++ }
+
+$listAgentRolesResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('list-agent-roles')
+$listAgentRolesOk = $listAgentRolesResult.ExitCode -eq 0 -and `
+    (($listAgentRolesResult.Output | Out-String) -match 'agent_roles:\s+specialist role registry snapshot') -and `
+    (($listAgentRolesResult.Output | Out-String) -match 'current_specialist_role:\s+\S+') -and `
+    (($listAgentRolesResult.Output | Out-String) -match 'current_specialist_role_provider:\s+\S+') -and `
+    (($listAgentRolesResult.Output | Out-String) -match 'specialist_role_registry_count:\s+\d+') -and `
+    (($listAgentRolesResult.Output | Out-String) -match 'roles:')
+Write-Check -Name 'CLI list-agent-roles' -Passed $listAgentRolesOk -Detail (($listAgentRolesResult.Output | Out-String).Trim())
+if (-not $listAgentRolesOk) { $failed++ }
+
+$browserStatusResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('browser-status')
+$browserStatusOk = $browserStatusResult.ExitCode -eq 0 -and `
+    (($browserStatusResult.Output | Out-String) -match 'browser_status:\s+browser-agent capability snapshot') -and `
+    (($browserStatusResult.Output | Out-String) -match 'browser_use_installed:\s+(yes|no)') -and `
+    (($browserStatusResult.Output | Out-String) -match 'browser_use_ready:\s+(yes|no)') -and `
+    (($browserStatusResult.Output | Out-String) -match 'playwright_installed:\s+(yes|no)') -and `
+    (($browserStatusResult.Output | Out-String) -match 'playwright_ready:\s+(yes|no)') -and `
+    (($browserStatusResult.Output | Out-String) -match 'current_browser_role:\s+\S+') -and `
+    (($browserStatusResult.Output | Out-String) -match 'browser_notes:')
+Write-Check -Name 'CLI browser-status' -Passed $browserStatusOk -Detail (($browserStatusResult.Output | Out-String).Trim())
+if (-not $browserStatusOk) { $failed++ }
+
+$memoryStatusResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('memory-status')
+$memoryStatusOk = $memoryStatusResult.ExitCode -eq 0 -and `
+    (($memoryStatusResult.Output | Out-String) -match 'memory_status:\s+compact markdown memory snapshot') -and `
+    (($memoryStatusResult.Output | Out-String) -match 'compact_memory_ready:\s+(yes|no)') -and `
+    (($memoryStatusResult.Output | Out-String) -match 'compact_memory_root:\s+') -and `
+    (($memoryStatusResult.Output | Out-String) -match 'compact_memory_file_count:\s+\d+') -and `
+    (($memoryStatusResult.Output | Out-String) -match 'compact_memory_notes:')
+Write-Check -Name 'CLI memory-status' -Passed $memoryStatusOk -Detail (($memoryStatusResult.Output | Out-String).Trim())
+if (-not $memoryStatusOk) { $failed++ }
 
 $councilResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('council-plan', '--goal-type', 'planning', '--privacy', 'balanced', '--speed', 'balanced', '--require-reviewer')
 $councilOk = $councilResult.ExitCode -eq 0
@@ -2131,3 +2172,4 @@ if ($failed -eq 0 -and $allFilesPresent -and $artifactsOk) {
 
 Write-Host ('Summary: {0} runtime MVP check(s) failed.' -f $failed)
 exit 1
+

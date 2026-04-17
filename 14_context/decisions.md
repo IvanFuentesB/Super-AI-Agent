@@ -16,6 +16,12 @@
 - Ghoti control-center work should improve visibility, guidance, and filtering without widening the executor boundary or weakening the existing safety model
 - Ghoti overlay and watchdog work should stay an operator-facing visibility layer only; it should surface blocked or stalled state clearly without turning into an autonomous daemon or silent recovery loop
 - Visible desktop action cues and target markers should stay operator-facing and local-only; they exist to show intent before action, not to widen autonomy
+- Specialist-agent registry work should stay inspectable and config-first for now; it is scaffolding for later routing, not proof of live multi-agent autonomy
+- Browser Use should be treated as the intended first-class browser-agent capability for future browser workflows, while Playwright remains the current deterministic fallback or control layer where useful
+- Browser capability truth must stay explicit in dashboard and CLI; Ghoti should say plainly when Browser Use is absent and when only Playwright playground control is available
+- Compact markdown memory should stay local-first and provider-swappable; use it to compress durable truth, not to replace the action or approval layers
+- Outreach or business workflow scaffolding must remain planning-only until human review, approval, and send or spend gates are explicit and testable
+- Any dialog auto-dismiss path must stay exact-process, exact-title, and exact-action allowlisted with visible logging; otherwise block safely
 - Desktop typing must stay narrow and supervised: explicit allowlisted target, one-line content, no broad freeform typing path, and no auto-submit unless a later recipe explicitly opts in
 - Codex-to-ChatGPT handoff must not fall back to terminal, PowerShell, or command-shell targets
 - Explicit terminal-targeted actions remain allowed for terminal recipes or actions that intentionally target a terminal; the no-terminal restriction applies to Codex-to-ChatGPT handoff destinations

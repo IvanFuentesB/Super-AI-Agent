@@ -40,9 +40,9 @@
 - current use: evaluation only
 
 ### browser-use / Stagehand
-- status: reference only
-- why: useful browser-executor pattern sources for later steps
-- current use: not integrated into the core runtime
+- status: reference plus capability-truth target
+- why: useful browser-executor pattern sources for later steps, with Browser Use intended as the first-class future browser-agent capability
+- current use: browser capability visibility now exists in the runtime, dashboard, and CLI, but Browser Use is not installed and no browser-session executor is wired yet
 
 ## Later Experiment
 

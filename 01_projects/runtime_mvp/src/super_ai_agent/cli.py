@@ -6,12 +6,14 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .agent_roles import get_specialist_role_status, list_agent_roles
 from .brain import (
     BrainInferenceError,
     get_brain_status,
     run_brain_inference,
     save_brain_config_override,
 )
+from .browser_agent import get_browser_capability_status
 from .council import build_council_plan
 from .environment import build_capability_summary, diagnose_environment
 from .github_actions import (
@@ -29,6 +31,7 @@ from .github_adapter import get_recent_commits, get_remote_info, get_repo_status
 from .handoff import build_handoff_snapshot
 from .integrations import list_supported_integrations
 from .mail_adapter import build_inbox_triage_plan
+from .memory_layer import get_memory_layer_status
 from .notion_adapter import build_notion_update_plan
 from .notification_adapter import (
     build_approval_notification,
@@ -86,6 +89,7 @@ from .storage import (
     APPROVAL_REQUESTS_PATH,
     RUNTIME_BRAIN_CONFIG_PATH,
     RUNTIME_BRAIN_STATE_PATH,
+    RUNTIME_BROWSER_STATE_PATH,
     SUPERVISOR_STATE_PATH,
     TASKS_PATH,
     ensure_runtime_files,
@@ -466,6 +470,55 @@ def _print_desktop_action_block(*, active_task=None) -> None:
     print(f"desktop_last_text_preview: {truth['text_preview']}")
 
 
+def _print_role_status_block(*, active_task=None) -> None:
+    status = get_specialist_role_status(active_task)
+    print(f"current_specialist_role: {status.current_role_id}")
+    print(f"current_specialist_role_purpose: {status.current_role_purpose}")
+    print(f"current_specialist_role_provider: {status.current_role_provider}")
+    print(f"current_specialist_role_sensitivity: {status.current_role_sensitivity}")
+    print(f"current_specialist_role_reason: {status.current_role_reason}")
+    print(f"specialist_role_registry_count: {status.registry_count}")
+
+
+def _print_browser_status_block() -> None:
+    status = get_browser_capability_status()
+    print(f"browser_use_installed: {'yes' if status.browser_use_installed else 'no'}")
+    print(f"browser_use_version: {status.browser_use_version}")
+    print(f"browser_use_ready: {'yes' if status.browser_use_ready else 'no'}")
+    print(f"browser_session_support: {status.browser_session_support}")
+    print(f"browser_task_support: {status.browser_task_support}")
+    print(f"playwright_installed: {'yes' if status.playwright_installed else 'no'}")
+    print(f"playwright_version: {status.playwright_version}")
+    print(f"playwright_cli_available: {'yes' if status.playwright_cli_available else 'no'}")
+    print(f"playwright_browser_binaries_installed: {'yes' if status.playwright_browser_binaries_installed else 'no'}")
+    print(f"playwright_ready: {'yes' if status.playwright_ready else 'no'}")
+    print(f"current_browser_role: {status.current_browser_role}")
+    print(f"current_browser_action: {status.current_browser_action}")
+    print(f"current_browser_session_id: {status.current_browser_session_id}")
+    print(f"last_browser_status: {status.last_browser_status}")
+    print(f"runtime_browser_state_file: {RUNTIME_BROWSER_STATE_PATH}")
+    print("browser_notes:")
+    for note in status.notes:
+        print(f"- {note}")
+
+
+def _print_memory_status_block() -> None:
+    status = get_memory_layer_status()
+    print(f"compact_memory_ready: {'yes' if status.ready else 'no'}")
+    print(f"compact_memory_root: {status.memory_root}")
+    print(f"compact_memory_obsidian_markdown_ready: {'yes' if status.obsidian_markdown_ready else 'no'}")
+    print(f"compact_memory_file_count: {status.file_count}")
+    print(f"compact_memory_newest_modified_at: {status.newest_modified_at}")
+    print("compact_memory_missing_files:")
+    if status.missing_files:
+        for item in status.missing_files:
+            print(f"- {item}")
+    else:
+        print("- none")
+    print("compact_memory_notes:")
+    for note in status.notes:
+        print(f"- {note}")
+
 def _build_ghoti_watchdog(state, tasks, active_task) -> dict:
     sorted_tasks = _sort_tasks_by_recent(tasks)
     failure_tasks = [
@@ -576,6 +629,9 @@ def _build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("snapshot")
     subparsers.add_parser("list-providers")
     subparsers.add_parser("brain-status")
+    subparsers.add_parser("list-agent-roles")
+    subparsers.add_parser("browser-status")
+    subparsers.add_parser("memory-status")
     subparsers.add_parser("list-workflows")
     subparsers.add_parser("publish-check")
     subparsers.add_parser("list-personal-workflows")
@@ -638,6 +694,7 @@ def _build_parser() -> argparse.ArgumentParser:
             "copy_selection",
             "paste_clipboard",
             "send_hotkey",
+            "type_text",
             "wait_seconds",
             "wait_for_window",
             "move_mouse",
@@ -931,6 +988,9 @@ def main(argv: list[str] | None = None) -> int:
             print("cli_mode:")
             print("- python -m super_ai_agent.cli ghoti-status")
             print("- python -m super_ai_agent.cli brain-status")
+            print("- python -m super_ai_agent.cli list-agent-roles")
+            print("- python -m super_ai_agent.cli browser-status")
+            print("- python -m super_ai_agent.cli memory-status")
             print("- python -m super_ai_agent.cli ghoti-hotkeys")
             print("- python -m super_ai_agent.cli ghoti-recent")
             print("stop:")
@@ -952,6 +1012,7 @@ def main(argv: list[str] | None = None) -> int:
             print("next:")
             print("- run ghoti-status to see the live local state and next operator step")
             print("- run brain-status to verify whether Ghoti is using Gemma/Ollama or only local rules")
+            print("- run list-agent-roles, browser-status, and memory-status to inspect role, browser, and compact-memory truth")
             print("- open the dashboard if you want the visual control center and recent artifact view")
             print("- run ghoti-recent when you want the shortest read on actionable tasks, failures, approvals, and artifacts")
             return 0
@@ -1018,6 +1079,9 @@ def main(argv: list[str] | None = None) -> int:
             print(f"overlay_target: {watchdog['overlay_target']}")
             print(f"overlay_target_detail: {watchdog['overlay_target_detail']}")
             print(f"watchdog_handoff_hint: {watchdog['handoff_hint']}")
+            _print_role_status_block(active_task=active_task)
+            _print_browser_status_block()
+            _print_memory_status_block()
             _print_brain_status_block(active_task=active_task)
             _print_desktop_action_block(active_task=active_task)
             print("recent_actionable_tasks:")
@@ -1070,6 +1134,9 @@ def main(argv: list[str] | None = None) -> int:
             print(f"watchdog_headline: {watchdog['headline']}")
             print(f"overlay_target: {watchdog['overlay_target']}")
             print(f"overlay_target_detail: {watchdog['overlay_target_detail']}")
+            _print_role_status_block(active_task=active_task)
+            _print_browser_status_block()
+            _print_memory_status_block()
             _print_brain_status_block(active_task=active_task)
             _print_desktop_action_block(active_task=active_task)
             print("recent_actionable_tasks:")
@@ -1102,6 +1169,32 @@ def main(argv: list[str] | None = None) -> int:
                     print(f"- {relative_path} | modified={datetime.fromtimestamp(artifact_path.stat().st_mtime, tz=timezone.utc).isoformat().replace('+00:00', 'Z')}")
             else:
                 print("- none")
+            return 0
+
+        if args.command == "list-agent-roles":
+            status = get_specialist_role_status()
+            print("agent_roles: specialist role registry snapshot")
+            print(f"current_specialist_role: {status.current_role_id}")
+            print(f"specialist_role_registry_count: {status.registry_count}")
+            print(f"current_specialist_role_purpose: {status.current_role_purpose}")
+            print(f"current_specialist_role_provider: {status.current_role_provider}")
+            print(f"current_specialist_role_sensitivity: {status.current_role_sensitivity}")
+            print(f"current_specialist_role_reason: {status.current_role_reason}")
+            print("roles:")
+            for role in status.roles:
+                print(
+                    f"- {role.role_id} | provider={role.preferred_provider} | sensitivity={role.approval_sensitivity} | tools={', '.join(role.allowed_tools)}"
+                )
+            return 0
+
+        if args.command == "browser-status":
+            print("browser_status: browser-agent capability snapshot")
+            _print_browser_status_block()
+            return 0
+
+        if args.command == "memory-status":
+            print("memory_status: compact markdown memory snapshot")
+            _print_memory_status_block()
             return 0
 
         if args.command == "brain-status":
@@ -2199,3 +2292,9 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+
+
+
+

@@ -24,6 +24,7 @@ EXECUTOR_ACTION_TYPES = (
     "copy_selection",
     "paste_clipboard",
     "send_hotkey",
+    "type_text",
     "wait_seconds",
     "wait_for_window",
     "move_mouse",
@@ -319,3 +320,4 @@ class RuntimeStatusSummary:
     rejected_tasks: int = 0
     failed_tasks: int = 0
     pending_approval_requests: int = 0
+

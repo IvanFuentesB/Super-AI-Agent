@@ -63,6 +63,11 @@
 - An Operator Watchdog summary now exists in both dashboard and CLI so wrong-window blocks, stalled work, did-not-complete work, and manual-intervention pressure are easier to spot.
 - The desktop bridge now shows a lightweight live action cue for aiming, clicking, typing, and waiting, including the target description and Ctrl+8 stop reminder.
 - Controlled one-line `type_text` now exists for explicit allowlisted desktop targets, and dashboard plus CLI surfaces now expose whether typing is enabled for the current or last desktop action.
+- The visible desktop cue crash caused by the Windows Forms paint path expecting a missing `Graphics` property is now fixed by pre-rendering marker bitmaps instead of depending on the failing paint-event path.
+- A minimal specialist-agent registry now exists with inspectable role metadata for supervisor, backend engineering, frontend design, browser operation, outreach review, video ingest research, finance-risk gating, and memory summarization.
+- Browser-agent capability truth now exists in dashboard and CLI, including whether Browser Use is installed, whether Browser Use is ready, whether Playwright is installed, whether browser binaries are present, and what the current browser role or action is.
+- Compact markdown memory scaffolding now exists under `14_context\compact_memory` for role notes, decision extracts, plan extracts, task summaries, and future paths aimed at later Obsidian-style durable memory.
+- A first business-outreach review scaffold now exists as planning-only documentation and workflow metadata, with human review and approval required before any send, spend, or negotiation step.
 
 ## 5. Current Safety Model
 - Risky actions require approval.
@@ -132,6 +137,7 @@
 - The wrong-destination input bug is now blocked in the recipe path, so a foreground terminal or other mismatched window should stop the handoff before input.
 - Terminal or PowerShell must not be used as a fallback target for Codex-to-ChatGPT handoff, although explicit terminal-targeted actions elsewhere are still allowed.
 - Honest current brain truth: Gemma is now wired as the default local brain path, but `ollama list` is currently empty in this environment and no broad operator task path automatically uses model inference yet.
+- Honest current browser truth: Browser Use is not installed in this environment yet, Playwright is ready through the local browser playground, and no full browser-session executor loop exists yet.
 - Some focus-sensitive desktop actions can still hit `manual_focus_required` depending on the Windows session.
 - Desktop screenshot capture can still hit `desktop_capture_unavailable` in some sessions.
 - PowerShell or Node windows can still appear during some checks or desktop actions, although focus-first reuse and resource guards reduce this.
@@ -165,6 +171,9 @@
 - No live Notion, mail-send, or LinkedIn execution adapters.
 - No multi-model council/router execution layer yet.
 - No broad task-routing layer yet that automatically sends operator work through the local Gemma brain.
+- No Browser Use runtime or full browser-agent executor loop yet.
+- No autonomous compact-memory summarizer loop or Obsidian integration yet.
+- No live outreach send, spend, negotiation, or business-action path yet.
 - No task deletion flow, and none should be added without explicit user approval.
 
 ## 12. Current Practical Conclusions

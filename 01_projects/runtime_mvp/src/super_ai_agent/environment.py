@@ -7,7 +7,10 @@ import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from .agent_roles import list_agent_roles
 from .brain import get_brain_status
+from .browser_agent import get_browser_capability_status
+from .memory_layer import get_memory_layer_status
 from .storage import get_project_root
 
 REPO_ROOT = get_project_root().parents[1]
@@ -217,6 +220,9 @@ def build_capability_summary(
 ) -> list[CapabilityStatus]:
     diagnosis = diagnosis or diagnose_environment()
     brain_status = get_brain_status()
+    browser_status = get_browser_capability_status()
+    memory_status = get_memory_layer_status()
+    agent_roles = list_agent_roles()
     github_read_only_block = None if diagnosis.git.found else "git is not available to the runtime."
 
     if not diagnosis.git.found:
@@ -227,6 +233,14 @@ def build_capability_summary(
         github_remote_write_block = "gh is available but not authenticated."
     else:
         github_remote_write_block = None
+
+    browser_execution_block = None
+    if not browser_status.browser_use_installed:
+        browser_execution_block = "Browser Use is not installed yet for browser-agent workflows."
+    elif not browser_status.playwright_ready:
+        browser_execution_block = "Playwright fallback/control is not fully ready yet in the local browser playground."
+    else:
+        browser_execution_block = "Browser agent execution is still scaffold-only and not wired into the approval-aware executor yet."
 
     return [
         CapabilityStatus(
@@ -241,6 +255,36 @@ def build_capability_summary(
                     f"Configured brain {brain_status.active_provider}/{brain_status.active_model} is not ready yet."
                 )
             ),
+        ),
+        CapabilityStatus(
+            capability_id="specialist_agent_registry",
+            required_tools=["agent_roles.example.json"],
+            state="available" if agent_roles else "blocked",
+            blocking_issue=None if agent_roles else "Agent role registry is missing or empty.",
+        ),
+        CapabilityStatus(
+            capability_id="browser_use_browser_agent",
+            required_tools=["browser_use"],
+            state="available" if browser_status.browser_use_installed else "blocked",
+            blocking_issue=None if browser_status.browser_use_installed else "Browser Use is not installed in the current Python runtime.",
+        ),
+        CapabilityStatus(
+            capability_id="playwright_browser_control",
+            required_tools=["node_playwright", "chromium_binaries"],
+            state="available" if browser_status.playwright_ready else "blocked",
+            blocking_issue=None
+            if browser_status.playwright_ready
+            else (
+                "Playwright is installed but browser binaries are not fully present yet."
+                if browser_status.playwright_installed
+                else "Playwright is not installed in the local browser playground."
+            ),
+        ),
+        CapabilityStatus(
+            capability_id="compact_markdown_memory",
+            required_tools=["14_context/compact_memory"],
+            state="available" if memory_status.ready else "blocked",
+            blocking_issue=None if memory_status.ready else "Compact markdown memory scaffold is incomplete.",
         ),
         CapabilityStatus(
             capability_id="github_read_only",
@@ -268,9 +312,9 @@ def build_capability_summary(
         ),
         CapabilityStatus(
             capability_id="browser_app_execution",
-            required_tools=["future_executor"],
+            required_tools=["browser_use", "playwright", "approval_wiring"],
             state="blocked",
-            blocking_issue="Browser and app execution is not implemented yet.",
+            blocking_issue=browser_execution_block,
         ),
         CapabilityStatus(
             capability_id="truth_council_scaffolding",

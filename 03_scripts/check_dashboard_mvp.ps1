@@ -355,6 +355,12 @@ try {
         $ghotiControlCenter.summary.brain.activeModel -and `
         $ghotiControlCenter.summary.brain.lastModelCallStatus -and `
         ($ghotiControlCenter.summary.brain.currentTaskUsedModelInference -in @($true, $false)) -and `
+        $ghotiControlCenter.summary.specialistRole.currentRoleId -and `
+        $ghotiControlCenter.summary.specialistRole.currentRoleProvider -and `
+        $null -ne $ghotiControlCenter.summary.browser.browserUseInstalled -and `
+        $null -ne $ghotiControlCenter.summary.browser.playwrightReady -and `
+        $ghotiControlCenter.summary.memory.root -and `
+        $null -ne $ghotiControlCenter.summary.memory.ready -and `
         $ghotiControlCenter.summary.overlayTarget.label -and `
         $null -ne $ghotiControlCenter.summary.watchdog.alerts -and `
         $ghotiControlCenter.summary.cliCommands.Count -ge 4 -and `
@@ -1653,7 +1659,13 @@ try {
         $dashboardHtml -match 'ghoti-brain-provider' -and `
         $dashboardHtml -match 'ghoti-brain-model' -and `
         $dashboardHtml -match 'ghoti-brain-last-call' -and `
+        $dashboardHtml -match 'ghoti-role-current' -and `
+        $dashboardHtml -match 'ghoti-browser-use-installed' -and `
+        $dashboardHtml -match 'ghoti-memory-ready' -and `
         $dashboardHtml -match 'Brain / Provider Truth' -and `
+        $dashboardHtml -match 'Specialist-Agent Truth' -and `
+        $dashboardHtml -match 'Browser-Agent Truth' -and `
+        $dashboardHtml -match 'Compact Memory Truth' -and `
         $dashboardHtml -match 'Operator Watchdog' -and `
         $dashboardHtml -match 'ghoti-task-visibility-filter' -and `
         $dashboardHtml -match 'ghoti-show-active-tasks' -and `
@@ -1751,3 +1763,4 @@ if ($failed -eq 0) {
 
 Write-Host ('Summary: {0} dashboard check(s) failed.' -f $failed)
 exit 1
+

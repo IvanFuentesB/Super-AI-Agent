@@ -108,11 +108,17 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Runtime and CLI now persist and expose desktop action truth such as current action, target, typing-enabled state, last action status, cue status, and text preview
 - The dashboard Ghoti control center now surfaces desktop-action truth for the current task so the operator can tell whether Ghoti is aiming, clicking, typing, waiting, or blocked
 - Desktop, runtime, and dashboard checkers now cover the visible desktop action cue, controlled typing path, and desktop-action truth honestly
+- The visible desktop cue crash caused by the Windows Forms paint path expecting a missing `Graphics` property is now fixed by pre-rendering marker bitmaps instead of depending on the failing paint-event path
 - A real local brain/provider foundation now exists through `super_ai_agent.brain`, with `gemma_local` as the default local-first provider target and Ollama as the live local inference path
 - CLI now exposes `brain-status`, `brain-set-active`, and `brain-infer`, and both dashboard and CLI now show the active brain provider, active model, current-task model-use truth, and last model-call status
 - The runtime now persists local brain config and last-call state under `01_projects\runtime_mvp\runtime_data`
 - Environment capability reporting now includes `local_brain_inference` so Ghoti can say honestly whether the configured local brain is actually ready
 - Honest current model truth: Gemma is wired as the default local brain path, but no local Ollama model is currently installed on this machine and no broad operator task path automatically uses model inference yet
+- A minimal specialist-agent foundation now exists through `super_ai_agent.agent_roles`, with inspectable role metadata for supervisor, backend engineering, frontend design, browser operation, outreach review, video ingest research, finance-risk gating, and memory summarization
+- Browser-agent capability truth now exists through `super_ai_agent.browser_agent`, and dashboard plus CLI now say plainly whether Browser Use is installed, whether Playwright is ready, and whether any browser role or action is actually active
+- Honest current browser truth: Browser Use is not installed in this environment yet, Playwright is ready through the local browser playground, and there is still no broad browser executor loop
+- Compact markdown memory scaffolding now exists under `14_context\compact_memory` for role notes, decision extracts, plan extracts, task summaries, and future paths aimed at later Obsidian-style durable memory
+- A first business-outreach review scaffold now exists as planning-only workflow/documentation, with explicit human review and approval required before any send, spend, or negotiation step
 - Resource/process guardrails now exist for duplicate terminal and process pressure
 - Desktop and recipe steps now stop after two failed attempts instead of retrying indefinitely
 - Checker and recipe label text is now blocked from being pasted into terminals by the clipboard guard
@@ -137,10 +143,14 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 ## Immediate Focus
 - Refresh Ghoti handoff memory first when chats get long, then use the new cue, resource guard, retry ceiling, wrong-active-window guard, and paste-only handoff path as the safe base
 - The current branch is now `feat/ghoti-visible-operator-stack`
-- The visible operator stack now exists in both dashboard and CLI, and the next practical step is to validate the new Gemma/Ollama brain truth in that same operator surface instead of pretending the rules stack is already model-driven
+- The visible operator stack now exists in both dashboard and CLI, and the next practical step is to validate the new specialist-role, browser-capability, and compact-memory truth in that same operator surface instead of pretending a multi-agent browser stack already exists
 - The visible supervised desktop-operator foundation now exists, so the next practical step is to validate real operator use of the target marker, controlled typing, and desktop-action truth before widening autonomy
 - Pull the configured Gemma model into Ollama before claiming live local inference readiness
 - Decide the first narrow task path that should intentionally call the local brain later, but keep the provider layer separable from approvals, dashboard, recipes, and executor control
+- Install Browser Use later only when a real browser-role task path is ready to use it honestly
+- Keep Playwright as the current deterministic browser-control fallback while Browser Use remains absent
+- Use the new compact memory files to keep summaries tight instead of re-expanding giant repeated context
+- Keep outreach, browser, and multi-agent work in scaffold or visibility mode until the approval and operator-review path is explicit
 - Real-window handoff targeting and final pre-input destination verification are already implemented for the current MVP and must remain intact while the new control center is exercised
 - Manual target resolution now has an operator-enabled browser-local remembered candidate option for repeated runs and should stay compatible with the clearer control surface
 - Keep the overlay/watchdog layer operator-facing only; use it to surface intervention points, not to auto-recover silently
@@ -164,6 +174,11 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - The desktop bridge is intentionally narrow and allowlisted; it is not arbitrary desktop control, click or type automation, clipboard orchestration, or a background daemon
 - The new desktop hand layer is useful but still narrow; it supports explicit allowlisted clipboard, hotkey, wait, mouse, and one-line typing actions, and it still has no freeform typing, drag-and-drop, or arbitrary UI-state inference
 - The first operator recipe layer is intentionally small and still prototype-grade; the current handoff recipe is an MVP even though the wrong-destination input bug is now blocked before paste
+- The new specialist-agent registry is scaffolding only; it does not yet schedule real work across multiple live agent runtimes
+- Browser Use visibility now exists, but Browser Use is not installed and no browser-session executor is wired yet
+- Playwright readiness is visible and honest, but it still belongs to the local browser playground and deterministic control path rather than a broad browser-agent loop
+- Compact memory scaffolding now exists, but there is still no autonomous summarizer loop or Obsidian integration
+- Business outreach workflow scaffolding is still planning-only; there is no live send, spend, negotiation, or external business action path
 - Window matching still depends on visible titles and allowed aliases, so some cross-window flows can remain brittle until the target set is tightened
 - Terminal or PowerShell must not be used as a substitute target for Codex-to-ChatGPT handoff, even though explicit terminal-targeted actions elsewhere remain allowed
 - The handoff bugfix now blocks bad fallback paths and wrong-active-window pastes safely, but real Codex and ChatGPT window resolution is still title-dependent and can still stop at manual target resolution

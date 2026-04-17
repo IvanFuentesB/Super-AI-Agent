@@ -43,6 +43,7 @@
 - [x] Ghoti visible operator stack with overlay, watchdog, and target marker now exists
 - [x] Gemma/Ollama local brain foundation now exists with provider/model visibility in dashboard and CLI
 - [x] Visible supervised desktop action cue, target marker, controlled typing, and desktop-action truth now exist
+- [x] Specialist-agent registry, browser-capability visibility, compact memory scaffolding, and outreach-review planning scaffold now exist
 
 ## Current Control Layer
 - Continue for local context/rules
@@ -52,7 +53,7 @@
 - feat/ghoti-visible-operator-stack
 
 ## Current Phase
-- Real-window handoff targeting, wrong-active-window input blocking, the browser-local remembered candidate toggle, the Ghoti control center, the visible operator stack, the first honest Gemma/Ollama brain foundation, and the first visible supervised desktop-action layer are complete; the next step is to validate real operator use and make local inference ready without widening the safety boundary
+- Real-window handoff targeting, wrong-active-window input blocking, the browser-local remembered candidate toggle, the Ghoti control center, the visible operator stack, the first honest Gemma/Ollama brain foundation, the first visible supervised desktop-action layer, and the new specialist-role plus browser-capability scaffolding are complete; the next step is to validate real operator use and make local inference ready without widening the safety boundary
 
 ## Next Milestones
 - manually validate real Codex and ChatGPT handoff with the new candidate picker
@@ -69,6 +70,10 @@
 - capture the OpenClaw patterns that fit later Ghoti channel, browser-assist, and long-running operator work without making it a hard dependency now
 - pull the configured Gemma model into Ollama and confirm `brain_inference_ready` becomes true
 - choose the first narrow approval-aware task path that should intentionally call the local brain
+- decide the first real browser-role workflow that should justify installing Browser Use instead of only tracking capability truth
+- keep Playwright as the deterministic fallback for narrow browser control while Browser Use remains absent
+- start using compact memory extracts in real handoffs so context stays smaller without losing truth
+- keep business outreach in review-only scaffold mode until human approval checkpoints are tested
 - improve operator-facing task-history filtering further only if stale failures still crowd current work
 - test the safe repo executor manually from the operator console
 - test the desktop bridge hand layer manually from the operator console
@@ -92,6 +97,8 @@
 - avoid bloated or messy setup
 - no live external provider integrations yet
 - no broad multi-provider routing layer yet
+- Browser Use capability visibility now exists, but Browser Use is not installed and no browser-session runtime exists yet
+- Playwright readiness is visible, but the live browser path is still the local browser playground rather than a general browser agent
 - no real browser or app execution yet
 - no remote auth layer yet
 - third-party repos are intake material only, not core project code
@@ -110,4 +117,4 @@
 - OpenClaw is now a major strategic reference, so new operator-core decisions should stay compatible with later OpenClaw-style channel and control-surface integration
 
 ## Last Reviewed
-- 2026-04-12
+- 2026-04-17

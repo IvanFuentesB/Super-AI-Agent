@@ -250,6 +250,84 @@
           </article>
           <article class="status-card">
             <div class="subsection-heading">
+              <h3>Specialist-Agent Truth</h3>
+              <p>Shows which narrow specialist role Ghoti would use right now, without pretending a full council/router exists yet.</p>
+            </div>
+            <div class="metric-grid ghoti-brain-metrics">
+              <article class="metric-card">
+                <span>Current Role</span>
+                <strong id="ghoti-role-current">supervisor</strong>
+              </article>
+              <article class="metric-card">
+                <span>Preferred Provider</span>
+                <strong id="ghoti-role-provider">none</strong>
+              </article>
+              <article class="metric-card">
+                <span>Approval Sensitivity</span>
+                <strong id="ghoti-role-sensitivity">unknown</strong>
+              </article>
+              <article class="metric-card">
+                <span>Registry Size</span>
+                <strong id="ghoti-role-count">0</strong>
+              </article>
+            </div>
+            <p id="ghoti-role-note" class="summary-note">Waiting for the specialist-role registry snapshot.</p>
+            <ul id="ghoti-role-roles" class="status-list"></ul>
+          </article>
+          <article class="status-card">
+            <div class="subsection-heading">
+              <h3>Browser-Agent Truth</h3>
+              <p>Shows whether Browser Use and Playwright are really present and ready, versus still only scaffolded.</p>
+            </div>
+            <div class="metric-grid ghoti-brain-metrics">
+              <article class="metric-card">
+                <span>Browser Use Installed</span>
+                <strong id="ghoti-browser-use-installed">no</strong>
+              </article>
+              <article class="metric-card">
+                <span>Browser Use Ready</span>
+                <strong id="ghoti-browser-use-ready">no</strong>
+              </article>
+              <article class="metric-card">
+                <span>Playwright Ready</span>
+                <strong id="ghoti-playwright-ready">no</strong>
+              </article>
+              <article class="metric-card">
+                <span>Current Browser Role</span>
+                <strong id="ghoti-browser-role">none</strong>
+              </article>
+              <article class="metric-card">
+                <span>Current Browser Action</span>
+                <strong id="ghoti-browser-action">none</strong>
+              </article>
+            </div>
+            <p id="ghoti-browser-note" class="summary-note">Waiting for browser capability truth.</p>
+            <ul id="ghoti-browser-notes" class="status-list"></ul>
+          </article>
+          <article class="status-card">
+            <div class="subsection-heading">
+              <h3>Compact Memory Truth</h3>
+              <p>Shows whether the local markdown memory scaffold exists for later Obsidian-style use, without claiming autonomous memory management.</p>
+            </div>
+            <div class="metric-grid ghoti-brain-metrics">
+              <article class="metric-card">
+                <span>Memory Ready</span>
+                <strong id="ghoti-memory-ready">no</strong>
+              </article>
+              <article class="metric-card">
+                <span>Markdown Ready</span>
+                <strong id="ghoti-memory-markdown-ready">no</strong>
+              </article>
+              <article class="metric-card">
+                <span>File Count</span>
+                <strong id="ghoti-memory-file-count">0</strong>
+              </article>
+            </div>
+            <p id="ghoti-memory-note" class="summary-note">Waiting for compact memory status.</p>
+            <ul id="ghoti-memory-notes" class="status-list"></ul>
+          </article>
+          <article class="status-card">
+            <div class="subsection-heading">
               <h3>Recent Failures</h3>
               <p>The smallest useful view into blocked, failed, or interrupted work that still needs operator attention.</p>
             </div>
@@ -1513,3 +1591,4 @@ This file was queued through the safe repo-local executor.
     <script src="/app.js"></script>
   </body>
 </html>
+

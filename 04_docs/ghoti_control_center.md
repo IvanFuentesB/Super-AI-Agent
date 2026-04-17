@@ -203,6 +203,49 @@ Both dashboard and CLI expose desktop action truth:
 - last desktop action status
 - cue visibility status
 
+## Specialist Roles, Browser Truth, And Compact Memory
+
+Ghoti now also exposes three more operator-facing truth surfaces.
+
+### Specialist-agent truth
+
+Use:
+
+```powershell
+python -m super_ai_agent.cli list-agent-roles
+python -m super_ai_agent.cli ghoti-status
+```
+
+The dashboard `Specialist-Agent Truth` card shows the current inferred role, preferred provider or model, approval sensitivity, and the small inspectable role set. This is scaffolding for later routing, not a live council.
+
+### Browser-agent truth
+
+Use:
+
+```powershell
+python -m super_ai_agent.cli browser-status
+```
+
+The dashboard `Browser-Agent Truth` card shows:
+
+- whether Browser Use is installed
+- whether Browser Use is actually ready
+- whether Playwright is installed
+- whether browser binaries are present
+- current browser role and current browser action if any
+
+Honest current state: Browser Use is not installed yet here, while Playwright is ready through the local browser playground.
+
+### Compact memory truth
+
+Use:
+
+```powershell
+python -m super_ai_agent.cli memory-status
+```
+
+The dashboard `Compact Memory Truth` card shows whether the local markdown memory scaffold is ready and where it lives. The current scaffold is under `14_context\compact_memory` and is meant to keep summaries small and durable for later Obsidian-style use.
+
 Typing is still intentionally narrow:
 
 - no freeform typing into arbitrary contexts

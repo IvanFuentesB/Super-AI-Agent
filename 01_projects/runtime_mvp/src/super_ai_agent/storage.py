@@ -20,6 +20,7 @@ APPROVAL_REQUESTS_PATH = RUNTIME_DATA_DIR / "approval_requests.json"
 SUPERVISOR_STATE_PATH = RUNTIME_DATA_DIR / "supervisor_state.json"
 RUNTIME_BRAIN_CONFIG_PATH = RUNTIME_DATA_DIR / "brain_config.json"
 RUNTIME_BRAIN_STATE_PATH = RUNTIME_DATA_DIR / "brain_state.json"
+RUNTIME_BROWSER_STATE_PATH = RUNTIME_DATA_DIR / "browser_state.json"
 RUNTIME_LOCK_PATH = RUNTIME_DATA_DIR / ".runtime_data.lock"
 
 
@@ -194,6 +195,19 @@ def ensure_runtime_files() -> Path:
             indent=2,
         ) + "\n",
     )
+    _initialize_file_if_missing(
+        RUNTIME_BROWSER_STATE_PATH,
+        json.dumps(
+            {
+                "current_role": "none",
+                "current_action": "none",
+                "current_session_id": "",
+                "last_status": "not_used",
+                "notes": [],
+            },
+            indent=2,
+        ) + "\n",
+    )
     return runtime_dir
 
 
@@ -261,3 +275,4 @@ def read_supervisor_state() -> SupervisorState:
 
 def write_supervisor_state(state: SupervisorState) -> None:
     _write_json_object(SUPERVISOR_STATE_PATH, state.to_dict())
+

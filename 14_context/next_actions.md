@@ -34,5 +34,10 @@
 - Add a narrow hardware-builder-assist experiment later only as a local-first research module, not as a Blueprint.am dependency
 - Design an explicit allowlist-expansion or workspace-override path later
 - Choose the next narrow desktop-control addition only if it stays approval-aware and builds directly on the visible cue and target-marker layer
+- Use the new specialist-role registry and browser-capability truth only as operator-visible scaffolding until a real router or browser-session executor is justified
+- Install Browser Use later and validate it honestly before describing any browser-agent path as live
+- Keep Playwright as the deterministic browser-control fallback until Browser Use is truly ready
+- Start using the new compact memory files under `14_context\compact_memory` to compress future thread handoffs instead of repeating giant summaries
+- Keep the business-outreach review scaffold planning-only until identification, drafting, review, and approval checkpoints are each explicit
 - Add a real notification channel later
 - Expand the executor layer later only if each new action stays allowlisted, workspace-bound, and approval-aware
