@@ -21,6 +21,7 @@ SUPERVISOR_STATE_PATH = RUNTIME_DATA_DIR / "supervisor_state.json"
 RUNTIME_BRAIN_CONFIG_PATH = RUNTIME_DATA_DIR / "brain_config.json"
 RUNTIME_BRAIN_STATE_PATH = RUNTIME_DATA_DIR / "brain_state.json"
 RUNTIME_BROWSER_STATE_PATH = RUNTIME_DATA_DIR / "browser_state.json"
+RUNTIME_RELAY_LOOP_STATE_PATH = RUNTIME_DATA_DIR / "relay_loop_state.json"
 RUNTIME_LOCK_PATH = RUNTIME_DATA_DIR / ".runtime_data.lock"
 
 
@@ -94,26 +95,48 @@ def _write_text(path: Path, text: str) -> None:
         f"{path.name}.tmp-{os.getpid()}-{int(time.time() * 1000)}"
     )
     try:
-        temp_path.write_text(text, encoding="utf-8")
-    except OSError:
-        encoded = base64.b64encode(text.encode("utf-8")).decode("ascii")
-        escaped_path = _ps_literal(temp_path)
-        subprocess.run(
-            [
-                "powershell.exe",
-                "-NoProfile",
-                "-Command",
-                (
-                    "[System.IO.File]::WriteAllBytes("
-                    f"'{escaped_path}', "
-                    f"[Convert]::FromBase64String('{encoded}'))"
-                ),
-            ],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-    os.replace(temp_path, path)
+        try:
+            temp_path.write_text(text, encoding="utf-8")
+        except OSError:
+            encoded = base64.b64encode(text.encode("utf-8")).decode("ascii")
+            escaped_path = _ps_literal(temp_path)
+            subprocess.run(
+                [
+                    "powershell.exe",
+                    "-NoProfile",
+                    "-Command",
+                    (
+                        "[System.IO.File]::WriteAllBytes("
+                        f"'{escaped_path}', "
+                        f"[Convert]::FromBase64String('{encoded}'))"
+                    ),
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+
+        last_error: OSError | None = None
+        for attempt in range(8):
+            try:
+                os.replace(temp_path, path)
+                return
+            except PermissionError as exc:
+                last_error = exc
+            except OSError as exc:
+                if getattr(exc, "winerror", None) not in {5, 32}:
+                    raise
+                last_error = exc
+            time.sleep(0.05 * (attempt + 1))
+
+        if last_error is not None:
+            raise last_error
+        raise OSError(f"Failed to replace runtime file: {path}")
+    finally:
+        try:
+            temp_path.unlink(missing_ok=True)
+        except OSError:
+            pass
 
 
 def _initialize_file_if_missing(path: Path, text: str) -> None:
@@ -208,6 +231,56 @@ def ensure_runtime_files() -> Path:
             indent=2,
         ) + "\n",
     )
+    _initialize_file_if_missing(
+        RUNTIME_RELAY_LOOP_STATE_PATH,
+        json.dumps(
+            {
+                "relay_state": "idle",
+                "current_step": "idle",
+                "source_target_alias": "chatgpt",
+                "source_target_candidate_id": "",
+                "source_target_title": "",
+                "destination_target_alias": "codex",
+                "destination_target_candidate_id": "",
+                "destination_target_title": "",
+                "codex_mode_preset": "Implementing new feature",
+                "codex_reasoning_preset": "Medium",
+                "preset_application_status": "stored_only",
+                "codex_execution_status": "unknown",
+                "next_usage_reset_at": "",
+                "resume_after_usage_reset": False,
+                "waiting_reason": "",
+                "blocked_reason": "",
+                "last_payload_preview": "",
+                "last_result_preview": "",
+                "last_completion_status": "not_started",
+                "last_transition_at": "",
+                "last_updated_at": "",
+                "last_used_task_id": "",
+                "last_known_dialog_status": "none",
+                "last_known_dialog_note": "",
+                "saved_targets": {
+                    "chatgpt": {
+                        "alias": "chatgpt",
+                        "candidate_id": "",
+                        "title": "",
+                        "binding_status": "not_bound",
+                        "last_checked_at": "",
+                        "last_error": "",
+                    },
+                    "codex": {
+                        "alias": "codex",
+                        "candidate_id": "",
+                        "title": "",
+                        "binding_status": "not_bound",
+                        "last_checked_at": "",
+                        "last_error": "",
+                    },
+                },
+            },
+            indent=2,
+        ) + "\n",
+    )
     return runtime_dir
 
 
@@ -275,4 +348,36 @@ def read_supervisor_state() -> SupervisorState:
 
 def write_supervisor_state(state: SupervisorState) -> None:
     _write_json_object(SUPERVISOR_STATE_PATH, state.to_dict())
+
+
+def read_brain_config_object() -> dict:
+    return _read_json_object(RUNTIME_BRAIN_CONFIG_PATH)
+
+
+def write_brain_config_object(payload: dict) -> None:
+    _write_json_object(RUNTIME_BRAIN_CONFIG_PATH, payload)
+
+
+def read_brain_state_object() -> dict:
+    return _read_json_object(RUNTIME_BRAIN_STATE_PATH)
+
+
+def write_brain_state_object(payload: dict) -> None:
+    _write_json_object(RUNTIME_BRAIN_STATE_PATH, payload)
+
+
+def read_browser_state_object() -> dict:
+    return _read_json_object(RUNTIME_BROWSER_STATE_PATH)
+
+
+def write_browser_state_object(payload: dict) -> None:
+    _write_json_object(RUNTIME_BROWSER_STATE_PATH, payload)
+
+
+def read_relay_loop_state_object() -> dict:
+    return _read_json_object(RUNTIME_RELAY_LOOP_STATE_PATH)
+
+
+def write_relay_loop_state_object(payload: dict) -> None:
+    _write_json_object(RUNTIME_RELAY_LOOP_STATE_PATH, payload)
 

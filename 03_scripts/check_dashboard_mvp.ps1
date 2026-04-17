@@ -361,6 +361,13 @@ try {
         $null -ne $ghotiControlCenter.summary.browser.playwrightReady -and `
         $ghotiControlCenter.summary.memory.root -and `
         $null -ne $ghotiControlCenter.summary.memory.ready -and `
+        $ghotiControlCenter.summary.relay.relayState -and `
+        $ghotiControlCenter.summary.relay.currentStep -and `
+        $ghotiControlCenter.summary.relay.sourceTargetAlias -and `
+        $ghotiControlCenter.summary.relay.destinationTargetAlias -and `
+        $ghotiControlCenter.summary.relay.codexModePreset -and `
+        $ghotiControlCenter.summary.relay.codexReasoningPreset -and `
+        $ghotiControlCenter.summary.relay.codexExecutionStatus -and `
         $ghotiControlCenter.summary.overlayTarget.label -and `
         $null -ne $ghotiControlCenter.summary.watchdog.alerts -and `
         $ghotiControlCenter.summary.cliCommands.Count -ge 4 -and `
@@ -1661,10 +1668,13 @@ try {
         $dashboardHtml -match 'ghoti-brain-last-call' -and `
         $dashboardHtml -match 'ghoti-role-current' -and `
         $dashboardHtml -match 'ghoti-browser-use-installed' -and `
+        $dashboardHtml -match 'ghoti-relay-state' -and `
+        $dashboardHtml -match 'ghoti-relay-preset' -and `
         $dashboardHtml -match 'ghoti-memory-ready' -and `
         $dashboardHtml -match 'Brain / Provider Truth' -and `
         $dashboardHtml -match 'Specialist-Agent Truth' -and `
         $dashboardHtml -match 'Browser-Agent Truth' -and `
+        $dashboardHtml -match 'Relay-Loop Truth' -and `
         $dashboardHtml -match 'Compact Memory Truth' -and `
         $dashboardHtml -match 'Operator Watchdog' -and `
         $dashboardHtml -match 'ghoti-task-visibility-filter' -and `

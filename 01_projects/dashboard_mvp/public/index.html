@@ -306,6 +306,44 @@
           </article>
           <article class="status-card">
             <div class="subsection-heading">
+              <h3>Relay-Loop Truth</h3>
+              <p>Shows the supervised ChatGPT ↔ Codex relay state, exact saved targets, stored preset truth, and any usage-reset wait.</p>
+            </div>
+            <div class="metric-grid ghoti-brain-metrics">
+              <article class="metric-card">
+                <span>Relay State</span>
+                <strong id="ghoti-relay-state">idle</strong>
+              </article>
+              <article class="metric-card">
+                <span>Current Step</span>
+                <strong id="ghoti-relay-step">idle</strong>
+              </article>
+              <article class="metric-card">
+                <span>Source</span>
+                <strong id="ghoti-relay-source">chatgpt</strong>
+              </article>
+              <article class="metric-card">
+                <span>Destination</span>
+                <strong id="ghoti-relay-destination">codex</strong>
+              </article>
+              <article class="metric-card">
+                <span>Codex Preset</span>
+                <strong id="ghoti-relay-preset">Implementing new feature | Medium</strong>
+              </article>
+              <article class="metric-card">
+                <span>Codex Status</span>
+                <strong id="ghoti-relay-status">unknown</strong>
+              </article>
+              <article class="metric-card">
+                <span>Next Reset</span>
+                <strong id="ghoti-relay-reset">none</strong>
+              </article>
+            </div>
+            <p id="ghoti-relay-note" class="summary-note">Waiting for the relay-loop runtime truth.</p>
+            <ul id="ghoti-relay-notes" class="status-list"></ul>
+          </article>
+          <article class="status-card">
+            <div class="subsection-heading">
               <h3>Compact Memory Truth</h3>
               <p>Shows whether the local markdown memory scaffold exists for later Obsidian-style use, without claiming autonomous memory management.</p>
             </div>

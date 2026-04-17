@@ -32,6 +32,12 @@ from .handoff import build_handoff_snapshot
 from .integrations import list_supported_integrations
 from .mail_adapter import build_inbox_triage_plan
 from .memory_layer import get_memory_layer_status
+from .relay_loop import (
+    get_relay_loop_status,
+    save_codex_preset,
+    save_relay_target_binding,
+    update_relay_loop_state,
+)
 from .notion_adapter import build_notion_update_plan
 from .notification_adapter import (
     build_approval_notification,
@@ -90,6 +96,7 @@ from .storage import (
     RUNTIME_BRAIN_CONFIG_PATH,
     RUNTIME_BRAIN_STATE_PATH,
     RUNTIME_BROWSER_STATE_PATH,
+    RUNTIME_RELAY_LOOP_STATE_PATH,
     SUPERVISOR_STATE_PATH,
     TASKS_PATH,
     ensure_runtime_files,
@@ -519,6 +526,39 @@ def _print_memory_status_block() -> None:
     for note in status.notes:
         print(f"- {note}")
 
+def _print_relay_status_block() -> None:
+    status = get_relay_loop_status()
+    print(f"relay_state: {status.relay_state}")
+    print(f"relay_current_step: {status.current_step}")
+    print(f"relay_source_target_alias: {status.source_target_alias}")
+    print(f"relay_source_target_candidate_id: {status.source_target_candidate_id or 'none'}")
+    print(f"relay_source_target_title: {status.source_target_title or 'none'}")
+    print(f"relay_source_target_status: {status.source_target_status}")
+    print(f"relay_destination_target_alias: {status.destination_target_alias}")
+    print(f"relay_destination_target_candidate_id: {status.destination_target_candidate_id or 'none'}")
+    print(f"relay_destination_target_title: {status.destination_target_title or 'none'}")
+    print(f"relay_destination_target_status: {status.destination_target_status}")
+    print(f"relay_codex_mode_preset: {status.codex_mode_preset}")
+    print(f"relay_codex_reasoning_preset: {status.codex_reasoning_preset}")
+    print(f"relay_preset_application_status: {status.preset_application_status}")
+    print(f"relay_codex_execution_status: {status.codex_execution_status}")
+    print(f"relay_next_usage_reset_at: {status.next_usage_reset_at or 'none'}")
+    print(f"relay_resume_after_usage_reset: {'yes' if status.resume_after_usage_reset else 'no'}")
+    print(f"relay_waiting_reason: {status.waiting_reason or 'none'}")
+    print(f"relay_blocked_reason: {status.blocked_reason or 'none'}")
+    print(f"relay_last_payload_preview: {status.last_payload_preview or 'none'}")
+    print(f"relay_last_result_preview: {status.last_result_preview or 'none'}")
+    print(f"relay_last_completion_status: {status.last_completion_status or 'none'}")
+    print(f"relay_last_transition_at: {status.last_transition_at or 'none'}")
+    print(f"relay_last_updated_at: {status.last_updated_at or 'none'}")
+    print(f"relay_last_used_task_id: {status.last_used_task_id or 'none'}")
+    print(f"relay_last_known_dialog_status: {status.last_known_dialog_status}")
+    print(f"relay_last_known_dialog_note: {status.last_known_dialog_note or 'none'}")
+    print(f"runtime_relay_state_file: {RUNTIME_RELAY_LOOP_STATE_PATH}")
+    print("relay_notes:")
+    for note in status.notes:
+        print(f"- {note}")
+
 def _build_ghoti_watchdog(state, tasks, active_task) -> dict:
     sorted_tasks = _sort_tasks_by_recent(tasks)
     failure_tasks = [
@@ -632,6 +672,7 @@ def _build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("list-agent-roles")
     subparsers.add_parser("browser-status")
     subparsers.add_parser("memory-status")
+    subparsers.add_parser("relay-status")
     subparsers.add_parser("list-workflows")
     subparsers.add_parser("publish-check")
     subparsers.add_parser("list-personal-workflows")
@@ -650,6 +691,33 @@ def _build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("ghoti-status")
     subparsers.add_parser("ghoti-hotkeys")
     subparsers.add_parser("ghoti-recent")
+
+    relay_bind_parser = subparsers.add_parser("relay-bind-target")
+    relay_bind_parser.add_argument("--alias", required=True, choices=["chatgpt", "codex"])
+    relay_bind_parser.add_argument("--candidate-id", required=True)
+
+    relay_preset_parser = subparsers.add_parser("relay-set-preset")
+    relay_preset_parser.add_argument("--mode", default="Implementing new feature")
+    relay_preset_parser.add_argument("--reasoning", default="Medium")
+    relay_preset_parser.add_argument("--application-status", default="stored_only", choices=["stored_only", "pending_manual_application", "applied", "blocked"])
+
+    relay_update_parser = subparsers.add_parser("relay-update-state")
+    relay_update_parser.add_argument("--state", default="")
+    relay_update_parser.add_argument("--step", default="")
+    relay_update_parser.add_argument("--source-alias", default="")
+    relay_update_parser.add_argument("--destination-alias", default="")
+    relay_update_parser.add_argument("--waiting-reason", default="")
+    relay_update_parser.add_argument("--blocked-reason", default="")
+    relay_update_parser.add_argument("--payload-preview", default="")
+    relay_update_parser.add_argument("--result-preview", default="")
+    relay_update_parser.add_argument("--codex-status", default="")
+    relay_update_parser.add_argument("--next-usage-reset-at", default="")
+    relay_update_parser.add_argument("--resume-after-usage-reset", choices=["yes", "no"], default="")
+    relay_update_parser.add_argument("--completion-status", default="")
+    relay_update_parser.add_argument("--task-id", default="")
+    relay_update_parser.add_argument("--preset-application-status", default="", choices=["", "stored_only", "pending_manual_application", "applied", "blocked"])
+    relay_update_parser.add_argument("--dialog-status", default="", choices=["", "none", "blocked_unrecognized", "allowlisted_dialog_ready", "allowlisted_dialog_handled"])
+    relay_update_parser.add_argument("--dialog-note", default="")
 
     brain_set_parser = subparsers.add_parser("brain-set-active")
     brain_set_parser.add_argument("--provider", required=True)
@@ -991,6 +1059,9 @@ def main(argv: list[str] | None = None) -> int:
             print("- python -m super_ai_agent.cli list-agent-roles")
             print("- python -m super_ai_agent.cli browser-status")
             print("- python -m super_ai_agent.cli memory-status")
+            print("- python -m super_ai_agent.cli relay-status")
+            print("- python -m super_ai_agent.cli relay-bind-target --alias chatgpt --candidate-id <candidate_id>")
+            print("- python -m super_ai_agent.cli relay-set-preset --mode Implementing_new_feature --reasoning Medium")
             print("- python -m super_ai_agent.cli ghoti-hotkeys")
             print("- python -m super_ai_agent.cli ghoti-recent")
             print("stop:")
@@ -1082,6 +1153,7 @@ def main(argv: list[str] | None = None) -> int:
             _print_role_status_block(active_task=active_task)
             _print_browser_status_block()
             _print_memory_status_block()
+            _print_relay_status_block()
             _print_brain_status_block(active_task=active_task)
             _print_desktop_action_block(active_task=active_task)
             print("recent_actionable_tasks:")
@@ -1137,6 +1209,7 @@ def main(argv: list[str] | None = None) -> int:
             _print_role_status_block(active_task=active_task)
             _print_browser_status_block()
             _print_memory_status_block()
+            _print_relay_status_block()
             _print_brain_status_block(active_task=active_task)
             _print_desktop_action_block(active_task=active_task)
             print("recent_actionable_tasks:")
@@ -1195,6 +1268,57 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "memory-status":
             print("memory_status: compact markdown memory snapshot")
             _print_memory_status_block()
+            return 0
+
+        if args.command == "relay-status":
+            print("relay_status: supervised chatgpt to codex relay snapshot")
+            _print_relay_status_block()
+            return 0
+
+        if args.command == "relay-bind-target":
+            status = save_relay_target_binding(alias=args.alias, candidate_id=args.candidate_id)
+            print("relay_bind_target: succeeded")
+            print(f"alias: {args.alias}")
+            print(f"candidate_id: {args.candidate_id}")
+            binding_status = status.source_binding.binding_status if args.alias == status.source_target_alias else status.destination_binding.binding_status
+            print(f"binding_status: {binding_status}")
+            print(f"runtime_relay_state_file: {RUNTIME_RELAY_LOOP_STATE_PATH}")
+            return 0
+
+        if args.command == "relay-set-preset":
+            status = save_codex_preset(mode=args.mode, reasoning=args.reasoning, application_status=args.application_status)
+            print("relay_set_preset: succeeded")
+            print(f"relay_codex_mode_preset: {status.codex_mode_preset}")
+            print(f"relay_codex_reasoning_preset: {status.codex_reasoning_preset}")
+            print(f"relay_preset_application_status: {status.preset_application_status}")
+            print(f"runtime_relay_state_file: {RUNTIME_RELAY_LOOP_STATE_PATH}")
+            return 0
+
+        if args.command == "relay-update-state":
+            status = update_relay_loop_state(
+                relay_state=args.state or None,
+                current_step=args.step or None,
+                source_alias=args.source_alias or None,
+                destination_alias=args.destination_alias or None,
+                waiting_reason=args.waiting_reason or None,
+                blocked_reason=args.blocked_reason or None,
+                last_payload_preview=args.payload_preview or None,
+                last_result_preview=args.result_preview or None,
+                codex_execution_status=args.codex_status or None,
+                next_usage_reset_at=args.next_usage_reset_at or None,
+                resume_after_usage_reset=(args.resume_after_usage_reset == "yes") if args.resume_after_usage_reset else None,
+                last_completion_status=args.completion_status or None,
+                task_id=args.task_id or None,
+                preset_application_status=args.preset_application_status or None,
+                dialog_status=args.dialog_status or None,
+                dialog_note=args.dialog_note or None,
+            )
+            print("relay_update_state: succeeded")
+            print(f"relay_state: {status.relay_state}")
+            print(f"relay_current_step: {status.current_step}")
+            print(f"relay_codex_execution_status: {status.codex_execution_status}")
+            print(f"relay_next_usage_reset_at: {status.next_usage_reset_at or 'none'}")
+            print(f"runtime_relay_state_file: {RUNTIME_RELAY_LOOP_STATE_PATH}")
             return 0
 
         if args.command == "brain-status":

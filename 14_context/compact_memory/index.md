@@ -7,3 +7,4 @@
   - stay provider-swappable
   - do not replace approvals, dashboard visibility, or action controls
   - no deletion without explicit approval
+- keep relay-loop summaries compact and reusable

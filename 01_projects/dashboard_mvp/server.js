@@ -545,6 +545,44 @@ function parseMemoryStatus(stdout) {
   };
 }
 
+function parseRelayStatus(stdout) {
+  const parsed = parseKeyValueBlock(stdout);
+  const notes = (parsed.listSections.relay_notes || [])
+    .filter((item) => item !== "none");
+
+  return {
+    relayState: parsed.values.relay_state || "idle",
+    currentStep: parsed.values.relay_current_step || "idle",
+    sourceTargetAlias: parsed.values.relay_source_target_alias || "chatgpt",
+    sourceTargetCandidateId: parsed.values.relay_source_target_candidate_id || "none",
+    sourceTargetTitle: parsed.values.relay_source_target_title || "none",
+    sourceTargetStatus: parsed.values.relay_source_target_status || "not_bound",
+    destinationTargetAlias: parsed.values.relay_destination_target_alias || "codex",
+    destinationTargetCandidateId: parsed.values.relay_destination_target_candidate_id || "none",
+    destinationTargetTitle: parsed.values.relay_destination_target_title || "none",
+    destinationTargetStatus: parsed.values.relay_destination_target_status || "not_bound",
+    codexModePreset: parsed.values.relay_codex_mode_preset || "Implementing new feature",
+    codexReasoningPreset: parsed.values.relay_codex_reasoning_preset || "Medium",
+    presetApplicationStatus: parsed.values.relay_preset_application_status || "stored_only",
+    codexExecutionStatus: parsed.values.relay_codex_execution_status || "unknown",
+    nextUsageResetAt: parsed.values.relay_next_usage_reset_at || "none",
+    resumeAfterUsageReset: parsed.values.relay_resume_after_usage_reset === "yes",
+    waitingReason: parsed.values.relay_waiting_reason || "none",
+    blockedReason: parsed.values.relay_blocked_reason || "none",
+    lastPayloadPreview: parsed.values.relay_last_payload_preview || "none",
+    lastResultPreview: parsed.values.relay_last_result_preview || "none",
+    lastCompletionStatus: parsed.values.relay_last_completion_status || "none",
+    lastTransitionAt: parsed.values.relay_last_transition_at || "none",
+    lastUpdatedAt: parsed.values.relay_last_updated_at || "none",
+    lastUsedTaskId: parsed.values.relay_last_used_task_id || "none",
+    lastKnownDialogStatus: parsed.values.relay_last_known_dialog_status || "none",
+    lastKnownDialogNote: parsed.values.relay_last_known_dialog_note || "none",
+    runtimeRelayStateFile: parsed.values.runtime_relay_state_file || "none",
+    notes,
+    headline: `${parsed.values.relay_state || "idle"} | ${parsed.values.relay_current_step || "idle"} | ${parsed.values.relay_codex_execution_status || "unknown"}`,
+  };
+}
+
 function parseApprovalRequestLine(line) {
   const parts = String(line)
     .split(" | ")
@@ -1314,7 +1352,7 @@ function buildOperatorStatus() {
 }
 
 async function buildGhotiControlCenterResponse(filters = {}) {
-  const [capabilityPayload, supervisorPayload, executorPayload, brainPayload, rolePayload, browserPayload, memoryPayload] = await Promise.all([
+  const [capabilityPayload, supervisorPayload, executorPayload, brainPayload, rolePayload, browserPayload, memoryPayload, relayPayload] = await Promise.all([
     buildCapabilityResponse(),
     buildSupervisorResponse(),
     buildExecutorTasksResponse(),
@@ -1322,6 +1360,7 @@ async function buildGhotiControlCenterResponse(filters = {}) {
     buildAgentRoleResponse(),
     buildBrowserStatusResponse(),
     buildMemoryStatusResponse(),
+    buildRelayStatusResponse(),
   ]);
 
   const operator = buildOperatorStatus();
@@ -1332,6 +1371,7 @@ async function buildGhotiControlCenterResponse(filters = {}) {
   const roleSummary = rolePayload.summary || {};
   const browserSummary = browserPayload.summary || {};
   const memorySummary = memoryPayload.summary || {};
+  const relaySummary = relayPayload.summary || {};
   const tasks = executorSummary.tasks || [];
   const filteredTasks = filterGhotiTasks(tasks, filters);
   const sortedTasks = sortGhotiTasks(tasks).map(decorateGhotiTask);
@@ -1360,7 +1400,7 @@ async function buildGhotiControlCenterResponse(filters = {}) {
   ].filter(Boolean);
 
   return {
-    ok: capabilityPayload.ok && supervisorPayload.ok && executorPayload.ok && brainPayload.ok && rolePayload.ok && browserPayload.ok && memoryPayload.ok,
+    ok: capabilityPayload.ok && supervisorPayload.ok && executorPayload.ok && brainPayload.ok && rolePayload.ok && browserPayload.ok && memoryPayload.ok && relayPayload.ok,
     summary: {
       headline: `${supervisor.ghotiState || "idle"} | ${supervisor.headline || "Ghoti control center ready."}`,
       ghotiState: supervisor.ghotiState || "idle",
@@ -1409,6 +1449,7 @@ async function buildGhotiControlCenterResponse(filters = {}) {
       specialistRole: roleSummary,
       browser: browserSummary,
       memory: memorySummary,
+      relay: relaySummary,
       pendingApprovalCount: Number(supervisor.pendingApprovalCount || 0),
       blockedTaskCount: Number(supervisor.blockedHumanNeededCount || 0),
       interruptedCount: Number(supervisor.interruptedCount || 0),
@@ -1443,6 +1484,7 @@ async function buildGhotiControlCenterResponse(filters = {}) {
       role: rolePayload.raw,
       browser: browserPayload.raw,
       memory: memoryPayload.raw,
+      relay: relayPayload.raw,
       supervisor: supervisorPayload.raw,
       executor: executorPayload.raw,
     },
@@ -2012,6 +2054,16 @@ async function buildMemoryStatusResponse() {
   return {
     ok: raw.ok,
     summary: parseMemoryStatus(raw.stdout),
+    raw,
+    localOnly: true,
+  };
+}
+
+async function buildRelayStatusResponse() {
+  const raw = await runRuntimeCli(["relay-status"]);
+  return {
+    ok: raw.ok,
+    summary: parseRelayStatus(raw.stdout),
     raw,
     localOnly: true,
   };

@@ -623,6 +623,7 @@ function renderGhotiControlCenter(payload) {
   const specialistRole = summary.specialistRole || {};
   const browser = summary.browser || {};
   const memory = summary.memory || {};
+  const relay = summary.relay || {};
   const desktopTruth = summary.desktopActionTruth || {};
 
   renderGhotiOverlay(summary);
@@ -711,6 +712,22 @@ function renderGhotiControlCenter(payload) {
     ].join(" | "),
   );
 
+  setText("ghoti-relay-state", relay.relayState || "idle");
+  setText("ghoti-relay-step", relay.currentStep || "idle");
+  setText("ghoti-relay-source", relay.sourceTargetAlias || "chatgpt");
+  setText("ghoti-relay-destination", relay.destinationTargetAlias || "codex");
+  setText("ghoti-relay-preset", `${relay.codexModePreset || "Implementing new feature"} | ${relay.codexReasoningPreset || "Medium"}`);
+  setText("ghoti-relay-status", relay.codexExecutionStatus || "unknown");
+  setText("ghoti-relay-reset", relay.nextUsageResetAt || "none");
+  setText("ghoti-relay-note", [
+    `source_status=${relay.sourceTargetStatus || "not_bound"}`,
+    `destination_status=${relay.destinationTargetStatus || "not_bound"}`,
+    `preset_status=${relay.presetApplicationStatus || "stored_only"}`,
+    `payload=${relay.lastPayloadPreview || "none"}`,
+    `result=${relay.lastResultPreview || "none"}`,
+    `blocked=${relay.blockedReason || "none"}`,
+  ].join(" | "));
+
   setText("ghoti-memory-ready", memory.ready ? "yes" : "no");
   setText("ghoti-memory-markdown-ready", memory.obsidianMarkdownReady ? "yes" : "no");
   setText("ghoti-memory-file-count", String(memory.fileCount ?? 0));
@@ -759,6 +776,7 @@ function renderGhotiControlCenter(payload) {
   renderStatusList("ghoti-brain-notes", brain.notes || []);
   renderStatusList("ghoti-role-roles", specialistRole.roles || []);
   renderStatusList("ghoti-browser-notes", browser.notes || []);
+  renderStatusList("ghoti-relay-notes", relay.notes || []);
   renderStatusList("ghoti-memory-notes", memory.notes || []);
   renderStatusList("ghoti-can-do-list", summary.whatGhotiCanDoNow || []);
   renderStatusList("ghoti-next-step-list", summary.whatOperatorShouldDoNext || []);

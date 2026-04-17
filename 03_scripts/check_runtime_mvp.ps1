@@ -130,6 +130,7 @@ $expectedFiles = @(
     '01_projects/runtime_mvp/src/super_ai_agent/notification_adapter.py',
     '01_projects/runtime_mvp/src/super_ai_agent/handoff.py',
     '01_projects/runtime_mvp/src/super_ai_agent/brain.py',
+    '01_projects/runtime_mvp/src/super_ai_agent/relay_loop.py',
     '01_projects/runtime_mvp/src/super_ai_agent/personal_ops.py',
     '01_projects/runtime_mvp/src/super_ai_agent/providers.py',
     '01_projects/runtime_mvp/src/super_ai_agent/council.py',
@@ -175,6 +176,13 @@ $expectedFiles = @(
     '08_research/career_ops_extraction_map.md',
     '08_research/repo_intake_matrix.md',
     '14_context/chat_handoff_latest.md',
+    '14_context/compact_memory/current_working_summary.md',
+    '14_context/compact_memory/current_loop_state.md',
+    '14_context/compact_memory/compact_build_context.md',
+    '14_context/compact_memory/last_successful_step.md',
+    '14_context/compact_memory/next_exact_step.md',
+    '14_context/compact_memory/blocker_state.md',
+    '14_context/compact_memory/operator_handoff_summary.md',
     '07_templates/inbox_triage_runbook.md',
     '07_templates/linkedin_update_pack.md',
     '07_templates/cv_update_pack.md',
@@ -260,6 +268,9 @@ $ghotiStatusOk = $ghotiStatusResult.ExitCode -eq 0 -and `
     (($ghotiStatusResult.Output | Out-String) -match 'active_brain_provider:\s+\S+') -and `
     (($ghotiStatusResult.Output | Out-String) -match 'active_brain_model:\s+\S+') -and `
     (($ghotiStatusResult.Output | Out-String) -match 'current_specialist_role:\s+\S+') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'relay_state:\s+\S+') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'relay_current_step:\s+\S+') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'relay_codex_mode_preset:\s+') -and `
     (($ghotiStatusResult.Output | Out-String) -match 'current_specialist_role_provider:\s+\S+') -and `
     (($ghotiStatusResult.Output | Out-String) -match 'browser_use_installed:\s+(yes|no)') -and `
     (($ghotiStatusResult.Output | Out-String) -match 'playwright_ready:\s+(yes|no)') -and `
@@ -286,6 +297,8 @@ $ghotiRecentOk = $ghotiRecentResult.ExitCode -eq 0 -and `
     (($ghotiRecentResult.Output | Out-String) -match 'active_brain_provider:\s+\S+') -and `
     (($ghotiRecentResult.Output | Out-String) -match 'active_brain_model:\s+\S+') -and `
     (($ghotiRecentResult.Output | Out-String) -match 'current_specialist_role:\s+\S+') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'relay_state:\s+\S+') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'relay_current_step:\s+\S+') -and `
     (($ghotiRecentResult.Output | Out-String) -match 'browser_use_installed:\s+(yes|no)') -and `
     (($ghotiRecentResult.Output | Out-String) -match 'playwright_ready:\s+(yes|no)') -and `
     (($ghotiRecentResult.Output | Out-String) -match 'compact_memory_ready:\s+(yes|no)') -and `
@@ -378,6 +391,20 @@ $browserStatusOk = $browserStatusResult.ExitCode -eq 0 -and `
     (($browserStatusResult.Output | Out-String) -match 'browser_notes:')
 Write-Check -Name 'CLI browser-status' -Passed $browserStatusOk -Detail (($browserStatusResult.Output | Out-String).Trim())
 if (-not $browserStatusOk) { $failed++ }
+
+$relayStatusResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('relay-status')
+$relayStatusOk = $relayStatusResult.ExitCode -eq 0 -and `
+    (($relayStatusResult.Output | Out-String) -match 'relay_status:\s+supervised chatgpt to codex relay snapshot') -and `
+    (($relayStatusResult.Output | Out-String) -match 'relay_state:\s+\S+') -and `
+    (($relayStatusResult.Output | Out-String) -match 'relay_current_step:\s+\S+') -and `
+    (($relayStatusResult.Output | Out-String) -match 'relay_source_target_alias:\s+\S+') -and `
+    (($relayStatusResult.Output | Out-String) -match 'relay_destination_target_alias:\s+\S+') -and `
+    (($relayStatusResult.Output | Out-String) -match 'relay_codex_mode_preset:\s+') -and `
+    (($relayStatusResult.Output | Out-String) -match 'relay_codex_reasoning_preset:\s+') -and `
+    (($relayStatusResult.Output | Out-String) -match 'relay_codex_execution_status:\s+\S+') -and `
+    (($relayStatusResult.Output | Out-String) -match 'runtime_relay_state_file:\s+')
+Write-Check -Name 'CLI relay-status' -Passed $relayStatusOk -Detail (($relayStatusResult.Output | Out-String).Trim())
+if (-not $relayStatusOk) { $failed++ }
 
 $memoryStatusResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('memory-status')
 $memoryStatusOk = $memoryStatusResult.ExitCode -eq 0 -and `
