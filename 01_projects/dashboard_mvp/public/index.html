@@ -51,8 +51,29 @@
       </div>
     </div>
 
-    <main class="page-shell">
-      <section class="summary-grid" style="order:1">
+    <nav class="tab-nav" role="tablist" aria-label="Console sections">
+      <button class="tab-btn" data-tab="dashboard" role="tab" aria-selected="true">
+        <span class="tab-icon">&#9673;</span> Dashboard
+      </button>
+      <button class="tab-btn" data-tab="approvals" role="tab" aria-selected="false">
+        <span class="tab-icon">&#9989;</span> Approvals
+        <span class="tab-badge" id="tab-badge-approvals"></span>
+      </button>
+      <button class="tab-btn" data-tab="pipeline" role="tab" aria-selected="false">
+        <span class="tab-icon">&#128203;</span> Pipeline
+      </button>
+      <button class="tab-btn" data-tab="control" role="tab" aria-selected="false">
+        <span class="tab-icon">&#9881;</span> Control
+      </button>
+      <button class="tab-btn" data-tab="tools" role="tab" aria-selected="false">
+        <span class="tab-icon">&#9889;</span> Tools
+      </button>
+      <button class="tab-btn" data-tab="system" role="tab" aria-selected="false">
+        <span class="tab-icon">&#128200;</span> System
+      </button>
+    </nav>
+    <main class="page-shell tabs-main">
+      <section class="summary-grid" style="order:1" data-tab="dashboard">
         <article class="summary-card">
           <span class="summary-label">Operator Mode</span>
           <strong id="operator-headline">Loading...</strong>
@@ -81,7 +102,7 @@
       </section>
 
 
-      <div class="flow-guide" style="order:2">
+      <div class="flow-guide" style="order:2" data-tab="dashboard">
         <div class="flow-step flow-step-active">
           <span class="flow-step-icon">&#128065;</span>
           <span>Observe</span>
@@ -113,7 +134,7 @@
         </div>
       </div>
 
-      <section id="ghoti-control-center" class="panel ghoti-control-panel" style="order:9">
+      <section id="ghoti-control-center" class="panel ghoti-control-panel" style="order:9" data-tab="control">
         <div class="section-heading">
           <div>
             <h2>Ghoti Control Center</h2>
@@ -530,7 +551,7 @@
         </div>
       </section>
 
-      <section class="panel panel-primary" id="ghoti-needs-action-panel" style="order:3">
+      <section class="panel panel-primary" id="ghoti-needs-action-panel" style="order:3" data-tab="dashboard">
         <div class="section-heading">
           <div>
             <h2>Needs Action Now</h2>
@@ -558,7 +579,7 @@
         </div>
       </section>
 
-      <section class="panel" id="ghoti-pipeline-state-panel" style="order:8">
+      <section class="panel" id="ghoti-pipeline-state-panel" style="order:8" data-tab="pipeline">
         <div class="section-heading">
           <div>
             <h2>Supervised Pipeline State</h2>
@@ -603,7 +624,7 @@
         <div id="pipeline-state-summary" class="summary-note">Waiting for pipeline state.</div>
       </section>
 
-      <section class="panel" id="ghoti-pipeline-items-panel" style="order:6">
+      <section class="panel" id="ghoti-pipeline-items-panel" style="order:6" data-tab="pipeline">
         <div class="section-heading">
           <div>
             <h2>Pipeline Items Overview</h2>
@@ -615,7 +636,7 @@
         <div id="pipeline-items-list" class="approval-list">Waiting for pipeline items data.</div>
       </section>
 
-      <section class="panel panel-primary" id="ghoti-approval-inbox-panel" style="order:4">
+      <section class="panel panel-primary" id="ghoti-approval-inbox-panel" style="order:4" data-tab="approvals">
         <div class="section-heading">
           <div>
             <h2>Approval Inbox</h2>
@@ -638,7 +659,7 @@
         </div>
       </section>
 
-      <section class="panel panel-primary" id="ghoti-manual-queue-panel" style="order:5">
+      <section class="panel panel-primary" id="ghoti-manual-queue-panel" style="order:5" data-tab="approvals">
         <div class="section-heading">
           <div>
             <h2>Manual Execution Queue</h2>
@@ -662,7 +683,7 @@
         </div>
       </section>
 
-      <section class="panel" id="ghoti-audit-trace-panel" style="order:7">
+      <section class="panel" id="ghoti-audit-trace-panel" style="order:7" data-tab="pipeline">
         <div class="section-heading">
           <div>
             <h2>Audit Trace</h2>
@@ -677,7 +698,7 @@
         <div id="audit-trace-body" class="approval-list">No trace loaded.</div>
       </section>
 
-      <section class="panel panel-muted" style="order:12">
+      <section class="panel panel-muted" style="order:12" data-tab="approvals">
         <div class="section-heading">
           <div>
             <h2>Supervisor &amp; Approval Inbox</h2>
@@ -1128,7 +1149,7 @@
         </details>
       </section>
 
-      <section class="content-grid" style="order:13">
+      <section class="content-grid" style="order:13" data-tab="tools">
         <section class="panel">
           <div class="section-heading">
             <div>
@@ -1772,7 +1793,7 @@ This file was queued through the safe repo-local executor.
         </section>
       </section>
 
-      <section class="panel">
+      <section class="panel" data-tab="system">
         <div class="section-heading">
           <div>
             <h2>Recent Artifacts</h2>
@@ -1795,7 +1816,7 @@ This file was queued through the safe repo-local executor.
         </div>
       </section>
 
-      <section class="panel">
+      <section class="panel" data-tab="system">
         <div class="section-heading">
           <div>
             <h2>Recent Actions</h2>
@@ -1807,6 +1828,36 @@ This file was queued through the safe repo-local executor.
     </main>
 
     <script src="/app.js"></script>
+    <script>
+    (function() {
+      var TABS = ['dashboard','approvals','pipeline','control','tools','system'];
+      function activate(tab) {
+        if (!TABS.includes(tab)) tab = 'dashboard';
+        document.querySelectorAll('.tab-btn').forEach(function(b) {
+          var active = b.dataset.tab === tab;
+          b.classList.toggle('tab-active', active);
+          b.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+        document.querySelectorAll('.tabs-main > [data-tab]').forEach(function(el) {
+          el.hidden = el.dataset.tab !== tab;
+        });
+        try { localStorage.setItem('ghoti_tab', tab); } catch(e) {}
+      }
+      document.querySelectorAll('.tab-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() { activate(btn.dataset.tab); });
+      });
+      // "Go to Approval Inbox" / "Go to Manual Queue" buttons switch tabs
+      var gotoApprovals = document.getElementById('needs-action-goto-approvals');
+      var gotoQueue = document.getElementById('needs-action-goto-queue');
+      if (gotoApprovals) gotoApprovals.addEventListener('click', function() { activate('approvals'); }, true);
+      if (gotoQueue) gotoQueue.addEventListener('click', function() { activate('approvals'); }, true);
+      // Restore saved tab
+      var saved;
+      try { saved = localStorage.getItem('ghoti_tab'); } catch(e) {}
+      activate(saved || 'dashboard');
+    })();
+    </script>
+
   </body>
 </html>
 

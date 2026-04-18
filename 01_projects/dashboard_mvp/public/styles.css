@@ -1145,3 +1145,81 @@ code {
   color: var(--muted);
   line-height: 1.5;
 }
+
+
+/* ── Tab navigation ── */
+.tab-nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  gap: 0;
+  background: var(--hero);
+  border-bottom: 2px solid rgba(255,255,255,0.08);
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 0 1rem;
+  width: 100%;
+}
+.tab-nav::-webkit-scrollbar { display: none; }
+
+.tab-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.75rem 1.1rem;
+  background: none;
+  border: none;
+  border-bottom: 2.5px solid transparent;
+  color: #8ea8db;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+  letter-spacing: 0.02em;
+  margin-bottom: -2px;
+}
+.tab-btn:hover {
+  color: #cfe0ff;
+}
+.tab-btn.tab-active {
+  color: #fff;
+  border-bottom-color: #4e8df5;
+}
+.tab-icon {
+  font-size: 0.9rem;
+}
+.tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.2rem;
+  height: 1.2rem;
+  padding: 0 0.35rem;
+  border-radius: 99px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  margin-left: 0.25rem;
+}
+.tab-badge:empty { display: none; }
+
+/* ── Tab panel visibility ── */
+.tabs-main > [data-tab][hidden] {
+  display: none !important;
+}
+
+/* ── Dashboard tab: two-column layout for priority panels ── */
+.tabs-main > .panel[data-tab="approvals"],
+.tabs-main > #ghoti-approval-inbox-panel,
+.tabs-main > #ghoti-manual-queue-panel {
+  /* already styled by panel-primary */
+}
+
+/* Remove the CSS order values now that we use tab visibility */
+.tabs-main > [data-tab] {
+  order: 0 !important;
+}
