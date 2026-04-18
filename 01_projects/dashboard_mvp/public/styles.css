@@ -1054,3 +1054,94 @@ code {
     border-radius: 16px;
   }
 }
+
+
+/* ── Operator Console additions ── */
+
+/* High-priority panels: left accent stripe */
+.panel-primary {
+  border-left: 4px solid var(--accent);
+  background: linear-gradient(to right, #f0f5ff 0%, var(--panel) 3%);
+}
+
+/* De-emphasized panels */
+.panel-muted {
+  opacity: 0.88;
+  border-color: #e5eaf3;
+}
+.panel-muted:focus-within,
+.panel-muted:hover {
+  opacity: 1;
+}
+
+/* Flow guide strip */
+.flow-guide {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.85rem 1.25rem;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+}
+
+.flow-step {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--panel-soft);
+  border: 1px solid var(--panel-border);
+  white-space: nowrap;
+}
+
+.flow-step-active {
+  color: var(--accent);
+  background: #e8f0fd;
+  border-color: var(--accent);
+}
+
+.flow-step-icon {
+  font-size: 0.95rem;
+}
+
+.flow-arrow {
+  color: var(--muted);
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+/* Section heading row with button alignment */
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.section-heading > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.section-heading h2 {
+  margin: 0 0 0.3rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.section-heading p {
+  margin: 0;
+  font-size: 0.83rem;
+  color: var(--muted);
+  line-height: 1.5;
+}

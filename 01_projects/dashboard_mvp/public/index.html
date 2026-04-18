@@ -52,7 +52,7 @@
     </div>
 
     <main class="page-shell">
-      <section class="summary-grid">
+      <section class="summary-grid" style="order:1">
         <article class="summary-card">
           <span class="summary-label">Operator Mode</span>
           <strong id="operator-headline">Loading...</strong>
@@ -80,7 +80,40 @@
         </article>
       </section>
 
-      <section id="ghoti-control-center" class="panel ghoti-control-panel">
+
+      <div class="flow-guide" style="order:2">
+        <div class="flow-step flow-step-active">
+          <span class="flow-step-icon">&#128065;</span>
+          <span>Observe</span>
+        </div>
+        <span class="flow-arrow">&#8594;</span>
+        <div class="flow-step">
+          <span class="flow-step-icon">&#9745;</span>
+          <span>Operator Decision</span>
+        </div>
+        <span class="flow-arrow">&#8594;</span>
+        <div class="flow-step">
+          <span class="flow-step-icon">&#9989;</span>
+          <span>Approval Inbox</span>
+        </div>
+        <span class="flow-arrow">&#8594;</span>
+        <div class="flow-step">
+          <span class="flow-step-icon">&#9998;</span>
+          <span>Manual Queue</span>
+        </div>
+        <span class="flow-arrow">&#8594;</span>
+        <div class="flow-step">
+          <span class="flow-step-icon">&#128203;</span>
+          <span>Reviewed</span>
+        </div>
+        <span class="flow-arrow">&#8594;</span>
+        <div class="flow-step">
+          <span class="flow-step-icon">&#128196;</span>
+          <span>Audit Trace</span>
+        </div>
+      </div>
+
+      <section id="ghoti-control-center" class="panel ghoti-control-panel" style="order:9">
         <div class="section-heading">
           <div>
             <h2>Ghoti Control Center</h2>
@@ -497,7 +530,7 @@
         </div>
       </section>
 
-      <section class="panel" id="ghoti-needs-action-panel">
+      <section class="panel panel-primary" id="ghoti-needs-action-panel" style="order:3">
         <div class="section-heading">
           <div>
             <h2>Needs Action Now</h2>
@@ -525,7 +558,7 @@
         </div>
       </section>
 
-      <section class="panel" id="ghoti-pipeline-state-panel">
+      <section class="panel" id="ghoti-pipeline-state-panel" style="order:8">
         <div class="section-heading">
           <div>
             <h2>Supervised Pipeline State</h2>
@@ -570,7 +603,7 @@
         <div id="pipeline-state-summary" class="summary-note">Waiting for pipeline state.</div>
       </section>
 
-      <section class="panel" id="ghoti-pipeline-items-panel">
+      <section class="panel" id="ghoti-pipeline-items-panel" style="order:6">
         <div class="section-heading">
           <div>
             <h2>Pipeline Items Overview</h2>
@@ -582,7 +615,7 @@
         <div id="pipeline-items-list" class="approval-list">Waiting for pipeline items data.</div>
       </section>
 
-      <section class="panel" id="ghoti-approval-inbox-panel">
+      <section class="panel panel-primary" id="ghoti-approval-inbox-panel" style="order:4">
         <div class="section-heading">
           <div>
             <h2>Approval Inbox</h2>
@@ -605,7 +638,7 @@
         </div>
       </section>
 
-      <section class="panel" id="ghoti-manual-queue-panel">
+      <section class="panel panel-primary" id="ghoti-manual-queue-panel" style="order:5">
         <div class="section-heading">
           <div>
             <h2>Manual Execution Queue</h2>
@@ -629,7 +662,7 @@
         </div>
       </section>
 
-      <section class="panel" id="ghoti-audit-trace-panel">
+      <section class="panel" id="ghoti-audit-trace-panel" style="order:7">
         <div class="section-heading">
           <div>
             <h2>Audit Trace</h2>
@@ -644,10 +677,10 @@
         <div id="audit-trace-body" class="approval-list">No trace loaded.</div>
       </section>
 
-      <section class="panel">
+      <section class="panel panel-muted" style="order:12">
         <div class="section-heading">
           <div>
-            <h2>Supervisor & Approval Inbox</h2>
+            <h2>Supervisor &amp; Approval Inbox</h2>
             <p>
               This is the first local-only foundation for patient work: pause safely,
               ask for approval, wait for the human, and resume later.
@@ -1095,7 +1128,7 @@
         </details>
       </section>
 
-      <section class="content-grid">
+      <section class="content-grid" style="order:13">
         <section class="panel">
           <div class="section-heading">
             <div>
