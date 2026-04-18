@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Super-AI-Agent Operator Console V3</title>
+    <title>Ghoti Operator Console</title>
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
@@ -25,6 +25,7 @@
         </div>
       </div>
     </header>
+    <section class="status-dock" aria-label="Ghoti live status">
 
     <aside id="ghoti-state-indicator" class="ghoti-state-indicator is-neutral" aria-live="polite">
       <div class="ghoti-indicator-topline">
@@ -51,29 +52,56 @@
       </div>
     </div>
 
+    
+    </section>
+
     <nav class="tab-nav" role="tablist" aria-label="Console sections">
-      <button class="tab-btn" data-tab="dashboard" role="tab" aria-selected="true">
+      <button class="tab-btn" id="tab-dashboard" data-tab="dashboard" role="tab" aria-controls="panel-dashboard" aria-selected="true">
         <span class="tab-icon">&#9673;</span> Dashboard
       </button>
-      <button class="tab-btn" data-tab="approvals" role="tab" aria-selected="false">
+      <button class="tab-btn" id="tab-approvals" data-tab="approvals" role="tab" aria-controls="panel-approvals" aria-selected="false">
         <span class="tab-icon">&#9989;</span> Approvals
         <span class="tab-badge" id="tab-badge-approvals"></span>
       </button>
-      <button class="tab-btn" data-tab="pipeline" role="tab" aria-selected="false">
+      <button class="tab-btn" id="tab-pipeline" data-tab="pipeline" role="tab" aria-controls="panel-pipeline" aria-selected="false">
         <span class="tab-icon">&#128203;</span> Pipeline
       </button>
-      <button class="tab-btn" data-tab="control" role="tab" aria-selected="false">
+      <button class="tab-btn" id="tab-control" data-tab="control" role="tab" aria-controls="panel-control" aria-selected="false">
         <span class="tab-icon">&#9881;</span> Control
       </button>
-      <button class="tab-btn" data-tab="tools" role="tab" aria-selected="false">
+      <button class="tab-btn" id="tab-tools" data-tab="tools" role="tab" aria-controls="panel-tools" aria-selected="false">
         <span class="tab-icon">&#9889;</span> Tools
       </button>
-      <button class="tab-btn" data-tab="system" role="tab" aria-selected="false">
+      <button class="tab-btn" id="tab-system" data-tab="system" role="tab" aria-controls="panel-system" aria-selected="false">
         <span class="tab-icon">&#128200;</span> System
       </button>
     </nav>
-    <main class="page-shell tabs-main">
-      <section class="summary-grid" style="order:1" data-tab="dashboard">
+    <main class="page-shell tabs-main app-shell">
+      <section class="tab-panel" id="panel-dashboard" data-tab-panel="dashboard" role="tabpanel" aria-labelledby="tab-dashboard">
+        <section class="dashboard-status-strip" aria-label="Supervised dashboard status strip">
+          <article class="status-strip-card">
+            <span>Latest decision</span>
+            <strong id="dashboard-strip-decision">Loading...</strong>
+          </article>
+          <article class="status-strip-card">
+            <span>Proposed action</span>
+            <strong id="dashboard-strip-action">Loading...</strong>
+          </article>
+          <article class="status-strip-card">
+            <span>Pending approvals</span>
+            <strong id="dashboard-strip-pending">0</strong>
+          </article>
+          <article class="status-strip-card">
+            <span>Manual queue</span>
+            <strong id="dashboard-strip-ready">0 ready</strong>
+          </article>
+          <article class="status-strip-card status-strip-card-wide">
+            <span>Operator status</span>
+            <strong id="dashboard-strip-status">Loading supervised operator state...</strong>
+          </article>
+        </section>
+
+<section class="summary-grid dashboard-summary-grid" data-tab="dashboard">
         <article class="summary-card">
           <span class="summary-label">Operator Mode</span>
           <strong id="operator-headline">Loading...</strong>
@@ -101,8 +129,7 @@
         </article>
       </section>
 
-
-      <div class="flow-guide" style="order:2" data-tab="dashboard">
+<div class="flow-guide dashboard-flow" data-tab="dashboard">
         <div class="flow-step flow-step-active">
           <span class="flow-step-icon">&#128065;</span>
           <span>Observe</span>
@@ -134,424 +161,8 @@
         </div>
       </div>
 
-      <section id="ghoti-control-center" class="panel ghoti-control-panel" style="order:9" data-tab="control">
-        <div class="section-heading">
-          <div>
-            <h2>Ghoti Control Center</h2>
-            <p>The shortest honest view of what Ghoti is doing, what can run now, what needs review, and how to stop it safely.</p>
-          </div>
-          <button id="ghoti-refresh-state" class="button-secondary" type="button">Refresh Ghoti State</button>
-        </div>
-        <div class="metric-grid">
-          <article class="metric-card">
-            <span>Ghoti State</span>
-            <strong id="ghoti-control-state">Loading...</strong>
-            <p id="ghoti-control-reason">Waiting for the control-center state.</p>
-          </article>
-          <article class="metric-card">
-            <span>Emergency Stop</span>
-            <strong id="ghoti-control-hotkey">Ctrl+8</strong>
-            <p id="ghoti-control-hotkey-note">Stops the current desktop action or operator recipe and forces operator review.</p>
-          </article>
-          <article class="metric-card">
-            <span>Current Task</span>
-            <strong id="ghoti-control-current-task">Loading...</strong>
-            <p id="ghoti-control-current-task-note">Waiting for the current task summary.</p>
-          </article>
-          <article class="metric-card">
-            <span>Pending Approvals</span>
-            <strong id="ghoti-control-pending">-</strong>
-          </article>
-          <article class="metric-card">
-            <span>Blocked Tasks</span>
-            <strong id="ghoti-control-blocked">-</strong>
-          </article>
-          <article class="metric-card">
-            <span>Recent Actionable</span>
-            <strong id="ghoti-control-actionable">-</strong>
-          </article>
-          <article class="metric-card">
-            <span>Recent Failures</span>
-            <strong id="ghoti-control-failures">-</strong>
-          </article>
-          <article class="metric-card">
-            <span>Available Capabilities</span>
-            <strong id="ghoti-control-capabilities">-</strong>
-          </article>
-          <article class="metric-card">
-            <span>Recent Artifacts</span>
-            <strong id="ghoti-control-artifacts">-</strong>
-          </article>
-        </div>
-        <div class="task-filter-toolbar ghoti-control-toolbar">
-          <label>
-            Task view
-            <select id="ghoti-task-visibility-filter">
-              <option value="actionable" selected>Actionable only</option>
-              <option value="all">Show all</option>
-            </select>
-          </label>
-          <label>
-            Recent limit
-            <select id="ghoti-task-limit-filter">
-              <option value="6" selected>Recent 6</option>
-              <option value="12">Recent 12</option>
-              <option value="24">Recent 24</option>
-            </select>
-          </label>
-          <label>
-            Task type
-            <select id="ghoti-task-type-filter">
-              <option value="all" selected>All task types</option>
-              <option value="repo">Repo actions</option>
-              <option value="desktop">Desktop actions</option>
-              <option value="recipe">Operator recipes</option>
-              <option value="handoff">Codex↔ChatGPT handoff</option>
-            </select>
-          </label>
-          <label>
-            Status
-            <select id="ghoti-task-status-filter">
-              <option value="all" selected>Any status</option>
-              <option value="queued">Queued</option>
-              <option value="running">Running</option>
-              <option value="pending_approval">Pending approval</option>
-              <option value="blocked_human_needed">Blocked human-needed</option>
-              <option value="waiting">Waiting</option>
-              <option value="ready_to_resume">Ready to resume</option>
-              <option value="interrupted">Interrupted</option>
-              <option value="failed">Failed</option>
-            </select>
-          </label>
-          <label class="checkbox-row">
-            <input id="ghoti-task-active-only" type="checkbox" />
-            Active-only view
-          </label>
-        </div>
-        <p id="ghoti-control-filter-note" class="list-filter-note">Completed tasks stay hidden by default.</p>
-        <div class="status-columns">
-          <article class="status-card">
-            <div class="subsection-heading">
-              <h3>Quick Actions</h3>
-              <p>Shortcuts into the safest and most common next moves.</p>
-            </div>
-            <div class="stacked-form">
-              <div class="compact-action-grid">
-                <button id="ghoti-show-approvals" class="button-secondary" type="button">Show Pending Approvals</button>
-                <button id="ghoti-show-active-tasks" class="button-secondary" type="button">Show Active / Recent Tasks</button>
-                <button id="ghoti-show-artifacts" class="button-secondary" type="button">Show Recent Artifacts</button>
-                <button id="ghoti-queue-observe-desktop" type="button">Queue Desktop Observation</button>
-                <button id="ghoti-queue-clipboard-read" class="button-secondary" type="button">Queue Clipboard Read</button>
-                <button id="ghoti-run-runtime-checker" class="button-secondary" type="button">Run Runtime Checker</button>
-                <button id="ghoti-run-dashboard-checker" class="button-secondary" type="button">Run Dashboard Checker</button>
-                <button id="ghoti-queue-handoff" type="button">Queue Handoff</button>
-              </div>
-              <label>
-                Quick clipboard text
-                <input id="ghoti-quick-clipboard-text" type="text" value="Ghoti quick clipboard text" />
-              </label>
-              <button id="ghoti-queue-clipboard-write" class="button-secondary" type="button">Queue Clipboard Write</button>
-              <label>
-                Focus window
-                <select id="ghoti-quick-focus-window">
-                  <option value="terminal" selected>Terminal</option>
-                  <option value="vscode">VS Code</option>
-                  <option value="cursor">Cursor</option>
-                  <option value="dashboard_browser">Dashboard browser</option>
-                </select>
-              </label>
-              <button id="ghoti-queue-focus-window" class="button-secondary" type="button">Queue Focus Window</button>
-            </div>
-            <div id="ghoti-control-action-summary" class="result-panel" aria-live="polite">Ready to refresh Ghoti state, inspect work, or queue a narrow local action.</div>
-          </article>
-          <article class="status-card">
-            <div class="subsection-heading">
-              <h3>Recent Actionable Tasks</h3>
-              <p>Recent work that still needs approval, execution, review, or follow-up. Completed tasks stay hidden by default here.</p>
-            </div>
-            <div id="ghoti-actionable-task-list" class="approval-list">Waiting for Ghoti control-center task data.</div>
-          </article>
-          <article class="status-card">
-            <div class="subsection-heading">
-              <h3>Brain / Provider Truth</h3>
-              <p>Shows the configured local brain, whether it is actually ready, and whether the current task used model inference or only local rules.</p>
-            </div>
-            <div class="metric-grid ghoti-brain-metrics">
-              <article class="metric-card">
-                <span>Active Provider</span>
-                <strong id="ghoti-brain-provider">unknown</strong>
-              </article>
-              <article class="metric-card">
-                <span>Active Model</span>
-                <strong id="ghoti-brain-model">none</strong>
-              </article>
-              <article class="metric-card">
-                <span>Inference Ready</span>
-                <strong id="ghoti-brain-ready">no</strong>
-              </article>
-              <article class="metric-card">
-                <span>Current Task Used Model</span>
-                <strong id="ghoti-brain-current-task-use">no</strong>
-              </article>
-              <article class="metric-card">
-                <span>Last Model Call</span>
-                <strong id="ghoti-brain-last-call">never_called</strong>
-              </article>
-            </div>
-            <p id="ghoti-brain-current-task-detail" class="summary-note">The current task model-use summary will appear here.</p>
-            <p id="ghoti-brain-note" class="summary-note">Waiting for the live brain/provider status.</p>
-            <ul id="ghoti-brain-notes" class="status-list"></ul>
-          </article>
-          <article class="status-card">
-            <div class="subsection-heading">
-              <h3>Specialist-Agent Truth</h3>
-              <p>Shows which narrow specialist role Ghoti would use right now, without pretending a full council/router exists yet.</p>
-            </div>
-            <div class="metric-grid ghoti-brain-metrics">
-              <article class="metric-card">
-                <span>Current Role</span>
-                <strong id="ghoti-role-current">supervisor</strong>
-              </article>
-              <article class="metric-card">
-                <span>Preferred Provider</span>
-                <strong id="ghoti-role-provider">none</strong>
-              </article>
-              <article class="metric-card">
-                <span>Approval Sensitivity</span>
-                <strong id="ghoti-role-sensitivity">unknown</strong>
-              </article>
-              <article class="metric-card">
-                <span>Registry Size</span>
-                <strong id="ghoti-role-count">0</strong>
-              </article>
-            </div>
-            <p id="ghoti-role-note" class="summary-note">Waiting for the specialist-role registry snapshot.</p>
-            <ul id="ghoti-role-roles" class="status-list"></ul>
-          </article>
-          <article class="status-card">
-            <div class="subsection-heading">
-              <h3>Browser-Agent Truth</h3>
-              <p>Shows whether Browser Use and Playwright are really present and ready, versus still only scaffolded.</p>
-            </div>
-            <div class="metric-grid ghoti-brain-metrics">
-              <article class="metric-card">
-                <span>Browser Use Installed</span>
-                <strong id="ghoti-browser-use-installed">no</strong>
-              </article>
-              <article class="metric-card">
-                <span>Browser Use Ready</span>
-                <strong id="ghoti-browser-use-ready">no</strong>
-              </article>
-              <article class="metric-card">
-                <span>Playwright Ready</span>
-                <strong id="ghoti-playwright-ready">no</strong>
-              </article>
-              <article class="metric-card">
-                <span>Current Browser Role</span>
-                <strong id="ghoti-browser-role">none</strong>
-              </article>
-              <article class="metric-card">
-                <span>Current Browser Action</span>
-                <strong id="ghoti-browser-action">none</strong>
-              </article>
-            </div>
-            <p id="ghoti-browser-note" class="summary-note">Waiting for browser capability truth.</p>
-            <ul id="ghoti-browser-notes" class="status-list"></ul>
-          </article>
-          <article class="status-card">
-            <div class="subsection-heading">
-              <h3>Relay-Loop Truth</h3>
-              <p>Shows the supervised ChatGPT ↔ Codex relay state, exact saved targets, stored preset truth, and any usage-reset wait.</p>
-            </div>
-            <div class="metric-grid ghoti-brain-metrics">
-              <article class="metric-card">
-                <span>Relay State</span>
-                <strong id="ghoti-relay-state">idle</strong>
-              </article>
-              <article class="metric-card">
-                <span>Current Step</span>
-                <strong id="ghoti-relay-step">idle</strong>
-              </article>
-              <article class="metric-card">
-                <span>Source</span>
-                <strong id="ghoti-relay-source">chatgpt</strong>
-              </article>
-              <article class="metric-card">
-                <span>Destination</span>
-                <strong id="ghoti-relay-destination">codex</strong>
-              </article>
-              <article class="metric-card">
-                <span>Codex Preset</span>
-                <strong id="ghoti-relay-preset">Implementing new feature | Medium</strong>
-              </article>
-              <article class="metric-card">
-                <span>Codex Status</span>
-                <strong id="ghoti-relay-status">unknown</strong>
-              </article>
-              <article class="metric-card">
-                <span>Next Reset</span>
-                <strong id="ghoti-relay-reset">none</strong>
-              </article>
-            </div>
-            <p id="ghoti-relay-note" class="summary-note">Waiting for the relay-loop runtime truth.</p>
-            <ul id="ghoti-relay-notes" class="status-list"></ul>
-          </article>
-          <article class="status-card">
-            <div class="subsection-heading">
-              <h3>Compact Memory Truth</h3>
-              <p>Shows whether the local markdown memory scaffold exists for later Obsidian-style use, without claiming autonomous memory management.</p>
-            </div>
-            <div class="metric-grid ghoti-brain-metrics">
-              <article class="metric-card">
-                <span>Memory Ready</span>
-                <strong id="ghoti-memory-ready">no</strong>
-              </article>
-              <article class="metric-card">
-                <span>Markdown Ready</span>
-                <strong id="ghoti-memory-markdown-ready">no</strong>
-              </article>
-              <article class="metric-card">
-                <span>File Count</span>
-                <strong id="ghoti-memory-file-count">0</strong>
-              </article>
-            </div>
-            <p id="ghoti-memory-note" class="summary-note">Waiting for compact memory status.</p>
-            <ul id="ghoti-memory-notes" class="status-list"></ul>
-          </article>
-          <article class="status-card">
-            <div class="subsection-heading">
-              <h3>Recent Failures</h3>
-              <p>The smallest useful view into blocked, failed, or interrupted work that still needs operator attention.</p>
-            </div>
-            <div id="ghoti-failure-task-list" class="approval-list">Waiting for recent failure visibility.</div>
-          </article>
-          <article class="status-card">
-            <div class="subsection-heading">
-              <h3>Operator Watchdog</h3>
-              <p>Small local-only visibility for manual intervention, wrong-window blocks, stalled tasks, and did-not-complete states.</p>
-            </div>
-            <div class="metric-grid ghoti-watchdog-metrics">
-              <article class="metric-card">
-                <span>Watchdog State</span>
-                <strong id="ghoti-watchdog-state">watching</strong>
-              </article>
-              <article class="metric-card">
-                <span>Wrong-Window Blocks</span>
-                <strong id="ghoti-watchdog-wrong-window">0</strong>
-              </article>
-              <article class="metric-card">
-                <span>Stalled Tasks</span>
-                <strong id="ghoti-watchdog-stalled">0</strong>
-              </article>
-              <article class="metric-card">
-                <span>Did Not Complete</span>
-                <strong id="ghoti-watchdog-did-not-complete">0</strong>
-              </article>
-            </div>
-            <p id="ghoti-watchdog-headline" class="summary-note">Waiting for local watchdog visibility.</p>
-            <ul id="ghoti-watchdog-alerts" class="status-list"></ul>
-            <p id="ghoti-watchdog-handoff-hint" class="summary-note">Handoff safety hints will appear here when relevant.</p>
-          </article>
-          <article class="status-card">
-            <div class="subsection-heading">
-              <h3>What Ghoti Can Do Right Now</h3>
-              <p>Only the capabilities that already exist in the current local-first stack.</p>
-            </div>
-            <ul id="ghoti-can-do-list" class="status-list"></ul>
-          </article>
-          <article class="status-card">
-            <div class="subsection-heading">
-              <h3>What To Do Next</h3>
-              <p id="ghoti-control-next-step-copy">Waiting for the next operator step.</p>
-            </div>
-            <ul id="ghoti-next-step-list" class="status-list"></ul>
-          </article>
-          <article class="status-card">
-            <div class="subsection-heading">
-              <h3>CLI Shortcuts</h3>
-              <p>Use these from PowerShell when you want the same operator visibility without the browser.</p>
-            </div>
-            <ul id="ghoti-cli-command-list" class="status-list"></ul>
-            <p id="ghoti-control-no-delete-note" class="summary-note">No task deletion without explicit approval. Prefer archive, filter, and history visibility instead.</p>
-          </article>
-        </div>
-      </section>
-
-      <section class="panel">
-        <div class="section-heading">
-          <div>
-            <h2>What Can I Do Now?</h2>
-            <p>These are the clearest local actions in the current console.</p>
-          </div>
-        </div>
-        <div class="quick-actions">
-          <article class="quick-action-card">
-            <h3>Refresh Console View</h3>
-            <p>Reload operator status, capabilities, GitHub updates, artifacts, desktop bridge state, and recent actions.</p>
-            <button id="refresh-console" class="button-secondary" type="button">Refresh Console Status</button>
-          </article>
-          <article class="quick-action-card">
-            <h3>Refresh GitHub Summary</h3>
-            <p>Check branch status, working tree state, recent commits, and remote readiness.</p>
-            <button id="refresh-github" class="button-secondary" type="button">Refresh GitHub Summary</button>
-          </article>
-          <article class="quick-action-card">
-            <h3>Generate Internship Pack</h3>
-            <p>Create the current default internship application scaffold.</p>
-            <button id="quick-internship" type="button">Generate Internship Pack</button>
-          </article>
-          <article class="quick-action-card">
-            <h3>Generate Showcase Case Study</h3>
-            <p>Create a recruiter-facing case-study scaffold for the current project state.</p>
-            <button id="quick-showcase" type="button">Generate Showcase Case Study</button>
-          </article>
-          <article class="quick-action-card">
-            <h3>Generate Portfolio Page</h3>
-            <p>Create a portfolio-ready project page scaffold for the current project state.</p>
-            <button id="quick-portfolio" type="button">Generate Portfolio Page</button>
-          </article>
-          <article class="quick-action-card">
-            <h3>Run Browser Smoke Demo</h3>
-            <p>Run the fast headless browser check and save the screenshot artifact.</p>
-            <button id="quick-browser-smoke" type="button">Run Headless Browser Demo</button>
-          </article>
-          <article class="quick-action-card highlight-card">
-            <h3>Run Visible Browser Demo</h3>
-            <p>Open the local headed browser demo so the click is visible.</p>
-            <button id="quick-browser-visible" type="button">Run Visible Browser Demo</button>
-          </article>
-          <article class="quick-action-card">
-            <h3>Run Desktop Bridge Check</h3>
-            <p>Verify the safe local desktop foundation without pretending native control already exists.</p>
-            <button id="quick-desktop-check" class="button-secondary" type="button">Run Desktop Bridge Check</button>
-          </article>
-        </div>
-      </section>
-
-      <section class="panel">
-        <div class="section-heading">
-          <div>
-            <h2>Live Boundary</h2>
-            <p>Keep the control boundary obvious: live now, scaffold-only, and still not implemented.</p>
-          </div>
-        </div>
-        <div class="status-columns">
-          <article class="status-card">
-            <h3>Live Now</h3>
-            <ul id="live-now-list" class="status-list"></ul>
-          </article>
-          <article class="status-card">
-            <h3>Scaffold-Only</h3>
-            <ul id="scaffold-only-list" class="status-list"></ul>
-          </article>
-          <article class="status-card">
-            <h3>Not Implemented Yet</h3>
-            <ul id="not-implemented-list" class="status-list"></ul>
-          </article>
-        </div>
-      </section>
-
-      <section class="panel panel-primary" id="ghoti-needs-action-panel" style="order:3" data-tab="dashboard">
+        <section class="dashboard-main-grid">
+<section class="panel panel-primary" id="ghoti-needs-action-panel" data-tab="dashboard">
         <div class="section-heading">
           <div>
             <h2>Needs Action Now</h2>
@@ -578,65 +189,40 @@
           <button id="needs-action-goto-queue" class="button-secondary" type="button">Go to Manual Queue</button>
         </div>
       </section>
-
-      <section class="panel" id="ghoti-pipeline-state-panel" style="order:8" data-tab="pipeline">
-        <div class="section-heading">
-          <div>
-            <h2>Supervised Pipeline State</h2>
-            <p>Read-only view of the current supervised operator pipeline: observe → decide → approve → prepare → review. Nothing executes here.</p>
-          </div>
-          <button id="refresh-pipeline-state" class="button-secondary" type="button">Refresh Pipeline State</button>
-        </div>
-        <div class="metric-grid">
-          <div class="metric-card">
-            <strong id="pipeline-operator-decision">-</strong>
-            <p>Latest Operator Decision</p>
-          </div>
-          <div class="metric-card">
-            <strong id="pipeline-proposed-action">-</strong>
-            <p>Latest Proposed Action</p>
-          </div>
-          <div class="metric-card">
-            <strong id="pipeline-pending-approvals">-</strong>
-            <p>Pending Approvals</p>
-          </div>
-          <div class="metric-card">
-            <strong id="pipeline-approved-count">-</strong>
-            <p>Approved</p>
-          </div>
-          <div class="metric-card">
-            <strong id="pipeline-ready-items">-</strong>
-            <p>Ready for Manual Execution</p>
-          </div>
-          <div class="metric-card">
-            <strong id="pipeline-reviewed-items">-</strong>
-            <p>Reviewed by Operator</p>
-          </div>
-          <div class="metric-card">
-            <strong id="pipeline-latest-approved-id">-</strong>
-            <p>Latest Approved Approval ID</p>
-          </div>
-          <div class="metric-card">
-            <strong id="pipeline-latest-ready-id">-</strong>
-            <p>Latest Ready Item ID</p>
-          </div>
-        </div>
-        <div id="pipeline-state-summary" class="summary-note">Waiting for pipeline state.</div>
+          <section class="panel dashboard-activity-panel">
+            <div class="section-heading">
+              <div>
+                <h2>Recent Activity &amp; Watchpoints</h2>
+                <p>Compact supervised history on the left, operator-facing issues on the right. Raw details stay in the deeper tabs.</p>
+              </div>
+            </div>
+            <div class="dashboard-activity-grid">
+              <article class="status-card dashboard-inline-card">
+                <div class="subsection-heading">
+                  <h3>Recent Supervised Activity</h3>
+                  <p id="dashboard-activity-note">Waiting for timeline data.</p>
+                </div>
+                <div id="dashboard-activity-list" class="approval-list">
+                  <p class="empty-state">Waiting for timeline data.</p>
+                </div>
+              </article>
+              <article class="status-card dashboard-inline-card">
+                <div class="subsection-heading">
+                  <h3>Recent Errors / Watchpoints</h3>
+                  <p id="dashboard-errors-note">Waiting for operator attention state.</p>
+                </div>
+                <div id="dashboard-errors-list" class="approval-list">
+                  <p class="empty-state">Waiting for operator attention state.</p>
+                </div>
+              </article>
+            </div>
+          </section>
+        </section>
       </section>
 
-      <section class="panel" id="ghoti-pipeline-items-panel" style="order:6" data-tab="pipeline">
-        <div class="section-heading">
-          <div>
-            <h2>Pipeline Items Overview</h2>
-            <p>Compact per-item view of the supervised pipeline. Each row is one approval-centered lifecycle entry. Read-only.</p>
-          </div>
-          <button id="refresh-pipeline-items" class="button-secondary" type="button">Refresh Pipeline Items</button>
-        </div>
-        <div id="pipeline-items-summary" class="summary-note">Waiting for pipeline items.</div>
-        <div id="pipeline-items-list" class="approval-list">Waiting for pipeline items data.</div>
-      </section>
-
-      <section class="panel panel-primary" id="ghoti-approval-inbox-panel" style="order:4" data-tab="approvals">
+      <section class="tab-panel" id="panel-approvals" data-tab-panel="approvals" role="tabpanel" aria-labelledby="tab-approvals" hidden>
+        <div class="approvals-grid">
+<section class="panel panel-primary" id="ghoti-approval-inbox-panel" data-tab="approvals">
         <div class="section-heading">
           <div>
             <h2>Approval Inbox</h2>
@@ -658,8 +244,7 @@
           </div>
         </div>
       </section>
-
-      <section class="panel panel-primary" id="ghoti-manual-queue-panel" style="order:5" data-tab="approvals">
+<section class="panel panel-primary" id="ghoti-manual-queue-panel" data-tab="approvals">
         <div class="section-heading">
           <div>
             <h2>Manual Execution Queue</h2>
@@ -682,23 +267,11 @@
           </div>
         </div>
       </section>
-
-      <section class="panel" id="ghoti-audit-trace-panel" style="order:7" data-tab="pipeline">
-        <div class="section-heading">
-          <div>
-            <h2>Audit Trace</h2>
-            <p>Read-only drilldown into one approval item's full supervised lifecycle: approval → queue → review. Enter an approval ID below.</p>
-          </div>
-          <button id="refresh-audit-trace" class="button-secondary" type="button">Load Trace</button>
         </div>
-        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
-          <input id="audit-trace-id-input" type="text" placeholder="Approval ID" style="flex:1;" />
-        </div>
-        <div id="audit-trace-summary" class="summary-note">Enter an approval ID and click Load Trace.</div>
-        <div id="audit-trace-body" class="approval-list">No trace loaded.</div>
-      </section>
-
-      <section class="panel panel-muted" style="order:12" data-tab="approvals">
+        <details class="panel panel-muted advanced-debug-shell">
+          <summary>Advanced / Debug: legacy supervisor lifecycle</summary>
+          <div class="advanced-debug-body">
+<section class="panel panel-muted legacy-supervisor-panel" data-tab="approvals">
         <div class="section-heading">
           <div>
             <h2>Supervisor &amp; Approval Inbox</h2>
@@ -1148,49 +721,482 @@
           <pre id="supervisor-raw">Waiting for refresh...</pre>
         </details>
       </section>
+          </div>
+        </details>
+      </section>
 
-      <section class="content-grid" style="order:13" data-tab="tools">
-        <section class="panel">
-          <div class="section-heading">
-            <div>
-              <h2>GitHub Updates</h2>
-              <p>Read-only repo visibility and remote readiness at a glance.</p>
-            </div>
-            <button id="refresh-github-panel" class="button-secondary" type="button">Refresh GitHub Panel</button>
+      <section class="tab-panel" id="panel-pipeline" data-tab-panel="pipeline" role="tabpanel" aria-labelledby="tab-pipeline" hidden>
+<section class="panel" id="ghoti-pipeline-state-panel" data-tab="pipeline">
+        <div class="section-heading">
+          <div>
+            <h2>Supervised Pipeline State</h2>
+            <p>Read-only view of the current supervised operator pipeline: observe → decide → approve → prepare → review. Nothing executes here.</p>
           </div>
-          <div class="metric-grid">
-            <article class="metric-card">
-              <span>Current Branch</span>
-              <strong id="github-branch">-</strong>
-            </article>
-            <article class="metric-card">
-              <span>Working Tree</span>
-              <strong id="github-clean">-</strong>
-            </article>
-            <article class="metric-card">
-              <span>Remote Write Readiness</span>
-              <strong id="github-remote-write">-</strong>
-            </article>
-            <article class="metric-card">
-              <span>gh Auth</span>
-              <strong id="github-auth">-</strong>
-            </article>
+          <button id="refresh-pipeline-state" class="button-secondary" type="button">Refresh Pipeline State</button>
+        </div>
+        <div class="metric-grid">
+          <div class="metric-card">
+            <strong id="pipeline-operator-decision">-</strong>
+            <p>Latest Operator Decision</p>
           </div>
-          <div id="github-summary" class="summary-note">Waiting for GitHub status.</div>
-          <div class="subsection">
+          <div class="metric-card">
+            <strong id="pipeline-proposed-action">-</strong>
+            <p>Latest Proposed Action</p>
+          </div>
+          <div class="metric-card">
+            <strong id="pipeline-pending-approvals">-</strong>
+            <p>Pending Approvals</p>
+          </div>
+          <div class="metric-card">
+            <strong id="pipeline-approved-count">-</strong>
+            <p>Approved</p>
+          </div>
+          <div class="metric-card">
+            <strong id="pipeline-ready-items">-</strong>
+            <p>Ready for Manual Execution</p>
+          </div>
+          <div class="metric-card">
+            <strong id="pipeline-reviewed-items">-</strong>
+            <p>Reviewed by Operator</p>
+          </div>
+          <div class="metric-card">
+            <strong id="pipeline-latest-approved-id">-</strong>
+            <p>Latest Approved Approval ID</p>
+          </div>
+          <div class="metric-card">
+            <strong id="pipeline-latest-ready-id">-</strong>
+            <p>Latest Ready Item ID</p>
+          </div>
+        </div>
+        <div id="pipeline-state-summary" class="summary-note">Waiting for pipeline state.</div>
+      </section>
+        <div class="pipeline-grid">
+<section class="panel" id="ghoti-pipeline-items-panel" data-tab="pipeline">
+        <div class="section-heading">
+          <div>
+            <h2>Pipeline Items Overview</h2>
+            <p>Compact per-item view of the supervised pipeline. Each row is one approval-centered lifecycle entry. Read-only.</p>
+          </div>
+          <button id="refresh-pipeline-items" class="button-secondary" type="button">Refresh Pipeline Items</button>
+        </div>
+        <div id="pipeline-items-summary" class="summary-note">Waiting for pipeline items.</div>
+        <div id="pipeline-items-list" class="approval-list">Waiting for pipeline items data.</div>
+      </section>
+<section class="panel" id="ghoti-audit-trace-panel" data-tab="pipeline">
+        <div class="section-heading">
+          <div>
+            <h2>Audit Trace</h2>
+            <p>Read-only drilldown into one approval item's full supervised lifecycle: approval → queue → review. Enter an approval ID below.</p>
+          </div>
+          <button id="refresh-audit-trace" class="button-secondary" type="button">Load Trace</button>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+          <input id="audit-trace-id-input" type="text" placeholder="Approval ID" style="flex:1;" />
+        </div>
+        <div id="audit-trace-summary" class="summary-note">Enter an approval ID and click Load Trace.</div>
+        <div id="audit-trace-body" class="approval-list">No trace loaded.</div>
+      </section>
+        </div>
+      </section>
+
+      <section class="tab-panel" id="panel-control" data-tab-panel="control" role="tabpanel" aria-labelledby="tab-control" hidden>
+<section id="ghoti-control-center" class="panel ghoti-control-panel" data-tab="control">
+        <div class="section-heading">
+          <div>
+            <h2>Ghoti Control Center</h2>
+            <p>The shortest honest view of what Ghoti is doing, what can run now, what needs review, and how to stop it safely.</p>
+          </div>
+          <button id="ghoti-refresh-state" class="button-secondary" type="button">Refresh Ghoti State</button>
+        </div>
+        <div class="metric-grid">
+          <article class="metric-card">
+            <span>Ghoti State</span>
+            <strong id="ghoti-control-state">Loading...</strong>
+            <p id="ghoti-control-reason">Waiting for the control-center state.</p>
+          </article>
+          <article class="metric-card">
+            <span>Emergency Stop</span>
+            <strong id="ghoti-control-hotkey">Ctrl+8</strong>
+            <p id="ghoti-control-hotkey-note">Stops the current desktop action or operator recipe and forces operator review.</p>
+          </article>
+          <article class="metric-card">
+            <span>Current Task</span>
+            <strong id="ghoti-control-current-task">Loading...</strong>
+            <p id="ghoti-control-current-task-note">Waiting for the current task summary.</p>
+          </article>
+          <article class="metric-card">
+            <span>Pending Approvals</span>
+            <strong id="ghoti-control-pending">-</strong>
+          </article>
+          <article class="metric-card">
+            <span>Blocked Tasks</span>
+            <strong id="ghoti-control-blocked">-</strong>
+          </article>
+          <article class="metric-card">
+            <span>Recent Actionable</span>
+            <strong id="ghoti-control-actionable">-</strong>
+          </article>
+          <article class="metric-card">
+            <span>Recent Failures</span>
+            <strong id="ghoti-control-failures">-</strong>
+          </article>
+          <article class="metric-card">
+            <span>Available Capabilities</span>
+            <strong id="ghoti-control-capabilities">-</strong>
+          </article>
+          <article class="metric-card">
+            <span>Recent Artifacts</span>
+            <strong id="ghoti-control-artifacts">-</strong>
+          </article>
+        </div>
+        <div class="task-filter-toolbar ghoti-control-toolbar">
+          <label>
+            Task view
+            <select id="ghoti-task-visibility-filter">
+              <option value="actionable" selected>Actionable only</option>
+              <option value="all">Show all</option>
+            </select>
+          </label>
+          <label>
+            Recent limit
+            <select id="ghoti-task-limit-filter">
+              <option value="6" selected>Recent 6</option>
+              <option value="12">Recent 12</option>
+              <option value="24">Recent 24</option>
+            </select>
+          </label>
+          <label>
+            Task type
+            <select id="ghoti-task-type-filter">
+              <option value="all" selected>All task types</option>
+              <option value="repo">Repo actions</option>
+              <option value="desktop">Desktop actions</option>
+              <option value="recipe">Operator recipes</option>
+              <option value="handoff">Codex↔ChatGPT handoff</option>
+            </select>
+          </label>
+          <label>
+            Status
+            <select id="ghoti-task-status-filter">
+              <option value="all" selected>Any status</option>
+              <option value="queued">Queued</option>
+              <option value="running">Running</option>
+              <option value="pending_approval">Pending approval</option>
+              <option value="blocked_human_needed">Blocked human-needed</option>
+              <option value="waiting">Waiting</option>
+              <option value="ready_to_resume">Ready to resume</option>
+              <option value="interrupted">Interrupted</option>
+              <option value="failed">Failed</option>
+            </select>
+          </label>
+          <label class="checkbox-row">
+            <input id="ghoti-task-active-only" type="checkbox" />
+            Active-only view
+          </label>
+        </div>
+        <p id="ghoti-control-filter-note" class="list-filter-note">Completed tasks stay hidden by default.</p>
+        <div class="status-columns">
+          <article class="status-card">
             <div class="subsection-heading">
-              <h3>Recent Commits</h3>
-              <p>Most recent repo activity from the current branch context.</p>
+              <h3>Quick Actions</h3>
+              <p>Shortcuts into the safest and most common next moves.</p>
             </div>
-            <ul id="github-commits" class="commit-list"></ul>
-          </div>
-          <details class="details-block">
-            <summary>Show raw GitHub details</summary>
-            <pre id="github-raw">Waiting for refresh...</pre>
-          </details>
-        </section>
+            <div class="stacked-form">
+              <div class="compact-action-grid">
+                <button id="ghoti-show-approvals" class="button-secondary" type="button">Show Pending Approvals</button>
+                <button id="ghoti-show-active-tasks" class="button-secondary" type="button">Show Active / Recent Tasks</button>
+                <button id="ghoti-show-artifacts" class="button-secondary" type="button">Show Recent Artifacts</button>
+                <button id="ghoti-queue-observe-desktop" type="button">Queue Desktop Observation</button>
+                <button id="ghoti-queue-clipboard-read" class="button-secondary" type="button">Queue Clipboard Read</button>
+                <button id="ghoti-run-runtime-checker" class="button-secondary" type="button">Run Runtime Checker</button>
+                <button id="ghoti-run-dashboard-checker" class="button-secondary" type="button">Run Dashboard Checker</button>
+                <button id="ghoti-queue-handoff" type="button">Queue Handoff</button>
+              </div>
+              <label>
+                Quick clipboard text
+                <input id="ghoti-quick-clipboard-text" type="text" value="Ghoti quick clipboard text" />
+              </label>
+              <button id="ghoti-queue-clipboard-write" class="button-secondary" type="button">Queue Clipboard Write</button>
+              <label>
+                Focus window
+                <select id="ghoti-quick-focus-window">
+                  <option value="terminal" selected>Terminal</option>
+                  <option value="vscode">VS Code</option>
+                  <option value="cursor">Cursor</option>
+                  <option value="dashboard_browser">Dashboard browser</option>
+                </select>
+              </label>
+              <button id="ghoti-queue-focus-window" class="button-secondary" type="button">Queue Focus Window</button>
+            </div>
+            <div id="ghoti-control-action-summary" class="result-panel" aria-live="polite">Ready to refresh Ghoti state, inspect work, or queue a narrow local action.</div>
+          </article>
+          <article class="status-card">
+            <div class="subsection-heading">
+              <h3>Recent Actionable Tasks</h3>
+              <p>Recent work that still needs approval, execution, review, or follow-up. Completed tasks stay hidden by default here.</p>
+            </div>
+            <div id="ghoti-actionable-task-list" class="approval-list">Waiting for Ghoti control-center task data.</div>
+          </article>
+          <article class="status-card">
+            <div class="subsection-heading">
+              <h3>Brain / Provider Truth</h3>
+              <p>Shows the configured local brain, whether it is actually ready, and whether the current task used model inference or only local rules.</p>
+            </div>
+            <div class="metric-grid ghoti-brain-metrics">
+              <article class="metric-card">
+                <span>Active Provider</span>
+                <strong id="ghoti-brain-provider">unknown</strong>
+              </article>
+              <article class="metric-card">
+                <span>Active Model</span>
+                <strong id="ghoti-brain-model">none</strong>
+              </article>
+              <article class="metric-card">
+                <span>Inference Ready</span>
+                <strong id="ghoti-brain-ready">no</strong>
+              </article>
+              <article class="metric-card">
+                <span>Current Task Used Model</span>
+                <strong id="ghoti-brain-current-task-use">no</strong>
+              </article>
+              <article class="metric-card">
+                <span>Last Model Call</span>
+                <strong id="ghoti-brain-last-call">never_called</strong>
+              </article>
+            </div>
+            <p id="ghoti-brain-current-task-detail" class="summary-note">The current task model-use summary will appear here.</p>
+            <p id="ghoti-brain-note" class="summary-note">Waiting for the live brain/provider status.</p>
+            <ul id="ghoti-brain-notes" class="status-list"></ul>
+          </article>
+          <article class="status-card">
+            <div class="subsection-heading">
+              <h3>Specialist-Agent Truth</h3>
+              <p>Shows which narrow specialist role Ghoti would use right now, without pretending a full council/router exists yet.</p>
+            </div>
+            <div class="metric-grid ghoti-brain-metrics">
+              <article class="metric-card">
+                <span>Current Role</span>
+                <strong id="ghoti-role-current">supervisor</strong>
+              </article>
+              <article class="metric-card">
+                <span>Preferred Provider</span>
+                <strong id="ghoti-role-provider">none</strong>
+              </article>
+              <article class="metric-card">
+                <span>Approval Sensitivity</span>
+                <strong id="ghoti-role-sensitivity">unknown</strong>
+              </article>
+              <article class="metric-card">
+                <span>Registry Size</span>
+                <strong id="ghoti-role-count">0</strong>
+              </article>
+            </div>
+            <p id="ghoti-role-note" class="summary-note">Waiting for the specialist-role registry snapshot.</p>
+            <ul id="ghoti-role-roles" class="status-list"></ul>
+          </article>
+          <article class="status-card">
+            <div class="subsection-heading">
+              <h3>Browser-Agent Truth</h3>
+              <p>Shows whether Browser Use and Playwright are really present and ready, versus still only scaffolded.</p>
+            </div>
+            <div class="metric-grid ghoti-brain-metrics">
+              <article class="metric-card">
+                <span>Browser Use Installed</span>
+                <strong id="ghoti-browser-use-installed">no</strong>
+              </article>
+              <article class="metric-card">
+                <span>Browser Use Ready</span>
+                <strong id="ghoti-browser-use-ready">no</strong>
+              </article>
+              <article class="metric-card">
+                <span>Playwright Ready</span>
+                <strong id="ghoti-playwright-ready">no</strong>
+              </article>
+              <article class="metric-card">
+                <span>Current Browser Role</span>
+                <strong id="ghoti-browser-role">none</strong>
+              </article>
+              <article class="metric-card">
+                <span>Current Browser Action</span>
+                <strong id="ghoti-browser-action">none</strong>
+              </article>
+            </div>
+            <p id="ghoti-browser-note" class="summary-note">Waiting for browser capability truth.</p>
+            <ul id="ghoti-browser-notes" class="status-list"></ul>
+          </article>
+          <article class="status-card">
+            <div class="subsection-heading">
+              <h3>Relay-Loop Truth</h3>
+              <p>Shows the supervised ChatGPT ↔ Codex relay state, exact saved targets, stored preset truth, and any usage-reset wait.</p>
+            </div>
+            <div class="metric-grid ghoti-brain-metrics">
+              <article class="metric-card">
+                <span>Relay State</span>
+                <strong id="ghoti-relay-state">idle</strong>
+              </article>
+              <article class="metric-card">
+                <span>Current Step</span>
+                <strong id="ghoti-relay-step">idle</strong>
+              </article>
+              <article class="metric-card">
+                <span>Source</span>
+                <strong id="ghoti-relay-source">chatgpt</strong>
+              </article>
+              <article class="metric-card">
+                <span>Destination</span>
+                <strong id="ghoti-relay-destination">codex</strong>
+              </article>
+              <article class="metric-card">
+                <span>Codex Preset</span>
+                <strong id="ghoti-relay-preset">Implementing new feature | Medium</strong>
+              </article>
+              <article class="metric-card">
+                <span>Codex Status</span>
+                <strong id="ghoti-relay-status">unknown</strong>
+              </article>
+              <article class="metric-card">
+                <span>Next Reset</span>
+                <strong id="ghoti-relay-reset">none</strong>
+              </article>
+            </div>
+            <p id="ghoti-relay-note" class="summary-note">Waiting for the relay-loop runtime truth.</p>
+            <ul id="ghoti-relay-notes" class="status-list"></ul>
+          </article>
+          <article class="status-card">
+            <div class="subsection-heading">
+              <h3>Compact Memory Truth</h3>
+              <p>Shows whether the local markdown memory scaffold exists for later Obsidian-style use, without claiming autonomous memory management.</p>
+            </div>
+            <div class="metric-grid ghoti-brain-metrics">
+              <article class="metric-card">
+                <span>Memory Ready</span>
+                <strong id="ghoti-memory-ready">no</strong>
+              </article>
+              <article class="metric-card">
+                <span>Markdown Ready</span>
+                <strong id="ghoti-memory-markdown-ready">no</strong>
+              </article>
+              <article class="metric-card">
+                <span>File Count</span>
+                <strong id="ghoti-memory-file-count">0</strong>
+              </article>
+            </div>
+            <p id="ghoti-memory-note" class="summary-note">Waiting for compact memory status.</p>
+            <ul id="ghoti-memory-notes" class="status-list"></ul>
+          </article>
+          <article class="status-card">
+            <div class="subsection-heading">
+              <h3>Recent Failures</h3>
+              <p>The smallest useful view into blocked, failed, or interrupted work that still needs operator attention.</p>
+            </div>
+            <div id="ghoti-failure-task-list" class="approval-list">Waiting for recent failure visibility.</div>
+          </article>
+          <article class="status-card">
+            <div class="subsection-heading">
+              <h3>Operator Watchdog</h3>
+              <p>Small local-only visibility for manual intervention, wrong-window blocks, stalled tasks, and did-not-complete states.</p>
+            </div>
+            <div class="metric-grid ghoti-watchdog-metrics">
+              <article class="metric-card">
+                <span>Watchdog State</span>
+                <strong id="ghoti-watchdog-state">watching</strong>
+              </article>
+              <article class="metric-card">
+                <span>Wrong-Window Blocks</span>
+                <strong id="ghoti-watchdog-wrong-window">0</strong>
+              </article>
+              <article class="metric-card">
+                <span>Stalled Tasks</span>
+                <strong id="ghoti-watchdog-stalled">0</strong>
+              </article>
+              <article class="metric-card">
+                <span>Did Not Complete</span>
+                <strong id="ghoti-watchdog-did-not-complete">0</strong>
+              </article>
+            </div>
+            <p id="ghoti-watchdog-headline" class="summary-note">Waiting for local watchdog visibility.</p>
+            <ul id="ghoti-watchdog-alerts" class="status-list"></ul>
+            <p id="ghoti-watchdog-handoff-hint" class="summary-note">Handoff safety hints will appear here when relevant.</p>
+          </article>
+          <article class="status-card">
+            <div class="subsection-heading">
+              <h3>What Ghoti Can Do Right Now</h3>
+              <p>Only the capabilities that already exist in the current local-first stack.</p>
+            </div>
+            <ul id="ghoti-can-do-list" class="status-list"></ul>
+          </article>
+          <article class="status-card">
+            <div class="subsection-heading">
+              <h3>What To Do Next</h3>
+              <p id="ghoti-control-next-step-copy">Waiting for the next operator step.</p>
+            </div>
+            <ul id="ghoti-next-step-list" class="status-list"></ul>
+          </article>
+          <article class="status-card">
+            <div class="subsection-heading">
+              <h3>CLI Shortcuts</h3>
+              <p>Use these from PowerShell when you want the same operator visibility without the browser.</p>
+            </div>
+            <ul id="ghoti-cli-command-list" class="status-list"></ul>
+            <p id="ghoti-control-no-delete-note" class="summary-note">No task deletion without explicit approval. Prefer archive, filter, and history visibility instead.</p>
+          </article>
+        </div>
+      </section>
+      </section>
 
-        <section class="panel">
+      <section class="tab-panel" id="panel-tools" data-tab-panel="tools" role="tabpanel" aria-labelledby="tab-tools" hidden>
+<section class="panel tools-quick-actions-panel">
+        <div class="section-heading">
+          <div>
+            <h2>What Can I Do Now?</h2>
+            <p>These are the clearest local actions in the current console.</p>
+          </div>
+        </div>
+        <div class="quick-actions">
+          <article class="quick-action-card">
+            <h3>Refresh Console View</h3>
+            <p>Reload operator status, capabilities, GitHub updates, artifacts, desktop bridge state, and recent actions.</p>
+            <button id="refresh-console" class="button-secondary" type="button">Refresh Console Status</button>
+          </article>
+          <article class="quick-action-card">
+            <h3>Refresh GitHub Summary</h3>
+            <p>Check branch status, working tree state, recent commits, and remote readiness.</p>
+            <button id="refresh-github" class="button-secondary" type="button">Refresh GitHub Summary</button>
+          </article>
+          <article class="quick-action-card">
+            <h3>Generate Internship Pack</h3>
+            <p>Create the current default internship application scaffold.</p>
+            <button id="quick-internship" type="button">Generate Internship Pack</button>
+          </article>
+          <article class="quick-action-card">
+            <h3>Generate Showcase Case Study</h3>
+            <p>Create a recruiter-facing case-study scaffold for the current project state.</p>
+            <button id="quick-showcase" type="button">Generate Showcase Case Study</button>
+          </article>
+          <article class="quick-action-card">
+            <h3>Generate Portfolio Page</h3>
+            <p>Create a portfolio-ready project page scaffold for the current project state.</p>
+            <button id="quick-portfolio" type="button">Generate Portfolio Page</button>
+          </article>
+          <article class="quick-action-card">
+            <h3>Run Browser Smoke Demo</h3>
+            <p>Run the fast headless browser check and save the screenshot artifact.</p>
+            <button id="quick-browser-smoke" type="button">Run Headless Browser Demo</button>
+          </article>
+          <article class="quick-action-card highlight-card">
+            <h3>Run Visible Browser Demo</h3>
+            <p>Open the local headed browser demo so the click is visible.</p>
+            <button id="quick-browser-visible" type="button">Run Visible Browser Demo</button>
+          </article>
+          <article class="quick-action-card">
+            <h3>Run Desktop Bridge Check</h3>
+            <p>Verify the safe local desktop foundation without pretending native control already exists.</p>
+            <button id="quick-desktop-check" class="button-secondary" type="button">Run Desktop Bridge Check</button>
+          </article>
+        </div>
+      </section>
+        <div class="tools-grid">
+<section class="panel">
           <div class="section-heading">
             <div>
               <h2>Safe Repo Executor</h2>
@@ -1274,8 +1280,7 @@ This file was queued through the safe repo-local executor.
             <pre id="executor-raw">Waiting for refresh...</pre>
           </details>
         </section>
-
-        <section class="panel">
+<section class="panel">
           <div class="section-heading">
             <div>
               <h2>Browser Controls</h2>
@@ -1309,8 +1314,7 @@ This file was queued through the safe repo-local executor.
             </article>
           </div>
         </section>
-
-        <section class="panel">
+<section class="panel">
           <div class="section-heading">
             <div>
               <h2>Desktop Bridge</h2>
@@ -1549,8 +1553,7 @@ This file was queued through the safe repo-local executor.
             <pre id="desktop-raw">Waiting for refresh...</pre>
           </details>
         </section>
-
-        <section class="panel">
+<section class="panel">
           <div class="section-heading">
             <div>
               <h2>Operator Recipes</h2>
@@ -1662,8 +1665,7 @@ This file was queued through the safe repo-local executor.
             <div id="recipe-task-list" class="approval-list">Waiting for recipe task list.</div>
           </div>
         </section>
-
-        <section class="panel">
+<section class="panel">
           <div class="section-heading">
             <div>
               <h2>Personal Ops</h2>
@@ -1766,8 +1768,73 @@ This file was queued through the safe repo-local executor.
             </article>
           </div>
         </section>
+        </div>
+      </section>
 
-        <section class="panel">
+      <section class="tab-panel" id="panel-system" data-tab-panel="system" role="tabpanel" aria-labelledby="tab-system" hidden>
+<section class="panel system-live-boundary-panel">
+        <div class="section-heading">
+          <div>
+            <h2>Live Boundary</h2>
+            <p>Keep the control boundary obvious: live now, scaffold-only, and still not implemented.</p>
+          </div>
+        </div>
+        <div class="status-columns">
+          <article class="status-card">
+            <h3>Live Now</h3>
+            <ul id="live-now-list" class="status-list"></ul>
+          </article>
+          <article class="status-card">
+            <h3>Scaffold-Only</h3>
+            <ul id="scaffold-only-list" class="status-list"></ul>
+          </article>
+          <article class="status-card">
+            <h3>Not Implemented Yet</h3>
+            <ul id="not-implemented-list" class="status-list"></ul>
+          </article>
+        </div>
+      </section>
+        <div class="system-grid">
+<section class="panel">
+          <div class="section-heading">
+            <div>
+              <h2>GitHub Updates</h2>
+              <p>Read-only repo visibility and remote readiness at a glance.</p>
+            </div>
+            <button id="refresh-github-panel" class="button-secondary" type="button">Refresh GitHub Panel</button>
+          </div>
+          <div class="metric-grid">
+            <article class="metric-card">
+              <span>Current Branch</span>
+              <strong id="github-branch">-</strong>
+            </article>
+            <article class="metric-card">
+              <span>Working Tree</span>
+              <strong id="github-clean">-</strong>
+            </article>
+            <article class="metric-card">
+              <span>Remote Write Readiness</span>
+              <strong id="github-remote-write">-</strong>
+            </article>
+            <article class="metric-card">
+              <span>gh Auth</span>
+              <strong id="github-auth">-</strong>
+            </article>
+          </div>
+          <div id="github-summary" class="summary-note">Waiting for GitHub status.</div>
+          <div class="subsection">
+            <div class="subsection-heading">
+              <h3>Recent Commits</h3>
+              <p>Most recent repo activity from the current branch context.</p>
+            </div>
+            <ul id="github-commits" class="commit-list"></ul>
+          </div>
+          <details class="details-block">
+            <summary>Show raw GitHub details</summary>
+            <pre id="github-raw">Waiting for refresh...</pre>
+          </details>
+        </section>
+<section class="panel">
           <div class="section-heading">
             <div>
               <h2>Capability Summary</h2>
@@ -1791,9 +1858,8 @@ This file was queued through the safe repo-local executor.
             <pre id="capability-raw">Waiting for refresh...</pre>
           </details>
         </section>
-      </section>
-
-      <section class="panel" data-tab="system">
+        </div>
+<section class="panel" data-tab="system">
         <div class="section-heading">
           <div>
             <h2>Recent Artifacts</h2>
@@ -1815,8 +1881,7 @@ This file was queued through the safe repo-local executor.
           </article>
         </div>
       </section>
-
-      <section class="panel" data-tab="system">
+<section class="panel" data-tab="system">
         <div class="section-heading">
           <div>
             <h2>Recent Actions</h2>
@@ -1825,39 +1890,10 @@ This file was queued through the safe repo-local executor.
         </div>
         <div id="recent-actions-output" class="action-log" aria-live="polite">Waiting for recent actions...</div>
       </section>
+      </section>
     </main>
 
     <script src="/app.js"></script>
-    <script>
-    (function() {
-      var TABS = ['dashboard','approvals','pipeline','control','tools','system'];
-      function activate(tab) {
-        if (!TABS.includes(tab)) tab = 'dashboard';
-        document.querySelectorAll('.tab-btn').forEach(function(b) {
-          var active = b.dataset.tab === tab;
-          b.classList.toggle('tab-active', active);
-          b.setAttribute('aria-selected', active ? 'true' : 'false');
-        });
-        document.querySelectorAll('.tabs-main > [data-tab]').forEach(function(el) {
-          el.hidden = el.dataset.tab !== tab;
-        });
-        try { localStorage.setItem('ghoti_tab', tab); } catch(e) {}
-      }
-      document.querySelectorAll('.tab-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() { activate(btn.dataset.tab); });
-      });
-      // "Go to Approval Inbox" / "Go to Manual Queue" buttons switch tabs
-      var gotoApprovals = document.getElementById('needs-action-goto-approvals');
-      var gotoQueue = document.getElementById('needs-action-goto-queue');
-      if (gotoApprovals) gotoApprovals.addEventListener('click', function() { activate('approvals'); }, true);
-      if (gotoQueue) gotoQueue.addEventListener('click', function() { activate('approvals'); }, true);
-      // Restore saved tab
-      var saved;
-      try { saved = localStorage.getItem('ghoti_tab'); } catch(e) {}
-      activate(saved || 'dashboard');
-    })();
-    </script>
-
-  </body>
+</body>
 </html>
 

@@ -8,8 +8,12 @@ const uiState = {
   controlCenterPayload: null,
   executorTasksPayload: null,
   handoffTargetsPayload: null,
+  latestControlCenterSummary: null,
+  activeConsoleTab: "dashboard",
 };
 const HANDOFF_TARGET_PREFERENCES_KEY = "ghoti.handoffTargetPreferences.v1";
+const CONSOLE_TAB_STORAGE_KEY = "ghoti.consoleActiveTab.v1";
+const CONSOLE_TABS = ["dashboard", "approvals", "pipeline", "control", "tools", "system"];
 
 const desktopActionTypes = new Set([
   "list_windows",
@@ -408,14 +412,110 @@ function getGhotiControlCenterFilters() {
   };
 }
 
+function readStoredConsoleTab() {
+  try {
+    const raw = window.localStorage.getItem(CONSOLE_TAB_STORAGE_KEY);
+    return CONSOLE_TABS.includes(raw) ? raw : "";
+  } catch (_error) {
+    return "";
+  }
+}
+
+function storeConsoleTab(tabName) {
+  try {
+    window.localStorage.setItem(CONSOLE_TAB_STORAGE_KEY, tabName);
+  } catch (_error) {
+    // Ignore localStorage write failures.
+  }
+}
+
+function setActiveConsoleTab(tabName, options = {}) {
+  const nextTab = CONSOLE_TABS.includes(tabName) ? tabName : "dashboard";
+  uiState.activeConsoleTab = nextTab;
+
+  document.querySelectorAll('.tab-btn[data-tab]').forEach((button) => {
+    const isActive = button.dataset.tab === nextTab;
+    button.classList.toggle('tab-active', isActive);
+    button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    button.tabIndex = isActive ? 0 : -1;
+  });
+
+  document.querySelectorAll('[data-tab-panel]').forEach((panel) => {
+    const isActive = panel.dataset.tabPanel === nextTab;
+    panel.hidden = !isActive;
+    panel.setAttribute('aria-hidden', isActive ? 'false' : 'true');
+  });
+
+  if (options.persist !== false) {
+    storeConsoleTab(nextTab);
+  }
+}
+
+function initConsoleTabs() {
+  const buttons = Array.from(document.querySelectorAll('.tab-btn[data-tab]'));
+  if (!buttons.length) {
+    return;
+  }
+
+  buttons.forEach((button, index) => {
+    button.addEventListener('click', () => {
+      setActiveConsoleTab(button.dataset.tab || 'dashboard');
+    });
+
+    button.addEventListener('keydown', (event) => {
+      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
+        return;
+      }
+      event.preventDefault();
+      let nextIndex = index;
+      if (event.key === 'ArrowRight') {
+        nextIndex = (index + 1) % buttons.length;
+      } else if (event.key === 'ArrowLeft') {
+        nextIndex = (index - 1 + buttons.length) % buttons.length;
+      } else if (event.key === 'Home') {
+        nextIndex = 0;
+      } else if (event.key === 'End') {
+        nextIndex = buttons.length - 1;
+      }
+      const nextButton = buttons[nextIndex];
+      if (nextButton) {
+        setActiveConsoleTab(nextButton.dataset.tab || 'dashboard');
+        nextButton.focus();
+      }
+    });
+  });
+
+  const initialTab = readStoredConsoleTab()
+    || buttons.find((button) => button.classList.contains('tab-active'))?.dataset.tab
+    || 'dashboard';
+  setActiveConsoleTab(initialTab, { persist: false });
+}
+
 function scrollToElement(targetId) {
   const element = document.getElementById(targetId);
-  if (element) {
-    element.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
+  if (!element) {
+    return;
   }
+
+  const panel = element.closest('[data-tab-panel]');
+  if (panel?.dataset?.tabPanel) {
+    setActiveConsoleTab(panel.dataset.tabPanel);
+  }
+
+  let parent = element.parentElement;
+  while (parent) {
+    if (parent.tagName === 'DETAILS') {
+      parent.open = true;
+    }
+    parent = parent.parentElement;
+  }
+
+  window.requestAnimationFrame(() => {
+    element.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+  });
 }
 
 function applyTaskListFilters(items) {
@@ -1834,13 +1934,15 @@ function renderRecentActions(payload) {
 
 function renderRecentActionsPanel() {
   const container = document.getElementById("recent-actions-output");
+  const actions = [...uiState.localActions, ...uiState.serverActions].slice(0, 12);
   if (!container) {
+    renderDashboardRecentActivity(uiState.latestControlCenterSummary || {});
     return;
   }
 
-  const actions = [...uiState.localActions, ...uiState.serverActions].slice(0, 12);
   if (actions.length === 0) {
     container.innerHTML = "<p class=\"empty-state\">No recent actions yet.</p>";
+    renderDashboardRecentActivity(uiState.latestControlCenterSummary || {});
     return;
   }
 
@@ -1859,6 +1961,8 @@ function renderRecentActionsPanel() {
       `;
     })
     .join("");
+
+  renderDashboardRecentActivity(uiState.latestControlCenterSummary || {});
 }
 
 function renderInlineMarkdown(text) {
@@ -2074,17 +2178,19 @@ async function refreshPipelineState() {
   const items = s.latest_items || {};
   const decision = (s.latest_operator_state || {}).decision || "-";
   const proposed = s.latest_proposed_action || "-";
+
   setText("pipeline-operator-decision", decision);
   setText("pipeline-proposed-action", proposed);
-  setText("pipeline-pending-approvals", inbox.pending_count ?? "-");
-  setText("pipeline-approved-count", inbox.approved_count ?? "-");
-  setText("pipeline-ready-items", queue.ready_count ?? "-");
-  setText("pipeline-reviewed-items", queue.reviewed_count ?? "-");
+  setText("pipeline-pending-approvals", payload.ok ? (inbox.pending_count ?? "-") : "unavailable");
+  setText("pipeline-approved-count", payload.ok ? (inbox.approved_count ?? "-") : "unavailable");
+  setText("pipeline-ready-items", payload.ok ? (queue.ready_count ?? "-") : "unavailable");
+  setText("pipeline-reviewed-items", payload.ok ? (queue.reviewed_count ?? "-") : "unavailable");
   setText("pipeline-latest-approved-id", items.latest_approved_approval_id || "none");
   setText("pipeline-latest-ready-id", items.latest_ready_item_id || "none");
+
   const note = payload.ok
     ? `Status: ${s.status || "unknown"} — generated ${s.generated_at_utc || ""}`
-    : "Pipeline state unavailable.";
+    : humanizeGhotiIssue(extractPayloadErrors(payload)[0] || s.reason || "Pipeline state unavailable.");
   setText("pipeline-state-summary", note);
   return payload;
 }
@@ -2096,10 +2202,14 @@ async function refreshPipelineItems() {
   const items = s.items || [];
   const note = payload.ok
     ? `${counts.total_items ?? 0} items — pending: ${counts.pending_count ?? 0}, approved: ${counts.approved_count ?? 0}, ready: ${counts.ready_count ?? 0}, reviewed: ${counts.reviewed_count ?? 0} — ${s.generated_at_utc || ""}`
-    : "Pipeline items unavailable.";
+    : humanizeGhotiIssue(extractPayloadErrors(payload)[0] || s.reason || "Pipeline items unavailable.");
   setText("pipeline-items-summary", note);
   const container = document.getElementById("pipeline-items-list");
   if (!container) return payload;
+  if (!payload.ok) {
+    container.innerHTML = renderInlineErrorCard("Pipeline items unavailable", note, payload.detail || payload);
+    return payload;
+  }
   if (!items.length) {
     container.innerHTML = `<p class="empty-state">No pipeline items found.</p>`;
     return payload;
@@ -2140,17 +2250,26 @@ async function refreshApprovalInbox() {
   try {
     payload = await requestJson("/api/ghoti/approval-inbox");
   } catch (err) {
-    setText("approval-inbox-summary", "Approval inbox unavailable: " + err.message);
+    const message = "Approval inbox unavailable: " + err.message;
+    setText("approval-inbox-summary", message);
+    const container = document.getElementById("approval-inbox-list");
+    if (container) {
+      container.innerHTML = renderInlineErrorCard("Approval inbox unavailable", message, { error: err.message });
+    }
     return;
   }
   const s = payload.summary || {};
   const items = (s.items || []).filter((item) => item.status === "pending");
   const note = payload.ok
     ? `${items.length} pending approval(s) — total in inbox: ${(s.items || []).length}`
-    : "Approval inbox unavailable.";
+    : humanizeGhotiIssue(extractPayloadErrors(payload)[0] || s.reason || "Approval inbox unavailable.");
   setText("approval-inbox-summary", note);
   const container = document.getElementById("approval-inbox-list");
   if (!container) return;
+  if (!payload.ok) {
+    container.innerHTML = renderInlineErrorCard("Approval inbox unavailable", note, payload.detail || payload);
+    return;
+  }
   if (!items.length) {
     container.innerHTML = `<p class="empty-state">No pending approvals. All items are approved, rejected, or the inbox is empty.</p>`;
     return;
@@ -2243,7 +2362,12 @@ async function refreshManualQueue() {
   try {
     payload = await requestJson("/api/ghoti/manual-queue");
   } catch (err) {
-    setText("manual-queue-summary", "Manual queue unavailable: " + err.message);
+    const message = "Manual queue unavailable: " + err.message;
+    setText("manual-queue-summary", message);
+    const container = document.getElementById("manual-queue-list");
+    if (container) {
+      container.innerHTML = renderInlineErrorCard("Manual queue unavailable", message, { error: err.message });
+    }
     return;
   }
   const s = payload.summary || {};
@@ -2252,10 +2376,14 @@ async function refreshManualQueue() {
   const reviewedCount = items.filter((i) => i.status === "reviewed_by_operator").length;
   const note = payload.ok
     ? `${items.length} item(s) — ready: ${readyCount}, reviewed: ${reviewedCount}`
-    : "Manual queue unavailable.";
+    : humanizeGhotiIssue(extractPayloadErrors(payload)[0] || s.reason || "Manual queue unavailable.");
   setText("manual-queue-summary", note);
   const container = document.getElementById("manual-queue-list");
   if (!container) return;
+  if (!payload.ok) {
+    container.innerHTML = renderInlineErrorCard("Manual queue unavailable", note, payload.detail || payload);
+    return;
+  }
   if (!items.length) {
     container.innerHTML = `<p class="empty-state">No items in the manual queue.</p>`;
     return;
@@ -2339,19 +2467,24 @@ async function refreshAuditTrace() {
   try {
     payload = await requestJson(`/api/ghoti/audit-trace?approval_id=${encodeURIComponent(approvalId)}`);
   } catch (err) {
-    setText("audit-trace-summary", "Audit trace failed: " + err.message);
+    const message = "Audit trace failed: " + err.message;
+    setText("audit-trace-summary", message);
+    const container = document.getElementById("audit-trace-body");
+    if (container) {
+      container.innerHTML = renderInlineErrorCard("Audit trace unavailable", message, { error: err.message, approvalId });
+    }
     return;
   }
   const s = payload.summary || {};
   const flags = s.lifecycle_flags || {};
   const note = payload.ok
     ? `Trace status: ${s.trace_status || "unknown"} — approval: ${flags.approval_found ? "found" : "missing"}, queue: ${flags.queue_item_found ? "found" : "missing"}`
-    : "Audit trace unavailable.";
+    : humanizeGhotiIssue(extractPayloadErrors(payload)[0] || s.reason || "Audit trace unavailable.");
   setText("audit-trace-summary", note);
   const container = document.getElementById("audit-trace-body");
   if (!container) return;
   if (!payload.ok || !s.approval_item) {
-    container.innerHTML = `<p class="empty-state">Approval item not found for ID: ${escapeHtml(approvalId)}</p>`;
+    container.innerHTML = renderInlineErrorCard("Audit trace unavailable", note, payload.detail || payload);
     return;
   }
   const ai = s.approval_item || {};
@@ -2379,19 +2512,239 @@ async function refreshAuditTrace() {
         ${qi.review_note ? `<p><strong>Review note:</strong> ${escapeHtml(qi.review_note)}</p>` : ""}
         ${qi.reviewed_at_utc ? `<p><strong>Reviewed at:</strong> ${escapeHtml(qi.reviewed_at_utc)}</p>` : ""}
       </div>
-    </article>` : `<p class="summary-note">No manual queue item linked to this approval.</p>`}
-    ${timeline.length ? `<div class="subsection"><h4>Timeline</h4>${timeline.map((e) =>
-      `<p class="approval-meta">${escapeHtml(e.timestamp_utc || "")} — ${escapeHtml(e.event || "")} (${escapeHtml(e.status || "")})${e.note ? ` — ${escapeHtml(e.note)}` : ""}</p>`
-    ).join("")}</div>` : ""}
+    </article>` : `<p class="empty-state">No manual queue item recorded for this approval.</p>`}
+    <div class="timeline-list">
+      ${(timeline || []).map((entry) => `
+        <article class="log-item">
+          <div class="log-topline">
+            <strong>${escapeHtml(entry.event || "event")}</strong>
+            <span class="console-badge">${escapeHtml(entry.timestamp_utc || "")}</span>
+          </div>
+          <p>${escapeHtml(entry.note || "")}</p>
+        </article>
+      `).join("")}
+    </div>
   `;
 }
 
 function loadAuditTraceById(approvalId) {
   const input = document.getElementById("audit-trace-id-input");
   if (input) input.value = approvalId;
-  const panel = document.getElementById("ghoti-audit-trace-panel");
-  if (panel) panel.scrollIntoView({ behavior: "smooth" });
+  scrollToElement("ghoti-audit-trace-panel");
   refreshAuditTrace();
+}
+
+function extractPayloadErrors(payload = {}) {
+  const detailErrors = Array.isArray(payload?.detail?.errors) ? payload.detail.errors : [];
+  const summaryReason = payload?.summary?.reason ? [payload.summary.reason] : [];
+  const detailReason = payload?.detail?.summary?.reason ? [payload.detail.summary.reason] : [];
+  const directError = payload?.error ? [payload.error] : [];
+  return [...new Set([...detailErrors, ...summaryReason, ...detailReason, ...directError].filter(Boolean))];
+}
+
+function humanizeGhotiIssue(rawMessage) {
+  const message = String(rawMessage || "").trim();
+  if (!message) {
+    return "No fresh supervised data is available right now.";
+  }
+  if (message.includes(".runtime_data.lock")) {
+    return "The live runtime lock file is missing, so this panel is falling back to saved operator state only.";
+  }
+  if (message.startsWith("approval_inbox_read_failed")) {
+    return "The approval inbox could not be read from the local supervised runtime state.";
+  }
+  if (message.startsWith("manual_queue_read_failed")) {
+    return "The manual queue could not be read from the local supervised runtime state.";
+  }
+  if (message.startsWith("operator_state_read_failed")) {
+    return "The latest operator snapshot could not be read from compact memory.";
+  }
+  if (message.startsWith("operator_state_missing")) {
+    return "No operator snapshot has been recorded yet.";
+  }
+  return message.replaceAll("_", " ");
+}
+
+function renderInlineErrorCard(title, message, debugPayload) {
+  const debugText = typeof debugPayload === "string"
+    ? debugPayload
+    : JSON.stringify(debugPayload ?? {}, null, 2);
+  return `
+    <article class="inline-error-card">
+      <div class="inline-error-topline">
+        <strong>${escapeHtml(title)}</strong>
+        <span class="state-pill state-error">attention</span>
+      </div>
+      <p>${escapeHtml(message)}</p>
+      <details class="details-block">
+        <summary>Debug details</summary>
+        <pre>${escapeHtml(debugText)}</pre>
+      </details>
+    </article>
+  `;
+}
+
+function updateApprovalsTabBadge(summary = {}) {
+  const badge = document.getElementById("tab-badge-approvals");
+  if (!badge) {
+    return;
+  }
+  const attention = summary.attention_summary || {};
+  const inbox = summary.approval_inbox_summary || {};
+  const queue = summary.manual_queue_summary || {};
+  const pending = Number(attention.pending_approvals_count ?? inbox.pending_count ?? 0) || 0;
+  const ready = Number(attention.ready_queue_count ?? queue.ready_count ?? 0) || 0;
+  const total = pending + ready;
+  badge.textContent = total > 0 ? String(total) : "";
+  badge.title = total > 0 ? `${pending} pending approvals, ${ready} ready manual items` : "";
+}
+
+function buildDashboardIssues(summary = {}, payload = {}) {
+  const issues = [];
+  const approvalSummary = summary.approval_inbox_summary || {};
+  const queueSummary = summary.manual_queue_summary || {};
+  const attention = summary.attention_summary || {};
+  const recentItems = Array.isArray(summary.recent_pipeline_items) ? summary.recent_pipeline_items : [];
+
+  if (approvalSummary.available === false && approvalSummary.reason) {
+    issues.push(humanizeGhotiIssue(approvalSummary.reason));
+  }
+  if (queueSummary.available === false && queueSummary.reason) {
+    issues.push(humanizeGhotiIssue(queueSummary.reason));
+  }
+  (attention.action_items || []).forEach((item) => {
+    if (item) {
+      issues.push(String(item));
+    }
+  });
+  recentItems.forEach((item) => {
+    const stage = String(item.latest_stage || "");
+    if (["approved_no_queue", "approval_rejected"].includes(stage)) {
+      const action = item.proposed_action || item.approval_id || "pipeline item";
+      issues.push(`${action}: ${stage.replaceAll("_", " ")}.`);
+    }
+  });
+  extractPayloadErrors(payload).forEach((error) => {
+    issues.push(humanizeGhotiIssue(error));
+  });
+
+  return [...new Set(issues.filter(Boolean))].slice(0, 6);
+}
+
+function renderDashboardStrip(summary = {}, payload = {}) {
+  const latest = summary.latest_operator_state || {};
+  const attention = summary.attention_summary || {};
+  const inbox = summary.approval_inbox_summary || {};
+  const queue = summary.manual_queue_summary || {};
+  const issues = buildDashboardIssues(summary, payload);
+
+  const pendingText = inbox.available === false
+    ? "Unavailable"
+    : String(attention.pending_approvals_count ?? inbox.pending_count ?? 0);
+  const readyCount = attention.ready_queue_count ?? queue.ready_count ?? 0;
+  const readyText = queue.available === false ? "Unavailable" : `${readyCount} ready`;
+  const statusText = issues[0]
+    || attention.primary_message
+    || (summary.status === "ok" ? "Local supervised pipeline is visible." : "Supervised state is partially visible.");
+
+  setText("dashboard-strip-decision", latest.decision || "No decision recorded yet");
+  setText("dashboard-strip-action", summary.latest_proposed_action || latest.proposed_next_action || "No action proposed");
+  setText("dashboard-strip-pending", pendingText);
+  setText("dashboard-strip-ready", readyText);
+  setText("dashboard-strip-status", statusText);
+}
+
+function renderDashboardRecentActivity(summary = {}) {
+  const noteEl = document.getElementById("dashboard-activity-note");
+  const listEl = document.getElementById("dashboard-activity-list");
+  if (!noteEl || !listEl) {
+    return;
+  }
+
+  const actions = [...uiState.localActions, ...uiState.serverActions].slice(0, 5);
+  if (actions.length) {
+    noteEl.textContent = `${actions.length} recent local console event${actions.length === 1 ? "" : "s"}.`;
+    listEl.innerHTML = actions
+      .map((action) => {
+        const state = normalizeState(action.status || "info");
+        return `
+          <article class="approval-item compact-activity-item">
+            <div class="approval-header">
+              <strong>${escapeHtml(action.label || "Action")}</strong>
+              <span class="state-pill state-${state}">${escapeHtml(action.status || state)}</span>
+            </div>
+            <div class="approval-body">
+              <p>${escapeHtml(action.summary || "No summary.")}</p>
+              <p class="approval-meta">${escapeHtml(formatTimeStamp(action.occurredAt))}</p>
+            </div>
+          </article>
+        `;
+      })
+      .join("");
+    return;
+  }
+
+  const timeline = Array.isArray(summary.compact_timeline_summary) ? summary.compact_timeline_summary.slice(0, 5) : [];
+  if (!timeline.length) {
+    noteEl.textContent = "No recent supervised timeline entries are visible yet.";
+    listEl.innerHTML = '<p class="empty-state">No recent supervised activity yet.</p>';
+    return;
+  }
+
+  noteEl.textContent = `${timeline.length} recent supervised lifecycle event${timeline.length === 1 ? "" : "s"}.`;
+  listEl.innerHTML = timeline
+    .map((entry) => `
+      <article class="approval-item compact-activity-item">
+        <div class="approval-header">
+          <strong>${escapeHtml(String(entry.event || "event").replaceAll("_", " "))}</strong>
+          <span class="console-badge">${escapeHtml(entry.source || "runtime")}</span>
+        </div>
+        <div class="approval-body">
+          <p>${escapeHtml(entry.note || "No note recorded.")}</p>
+          <p class="approval-meta">${escapeHtml((entry.timestamp_utc || "").replace("T", " ").replace("Z", " UTC"))}</p>
+        </div>
+      </article>
+    `)
+    .join("");
+}
+
+function renderDashboardErrors(summary = {}, payload = {}) {
+  const noteEl = document.getElementById("dashboard-errors-note");
+  const listEl = document.getElementById("dashboard-errors-list");
+  if (!noteEl || !listEl) {
+    return;
+  }
+
+  const issues = buildDashboardIssues(summary, payload);
+  if (!issues.length) {
+    noteEl.textContent = "No operator-facing warnings are visible right now.";
+    listEl.innerHTML = '<p class="empty-state">No active errors or watchpoints.</p>';
+    return;
+  }
+
+  noteEl.textContent = `${issues.length} watchpoint${issues.length === 1 ? "" : "s"} currently visible.`;
+  listEl.innerHTML = issues
+    .map((issue) => `
+      <article class="approval-item compact-activity-item inline-watch-item">
+        <div class="approval-header">
+          <strong>Watchpoint</strong>
+          <span class="state-pill state-error">review</span>
+        </div>
+        <div class="approval-body">
+          <p>${escapeHtml(issue)}</p>
+        </div>
+      </article>
+    `)
+    .join("");
+}
+
+function renderDashboardFromControlCenter(payload = {}) {
+  const summary = payload.summary || {};
+  uiState.latestControlCenterSummary = summary;
+  renderDashboardStrip(summary, payload);
+  renderDashboardRecentActivity(summary);
+  renderDashboardErrors(summary, payload);
+  updateApprovalsTabBadge(summary);
 }
 
 async function refreshNeedsActionNow() {
@@ -2399,12 +2752,19 @@ async function refreshNeedsActionNow() {
   try {
     payload = await requestJson("/api/ghoti/control-center-state");
   } catch (err) {
-    setText("needs-action-message", "Needs-action state unavailable: " + err.message);
+    const message = "Needs-action state unavailable: " + err.message;
+    setText("needs-action-message", message);
+    renderDashboardStrip({
+      attention_summary: { primary_message: message },
+      latest_operator_state: uiState.latestControlCenterSummary?.latest_operator_state || {},
+      latest_proposed_action: uiState.latestControlCenterSummary?.latest_proposed_action || "",
+    });
+    renderDashboardErrors({}, { error: err.message });
     return;
   }
   const s = payload.summary || {};
   const attn = s.attention_summary || {};
-  const level = attn.attention_level || "none";
+  const level = attn.attention_level || (payload.ok ? "none" : "warning");
   const banner = document.getElementById("needs-action-banner");
   if (banner) {
     banner.className = `needs-action-banner needs-action-${escapeHtml(level)}`;
@@ -2419,6 +2779,7 @@ async function refreshNeedsActionNow() {
       ? items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")
       : `<li class="empty-state">No action items.</li>`;
   }
+  renderDashboardFromControlCenter(payload);
 }
 
 async function refreshCapabilities() {
@@ -2678,7 +3039,7 @@ async function refreshHandoffTargetCandidates() {
 }
 
 async function refreshConsole() {
-  await Promise.all([
+  const results = await Promise.allSettled([
     refreshOperatorStatus(),
     refreshGhotiControlCenter(),
     refreshNeedsActionNow(),
@@ -2696,6 +3057,17 @@ async function refreshConsole() {
     refreshHandoffTargetCandidates(),
     refreshRecentActions(),
   ]);
+
+  const failures = results
+    .filter((result) => result.status === "rejected")
+    .map((result) => humanizeGhotiIssue(result.reason?.message || result.reason))
+    .filter(Boolean);
+
+  if (failures.length) {
+    renderDashboardErrors(uiState.latestControlCenterSummary || {}, { error: failures.join(" ") });
+  }
+
+  return results;
 }
 
 function serializeForm(formId) {
@@ -3818,9 +4190,18 @@ clearApprovalDetail("Select a pending approval to inspect it.");
 clearTaskDetail("Select a stopped, interrupted, or executor task to inspect it.");
 document.getElementById("handoff-remember-targets").checked = loadHandoffTargetPreferences().rememberSelectedCandidates;
 updateHandoffTargetPreferenceNote();
+initConsoleTabs();
+renderDashboardRecentActivity({});
+renderDashboardErrors({}, {});
 
 refreshConsole().catch((error) => {
   setText("operator-headline", "Console load failed.");
   setText("operator-next-step", error.message);
+  renderDashboardStrip({
+    attention_summary: { primary_message: error.message },
+    latest_operator_state: {},
+    latest_proposed_action: "",
+  }, { error: error.message });
+  renderDashboardErrors({}, { error: error.message });
 });
 
