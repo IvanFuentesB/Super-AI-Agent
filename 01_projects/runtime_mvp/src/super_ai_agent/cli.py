@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -32,6 +33,7 @@ from .handoff import build_handoff_snapshot
 from .integrations import list_supported_integrations
 from .mail_adapter import build_inbox_triage_plan
 from .memory_layer import get_memory_layer_status
+from .mcp_runtime import call_mcp_tool
 from .relay_loop import (
     get_relay_loop_status,
     save_codex_preset,
@@ -39,6 +41,23 @@ from .relay_loop import (
     update_relay_loop_state,
 )
 from .notion_adapter import build_notion_update_plan
+from .control_center_state import get_full_control_center_state, get_pipeline_items_overview
+from .operator_loop import (
+    APPROVAL_INBOX_PATH,
+    MANUAL_EXECUTION_QUEUE_PATH,
+    OPERATOR_STATE_FILE,
+    explain_manual_queue_item,
+    find_latest_approved_approval_item,
+    get_approval_item,
+    get_audit_trace,
+    get_manual_queue_item,
+    read_approval_inbox_state,
+    read_latest_operator_state,
+    read_manual_queue_state,
+    simple_operator_tick,
+    update_approval_item_status,
+    update_manual_queue_item_review,
+)
 from .notification_adapter import (
     build_approval_notification,
     build_human_needed_notification,
@@ -250,6 +269,116 @@ def _repo_root() -> Path:
 
 def _dashboard_url() -> str:
     return "http://127.0.0.1:3210"
+
+
+def _mcp_server_script_path() -> Path:
+    return _repo_root() / "01_projects" / "mcp_server" / "server.py"
+
+
+def _detect_running_mcp_server_processes() -> list[dict[str, str]]:
+    script_path = _mcp_server_script_path()
+    script_glob = str(script_path).replace(chr(92), chr(92) * 2)
+    command = (
+        "Get-CimInstance Win32_Process | "
+        f"Where-Object {{ $_.CommandLine -like '*{script_glob}*' }} | "
+        "Select-Object ProcessId, Name, CommandLine | ConvertTo-Json -Compress"
+    )
+    result = subprocess.run(
+        ["powershell.exe", "-NoProfile", "-Command", command],
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=10,
+    )
+    if result.returncode != 0:
+        return []
+    stdout = result.stdout.strip()
+    if not stdout:
+        return []
+    try:
+        parsed = json.loads(stdout)
+    except json.JSONDecodeError:
+        return []
+    if isinstance(parsed, dict):
+        parsed = [parsed]
+    processes: list[dict[str, str]] = []
+    for item in parsed:
+        if not isinstance(item, dict):
+            continue
+        processes.append({
+            "pid": str(item.get("ProcessId", "") or ""),
+            "name": str(item.get("Name", "") or ""),
+            "command_line": str(item.get("CommandLine", "") or ""),
+        })
+    return processes
+
+
+def _probe_mcp_server() -> tuple[bool, str, str]:
+    script_path = _mcp_server_script_path()
+    if not script_path.exists():
+        return (False, "missing_script", f"MCP server script not found: {script_path}")
+
+    request = json.dumps({
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "initialize",
+        "params": {}
+    }) + "\n"
+
+    result = subprocess.run(
+        [sys.executable, str(script_path)],
+        input=request,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=10,
+        cwd=str(_repo_root()),
+    )
+    stdout = result.stdout.strip()
+    stderr = result.stderr.strip()
+    if result.returncode != 0 and not stdout:
+        detail = stderr or f"probe exited with code {result.returncode}"
+        return (False, "probe_failed", detail)
+    first_line = stdout.splitlines()[0].strip() if stdout else ""
+    if not first_line:
+        return (False, "probe_failed", stderr or "MCP probe returned no output.")
+    try:
+        response = json.loads(first_line)
+    except json.JSONDecodeError as exc:
+        return (False, "invalid_response", f"MCP probe returned invalid JSON: {exc}")
+    server_name = str(((response.get("result") or {}).get("serverInfo") or {}).get("name") or "")
+    if response.get("id") == 1 and server_name == "ghoti-mcp":
+        return (True, "reachable", "MCP initialize probe succeeded.")
+    return (False, "invalid_response", f"Unexpected MCP initialize response: {first_line}")
+
+
+
+def _build_supervised_payload(
+    *,
+    status: str,
+    summary: dict | None = None,
+    items: list | None = None,
+    item: dict | None = None,
+    trace: dict | None = None,
+    errors: list[str] | None = None,
+    **extra,
+) -> dict:
+    payload = {
+        "status": status,
+        "summary": summary or {},
+        "items": items if items is not None else [],
+        "item": item,
+        "trace": trace,
+        "errors": errors or [],
+    }
+    payload.update(extra)
+    return payload
+
+
+def _emit_supervised_json(header: str, payload: dict) -> None:
+    print(header)
+    print("---")
+    print(json.dumps(payload, indent=2))
 
 
 def _control_center_doc_path() -> Path:
@@ -671,6 +800,9 @@ def _build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("brain-status")
     subparsers.add_parser("list-agent-roles")
     subparsers.add_parser("browser-status")
+    subparsers.add_parser("ghoti-mcp-status")
+    mcp_call_parser = subparsers.add_parser("ghoti-mcp-call")
+    mcp_call_parser.add_argument("tool_name")
     subparsers.add_parser("memory-status")
     subparsers.add_parser("relay-status")
     subparsers.add_parser("list-workflows")
@@ -689,6 +821,35 @@ def _build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("list-executor-tasks")
     subparsers.add_parser("ghoti-help")
     subparsers.add_parser("ghoti-status")
+    subparsers.add_parser("ghoti-operator-tick")
+    subparsers.add_parser("ghoti-operator-state")
+    subparsers.add_parser("ghoti-approval-list")
+    approval_view_parser = subparsers.add_parser("ghoti-approval-view")
+    approval_view_parser.add_argument("approval_id")
+    approval_approve_parser = subparsers.add_parser("ghoti-approval-approve")
+    approval_approve_parser.add_argument("approval_id")
+    approval_reject_parser = subparsers.add_parser("ghoti-approval-reject")
+    approval_reject_parser.add_argument("approval_id")
+    approval_reject_parser.add_argument("--reason", required=True)
+    subparsers.add_parser("ghoti-manual-queue-list")
+    manual_queue_view_parser = subparsers.add_parser("ghoti-manual-queue-view")
+    manual_queue_view_parser.add_argument("item_id")
+    subparsers.add_parser("ghoti-manual-queue-state")
+    manual_queue_review_parser = subparsers.add_parser("ghoti-manual-queue-mark-reviewed")
+    manual_queue_review_parser.add_argument("item_id")
+    manual_queue_review_parser.add_argument("--note", required=True)
+    manual_queue_explain_parser = subparsers.add_parser("ghoti-manual-queue-explain")
+    manual_queue_explain_parser.add_argument("item_id")
+    audit_trace_parser = subparsers.add_parser("ghoti-audit-trace")
+    audit_trace_parser.add_argument("approval_id", nargs="?", default=None)
+    audit_trace_parser.add_argument("--latest-approved", action="store_true")
+    subparsers.add_parser("ghoti-control-center-state")
+    pipeline_items_parser = subparsers.add_parser("ghoti-pipeline-items")
+    pipeline_items_parser.add_argument(
+        "--status",
+        choices=["pending", "approved", "rejected", "ready", "reviewed"],
+        default=None,
+    )
     subparsers.add_parser("ghoti-hotkeys")
     subparsers.add_parser("ghoti-recent")
 
@@ -1264,6 +1425,331 @@ def main(argv: list[str] | None = None) -> int:
             print("browser_status: browser-agent capability snapshot")
             _print_browser_status_block()
             return 0
+
+        if args.command == "ghoti-mcp-status":
+            running_processes = _detect_running_mcp_server_processes()
+            probe_ok, probe_status, probe_detail = _probe_mcp_server()
+            if probe_ok and running_processes:
+                headline = "MCP server reachable"
+            elif probe_ok:
+                headline = "MCP server not running"
+            else:
+                headline = "MCP server error"
+            print(f"ghoti_mcp_status: {headline}")
+            print(f"mcp_server_script: {_mcp_server_script_path()}")
+            print(f"mcp_process_running: {'yes' if running_processes else 'no'}")
+            print(f"mcp_running_process_count: {len(running_processes)}")
+            print(f"mcp_probe_status: {probe_status}")
+            print(f"mcp_probe_reachable: {'yes' if probe_ok else 'no'}")
+            print(f"mcp_probe_detail: {probe_detail}")
+            print("mcp_running_processes:")
+            if running_processes:
+                for process in running_processes:
+                    print(f"- pid={process['pid']} | name={process['name']}")
+            else:
+                print("- none")
+            return 0
+
+        if args.command == "ghoti-mcp-call":
+            try:
+                payload = call_mcp_tool(args.tool_name)
+            except Exception as exc:
+                print("ghoti_mcp_call: failed")
+                print(f"reason: {exc}")
+                return 1
+            print("ghoti_mcp_call: success")
+            print(f"result: {json.dumps(payload, indent=2)}")
+            return 0
+
+        if args.command == "ghoti-operator-tick":
+            tick = simple_operator_tick()
+            print("ghoti_operator:")
+            print(f"status: {tick.get('status', 'unknown')}")
+            print(f"decision: {tick.get('decision', 'none')}")
+            print(f"proposed_next_action: {tick.get('proposed_next_action', 'none')}")
+            print(f"approval_required: {'yes' if tick.get('approval_required', False) else 'no'}")
+            print(f"timestamp_utc: {tick.get('timestamp_utc', 'none')}")
+            print(f"operator_state_path: {tick.get('operator_state_path', str(OPERATOR_STATE_FILE))}")
+            print(f"approval_inbox_path: {tick.get('approval_inbox_path', str(APPROVAL_INBOX_PATH))}")
+            print(f"approval_item_status: {tick.get('approval_item_status', 'none')}")
+            print(f"approval_item_id: {tick.get('approval_item_id', 'none') or 'none'}")
+            if tick.get('reason'):
+                print(f"reason: {tick['reason']}")
+            print(f"repo: {json.dumps(tick.get('repo_summary', {}), indent=2)}")
+            print(f"state: {json.dumps(tick.get('current_state_preview_info', {}), indent=2)}")
+            return 0 if tick.get('status') == 'ok' else 1
+
+        if args.command == "ghoti-operator-state":
+            state = read_latest_operator_state()
+            print("ghoti_operator_state:")
+            print(f"path: {OPERATOR_STATE_FILE}")
+            print(f"status: {state.get('status', 'unknown')}")
+            if state.get('reason'):
+                print(f"reason: {state['reason']}")
+            else:
+                print(f"decision: {state.get('decision', 'none')}")
+                print(f"proposed_next_action: {state.get('proposed_next_action', 'none')}")
+                print(f"approval_required: {'yes' if state.get('approval_required', False) else 'no'}")
+                print(f"timestamp_utc: {state.get('timestamp_utc', 'none')}")
+            print(json.dumps(state, indent=2))
+            return 0 if state.get('status') == 'ok' else 1
+
+        if args.command == "ghoti-approval-list":
+            inbox = read_approval_inbox_state()
+            items = inbox.get("items", []) if inbox.get("status") == "ok" else []
+            counts = {
+                "total_count": len(items),
+                "pending_count": sum(1 for item in items if item.get("status") == "pending"),
+                "approved_count": sum(1 for item in items if item.get("status") == "approved"),
+                "rejected_count": sum(1 for item in items if item.get("status") == "rejected"),
+            }
+            payload = _build_supervised_payload(
+                status=inbox.get("status", "unknown"),
+                summary={
+                    "path": inbox.get("path", str(APPROVAL_INBOX_PATH)),
+                    "counts": counts,
+                    "items": items,
+                },
+                items=items,
+                errors=[inbox.get("reason", "unknown")] if inbox.get("status") != "ok" else [],
+            )
+            _emit_supervised_json("ghoti_approval_list:", payload)
+            return 0 if inbox.get("status") == "ok" else 1
+
+        if args.command == "ghoti-approval-view":
+            result = get_approval_item(args.approval_id)
+            item = result.get("item") if result.get("status") == "ok" else None
+            payload = _build_supervised_payload(
+                status=result.get("status", "unknown"),
+                summary={
+                    "path": result.get("path", str(APPROVAL_INBOX_PATH)),
+                    "approval_id": args.approval_id,
+                    "item": item,
+                },
+                item=item,
+                errors=[result.get("reason", "unknown")] if result.get("status") != "ok" else [],
+            )
+            _emit_supervised_json("ghoti_approval_view:", payload)
+            return 0 if result.get("status") == "ok" else 1
+
+        if args.command == "ghoti-approval-approve":
+            result = update_approval_item_status(args.approval_id, new_status="approved")
+            item = result.get("item") if isinstance(result.get("item"), dict) else None
+            bridge_result = result.get("bridge_result") if isinstance(result.get("bridge_result"), dict) else None
+            bridge_status = bridge_result.get("status", "not_attempted") if bridge_result else "not_attempted"
+            transition_succeeded = bool(result.get("transition_succeeded", False))
+            bridge_attempted = bool(result.get("bridge_attempted", False))
+            bridge_succeeded = result.get("bridge_succeeded")
+            status = result.get("status", "unknown")
+            if status == "ok" and bridge_status == "created":
+                headline = "Approval approved and manual queue item created."
+            elif status == "ok" and bridge_status == "deduped":
+                headline = "Approval approved and existing manual queue item reused."
+            elif status == "partial":
+                headline = "Approval approved, but manual queue bridge failed."
+            elif status == "ok":
+                headline = "Approval approved."
+            else:
+                headline = result.get("reason", "Approval approve failed.")
+            payload = _build_supervised_payload(
+                status=status,
+                summary={
+                    "headline": headline,
+                    "action": "approve",
+                    "approval_id": args.approval_id,
+                    "path": result.get("path", str(APPROVAL_INBOX_PATH)),
+                    "item_status": item.get("status", "none") if item else "none",
+                    "transition_succeeded": transition_succeeded,
+                    "transition_status": result.get("transition_status", item.get("status", "unknown") if item else "unknown"),
+                    "bridge_attempted": bridge_attempted,
+                    "bridge_succeeded": bridge_succeeded,
+                    "bridge_status": bridge_status,
+                },
+                item=item,
+                errors=[result.get("reason", "unknown")] if status != "ok" and result.get("reason") else [],
+                transition_succeeded=transition_succeeded,
+                transition_status=result.get("transition_status", item.get("status", "unknown") if item else "unknown"),
+                bridge_attempted=bridge_attempted,
+                bridge_succeeded=bridge_succeeded,
+                bridge_result=bridge_result,
+            )
+            _emit_supervised_json("ghoti_approval_approve:", payload)
+            return 0 if status == "ok" else 1
+
+        if args.command == "ghoti-approval-reject":
+            result = update_approval_item_status(args.approval_id, new_status="rejected", reason=args.reason)
+            item = result.get("item") if isinstance(result.get("item"), dict) else None
+            status = result.get("status", "unknown")
+            headline = "Approval rejected." if status == "ok" else result.get("reason", "Approval reject failed.")
+            payload = _build_supervised_payload(
+                status=status,
+                summary={
+                    "headline": headline,
+                    "action": "reject",
+                    "approval_id": args.approval_id,
+                    "path": result.get("path", str(APPROVAL_INBOX_PATH)),
+                    "item_status": item.get("status", "none") if item else "none",
+                    "transition_succeeded": bool(result.get("transition_succeeded", status == "ok")),
+                    "transition_status": result.get("transition_status", item.get("status", "unknown") if item else "unknown"),
+                    "bridge_attempted": bool(result.get("bridge_attempted", False)),
+                    "bridge_succeeded": result.get("bridge_succeeded"),
+                },
+                item=item,
+                errors=[result.get("reason", "unknown")] if status != "ok" and result.get("reason") else [],
+                transition_succeeded=bool(result.get("transition_succeeded", status == "ok")),
+                transition_status=result.get("transition_status", item.get("status", "unknown") if item else "unknown"),
+                bridge_attempted=bool(result.get("bridge_attempted", False)),
+                bridge_succeeded=result.get("bridge_succeeded"),
+            )
+            _emit_supervised_json("ghoti_approval_reject:", payload)
+            return 0 if status == "ok" else 1
+
+        if args.command == "ghoti-manual-queue-list":
+            queue = read_manual_queue_state()
+            items = queue.get("items", []) if queue.get("status") == "ok" else []
+            counts = {
+                "total_count": len(items),
+                "ready_count": sum(1 for item in items if item.get("status") == "ready_for_manual_execution"),
+                "reviewed_count": sum(1 for item in items if item.get("status") == "reviewed_by_operator"),
+            }
+            payload = _build_supervised_payload(
+                status=queue.get("status", "unknown"),
+                summary={
+                    "path": queue.get("path", str(MANUAL_EXECUTION_QUEUE_PATH)),
+                    "counts": counts,
+                    "items": items,
+                },
+                items=items,
+                errors=[queue.get("reason", "unknown")] if queue.get("status") != "ok" else [],
+            )
+            _emit_supervised_json("ghoti_manual_queue_list:", payload)
+            return 0 if queue.get("status") == "ok" else 1
+
+        if args.command == "ghoti-manual-queue-view":
+            result = get_manual_queue_item(args.item_id)
+            item = result.get("item") if result.get("status") == "ok" else None
+            payload = _build_supervised_payload(
+                status=result.get("status", "unknown"),
+                summary={
+                    "path": result.get("path", str(MANUAL_EXECUTION_QUEUE_PATH)),
+                    "item_id": args.item_id,
+                    "item": item,
+                },
+                item=item,
+                errors=[result.get("reason", "unknown")] if result.get("status") != "ok" else [],
+            )
+            _emit_supervised_json("ghoti_manual_queue_view:", payload)
+            return 0 if result.get("status") == "ok" else 1
+
+        if args.command == "ghoti-manual-queue-state":
+            queue = read_manual_queue_state()
+            print("ghoti_manual_queue_state:")
+            print(f"path: {queue.get('path', str(MANUAL_EXECUTION_QUEUE_PATH))}")
+            print(f"status: {queue.get('status', 'unknown')}")
+            if queue.get("status") != "ok":
+                print(f"reason: {queue.get('reason', 'unknown')}")
+                return 1
+            items = queue.get("items", [])
+            print(f"item_count: {len(items)}")
+            status_counts: dict[str, int] = {}
+            for item in items:
+                s = str(item.get("status", "unknown"))
+                status_counts[s] = status_counts.get(s, 0) + 1
+            for s, c in status_counts.items():
+                print(f"  {s}: {c}")
+            return 0
+
+        if args.command == "ghoti-manual-queue-explain":
+            result = explain_manual_queue_item(args.item_id)
+            print("ghoti_manual_queue_explain:")
+            print(f"path: {result.get('path', str(MANUAL_EXECUTION_QUEUE_PATH))}")
+            print(f"status: {result.get('status', 'unknown')}")
+            if result.get("status") != "ok":
+                print(f"reason: {result.get('reason', 'unknown')}")
+                return 1
+            print(json.dumps(result.get("explanation", {}), indent=2))
+            return 0
+
+        if args.command == "ghoti-audit-trace":
+            approval_id = args.approval_id
+            if not approval_id and getattr(args, "latest_approved", False):
+                latest = find_latest_approved_approval_item()
+                approval_id = latest.get("id", "") if latest else ""
+            if not approval_id:
+                trace = {
+                    "trace_status": "error",
+                    "reason": "approval_id_required_or_use_latest_approved",
+                    "approval_id": "",
+                }
+                payload = _build_supervised_payload(
+                    status="error",
+                    summary=trace,
+                    trace=trace,
+                    errors=[trace["reason"]],
+                )
+                _emit_supervised_json("ghoti_audit_trace:", payload)
+                return 1
+            trace = get_audit_trace(approval_id)
+            trace_status = trace.get("trace_status", "unknown")
+            payload = _build_supervised_payload(
+                status=trace_status,
+                summary=trace,
+                trace=trace,
+                errors=[trace.get("reason", "unknown")] if trace_status == "error" and trace.get("reason") else [],
+            )
+            _emit_supervised_json("ghoti_audit_trace:", payload)
+            return 0 if trace_status in {"ok", "partial"} else 1
+
+        if args.command == "ghoti-control-center-state":
+            state = get_full_control_center_state()
+            payload = _build_supervised_payload(
+                status=state.get("status", "unknown"),
+                summary=state,
+                errors=[state.get("reason", "unknown")] if state.get("status") == "error" and state.get("reason") else [],
+            )
+            _emit_supervised_json("ghoti_control_center_state:", payload)
+            return 0 if state.get("status") in {"ok", "partial"} else 1
+
+        if args.command == "ghoti-pipeline-items":
+            status_filter = getattr(args, "status", None)
+            overview = get_pipeline_items_overview(status_filter)
+            payload = _build_supervised_payload(
+                status=overview.get("status", "unknown"),
+                summary=overview,
+                items=overview.get("items", []) if overview.get("status") != "error" else [],
+                errors=[overview.get("reason", "unknown")] if overview.get("status") == "error" and overview.get("reason") else [],
+            )
+            _emit_supervised_json("ghoti_pipeline_items:", payload)
+            return 0 if overview.get("status") in {"ok", "partial"} else 1
+
+        if args.command == "ghoti-manual-queue-mark-reviewed":
+            result = update_manual_queue_item_review(args.item_id, args.note)
+            item = result.get("item") if isinstance(result.get("item"), dict) else None
+            status = result.get("status", "unknown")
+            transition_succeeded = status == "ok"
+            headline = "Queue item marked reviewed by operator." if transition_succeeded else result.get("reason", "Queue item review failed.")
+            payload = _build_supervised_payload(
+                status=status,
+                summary={
+                    "headline": headline,
+                    "action": "mark_reviewed",
+                    "item_id": args.item_id,
+                    "path": result.get("path", str(MANUAL_EXECUTION_QUEUE_PATH)),
+                    "item_status": item.get("status", "none") if item else "none",
+                    "transition_succeeded": transition_succeeded,
+                    "transition_status": item.get("status", "unknown") if item else "unknown",
+                    "bridge_attempted": False,
+                    "bridge_succeeded": None,
+                },
+                item=item,
+                errors=[result.get("reason", "unknown")] if status != "ok" and result.get("reason") else [],
+                transition_succeeded=transition_succeeded,
+                transition_status=item.get("status", "unknown") if item else "unknown",
+                bridge_attempted=False,
+                bridge_succeeded=None,
+            )
+            _emit_supervised_json("ghoti_manual_queue_mark_reviewed:", payload)
+            return 0 if status == "ok" else 1
 
         if args.command == "memory-status":
             print("memory_status: compact markdown memory snapshot")

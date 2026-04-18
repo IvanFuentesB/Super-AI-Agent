@@ -2069,6 +2069,149 @@ async function buildRelayStatusResponse() {
   };
 }
 
+function parseCliJson(stdout) {
+  if (!stdout) {
+    return null;
+  }
+
+  const normalized = String(stdout).trimEnd();
+  const markerMatch = normalized.match(/(?:^|\r?\n)---\r?\n([\s\S]+)$/);
+  if (!markerMatch) {
+    return null;
+  }
+
+  const jsonPart = markerMatch[1].trim();
+  if (!jsonPart) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(jsonPart);
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function buildCliJsonFailure(raw, error, parsed = null) {
+  return {
+    ok: false,
+    summary: null,
+    detail: parsed,
+    raw,
+    localOnly: true,
+    error,
+  };
+}
+
+function buildCliSummaryResponse(raw, label) {
+  const parsed = parseCliJson(raw.stdout);
+  if (!raw.ok) {
+    return buildCliJsonFailure(raw, raw.stderr || raw.stdout || `${label} failed.`, parsed);
+  }
+  if (!parsed || typeof parsed !== "object") {
+    return buildCliJsonFailure(raw, `${label} returned an invalid CLI JSON payload.`, parsed);
+  }
+  if (!parsed.summary || typeof parsed.summary !== "object") {
+    return buildCliJsonFailure(raw, `${label} returned no summary.`, parsed);
+  }
+  if (parsed.status === "error") {
+    const errors = Array.isArray(parsed.errors) ? parsed.errors.filter(Boolean) : [];
+    return buildCliJsonFailure(raw, errors[0] || `${label} returned an error status.`, parsed);
+  }
+  return {
+    ok: true,
+    summary: parsed.summary,
+    detail: parsed,
+    raw,
+    localOnly: true,
+  };
+}
+
+function buildCliActionResponse(raw, label, fallbackHeadline) {
+  const parsed = parseCliJson(raw.stdout);
+  if (!parsed || typeof parsed !== "object") {
+    return {
+      ok: false,
+      localOnly: true,
+      summary: { headline: fallbackHeadline || `${label} failed.` },
+      detail: parsed,
+      raw,
+      error: `${label} returned an invalid CLI JSON payload.`,
+    };
+  }
+  if (!parsed.summary || typeof parsed.summary !== "object") {
+    return {
+      ok: false,
+      localOnly: true,
+      summary: { headline: fallbackHeadline || `${label} failed.` },
+      detail: parsed,
+      raw,
+      error: `${label} returned no summary.`,
+    };
+  }
+
+  const errors = Array.isArray(parsed.errors) ? parsed.errors.filter(Boolean) : [];
+  const ok = raw.ok && parsed.status === "ok";
+  const headline = parsed.summary.headline || fallbackHeadline || (ok ? `${label} completed.` : `${label} failed.`);
+
+  return {
+    ok,
+    localOnly: true,
+    summary: {
+      ...parsed.summary,
+      headline,
+    },
+    detail: parsed,
+    raw,
+    error: ok ? null : (errors[0] || raw.stderr || raw.stdout || `${label} failed.`),
+  };
+}
+
+async function buildApprovalInboxResponse() {
+  const raw = await runRuntimeCli(["ghoti-approval-list"]);
+  return buildCliSummaryResponse(raw, "Approval inbox");
+}
+
+async function buildApprovalItemDetailResponse(approvalId) {
+  const raw = await runRuntimeCli(["ghoti-approval-view", approvalId]);
+  return buildCliSummaryResponse(raw, "Approval item detail");
+}
+
+async function buildManualQueueResponse() {
+  const raw = await runRuntimeCli(["ghoti-manual-queue-list"]);
+  return buildCliSummaryResponse(raw, "Manual queue");
+}
+
+async function buildManualQueueItemResponse(itemId) {
+  const raw = await runRuntimeCli(["ghoti-manual-queue-view", itemId]);
+  return buildCliSummaryResponse(raw, "Manual queue item detail");
+}
+
+async function buildAuditTraceResponse(approvalId) {
+  const raw = await runRuntimeCli(["ghoti-audit-trace", approvalId]);
+  return buildCliSummaryResponse(raw, "Audit trace");
+}
+
+async function buildControlCenterStateResponse() {
+  const raw = await runRuntimeCli(["ghoti-control-center-state"]);
+  return buildCliSummaryResponse(raw, "Control center state");
+}
+
+async function buildPipelineStateResponse() {
+  const raw = await runRuntimeCli(["ghoti-control-center-state"]);
+  return buildCliSummaryResponse(raw, "Pipeline state");
+}
+
+async function buildPipelineItemsResponse(statusFilter) {
+  const cliArgs = ["ghoti-pipeline-items"];
+  if (statusFilter) {
+    cliArgs.push("--status", statusFilter);
+  }
+  const raw = await runRuntimeCli(cliArgs);
+  return buildCliSummaryResponse(raw, "Pipeline items");
+}
+
 async function buildGithubUpdatesResponse() {
   const statusRaw = await runRuntimeCli(["github-status"]);
   const capabilityRaw = await runRuntimeCli(["github-remote-capability"]);
@@ -2175,6 +2318,31 @@ async function handleApiRequest(request, response, requestUrl) {
       status: payload.ok ? "success" : "error",
       summary: payload.summary.headline,
     });
+      sendJson(response, payload.ok ? 200 : 500, payload);
+      return;
+    }
+
+    if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/pipeline-items") {
+      const statusFilter = requestUrl.searchParams.get("status") || null;
+      const payload = await buildPipelineItemsResponse(statusFilter);
+      pushAction({
+        actionType: "status",
+        label: "Viewed Ghoti pipeline items",
+        status: payload.ok ? "success" : "error",
+        summary: payload.ok ? `Pipeline items loaded${statusFilter ? ` (filter: ${statusFilter})` : ""}.` : "Pipeline items unavailable.",
+      });
+      sendJson(response, payload.ok ? 200 : 500, payload);
+      return;
+    }
+
+    if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/pipeline-state") {
+      const payload = await buildPipelineStateResponse();
+      pushAction({
+        actionType: "status",
+        label: "Viewed Ghoti pipeline state",
+        status: payload.ok ? "success" : "error",
+        summary: payload.ok ? "Pipeline state loaded." : "Pipeline state unavailable.",
+      });
       sendJson(response, payload.ok ? 200 : 500, payload);
       return;
     }
@@ -2827,6 +2995,118 @@ async function handleApiRequest(request, response, requestUrl) {
       outputPath: browserResult.screenshotPath,
     });
     sendJson(response, raw.ok ? 200 : 500, responsePayload);
+    return;
+  }
+
+  if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/control-center-state") {
+    const payload = await buildControlCenterStateResponse();
+    pushAction({ actionType: "status", label: "Viewed Ghoti control center state", status: payload.ok ? "success" : "error", summary: payload.ok ? "Control center state loaded." : "Control center state unavailable." });
+    sendJson(response, payload.ok ? 200 : 500, payload);
+    return;
+  }
+
+  if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/approval-inbox") {
+    const payload = await buildApprovalInboxResponse();
+    pushAction({ actionType: "approval", label: "Viewed Ghoti approval inbox", status: payload.ok ? "success" : "error", summary: payload.ok ? "Approval inbox loaded." : "Approval inbox unavailable." });
+    sendJson(response, payload.ok ? 200 : 500, payload);
+    return;
+  }
+
+  if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/approval-item") {
+    const id = requestUrl.searchParams.get("id");
+    if (!id) {
+      sendJson(response, 400, { ok: false, error: "Missing id query parameter." });
+      return;
+    }
+    const payload = await buildApprovalItemDetailResponse(id);
+    pushAction({ actionType: "approval", label: "Viewed approval item detail", status: payload.ok ? "success" : "error", summary: payload.ok ? `Approval ${id} loaded.` : `Approval ${id} not found.` });
+    sendJson(response, payload.ok ? 200 : 500, payload);
+    return;
+  }
+
+  if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/manual-queue") {
+    const payload = await buildManualQueueResponse();
+    pushAction({ actionType: "status", label: "Viewed Ghoti manual queue", status: payload.ok ? "success" : "error", summary: payload.ok ? "Manual queue loaded." : "Manual queue unavailable." });
+    sendJson(response, payload.ok ? 200 : 500, payload);
+    return;
+  }
+
+  if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/manual-queue-item") {
+    const id = requestUrl.searchParams.get("id");
+    if (!id) {
+      sendJson(response, 400, { ok: false, error: "Missing id query parameter." });
+      return;
+    }
+    const payload = await buildManualQueueItemResponse(id);
+    pushAction({ actionType: "status", label: "Viewed manual queue item", status: payload.ok ? "success" : "error", summary: payload.ok ? `Queue item ${id} loaded.` : `Queue item ${id} not found.` });
+    sendJson(response, payload.ok ? 200 : 500, payload);
+    return;
+  }
+
+  if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/audit-trace") {
+    const id = requestUrl.searchParams.get("approval_id");
+    if (!id) {
+      sendJson(response, 400, { ok: false, error: "Missing approval_id query parameter." });
+      return;
+    }
+    const payload = await buildAuditTraceResponse(id);
+    pushAction({ actionType: "status", label: "Viewed audit trace", status: payload.ok ? "success" : "error", summary: payload.ok ? `Audit trace for ${id} loaded.` : `Audit trace for ${id} unavailable.` });
+    sendJson(response, payload.ok ? 200 : 500, payload);
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/api/ghoti/approval/approve") {
+    const body = await readJsonBody(request);
+    requireFields(body, ["approval_id"]);
+    const approvalId = String(body.approval_id).trim();
+    const raw = await runRuntimeCli(["ghoti-approval-approve", approvalId]);
+    const payload = buildCliActionResponse(raw, "Approval approve", "Approval approve failed.");
+    pushAction({
+      actionType: "approval",
+      label: "Approved ghoti approval",
+      status: payload.ok ? "success" : "error",
+      summary: payload.summary?.headline || payload.error || "Approve failed.",
+      outputPath: approvalId,
+    });
+    sendJson(response, payload.ok ? 200 : 500, payload);
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/api/ghoti/approval/reject") {
+    const body = await readJsonBody(request);
+    requireFields(body, ["approval_id", "reason"]);
+    const approvalId = String(body.approval_id).trim();
+    const reason = String(body.reason).trim();
+    if (!reason) throw new Error("reason is required to reject an approval.");
+    const raw = await runRuntimeCli(["ghoti-approval-reject", approvalId, "--reason", reason]);
+    const payload = buildCliActionResponse(raw, "Approval reject", "Approval reject failed.");
+    pushAction({
+      actionType: "approval",
+      label: "Rejected ghoti approval",
+      status: payload.ok ? "success" : "error",
+      summary: payload.summary?.headline || payload.error || "Reject failed.",
+      outputPath: approvalId,
+    });
+    sendJson(response, payload.ok ? 200 : 500, payload);
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/api/ghoti/manual-queue/review") {
+    const body = await readJsonBody(request);
+    requireFields(body, ["item_id", "note"]);
+    const itemId = String(body.item_id).trim();
+    const note = String(body.note).trim();
+    if (!note) throw new Error("note is required to mark a queue item reviewed.");
+    const raw = await runRuntimeCli(["ghoti-manual-queue-mark-reviewed", itemId, "--note", note]);
+    const payload = buildCliActionResponse(raw, "Manual queue review", "Queue item review failed.");
+    pushAction({
+      actionType: "status",
+      label: "Marked queue item reviewed",
+      status: payload.ok ? "success" : "error",
+      summary: payload.summary?.headline || payload.error || "Review failed.",
+      outputPath: itemId,
+    });
+    sendJson(response, payload.ok ? 200 : 500, payload);
     return;
   }
 

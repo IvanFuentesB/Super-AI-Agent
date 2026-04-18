@@ -4,6 +4,7 @@ import json
 from dataclasses import dataclass
 
 from .storage import get_project_root
+from .mcp_runtime import call_mcp_tool
 
 CONFIG_PATH = get_project_root().parents[1] / "23_configs" / "agent_roles.example.json"
 
@@ -115,3 +116,31 @@ def get_specialist_role_status(active_task=None) -> SpecialistRoleStatus:
         registry_count=len(roles),
         roles=roles,
     )
+
+_CAPABILITY_MAP: dict[str, tuple[str, dict | None]] = {
+    # Basic health / repo reads
+    "MCP_STATUS": ("ghoti_status", None),
+    "MCP_REPO_SUMMARY": ("read_repo_summary", None),
+    "MCP_CURRENT_STATE": ("read_current_state", None),
+    "MCP_LATEST_OPERATOR_STATE": ("read_latest_operator_state", None),
+    # Supervised pipeline reads (no-arg)
+    "MCP_CONTROL_CENTER_STATE": ("read_control_center_state", None),
+    "MCP_APPROVAL_INBOX": ("read_approval_inbox", None),
+    "MCP_MANUAL_QUEUE": ("read_manual_execution_queue", None),
+    "MCP_PIPELINE_ITEMS": ("read_pipeline_items_overview", None),
+}
+
+
+def call_agent_capability(capability_name: str, arguments: dict | None = None) -> dict:
+    entry = _CAPABILITY_MAP.get(capability_name)
+    if not entry:
+        allowed = sorted(_CAPABILITY_MAP.keys())
+        raise ValueError(f"Unknown capability: {capability_name!r}. Allowed: {allowed}")
+    tool_name, default_args = entry
+    effective_args = arguments if isinstance(arguments, dict) else default_args
+    return {
+        "capability": capability_name,
+        "tool_name": tool_name,
+        "result": call_mcp_tool(tool_name, effective_args),
+    }
+

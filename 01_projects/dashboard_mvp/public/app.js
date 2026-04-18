@@ -2066,6 +2066,361 @@ async function refreshGhotiControlCenter() {
   return payload;
 }
 
+async function refreshPipelineState() {
+  const payload = await requestJson("/api/ghoti/pipeline-state");
+  const s = payload.summary || {};
+  const inbox = s.approval_inbox_summary || {};
+  const queue = s.manual_queue_summary || {};
+  const items = s.latest_items || {};
+  const decision = (s.latest_operator_state || {}).decision || "-";
+  const proposed = s.latest_proposed_action || "-";
+  setText("pipeline-operator-decision", decision);
+  setText("pipeline-proposed-action", proposed);
+  setText("pipeline-pending-approvals", inbox.pending_count ?? "-");
+  setText("pipeline-approved-count", inbox.approved_count ?? "-");
+  setText("pipeline-ready-items", queue.ready_count ?? "-");
+  setText("pipeline-reviewed-items", queue.reviewed_count ?? "-");
+  setText("pipeline-latest-approved-id", items.latest_approved_approval_id || "none");
+  setText("pipeline-latest-ready-id", items.latest_ready_item_id || "none");
+  const note = payload.ok
+    ? `Status: ${s.status || "unknown"} — generated ${s.generated_at_utc || ""}`
+    : "Pipeline state unavailable.";
+  setText("pipeline-state-summary", note);
+  return payload;
+}
+
+async function refreshPipelineItems() {
+  const payload = await requestJson("/api/ghoti/pipeline-items");
+  const s = payload.summary || {};
+  const counts = s.counts || {};
+  const items = s.items || [];
+  const note = payload.ok
+    ? `${counts.total_items ?? 0} items — pending: ${counts.pending_count ?? 0}, approved: ${counts.approved_count ?? 0}, ready: ${counts.ready_count ?? 0}, reviewed: ${counts.reviewed_count ?? 0} — ${s.generated_at_utc || ""}`
+    : "Pipeline items unavailable.";
+  setText("pipeline-items-summary", note);
+  const container = document.getElementById("pipeline-items-list");
+  if (!container) return payload;
+  if (!items.length) {
+    container.innerHTML = `<p class="empty-state">No pipeline items found.</p>`;
+    return payload;
+  }
+  container.innerHTML = items.map((item) => {
+    const stage = escapeHtml(item.latest_stage || "-");
+    const approvalId = escapeHtml((item.approval_id || "").slice(0, 24));
+    const action = escapeHtml(item.proposed_action || "-");
+    const ts = escapeHtml((item.latest_timestamp_utc || "").replace("T", " ").replace("Z", " UTC"));
+    const reviewed = item.reviewed ? "✓ reviewed" : "";
+    const stageClass = item.approval_status === "pending" ? "status-pending"
+      : item.approval_status === "rejected" ? "status-error"
+      : item.latest_stage === "reviewed_by_operator" ? "status-success"
+      : item.latest_stage === "ready_for_manual_execution" ? "status-warning"
+      : "status-info";
+    const rawApprovalId = escapeHtml(item.approval_id || "");
+    return `<article class="approval-item">
+      <div class="approval-header">
+        <span class="approval-id">${approvalId}</span>
+        <span class="status-pill ${stageClass}">${stage}</span>
+        ${reviewed ? `<span class="status-pill status-success">${reviewed}</span>` : ""}
+      </div>
+      <div class="approval-body">
+        <p><strong>Action:</strong> ${action}</p>
+        <p class="approval-meta">${ts}</p>
+        ${rawApprovalId ? `<button class="view-trace-btn button-secondary" data-approval-id="${rawApprovalId}" type="button" style="margin-top:6px;">View Trace</button>` : ""}
+      </div>
+    </article>`;
+  }).join("");
+  container.querySelectorAll(".view-trace-btn").forEach((btn) => {
+    btn.addEventListener("click", () => loadAuditTraceById(btn.dataset.approvalId));
+  });
+  return payload;
+}
+
+async function refreshApprovalInbox() {
+  let payload;
+  try {
+    payload = await requestJson("/api/ghoti/approval-inbox");
+  } catch (err) {
+    setText("approval-inbox-summary", "Approval inbox unavailable: " + err.message);
+    return;
+  }
+  const s = payload.summary || {};
+  const items = (s.items || []).filter((item) => item.status === "pending");
+  const note = payload.ok
+    ? `${items.length} pending approval(s) — total in inbox: ${(s.items || []).length}`
+    : "Approval inbox unavailable.";
+  setText("approval-inbox-summary", note);
+  const container = document.getElementById("approval-inbox-list");
+  if (!container) return;
+  if (!items.length) {
+    container.innerHTML = `<p class="empty-state">No pending approvals. All items are approved, rejected, or the inbox is empty.</p>`;
+    return;
+  }
+  container.innerHTML = items.map((item) => {
+    const id = escapeHtml(item.id || "");
+    const action = escapeHtml(item.proposed_action || "-");
+    const ts = escapeHtml((item.timestamp_utc || "").replace("T", " ").replace("Z", " UTC"));
+    const reason = escapeHtml(item.reason || "");
+    return `<article class="approval-item">
+      <div class="approval-header">
+        <span class="approval-id">${id.slice(0, 24)}</span>
+        <span class="status-pill status-pending">pending</span>
+        <span class="console-badge">approval required</span>
+      </div>
+      <div class="approval-body">
+        <p><strong>Action:</strong> ${action}</p>
+        ${reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ""}
+        <p class="approval-meta">${ts}</p>
+        <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
+          <button class="approve-inbox-btn" data-approval-id="${id}" type="button">Approve</button>
+          <button class="reject-inbox-btn button-danger" data-approval-id="${id}" type="button">Reject…</button>
+          <button class="view-inbox-trace-btn button-secondary" data-approval-id="${id}" type="button">View Trace</button>
+        </div>
+      </div>
+    </article>`;
+  }).join("");
+  container.querySelectorAll(".approve-inbox-btn").forEach((btn) => {
+    btn.addEventListener("click", () => approveInboxItem(btn.dataset.approvalId));
+  });
+  container.querySelectorAll(".reject-inbox-btn").forEach((btn) => {
+    btn.addEventListener("click", () => showInboxRejectForm(btn.dataset.approvalId));
+  });
+  container.querySelectorAll(".view-inbox-trace-btn").forEach((btn) => {
+    btn.addEventListener("click", () => loadAuditTraceById(btn.dataset.approvalId));
+  });
+}
+
+function showInboxRejectForm(approvalId) {
+  const form = document.getElementById("approval-inbox-reject-form");
+  const idSpan = document.getElementById("approval-inbox-reject-id");
+  const textarea = document.getElementById("approval-inbox-reject-reason");
+  if (!form || !idSpan || !textarea) return;
+  idSpan.textContent = approvalId;
+  textarea.value = "";
+  form.dataset.pendingId = approvalId;
+  form.style.display = "block";
+  textarea.focus();
+}
+
+async function approveInboxItem(approvalId) {
+  const resultEl = document.getElementById("approval-inbox-action-result");
+  if (resultEl) resultEl.textContent = `Approving ${approvalId}…`;
+  try {
+    const result = await requestJson("/api/ghoti/approval/approve", {
+      method: "POST",
+      body: JSON.stringify({ approval_id: approvalId }),
+    });
+    if (resultEl) resultEl.textContent = result.summary?.headline || "Approved.";
+    await refreshApprovalInbox();
+    await refreshManualQueue();
+    await refreshPipelineItems();
+    await refreshPipelineState();
+    await refreshNeedsActionNow();
+  } catch (err) {
+    if (resultEl) resultEl.textContent = "Approve failed: " + err.message;
+  }
+}
+
+async function rejectInboxItem(approvalId, reason) {
+  const resultEl = document.getElementById("approval-inbox-action-result");
+  if (resultEl) resultEl.textContent = `Rejecting ${approvalId}…`;
+  try {
+    const result = await requestJson("/api/ghoti/approval/reject", {
+      method: "POST",
+      body: JSON.stringify({ approval_id: approvalId, reason }),
+    });
+    if (resultEl) resultEl.textContent = result.summary?.headline || "Rejected.";
+    await refreshApprovalInbox();
+    await refreshPipelineItems();
+    await refreshPipelineState();
+    await refreshNeedsActionNow();
+  } catch (err) {
+    if (resultEl) resultEl.textContent = "Reject failed: " + err.message;
+  }
+}
+
+async function refreshManualQueue() {
+  let payload;
+  try {
+    payload = await requestJson("/api/ghoti/manual-queue");
+  } catch (err) {
+    setText("manual-queue-summary", "Manual queue unavailable: " + err.message);
+    return;
+  }
+  const s = payload.summary || {};
+  const items = s.items || [];
+  const readyCount = items.filter((i) => i.status === "ready_for_manual_execution").length;
+  const reviewedCount = items.filter((i) => i.status === "reviewed_by_operator").length;
+  const note = payload.ok
+    ? `${items.length} item(s) — ready: ${readyCount}, reviewed: ${reviewedCount}`
+    : "Manual queue unavailable.";
+  setText("manual-queue-summary", note);
+  const container = document.getElementById("manual-queue-list");
+  if (!container) return;
+  if (!items.length) {
+    container.innerHTML = `<p class="empty-state">No items in the manual queue.</p>`;
+    return;
+  }
+  container.innerHTML = items.map((item) => {
+    const id = escapeHtml(item.id || "");
+    const srcApproval = escapeHtml(item.source_approval_id || "-");
+    const action = escapeHtml(item.proposed_action || "-");
+    const status = escapeHtml(item.status || "-");
+    const ts = escapeHtml((item.created_at_utc || "").replace("T", " ").replace("Z", " UTC"));
+    const reviewNote = escapeHtml(item.review_note || "");
+    const statusClass = status === "reviewed_by_operator" ? "status-success"
+      : status === "ready_for_manual_execution" ? "status-warning" : "status-info";
+    const isReviewed = status === "reviewed_by_operator";
+    return `<article class="approval-item">
+      <div class="approval-header">
+        <span class="approval-id">${id.slice(0, 24)}</span>
+        <span class="status-pill ${statusClass}">${status}</span>
+        <span class="console-badge">manual only</span>
+        ${isReviewed ? `<span class="status-pill status-success">reviewed by operator</span>` : ""}
+      </div>
+      <div class="approval-body">
+        <p><strong>Action:</strong> ${action}</p>
+        <p><strong>Source approval:</strong> ${srcApproval}</p>
+        ${reviewNote ? `<p><strong>Review note:</strong> ${reviewNote}</p>` : ""}
+        <p class="approval-meta">${ts}</p>
+        <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
+          ${!isReviewed ? `<button class="review-queue-btn" data-item-id="${id}" type="button">Mark Reviewed…</button>` : ""}
+          ${escapeHtml(item.source_approval_id || "") ? `<button class="view-queue-trace-btn button-secondary" data-approval-id="${escapeHtml(item.source_approval_id || "")}" type="button">View Trace</button>` : ""}
+        </div>
+      </div>
+    </article>`;
+  }).join("");
+  container.querySelectorAll(".review-queue-btn").forEach((btn) => {
+    btn.addEventListener("click", () => showQueueReviewForm(btn.dataset.itemId));
+  });
+  container.querySelectorAll(".view-queue-trace-btn").forEach((btn) => {
+    btn.addEventListener("click", () => loadAuditTraceById(btn.dataset.approvalId));
+  });
+}
+
+function showQueueReviewForm(itemId) {
+  const form = document.getElementById("manual-queue-review-form");
+  const idSpan = document.getElementById("manual-queue-review-id");
+  const textarea = document.getElementById("manual-queue-review-note");
+  if (!form || !idSpan || !textarea) return;
+  idSpan.textContent = itemId;
+  textarea.value = "";
+  form.dataset.pendingId = itemId;
+  form.style.display = "block";
+  textarea.focus();
+}
+
+async function submitQueueReview(itemId, note) {
+  const resultEl = document.getElementById("manual-queue-action-result");
+  if (resultEl) resultEl.textContent = `Marking ${itemId} reviewed…`;
+  try {
+    const result = await requestJson("/api/ghoti/manual-queue/review", {
+      method: "POST",
+      body: JSON.stringify({ item_id: itemId, note }),
+    });
+    if (resultEl) resultEl.textContent = result.summary?.headline || "Marked reviewed.";
+    await refreshManualQueue();
+    await refreshPipelineItems();
+    await refreshPipelineState();
+    await refreshNeedsActionNow();
+  } catch (err) {
+    if (resultEl) resultEl.textContent = "Review failed: " + err.message;
+  }
+}
+
+async function refreshAuditTrace() {
+  const input = document.getElementById("audit-trace-id-input");
+  const approvalId = input ? input.value.trim() : "";
+  if (!approvalId) {
+    setText("audit-trace-summary", "Enter an approval ID above and click Load Trace.");
+    return;
+  }
+  setText("audit-trace-summary", `Loading trace for ${approvalId}…`);
+  let payload;
+  try {
+    payload = await requestJson(`/api/ghoti/audit-trace?approval_id=${encodeURIComponent(approvalId)}`);
+  } catch (err) {
+    setText("audit-trace-summary", "Audit trace failed: " + err.message);
+    return;
+  }
+  const s = payload.summary || {};
+  const flags = s.lifecycle_flags || {};
+  const note = payload.ok
+    ? `Trace status: ${s.trace_status || "unknown"} — approval: ${flags.approval_found ? "found" : "missing"}, queue: ${flags.queue_item_found ? "found" : "missing"}`
+    : "Audit trace unavailable.";
+  setText("audit-trace-summary", note);
+  const container = document.getElementById("audit-trace-body");
+  if (!container) return;
+  if (!payload.ok || !s.approval_item) {
+    container.innerHTML = `<p class="empty-state">Approval item not found for ID: ${escapeHtml(approvalId)}</p>`;
+    return;
+  }
+  const ai = s.approval_item || {};
+  const qi = s.manual_queue_item;
+  const timeline = s.timeline || [];
+  container.innerHTML = `
+    <article class="approval-item">
+      <div class="approval-header">
+        <span class="approval-id">${escapeHtml((ai.id || "").slice(0, 24))}</span>
+        <span class="status-pill ${ai.status === "approved" ? "status-success" : ai.status === "rejected" ? "status-error" : "status-pending"}">${escapeHtml(ai.status || "-")}</span>
+      </div>
+      <div class="approval-body">
+        <p><strong>Action:</strong> ${escapeHtml(ai.proposed_action || "-")}</p>
+        <p><strong>Reason:</strong> ${escapeHtml(ai.reason || "-")}</p>
+        ${ai.resolved_at_utc ? `<p><strong>Resolved:</strong> ${escapeHtml(ai.resolved_at_utc)}</p>` : ""}
+      </div>
+    </article>
+    ${qi ? `<article class="approval-item">
+      <div class="approval-header">
+        <span class="approval-id">Queue: ${escapeHtml((qi.id || "").slice(0, 24))}</span>
+        <span class="status-pill ${qi.status === "reviewed_by_operator" ? "status-success" : "status-warning"}">${escapeHtml(qi.status || "-")}</span>
+        <span class="console-badge">manual only</span>
+      </div>
+      <div class="approval-body">
+        ${qi.review_note ? `<p><strong>Review note:</strong> ${escapeHtml(qi.review_note)}</p>` : ""}
+        ${qi.reviewed_at_utc ? `<p><strong>Reviewed at:</strong> ${escapeHtml(qi.reviewed_at_utc)}</p>` : ""}
+      </div>
+    </article>` : `<p class="summary-note">No manual queue item linked to this approval.</p>`}
+    ${timeline.length ? `<div class="subsection"><h4>Timeline</h4>${timeline.map((e) =>
+      `<p class="approval-meta">${escapeHtml(e.timestamp_utc || "")} — ${escapeHtml(e.event || "")} (${escapeHtml(e.status || "")})${e.note ? ` — ${escapeHtml(e.note)}` : ""}</p>`
+    ).join("")}</div>` : ""}
+  `;
+}
+
+function loadAuditTraceById(approvalId) {
+  const input = document.getElementById("audit-trace-id-input");
+  if (input) input.value = approvalId;
+  const panel = document.getElementById("ghoti-audit-trace-panel");
+  if (panel) panel.scrollIntoView({ behavior: "smooth" });
+  refreshAuditTrace();
+}
+
+async function refreshNeedsActionNow() {
+  let payload;
+  try {
+    payload = await requestJson("/api/ghoti/control-center-state");
+  } catch (err) {
+    setText("needs-action-message", "Needs-action state unavailable: " + err.message);
+    return;
+  }
+  const s = payload.summary || {};
+  const attn = s.attention_summary || {};
+  const level = attn.attention_level || "none";
+  const banner = document.getElementById("needs-action-banner");
+  if (banner) {
+    banner.className = `needs-action-banner needs-action-${escapeHtml(level)}`;
+  }
+  setText("needs-action-message", attn.primary_message || "No attention summary available.");
+  setText("needs-action-pending-count", attn.pending_approvals_count ?? "-");
+  setText("needs-action-ready-count", attn.ready_queue_count ?? "-");
+  const list = document.getElementById("needs-action-items");
+  if (list) {
+    const items = attn.action_items || [];
+    list.innerHTML = items.length
+      ? items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")
+      : `<li class="empty-state">No action items.</li>`;
+  }
+}
+
 async function refreshCapabilities() {
   const payload = await requestJson("/api/capability-summary");
   renderCapabilitySummary(payload);
@@ -2326,6 +2681,11 @@ async function refreshConsole() {
   await Promise.all([
     refreshOperatorStatus(),
     refreshGhotiControlCenter(),
+    refreshNeedsActionNow(),
+    refreshPipelineState(),
+    refreshPipelineItems(),
+    refreshApprovalInbox(),
+    refreshManualQueue(),
     refreshCapabilities(),
     refreshGithubUpdates(),
     refreshSupervisorStatus(),
@@ -2525,6 +2885,30 @@ document.getElementById("refresh-github-panel").addEventListener("click", async 
     (error) => {
       setText("github-headline", "GitHub panel refresh failed.");
       setText("github-quick-note", error.message);
+    },
+  );
+});
+
+document.getElementById("refresh-pipeline-items").addEventListener("click", async (event) => {
+  await runRefresh(
+    event.currentTarget,
+    "Refresh pipeline items",
+    "Refreshing...",
+    () => refreshPipelineItems(),
+    (error) => {
+      setText("pipeline-items-summary", "Pipeline items refresh failed: " + error.message);
+    },
+  );
+});
+
+document.getElementById("refresh-pipeline-state").addEventListener("click", async (event) => {
+  await runRefresh(
+    event.currentTarget,
+    "Refresh pipeline state",
+    "Refreshing...",
+    () => refreshPipelineState(),
+    (error) => {
+      setText("pipeline-state-summary", "Pipeline state refresh failed: " + error.message);
     },
   );
 });
@@ -3165,6 +3549,100 @@ document.getElementById("quick-browser-visible").addEventListener("click", async
 
 document.getElementById("quick-desktop-check").addEventListener("click", async (event) => {
   await runDesktopBridgeCheck(event.currentTarget);
+});
+
+document.getElementById("refresh-needs-action").addEventListener("click", async (event) => {
+  await runRefresh(
+    event.currentTarget,
+    "Refresh needs-action panel",
+    "Refreshing...",
+    () => refreshNeedsActionNow(),
+    (error) => {
+      setText("needs-action-message", "Needs-action refresh failed: " + error.message);
+    },
+  );
+});
+
+document.getElementById("needs-action-goto-approvals").addEventListener("click", () => {
+  scrollToElement("ghoti-approval-inbox-panel");
+});
+
+document.getElementById("needs-action-goto-queue").addEventListener("click", () => {
+  scrollToElement("ghoti-manual-queue-panel");
+});
+
+document.getElementById("refresh-approval-inbox").addEventListener("click", async (event) => {
+  await runRefresh(
+    event.currentTarget,
+    "Refresh approval inbox",
+    "Refreshing...",
+    () => refreshApprovalInbox(),
+    (error) => {
+      setText("approval-inbox-summary", "Approval inbox refresh failed: " + error.message);
+    },
+  );
+});
+
+document.getElementById("approval-inbox-reject-confirm").addEventListener("click", async () => {
+  const form = document.getElementById("approval-inbox-reject-form");
+  const approvalId = form ? form.dataset.pendingId : "";
+  const reason = document.getElementById("approval-inbox-reject-reason").value.trim();
+  if (!approvalId) return;
+  if (!reason) {
+    const resultEl = document.getElementById("approval-inbox-action-result");
+    if (resultEl) resultEl.textContent = "Reason is required to reject.";
+    return;
+  }
+  if (form) form.style.display = "none";
+  await rejectInboxItem(approvalId, reason);
+});
+
+document.getElementById("approval-inbox-reject-cancel").addEventListener("click", () => {
+  const form = document.getElementById("approval-inbox-reject-form");
+  if (form) form.style.display = "none";
+});
+
+document.getElementById("refresh-manual-queue").addEventListener("click", async (event) => {
+  await runRefresh(
+    event.currentTarget,
+    "Refresh manual queue",
+    "Refreshing...",
+    () => refreshManualQueue(),
+    (error) => {
+      setText("manual-queue-summary", "Manual queue refresh failed: " + error.message);
+    },
+  );
+});
+
+document.getElementById("manual-queue-review-confirm").addEventListener("click", async () => {
+  const form = document.getElementById("manual-queue-review-form");
+  const itemId = form ? form.dataset.pendingId : "";
+  const note = document.getElementById("manual-queue-review-note").value.trim();
+  if (!itemId) return;
+  if (!note) {
+    const resultEl = document.getElementById("manual-queue-action-result");
+    if (resultEl) resultEl.textContent = "Operator note is required to mark reviewed.";
+    return;
+  }
+  if (form) form.style.display = "none";
+  await submitQueueReview(itemId, note);
+});
+
+document.getElementById("manual-queue-review-cancel").addEventListener("click", () => {
+  const form = document.getElementById("manual-queue-review-form");
+  if (form) form.style.display = "none";
+});
+
+document.getElementById("refresh-audit-trace").addEventListener("click", async (event) => {
+  await runRefresh(
+    event.currentTarget,
+    "Load audit trace",
+    "Loading...",
+    () => refreshAuditTrace(),
+    (error) => {
+      setText("audit-trace-summary", "Audit trace failed: " + error.message);
+    },
+  );
 });
 
 document.getElementById("artifacts-output").addEventListener("click", async (event) => {

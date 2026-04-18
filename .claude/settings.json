@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(**)",
+      "Glob(**)",
+      "Grep(**)",
+      "Bash(python 01_projects/mcp_server/server.py*)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(git push*)",
+      "Bash(git reset --hard*)",
+      "Bash(git rebase*)",
+      "Bash(* .env*)",
+      "Bash(cat .env*)",
+      "Bash(type .env*)",
+      "Bash(printenv*)",
+      "Bash(env *)",
+      "Bash(set *)",
+      "Bash(export *)"
+    ]
+  },
+  "notes": [
+    "Repo-root only: C:\\Users\\ai_sandbox\\Documents\\AI_Managed_Only",
+    "Ask before any destructive shell command (delete, push, history rewrite)",
+    "Deny reads of .env, secrets, credential stores, and OS env vars by default",
+    "Preserve Ghoti safety model: do not weaken approval gates",
+    "Stop after 2 repeated failures on the same root-cause issue",
+    "No task deletion",
+    "Prefer compact memory under 14_context/compact_memory",
+    "Allow only direct python launch of 01_projects/mcp_server/server.py without extra Claude prompt friction"
+  ]
+}

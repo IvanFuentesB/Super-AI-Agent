@@ -9,19 +9,19 @@
   <body>
     <header class="hero">
       <div class="hero-copy">
-        <p class="eyebrow">Local Operator Console</p>
-        <h1>Super-AI-Agent Operator Console</h1>
+        <p class="eyebrow">Supervised Operator Console — Local Only</p>
+        <h1>Ghoti Operator Console</h1>
         <p class="hero-text">
-          A local control surface for the parts of the project that already work:
-          GitHub visibility, scaffold generation, browser demos, usable artifact review,
-          and the first honest desktop bridge status layer.
+          A local-first supervised operator framework. Every action is approval-gated, manually executed, and fully traced.
+          Nothing runs autonomously. The operator decides what happens at every step.
         </p>
         <div class="hero-badges">
+          <span class="console-badge">Approval gated</span>
+          <span class="console-badge">Manual only</span>
+          <span class="console-badge">Non-executing</span>
+          <span class="console-badge">Operator reviewed</span>
           <span class="console-badge">Local only</span>
-          <span class="console-badge">Artifact preview</span>
-          <span class="console-badge">Visible browser demo</span>
-          <span class="console-badge">Desktop bridge actions</span>
-          <span class="console-badge">Operator recipes</span>
+          <span class="console-badge">Full audit trail</span>
         </div>
       </div>
     </header>
@@ -56,7 +56,12 @@
         <article class="summary-card">
           <span class="summary-label">Operator Mode</span>
           <strong id="operator-headline">Loading...</strong>
-          <p id="operator-next-step">Checking current console status.</p>
+          <p id="operator-next-step">Approval-gated. Manual only. No autonomous execution.</p>
+        </article>
+        <article class="summary-card">
+          <span class="summary-label">Supervised Pipeline</span>
+          <strong id="supervisor-headline">Loading...</strong>
+          <p id="supervisor-quick-note">Pending approvals and manual queue state.</p>
         </article>
         <article class="summary-card">
           <span class="summary-label">Capability Summary</span>
@@ -69,14 +74,9 @@
           <p id="github-quick-note">Waiting for GitHub summary.</p>
         </article>
         <article class="summary-card">
-          <span class="summary-label">Supervisor</span>
-          <strong id="supervisor-headline">Loading...</strong>
-          <p id="supervisor-quick-note">Checking pending approvals and human-needed state.</p>
-        </article>
-        <article class="summary-card">
           <span class="summary-label">Desktop Bridge</span>
           <strong id="desktop-headline">Loading...</strong>
-          <p id="desktop-quick-note">Checking safe local desktop bridge status.</p>
+          <p id="desktop-quick-note">Safe local desktop bridge status.</p>
         </article>
       </section>
 
@@ -495,6 +495,153 @@
             <ul id="not-implemented-list" class="status-list"></ul>
           </article>
         </div>
+      </section>
+
+      <section class="panel" id="ghoti-needs-action-panel">
+        <div class="section-heading">
+          <div>
+            <h2>Needs Action Now</h2>
+            <p>What requires your attention as operator right now. Approval gates must not be bypassed.</p>
+          </div>
+          <button id="refresh-needs-action" class="button-secondary" type="button">Refresh</button>
+        </div>
+        <div id="needs-action-banner" class="needs-action-banner needs-action-none">
+          <strong id="needs-action-message">Loading...</strong>
+        </div>
+        <div class="metric-grid" style="margin-top:0.75rem;">
+          <article class="metric-card">
+            <span>Pending Approvals</span>
+            <strong id="needs-action-pending-count">-</strong>
+          </article>
+          <article class="metric-card">
+            <span>Ready for Manual Execution</span>
+            <strong id="needs-action-ready-count">-</strong>
+          </article>
+        </div>
+        <ul id="needs-action-items" class="status-list" style="margin-top:0.75rem;"></ul>
+        <div class="needs-action-nav">
+          <button id="needs-action-goto-approvals" class="button-secondary" type="button">Go to Approval Inbox</button>
+          <button id="needs-action-goto-queue" class="button-secondary" type="button">Go to Manual Queue</button>
+        </div>
+      </section>
+
+      <section class="panel" id="ghoti-pipeline-state-panel">
+        <div class="section-heading">
+          <div>
+            <h2>Supervised Pipeline State</h2>
+            <p>Read-only view of the current supervised operator pipeline: observe → decide → approve → prepare → review. Nothing executes here.</p>
+          </div>
+          <button id="refresh-pipeline-state" class="button-secondary" type="button">Refresh Pipeline State</button>
+        </div>
+        <div class="metric-grid">
+          <div class="metric-card">
+            <strong id="pipeline-operator-decision">-</strong>
+            <p>Latest Operator Decision</p>
+          </div>
+          <div class="metric-card">
+            <strong id="pipeline-proposed-action">-</strong>
+            <p>Latest Proposed Action</p>
+          </div>
+          <div class="metric-card">
+            <strong id="pipeline-pending-approvals">-</strong>
+            <p>Pending Approvals</p>
+          </div>
+          <div class="metric-card">
+            <strong id="pipeline-approved-count">-</strong>
+            <p>Approved</p>
+          </div>
+          <div class="metric-card">
+            <strong id="pipeline-ready-items">-</strong>
+            <p>Ready for Manual Execution</p>
+          </div>
+          <div class="metric-card">
+            <strong id="pipeline-reviewed-items">-</strong>
+            <p>Reviewed by Operator</p>
+          </div>
+          <div class="metric-card">
+            <strong id="pipeline-latest-approved-id">-</strong>
+            <p>Latest Approved Approval ID</p>
+          </div>
+          <div class="metric-card">
+            <strong id="pipeline-latest-ready-id">-</strong>
+            <p>Latest Ready Item ID</p>
+          </div>
+        </div>
+        <div id="pipeline-state-summary" class="summary-note">Waiting for pipeline state.</div>
+      </section>
+
+      <section class="panel" id="ghoti-pipeline-items-panel">
+        <div class="section-heading">
+          <div>
+            <h2>Pipeline Items Overview</h2>
+            <p>Compact per-item view of the supervised pipeline. Each row is one approval-centered lifecycle entry. Read-only.</p>
+          </div>
+          <button id="refresh-pipeline-items" class="button-secondary" type="button">Refresh Pipeline Items</button>
+        </div>
+        <div id="pipeline-items-summary" class="summary-note">Waiting for pipeline items.</div>
+        <div id="pipeline-items-list" class="approval-list">Waiting for pipeline items data.</div>
+      </section>
+
+      <section class="panel" id="ghoti-approval-inbox-panel">
+        <div class="section-heading">
+          <div>
+            <h2>Approval Inbox</h2>
+            <p>Pending approvals requiring human decision. Approve or reject each item here. Reject requires a reason. Nothing executes automatically.</p>
+          </div>
+          <button id="refresh-approval-inbox" class="button-secondary" type="button">Refresh Inbox</button>
+        </div>
+        <div id="approval-inbox-summary" class="summary-note">Waiting for approval inbox.</div>
+        <div id="approval-inbox-list" class="approval-list">Waiting for approval inbox data.</div>
+        <div id="approval-inbox-action-result" class="result-panel" aria-live="polite">Select an approval to approve or reject it.</div>
+        <div id="approval-inbox-reject-form" style="display:none;" class="stacked-form">
+          <strong>Reject: <span id="approval-inbox-reject-id">-</span></strong>
+          <label>Reason (required)
+            <textarea id="approval-inbox-reject-reason" rows="2" placeholder="Enter reason for rejection."></textarea>
+          </label>
+          <div style="display:flex;gap:8px;">
+            <button id="approval-inbox-reject-confirm" type="button" class="button-danger">Confirm Reject</button>
+            <button id="approval-inbox-reject-cancel" type="button" class="button-secondary">Cancel</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" id="ghoti-manual-queue-panel">
+        <div class="section-heading">
+          <div>
+            <h2>Manual Execution Queue</h2>
+            <p>Items ready for manual execution or already reviewed. Mark reviewed with a required note. <strong>Nothing executes automatically — manual only.</strong></p>
+          </div>
+          <button id="refresh-manual-queue" class="button-secondary" type="button">Refresh Queue</button>
+        </div>
+        <div id="manual-queue-summary" class="summary-note">Waiting for manual queue.</div>
+        <div id="manual-queue-list" class="approval-list">Waiting for manual queue data.</div>
+        <div id="manual-queue-action-result" class="result-panel" aria-live="polite">Select a queue item to mark it reviewed.</div>
+        <div id="manual-queue-review-form" style="display:none;" class="stacked-form">
+          <strong>Mark reviewed: <span id="manual-queue-review-id">-</span></strong>
+          <p class="summary-note">Marking reviewed does NOT execute anything. It records that the operator has inspected this item.</p>
+          <label>Operator note (required)
+            <textarea id="manual-queue-review-note" rows="2" placeholder="Enter your operator review note."></textarea>
+          </label>
+          <div style="display:flex;gap:8px;">
+            <button id="manual-queue-review-confirm" type="button">Confirm Mark Reviewed</button>
+            <button id="manual-queue-review-cancel" type="button" class="button-secondary">Cancel</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" id="ghoti-audit-trace-panel">
+        <div class="section-heading">
+          <div>
+            <h2>Audit Trace</h2>
+            <p>Read-only drilldown into one approval item's full supervised lifecycle: approval → queue → review. Enter an approval ID below.</p>
+          </div>
+          <button id="refresh-audit-trace" class="button-secondary" type="button">Load Trace</button>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+          <input id="audit-trace-id-input" type="text" placeholder="Approval ID" style="flex:1;" />
+        </div>
+        <div id="audit-trace-summary" class="summary-note">Enter an approval ID and click Load Trace.</div>
+        <div id="audit-trace-body" class="approval-list">No trace loaded.</div>
       </section>
 
       <section class="panel">

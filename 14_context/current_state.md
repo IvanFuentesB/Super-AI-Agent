@@ -103,6 +103,7 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - The dashboard now shows an Operator Watchdog card and target marker so wrong-window blocks, stalled work, manual intervention, and did-not-complete states are easier to see without digging through raw task history
 - CLI `ghoti-status` and `ghoti-recent` now surface watchdog summaries and the current overlay-target hint so the same visibility exists outside the browser
 - Runtime, dashboard, and desktop checkers now cover the visible Ghoti overlay/watchdog slice honestly
+- Repo-local Ghoti MCP launch helper now exists at `03_scripts\run_mcp_server.ps1`
 - Desktop bridge actions now also surface a lightweight live action cue and target marker for aiming, clicking, typing, and waiting steps
 - Controlled one-line `type_text` support now exists for explicit allowlisted desktop targets only, with no auto-submit and no freeform broad typing path
 - Runtime and CLI now persist and expose desktop action truth such as current action, target, typing-enabled state, last action status, cue status, and text preview
@@ -156,6 +157,7 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Keep the overlay/watchdog layer operator-facing only; use it to surface intervention points, not to auto-recover silently
 - Improve operator-facing task filtering further only if it reduces noise without introducing any deletion path
 - Keep the operator stack swappable from the provider brain so later model changes do not require a rewrite
+- Run the Ghoti MCP server from repo root with `powershell.exe -ExecutionPolicy Bypass -File .\03_scripts\run_mcp_server.ps1`
 - Keep the operator stack compatible with later OpenClaw-style channel, browser-assist, and control-surface integration without making OpenClaw a hard dependency now
 - Decide the next narrow desktop-control implementation path only if it directly supports the real handoff loop
 - Keep GitHub remote actions explicit and approval-gated
