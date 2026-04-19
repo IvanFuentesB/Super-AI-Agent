@@ -4360,20 +4360,19 @@ function renderCaptureState(captureState) {
     catch { timeEl.textContent = captureState.latest_frame_utc; }
   }
 
-  if (previewRow && latestLink && captureState.latest_frame_path) {
-    const p = captureState.latest_frame_path.replace(/\\/g, "/");
-    // Strip absolute path prefix to make a relative URL the server can serve
-    const rel = p.replace(/^.*\/(\.tmp-screenshots\/)/, "$1");
-    previewRow.hidden = false;
-    latestLink.href = "/" + rel;
-    latestLink.textContent = rel.split("/").pop() || "latest.png";
-    if (latestImg) {
-      latestImg.src = "/" + rel + "?t=" + Date.now();
-      latestImg.hidden = false;
-    }
-  } else if (previewRow) {
-    previewRow.hidden = true;
-    if (latestImg) latestImg.hidden = true;
+  const hasFrames = captureState.frame_count > 0;
+  if (previewRow) {
+    previewRow.hidden = !hasFrames;
+  }
+  if (hasFrames && latestLink && latestImg) {
+    const frameUrl = "/api/ghoti/active/latest-frame?t=" + Date.now();
+    latestLink.href = "/api/ghoti/active/latest-frame";
+    latestLink.textContent = capturing ? "Capture running — Latest frame" : "Capture stopped — Latest frame";
+    latestImg.src = frameUrl;
+    latestImg.hidden = false;
+    latestImg.alt = capturing ? "Live screen preview" : "Last captured frame";
+  } else if (latestImg) {
+    latestImg.hidden = true;
   }
 
   if (errorEl) {
@@ -4427,4 +4426,11 @@ document.getElementById("ghoti-capture-stop-btn").addEventListener("click", asyn
 
 refreshCaptureState();
 setInterval(refreshCaptureState, 4000);
+
+setInterval(() => {
+  const img = document.getElementById("ghoti-capture-latest-img");
+  if (img && !img.hidden) {
+    img.src = "/api/ghoti/active/latest-frame?t=" + Date.now();
+  }
+}, 2000);
 

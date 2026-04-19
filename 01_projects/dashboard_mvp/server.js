@@ -3364,6 +3364,23 @@ async function handleApiRequest(request, response, requestUrl) {
     return;
   }
 
+  if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/active/latest-frame") {
+    const latestFramePath = path.join(captureFramesDir, "latest.png");
+    if (!fs.existsSync(latestFramePath)) {
+      sendJson(response, 404, { ok: false, error: "No latest frame available." });
+      return;
+    }
+    const frameData = fs.readFileSync(latestFramePath);
+    response.writeHead(200, {
+      "Content-Type": "image/png",
+      "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+      "Pragma": "no-cache",
+      "Expires": "0",
+    });
+    response.end(frameData);
+    return;
+  }
+
   sendJson(response, 404, {
     ok: false,
     error: "Route not found.",
