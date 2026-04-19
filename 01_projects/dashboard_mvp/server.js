@@ -15,6 +15,9 @@ const desktopCheckScriptPath = path.join(desktopPlaygroundRoot, "check_desktop_p
 const desktopActionsScriptPath = path.join(desktopPlaygroundRoot, "desktop_bridge_actions.ps1");
 const dashboardPort = Number.parseInt(process.env.PORT || "3210", 10);
 const maxRecentActions = 25;
+const runtimeDataDir = path.join(runtimeProjectRoot, "runtime_data");
+const activeModeStateFile = path.join(runtimeDataDir, "active_mode_state.json");
+const screenshotsDir = path.join(dashboardRoot, ".tmp-screenshots");
 const previewableExtensions = new Set([
   ".md",
   ".markdown",
@@ -167,6 +170,33 @@ function runCommand(command, args, options = {}) {
       finalize({ code: code ?? 1, timedOut: false });
     });
   });
+}
+
+function readActiveModeState() {
+  const defaults = {
+    active: false,
+    mode: "idle",
+    screen_view_enabled: false,
+    audio_enabled: false,
+    last_snapshot_path: null,
+    last_event_utc: null,
+    error: null,
+    safety_note: "No hidden recording. Screen capture only when explicitly triggered by operator.",
+  };
+  try {
+    if (!fs.existsSync(activeModeStateFile)) return defaults;
+    return { ...defaults, ...JSON.parse(fs.readFileSync(activeModeStateFile, "utf8")) };
+  } catch {
+    return defaults;
+  }
+}
+
+function writeActiveModeState(patch) {
+  const current = readActiveModeState();
+  const next = { ...current, ...patch, last_event_utc: new Date().toISOString() };
+  if (!fs.existsSync(runtimeDataDir)) fs.mkdirSync(runtimeDataDir, { recursive: true });
+  fs.writeFileSync(activeModeStateFile, JSON.stringify(next, null, 2));
+  return next;
 }
 
 async function runRuntimeCli(cliArgs) {
@@ -3107,6 +3137,74 @@ async function handleApiRequest(request, response, requestUrl) {
       outputPath: itemId,
     });
     sendJson(response, payload.ok ? 200 : 500, payload);
+    return;
+  }
+
+  if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/active-state") {
+    const state = readActiveModeState();
+    sendJson(response, 200, { ok: true, state });
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/api/ghoti/active/start") {
+    const state = writeActiveModeState({ active: true, mode: "active", screen_view_enabled: true, error: null });
+    pushAction({ actionType: "status", label: "Ghoti Active Mode started", status: "success", summary: "Operator started Ghoti Active Mode." });
+    sendJson(response, 200, { ok: true, state });
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/api/ghoti/active/stop") {
+    const state = writeActiveModeState({ active: false, mode: "idle", screen_view_enabled: false, error: null });
+    pushAction({ actionType: "status", label: "Ghoti Active Mode stopped", status: "success", summary: "Operator stopped Ghoti Active Mode." });
+    sendJson(response, 200, { ok: true, state });
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/api/ghoti/active/snapshot") {
+    if (!fs.existsSync(screenshotsDir)) fs.mkdirSync(screenshotsDir, { recursive: true });
+    const snapshotFilename = `ghoti-snapshot-${Date.now()}.png`;
+    const snapshotPath = path.join(screenshotsDir, snapshotFilename);
+    const powerShell = resolvePowerShell();
+    if (!powerShell) {
+      const state = writeActiveModeState({ error: "PowerShell not found — cannot capture screenshot." });
+      sendJson(response, 500, { ok: false, error: "PowerShell not found.", state });
+      return;
+    }
+    const psScript = [
+      "Add-Type -AssemblyName System.Windows.Forms",
+      "Add-Type -AssemblyName System.Drawing",
+      "$screen = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds",
+      "$bmp = New-Object System.Drawing.Bitmap($screen.Width, $screen.Height)",
+      "$g = [System.Drawing.Graphics]::FromImage($bmp)",
+      "$g.CopyFromScreen($screen.Location, [System.Drawing.Point]::Empty, $screen.Size)",
+      "$g.Dispose()",
+      `$bmp.Save("${snapshotPath.replace(/\\/g, "\\\\")}")`,
+      "$bmp.Dispose()",
+      "Write-Output 'ok'",
+    ].join("; ");
+    const result = await runCommand(powerShell.command, [...powerShell.baseArgs, "-ExecutionPolicy", "Bypass", "-Command", psScript], { cwd: repoRoot, timeoutMs: 20000 });
+    if (!result.ok || !fs.existsSync(snapshotPath)) {
+      const errMsg = result.stderr || result.stdout || "Screenshot capture failed.";
+      const state = writeActiveModeState({ error: `Screenshot failed: ${errMsg}` });
+      sendJson(response, 500, { ok: false, error: errMsg, state });
+      return;
+    }
+    const relPath = path.relative(repoRoot, snapshotPath).replace(/\\/g, "/");
+    const state = writeActiveModeState({ last_snapshot_path: relPath, mode: "active", error: null });
+    pushAction({ actionType: "status", label: "Ghoti snapshot captured", status: "success", summary: `Snapshot saved: ${relPath}` });
+    sendJson(response, 200, { ok: true, snapshotPath: relPath, state });
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/api/ghoti/active/message") {
+    const body = await readJsonBody(request);
+    requireFields(body, ["message"]);
+    const msg = String(body.message || "").trim();
+    if (!msg) throw new Error("message is required.");
+    const state = writeActiveModeState({ mode: "processing", error: null });
+    pushAction({ actionType: "status", label: "Ghoti received instruction", status: "success", summary: `Operator message: ${msg.slice(0, 80)}` });
+    const ackState = writeActiveModeState({ mode: "waiting_for_approval" });
+    sendJson(response, 200, { ok: true, received: msg, note: "Instruction logged. Operator approval required before any action is taken.", state: ackState });
     return;
   }
 

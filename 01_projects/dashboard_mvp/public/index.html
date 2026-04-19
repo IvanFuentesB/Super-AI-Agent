@@ -25,6 +25,11 @@
         </div>
       </div>
     </header>
+    <div id="ghoti-active-mode-rail" class="ghoti-active-rail" aria-live="polite" title="Ghoti Active Mode status">
+      <span class="ghoti-active-rail-dot" aria-hidden="true"></span>
+      <span id="ghoti-active-rail-label">Ghoti idle</span>
+    </div>
+
     <section class="status-dock" aria-label="Ghoti live status">
 
     <aside id="ghoti-state-indicator" class="ghoti-state-indicator is-neutral" aria-live="polite">
@@ -74,6 +79,9 @@
       </button>
       <button class="tab-btn" id="tab-system" data-tab="system" role="tab" aria-controls="panel-system" aria-selected="false">
         <span class="tab-icon">&#128200;</span> System
+      </button>
+      <button class="tab-btn" id="tab-active" data-tab="active" role="tab" aria-controls="panel-active" aria-selected="false">
+        <span class="tab-icon">&#128065;</span> Active
       </button>
     </nav>
     <main class="page-shell tabs-main app-shell">
@@ -1892,6 +1900,46 @@ This file was queued through the safe repo-local executor.
       </section>
       </section>
     </main>
+
+      <section class="tab-panel" id="panel-active" data-tab-panel="active" role="tabpanel" aria-labelledby="tab-active" hidden>
+        <section class="panel panel-primary" id="ghoti-active-mode-panel">
+          <div class="section-heading">
+            <div>
+              <h2>Ghoti Active Mode</h2>
+              <p>Explicit operator-controlled activation. No hidden recording. Screen capture only when you trigger it.</p>
+            </div>
+          </div>
+
+          <div class="ghoti-active-status-row">
+            <span id="ghoti-active-pill" class="state-pill ghoti-active-pill-off">OFF — idle</span>
+            <span id="ghoti-active-last-event" class="ghoti-active-meta"></span>
+          </div>
+
+          <div class="ghoti-active-controls">
+            <button id="ghoti-active-start-btn" class="action-btn action-btn-primary" type="button">Start Ghoti</button>
+            <button id="ghoti-active-stop-btn" class="action-btn action-btn-danger" type="button">Stop Ghoti</button>
+            <button id="ghoti-active-snapshot-btn" class="action-btn" type="button">Capture Screenshot</button>
+          </div>
+
+          <div class="ghoti-active-instruction-row">
+            <label for="ghoti-active-msg-input" class="ghoti-active-label">Tell Ghoti what to focus on</label>
+            <textarea id="ghoti-active-msg-input" class="ghoti-active-textarea" rows="3" placeholder="Describe the task or area to focus on. Approval required before any action."></textarea>
+            <button id="ghoti-active-send-btn" class="action-btn" type="button">Send instruction</button>
+          </div>
+
+          <div id="ghoti-active-snapshot-preview" class="ghoti-active-snapshot-preview" hidden>
+            <p class="ghoti-active-label">Last snapshot</p>
+            <a id="ghoti-active-snapshot-link" href="#" target="_blank" class="ghoti-active-snapshot-link">View screenshot</a>
+          </div>
+
+          <div id="ghoti-active-feedback" class="ghoti-active-feedback" aria-live="polite"></div>
+
+          <p class="ghoti-active-privacy-note">
+            Visible indicator is shown while active. No autonomous execution. No hidden recording.
+            Screenshots are saved locally in the repo artifacts folder and are not sent to any remote API.
+          </p>
+        </section>
+      </section>
 
     <script src="/app.js"></script>
 </body>

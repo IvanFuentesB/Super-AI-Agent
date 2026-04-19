@@ -4205,3 +4205,118 @@ refreshConsole().catch((error) => {
   renderDashboardErrors({}, { error: error.message });
 });
 
+// --- Ghoti Active Mode ---
+
+const ACTIVE_PILL_CLASSES = ["ghoti-active-pill-off","ghoti-active-pill-on","ghoti-active-pill-listening","ghoti-active-pill-processing","ghoti-active-pill-waiting","ghoti-active-pill-error"];
+
+function renderActiveModeState(state) {
+  if (!state) return;
+  const pill = document.getElementById("ghoti-active-pill");
+  const rail = document.getElementById("ghoti-active-mode-rail");
+  const railLabel = document.getElementById("ghoti-active-rail-label");
+  const lastEvent = document.getElementById("ghoti-active-last-event");
+  const snapshotPreview = document.getElementById("ghoti-active-snapshot-preview");
+  const snapshotLink = document.getElementById("ghoti-active-snapshot-link");
+
+  const mode = (state.mode || "idle").toLowerCase();
+  const active = Boolean(state.active);
+
+  // pill label + class
+  const modeLabels = { idle: "OFF — idle", active: "ACTIVE — screen view on", listening: "LISTENING", processing: "PROCESSING", waiting_for_approval: "WAITING — approval needed", stopped: "STOPPED", error: "ERROR" };
+  const modeClasses = { idle: "ghoti-active-pill-off", active: "ghoti-active-pill-on", listening: "ghoti-active-pill-listening", processing: "ghoti-active-pill-processing", waiting_for_approval: "ghoti-active-pill-waiting", stopped: "ghoti-active-pill-off", error: "ghoti-active-pill-error" };
+  if (pill) {
+    ACTIVE_PILL_CLASSES.forEach(c => pill.classList.remove(c));
+    pill.classList.add(modeClasses[mode] || "ghoti-active-pill-off");
+    pill.textContent = modeLabels[mode] || mode.toUpperCase();
+  }
+
+  // top rail
+  if (rail && railLabel) {
+    rail.classList.toggle("is-active", active);
+    railLabel.textContent = active ? "Ghoti active — screen view on" : "Ghoti idle";
+  }
+
+  // last event timestamp
+  if (lastEvent && state.last_event_utc) {
+    try { lastEvent.textContent = new Date(state.last_event_utc).toLocaleTimeString(); } catch { lastEvent.textContent = state.last_event_utc; }
+  }
+
+  // snapshot preview
+  if (snapshotPreview && snapshotLink && state.last_snapshot_path) {
+    snapshotPreview.hidden = false;
+    snapshotLink.textContent = state.last_snapshot_path;
+    snapshotLink.href = "/" + state.last_snapshot_path;
+  } else if (snapshotPreview) {
+    snapshotPreview.hidden = true;
+  }
+
+  if (state.error) {
+    setActiveFeedback("Error: " + state.error, true);
+  }
+}
+
+function setActiveFeedback(msg, isError) {
+  const el = document.getElementById("ghoti-active-feedback");
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = isError ? "#c0392b" : "#1a7f4b";
+}
+
+async function refreshActiveModeState() {
+  try {
+    const data = await fetchJson("/api/ghoti/active-state");
+    renderActiveModeState(data.state);
+  } catch (err) {
+    setActiveFeedback("Could not load active state: " + err.message, true);
+  }
+}
+
+async function activeModePost(endpoint, body) {
+  try {
+    const resp = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
+    const data = await resp.json();
+    renderActiveModeState(data.state);
+    return data;
+  } catch (err) {
+    setActiveFeedback("Request failed: " + err.message, true);
+    return null;
+  }
+}
+
+document.getElementById("ghoti-active-start-btn").addEventListener("click", async () => {
+  setActiveFeedback("Starting Ghoti Active Mode...", false);
+  const data = await activeModePost("/api/ghoti/active/start");
+  if (data && data.ok) setActiveFeedback("Ghoti Active Mode started. Visible indicator is now shown.", false);
+});
+
+document.getElementById("ghoti-active-stop-btn").addEventListener("click", async () => {
+  setActiveFeedback("Stopping Ghoti Active Mode...", false);
+  const data = await activeModePost("/api/ghoti/active/stop");
+  if (data && data.ok) setActiveFeedback("Ghoti Active Mode stopped.", false);
+});
+
+document.getElementById("ghoti-active-snapshot-btn").addEventListener("click", async () => {
+  setActiveFeedback("Capturing screenshot...", false);
+  const data = await activeModePost("/api/ghoti/active/snapshot");
+  if (data && data.ok) setActiveFeedback("Screenshot captured: " + data.snapshotPath, false);
+  else if (data && data.error) setActiveFeedback("Snapshot failed: " + data.error, true);
+});
+
+document.getElementById("ghoti-active-send-btn").addEventListener("click", async () => {
+  const input = document.getElementById("ghoti-active-msg-input");
+  const msg = input ? input.value.trim() : "";
+  if (!msg) { setActiveFeedback("Enter an instruction before sending.", true); return; }
+  setActiveFeedback("Sending instruction...", false);
+  const data = await activeModePost("/api/ghoti/active/message", { message: msg });
+  if (data && data.ok) {
+    setActiveFeedback("Instruction received. " + (data.note || ""), false);
+    if (input) input.value = "";
+  } else if (data && data.error) {
+    setActiveFeedback("Failed: " + data.error, true);
+  }
+});
+
+// Poll active state every 6 seconds
+refreshActiveModeState();
+setInterval(refreshActiveModeState, 6000);
+

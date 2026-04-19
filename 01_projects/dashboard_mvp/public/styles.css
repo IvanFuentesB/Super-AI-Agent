@@ -1482,3 +1482,155 @@ pre {
     grid-column: span 1;
   }
 }
+
+/* Ghoti Active Mode panel */
+.ghoti-active-status-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1.1rem 0 0.9rem;
+}
+
+.ghoti-active-pill-off {
+  background: #e0e4ec;
+  color: #5a6478;
+}
+
+.ghoti-active-pill-on {
+  background: #1a7f4b;
+  color: #fff;
+}
+
+.ghoti-active-pill-listening {
+  background: #6a3dbf;
+  color: #fff;
+}
+
+.ghoti-active-pill-processing {
+  background: #1565c0;
+  color: #fff;
+}
+
+.ghoti-active-pill-waiting {
+  background: #c07a00;
+  color: #fff;
+}
+
+.ghoti-active-pill-error {
+  background: #c0392b;
+  color: #fff;
+}
+
+.ghoti-active-meta {
+  font-size: 0.78rem;
+  color: #7a8499;
+}
+
+.ghoti-active-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 1.1rem;
+}
+
+.action-btn-danger {
+  background: #c0392b;
+  color: #fff;
+  border-color: #c0392b;
+}
+
+.action-btn-danger:hover {
+  background: #a93226;
+}
+
+.ghoti-active-instruction-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.ghoti-active-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #334f7d;
+}
+
+.ghoti-active-textarea {
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border: 1.5px solid #c8d2e8;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  font-family: inherit;
+  resize: vertical;
+  background: #f7f9fd;
+  color: #1a2340;
+  box-sizing: border-box;
+}
+
+.ghoti-active-snapshot-preview {
+  margin: 0.8rem 0;
+  padding: 0.7rem 0.9rem;
+  background: #f0f4fb;
+  border-radius: 6px;
+  border: 1px solid #c8d2e8;
+}
+
+.ghoti-active-snapshot-link {
+  color: #1565c0;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-decoration: underline;
+}
+
+.ghoti-active-feedback {
+  min-height: 1.5rem;
+  font-size: 0.83rem;
+  color: #334f7d;
+  margin-bottom: 0.5rem;
+}
+
+.ghoti-active-privacy-note {
+  font-size: 0.77rem;
+  color: #7a8499;
+  border-top: 1px solid #e0e4ec;
+  padding-top: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+/* Persistent active mode rail — fixed top-right corner */
+#ghoti-active-mode-rail {
+  position: fixed;
+  top: 0.6rem;
+  right: 1rem;
+  z-index: 100;
+}
+
+.ghoti-active-rail {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: #e0e4ec;
+  color: #5a6478;
+  transition: background 0.3s, color 0.3s;
+  white-space: nowrap;
+}
+
+.ghoti-active-rail.is-active {
+  background: #1a7f4b;
+  color: #fff;
+}
+
+.ghoti-active-rail-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.85;
+  display: inline-block;
+}

@@ -87,3 +87,10 @@ gemma4/
 # Third-party intake clones
 21_repos/third_party/*
 !21_repos/third_party/.gitkeep
+
+# External repo research clones
+00_external_repos/
+
+# Ghoti Active Mode screenshots and runtime snapshots
+01_projects/dashboard_mvp/.tmp-screenshots/
+*.tmp-ghoti-*.png
