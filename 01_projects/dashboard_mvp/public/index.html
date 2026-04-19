@@ -230,6 +230,22 @@
       </section>
 
       <section class="tab-panel" id="panel-approvals" data-tab-panel="approvals" role="tabpanel" aria-labelledby="tab-approvals" hidden>
+        <section class="panel panel-primary" id="ghoti-approval-queue-panel" data-tab="approvals">
+          <div class="section-heading">
+            <div>
+              <h2>Approval Queue <span class="summary-note" style="font-weight:400;font-size:0.85rem;">— local runtime gate</span></h2>
+              <p>Pending approvals from Ghoti route guards. Approve or reject each item. Nothing executes automatically. No auto-approval.</p>
+            </div>
+            <button id="ghoti-approvals-refresh" class="button-secondary" type="button">Refresh</button>
+          </div>
+          <div id="ghoti-approvals-pending-count" class="summary-note" style="margin-bottom:0.5rem;">Loading…</div>
+          <div id="ghoti-approvals-pending-list" class="approval-list" aria-live="polite"></div>
+          <div id="ghoti-approvals-result" class="result-panel" aria-live="polite" style="margin-top:0.5rem;"></div>
+          <details style="margin-top:1rem;">
+            <summary style="cursor:pointer;font-size:0.85rem;color:var(--muted);">Recent decisions (last 10)</summary>
+            <div id="ghoti-approvals-recent-list" class="approval-list" style="margin-top:0.5rem;"></div>
+          </details>
+        </section>
         <div class="approvals-grid">
 <section class="panel panel-primary" id="ghoti-approval-inbox-panel" data-tab="approvals">
         <div class="section-heading">

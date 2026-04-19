@@ -25,6 +25,7 @@ const captureStopFile = path.join(captureFramesDir, ".stop");
 const captureSidecarScript = path.join(runtimeProjectRoot, "src", "super_ai_agent", "screen_capture_sidecar.py");
 const voiceStateFile = path.join(runtimeDataDir, "voice_state.json");
 const youtubeFollowerTasksFile = path.join(runtimeDataDir, "youtube_follower_tasks.json");
+const approvalsFile = path.join(runtimeDataDir, "approvals.json");
 const maxActiveSessions = 5;
 const maxYoutubeFollowerTasks = 20;
 const maxSessionFrames = 12;
@@ -148,11 +149,17 @@ function readYoutubeFollowerTasks() {
   return [];
 }
 
-// Approval contract scaffold.
-// Real approval queue integration is a future milestone.
-// Do not bypass this for risky actions.
+// Risky route pattern:
+// 1. Caller omits approval_id -> create/reuse pending approval, return approval_required JSON.
+// 2. Operator approves/rejects in UI.
+// 3. Caller retries with approval_id.
+// 4. Route consumes approval.
+// 5. Route executes exactly the approved action.
+// 6. Missing/rejected/consumed/wrong-type approval refuses.
+// This app-level gate is separate from Claude Code CLI permissions.
 function requiresOperatorApproval(action) {
   const riskyTypes = new Set([
+    "cleanup_capture_files",
     "delete_file",
     "write_outside_repo",
     "send_network_request",
@@ -160,19 +167,122 @@ function requiresOperatorApproval(action) {
     "type_text",
     "run_shell",
     "browser_submit",
-    "cleanup_capture_files",
+    "desktop_action",
+    "browser_action",
   ]);
   return riskyTypes.has(action?.type || action);
 }
 
-function buildApprovalRequiredResponse(action, reason) {
+function buildApprovalRequiredResponse(action, reason, approval) {
   return {
     ok: false,
     approval_required: true,
+    approval_id: approval?.id || null,
     action,
-    reason: reason || "This action requires explicit operator approval.",
+    reason,
+    approval,
     local_only: true,
+    next_step: "Approve or reject this request in the dashboard Approvals panel, then retry the original action with approval_id.",
   };
+}
+
+const MAX_APPROVALS = 200;
+const MAX_PAYLOAD_STRING_LEN = 512;
+const MAX_PAYLOAD_ARRAY_LEN = 20;
+const SENSITIVE_KEYS = /password|api_key|apikey|token|secret|credential|authorization|cookie/i;
+
+function sanitizeApprovalPayload(obj, depth) {
+  if (depth === undefined) depth = 0;
+  if (depth > 6) return "[truncated-depth]";
+  if (obj === null || obj === undefined) return obj;
+  if (typeof obj === "string") return obj.length > MAX_PAYLOAD_STRING_LEN ? obj.slice(0, MAX_PAYLOAD_STRING_LEN) + "[truncated]" : obj;
+  if (typeof obj !== "object") return obj;
+  if (Array.isArray(obj)) {
+    const arr = obj.slice(0, MAX_PAYLOAD_ARRAY_LEN).map((v) => sanitizeApprovalPayload(v, depth + 1));
+    return arr;
+  }
+  const out = {};
+  let redacted = false;
+  for (const [k, v] of Object.entries(obj)) {
+    if (SENSITIVE_KEYS.test(k)) {
+      out[k] = "[redacted]";
+      redacted = true;
+    } else {
+      out[k] = sanitizeApprovalPayload(v, depth + 1);
+    }
+  }
+  if (redacted) out._redacted = true;
+  return out;
+}
+
+function readApprovals() {
+  try {
+    if (fs.existsSync(approvalsFile)) {
+      return JSON.parse(fs.readFileSync(approvalsFile, "utf8"));
+    }
+  } catch {
+    pushAction({ actionType: "warning", label: "approvals.json parse error", status: "warn", summary: "approvals.json was unreadable; returning empty list." });
+  }
+  return [];
+}
+
+function writeApprovals(list) {
+  if (!fs.existsSync(runtimeDataDir)) fs.mkdirSync(runtimeDataDir, { recursive: true });
+  const bounded = Array.isArray(list) ? list.slice(0, MAX_APPROVALS) : [];
+  fs.writeFileSync(approvalsFile, JSON.stringify(bounded, null, 2), "utf8");
+}
+
+function createApprovalRequest(action, reason, requestedBy) {
+  const sanitized = sanitizeApprovalPayload(action.payload);
+  const wasRedacted = sanitized && sanitized._redacted;
+  const record = {
+    id: `apv-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    action: { type: String(action.type || "").slice(0, 128), payload: sanitized || {} },
+    reason: String(reason || "").slice(0, 512),
+    requested_by: String(requestedBy || "").slice(0, 128),
+    requested_at_utc: new Date().toISOString(),
+    status: "pending",
+    decided_at_utc: null,
+    decided_by: null,
+    consumed_at_utc: null,
+    notes: "",
+    payload_sanitized: Boolean(wasRedacted),
+  };
+  const list = readApprovals();
+  list.unshift(record);
+  writeApprovals(list);
+  return record;
+}
+
+function getApproval(id) {
+  return readApprovals().find((a) => a.id === id) || null;
+}
+
+function updateApprovalStatus(id, status, extraFields) {
+  const list = readApprovals();
+  const idx = list.findIndex((a) => a.id === id);
+  if (idx === -1) return null;
+  list[idx] = { ...list[idx], status, ...extraFields };
+  writeApprovals(list);
+  return list[idx];
+}
+
+function pendingApprovals() {
+  return readApprovals().filter((a) => a.status === "pending");
+}
+
+function validateAndConsumeApproval(approvalId, expectedActionType) {
+  const approval = getApproval(approvalId);
+  if (!approval) return { ok: false, error: "approval_not_found" };
+  if (approval.status === "rejected") return { ok: false, error: "approval_rejected", approval };
+  if (approval.status === "consumed") return { ok: false, error: "approval_already_consumed", approval };
+  if (approval.status === "expired") return { ok: false, error: "approval_expired", approval };
+  if (approval.status !== "approved") return { ok: false, error: "approval_not_approved", approval };
+  if (expectedActionType && approval.action?.type !== expectedActionType) {
+    return { ok: false, error: "approval_action_type_mismatch", approval };
+  }
+  const consumed = updateApprovalStatus(approvalId, "consumed", { consumed_at_utc: new Date().toISOString() });
+  return { ok: true, approval: consumed };
 }
 
 function checkOllamaReachable() {
@@ -4216,6 +4326,7 @@ async function handleApiRequest(request, response, requestUrl) {
     const body = await readJsonBody(request);
     const rawSessionId = String(body.session_id || "").trim();
     const confirm = String(body.confirm || "").trim();
+    const approvalId = String(body.approval_id || requestUrl.searchParams.get("approval_id") || "").trim();
     if (!rawSessionId) {
       sendJson(response, 400, { ok: false, error: "session_id is required." });
       return;
@@ -4249,9 +4360,36 @@ async function handleApiRequest(request, response, requestUrl) {
       sendJson(response, 400, { ok: false, error: "Session has already been cleaned." });
       return;
     }
+    const { files, missing_files, safety_root } = listSessionFrameFiles(sessionId);
+
+    // Approval gate: require explicit approval for cleanup_capture_files
+    if (!approvalId) {
+      // Reuse existing pending approval for same session if one exists
+      const existing = readApprovals().find(
+        (a) => a.status === "pending" && a.action?.type === "cleanup_capture_files" && a.action?.payload?.session_id === sessionId,
+      );
+      const approval = existing || createApprovalRequest(
+        { type: "cleanup_capture_files", payload: { session_id: sessionId, file_count: files.length, safety_root } },
+        `Delete ${files.length} capture frame file(s) from session ${sessionId}. Only frame-XXXXXX.png files will be deleted. latest.png is preserved.`,
+        "POST /api/ghoti/active/session/cleanup-confirm",
+      );
+      sendJson(response, 200, buildApprovalRequiredResponse(
+        { type: "cleanup_capture_files", payload: { session_id: sessionId } },
+        `Approval required to delete ${files.length} capture frame file(s). Approve in the Approvals panel, then retry with approval_id.`,
+        approval,
+      ));
+      return;
+    }
+
+    // Validate and consume approval
+    const consumeResult = validateAndConsumeApproval(approvalId, "cleanup_capture_files");
+    if (!consumeResult.ok) {
+      sendJson(response, 400, { ok: false, error: consumeResult.error, approval: consumeResult.approval || null });
+      return;
+    }
+
     const sessionDir = getSessionFrameDir(sessionId);
     const resolvedSessionDir = sessionDir ? path.resolve(sessionDir) : null;
-    const { files, missing_files, safety_root } = listSessionFrameFiles(sessionId);
     let deleted_count = 0;
     let deleted_bytes = 0;
     let delete_fail_count = 0;
@@ -4379,6 +4517,22 @@ async function handleApiRequest(request, response, requestUrl) {
         approval_required_for_risky_actions: true,
         full_autonomy_enabled: false,
       },
+      approvals: {
+        pending_count: pendingApprovals().length,
+        queue_enabled: true,
+        enforced_on: ["cleanup_capture_files"],
+        enforced_stub_for: [
+          "delete_file",
+          "write_outside_repo",
+          "send_network_request",
+          "click",
+          "type_text",
+          "run_shell",
+          "browser_submit",
+          "desktop_action",
+          "browser_action",
+        ],
+      },
       local_only: true,
       updated_at_utc: new Date().toISOString(),
     });
@@ -4388,6 +4542,7 @@ async function handleApiRequest(request, response, requestUrl) {
   // Brain status — probes Ollama directly; always 200 (reachable:false = not configured, not an error)
   if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/brain/status") {
     const { reachable, models } = await checkOllamaReachable();
+    const modelCount = models.length;
     sendJson(response, 200, {
       ok: true,
       brain: {
@@ -4396,12 +4551,92 @@ async function handleApiRequest(request, response, requestUrl) {
         models,
         active_model: models[0] || null,
         drives_operator: false,
+        frame_understanding: false,
+        action_planning: false,
         note: reachable
-          ? "Ollama reachable but not wired to drive operator actions."
-          : "No brain configured. Ollama not reachable at 127.0.0.1:11434.",
+          ? `Ollama reachable at 127.0.0.1:11434. Models loaded: ${modelCount}. Not wired to drive operator. No frame understanding. No action planning.`
+          : "Ollama not reachable at 127.0.0.1:11434. No local brain available. Not wired to drive operator. No frame understanding. No action planning.",
       },
     });
     return;
+  }
+
+  // Ghoti approval queue routes
+  if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/approvals") {
+    const statusFilter = (requestUrl.searchParams.get("status") || "all").toLowerCase();
+    const all = readApprovals();
+    const filtered = statusFilter === "all" ? all : all.filter((a) => a.status === statusFilter);
+    sendJson(response, 200, {
+      ok: true,
+      approvals: filtered,
+      pending_count: all.filter((a) => a.status === "pending").length,
+      updated_at_utc: new Date().toISOString(),
+    });
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/api/ghoti/approvals/request") {
+    const body = await readJsonBody(request);
+    if (!body.action?.type) {
+      sendJson(response, 400, { ok: false, error: "action.type is required" });
+      return;
+    }
+    if (!body.reason) {
+      sendJson(response, 400, { ok: false, error: "reason is required" });
+      return;
+    }
+    const record = createApprovalRequest(body.action, body.reason, body.requested_by || "api");
+    sendJson(response, 200, { ok: true, approval: record });
+    return;
+  }
+
+  // /api/ghoti/approvals/<id>/approve|reject|consume — parse id from path
+  {
+    const approvalRouteMatch = requestUrl.pathname.match(/^\/api\/ghoti\/approvals\/([^/]+)\/(approve|reject|consume)$/);
+    if (approvalRouteMatch && request.method === "POST") {
+      const approvalId = approvalRouteMatch[1];
+      const action = approvalRouteMatch[2];
+      const approval = getApproval(approvalId);
+      if (!approval) {
+        sendJson(response, 404, { ok: false, error: "approval_not_found" });
+        return;
+      }
+      if (action === "approve") {
+        if (approval.status !== "pending") {
+          sendJson(response, 400, { ok: false, error: `Cannot approve: status is ${approval.status}`, approval });
+          return;
+        }
+        const updated = updateApprovalStatus(approvalId, "approved", {
+          decided_at_utc: new Date().toISOString(),
+          decided_by: "operator",
+        });
+        sendJson(response, 200, { ok: true, approval: updated });
+        return;
+      }
+      if (action === "reject") {
+        if (approval.status !== "pending") {
+          sendJson(response, 400, { ok: false, error: `Cannot reject: status is ${approval.status}`, approval });
+          return;
+        }
+        const body = await readJsonBody(request);
+        const updated = updateApprovalStatus(approvalId, "rejected", {
+          decided_at_utc: new Date().toISOString(),
+          decided_by: "operator",
+          notes: String(body.notes || "").slice(0, 512),
+        });
+        sendJson(response, 200, { ok: true, approval: updated });
+        return;
+      }
+      if (action === "consume") {
+        if (approval.status !== "approved") {
+          sendJson(response, 200, { ok: false, error: "approval_not_approved", approval });
+          return;
+        }
+        const updated = updateApprovalStatus(approvalId, "consumed", { consumed_at_utc: new Date().toISOString() });
+        sendJson(response, 200, { ok: true, approval: updated });
+        return;
+      }
+    }
   }
 
   // YouTube follower routes

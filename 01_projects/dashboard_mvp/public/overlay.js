@@ -22,6 +22,8 @@ const operatorDot = document.getElementById("operator-dot");
 const operatorLabel = document.getElementById("operator-label");
 const ytDot = document.getElementById("yt-dot");
 const ytLabel = document.getElementById("yt-label");
+const approvalsDot = document.getElementById("approvals-dot");
+const approvalsLabel = document.getElementById("approvals-label");
 const framePreviewRow = document.getElementById("frame-preview-row");
 const latestFrameImg = document.getElementById("latest-frame-img");
 const frameTimestamp = document.getElementById("frame-timestamp");
@@ -143,6 +145,24 @@ function applyYoutubeState(payload) {
   setDot(ytDot, "off");
 }
 
+function applyApprovalsState(payload) {
+  if (!payload?.ok) {
+    approvalsLabel.textContent = "Approvals: unavailable";
+    setDot(approvalsDot, "warn");
+    return;
+  }
+  const n = payload.pending_count || 0;
+  if (n > 0) {
+    approvalsLabel.textContent = `Pending approvals: ${n} — action required`;
+    approvalsLabel.className = "status-label approvals-pending";
+    setDot(approvalsDot, "warn");
+  } else {
+    approvalsLabel.textContent = "Pending approvals: 0";
+    approvalsLabel.className = "status-label";
+    setDot(approvalsDot, "off");
+  }
+}
+
 function buildLatestFrameUrl(sessionId) {
   const base = sessionId
     ? `/api/ghoti/active/latest-frame?session_id=${encodeURIComponent(sessionId)}`
@@ -173,13 +193,14 @@ async function safeFetch(url) {
 }
 
 async function fetchState() {
-  const [activeData, captureData, voiceData, operatorData, brainData, ytData] = await Promise.all([
+  const [activeData, captureData, voiceData, operatorData, brainData, ytData, approvalsData] = await Promise.all([
     safeFetch("/api/ghoti/active-state"),
     safeFetch("/api/ghoti/active/capture-state"),
     safeFetch("/api/ghoti/voice/state"),
     safeFetch("/api/ghoti/operator/status"),
     safeFetch("/api/ghoti/brain/status"),
     safeFetch("/api/ghoti/youtube-follower/status"),
+    safeFetch("/api/ghoti/approvals?status=pending"),
   ]);
 
   if (activeData) applyActiveState(activeData.state);
@@ -192,6 +213,7 @@ async function fetchState() {
   applyBrainState(brainData);
   applyOperatorState(operatorData);
   applyYoutubeState(ytData);
+  applyApprovalsState(approvalsData);
 }
 
 async function postAction(path) {

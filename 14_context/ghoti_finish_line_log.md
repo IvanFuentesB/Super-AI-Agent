@@ -2,13 +2,153 @@
 
 ---
 
+## Milestone Run: Approval Queue + Route Guards
+
+Date: 2026-04-19
+Milestone: Approval Queue + Route Guards
+Branch: feat/ghoti-visible-operator-stack
+Commit: (filled after commit)
+Pushed: (filled after push)
+Port: 3210
+
+### What is real
+
+- Approval queue storage: real — JSON-backed at `runtime_data/approvals.json`, gitignored
+- Payload sanitization: real — sensitive keys (token, password, api_key, etc.) replaced with `[redacted]`
+- GET /api/ghoti/approvals: real — status filter, pending_count
+- POST /api/ghoti/approvals/request: real — creates sanitized approval record
+- POST /api/ghoti/approvals/<id>/approve: real — sets status=approved
+- POST /api/ghoti/approvals/<id>/reject: real — sets status=rejected with notes
+- POST /api/ghoti/approvals/<id>/consume: real — sets status=consumed, refuses if not approved
+- Session cleanup guard: real — cleanup-confirm requires approval_id; creates pending approval without it; validates+consumes on retry
+- Duplicate pending detection: real — reuses existing pending approval for same session
+- Dashboard approvals panel: real — Ghoti Approval Queue panel with approve/reject buttons, 3s auto-refresh
+- Cleanup UI approval handling: real — shows approval_id, stores for retry, prompts operator
+- Overlay pending badge: real — polls /api/ghoti/approvals?status=pending, highlights when pending > 0
+- Operator status approvals block: real — pending_count, enforced_on, enforced_stub_for
+- Brain status note: real — explicit "Ollama reachable at ... Models loaded: N. Not wired to drive operator. No frame understanding. No action planning."
+- Active Mode regression: PASS
+
+### What is scaffold
+
+- Voice API: still placeholder, no real microphone
+- YouTube follower: still scaffold, no browser execution
+- Approval UI in cleanup: manual retry flow — operator clicks confirm again after approval (no auto-retry)
+
+### What is not implemented
+
+- Real voice/STT/TTS
+- Real browser automation
+- Approval queue for any route other than cleanup_capture_files
+- AI frame understanding
+- Ollama driving operator actions
+
+### Feature status table
+
+| Feature | Status | Notes |
+|---|---|---|
+| Approval queue storage | real | JSON-backed, gitignored, bounded 200 items |
+| Payload sanitization | real | Sensitive keys redacted, confirmed in validation |
+| GET /api/ghoti/approvals | real | Status filter, pending_count |
+| POST /approvals/request | real | Creates record, sanitizes payload |
+| POST /approvals/<id>/approve | real | Sets approved, refused if not pending |
+| POST /approvals/<id>/reject | real | Sets rejected with notes |
+| POST /approvals/<id>/consume | real | Consumes if approved, refuses otherwise |
+| Session cleanup guard wired | real | POST /api/ghoti/active/session/cleanup-confirm |
+| Cleanup UI approval handling | real | Shows approval_id, data-approval-id for retry |
+| Stub guard contract | documented | Comment block + requiresOperatorApproval |
+| Dashboard approvals panel | real | Ghoti Approval Queue panel, approve/reject, 3s refresh |
+| Overlay pending badge | real | Polls approvals, warns when pending > 0 |
+| Operator status approvals block | real | pending_count, enforced_on, enforced_stub_for |
+| Brain status note honest | yes | Explicit: reachable/not wired/no frame understanding/no action planning |
+| Active Mode regression | PASS | 200 image/png, frame_count > 0 |
+
+### Validation results
+
+| Command/Check | Result |
+|---|---|
+| node --check server.js | PASS |
+| node --check app.js | PASS |
+| node --check overlay.js | PASS |
+| GET /api/ghoti/approvals?status=pending | 200 OK |
+| POST /approvals/request (with token) | 200 OK — token [redacted] |
+| POST /approvals/<id>/approve | 200 OK — status=approved |
+| POST /approvals/<id>/consume | 200 OK — status=consumed |
+| Consume again (double-consume) | 200 ok:false error:approval_not_approved |
+| POST /approvals/request (reject test) | 200 OK |
+| POST /approvals/<id>/reject | 200 OK — status=rejected |
+| Consume rejected | 200 ok:false error:approval_not_approved |
+| Cleanup without approval | 200 ok:false approval_required:true |
+| Cleanup with valid approval | 200 ok:true deleted_count:2 |
+| Approval consumed after cleanup | confirmed status:consumed |
+| latest.png preserved | EXISTS |
+| frame-*.png after cleanup | 0 remaining |
+| Operator status approvals block | pending_count present |
+| Brain status note | Explicit/honest — no wired/no frame understanding |
+| /overlay | 200 OK |
+| Active Mode regression | PASS — frame_count>0, 200 image/png |
+
+### Third-party repo truth table
+
+No changes — all reference-only, none imported or runtime-used.
+
+### Files modified
+
+- `01_projects/dashboard_mvp/server.js` — approval helpers, routes, cleanup guard, operator status, brain note
+- `01_projects/dashboard_mvp/public/index.html` — Ghoti Approval Queue panel section
+- `01_projects/dashboard_mvp/public/app.js` — cleanup confirm handler, Ghoti approval queue JS
+- `01_projects/dashboard_mvp/public/overlay.html` — approvals badge row
+- `01_projects/dashboard_mvp/public/overlay.css` — approvals pending styling
+- `01_projects/dashboard_mvp/public/overlay.js` — applyApprovalsState, fetchState poll
+- `14_context/ghoti_finish_line_log.md` — this update
+
+### Files created
+
+None (all files were existing).
+
+### Files intentionally not staged
+
+- `21_repos/third_party/.gitkeep`
+- `01_projects/mcp_server/test.txt`
+
+### Runtime/generated not committed
+
+- `01_projects/runtime_mvp/runtime_data/approvals.json` — gitignored
+- `01_projects/runtime_mvp/runtime_data/*.json` — all gitignored
+- `01_projects/dashboard_mvp/.tmp-screenshots/**` — gitignored
+
+### Honest estimates
+
+| Area | Estimate |
+|---|---|
+| Active Mode slice | ~90% |
+| Overlay/presence | ~90% — now shows approvals badge |
+| Approval queue | ~80% — lifecycle works; only cleanup wired; UI functional |
+| Voice | ~15% — scaffold only |
+| YouTube follower | ~10% — scaffold only |
+| Full Ghoti vision | ~10% — approval substrate in place |
+
+### Next milestone recommendation
+
+**Milestone: Ollama Frame-Reading Read-Only Observer**
+
+Reason: approval gates now exist. The next safest step is read-only understanding of frames — no clicking, no typing, no browser execution. Ollama is reachable; wire it to describe a captured frame on demand. All output must be logged and displayed, never acted upon automatically. Approval required before any action is taken based on an observation.
+
+Steps:
+1. POST /api/ghoti/active/observe-frame — takes a session_id, reads latest frame, sends to Ollama vision model
+2. Returns description as text, stored in session log, never triggers actions
+3. Approval required before any downstream action
+4. Display observation in overlay and dashboard
+
+---
+
 ## Milestone Run: Presence + Voice Scaffold + Operator Status + YouTube Follower Plan
 
 Date: 2026-04-19
 Milestone: Presence + Voice Scaffold + Operator Status + YouTube Follower Plan
 Branch: feat/ghoti-visible-operator-stack
-Commit: (filled after commit)
-Pushed: (filled after push)
+Commit: c3cc8ba
+Pushed: YES
 Port: 3210
 
 ### What is real

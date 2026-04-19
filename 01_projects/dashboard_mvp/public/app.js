@@ -4714,21 +4714,38 @@ async function handleCleanupConfirm(sessionId, articleEl) {
   const confirmInput = cleanupArea ? cleanupArea.querySelector(".ghoti-cleanup-confirm-input") : null;
   const resultEl = cleanupArea ? cleanupArea.querySelector(".ghoti-cleanup-result") : null;
   const phrase = confirmInput ? confirmInput.value.trim() : "";
+  // Include stored approval_id if operator previously got one for this session
+  const storedApprovalId = cleanupArea ? (cleanupArea.dataset.approvalId || "") : "";
   if (resultEl) {
     resultEl.innerHTML = "<p style=\"color:var(--muted);font-size:0.85rem;\">Sending cleanup request...</p>";
   }
   try {
+    const reqBody = { session_id: sessionId, confirm: phrase };
+    if (storedApprovalId) reqBody.approval_id = storedApprovalId;
     const data = await requestJson("/api/ghoti/active/session/cleanup-confirm", {
       method: "POST",
-      body: JSON.stringify({ session_id: sessionId, confirm: phrase }),
+      body: JSON.stringify(reqBody),
     });
     if (data.ok) {
       const sizeKb = ((data.deleted_bytes || 0) / 1024).toFixed(1);
       const missingNote = data.missing_count ? ` ${escapeHtml(String(data.missing_count))} already missing.` : "";
+      if (cleanupArea) cleanupArea.removeAttribute("data-approval-id");
       if (resultEl) {
         resultEl.innerHTML = `<div class="result-panel is-success"><p>Cleanup complete. ${escapeHtml(String(data.deleted_count || 0))} file(s) deleted (${escapeHtml(sizeKb)} KB).${missingNote}</p></div>`;
       }
       await refreshActiveSessionData();
+    } else if (data.approval_required) {
+      // Store approval id for retry; do not auto-approve
+      const apvId = escapeHtml(data.approval_id || "");
+      if (cleanupArea && data.approval_id) cleanupArea.dataset.approvalId = data.approval_id;
+      if (resultEl) {
+        resultEl.innerHTML = `<div class="result-panel"><p>Approval required. Request created: <code>${apvId}</code>. Approve it in the <strong>Approvals panel</strong> (top of Approvals tab), then click Confirm cleanup again.</p></div>`;
+      }
+      refreshGhotiApprovalQueue();
+    } else {
+      if (resultEl) {
+        resultEl.innerHTML = `<div class="result-panel is-error"><p>Cleanup refused: ${escapeHtml(data.error || "unknown error")}</p></div>`;
+      }
     }
   } catch (err) {
     if (resultEl) {
@@ -4809,4 +4826,107 @@ setInterval(() => {
     img.src = base + (base.includes("?") ? "&" : "?") + "t=" + Date.now();
   }
 }, 2000);
+
+// Ghoti Approval Queue panel
+async function refreshGhotiApprovalQueue() {
+  const countEl = document.getElementById("ghoti-approvals-pending-count");
+  const pendingListEl = document.getElementById("ghoti-approvals-pending-list");
+  const recentListEl = document.getElementById("ghoti-approvals-recent-list");
+  const resultEl = document.getElementById("ghoti-approvals-result");
+  try {
+    const data = await requestJson("/api/ghoti/approvals?status=all");
+    if (!data.ok) throw new Error("API error");
+    const pending = (data.approvals || []).filter((a) => a.status === "pending");
+    const recent = (data.approvals || []).filter((a) => a.status !== "pending").slice(0, 10);
+    if (countEl) {
+      countEl.textContent = pending.length === 0
+        ? "No pending approvals."
+        : `${pending.length} pending approval${pending.length !== 1 ? "s" : ""} — operator action required.`;
+      countEl.className = "summary-note" + (pending.length > 0 ? " needs-action-urgent" : "");
+    }
+    if (pendingListEl) {
+      if (pending.length === 0) {
+        pendingListEl.innerHTML = "<p class=\"empty-state\">No pending approvals.</p>";
+      } else {
+        pendingListEl.innerHTML = pending.map((a) => `
+          <article class="approval-item" data-approval-id="${escapeHtml(a.id)}" style="border-left:3px solid var(--warning,#e6a817);padding:0.6rem 0.75rem;margin-bottom:0.5rem;background:var(--panel-bg,#1c2941);border-radius:4px;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem;">
+              <div>
+                <code style="font-size:0.75rem;opacity:0.7;">${escapeHtml(a.id)}</code>
+                <strong style="display:block;margin-top:0.2rem;">${escapeHtml(a.action?.type || "unknown")}</strong>
+                <p style="margin:0.25rem 0;font-size:0.85rem;">${escapeHtml(a.reason)}</p>
+                <p style="margin:0;font-size:0.75rem;opacity:0.6;">Requested by: ${escapeHtml(a.requested_by)} &mdash; ${escapeHtml(a.requested_at_utc || "")}</p>
+              </div>
+              <div style="display:flex;gap:0.4rem;flex-shrink:0;">
+                <button class="button-secondary ghoti-approve-btn" type="button" data-approval-id="${escapeHtml(a.id)}" style="font-size:0.8rem;padding:4px 10px;">Approve</button>
+                <button class="button-danger ghoti-reject-btn" type="button" data-approval-id="${escapeHtml(a.id)}" style="font-size:0.8rem;padding:4px 10px;">Reject</button>
+              </div>
+            </div>
+          </article>`).join("");
+      }
+    }
+    if (recentListEl) {
+      if (recent.length === 0) {
+        recentListEl.innerHTML = "<p class=\"empty-state\">No recent decisions.</p>";
+      } else {
+        recentListEl.innerHTML = recent.map((a) => {
+          const color = a.status === "approved" ? "var(--success,#2ecc85)" : a.status === "consumed" ? "#6eb2f7" : "var(--danger,#d05050)";
+          return `<div style="display:flex;justify-content:space-between;padding:0.35rem 0.5rem;border-bottom:1px solid var(--border,#2d3f5e);font-size:0.82rem;">
+            <span>${escapeHtml(a.action?.type || "?")} &mdash; <span style="color:${color};">${escapeHtml(a.status)}</span></span>
+            <span style="opacity:0.55;">${escapeHtml((a.decided_at_utc || a.consumed_at_utc || "").slice(0, 19))}</span>
+          </div>`;
+        }).join("");
+      }
+    }
+    // Update overlay badge via tab badge
+    const badge = document.getElementById("tab-badge-approvals");
+    if (badge) {
+      const total = pending.length + Number(badge.dataset.legacyCount || 0);
+      badge.textContent = total > 0 ? String(total) : "";
+      badge.hidden = total === 0;
+    }
+  } catch {
+    if (countEl) countEl.textContent = "Approval queue unavailable.";
+  }
+}
+
+const ghotiApprovalsPanel = document.getElementById("ghoti-approval-queue-panel");
+if (ghotiApprovalsPanel) {
+  ghotiApprovalsPanel.addEventListener("click", async (e) => {
+    const approveBtn = e.target.closest(".ghoti-approve-btn");
+    const rejectBtn = e.target.closest(".ghoti-reject-btn");
+    const resultEl = document.getElementById("ghoti-approvals-result");
+    if (approveBtn) {
+      const id = approveBtn.dataset.approvalId;
+      approveBtn.disabled = true;
+      try {
+        const data = await requestJson(`/api/ghoti/approvals/${encodeURIComponent(id)}/approve`, { method: "POST" });
+        if (resultEl) resultEl.innerHTML = data.ok ? `<div class="result-panel is-success"><p>Approved: ${escapeHtml(id)}</p></div>` : `<div class="result-panel is-error"><p>${escapeHtml(data.error || "approve failed")}</p></div>`;
+      } catch (err) {
+        if (resultEl) resultEl.innerHTML = `<div class="result-panel is-error"><p>${escapeHtml(err.message)}</p></div>`;
+      } finally {
+        approveBtn.disabled = false;
+        await refreshGhotiApprovalQueue();
+      }
+    }
+    if (rejectBtn) {
+      const id = rejectBtn.dataset.approvalId;
+      rejectBtn.disabled = true;
+      try {
+        const data = await requestJson(`/api/ghoti/approvals/${encodeURIComponent(id)}/reject`, { method: "POST", body: JSON.stringify({ notes: "Rejected by operator." }) });
+        if (resultEl) resultEl.innerHTML = data.ok ? `<div class="result-panel"><p>Rejected: ${escapeHtml(id)}</p></div>` : `<div class="result-panel is-error"><p>${escapeHtml(data.error || "reject failed")}</p></div>`;
+      } catch (err) {
+        if (resultEl) resultEl.innerHTML = `<div class="result-panel is-error"><p>${escapeHtml(err.message)}</p></div>`;
+      } finally {
+        rejectBtn.disabled = false;
+        await refreshGhotiApprovalQueue();
+      }
+    }
+  });
+
+  document.getElementById("ghoti-approvals-refresh")?.addEventListener("click", refreshGhotiApprovalQueue);
+}
+
+refreshGhotiApprovalQueue();
+setInterval(refreshGhotiApprovalQueue, 3000);
 
