@@ -30,6 +30,7 @@ const activeSessionSafetyNote = "Local-only screen capture. Frames are only coll
 let captureInterval = null;
 let captureFrameCount = 0;
 let captureTickRunning = false;
+let currentCaptureSessionId = null;
 const previewableExtensions = new Set([
   ".md",
   ".markdown",
@@ -45,6 +46,56 @@ const previewableExtensions = new Set([
 
 let actionCounter = 0;
 const recentActions = [];
+
+function sanitizeSessionId(sessionId) {
+  const s = String(sessionId || "").trim();
+  return /^ghoti-session-[A-Za-z0-9_-]+$/.test(s) ? s : null;
+}
+
+function getSessionFrameDir(sessionId) {
+  const safe = sanitizeSessionId(sessionId);
+  if (!safe) return null;
+  const base = path.resolve(captureFramesDir);
+  const dir = path.resolve(base, safe);
+  if (!dir.startsWith(base + path.sep)) return null;
+  return dir;
+}
+
+function resolveSessionFramePath(sessionId, frameName) {
+  const dir = getSessionFrameDir(sessionId);
+  if (!dir) return null;
+  const safeName = path.basename(String(frameName || ""));
+  if (safeName !== "latest.png" && !/^frame-\d{6}\.png$/i.test(safeName)) return null;
+  const abs = path.resolve(dir, safeName);
+  if (!abs.startsWith(dir + path.sep) && abs !== path.resolve(dir, safeName)) return null;
+  if (!abs.startsWith(path.resolve(captureFramesDir) + path.sep)) return null;
+  return abs;
+}
+
+function listSessionFrameFiles(sessionId) {
+  const dir = getSessionFrameDir(sessionId);
+  const resolvedDir = dir ? path.resolve(dir) : null;
+  if (!resolvedDir || !fs.existsSync(resolvedDir)) {
+    return { files: [], missing_files: [], total_bytes: 0, safety_root: resolvedDir || "" };
+  }
+  const entries = fs.readdirSync(resolvedDir);
+  const files = [];
+  const missing_files = [];
+  let total_bytes = 0;
+  for (const name of entries) {
+    if (!/^frame-\d{6}\.png$/i.test(name)) continue;
+    const abs = path.resolve(resolvedDir, name);
+    if (!abs.startsWith(resolvedDir + path.sep)) continue;
+    try {
+      const stat = fs.statSync(abs);
+      files.push({ name, abs, size: stat.size });
+      total_bytes += stat.size;
+    } catch {
+      missing_files.push(name);
+    }
+  }
+  return { files, missing_files, total_bytes, safety_root: resolvedDir };
+}
 
 function firstNonEmptyValue(values) {
   for (const value of values) {
@@ -273,9 +324,11 @@ function normalizeActiveSession(session) {
     capture_stopped_at_utc: typeof session.capture_stopped_at_utc === "string" ? session.capture_stopped_at_utc : null,
     frame_count: Number.isFinite(Number(session.frame_count)) ? Number(session.frame_count) : 0,
     capture_method: typeof session.capture_method === "string" ? session.capture_method : null,
+    frame_dir: typeof session.frame_dir === "string" ? session.frame_dir : null,
     latest_frame_path: typeof session.latest_frame_path === "string" ? session.latest_frame_path : null,
+    latest_frame_name: typeof session.latest_frame_name === "string" ? session.latest_frame_name : null,
     latest_frame_utc: typeof session.latest_frame_utc === "string" ? session.latest_frame_utc : null,
-    latest_frame_url: session.latest_frame_path ? "/api/ghoti/active/latest-frame" : null,
+    latest_frame_url: session.latest_frame_path && session.session_id ? `/api/ghoti/active/latest-frame?session_id=${encodeURIComponent(session.session_id)}` : (session.latest_frame_path ? "/api/ghoti/active/latest-frame" : null),
     recent_frames: normalizeRecentFrames(session.recent_frames),
     reviewed: Boolean(session.reviewed),
     reviewed_at_utc: typeof session.reviewed_at_utc === "string" ? session.reviewed_at_utc : null,
@@ -303,7 +356,9 @@ function buildActiveSessionRecord() {
     capture_stopped_at_utc: null,
     frame_count: 0,
     capture_method: null,
+    frame_dir: null,
     latest_frame_path: null,
+    latest_frame_name: null,
     latest_frame_utc: null,
     recent_frames: [],
     reviewed: false,
@@ -483,6 +538,10 @@ function markCurrentSessionCaptureStarted(method = "powershell-copyfromscreen-lo
   const store = readActiveSessionStore();
   const session = normalizeActiveSession(store.current_session) || buildActiveSessionRecord();
   const nowUtc = new Date().toISOString();
+  const sessionFrameDir = getSessionFrameDir(session.session_id);
+  if (sessionFrameDir && !fs.existsSync(sessionFrameDir)) {
+    fs.mkdirSync(sessionFrameDir, { recursive: true });
+  }
   const next = {
     ...session,
     status: "active",
@@ -491,7 +550,9 @@ function markCurrentSessionCaptureStarted(method = "powershell-copyfromscreen-lo
     capture_stopped_at_utc: null,
     frame_count: 0,
     capture_method: method,
+    frame_dir: sessionFrameDir || null,
     latest_frame_path: null,
+    latest_frame_name: null,
     latest_frame_utc: null,
     latest_frame_url: null,
     recent_frames: [],
@@ -514,20 +575,23 @@ function recordCurrentSessionFrame(framePath, latestPath, capturedAtUtc) {
 
   const nextFrameCount = Number(session.frame_count || 0) + 1;
   const filename = path.basename(framePath);
+  const sidParam = session.session_id ? `&session_id=${encodeURIComponent(session.session_id)}` : "";
   const next = {
     ...session,
     capture_running: true,
     capture_method: session.capture_method || "powershell-copyfromscreen-loop",
     frame_count: nextFrameCount,
+    frame_dir: session.frame_dir,
     latest_frame_path: latestPath,
+    latest_frame_name: filename,
     latest_frame_utc: capturedAtUtc,
-    latest_frame_url: "/api/ghoti/active/latest-frame",
+    latest_frame_url: session.session_id ? `/api/ghoti/active/latest-frame?session_id=${encodeURIComponent(session.session_id)}` : "/api/ghoti/active/latest-frame",
     recent_frames: [
       {
         frame_id: `${session.session_id}-frame-${String(nextFrameCount).padStart(6, "0")}`,
         filename,
         captured_at_utc: capturedAtUtc,
-        image_url: `/api/ghoti/active/frame?name=${encodeURIComponent(filename)}`,
+        image_url: `/api/ghoti/active/frame?name=${encodeURIComponent(filename)}${sidParam}`,
       },
       ...session.recent_frames.filter((frame) => frame.filename !== filename),
     ].slice(0, maxSessionFrames),
@@ -588,53 +652,43 @@ function closeCurrentActiveSession() {
   return writeActiveSessionStore(store).current_session;
 }
 
-function resolveCurrentSessionFramePath(frameName) {
+function resolveFramePathForSession(sessionId, frameName) {
   const safeName = path.basename(String(frameName || ""));
-  if (!/^frame-\d{6}\.png$/i.test(safeName)) {
-    return null;
-  }
-
-  const store = readActiveSessionStore();
-  const session = normalizeActiveSession(store.current_session);
-  if (!session || !session.recent_frames.some((frame) => frame.filename === safeName)) {
-    return null;
-  }
-
-  const framePath = path.join(captureFramesDir, safeName);
-  if (!framePath.startsWith(captureFramesDir) || !fs.existsSync(framePath)) {
-    return null;
-  }
-
-  return framePath;
+  if (!/^frame-\d{6}\.png$/i.test(safeName)) return null;
+  const safeId = sanitizeSessionId(sessionId);
+  if (!safeId) return null;
+  const dir = getSessionFrameDir(safeId);
+  if (!dir) return null;
+  const abs = path.resolve(dir, safeName);
+  if (!abs.startsWith(path.resolve(captureFramesDir) + path.sep)) return null;
+  if (!fs.existsSync(abs)) return null;
+  return abs;
 }
 
-function resolveCleanupCandidates() {
-  const resolvedRoot = path.resolve(captureFramesDir);
-  const safetyRoot = resolvedRoot;
-  if (!fs.existsSync(resolvedRoot)) {
-    return { files: [], missing_files: [], total_bytes: 0, safety_root: safetyRoot };
-  }
-  const entries = fs.readdirSync(resolvedRoot);
-  const files = [];
-  const missing_files = [];
-  let total_bytes = 0;
-  for (const name of entries) {
-    if (!/^frame-\d{6}\.png$/i.test(name)) {
-      continue;
-    }
-    const abs = path.resolve(resolvedRoot, name);
-    if (!abs.startsWith(resolvedRoot + path.sep) && abs !== resolvedRoot) {
-      continue;
-    }
-    try {
-      const stat = fs.statSync(abs);
-      files.push({ name, abs, size: stat.size });
-      total_bytes += stat.size;
-    } catch {
-      missing_files.push(name);
+function resolveCurrentSessionFramePath(sessionIdHint, frameName) {
+  const safeName = path.basename(String(frameName || ""));
+  if (!/^frame-\d{6}\.png$/i.test(safeName)) return null;
+
+  const store = readActiveSessionStore();
+
+  const trySession = (session) => {
+    if (!session) return null;
+    if (!session.recent_frames.some((frame) => frame.filename === safeName)) return null;
+    return resolveFramePathForSession(session.session_id, safeName);
+  };
+
+  if (sessionIdHint) {
+    const safeHint = sanitizeSessionId(sessionIdHint);
+    if (safeHint) {
+      const hintSession = safeHint === store.current_session?.session_id
+        ? normalizeActiveSession(store.current_session)
+        : normalizeActiveSession((store.recent_sessions || []).find((s) => s?.session_id === safeHint));
+      const found = trySession(hintSession);
+      if (found) return found;
     }
   }
-  return { files, missing_files, total_bytes, safety_root: safetyRoot };
+
+  return trySession(normalizeActiveSession(store.current_session));
 }
 
 function stopCaptureProcess() {
@@ -643,6 +697,7 @@ function stopCaptureProcess() {
     captureInterval = null;
   }
   captureTickRunning = false;
+  currentCaptureSessionId = null;
   const current = readCaptureState();
   const stopped = { ...current, capturing: false };
   try {
@@ -656,10 +711,27 @@ async function captureOneTick(powerShell) {
   if (captureTickRunning) return;
   captureTickRunning = true;
   try {
-    const latestPath = path.join(captureFramesDir, "latest.png");
-    const framePath = path.join(captureFramesDir, `frame-${String(captureFrameCount).padStart(6, "0")}.png`);
+    const sessionId = currentCaptureSessionId;
+    const sessionDir = sessionId ? getSessionFrameDir(sessionId) : null;
+    if (sessionDir && !fs.existsSync(sessionDir)) {
+      fs.mkdirSync(sessionDir, { recursive: true });
+    }
+    const writeDir = sessionDir || captureFramesDir;
+    const latestPath = path.join(writeDir, "latest.png");
+    const frameName = `frame-${String(captureFrameCount).padStart(6, "0")}.png`;
+    const framePath = path.join(writeDir, frameName);
+    // Also keep a global latest for backward compat (not a cleanup candidate)
+    const globalLatestPath = path.join(captureFramesDir, "latest.png");
     const latestEsc = latestPath.replace(/\\/g, "\\\\");
     const frameEsc = framePath.replace(/\\/g, "\\\\");
+    const globalLatestEsc = globalLatestPath.replace(/\\/g, "\\\\");
+    const saveLines = [
+      `$bmp.Save("${latestEsc}")`,
+      `$bmp.Save("${frameEsc}")`,
+    ];
+    if (sessionDir && globalLatestPath !== latestPath) {
+      saveLines.push(`$bmp.Save("${globalLatestEsc}")`);
+    }
     const psScript = [
       "Add-Type -AssemblyName System.Windows.Forms",
       "Add-Type -AssemblyName System.Drawing",
@@ -668,8 +740,7 @@ async function captureOneTick(powerShell) {
       "$g = [System.Drawing.Graphics]::FromImage($bmp)",
       "$g.CopyFromScreen($screen.Location, [System.Drawing.Point]::Empty, $screen.Size)",
       "$g.Dispose()",
-      `$bmp.Save("${latestEsc}")`,
-      `$bmp.Save("${frameEsc}")`,
+      ...saveLines,
       "$bmp.Dispose()",
       "Write-Output 'ok'",
     ].join("; ");
@@ -689,7 +760,10 @@ async function captureOneTick(powerShell) {
         capture_method: "powershell-copyfromscreen-loop",
         fps_target: 1,
         frame_count: captureFrameCount,
+        session_id: sessionId || null,
+        session_frame_dir: sessionDir || null,
         latest_frame_path: latestPath,
+        latest_frame_name: frameName,
         latest_frame_utc: nowUtc,
         error: null,
       }, null, 2));
@@ -3738,11 +3812,36 @@ async function handleApiRequest(request, response, requestUrl) {
 
   if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/active/frames") {
     const store = readActiveSessionStore();
-    const session = store.current_session;
+    const sessionIdParam = requestUrl.searchParams.get("session_id");
+    let session;
+    if (sessionIdParam) {
+      const safeId = sanitizeSessionId(sessionIdParam);
+      if (!safeId) {
+        sendJson(response, 400, { ok: false, error: "Invalid session_id." });
+        return;
+      }
+      session = safeId === store.current_session?.session_id
+        ? normalizeActiveSession(store.current_session)
+        : normalizeActiveSession((store.recent_sessions || []).find((s) => s?.session_id === safeId));
+    } else {
+      session = normalizeActiveSession(store.current_session);
+    }
+    const sessionId = session?.session_id || null;
+    const rawFrames = Array.isArray(session?.recent_frames) ? session.recent_frames.slice(0, maxSessionFrames) : [];
+    const frames = rawFrames.map((frame) => ({
+      ...frame,
+      url: frame.image_url || null,
+      size: null,
+      mtime_utc: frame.captured_at_utc || null,
+    }));
     sendJson(response, 200, {
       ok: true,
+      session_id: sessionId,
       session: buildActiveSessionSummary(session),
-      frames: Array.isArray(session?.recent_frames) ? session.recent_frames.slice(0, maxSessionFrames) : [],
+      frames,
+      bounded: true,
+      max_frames: maxSessionFrames,
+      local_only: true,
     });
     return;
   }
@@ -3841,16 +3940,21 @@ async function handleApiRequest(request, response, requestUrl) {
     captureFrameCount = 0;
     captureTickRunning = false;
 
+    const session = markCurrentSessionCaptureStarted();
+    currentCaptureSessionId = session?.session_id || null;
+
     fs.writeFileSync(captureStateFile, JSON.stringify({
       capturing: true,
       capture_method: "powershell-copyfromscreen-loop",
       fps_target: 1,
       frame_count: 0,
+      session_id: currentCaptureSessionId,
+      session_frame_dir: currentCaptureSessionId ? getSessionFrameDir(currentCaptureSessionId) : null,
       latest_frame_path: null,
+      latest_frame_name: null,
       latest_frame_utc: null,
       error: null,
     }, null, 2));
-    const session = markCurrentSessionCaptureStarted();
 
     // Kick off first frame immediately (non-blocking)
     captureOneTick(powerShell);
@@ -3874,9 +3978,10 @@ async function handleApiRequest(request, response, requestUrl) {
   }
 
   if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/active/frame") {
-    const framePath = resolveCurrentSessionFramePath(requestUrl.searchParams.get("name"));
+    const sessionIdParam = requestUrl.searchParams.get("session_id");
+    const framePath = resolveCurrentSessionFramePath(sessionIdParam, requestUrl.searchParams.get("name"));
     if (!framePath) {
-      sendJson(response, 404, { ok: false, error: "Requested frame is not available for the current session." });
+      sendJson(response, 404, { ok: false, error: "Requested frame is not available for the requested session." });
       return;
     }
     sendBuffer(response, 200, fs.readFileSync(framePath), "image/png");
@@ -3884,8 +3989,48 @@ async function handleApiRequest(request, response, requestUrl) {
   }
 
   if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/active/latest-frame") {
-    const latestFramePath = path.join(captureFramesDir, "latest.png");
-    if (!fs.existsSync(latestFramePath)) {
+    const sessionIdParam = requestUrl.searchParams.get("session_id");
+    let latestFramePath = null;
+
+    const trySessionLatest = (sessionId) => {
+      const safeId = sanitizeSessionId(sessionId);
+      if (!safeId) return null;
+      const dir = getSessionFrameDir(safeId);
+      if (!dir) return null;
+      const candidate = path.join(dir, "latest.png");
+      return fs.existsSync(candidate) ? candidate : null;
+    };
+
+    if (sessionIdParam) {
+      const safeId = sanitizeSessionId(sessionIdParam);
+      if (!safeId) {
+        sendJson(response, 400, { ok: false, error: "Invalid session_id." });
+        return;
+      }
+      latestFramePath = trySessionLatest(safeId);
+    } else {
+      const store = readActiveSessionStore();
+      // Prefer current session
+      latestFramePath = store.current_session?.session_id
+        ? trySessionLatest(store.current_session.session_id)
+        : null;
+      // Fall back to most recent stopped session with a frame
+      if (!latestFramePath && Array.isArray(store.recent_sessions)) {
+        for (const s of store.recent_sessions) {
+          if (s?.session_id) {
+            const candidate = trySessionLatest(s.session_id);
+            if (candidate) { latestFramePath = candidate; break; }
+          }
+        }
+      }
+      // Final fallback: global latest.png
+      if (!latestFramePath) {
+        const globalLatest = path.join(captureFramesDir, "latest.png");
+        if (fs.existsSync(globalLatest)) latestFramePath = globalLatest;
+      }
+    }
+
+    if (!latestFramePath) {
       sendJson(response, 404, { ok: false, error: "No latest frame available." });
       return;
     }
@@ -3894,9 +4039,14 @@ async function handleApiRequest(request, response, requestUrl) {
   }
 
   if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/active/session/cleanup-preview") {
-    const sessionId = String(requestUrl.searchParams.get("session_id") || "").trim();
-    if (!sessionId) {
+    const rawSessionId = String(requestUrl.searchParams.get("session_id") || "").trim();
+    if (!rawSessionId) {
       sendJson(response, 400, { ok: false, error: "session_id query param is required." });
+      return;
+    }
+    const sessionId = sanitizeSessionId(rawSessionId);
+    if (!sessionId) {
+      sendJson(response, 400, { ok: false, error: "Invalid session_id format." });
       return;
     }
     const store = readActiveSessionStore();
@@ -3919,27 +4069,33 @@ async function handleApiRequest(request, response, requestUrl) {
       sendJson(response, 200, { ok: true, session_id: sessionId, deletion_allowed: false, reason: "Session has already been cleaned." });
       return;
     }
-    const { files, missing_files, total_bytes, safety_root } = resolveCleanupCandidates();
+    const { files, missing_files, total_bytes, safety_root } = listSessionFrameFiles(sessionId);
     sendJson(response, 200, {
       ok: true,
       session_id: sessionId,
       deletion_allowed: true,
-      reason: "Session is discarded and stopped. Files listed are safe capture frames from the safe capture folder.",
+      reason: "Session is discarded and stopped. Files listed are safe capture frames from this session's folder only.",
       safety_root,
       files: files.map((f) => f.name),
       missing_files,
       file_count: files.length,
       total_bytes,
+      note: "latest.png is preserved. Only frame-XXXXXX.png files are listed for deletion.",
     });
     return;
   }
 
   if (request.method === "POST" && requestUrl.pathname === "/api/ghoti/active/session/cleanup-confirm") {
     const body = await readJsonBody(request);
-    const sessionId = String(body.session_id || "").trim();
+    const rawSessionId = String(body.session_id || "").trim();
     const confirm = String(body.confirm || "").trim();
-    if (!sessionId) {
+    if (!rawSessionId) {
       sendJson(response, 400, { ok: false, error: "session_id is required." });
+      return;
+    }
+    const sessionId = sanitizeSessionId(rawSessionId);
+    if (!sessionId) {
+      sendJson(response, 400, { ok: false, error: "Invalid session_id format." });
       return;
     }
     if (confirm !== "DELETE_CAPTURE_FRAMES") {
@@ -3966,14 +4122,16 @@ async function handleApiRequest(request, response, requestUrl) {
       sendJson(response, 400, { ok: false, error: "Session has already been cleaned." });
       return;
     }
-    const { files, missing_files, total_bytes: _total, safety_root } = resolveCleanupCandidates();
+    const sessionDir = getSessionFrameDir(sessionId);
+    const resolvedSessionDir = sessionDir ? path.resolve(sessionDir) : null;
+    const { files, missing_files, safety_root } = listSessionFrameFiles(sessionId);
     let deleted_count = 0;
     let deleted_bytes = 0;
     let delete_fail_count = 0;
     for (const { abs, size } of files) {
-      if (!abs.startsWith(path.resolve(captureFramesDir) + path.sep)) {
-        continue;
-      }
+      // Double-check: must be inside this session's dir, must match frame pattern
+      if (!resolvedSessionDir || !abs.startsWith(resolvedSessionDir + path.sep)) continue;
+      if (!/^frame-\d{6}\.png$/i.test(path.basename(abs))) continue;
       try {
         fs.unlinkSync(abs);
         deleted_count++;
@@ -3994,7 +4152,7 @@ async function handleApiRequest(request, response, requestUrl) {
       actionType: "status",
       label: "Active session cleanup completed",
       status: "success",
-      summary: `Deleted ${deleted_count} capture frame(s) (${deleted_bytes} bytes) for session ${sessionId}.`,
+      summary: `Deleted ${deleted_count} capture frame(s) (${deleted_bytes} bytes) for session ${sessionId}. Session folder and latest.png preserved.`,
     });
     sendJson(response, 200, {
       ok: true,
@@ -4003,6 +4161,7 @@ async function handleApiRequest(request, response, requestUrl) {
       deleted_bytes,
       missing_count: missing_files.length + delete_fail_count,
       safety_root,
+      note: "Only frame-XXXXXX.png files in this session's folder were deleted. latest.png and other sessions are untouched.",
       session: updatedSession,
     });
     return;
