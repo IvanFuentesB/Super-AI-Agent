@@ -28,20 +28,34 @@
 | MiroFish | https://github.com/666ghj/MiroFish.git | 21_repos/third_party/MiroFish | cloned | fa0f651 | multi-agent prediction/simulation reference | No — reference only | Review multi-agent simulation design |
 | mirofish-english | https://github.com/amadad/mirofish.git | 21_repos/third_party/mirofish-english | cloned | 3e98e77 | English CLI fork of MiroFish | No — reference only | Review CLI interface |
 | claw-code-android | https://github.com/friuns2/claw-code-android.git | 21_repos/third_party/claw-code-android | cloned | 594ed1f | phone/mobile coding-agent reference | No — reference only | Review mobile agent interface |
+| browser-use-examples | (browser-use org) | 21_repos/third_party/browser-use-examples | cloned | — | browser-use example scripts reference | No — reference only | Review example action patterns |
+| browser-use-web-ui | (browser-use org) | 21_repos/third_party/browser-use-web-ui | cloned | — | browser-use web UI reference | No — reference only | Review web UI scaffolding |
+| playwright-official | https://github.com/microsoft/playwright.git | 21_repos/third_party/playwright-official | cloned | — | Playwright docs/tests reference | No — reference only | Same as playwright |
+| stagehand | https://github.com/browserbase/stagehand.git | 21_repos/third_party/stagehand | cloned | — | AI browser actions reference | No — reference only | Review AI browser action patterns |
+| open-computer-use | — | 21_repos/third_party/open-computer-use | cloned | — | Desktop computer-use reference | No — reference only | Review desktop computer-use patterns |
+| open-interpreter | https://github.com/OpenInterpreter/open-interpreter.git | 21_repos/third_party/open-interpreter | cloned | — | AI interpreter loop reference | No — reference only | Review interpreter loop design |
+| openhands | https://github.com/All-Hands-AI/OpenHands.git | 21_repos/third_party/openhands | cloned | — | Agent task patterns reference | No — reference only | Review agent task patterns |
+| openhands-cli | — | 21_repos/third_party/openhands-cli | cloned | — | OpenHands CLI reference | No — reference only | Review CLI agent interface |
+| logto | https://github.com/logto-io/logto.git | 21_repos/third_party/logto | cloned | — | Auth/identity reference | No — reference only | Review auth patterns |
+| n8n | https://github.com/n8n-io/n8n.git | 21_repos/third_party/n8n | cloned | — | Workflow automation reference | No — reference only | Review workflow node model |
+| mcp-servers | — | 21_repos/third_party/mcp-servers | cloned | — | MCP server patterns reference | No — reference only | Review MCP server patterns |
+| windows-mcp | — | 21_repos/third_party/windows-mcp | cloned | — | Windows MCP integration reference | No — reference only | Review Windows MCP |
+| windows-use | — | 21_repos/third_party/windows-use | cloned | — | Windows computer-use reference | No — reference only | Review Windows computer-use |
+| claude-code-official | — | 21_repos/third_party/claude-code-official | cloned | — | Claude Code official docs reference | No — reference only | Review Claude Code patterns |
 
 ## Truth
 
 ### Which repos are cloned
-All 21 repos are present and accessible.
+37 repos present under 21_repos/third_party (audit date: 2026-04-19).
 
 ### Failed/missing
-None failed. 4 repos (openclaw, browser-use, aider, awesome-claude-code) had `dubious ownership` git errors (cloned by user `ai_sandbox`, current user `Navif`) — fixed by adding safe.directory exceptions; commits verified.
+None failed. Some repos had `dubious ownership` git errors (cloned by user `ai_sandbox`, current user `Navif`) — fixed by adding safe.directory exceptions.
 
 ### Repos used in product code now
-**None.** All 21 repos are reference-only. No third-party repo code has been imported into `01_projects/` or any product path.
+**None.** All 37 repos are reference-only. No third-party repo code has been imported into `01_projects/` or any product path.
 
 ### Reference-only repos
-All 21 repos listed above.
+All 37 repos listed above.
 
 ---
 

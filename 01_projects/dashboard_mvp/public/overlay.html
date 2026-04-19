@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ghoti Overlay</title>
+  <link rel="stylesheet" href="overlay.css" />
+</head>
+<body>
+  <div class="overlay-root">
+    <div class="overlay-header">
+      <span class="overlay-logo">Ghoti</span>
+      <div class="overlay-badges">
+        <span class="badge badge-local">LOCAL ONLY</span>
+        <span class="badge badge-approval">MANUAL APPROVAL</span>
+      </div>
+    </div>
+
+    <div class="overlay-status-block">
+      <div class="overlay-status-row">
+        <span class="status-dot" id="active-dot"></span>
+        <span class="status-label" id="active-label">Checking…</span>
+      </div>
+      <div class="overlay-status-row">
+        <span class="status-dot" id="capture-dot"></span>
+        <span class="status-label" id="capture-label">Checking…</span>
+      </div>
+      <div class="overlay-status-row">
+        <span class="status-dot dot-off"></span>
+        <span class="status-label muted">Voice: Muted <span class="placeholder-note">(not configured)</span></span>
+      </div>
+    </div>
+
+    <div id="frame-preview-row" class="frame-preview-row" hidden>
+      <img id="latest-frame-img" class="latest-frame-thumb" src="" alt="Latest captured frame" />
+      <span id="frame-timestamp" class="frame-timestamp"></span>
+    </div>
+
+    <div id="overlay-feedback" class="overlay-feedback" aria-live="polite" hidden></div>
+
+    <div class="overlay-actions">
+      <a class="btn btn-secondary" href="http://127.0.0.1:3210" target="_blank" rel="noopener">Open Dashboard</a>
+      <button class="btn btn-primary" id="toggle-active-btn" type="button">Start Ghoti</button>
+      <button class="btn btn-capture" id="toggle-capture-btn" type="button" disabled>Start Watching</button>
+      <button class="btn btn-ghost" id="refresh-btn" type="button">↺ Refresh</button>
+    </div>
+  </div>
+  <script src="overlay.js"></script>
+</body>
+</html>
