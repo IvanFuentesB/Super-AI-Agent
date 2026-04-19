@@ -12,7 +12,7 @@
       <span class="overlay-logo">Ghoti</span>
       <div class="overlay-badges">
         <span class="badge badge-local">LOCAL ONLY</span>
-        <span class="badge badge-approval">MANUAL APPROVAL</span>
+        <span class="badge badge-approval">APPROVAL GATED</span>
       </div>
     </div>
 
@@ -26,8 +26,20 @@
         <span class="status-label" id="capture-label">Checking…</span>
       </div>
       <div class="overlay-status-row">
-        <span class="status-dot dot-off"></span>
-        <span class="status-label muted">Voice: Muted <span class="placeholder-note">(not configured)</span></span>
+        <span class="status-dot" id="voice-dot"></span>
+        <span class="status-label" id="voice-label">Voice: checking…</span>
+      </div>
+      <div class="overlay-status-row">
+        <span class="status-dot dot-off" id="brain-dot"></span>
+        <span class="status-label" id="brain-label">Brain: checking…</span>
+      </div>
+      <div class="overlay-status-row">
+        <span class="status-dot dot-off" id="operator-dot"></span>
+        <span class="status-label" id="operator-label">Operator: checking…</span>
+      </div>
+      <div class="overlay-status-row">
+        <span class="status-dot dot-off" id="yt-dot"></span>
+        <span class="status-label" id="yt-label">YouTube follower: checking…</span>
       </div>
     </div>
 
@@ -42,8 +54,12 @@
       <a class="btn btn-secondary" href="http://127.0.0.1:3210" target="_blank" rel="noopener">Open Dashboard</a>
       <button class="btn btn-primary" id="toggle-active-btn" type="button">Start Ghoti</button>
       <button class="btn btn-capture" id="toggle-capture-btn" type="button" disabled>Start Watching</button>
+      <button class="btn btn-voice" id="toggle-mute-btn" type="button">Unmute</button>
       <button class="btn btn-ghost" id="refresh-btn" type="button">↺ Refresh</button>
     </div>
+
+    <div class="voice-note">Voice placeholder — mic not active</div>
+    <div class="voice-note">Browser overlay — not a native always-on-top desktop window</div>
   </div>
   <script src="overlay.js"></script>
 </body>

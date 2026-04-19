@@ -1,7 +1,147 @@
-# Ghoti Finish-Line Log
+# Ghoti Finish Line Log
 
-## Current session date
-2026-04-19T17:00:00Z
+---
+
+## Milestone Run: Presence + Voice Scaffold + Operator Status + YouTube Follower Plan
+
+Date: 2026-04-19
+Milestone: Presence + Voice Scaffold + Operator Status + YouTube Follower Plan
+Branch: feat/ghoti-visible-operator-stack
+Commit: (filled after commit)
+Pushed: (filled after push)
+Port: 3210
+
+### What is real
+
+- Active Mode start/stop: real — session lifecycle, state files, 10 frames captured in regression
+- Screen capture (PowerShell CopyFromScreen loop): real — 200 image/png from `/api/ghoti/active/latest-frame`
+- `/overlay` → serves overlay.html: real — 200 OK confirmed
+- Voice state persistence: real — mute/unmute writes `runtime_data/voice_state.json`
+- Ollama brain probe: real — direct HTTP check to `127.0.0.1:11434/api/tags`, reachable=true (no models loaded)
+- Operator status API: real — reads live active/capture/voice state files and returns full spec JSON
+- Approval gate contract: `requiresOperatorApproval()` and `buildApprovalRequiredResponse()` present as visible scaffold
+
+### What is scaffold
+
+- Voice API: state machine only — no real microphone. `listening` always stays false. Honest placeholders.
+- YouTube follower: stores task JSON, no browser execution
+- Overlay: browser page polling 6 APIs every 2s — not a native always-on-top window (explicitly labeled)
+- `start_overlay.ps1`: opens browser to overlay URL, no hidden recording
+
+### What is not implemented
+
+- Real microphone STT (Whisper/Vosk/Web Speech)
+- Real TTS
+- Real browser automation
+- YouTube transcript parsing or step execution
+- Approval queue processing UI
+- AI screen understanding
+- Local LLM driving operator actions (Ollama reachable, not wired)
+- Full autonomy
+
+### Feature status table
+
+| Feature | Status | Notes |
+|---|---|---|
+| Overlay (`/overlay`) | real | Browser-based, 200 OK, polls every 2s |
+| Browser overlay notice | real | Visible "Browser overlay — not native always-on-top" |
+| Voice state API | scaffold | 5 endpoints, all 200, honest placeholders |
+| Mute/unmute UI | scaffold | State persisted, no real mic |
+| Listen start/stop | scaffold | listening stays false, honest note returned |
+| Operator status API | real | Full spec: status/active_mode/capture/voice/brain/operator/local_only/updated_at_utc |
+| Brain status API | real (live probe) | Ollama reachable=true, no models, drives_operator=false |
+| YouTube follower scaffold | scaffold | GET+POST, stored runtime_data, no execution |
+| Active Mode regression | PASS | 10 frames, latest-frame 200 image/png, clean stop |
+| Approval gate contract | scaffold | Functions present, queue not wired |
+
+### Third-party repo truth table
+
+| Repo | Present | Imported | Runtime-used | Status | Next step |
+|---|---|---|---|---|---|
+| claw-code | Yes | No | No | Reference only | Review agent loop architecture |
+| browser-use | Yes | No | No | Reference only | Integrate for browser control |
+| playwright | Yes | No | No | Reference only | Evaluate for test harness |
+| dora | Yes | No | No | Reference only | Review dataflow node model |
+| dora-hub | Yes | No | No | Reference only | Review example nodes |
+| openarm | Yes | No | No | Reference only | Review teleoperation interface |
+| mithi/robotics-coursework | No (concept) | No | No | Concept reference | Not cloned |
+| Kronos | Yes | No | No | Reference only | Review model architecture |
+| MiroFish | Yes | No | No | Reference only | Review multi-agent simulation |
+
+All 37+ repos under `21_repos/third_party/` are reference-only. None imported or called by runtime.
+
+### Validation results
+
+| Command | Result |
+|---|---|
+| `node --check server.js` | PASS |
+| `node --check app.js` | PASS |
+| `node --check overlay.js` | PASS |
+| `GET /overlay` | 200 OK HTML |
+| `GET /api/ghoti/operator/status` | 200 OK — status:idle, all spec fields present |
+| `GET /api/ghoti/voice/state` | 200 OK — mode:placeholder, real_audio:false |
+| `POST /api/ghoti/voice/mute` | 200 OK — muted:true |
+| `POST /api/ghoti/voice/unmute` | 200 OK — muted:false |
+| `POST /api/ghoti/voice/listen/start` | 200 OK — listening:false, honest note |
+| `POST /api/ghoti/voice/listen/stop` | 200 OK — listening:false |
+| `GET /api/ghoti/brain/status` | 200 OK — ollama reachable:true, drives_operator:false |
+| `GET /api/ghoti/youtube-follower/status` | 200 OK — scaffold, real:false |
+| `POST /api/ghoti/youtube-follower/task` | 200 OK — task created, execution_enabled:false |
+| Active Mode start → capture → 4s → state | 200 OK frame_count:4 |
+| `GET /api/ghoti/active/latest-frame` | 200 image/png |
+| Active Mode capture/stop | 200 OK frame_count:10 |
+| Active Mode stop | 200 OK session stopped |
+| Runtime files gitignored | CONFIRMED (4 checked) |
+
+### Files modified
+
+- `01_projects/dashboard_mvp/server.js` — approval gate, voice state shape, full operator status, Ollama brain probe, YouTube follower fields
+- `01_projects/dashboard_mvp/public/overlay.html` — added browser overlay notice
+- `01_projects/dashboard_mvp/public/overlay.css` — (pre-existing from prior milestone)
+- `01_projects/dashboard_mvp/public/overlay.js` — (pre-existing from prior milestone)
+- `14_context/external_repo_clone_registry.md` — (pre-existing from prior milestone)
+
+### Files created
+
+- `01_projects/dashboard_mvp/start_overlay.ps1` — overlay launcher (was untracked)
+- `14_context/youtube_follower_mvp_plan.md` — future architecture doc (was untracked)
+- `14_context/ghoti_finish_line_log.md` — this file (updated)
+
+### Files intentionally not staged
+
+- `21_repos/third_party/.gitkeep` — third-party marker
+- `01_projects/mcp_server/test.txt` — test artifact
+
+### Runtime/generated files not committed
+
+- `01_projects/runtime_mvp/runtime_data/*.json` — gitignored
+- `01_projects/dashboard_mvp/.tmp-screenshots/**` — gitignored
+
+### Honest estimates
+
+| Area | Estimate |
+|---|---|
+| Active Mode slice (capture/gallery/cleanup) | ~90% |
+| Overlay/presence | ~85% — browser-based, full polling, honest labeling |
+| Voice | ~15% — scaffold only, no real audio |
+| YouTube follower | ~10% — scaffold and plan only |
+| Full Ghoti vision | ~8% — early prototype |
+
+### Next milestone recommendation
+
+**Milestone: Real Voice Input + Approval Queue UI**
+
+1. Wire Web Speech API in overlay for push-to-talk STT (no hidden recording)
+2. Add approval queue table to dashboard with approve/reject buttons
+3. Wire `requiresOperatorApproval` to actual route guards for shell/browser/cleanup actions
+4. Show approval queue count in overlay
+5. Test local Whisper via python-sounddevice + whisper.cpp
+
+---
+
+## Previous run: Ghoti Presence Overlay MVP
+
+Date: 2026-04-19T17:00:00Z
 
 ## Current branch
 feat/ghoti-visible-operator-stack

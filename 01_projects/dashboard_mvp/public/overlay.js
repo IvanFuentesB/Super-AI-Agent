@@ -1,11 +1,12 @@
 "use strict";
 
 const DASHBOARD_URL = "http://127.0.0.1:3210";
-const POLL_INTERVAL_MS = 3000;
+const POLL_INTERVAL_MS = 2000;
 const FRAME_REFRESH_MS = 2000;
 
 let isGhotiActive = false;
 let isCapturing = false;
+let isMuted = true;
 let captureSessionId = null;
 let frameRefreshTimer = null;
 
@@ -13,12 +14,21 @@ const activeDot = document.getElementById("active-dot");
 const activeLabel = document.getElementById("active-label");
 const captureDot = document.getElementById("capture-dot");
 const captureLabel = document.getElementById("capture-label");
+const voiceDot = document.getElementById("voice-dot");
+const voiceLabel = document.getElementById("voice-label");
+const brainDot = document.getElementById("brain-dot");
+const brainLabel = document.getElementById("brain-label");
+const operatorDot = document.getElementById("operator-dot");
+const operatorLabel = document.getElementById("operator-label");
+const ytDot = document.getElementById("yt-dot");
+const ytLabel = document.getElementById("yt-label");
 const framePreviewRow = document.getElementById("frame-preview-row");
 const latestFrameImg = document.getElementById("latest-frame-img");
 const frameTimestamp = document.getElementById("frame-timestamp");
 const feedbackEl = document.getElementById("overlay-feedback");
 const toggleActiveBtn = document.getElementById("toggle-active-btn");
 const toggleCaptureBtn = document.getElementById("toggle-capture-btn");
+const toggleMuteBtn = document.getElementById("toggle-mute-btn");
 const refreshBtn = document.getElementById("refresh-btn");
 
 function showFeedback(msg, isError) {
@@ -53,11 +63,16 @@ function updateCaptureButton() {
   toggleCaptureBtn.classList.toggle("is-stop", isCapturing);
 }
 
+function updateMuteButton() {
+  toggleMuteBtn.textContent = isMuted ? "Unmute" : "Mute";
+  toggleMuteBtn.classList.toggle("is-stop", !isMuted);
+}
+
 function applyActiveState(state) {
   isGhotiActive = Boolean(state?.active);
   if (isGhotiActive) {
     setDot(activeDot, "on");
-    activeLabel.textContent = "Active — screen view on";
+    activeLabel.textContent = "Active";
   } else {
     setDot(activeDot, "off");
     activeLabel.textContent = "Idle";
@@ -92,6 +107,42 @@ function applyCaptureState(cs) {
   manageFrameRefresh();
 }
 
+function applyVoiceState(v) {
+  if (!v) { voiceLabel.textContent = "Voice: unavailable"; setDot(voiceDot, "warn"); return; }
+  isMuted = Boolean(v.muted);
+  const muteText = v.muted ? "Muted" : "Unmuted";
+  const listenText = v.listening ? "Listening" : "Not listening";
+  voiceLabel.textContent = `Voice: ${muteText} / ${listenText} (placeholder)`;
+  setDot(voiceDot, v.muted ? "off" : "warn");
+  updateMuteButton();
+}
+
+function applyBrainState(payload) {
+  if (!payload?.ok) { brainLabel.textContent = "Brain: unavailable"; setDot(brainDot, "warn"); return; }
+  const s = payload.summary || {};
+  const provider = s.activeProvider || payload.activeProvider || "unknown";
+  const model = s.activeModel || payload.activeModel || "none";
+  const ready = s.inferenceReady || payload.inferenceReady;
+  brainLabel.textContent = `Brain: ${provider} / ${model}`;
+  setDot(brainDot, ready ? "on" : "off");
+}
+
+function applyOperatorState(payload) {
+  if (!payload?.ok) { operatorLabel.textContent = "Operator: unavailable"; setDot(operatorDot, "warn"); return; }
+  const op = payload.operator || {};
+  const desktop = op.desktop_actions_available ? "Desktop: available" : "Desktop: unavailable";
+  const browser = op.browser_actions_available ? "Browser: available" : "Browser: not integrated";
+  operatorLabel.textContent = `${desktop} | ${browser}`;
+  setDot(operatorDot, op.desktop_actions_available ? "warn" : "off");
+}
+
+function applyYoutubeState(payload) {
+  if (!payload?.ok) { ytLabel.textContent = "YouTube follower: unavailable"; setDot(ytDot, "warn"); return; }
+  const count = payload.task_count || 0;
+  ytLabel.textContent = `YouTube follower: scaffold only (${count} task${count !== 1 ? "s" : ""})`;
+  setDot(ytDot, "off");
+}
+
 function buildLatestFrameUrl(sessionId) {
   const base = sessionId
     ? `/api/ghoti/active/latest-frame?session_id=${encodeURIComponent(sessionId)}`
@@ -113,24 +164,34 @@ function manageFrameRefresh() {
   }
 }
 
-async function fetchState() {
+async function safeFetch(url) {
   try {
-    const [activeRes, captureRes] = await Promise.all([
-      fetch(`${DASHBOARD_URL}/api/ghoti/active-state`),
-      fetch(`${DASHBOARD_URL}/api/ghoti/active/capture-state`),
-    ]);
-    const [activeData, captureData] = await Promise.all([
-      activeRes.json(),
-      captureRes.json(),
-    ]);
-    applyActiveState(activeData.state);
-    applyCaptureState(captureData.captureState);
-  } catch (err) {
-    setDot(activeDot, "warn");
-    activeLabel.textContent = "Dashboard unreachable";
-    setDot(captureDot, "off");
-    captureLabel.textContent = "—";
-  }
+    const res = await fetch(`${DASHBOARD_URL}${url}`);
+    if (!res.ok) return null;
+    return res.json();
+  } catch { return null; }
+}
+
+async function fetchState() {
+  const [activeData, captureData, voiceData, operatorData, brainData, ytData] = await Promise.all([
+    safeFetch("/api/ghoti/active-state"),
+    safeFetch("/api/ghoti/active/capture-state"),
+    safeFetch("/api/ghoti/voice/state"),
+    safeFetch("/api/ghoti/operator/status"),
+    safeFetch("/api/ghoti/brain/status"),
+    safeFetch("/api/ghoti/youtube-follower/status"),
+  ]);
+
+  if (activeData) applyActiveState(activeData.state);
+  else { setDot(activeDot, "warn"); activeLabel.textContent = "Dashboard unreachable"; }
+
+  if (captureData) applyCaptureState(captureData.captureState);
+  else { setDot(captureDot, "off"); captureLabel.textContent = "—"; }
+
+  applyVoiceState(voiceData?.voice || null);
+  applyBrainState(brainData);
+  applyOperatorState(operatorData);
+  applyYoutubeState(ytData);
 }
 
 async function postAction(path) {
@@ -168,6 +229,21 @@ toggleCaptureBtn.addEventListener("click", async () => {
     showFeedback(err.message, true);
   } finally {
     toggleCaptureBtn.disabled = false;
+  }
+});
+
+toggleMuteBtn.addEventListener("click", async () => {
+  toggleMuteBtn.disabled = true;
+  try {
+    const route = isMuted ? "/api/ghoti/voice/unmute" : "/api/ghoti/voice/mute";
+    const data = await postAction(route);
+    if (!data.ok) throw new Error(data.error || "Action failed");
+    applyVoiceState(data.voice);
+    showFeedback(isMuted ? "Voice unmuted." : "Voice muted.", false);
+  } catch (err) {
+    showFeedback(err.message, true);
+  } finally {
+    toggleMuteBtn.disabled = false;
   }
 });
 

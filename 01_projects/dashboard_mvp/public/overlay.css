@@ -237,3 +237,22 @@ body {
   border: 1px solid var(--border);
   font-weight: 400;
 }
+
+.btn-voice {
+  background: #1a2a3a;
+  color: #7eb8e8;
+  border: 1px solid #2a4a6a;
+}
+
+.btn-voice.is-stop {
+  background: #2a3a1a;
+  color: #88d068;
+  border-color: #3a5a2a;
+}
+
+.voice-note {
+  font-size: 10px;
+  color: var(--muted);
+  text-align: center;
+  opacity: 0.7;
+}

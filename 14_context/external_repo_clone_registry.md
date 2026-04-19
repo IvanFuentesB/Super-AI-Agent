@@ -1,6 +1,6 @@
 # External Repo Clone Registry
 
-**Timestamp:** 2026-04-19T00:00:00Z  
+**Timestamp:** 2026-04-19T04:00:00Z (updated this run)  
 **Clone root:** `C:\Users\ai_sandbox\Documents\AI_Managed_Only\21_repos\third_party`
 
 ## Clone Table
@@ -47,6 +47,10 @@
 
 ### Which repos are cloned
 37 repos present under 21_repos/third_party (audit date: 2026-04-19).
+
+### claw-code truth
+**claw-code: Reference only. Not imported, not called, not part of runtime.**
+No file in `01_projects/` imports or requires claw-code. It is cloned at `21_repos/third_party/claw-code` for architecture reference only.
 
 ### Failed/missing
 None failed. Some repos had `dubious ownership` git errors (cloned by user `ai_sandbox`, current user `Navif`) — fixed by adding safe.directory exceptions.

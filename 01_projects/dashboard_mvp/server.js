@@ -23,7 +23,10 @@ const captureFramesDir = path.join(screenshotsDir, "capture_frames");
 const captureStateFile = path.join(runtimeDataDir, "screen_capture_state.json");
 const captureStopFile = path.join(captureFramesDir, ".stop");
 const captureSidecarScript = path.join(runtimeProjectRoot, "src", "super_ai_agent", "screen_capture_sidecar.py");
+const voiceStateFile = path.join(runtimeDataDir, "voice_state.json");
+const youtubeFollowerTasksFile = path.join(runtimeDataDir, "youtube_follower_tasks.json");
 const maxActiveSessions = 5;
+const maxYoutubeFollowerTasks = 20;
 const maxSessionFrames = 12;
 const activeSessionSafetyNote = "Local-only screen capture. Frames are only collected while the operator explicitly keeps capture running.";
 
@@ -95,6 +98,128 @@ function listSessionFrameFiles(sessionId) {
     }
   }
   return { files, missing_files, total_bytes, safety_root: resolvedDir };
+}
+
+function buildDefaultVoiceState() {
+  return {
+    mode: "placeholder",
+    muted: true,
+    listening: false,
+    real_audio: false,
+    input_provider: "not_configured",
+    output_provider: "not_configured",
+    stt_available: false,
+    tts_available: false,
+    local_only: true,
+    note: "Voice is placeholder only. No real microphone or TTS is wired.",
+    updated_at_utc: new Date().toISOString(),
+  };
+}
+
+function readVoiceState() {
+  const defaults = buildDefaultVoiceState();
+  try {
+    if (fs.existsSync(voiceStateFile)) {
+      const stored = JSON.parse(fs.readFileSync(voiceStateFile, "utf8"));
+      return {
+        ...defaults,
+        ...stored,
+        mode: "placeholder",
+        real_audio: false,
+        note: defaults.note,
+        updated_at_utc: stored.updated_at_utc || defaults.updated_at_utc,
+      };
+    }
+  } catch {}
+  return defaults;
+}
+
+function writeVoiceState(state) {
+  if (!fs.existsSync(runtimeDataDir)) fs.mkdirSync(runtimeDataDir, { recursive: true });
+  fs.writeFileSync(voiceStateFile, JSON.stringify(state, null, 2), "utf8");
+}
+
+function readYoutubeFollowerTasks() {
+  try {
+    if (fs.existsSync(youtubeFollowerTasksFile)) {
+      return JSON.parse(fs.readFileSync(youtubeFollowerTasksFile, "utf8"));
+    }
+  } catch {}
+  return [];
+}
+
+// Approval contract scaffold.
+// Real approval queue integration is a future milestone.
+// Do not bypass this for risky actions.
+function requiresOperatorApproval(action) {
+  const riskyTypes = new Set([
+    "delete_file",
+    "write_outside_repo",
+    "send_network_request",
+    "click",
+    "type_text",
+    "run_shell",
+    "browser_submit",
+    "cleanup_capture_files",
+  ]);
+  return riskyTypes.has(action?.type || action);
+}
+
+function buildApprovalRequiredResponse(action, reason) {
+  return {
+    ok: false,
+    approval_required: true,
+    action,
+    reason: reason || "This action requires explicit operator approval.",
+    local_only: true,
+  };
+}
+
+function checkOllamaReachable() {
+  return new Promise((resolve) => {
+    const req = http.get("http://127.0.0.1:11434/api/tags", { timeout: 2000 }, (res) => {
+      let data = "";
+      res.on("data", (chunk) => { data += chunk; });
+      res.on("end", () => {
+        try {
+          const parsed = JSON.parse(data);
+          const models = Array.isArray(parsed.models)
+            ? parsed.models.map((m) => m.name || m.model || String(m)).filter(Boolean)
+            : [];
+          resolve({ reachable: true, models });
+        } catch {
+          resolve({ reachable: true, models: [] });
+        }
+      });
+    });
+    req.on("error", () => resolve({ reachable: false, models: [] }));
+    req.on("timeout", () => { req.destroy(); resolve({ reachable: false, models: [] }); });
+  });
+}
+
+function writeYoutubeFollowerTasks(tasks) {
+  if (!fs.existsSync(runtimeDataDir)) fs.mkdirSync(runtimeDataDir, { recursive: true });
+  fs.writeFileSync(youtubeFollowerTasksFile, JSON.stringify(tasks, null, 2), "utf8");
+}
+
+function createYoutubeFollowerTask(body) {
+  const tasks = readYoutubeFollowerTasks();
+  const task = {
+    id: `yt-task-${Date.now()}`,
+    url: String(body.url || "").slice(0, 2048),
+    goal: String(body.goal || "follow the tutorial").slice(0, 512),
+    created_at: new Date().toISOString(),
+    status: "planned",
+    execution_enabled: false,
+    needs_user_approval: true,
+    next_step: "browser_operator_not_integrated",
+    steps: [],
+    log: [],
+  };
+  tasks.unshift(task);
+  if (tasks.length > maxYoutubeFollowerTasks) tasks.length = maxYoutubeFollowerTasks;
+  writeYoutubeFollowerTasks(tasks);
+  return task;
 }
 
 function firstNonEmptyValue(values) {
@@ -4169,6 +4294,159 @@ async function handleApiRequest(request, response, requestUrl) {
     return;
   }
 
+  // Voice state routes
+  if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/voice/state") {
+    const voice = readVoiceState();
+    sendJson(response, 200, { ok: true, voice });
+    return;
+  }
+  if (request.method === "POST" && requestUrl.pathname === "/api/ghoti/voice/mute") {
+    const voice = readVoiceState();
+    voice.muted = true;
+    voice.updated_at_utc = new Date().toISOString();
+    writeVoiceState(voice);
+    sendJson(response, 200, { ok: true, voice });
+    return;
+  }
+  if (request.method === "POST" && requestUrl.pathname === "/api/ghoti/voice/unmute") {
+    const voice = readVoiceState();
+    voice.muted = false;
+    voice.updated_at_utc = new Date().toISOString();
+    writeVoiceState(voice);
+    sendJson(response, 200, { ok: true, voice });
+    return;
+  }
+  if (request.method === "POST" && requestUrl.pathname === "/api/ghoti/voice/listen/start") {
+    const voice = readVoiceState();
+    voice.listening = false;
+    voice.updated_at_utc = new Date().toISOString();
+    writeVoiceState(voice);
+    sendJson(response, 200, {
+      ok: true,
+      voice,
+      note: "STT not configured. Listening remains false.",
+    });
+    return;
+  }
+  if (request.method === "POST" && requestUrl.pathname === "/api/ghoti/voice/listen/stop") {
+    const voice = readVoiceState();
+    voice.listening = false;
+    voice.updated_at_utc = new Date().toISOString();
+    writeVoiceState(voice);
+    sendJson(response, 200, { ok: true, voice });
+    return;
+  }
+
+  // Operator status route — returns full system summary
+  if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/operator/status") {
+    const activeState = readActiveModeState();
+    const captureState = readCaptureState();
+    const voiceState = readVoiceState();
+    const desktopBridgeExists = fs.existsSync(desktopActionsScriptPath);
+    const isActive = Boolean(activeState.active);
+    const isCapturing = Boolean(captureState.capturing);
+    const operatorStatus = isCapturing ? "watching" : isActive ? "active" : "idle";
+    sendJson(response, 200, {
+      ok: true,
+      status: operatorStatus,
+      active_mode: isActive,
+      capture: {
+        capturing: isCapturing,
+        frame_count: captureState.frame_count || 0,
+        session_id: currentCaptureSessionId || null,
+        last_frame_ts: captureState.latest_frame_utc || null,
+        latest_frame_url: currentCaptureSessionId
+          ? `/api/ghoti/active/latest-frame?session_id=${encodeURIComponent(currentCaptureSessionId)}`
+          : (captureState.latest_frame_path ? "/api/ghoti/active/latest-frame" : null),
+      },
+      voice: {
+        real: false,
+        mode: voiceState.mode || "placeholder",
+        muted: Boolean(voiceState.muted),
+        listening: Boolean(voiceState.listening),
+      },
+      brain: {
+        provider: "none",
+        reachable: false,
+        model: null,
+        drives_operator: false,
+        note: "Brain not checked inline. Use /api/ghoti/brain/status for live Ollama probe.",
+      },
+      operator: {
+        desktop_actions_available: desktopBridgeExists,
+        browser_actions_available: false,
+        visual_indicator_available: true,
+        approval_required_for_risky_actions: true,
+        full_autonomy_enabled: false,
+      },
+      local_only: true,
+      updated_at_utc: new Date().toISOString(),
+    });
+    return;
+  }
+
+  // Brain status — probes Ollama directly; always 200 (reachable:false = not configured, not an error)
+  if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/brain/status") {
+    const { reachable, models } = await checkOllamaReachable();
+    sendJson(response, 200, {
+      ok: true,
+      brain: {
+        provider: reachable ? "ollama" : "none",
+        reachable,
+        models,
+        active_model: models[0] || null,
+        drives_operator: false,
+        note: reachable
+          ? "Ollama reachable but not wired to drive operator actions."
+          : "No brain configured. Ollama not reachable at 127.0.0.1:11434.",
+      },
+    });
+    return;
+  }
+
+  // YouTube follower routes
+  if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/youtube-follower/status") {
+    const tasks = readYoutubeFollowerTasks();
+    sendJson(response, 200, {
+      ok: true,
+      status: "scaffold",
+      real: false,
+      execution_enabled: false,
+      browser_operator_integrated: false,
+      task_count: tasks.length,
+      latest_task: tasks[0] || null,
+      note: "YouTube follower is a scaffold only. No video parsing or browser execution is wired.",
+    });
+    return;
+  }
+  if (request.method === "POST" && requestUrl.pathname === "/api/ghoti/youtube-follower/task") {
+    let body = {};
+    try {
+      const chunks = [];
+      for await (const chunk of request) chunks.push(chunk);
+      body = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+    } catch {}
+    if (!body.url) {
+      sendJson(response, 400, { ok: false, error: "url is required" });
+      return;
+    }
+    const task = createYoutubeFollowerTask(body);
+    sendJson(response, 200, {
+      ok: true,
+      task: {
+        id: task.id,
+        status: task.status,
+        execution_enabled: task.execution_enabled,
+        needs_user_approval: task.needs_user_approval,
+        next_step: task.next_step,
+        url: task.url,
+        goal: task.goal,
+        created_at: task.created_at,
+      },
+    });
+    return;
+  }
+
   sendJson(response, 404, {
     ok: false,
     error: "Route not found.",
@@ -4202,6 +4480,10 @@ async function handleRequest(request, response) {
     if (requestUrl.pathname.startsWith("/api/")) {
       await handleApiRequest(request, response, requestUrl);
       return;
+    }
+
+    if (requestUrl.pathname === "/overlay") {
+      requestUrl.pathname = "/overlay.html";
     }
 
     serveStatic(requestUrl, response);
