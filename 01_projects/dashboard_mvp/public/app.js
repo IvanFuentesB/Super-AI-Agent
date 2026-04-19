@@ -4493,6 +4493,16 @@ function renderRecentActiveSessions(sessions) {
       ? "Update the local review note for this session"
       : "Optional local review note for this session";
 
+    const cleanupStatus = session.cleanup_status === "cleaned" ? "Cleaned" : (session.retention_status === "discarded" ? "Pending" : "—");
+    const cleanupDetail = session.cleanup_status === "cleaned" && session.cleaned_file_count != null
+      ? ` · ${escapeHtml(String(session.cleaned_file_count))} file(s), ${escapeHtml(((session.cleaned_bytes || 0) / 1024).toFixed(1))} KB`
+      : "";
+    const approxSizeHint = session.frame_count ? ` · ~${escapeHtml(String(session.frame_count))} frame(s)` : "";
+
+    const showCleanupBtn = session.status === "stopped"
+      && session.retention_status === "discarded"
+      && session.cleanup_status !== "cleaned";
+
     return `
       <article class="ghoti-session-history-item" data-session-id="${escapeHtml(session.session_id || "")}">
         <div class="ghoti-session-history-top">
@@ -4502,10 +4512,10 @@ function renderRecentActiveSessions(sessions) {
         <div class="ghoti-session-history-meta">
           <span>Started <strong>${escapeHtml(session.started_at_utc ? formatTimeStamp(session.started_at_utc) : "—")}</strong></span>
           <span>Stopped <strong>${escapeHtml(session.stopped_at_utc ? formatTimeStamp(session.stopped_at_utc) : "—")}</strong></span>
-          <span>Frames <strong>${escapeHtml(String(session.frame_count || 0))}</strong></span>
-          <span>Latest <strong>${escapeHtml(session.latest_frame_utc ? formatTimeStamp(session.latest_frame_utc) : "—")}</strong></span>
+          <span>Frames <strong>${escapeHtml(String(session.frame_count || 0))}${approxSizeHint}</strong></span>
           <span>Reviewed <strong>${escapeHtml(reviewStatus)}</strong></span>
           <span>Retention <strong>${escapeHtml(retentionStatus)}</strong></span>
+          <span>Cleanup <strong>${escapeHtml(cleanupStatus)}${cleanupDetail}</strong></span>
         </div>
         <label class="ghoti-session-review-field">
           <span>Review note</span>
@@ -4515,8 +4525,10 @@ function renderRecentActiveSessions(sessions) {
           <button class="button-secondary ghoti-session-action-btn" type="button" data-active-session-action="review" data-session-id="${escapeHtml(session.session_id || "")}">${escapeHtml(reviewLabel)}</button>
           <button class="button-secondary ghoti-session-action-btn" type="button" data-active-session-action="keep" data-session-id="${escapeHtml(session.session_id || "")}">Keep session</button>
           <button class="button-secondary ghoti-session-action-btn" type="button" data-active-session-action="discard" data-session-id="${escapeHtml(session.session_id || "")}">Discard metadata</button>
+          ${showCleanupBtn ? `<button class="button-secondary ghoti-session-action-btn" type="button" data-active-session-action="cleanup-preview" data-session-id="${escapeHtml(session.session_id || "")}">Preview cleanup</button>` : ""}
         </div>
-        <p class="ghoti-session-retention-copy">Local-only archive controls. Discard changes session metadata only and does not delete capture files.</p>
+        <p class="ghoti-session-retention-copy">Local-only archive controls. Discard is metadata-only. Cleanup is a separate explicit operator action that only deletes local capture frames from the safe capture folder. Cleanup never runs automatically.</p>
+        <div class="ghoti-session-cleanup-area" data-session-id="${escapeHtml(session.session_id || "")}" style="margin-top:0.6rem;" hidden></div>
       </article>
     `;
   }).join("");
@@ -4624,6 +4636,73 @@ async function refreshCaptureState() {
   } catch { /* silent */ }
 }
 
+async function handleCleanupPreview(sessionId) {
+  const container = document.querySelector(`.ghoti-session-cleanup-area[data-session-id="${CSS.escape(sessionId)}"]`);
+  if (!container) {
+    return;
+  }
+  container.hidden = false;
+  container.innerHTML = "<p style=\"color:var(--muted);font-size:0.85rem;\">Loading cleanup preview...</p>";
+  try {
+    const data = await requestJson(`/api/ghoti/active/session/cleanup-preview?session_id=${encodeURIComponent(sessionId)}`);
+    if (!data.deletion_allowed) {
+      container.innerHTML = `<div class="result-panel is-error"><p>${escapeHtml(data.reason || "Cleanup not allowed.")}</p></div>`;
+      return;
+    }
+    const filesSample = (data.files || []).slice(0, 5).map((f) => escapeHtml(f)).join(", ");
+    const moreCount = (data.files || []).length > 5 ? ` and ${(data.files || []).length - 5} more` : "";
+    const sizeKb = ((data.total_bytes || 0) / 1024).toFixed(1);
+    container.innerHTML = `
+      <div class="result-panel">
+        <p><strong>Cleanup preview</strong> — ${escapeHtml(String(data.file_count || 0))} frame file(s) · ${escapeHtml(sizeKb)} KB total</p>
+        ${data.file_count > 0 ? `<p style="font-size:0.82rem;color:var(--muted);">Files: ${filesSample}${moreCount}</p>` : "<p style=\"font-size:0.82rem;color:var(--muted);\">No frame files found in capture folder.</p>"}
+        <p style="font-size:0.81rem;color:var(--muted);">Safety root: ${escapeHtml(data.safety_root || "")}</p>
+        <p class="summary-note" style="margin-top:0.6rem;font-size:0.82rem;">
+          Discard is metadata-only. Cleanup is separate. Cleanup only deletes local capture frames from the safe capture folder. Cleanup never runs automatically.
+        </p>
+        <div style="display:grid;gap:0.55rem;margin-top:0.75rem;">
+          <label style="display:grid;gap:0.3rem;font-weight:600;font-size:0.85rem;">
+            <span>Type <code>DELETE_CAPTURE_FRAMES</code> to confirm</span>
+            <input type="text" class="ghoti-cleanup-confirm-input" placeholder="DELETE_CAPTURE_FRAMES" autocomplete="off" />
+          </label>
+          <button class="button-danger ghoti-session-action-btn" type="button" data-active-session-action="cleanup-confirm" data-session-id="${escapeHtml(sessionId)}">Confirm cleanup</button>
+        </div>
+        <div class="ghoti-cleanup-result" aria-live="polite" style="margin-top:0.5rem;"></div>
+      </div>
+    `;
+  } catch (err) {
+    container.innerHTML = `<div class="result-panel is-error"><p>Preview failed: ${escapeHtml(err.message)}</p></div>`;
+  }
+}
+
+async function handleCleanupConfirm(sessionId, articleEl) {
+  const cleanupArea = articleEl ? articleEl.querySelector(".ghoti-session-cleanup-area") : null;
+  const confirmInput = cleanupArea ? cleanupArea.querySelector(".ghoti-cleanup-confirm-input") : null;
+  const resultEl = cleanupArea ? cleanupArea.querySelector(".ghoti-cleanup-result") : null;
+  const phrase = confirmInput ? confirmInput.value.trim() : "";
+  if (resultEl) {
+    resultEl.innerHTML = "<p style=\"color:var(--muted);font-size:0.85rem;\">Sending cleanup request...</p>";
+  }
+  try {
+    const data = await requestJson("/api/ghoti/active/session/cleanup-confirm", {
+      method: "POST",
+      body: JSON.stringify({ session_id: sessionId, confirm: phrase }),
+    });
+    if (data.ok) {
+      const sizeKb = ((data.deleted_bytes || 0) / 1024).toFixed(1);
+      const missingNote = data.missing_count ? ` ${escapeHtml(String(data.missing_count))} already missing.` : "";
+      if (resultEl) {
+        resultEl.innerHTML = `<div class="result-panel is-success"><p>Cleanup complete. ${escapeHtml(String(data.deleted_count || 0))} file(s) deleted (${escapeHtml(sizeKb)} KB).${missingNote}</p></div>`;
+      }
+      await refreshActiveSessionData();
+    }
+  } catch (err) {
+    if (resultEl) {
+      resultEl.innerHTML = `<div class="result-panel is-error"><p>Cleanup failed: ${escapeHtml(err.message)}</p></div>`;
+    }
+  }
+}
+
 const ghotiSessionHistory = document.getElementById("ghoti-session-history");
 if (ghotiSessionHistory) {
   ghotiSessionHistory.addEventListener("click", async (event) => {
@@ -4637,6 +4716,15 @@ if (ghotiSessionHistory) {
     const sessionCard = button.closest("[data-session-id]");
     const noteField = sessionCard?.querySelector(".ghoti-session-review-note");
     const reviewNote = noteField ? noteField.value : "";
+
+    if (action === "cleanup-preview") {
+      await handleCleanupPreview(sessionId);
+      return;
+    }
+    if (action === "cleanup-confirm") {
+      await handleCleanupConfirm(sessionId, sessionCard);
+      return;
+    }
     await updateActiveSessionArchive(action, sessionId, reviewNote);
   });
 }

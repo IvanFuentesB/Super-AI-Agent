@@ -281,6 +281,11 @@ function normalizeActiveSession(session) {
     reviewed_at_utc: typeof session.reviewed_at_utc === "string" ? session.reviewed_at_utc : null,
     review_note: normalizeReviewNote(session.review_note),
     retention_status: normalizeRetentionStatus(session.retention_status),
+    cleanup_status: typeof session.cleanup_status === "string" ? session.cleanup_status : null,
+    cleaned_at_utc: typeof session.cleaned_at_utc === "string" ? session.cleaned_at_utc : null,
+    cleaned_file_count: Number.isFinite(Number(session.cleaned_file_count)) && session.cleaned_file_count != null ? Number(session.cleaned_file_count) : null,
+    cleaned_bytes: Number.isFinite(Number(session.cleaned_bytes)) && session.cleaned_bytes != null ? Number(session.cleaned_bytes) : null,
+    cleanup_missing_file_count: Number.isFinite(Number(session.cleanup_missing_file_count)) && session.cleanup_missing_file_count != null ? Number(session.cleanup_missing_file_count) : null,
     operator_controlled: true,
     local_only: true,
     safety_note: activeSessionSafetyNote,
@@ -330,6 +335,11 @@ function buildActiveSessionSummary(session) {
     reviewed_at_utc: normalized.reviewed_at_utc,
     review_note: normalized.review_note,
     retention_status: normalized.retention_status,
+    cleanup_status: normalized.cleanup_status,
+    cleaned_at_utc: normalized.cleaned_at_utc,
+    cleaned_file_count: normalized.cleaned_file_count,
+    cleaned_bytes: normalized.cleaned_bytes,
+    cleanup_missing_file_count: normalized.cleanup_missing_file_count,
     operator_controlled: true,
     local_only: true,
     safety_note: normalized.safety_note,
@@ -596,6 +606,35 @@ function resolveCurrentSessionFramePath(frameName) {
   }
 
   return framePath;
+}
+
+function resolveCleanupCandidates() {
+  const resolvedRoot = path.resolve(captureFramesDir);
+  const safetyRoot = resolvedRoot;
+  if (!fs.existsSync(resolvedRoot)) {
+    return { files: [], missing_files: [], total_bytes: 0, safety_root: safetyRoot };
+  }
+  const entries = fs.readdirSync(resolvedRoot);
+  const files = [];
+  const missing_files = [];
+  let total_bytes = 0;
+  for (const name of entries) {
+    if (!/^frame-\d{6}\.png$/i.test(name)) {
+      continue;
+    }
+    const abs = path.resolve(resolvedRoot, name);
+    if (!abs.startsWith(resolvedRoot + path.sep) && abs !== resolvedRoot) {
+      continue;
+    }
+    try {
+      const stat = fs.statSync(abs);
+      files.push({ name, abs, size: stat.size });
+      total_bytes += stat.size;
+    } catch {
+      missing_files.push(name);
+    }
+  }
+  return { files, missing_files, total_bytes, safety_root: safetyRoot };
 }
 
 function stopCaptureProcess() {
@@ -3851,6 +3890,121 @@ async function handleApiRequest(request, response, requestUrl) {
       return;
     }
     sendBuffer(response, 200, fs.readFileSync(latestFramePath), "image/png");
+    return;
+  }
+
+  if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/active/session/cleanup-preview") {
+    const sessionId = String(requestUrl.searchParams.get("session_id") || "").trim();
+    if (!sessionId) {
+      sendJson(response, 400, { ok: false, error: "session_id query param is required." });
+      return;
+    }
+    const store = readActiveSessionStore();
+    const session = sessionId === store.current_session?.session_id
+      ? normalizeActiveSession(store.current_session)
+      : normalizeActiveSession((store.recent_sessions || []).find((s) => s?.session_id === sessionId));
+    if (!session) {
+      sendJson(response, 404, { ok: false, error: "Session not found." });
+      return;
+    }
+    if (session.status === "active" || session.capture_running) {
+      sendJson(response, 200, { ok: true, session_id: sessionId, deletion_allowed: false, reason: "Session is still active or capture is running." });
+      return;
+    }
+    if (session.retention_status !== "discarded") {
+      sendJson(response, 200, { ok: true, session_id: sessionId, deletion_allowed: false, reason: "Session must be marked discarded before cleanup." });
+      return;
+    }
+    if (session.cleanup_status === "cleaned") {
+      sendJson(response, 200, { ok: true, session_id: sessionId, deletion_allowed: false, reason: "Session has already been cleaned." });
+      return;
+    }
+    const { files, missing_files, total_bytes, safety_root } = resolveCleanupCandidates();
+    sendJson(response, 200, {
+      ok: true,
+      session_id: sessionId,
+      deletion_allowed: true,
+      reason: "Session is discarded and stopped. Files listed are safe capture frames from the safe capture folder.",
+      safety_root,
+      files: files.map((f) => f.name),
+      missing_files,
+      file_count: files.length,
+      total_bytes,
+    });
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/api/ghoti/active/session/cleanup-confirm") {
+    const body = await readJsonBody(request);
+    const sessionId = String(body.session_id || "").trim();
+    const confirm = String(body.confirm || "").trim();
+    if (!sessionId) {
+      sendJson(response, 400, { ok: false, error: "session_id is required." });
+      return;
+    }
+    if (confirm !== "DELETE_CAPTURE_FRAMES") {
+      sendJson(response, 400, { ok: false, error: "Incorrect confirmation phrase. Required: DELETE_CAPTURE_FRAMES" });
+      return;
+    }
+    const store = readActiveSessionStore();
+    const session = sessionId === store.current_session?.session_id
+      ? normalizeActiveSession(store.current_session)
+      : normalizeActiveSession((store.recent_sessions || []).find((s) => s?.session_id === sessionId));
+    if (!session) {
+      sendJson(response, 404, { ok: false, error: "Session not found." });
+      return;
+    }
+    if (session.status === "active" || session.capture_running) {
+      sendJson(response, 400, { ok: false, error: "Cannot clean an active session or one with capture running." });
+      return;
+    }
+    if (session.retention_status !== "discarded") {
+      sendJson(response, 400, { ok: false, error: "Session must be marked discarded before cleanup." });
+      return;
+    }
+    if (session.cleanup_status === "cleaned") {
+      sendJson(response, 400, { ok: false, error: "Session has already been cleaned." });
+      return;
+    }
+    const { files, missing_files, total_bytes: _total, safety_root } = resolveCleanupCandidates();
+    let deleted_count = 0;
+    let deleted_bytes = 0;
+    let delete_fail_count = 0;
+    for (const { abs, size } of files) {
+      if (!abs.startsWith(path.resolve(captureFramesDir) + path.sep)) {
+        continue;
+      }
+      try {
+        fs.unlinkSync(abs);
+        deleted_count++;
+        deleted_bytes += size;
+      } catch {
+        delete_fail_count++;
+      }
+    }
+    const nowUtc = new Date().toISOString();
+    const updatedSession = updateStoredActiveSession(sessionId, {
+      cleanup_status: "cleaned",
+      cleaned_at_utc: nowUtc,
+      cleaned_file_count: deleted_count,
+      cleaned_bytes: deleted_bytes,
+      cleanup_missing_file_count: missing_files.length + delete_fail_count,
+    });
+    pushAction({
+      actionType: "status",
+      label: "Active session cleanup completed",
+      status: "success",
+      summary: `Deleted ${deleted_count} capture frame(s) (${deleted_bytes} bytes) for session ${sessionId}.`,
+    });
+    sendJson(response, 200, {
+      ok: true,
+      session_id: sessionId,
+      deleted_count,
+      deleted_bytes,
+      missing_count: missing_files.length + delete_fail_count,
+      safety_root,
+      session: updatedSession,
+    });
     return;
   }
 

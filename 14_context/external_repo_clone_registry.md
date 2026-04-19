@@ -45,6 +45,12 @@ All 21 repos listed above.
 
 ---
 
+## Concept References (not cloned)
+
+| Name | URL | Reason |
+|------|-----|--------|
+| mithi/robotics-coursework | https://github.com/mithi/robotics-coursework | Robotics learning resources — reference concept only; not needed for cloning |
+
 ## Ghoti Truth
 
 ### Real continuous screen recording: NO
