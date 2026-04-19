@@ -1921,6 +1921,25 @@ This file was queued through the safe repo-local executor.
             <button id="ghoti-active-snapshot-btn" class="action-btn" type="button">Capture Screenshot</button>
           </div>
 
+          <div class="ghoti-capture-section">
+            <p class="ghoti-active-label">Continuous Screen Capture</p>
+            <div class="ghoti-capture-controls">
+              <button id="ghoti-capture-start-btn" class="action-btn action-btn-primary" type="button">Start Screen Capture</button>
+              <button id="ghoti-capture-stop-btn" class="action-btn action-btn-danger" type="button">Stop Screen Capture</button>
+              <span id="ghoti-capture-pill" class="state-pill ghoti-capture-pill-off">OFF</span>
+            </div>
+            <div id="ghoti-capture-meta" class="ghoti-capture-meta" hidden>
+              <span id="ghoti-capture-fps" class="ghoti-capture-meta-item"></span>
+              <span id="ghoti-capture-count" class="ghoti-capture-meta-item"></span>
+              <span id="ghoti-capture-time" class="ghoti-capture-meta-item"></span>
+            </div>
+            <div id="ghoti-capture-preview-row" class="ghoti-capture-preview-row" hidden>
+              <a id="ghoti-capture-latest-link" href="#" target="_blank" class="ghoti-active-snapshot-link">View latest frame</a>
+              <img id="ghoti-capture-latest-img" src="" alt="Latest capture frame" class="ghoti-capture-preview-img" hidden />
+            </div>
+            <div id="ghoti-capture-error" class="ghoti-capture-error" aria-live="polite" hidden></div>
+          </div>
+
           <div class="ghoti-active-instruction-row">
             <label for="ghoti-active-msg-input" class="ghoti-active-label">Tell Ghoti what to focus on</label>
             <textarea id="ghoti-active-msg-input" class="ghoti-active-textarea" rows="3" placeholder="Describe the task or area to focus on. Approval required before any action."></textarea>

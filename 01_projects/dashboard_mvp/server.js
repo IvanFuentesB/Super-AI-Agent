@@ -18,6 +18,14 @@ const maxRecentActions = 25;
 const runtimeDataDir = path.join(runtimeProjectRoot, "runtime_data");
 const activeModeStateFile = path.join(runtimeDataDir, "active_mode_state.json");
 const screenshotsDir = path.join(dashboardRoot, ".tmp-screenshots");
+const captureFramesDir = path.join(screenshotsDir, "capture_frames");
+const captureStateFile = path.join(runtimeDataDir, "screen_capture_state.json");
+const captureStopFile = path.join(captureFramesDir, ".stop");
+const captureSidecarScript = path.join(runtimeProjectRoot, "src", "super_ai_agent", "screen_capture_sidecar.py");
+
+let captureInterval = null;
+let captureFrameCount = 0;
+let captureTickRunning = false;
 const previewableExtensions = new Set([
   ".md",
   ".markdown",
@@ -197,6 +205,94 @@ function writeActiveModeState(patch) {
   if (!fs.existsSync(runtimeDataDir)) fs.mkdirSync(runtimeDataDir, { recursive: true });
   fs.writeFileSync(activeModeStateFile, JSON.stringify(next, null, 2));
   return next;
+}
+
+function readCaptureState() {
+  const defaults = {
+    capturing: false,
+    capture_method: null,
+    fps_target: 1,
+    frame_count: 0,
+    latest_frame_path: null,
+    latest_frame_utc: null,
+    error: null,
+  };
+  try {
+    if (!fs.existsSync(captureStateFile)) return defaults;
+    return { ...defaults, ...JSON.parse(fs.readFileSync(captureStateFile, "utf8")) };
+  } catch {
+    return defaults;
+  }
+}
+
+function stopCaptureProcess() {
+  if (captureInterval) {
+    clearInterval(captureInterval);
+    captureInterval = null;
+  }
+  captureTickRunning = false;
+  const current = readCaptureState();
+  const stopped = { ...current, capturing: false };
+  try {
+    if (!fs.existsSync(runtimeDataDir)) fs.mkdirSync(runtimeDataDir, { recursive: true });
+    fs.writeFileSync(captureStateFile, JSON.stringify(stopped, null, 2));
+  } catch { /* best effort */ }
+}
+
+async function captureOneTick(powerShell) {
+  if (captureTickRunning) return;
+  captureTickRunning = true;
+  try {
+    const latestPath = path.join(captureFramesDir, "latest.png");
+    const framePath = path.join(captureFramesDir, `frame-${String(captureFrameCount).padStart(6, "0")}.png`);
+    const latestEsc = latestPath.replace(/\\/g, "\\\\");
+    const frameEsc = framePath.replace(/\\/g, "\\\\");
+    const psScript = [
+      "Add-Type -AssemblyName System.Windows.Forms",
+      "Add-Type -AssemblyName System.Drawing",
+      "$screen = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds",
+      "$bmp = New-Object System.Drawing.Bitmap($screen.Width, $screen.Height)",
+      "$g = [System.Drawing.Graphics]::FromImage($bmp)",
+      "$g.CopyFromScreen($screen.Location, [System.Drawing.Point]::Empty, $screen.Size)",
+      "$g.Dispose()",
+      `$bmp.Save("${latestEsc}")`,
+      `$bmp.Save("${frameEsc}")`,
+      "$bmp.Dispose()",
+      "Write-Output 'ok'",
+    ].join("; ");
+    const result = await runCommand(
+      powerShell.command,
+      [...powerShell.baseArgs, "-ExecutionPolicy", "Bypass", "-Command", psScript],
+      { cwd: repoRoot, timeoutMs: 10000 }
+    );
+    // If stop was called while we were capturing, do not overwrite the stopped state
+    if (!captureInterval) return;
+    if (result.ok && fs.existsSync(latestPath)) {
+      captureFrameCount++;
+      const nowUtc = new Date().toISOString();
+      if (!fs.existsSync(runtimeDataDir)) fs.mkdirSync(runtimeDataDir, { recursive: true });
+      fs.writeFileSync(captureStateFile, JSON.stringify({
+        capturing: true,
+        capture_method: "powershell-copyfromscreen-loop",
+        fps_target: 1,
+        frame_count: captureFrameCount,
+        latest_frame_path: latestPath,
+        latest_frame_utc: nowUtc,
+        error: null,
+      }, null, 2));
+    } else {
+      const cur = readCaptureState();
+      if (!fs.existsSync(runtimeDataDir)) fs.mkdirSync(runtimeDataDir, { recursive: true });
+      fs.writeFileSync(captureStateFile, JSON.stringify({
+        ...cur,
+        error: result.stderr || result.stdout || "PowerShell capture failed",
+      }, null, 2));
+    }
+  } catch (err) {
+    process.stderr.write(`[capture] tick error: ${err.message}\n`);
+  } finally {
+    captureTickRunning = false;
+  }
 }
 
 async function runRuntimeCli(cliArgs) {
@@ -3154,6 +3250,7 @@ async function handleApiRequest(request, response, requestUrl) {
   }
 
   if (request.method === "POST" && requestUrl.pathname === "/api/ghoti/active/stop") {
+    stopCaptureProcess();
     const state = writeActiveModeState({ active: false, mode: "idle", screen_view_enabled: false, error: null });
     pushAction({ actionType: "status", label: "Ghoti Active Mode stopped", status: "success", summary: "Operator stopped Ghoti Active Mode." });
     sendJson(response, 200, { ok: true, state });
@@ -3205,6 +3302,65 @@ async function handleApiRequest(request, response, requestUrl) {
     pushAction({ actionType: "status", label: "Ghoti received instruction", status: "success", summary: `Operator message: ${msg.slice(0, 80)}` });
     const ackState = writeActiveModeState({ mode: "waiting_for_approval" });
     sendJson(response, 200, { ok: true, received: msg, note: "Instruction logged. Operator approval required before any action is taken.", state: ackState });
+    return;
+  }
+
+  if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/active/capture-state") {
+    const captureState = readCaptureState();
+    sendJson(response, 200, { ok: true, captureState });
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/api/ghoti/active/capture/start") {
+    const activeState = readActiveModeState();
+    if (!activeState.active) {
+      sendJson(response, 400, { ok: false, error: "Ghoti is not active. Start Ghoti first.", captureState: readCaptureState() });
+      return;
+    }
+    if (captureInterval) {
+      sendJson(response, 200, { ok: true, note: "Capture already running.", captureState: readCaptureState() });
+      return;
+    }
+
+    const powerShell = resolvePowerShell();
+    if (!powerShell) {
+      sendJson(response, 500, { ok: false, error: "PowerShell not found — cannot start screen capture.", captureState: readCaptureState() });
+      return;
+    }
+
+    if (!fs.existsSync(runtimeDataDir)) fs.mkdirSync(runtimeDataDir, { recursive: true });
+    if (!fs.existsSync(captureFramesDir)) fs.mkdirSync(captureFramesDir, { recursive: true });
+
+    captureFrameCount = 0;
+    captureTickRunning = false;
+
+    fs.writeFileSync(captureStateFile, JSON.stringify({
+      capturing: true,
+      capture_method: "powershell-copyfromscreen-loop",
+      fps_target: 1,
+      frame_count: 0,
+      latest_frame_path: null,
+      latest_frame_utc: null,
+      error: null,
+    }, null, 2));
+
+    // Kick off first frame immediately (non-blocking)
+    captureOneTick(powerShell);
+
+    // Then repeat at 1 FPS
+    captureInterval = setInterval(() => captureOneTick(powerShell), 1000);
+
+    const captureState = readCaptureState();
+    pushAction({ actionType: "status", label: "Screen capture started", status: "success", summary: "Continuous capture at 1 FPS via PowerShell" });
+    sendJson(response, 200, { ok: true, captureState });
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/api/ghoti/active/capture/stop") {
+    stopCaptureProcess();
+    const captureState = readCaptureState();
+    pushAction({ actionType: "status", label: "Screen capture stopped", status: "success", summary: "Operator stopped continuous capture." });
+    sendJson(response, 200, { ok: true, captureState });
     return;
   }
 

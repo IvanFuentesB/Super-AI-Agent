@@ -4320,3 +4320,111 @@ document.getElementById("ghoti-active-send-btn").addEventListener("click", async
 refreshActiveModeState();
 setInterval(refreshActiveModeState, 6000);
 
+// --- Continuous Screen Capture UI ---
+
+const CAPTURE_PILL_CLASSES = ["ghoti-capture-pill-off", "ghoti-capture-pill-on", "ghoti-capture-pill-error"];
+
+function renderCaptureState(captureState) {
+  if (!captureState) return;
+  const pill = document.getElementById("ghoti-capture-pill");
+  const meta = document.getElementById("ghoti-capture-meta");
+  const fpsEl = document.getElementById("ghoti-capture-fps");
+  const countEl = document.getElementById("ghoti-capture-count");
+  const timeEl = document.getElementById("ghoti-capture-time");
+  const previewRow = document.getElementById("ghoti-capture-preview-row");
+  const latestLink = document.getElementById("ghoti-capture-latest-link");
+  const latestImg = document.getElementById("ghoti-capture-latest-img");
+  const errorEl = document.getElementById("ghoti-capture-error");
+
+  const capturing = Boolean(captureState.capturing);
+
+  if (pill) {
+    CAPTURE_PILL_CLASSES.forEach(c => pill.classList.remove(c));
+    if (captureState.error && !capturing) {
+      pill.classList.add("ghoti-capture-pill-error");
+      pill.textContent = "ERROR";
+    } else if (capturing) {
+      pill.classList.add("ghoti-capture-pill-on");
+      pill.textContent = "CAPTURING";
+    } else {
+      pill.classList.add("ghoti-capture-pill-off");
+      pill.textContent = "OFF";
+    }
+  }
+
+  if (meta) meta.hidden = !capturing && !captureState.frame_count;
+  if (fpsEl) fpsEl.textContent = `FPS target: ${captureState.fps_target || 1}`;
+  if (countEl) countEl.textContent = `Frames: ${captureState.frame_count || 0}`;
+  if (timeEl && captureState.latest_frame_utc) {
+    try { timeEl.textContent = `Last: ${new Date(captureState.latest_frame_utc).toLocaleTimeString()}`; }
+    catch { timeEl.textContent = captureState.latest_frame_utc; }
+  }
+
+  if (previewRow && latestLink && captureState.latest_frame_path) {
+    const p = captureState.latest_frame_path.replace(/\\/g, "/");
+    // Strip absolute path prefix to make a relative URL the server can serve
+    const rel = p.replace(/^.*\/(\.tmp-screenshots\/)/, "$1");
+    previewRow.hidden = false;
+    latestLink.href = "/" + rel;
+    latestLink.textContent = rel.split("/").pop() || "latest.png";
+    if (latestImg) {
+      latestImg.src = "/" + rel + "?t=" + Date.now();
+      latestImg.hidden = false;
+    }
+  } else if (previewRow) {
+    previewRow.hidden = true;
+    if (latestImg) latestImg.hidden = true;
+  }
+
+  if (errorEl) {
+    if (captureState.error) {
+      errorEl.textContent = "Capture error: " + captureState.error;
+      errorEl.hidden = false;
+    } else {
+      errorEl.hidden = true;
+    }
+  }
+}
+
+async function refreshCaptureState() {
+  try {
+    const data = await fetchJson("/api/ghoti/active/capture-state");
+    renderCaptureState(data.captureState);
+  } catch { /* silent */ }
+}
+
+document.getElementById("ghoti-capture-start-btn").addEventListener("click", async () => {
+  setActiveFeedback("Starting continuous screen capture...", false);
+  try {
+    const resp = await fetch("/api/ghoti/active/capture/start", { method: "POST", headers: { "Content-Type": "application/json" } });
+    const data = await resp.json();
+    if (data.ok) {
+      setActiveFeedback("Screen capture started.", false);
+      renderCaptureState(data.captureState);
+    } else {
+      setActiveFeedback("Cannot start capture: " + (data.error || "unknown error"), true);
+    }
+  } catch (err) {
+    setActiveFeedback("Request failed: " + err.message, true);
+  }
+});
+
+document.getElementById("ghoti-capture-stop-btn").addEventListener("click", async () => {
+  setActiveFeedback("Stopping screen capture...", false);
+  try {
+    const resp = await fetch("/api/ghoti/active/capture/stop", { method: "POST", headers: { "Content-Type": "application/json" } });
+    const data = await resp.json();
+    if (data.ok) {
+      setActiveFeedback("Screen capture stopped.", false);
+      renderCaptureState(data.captureState);
+    } else {
+      setActiveFeedback("Stop failed: " + (data.error || "unknown"), true);
+    }
+  } catch (err) {
+    setActiveFeedback("Request failed: " + err.message, true);
+  }
+});
+
+refreshCaptureState();
+setInterval(refreshCaptureState, 4000);
+

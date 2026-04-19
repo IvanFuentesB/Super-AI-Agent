@@ -1599,6 +1599,80 @@ pre {
   margin-top: 0.5rem;
 }
 
+/* Continuous Screen Capture */
+.ghoti-capture-section {
+  margin: 1rem 0;
+  padding: 0.9rem 1rem;
+  background: #f4f7fe;
+  border-radius: 7px;
+  border: 1px solid #c8d2e8;
+}
+
+.ghoti-capture-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 0.5rem 0;
+}
+
+.ghoti-capture-pill-off {
+  background: #e8ecf3;
+  color: #5a6480;
+}
+
+.ghoti-capture-pill-on {
+  background: #d4f0e0;
+  color: #1a7f4b;
+  animation: pulse-capture 2s infinite;
+}
+
+.ghoti-capture-pill-error {
+  background: #fde8e8;
+  color: #c0392b;
+}
+
+@keyframes pulse-capture {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.ghoti-capture-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 0.4rem 0;
+  font-size: 0.82rem;
+  color: #3a4a6a;
+}
+
+.ghoti-capture-meta-item {
+  background: #e2e9f7;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.ghoti-capture-preview-row {
+  margin: 0.6rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.ghoti-capture-preview-img {
+  max-width: 100%;
+  max-height: 200px;
+  border-radius: 5px;
+  border: 1px solid #b0bcd8;
+  margin-top: 0.3rem;
+}
+
+.ghoti-capture-error {
+  color: #c0392b;
+  font-size: 0.82rem;
+  margin-top: 0.4rem;
+}
+
 /* Persistent active mode rail — fixed top-right corner */
 #ghoti-active-mode-rail {
   position: fixed;
