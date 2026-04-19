@@ -193,14 +193,13 @@ async function safeFetch(url) {
 }
 
 async function fetchState() {
-  const [activeData, captureData, voiceData, operatorData, brainData, ytData, approvalsData] = await Promise.all([
+  const [activeData, captureData, voiceData, operatorData, brainData, ytData] = await Promise.all([
     safeFetch("/api/ghoti/active-state"),
     safeFetch("/api/ghoti/active/capture-state"),
     safeFetch("/api/ghoti/voice/state"),
     safeFetch("/api/ghoti/operator/status"),
     safeFetch("/api/ghoti/brain/status"),
     safeFetch("/api/ghoti/youtube-follower/status"),
-    safeFetch("/api/ghoti/approvals?status=pending"),
   ]);
 
   if (activeData) applyActiveState(activeData.state);
@@ -213,6 +212,10 @@ async function fetchState() {
   applyBrainState(brainData);
   applyOperatorState(operatorData);
   applyYoutubeState(ytData);
+}
+
+async function fetchApprovalsState() {
+  const approvalsData = await safeFetch("/api/ghoti/approvals?status=pending");
   applyApprovalsState(approvalsData);
 }
 
@@ -277,3 +280,5 @@ refreshBtn.addEventListener("click", async () => {
 
 fetchState();
 setInterval(fetchState, POLL_INTERVAL_MS);
+fetchApprovalsState();
+setInterval(fetchApprovalsState, 3000);

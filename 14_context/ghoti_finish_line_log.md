@@ -134,6 +134,120 @@ None (all files were existing).
 
 Reason: approval gates now exist. The next safest step is read-only understanding of frames — no clicking, no typing, no browser execution. Ollama is reachable; wire it to describe a captured frame on demand. All output must be logged and displayed, never acted upon automatically. Approval required before any action is taken based on an observation.
 
+---
+
+## Milestone Run: Approval Queue Hardening Patch
+
+Date: 2026-04-19
+Milestone: Approval Queue Hardening Patch (N+1.1)
+Branch: feat/ghoti-visible-operator-stack
+Commit: TBD (post-commit)
+Pushed: TBD
+Port: 3210
+
+### Discovery findings
+
+Gaps found (all 10 from the prompt confirmed present):
+
+1. `writeApprovals()` did not use atomic temp-write + rename — FOUND
+2. Approval records did not include `expires_at_utc` — FOUND
+3. Lazy expiry sweep not implemented — FOUND
+4. `/api/ghoti/approvals/:id/consume` did not require body `{ action_type }` — FOUND
+5. Consumed approval replay returned `approval_not_approved` instead of `already_consumed` — FOUND
+6. Action mismatch protection existed only in helper, not in the public consume route — FOUND
+7. Payload sanitization missing `bearer`, `private_key`, `ssh_key` — FOUND
+8. Redaction used `[redacted]` (lowercase) — FOUND (standardized to `[REDACTED]`)
+9. Overlay approval badge was inside the 2s `fetchState()` Promise.all, not a separate poller — FOUND
+10. Finish-line log overstated approval queue at ~80% — FOUND
+
+### Gaps fixed
+
+All 10 gaps fixed:
+
+1. `writeApprovals()` now writes to `approvals.json.tmp` then `fs.renameSync` to `approvals.json`
+2. `createApprovalRequest()` now sets `expires_at_utc: new Date(now + 15min).toISOString()`
+3. `readApprovals()` now does lazy expiry sweep: pending records past `expires_at_utc` become `status: "expired"`, writes back only if changed. Records missing `expires_at_utc` get `legacy_no_expiry: true`
+4. `POST /api/ghoti/approvals/:id/consume` now requires `{ action_type }` in body; returns `action_type_required` if absent
+5. Replay now returns `already_consumed` (via `validateAndConsumeApproval`)
+6. Action mismatch now returns `action_mismatch` on public consume route (via `validateAndConsumeApproval`)
+7. `SENSITIVE_KEYS` regex extended to include `bearer|private_key|ssh_key`
+8. All redaction values now `[REDACTED]` (uppercase)
+9. `overlay.js` now has separate `async function fetchApprovalsState()` with `setInterval(fetchApprovalsState, 3000)` — removed from `fetchState()` Promise.all
+10. Finish-line log updated with honest status
+
+### Session-binding (5e)
+
+`validateAndConsumeApproval(approvalId, expectedActionType, expectedPayloadSubset)` implemented. Cleanup-confirm passes `{ session_id }` as `expectedPayloadSubset`. Cross-session misuse returns `payload_mismatch`. Validated with real session A approval rejected for session B.
+
+### What remains scaffold
+
+- Voice: placeholder only, no microphone
+- YouTube follower: scaffold only
+- Approval queue only enforced on `cleanup_capture_files`; stub guard contract documented for all others
+
+### Validation results
+
+| Check | Result |
+|---|---|
+| node --check server.js | PASS |
+| node --check app.js | PASS |
+| node --check overlay.js | PASS |
+| Create approval with sensitive payload | PASS — token/password/bearer/private_key all [REDACTED], payload_sanitized: true, expires_at_utc present |
+| Missing action_type on consume | PASS — error: action_type_required |
+| Approve | PASS — status: approved |
+| Wrong action_type on consume | PASS — error: action_mismatch |
+| Correct consume | PASS — status: consumed |
+| Replay consume | PASS — error: already_consumed |
+| Reject path | PASS — status: rejected |
+| Consume rejected | PASS — error: approval_rejected |
+| Cleanup without approval | PASS — approval_required: true |
+| Cleanup with valid approval | PASS — deleted_count: 6, latest.png preserved |
+| Cleanup replay | PASS — error: Session has already been cleaned (session-level guard, pre-approval check) |
+| Cross-session payload mismatch | PASS — error: payload_mismatch |
+| Operator status approvals block | PASS — pending_count, enforced_on, enforced_stub_for all present |
+| Brain status | PASS — Ollama reachable, 0 models, honest note |
+| /overlay | 200 OK |
+| Active Mode regression | PASS — 6 frames captured, 200 image/png, stop/start clean |
+
+### Honest status
+
+| Area | Status |
+|---|---|
+| Atomic approval writes | real — temp rename in place |
+| TTL / lazy expiry | real — expires_at_utc on create, lazy sweep on read |
+| Payload sanitization | real — [REDACTED] uppercase, bearer/private_key/ssh_key covered |
+| Consume requires action_type | real — public route enforces |
+| Replay protection | real — already_consumed |
+| Action mismatch protection | real — action_mismatch on public route |
+| Payload/session binding | real — payload_mismatch cross-session confirmed |
+| Cleanup guard | real |
+| Overlay separate poller | real — fetchApprovalsState 3000ms separate from 2000ms fetchState |
+| Operator status honest | yes |
+| Brain status honest | yes |
+| Approval queue % estimate | ~95% — all hardening items implemented |
+
+### Files modified
+
+- `01_projects/dashboard_mvp/server.js` — atomic writes, TTL, expiry sweep, extended SENSITIVE_KEYS, [REDACTED] uppercase, action_type required on consume, validateAndConsumeApproval with payload subset
+- `01_projects/dashboard_mvp/public/overlay.js` — separate fetchApprovalsState() poller
+- `14_context/ghoti_finish_line_log.md` — this update
+- `14_context/ghoti_current_prompt.md` — overwritten with hardening patch prompt (pre-existing requirement)
+
+### Files not staged
+
+- `21_repos/third_party/.gitkeep`
+- `01_projects/mcp_server/test.txt`
+- `01_projects/runtime_mvp/runtime_data/*.json` (gitignored)
+- `01_projects/dashboard_mvp/.tmp-screenshots/**` (gitignored)
+
+### Third-party repo status
+
+Unchanged — reference only.
+
+### Next milestone recommendation
+
+Recommended: **Ollama Frame-Reading Read-Only Observer** — now that hardening passes, next safest step is wiring Ollama to describe a captured frame on demand (read-only, no actions, no auto-loop, operator-triggered, output displayed and logged only).
+
 Steps:
 1. POST /api/ghoti/active/observe-frame — takes a session_id, reads latest frame, sends to Ollama vision model
 2. Returns description as text, stored in session log, never triggers actions

@@ -189,7 +189,8 @@ function buildApprovalRequiredResponse(action, reason, approval) {
 const MAX_APPROVALS = 200;
 const MAX_PAYLOAD_STRING_LEN = 512;
 const MAX_PAYLOAD_ARRAY_LEN = 20;
-const SENSITIVE_KEYS = /password|api_key|apikey|token|secret|credential|authorization|cookie/i;
+const APPROVAL_TTL_MS = 15 * 60 * 1000; // 15 minutes
+const SENSITIVE_KEYS = /password|api_key|apikey|token|secret|credential|authorization|cookie|bearer|private_key|ssh_key/i;
 
 function sanitizeApprovalPayload(obj, depth) {
   if (depth === undefined) depth = 0;
@@ -198,55 +199,89 @@ function sanitizeApprovalPayload(obj, depth) {
   if (typeof obj === "string") return obj.length > MAX_PAYLOAD_STRING_LEN ? obj.slice(0, MAX_PAYLOAD_STRING_LEN) + "[truncated]" : obj;
   if (typeof obj !== "object") return obj;
   if (Array.isArray(obj)) {
-    const arr = obj.slice(0, MAX_PAYLOAD_ARRAY_LEN).map((v) => sanitizeApprovalPayload(v, depth + 1));
-    return arr;
+    return obj.slice(0, MAX_PAYLOAD_ARRAY_LEN).map((v) => sanitizeApprovalPayload(v, depth + 1));
   }
   const out = {};
-  let redacted = false;
+  let anyRedacted = false;
   for (const [k, v] of Object.entries(obj)) {
     if (SENSITIVE_KEYS.test(k)) {
-      out[k] = "[redacted]";
-      redacted = true;
+      out[k] = "[REDACTED]";
+      anyRedacted = true;
     } else {
       out[k] = sanitizeApprovalPayload(v, depth + 1);
     }
   }
-  if (redacted) out._redacted = true;
-  return out;
+  return { _sanitized: anyRedacted, ...out };
+}
+
+function stripSanitizedMarker(obj) {
+  if (!obj || typeof obj !== "object" || Array.isArray(obj)) return obj;
+  const { _sanitized, ...rest } = obj;
+  return rest;
+}
+
+function sanitizePayloadClean(payload) {
+  const raw = sanitizeApprovalPayload(payload);
+  const wasRedacted = raw && raw._sanitized;
+  const clean = stripSanitizedMarker(raw);
+  return { clean: clean || {}, wasRedacted: Boolean(wasRedacted) };
 }
 
 function readApprovals() {
+  let list = [];
   try {
     if (fs.existsSync(approvalsFile)) {
-      return JSON.parse(fs.readFileSync(approvalsFile, "utf8"));
+      list = JSON.parse(fs.readFileSync(approvalsFile, "utf8"));
+      if (!Array.isArray(list)) list = [];
     }
   } catch {
-    pushAction({ actionType: "warning", label: "approvals.json parse error", status: "warn", summary: "approvals.json was unreadable; returning empty list." });
+    pushAction({ actionType: "warning", label: "approvals.json parse error", status: "warn", summary: "approvals.json unreadable; returning empty list." });
+    return [];
   }
-  return [];
+  // Lazy expiry sweep: expire pending records past TTL
+  const now = Date.now();
+  let changed = false;
+  for (let i = 0; i < list.length; i++) {
+    const a = list[i];
+    if (a.status !== "pending") continue;
+    if (a.expires_at_utc) {
+      if (new Date(a.expires_at_utc).getTime() <= now) {
+        list[i] = { ...a, status: "expired", expired_at_utc: new Date().toISOString() };
+        changed = true;
+      }
+    } else {
+      // Legacy record without expires_at_utc — mark and leave pending; assign TTL from now
+      list[i] = { ...a, legacy_no_expiry: true };
+    }
+  }
+  if (changed) writeApprovals(list);
+  return list;
 }
 
 function writeApprovals(list) {
   if (!fs.existsSync(runtimeDataDir)) fs.mkdirSync(runtimeDataDir, { recursive: true });
   const bounded = Array.isArray(list) ? list.slice(0, MAX_APPROVALS) : [];
-  fs.writeFileSync(approvalsFile, JSON.stringify(bounded, null, 2), "utf8");
+  const tmpPath = approvalsFile + ".tmp";
+  fs.writeFileSync(tmpPath, JSON.stringify(bounded, null, 2), "utf8");
+  fs.renameSync(tmpPath, approvalsFile);
 }
 
 function createApprovalRequest(action, reason, requestedBy) {
-  const sanitized = sanitizeApprovalPayload(action.payload);
-  const wasRedacted = sanitized && sanitized._redacted;
+  const { clean, wasRedacted } = sanitizePayloadClean(action.payload);
+  const now = new Date();
   const record = {
-    id: `apv-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-    action: { type: String(action.type || "").slice(0, 128), payload: sanitized || {} },
+    id: `apv-${now.getTime()}-${Math.random().toString(36).slice(2, 7)}`,
+    action: { type: String(action.type || "").slice(0, 128), payload: clean },
     reason: String(reason || "").slice(0, 512),
     requested_by: String(requestedBy || "").slice(0, 128),
-    requested_at_utc: new Date().toISOString(),
+    requested_at_utc: now.toISOString(),
+    expires_at_utc: new Date(now.getTime() + APPROVAL_TTL_MS).toISOString(),
     status: "pending",
     decided_at_utc: null,
     decided_by: null,
     consumed_at_utc: null,
     notes: "",
-    payload_sanitized: Boolean(wasRedacted),
+    payload_sanitized: wasRedacted,
   };
   const list = readApprovals();
   list.unshift(record);
@@ -271,15 +306,23 @@ function pendingApprovals() {
   return readApprovals().filter((a) => a.status === "pending");
 }
 
-function validateAndConsumeApproval(approvalId, expectedActionType) {
+// expectedPayloadSubset: if provided, every key in subset must match approval's payload
+function validateAndConsumeApproval(approvalId, expectedActionType, expectedPayloadSubset) {
   const approval = getApproval(approvalId);
   if (!approval) return { ok: false, error: "approval_not_found" };
+  if (approval.status === "consumed") return { ok: false, error: "already_consumed", approval };
   if (approval.status === "rejected") return { ok: false, error: "approval_rejected", approval };
-  if (approval.status === "consumed") return { ok: false, error: "approval_already_consumed", approval };
   if (approval.status === "expired") return { ok: false, error: "approval_expired", approval };
   if (approval.status !== "approved") return { ok: false, error: "approval_not_approved", approval };
   if (expectedActionType && approval.action?.type !== expectedActionType) {
-    return { ok: false, error: "approval_action_type_mismatch", approval };
+    return { ok: false, error: "action_mismatch", approval };
+  }
+  if (expectedPayloadSubset) {
+    for (const [k, v] of Object.entries(expectedPayloadSubset)) {
+      if (approval.action?.payload?.[k] !== v) {
+        return { ok: false, error: "payload_mismatch", approval };
+      }
+    }
   }
   const consumed = updateApprovalStatus(approvalId, "consumed", { consumed_at_utc: new Date().toISOString() });
   return { ok: true, approval: consumed };
@@ -4382,7 +4425,7 @@ async function handleApiRequest(request, response, requestUrl) {
     }
 
     // Validate and consume approval
-    const consumeResult = validateAndConsumeApproval(approvalId, "cleanup_capture_files");
+    const consumeResult = validateAndConsumeApproval(approvalId, "cleanup_capture_files", { session_id: sessionId });
     if (!consumeResult.ok) {
       sendJson(response, 400, { ok: false, error: consumeResult.error, approval: consumeResult.approval || null });
       return;
@@ -4628,12 +4671,16 @@ async function handleApiRequest(request, response, requestUrl) {
         return;
       }
       if (action === "consume") {
-        if (approval.status !== "approved") {
-          sendJson(response, 200, { ok: false, error: "approval_not_approved", approval });
+        const consumeBody = await readJsonBody(request);
+        const actionType = String(consumeBody.action_type || "").trim();
+        if (!actionType) {
+          sendJson(response, 200, { ok: false, error: "action_type_required" });
           return;
         }
-        const updated = updateApprovalStatus(approvalId, "consumed", { consumed_at_utc: new Date().toISOString() });
-        sendJson(response, 200, { ok: true, approval: updated });
+        const consumeResult = validateAndConsumeApproval(approvalId, actionType);
+        sendJson(response, 200, consumeResult.ok
+          ? { ok: true, approval: consumeResult.approval }
+          : { ok: false, error: consumeResult.error, approval: consumeResult.approval || null });
         return;
       }
     }
