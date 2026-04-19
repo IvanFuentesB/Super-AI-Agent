@@ -395,6 +395,8 @@ function buildActiveSessionSummary(session) {
     cleaned_file_count: normalized.cleaned_file_count,
     cleaned_bytes: normalized.cleaned_bytes,
     cleanup_missing_file_count: normalized.cleanup_missing_file_count,
+    frame_dir: normalized.frame_dir,
+    legacy_capture: !normalized.frame_dir,
     operator_controlled: true,
     local_only: true,
     safety_note: normalized.safety_note,

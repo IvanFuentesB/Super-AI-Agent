@@ -4328,10 +4328,23 @@ setInterval(refreshActiveModeState, 6000);
 
 // --- Continuous Screen Capture UI ---
 
+let activeCaptureSessionId = null;
+
+function buildSessionLatestFrameUrl(sessionId) {
+  if (!sessionId) return "/api/ghoti/active/latest-frame";
+  return `/api/ghoti/active/latest-frame?session_id=${encodeURIComponent(sessionId)}`;
+}
+
+function buildSessionFrameUrl(sessionId, frameName) {
+  if (!sessionId || !frameName) return "";
+  return `/api/ghoti/active/frame?name=${encodeURIComponent(frameName)}&session_id=${encodeURIComponent(sessionId)}`;
+}
+
 const CAPTURE_PILL_CLASSES = ["ghoti-capture-pill-off", "ghoti-capture-pill-on", "ghoti-capture-pill-error"];
 
 function renderCaptureState(captureState) {
   if (!captureState) return;
+  activeCaptureSessionId = captureState.session_id || null;
   const pill = document.getElementById("ghoti-capture-pill");
   const meta = document.getElementById("ghoti-capture-meta");
   const fpsEl = document.getElementById("ghoti-capture-fps");
@@ -4371,8 +4384,9 @@ function renderCaptureState(captureState) {
     previewRow.hidden = !hasFrames;
   }
   if (hasFrames && latestLink && latestImg) {
-    const frameUrl = "/api/ghoti/active/latest-frame?t=" + Date.now();
-    latestLink.href = "/api/ghoti/active/latest-frame";
+    const latestBase = buildSessionLatestFrameUrl(captureState.session_id);
+    const frameUrl = latestBase + (latestBase.includes("?") ? "&" : "?") + "t=" + Date.now();
+    latestLink.href = latestBase;
     latestLink.textContent = capturing ? "Capture running — Latest frame" : "Capture stopped — Latest frame";
     latestImg.src = frameUrl;
     latestImg.hidden = false;
@@ -4503,6 +4517,11 @@ function renderRecentActiveSessions(sessions) {
       && session.retention_status === "discarded"
       && session.cleanup_status !== "cleaned";
 
+    const isLegacySession = !session.frame_dir && (session.frame_count > 0 || session.capture_method);
+    const legacyNote = isLegacySession
+      ? `<p class="summary-note" style="font-size:0.81rem;margin-bottom:0.4rem;">Legacy capture session — captured before per-session folder isolation. Cleanup may have zero files or may be unavailable.</p>`
+      : "";
+
     return `
       <article class="ghoti-session-history-item" data-session-id="${escapeHtml(session.session_id || "")}">
         <div class="ghoti-session-history-top">
@@ -4521,13 +4540,18 @@ function renderRecentActiveSessions(sessions) {
           <span>Review note</span>
           <textarea class="ghoti-session-review-note" data-session-id="${escapeHtml(session.session_id || "")}" rows="2" placeholder="${escapeHtml(reviewPlaceholder)}">${escapeHtml(session.review_note || "")}</textarea>
         </label>
+        ${legacyNote}
         <div class="ghoti-session-history-actions">
           <button class="button-secondary ghoti-session-action-btn" type="button" data-active-session-action="review" data-session-id="${escapeHtml(session.session_id || "")}">${escapeHtml(reviewLabel)}</button>
           <button class="button-secondary ghoti-session-action-btn" type="button" data-active-session-action="keep" data-session-id="${escapeHtml(session.session_id || "")}">Keep session</button>
           <button class="button-secondary ghoti-session-action-btn" type="button" data-active-session-action="discard" data-session-id="${escapeHtml(session.session_id || "")}">Discard metadata</button>
           ${showCleanupBtn ? `<button class="button-secondary ghoti-session-action-btn" type="button" data-active-session-action="cleanup-preview" data-session-id="${escapeHtml(session.session_id || "")}">Preview cleanup</button>` : ""}
         </div>
-        <p class="ghoti-session-retention-copy">Local-only archive controls. Discard is metadata-only. Cleanup is a separate explicit operator action that only deletes local capture frames from the safe capture folder. Cleanup never runs automatically.</p>
+        <p class="ghoti-session-retention-copy">
+          <strong>Discard</strong> = metadata status only — no files deleted.
+          <strong>Preview cleanup</strong> = shows what would be deleted (only after Discard).
+          <strong>Confirm cleanup</strong> = requires typing <code>DELETE_CAPTURE_FRAMES</code> — deletes only <code>frame-XXXXXX.png</code> files in this session's folder. <code>latest.png</code> is preserved. Other sessions are untouched. Cleanup never runs automatically.
+        </p>
         <div class="ghoti-session-cleanup-area" data-session-id="${escapeHtml(session.session_id || "")}" style="margin-top:0.6rem;" hidden></div>
       </article>
     `;
@@ -4550,10 +4574,20 @@ function renderActiveSessionFrames(payload) {
   }
 
   const cacheBust = Date.now();
+  const gallerySessionId = payload.session_id || null;
+  const isLegacy = payload.session?.legacy_capture;
+
   empty.hidden = true;
   gallery.hidden = false;
-  gallery.innerHTML = frames.map((frame) => {
-    const baseUrl = String(frame.image_url || "");
+
+  const legacyNote = isLegacy
+    ? `<p class="summary-note" style="font-size:0.82rem;margin-bottom:0.5rem;">Legacy capture session; frame URLs may not be available after per-session isolation.</p>`
+    : "";
+
+  gallery.innerHTML = legacyNote + frames.map((frame) => {
+    let baseUrl = gallerySessionId && frame.filename
+      ? buildSessionFrameUrl(gallerySessionId, frame.filename)
+      : String(frame.image_url || frame.url || "");
     const imageUrl = baseUrl ? `${baseUrl}${baseUrl.includes("?") ? "&" : "?"}t=${cacheBust}` : "";
     const label = frame.captured_at_utc ? formatTimeStamp(frame.captured_at_utc) : (frame.filename || "Captured frame");
     return `
@@ -4658,7 +4692,7 @@ async function handleCleanupPreview(sessionId) {
         ${data.file_count > 0 ? `<p style="font-size:0.82rem;color:var(--muted);">Files: ${filesSample}${moreCount}</p>` : "<p style=\"font-size:0.82rem;color:var(--muted);\">No frame files found in capture folder.</p>"}
         <p style="font-size:0.81rem;color:var(--muted);">Safety root: ${escapeHtml(data.safety_root || "")}</p>
         <p class="summary-note" style="margin-top:0.6rem;font-size:0.82rem;">
-          Discard is metadata-only. Cleanup is separate. Cleanup only deletes local capture frames from the safe capture folder. Cleanup never runs automatically.
+          Cleanup deletes only <code>frame-XXXXXX.png</code> files from this session's folder. <code>latest.png</code> is preserved. Other session folders are not affected. Cleanup never runs automatically.
         </p>
         <div style="display:grid;gap:0.55rem;margin-top:0.75rem;">
           <label style="display:grid;gap:0.3rem;font-weight:600;font-size:0.85rem;">
@@ -4771,7 +4805,8 @@ setInterval(refreshActiveSessionData, 4000);
 setInterval(() => {
   const img = document.getElementById("ghoti-capture-latest-img");
   if (img && !img.hidden) {
-    img.src = "/api/ghoti/active/latest-frame?t=" + Date.now();
+    const base = buildSessionLatestFrameUrl(activeCaptureSessionId);
+    img.src = base + (base.includes("?") ? "&" : "?") + "t=" + Date.now();
   }
 }, 2000);
 
