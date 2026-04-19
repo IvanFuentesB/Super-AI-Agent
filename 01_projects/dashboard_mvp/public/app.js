@@ -4264,7 +4264,7 @@ function setActiveFeedback(msg, isError) {
 
 async function refreshActiveModeState() {
   try {
-    const data = await fetchJson("/api/ghoti/active-state");
+    const data = await requestJson("/api/ghoti/active-state");
     renderActiveModeState(data.state);
   } catch (err) {
     setActiveFeedback("Could not load active state: " + err.message, true);
@@ -4286,13 +4286,19 @@ async function activeModePost(endpoint, body) {
 document.getElementById("ghoti-active-start-btn").addEventListener("click", async () => {
   setActiveFeedback("Starting Ghoti Active Mode...", false);
   const data = await activeModePost("/api/ghoti/active/start");
-  if (data && data.ok) setActiveFeedback("Ghoti Active Mode started. Visible indicator is now shown.", false);
+  if (data && data.ok) {
+    setActiveFeedback("Ghoti Active Mode started. Visible indicator is now shown.", false);
+    refreshActiveSessionData();
+  }
 });
 
 document.getElementById("ghoti-active-stop-btn").addEventListener("click", async () => {
   setActiveFeedback("Stopping Ghoti Active Mode...", false);
   const data = await activeModePost("/api/ghoti/active/stop");
-  if (data && data.ok) setActiveFeedback("Ghoti Active Mode stopped.", false);
+  if (data && data.ok) {
+    setActiveFeedback("Ghoti Active Mode stopped.", false);
+    refreshActiveSessionData();
+  }
 });
 
 document.getElementById("ghoti-active-snapshot-btn").addEventListener("click", async () => {
@@ -4385,9 +4391,141 @@ function renderCaptureState(captureState) {
   }
 }
 
+function renderCurrentActiveSession(session) {
+  const empty = document.getElementById("ghoti-session-empty");
+  const current = document.getElementById("ghoti-session-current");
+  const badge = document.getElementById("ghoti-session-status-badge");
+  if (!empty || !current || !badge) {
+    return;
+  }
+
+  ACTIVE_PILL_CLASSES.forEach((cls) => badge.classList.remove(cls));
+
+  if (!session || !session.session_id) {
+    empty.hidden = false;
+    current.hidden = true;
+    badge.classList.add("ghoti-active-pill-off");
+    badge.textContent = "IDLE";
+    setText("ghoti-session-note", "Capture stays local-only and only starts when you explicitly press Start Screen Capture.");
+    return;
+  }
+
+  empty.hidden = true;
+  current.hidden = false;
+  const statusLabel = session.status === "stopped"
+    ? "STOPPED"
+    : session.capture_running ? "ACTIVE + CAPTURE" : "ACTIVE";
+  badge.classList.add(
+    session.status === "stopped"
+      ? "ghoti-active-pill-off"
+      : session.capture_running ? "ghoti-active-pill-on" : "ghoti-active-pill-waiting"
+  );
+  badge.textContent = statusLabel;
+
+  setText("ghoti-session-id", session.session_id);
+  setText("ghoti-session-started", session.started_at_utc ? formatTimeStamp(session.started_at_utc) : "—");
+  setText("ghoti-session-stopped", session.stopped_at_utc ? formatTimeStamp(session.stopped_at_utc) : "—");
+  setText("ghoti-session-frame-count", String(session.frame_count || 0));
+
+  const note = session.capture_running
+    ? "Capture is currently running locally. Stop Screen Capture to freeze the latest gallery."
+    : session.status === "stopped"
+      ? "This session is closed. The gallery below shows the most recent locally retained frames from it."
+      : "Ghoti is active, but capture is still off until the operator explicitly starts it.";
+  setText("ghoti-session-note", note);
+}
+
+function renderRecentActiveSessions(sessions) {
+  const empty = document.getElementById("ghoti-session-history-empty");
+  const container = document.getElementById("ghoti-session-history");
+  if (!empty || !container) {
+    return;
+  }
+
+  const items = Array.isArray(sessions) ? sessions : [];
+  if (!items.length) {
+    empty.hidden = false;
+    container.hidden = true;
+    container.innerHTML = "";
+    return;
+  }
+
+  empty.hidden = true;
+  container.hidden = false;
+  container.innerHTML = items.map((session) => {
+    const statusText = session.status === "stopped"
+      ? "Stopped"
+      : session.capture_running ? "Active + capture" : "Active";
+    const badgeClass = session.status === "stopped"
+      ? "ghoti-active-pill-off"
+      : session.capture_running ? "ghoti-active-pill-on" : "ghoti-active-pill-waiting";
+
+    return `
+      <article class="ghoti-session-history-item">
+        <div class="ghoti-session-history-top">
+          <strong class="ghoti-session-history-id">${escapeHtml((session.session_id || "session").slice(0, 28))}</strong>
+          <span class="state-pill ${badgeClass}">${escapeHtml(statusText)}</span>
+        </div>
+        <div class="ghoti-session-history-meta">
+          <span>Started <strong>${escapeHtml(session.started_at_utc ? formatTimeStamp(session.started_at_utc) : "—")}</strong></span>
+          <span>Stopped <strong>${escapeHtml(session.stopped_at_utc ? formatTimeStamp(session.stopped_at_utc) : "—")}</strong></span>
+          <span>Frames <strong>${escapeHtml(String(session.frame_count || 0))}</strong></span>
+          <span>Latest <strong>${escapeHtml(session.latest_frame_utc ? formatTimeStamp(session.latest_frame_utc) : "—")}</strong></span>
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+function renderActiveSessionFrames(payload) {
+  const empty = document.getElementById("ghoti-capture-gallery-empty");
+  const gallery = document.getElementById("ghoti-capture-gallery");
+  if (!empty || !gallery) {
+    return;
+  }
+
+  const frames = Array.isArray(payload?.frames) ? payload.frames : [];
+  if (!frames.length) {
+    empty.hidden = false;
+    gallery.hidden = true;
+    gallery.innerHTML = "";
+    return;
+  }
+
+  const cacheBust = Date.now();
+  empty.hidden = true;
+  gallery.hidden = false;
+  gallery.innerHTML = frames.map((frame) => {
+    const baseUrl = String(frame.image_url || "");
+    const imageUrl = baseUrl ? `${baseUrl}${baseUrl.includes("?") ? "&" : "?"}t=${cacheBust}` : "";
+    const label = frame.captured_at_utc ? formatTimeStamp(frame.captured_at_utc) : (frame.filename || "Captured frame");
+    return `
+      <a class="ghoti-capture-gallery-item" href="${escapeHtml(baseUrl || "#")}" target="_blank" rel="noopener">
+        <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(frame.filename || "Captured frame")}" loading="lazy" />
+        <span>${escapeHtml(label)}</span>
+      </a>
+    `;
+  }).join("");
+}
+
+async function refreshActiveSessionData() {
+  try {
+    const [currentData, sessionsData, framesData] = await Promise.all([
+      requestJson("/api/ghoti/active/session"),
+      requestJson("/api/ghoti/active/sessions"),
+      requestJson("/api/ghoti/active/frames"),
+    ]);
+    renderCurrentActiveSession(currentData.session);
+    renderRecentActiveSessions(sessionsData.sessions);
+    renderActiveSessionFrames(framesData);
+  } catch (err) {
+    console.warn("Could not load active session data:", err);
+  }
+}
+
 async function refreshCaptureState() {
   try {
-    const data = await fetchJson("/api/ghoti/active/capture-state");
+    const data = await requestJson("/api/ghoti/active/capture-state");
     renderCaptureState(data.captureState);
   } catch { /* silent */ }
 }
@@ -4400,6 +4538,7 @@ document.getElementById("ghoti-capture-start-btn").addEventListener("click", asy
     if (data.ok) {
       setActiveFeedback("Screen capture started.", false);
       renderCaptureState(data.captureState);
+      refreshActiveSessionData();
     } else {
       setActiveFeedback("Cannot start capture: " + (data.error || "unknown error"), true);
     }
@@ -4416,6 +4555,7 @@ document.getElementById("ghoti-capture-stop-btn").addEventListener("click", asyn
     if (data.ok) {
       setActiveFeedback("Screen capture stopped.", false);
       renderCaptureState(data.captureState);
+      refreshActiveSessionData();
     } else {
       setActiveFeedback("Stop failed: " + (data.error || "unknown"), true);
     }
@@ -4425,7 +4565,9 @@ document.getElementById("ghoti-capture-stop-btn").addEventListener("click", asyn
 });
 
 refreshCaptureState();
+refreshActiveSessionData();
 setInterval(refreshCaptureState, 4000);
+setInterval(refreshActiveSessionData, 4000);
 
 setInterval(() => {
   const img = document.getElementById("ghoti-capture-latest-img");

@@ -1921,6 +1921,51 @@ This file was queued through the safe repo-local executor.
             <button id="ghoti-active-snapshot-btn" class="action-btn" type="button">Capture Screenshot</button>
           </div>
 
+          <div class="ghoti-active-session-layout">
+            <section class="ghoti-session-card">
+              <div class="ghoti-session-card-head">
+                <div>
+                  <p class="ghoti-active-label">Current Session</p>
+                  <p class="ghoti-session-subtitle">Local-only timeline for the current operator-controlled Active Mode run.</p>
+                </div>
+                <span id="ghoti-session-status-badge" class="state-pill ghoti-active-pill-off">IDLE</span>
+              </div>
+              <div id="ghoti-session-empty" class="ghoti-session-empty">Start Ghoti to open a tracked active session.</div>
+              <div id="ghoti-session-current" class="ghoti-session-current" hidden>
+                <div class="ghoti-session-stats">
+                  <article class="ghoti-session-stat">
+                    <span>Session</span>
+                    <strong id="ghoti-session-id">—</strong>
+                  </article>
+                  <article class="ghoti-session-stat">
+                    <span>Started</span>
+                    <strong id="ghoti-session-started">—</strong>
+                  </article>
+                  <article class="ghoti-session-stat">
+                    <span>Stopped</span>
+                    <strong id="ghoti-session-stopped">—</strong>
+                  </article>
+                  <article class="ghoti-session-stat">
+                    <span>Frames</span>
+                    <strong id="ghoti-session-frame-count">0</strong>
+                  </article>
+                </div>
+                <p id="ghoti-session-note" class="ghoti-session-note">Capture stays local-only and only starts when you explicitly press Start Screen Capture.</p>
+              </div>
+            </section>
+
+            <section class="ghoti-session-card">
+              <div class="ghoti-session-card-head">
+                <div>
+                  <p class="ghoti-active-label">Recent Sessions</p>
+                  <p class="ghoti-session-subtitle">Last 5 local sessions. This stays on this machine and never records silently.</p>
+                </div>
+              </div>
+              <div id="ghoti-session-history-empty" class="ghoti-session-empty">No recent sessions recorded yet.</div>
+              <div id="ghoti-session-history" class="ghoti-session-history" hidden></div>
+            </section>
+          </div>
+
           <div class="ghoti-capture-section">
             <p class="ghoti-active-label">Continuous Screen Capture</p>
             <div class="ghoti-capture-controls">
@@ -1938,6 +1983,12 @@ This file was queued through the safe repo-local executor.
               <a id="ghoti-capture-latest-link" href="/api/ghoti/active/latest-frame" target="_blank" class="ghoti-active-snapshot-link">Latest frame</a>
               <img id="ghoti-capture-latest-img" src="" alt="Live screen preview" class="ghoti-capture-preview-img" hidden />
             </div>
+            <div class="ghoti-capture-gallery-head">
+              <p class="ghoti-active-label">Recent frames</p>
+              <p class="ghoti-session-subtitle">Showing the last 12 frames for the current session. Local-only and operator-controlled.</p>
+            </div>
+            <div id="ghoti-capture-gallery-empty" class="ghoti-session-empty">No recent frames yet. Start screen capture to build the gallery.</div>
+            <div id="ghoti-capture-gallery" class="ghoti-capture-gallery" hidden></div>
             <div id="ghoti-capture-error" class="ghoti-capture-error" aria-live="polite" hidden></div>
           </div>
 

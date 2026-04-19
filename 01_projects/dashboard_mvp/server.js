@@ -17,11 +17,15 @@ const dashboardPort = Number.parseInt(process.env.PORT || "3210", 10);
 const maxRecentActions = 25;
 const runtimeDataDir = path.join(runtimeProjectRoot, "runtime_data");
 const activeModeStateFile = path.join(runtimeDataDir, "active_mode_state.json");
+const activeSessionsFile = path.join(runtimeDataDir, "active_capture_sessions.json");
 const screenshotsDir = path.join(dashboardRoot, ".tmp-screenshots");
 const captureFramesDir = path.join(screenshotsDir, "capture_frames");
 const captureStateFile = path.join(runtimeDataDir, "screen_capture_state.json");
 const captureStopFile = path.join(captureFramesDir, ".stop");
 const captureSidecarScript = path.join(runtimeProjectRoot, "src", "super_ai_agent", "screen_capture_sidecar.py");
+const maxActiveSessions = 5;
+const maxSessionFrames = 12;
+const activeSessionSafetyNote = "Local-only screen capture. Frames are only collected while the operator explicitly keeps capture running.";
 
 let captureInterval = null;
 let captureFrameCount = 0;
@@ -225,6 +229,291 @@ function readCaptureState() {
   }
 }
 
+function normalizeRecentFrames(frames) {
+  if (!Array.isArray(frames)) {
+    return [];
+  }
+
+  return frames
+    .filter((frame) => frame && typeof frame === "object")
+    .map((frame) => ({
+      frame_id: typeof frame.frame_id === "string" ? frame.frame_id : null,
+      filename: typeof frame.filename === "string" ? frame.filename : null,
+      captured_at_utc: typeof frame.captured_at_utc === "string" ? frame.captured_at_utc : null,
+      image_url: typeof frame.image_url === "string" ? frame.image_url : null,
+    }))
+    .filter((frame) => frame.filename)
+    .slice(0, maxSessionFrames);
+}
+
+function normalizeActiveSession(session) {
+  if (!session || typeof session !== "object") {
+    return null;
+  }
+
+  return {
+    session_id: typeof session.session_id === "string" ? session.session_id : null,
+    status: typeof session.status === "string" ? session.status : "idle",
+    started_at_utc: typeof session.started_at_utc === "string" ? session.started_at_utc : null,
+    stopped_at_utc: typeof session.stopped_at_utc === "string" ? session.stopped_at_utc : null,
+    capture_running: Boolean(session.capture_running),
+    capture_started_at_utc: typeof session.capture_started_at_utc === "string" ? session.capture_started_at_utc : null,
+    capture_stopped_at_utc: typeof session.capture_stopped_at_utc === "string" ? session.capture_stopped_at_utc : null,
+    frame_count: Number.isFinite(Number(session.frame_count)) ? Number(session.frame_count) : 0,
+    capture_method: typeof session.capture_method === "string" ? session.capture_method : null,
+    latest_frame_path: typeof session.latest_frame_path === "string" ? session.latest_frame_path : null,
+    latest_frame_utc: typeof session.latest_frame_utc === "string" ? session.latest_frame_utc : null,
+    latest_frame_url: session.latest_frame_path ? "/api/ghoti/active/latest-frame" : null,
+    recent_frames: normalizeRecentFrames(session.recent_frames),
+    operator_controlled: true,
+    local_only: true,
+    safety_note: activeSessionSafetyNote,
+  };
+}
+
+function buildActiveSessionRecord() {
+  return normalizeActiveSession({
+    session_id: `ghoti-session-${Date.now()}`,
+    status: "active",
+    started_at_utc: new Date().toISOString(),
+    stopped_at_utc: null,
+    capture_running: false,
+    capture_started_at_utc: null,
+    capture_stopped_at_utc: null,
+    frame_count: 0,
+    capture_method: null,
+    latest_frame_path: null,
+    latest_frame_utc: null,
+    recent_frames: [],
+    operator_controlled: true,
+    local_only: true,
+    safety_note: activeSessionSafetyNote,
+  });
+}
+
+function buildActiveSessionSummary(session) {
+  const normalized = normalizeActiveSession(session);
+  if (!normalized) {
+    return null;
+  }
+
+  return {
+    session_id: normalized.session_id,
+    status: normalized.status,
+    started_at_utc: normalized.started_at_utc,
+    stopped_at_utc: normalized.stopped_at_utc,
+    capture_running: normalized.capture_running,
+    frame_count: normalized.frame_count,
+    latest_frame_utc: normalized.latest_frame_utc,
+    latest_frame_available: Boolean(normalized.latest_frame_path),
+    local_only: true,
+  };
+}
+
+function readActiveSessionStore() {
+  const defaults = {
+    current_session: null,
+    recent_sessions: [],
+  };
+
+  try {
+    if (!fs.existsSync(activeSessionsFile)) {
+      return defaults;
+    }
+
+    const parsed = JSON.parse(fs.readFileSync(activeSessionsFile, "utf8"));
+    return {
+      current_session: normalizeActiveSession(parsed.current_session),
+      recent_sessions: Array.isArray(parsed.recent_sessions)
+        ? parsed.recent_sessions
+          .filter((session) => session && typeof session === "object")
+          .slice(0, maxActiveSessions)
+        : [],
+    };
+  } catch {
+    return defaults;
+  }
+}
+
+function writeActiveSessionStore(store) {
+  const next = {
+    current_session: normalizeActiveSession(store.current_session),
+    recent_sessions: Array.isArray(store.recent_sessions)
+      ? store.recent_sessions.filter((session) => session && typeof session === "object").slice(0, maxActiveSessions)
+      : [],
+  };
+
+  if (!fs.existsSync(runtimeDataDir)) {
+    fs.mkdirSync(runtimeDataDir, { recursive: true });
+  }
+
+  fs.writeFileSync(activeSessionsFile, JSON.stringify(next, null, 2));
+  return next;
+}
+
+function upsertRecentSessionSummary(recentSessions, session) {
+  const summary = buildActiveSessionSummary(session);
+  if (!summary || !summary.session_id) {
+    return Array.isArray(recentSessions) ? recentSessions.slice(0, maxActiveSessions) : [];
+  }
+
+  return [
+    summary,
+    ...(Array.isArray(recentSessions) ? recentSessions : []).filter((item) => item?.session_id !== summary.session_id),
+  ].slice(0, maxActiveSessions);
+}
+
+function ensureCurrentActiveSession() {
+  const store = readActiveSessionStore();
+  let session = normalizeActiveSession(store.current_session);
+
+  if (!session || session.status !== "active") {
+    session = buildActiveSessionRecord();
+  } else {
+    session = {
+      ...session,
+      status: "active",
+      stopped_at_utc: null,
+      operator_controlled: true,
+      local_only: true,
+      safety_note: activeSessionSafetyNote,
+    };
+  }
+
+  store.current_session = session;
+  store.recent_sessions = upsertRecentSessionSummary(store.recent_sessions, session);
+  return writeActiveSessionStore(store).current_session;
+}
+
+function markCurrentSessionCaptureStarted(method = "powershell-copyfromscreen-loop") {
+  const store = readActiveSessionStore();
+  const session = normalizeActiveSession(store.current_session) || buildActiveSessionRecord();
+  const nowUtc = new Date().toISOString();
+  const next = {
+    ...session,
+    status: "active",
+    capture_running: true,
+    capture_started_at_utc: nowUtc,
+    capture_stopped_at_utc: null,
+    frame_count: 0,
+    capture_method: method,
+    latest_frame_path: null,
+    latest_frame_utc: null,
+    latest_frame_url: null,
+    recent_frames: [],
+    operator_controlled: true,
+    local_only: true,
+    safety_note: activeSessionSafetyNote,
+  };
+
+  store.current_session = next;
+  store.recent_sessions = upsertRecentSessionSummary(store.recent_sessions, next);
+  return writeActiveSessionStore(store).current_session;
+}
+
+function recordCurrentSessionFrame(framePath, latestPath, capturedAtUtc) {
+  const store = readActiveSessionStore();
+  const session = normalizeActiveSession(store.current_session);
+  if (!session) {
+    return null;
+  }
+
+  const nextFrameCount = Number(session.frame_count || 0) + 1;
+  const filename = path.basename(framePath);
+  const next = {
+    ...session,
+    capture_running: true,
+    capture_method: session.capture_method || "powershell-copyfromscreen-loop",
+    frame_count: nextFrameCount,
+    latest_frame_path: latestPath,
+    latest_frame_utc: capturedAtUtc,
+    latest_frame_url: "/api/ghoti/active/latest-frame",
+    recent_frames: [
+      {
+        frame_id: `${session.session_id}-frame-${String(nextFrameCount).padStart(6, "0")}`,
+        filename,
+        captured_at_utc: capturedAtUtc,
+        image_url: `/api/ghoti/active/frame?name=${encodeURIComponent(filename)}`,
+      },
+      ...session.recent_frames.filter((frame) => frame.filename !== filename),
+    ].slice(0, maxSessionFrames),
+    operator_controlled: true,
+    local_only: true,
+    safety_note: activeSessionSafetyNote,
+  };
+
+  store.current_session = next;
+  store.recent_sessions = upsertRecentSessionSummary(store.recent_sessions, next);
+  return writeActiveSessionStore(store).current_session;
+}
+
+function markCurrentSessionCaptureStopped() {
+  const store = readActiveSessionStore();
+  const session = normalizeActiveSession(store.current_session);
+  if (!session) {
+    return null;
+  }
+
+  const next = {
+    ...session,
+    capture_running: false,
+    capture_stopped_at_utc: new Date().toISOString(),
+    operator_controlled: true,
+    local_only: true,
+    safety_note: activeSessionSafetyNote,
+  };
+
+  store.current_session = next;
+  store.recent_sessions = upsertRecentSessionSummary(store.recent_sessions, next);
+  return writeActiveSessionStore(store).current_session;
+}
+
+function closeCurrentActiveSession() {
+  const store = readActiveSessionStore();
+  const session = normalizeActiveSession(store.current_session);
+  if (!session) {
+    return null;
+  }
+
+  const nowUtc = new Date().toISOString();
+  const next = {
+    ...session,
+    status: "stopped",
+    capture_running: false,
+    stopped_at_utc: nowUtc,
+    capture_stopped_at_utc: session.capture_running || session.capture_started_at_utc
+      ? (session.capture_stopped_at_utc || nowUtc)
+      : session.capture_stopped_at_utc,
+    operator_controlled: true,
+    local_only: true,
+    safety_note: activeSessionSafetyNote,
+  };
+
+  store.current_session = next;
+  store.recent_sessions = upsertRecentSessionSummary(store.recent_sessions, next);
+  return writeActiveSessionStore(store).current_session;
+}
+
+function resolveCurrentSessionFramePath(frameName) {
+  const safeName = path.basename(String(frameName || ""));
+  if (!/^frame-\d{6}\.png$/i.test(safeName)) {
+    return null;
+  }
+
+  const store = readActiveSessionStore();
+  const session = normalizeActiveSession(store.current_session);
+  if (!session || !session.recent_frames.some((frame) => frame.filename === safeName)) {
+    return null;
+  }
+
+  const framePath = path.join(captureFramesDir, safeName);
+  if (!framePath.startsWith(captureFramesDir) || !fs.existsSync(framePath)) {
+    return null;
+  }
+
+  return framePath;
+}
+
 function stopCaptureProcess() {
   if (captureInterval) {
     clearInterval(captureInterval);
@@ -237,6 +526,7 @@ function stopCaptureProcess() {
     if (!fs.existsSync(runtimeDataDir)) fs.mkdirSync(runtimeDataDir, { recursive: true });
     fs.writeFileSync(captureStateFile, JSON.stringify(stopped, null, 2));
   } catch { /* best effort */ }
+  markCurrentSessionCaptureStopped();
 }
 
 async function captureOneTick(powerShell) {
@@ -280,6 +570,7 @@ async function captureOneTick(powerShell) {
         latest_frame_utc: nowUtc,
         error: null,
       }, null, 2));
+      recordCurrentSessionFrame(framePath, latestPath, nowUtc);
     } else {
       const cur = readCaptureState();
       if (!fs.existsSync(runtimeDataDir)) fs.mkdirSync(runtimeDataDir, { recursive: true });
@@ -3242,18 +3533,43 @@ async function handleApiRequest(request, response, requestUrl) {
     return;
   }
 
+  if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/active/session") {
+    const store = readActiveSessionStore();
+    sendJson(response, 200, { ok: true, session: store.current_session });
+    return;
+  }
+
+  if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/active/sessions") {
+    const store = readActiveSessionStore();
+    sendJson(response, 200, { ok: true, sessions: store.recent_sessions.slice(0, maxActiveSessions) });
+    return;
+  }
+
+  if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/active/frames") {
+    const store = readActiveSessionStore();
+    const session = store.current_session;
+    sendJson(response, 200, {
+      ok: true,
+      session: buildActiveSessionSummary(session),
+      frames: Array.isArray(session?.recent_frames) ? session.recent_frames.slice(0, maxSessionFrames) : [],
+    });
+    return;
+  }
+
   if (request.method === "POST" && requestUrl.pathname === "/api/ghoti/active/start") {
     const state = writeActiveModeState({ active: true, mode: "active", screen_view_enabled: true, error: null });
+    const session = ensureCurrentActiveSession();
     pushAction({ actionType: "status", label: "Ghoti Active Mode started", status: "success", summary: "Operator started Ghoti Active Mode." });
-    sendJson(response, 200, { ok: true, state });
+    sendJson(response, 200, { ok: true, state, session });
     return;
   }
 
   if (request.method === "POST" && requestUrl.pathname === "/api/ghoti/active/stop") {
     stopCaptureProcess();
     const state = writeActiveModeState({ active: false, mode: "idle", screen_view_enabled: false, error: null });
+    const session = closeCurrentActiveSession();
     pushAction({ actionType: "status", label: "Ghoti Active Mode stopped", status: "success", summary: "Operator stopped Ghoti Active Mode." });
-    sendJson(response, 200, { ok: true, state });
+    sendJson(response, 200, { ok: true, state, session });
     return;
   }
 
@@ -3343,6 +3659,7 @@ async function handleApiRequest(request, response, requestUrl) {
       latest_frame_utc: null,
       error: null,
     }, null, 2));
+    const session = markCurrentSessionCaptureStarted();
 
     // Kick off first frame immediately (non-blocking)
     captureOneTick(powerShell);
@@ -3352,15 +3669,26 @@ async function handleApiRequest(request, response, requestUrl) {
 
     const captureState = readCaptureState();
     pushAction({ actionType: "status", label: "Screen capture started", status: "success", summary: "Continuous capture at 1 FPS via PowerShell" });
-    sendJson(response, 200, { ok: true, captureState });
+    sendJson(response, 200, { ok: true, captureState, session });
     return;
   }
 
   if (request.method === "POST" && requestUrl.pathname === "/api/ghoti/active/capture/stop") {
     stopCaptureProcess();
     const captureState = readCaptureState();
+    const session = normalizeActiveSession(readActiveSessionStore().current_session);
     pushAction({ actionType: "status", label: "Screen capture stopped", status: "success", summary: "Operator stopped continuous capture." });
-    sendJson(response, 200, { ok: true, captureState });
+    sendJson(response, 200, { ok: true, captureState, session });
+    return;
+  }
+
+  if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/active/frame") {
+    const framePath = resolveCurrentSessionFramePath(requestUrl.searchParams.get("name"));
+    if (!framePath) {
+      sendJson(response, 404, { ok: false, error: "Requested frame is not available for the current session." });
+      return;
+    }
+    sendBuffer(response, 200, fs.readFileSync(framePath), "image/png");
     return;
   }
 
@@ -3370,14 +3698,7 @@ async function handleApiRequest(request, response, requestUrl) {
       sendJson(response, 404, { ok: false, error: "No latest frame available." });
       return;
     }
-    const frameData = fs.readFileSync(latestFramePath);
-    response.writeHead(200, {
-      "Content-Type": "image/png",
-      "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
-      "Pragma": "no-cache",
-      "Expires": "0",
-    });
-    response.end(frameData);
+    sendBuffer(response, 200, fs.readFileSync(latestFramePath), "image/png");
     return;
   }
 
