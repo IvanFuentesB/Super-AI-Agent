@@ -246,6 +246,18 @@ function normalizeRecentFrames(frames) {
     .slice(0, maxSessionFrames);
 }
 
+function normalizeReviewNote(value) {
+  return typeof value === "string" ? value.trim().slice(0, 600) : "";
+}
+
+function normalizeRetentionStatus(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (normalized === "kept" || normalized === "discarded") {
+    return normalized;
+  }
+  return "default";
+}
+
 function normalizeActiveSession(session) {
   if (!session || typeof session !== "object") {
     return null;
@@ -265,6 +277,10 @@ function normalizeActiveSession(session) {
     latest_frame_utc: typeof session.latest_frame_utc === "string" ? session.latest_frame_utc : null,
     latest_frame_url: session.latest_frame_path ? "/api/ghoti/active/latest-frame" : null,
     recent_frames: normalizeRecentFrames(session.recent_frames),
+    reviewed: Boolean(session.reviewed),
+    reviewed_at_utc: typeof session.reviewed_at_utc === "string" ? session.reviewed_at_utc : null,
+    review_note: normalizeReviewNote(session.review_note),
+    retention_status: normalizeRetentionStatus(session.retention_status),
     operator_controlled: true,
     local_only: true,
     safety_note: activeSessionSafetyNote,
@@ -285,6 +301,10 @@ function buildActiveSessionRecord() {
     latest_frame_path: null,
     latest_frame_utc: null,
     recent_frames: [],
+    reviewed: false,
+    reviewed_at_utc: null,
+    review_note: "",
+    retention_status: "default",
     operator_controlled: true,
     local_only: true,
     safety_note: activeSessionSafetyNote,
@@ -306,7 +326,13 @@ function buildActiveSessionSummary(session) {
     frame_count: normalized.frame_count,
     latest_frame_utc: normalized.latest_frame_utc,
     latest_frame_available: Boolean(normalized.latest_frame_path),
+    reviewed: normalized.reviewed,
+    reviewed_at_utc: normalized.reviewed_at_utc,
+    review_note: normalized.review_note,
+    retention_status: normalized.retention_status,
+    operator_controlled: true,
     local_only: true,
+    safety_note: normalized.safety_note,
   };
 }
 
@@ -327,6 +353,8 @@ function readActiveSessionStore() {
       recent_sessions: Array.isArray(parsed.recent_sessions)
         ? parsed.recent_sessions
           .filter((session) => session && typeof session === "object")
+          .map((session) => buildActiveSessionSummary(session))
+          .filter(Boolean)
           .slice(0, maxActiveSessions)
         : [],
     };
@@ -351,16 +379,72 @@ function writeActiveSessionStore(store) {
   return next;
 }
 
-function upsertRecentSessionSummary(recentSessions, session) {
+function upsertRecentSessionSummary(recentSessions, session, options = {}) {
   const summary = buildActiveSessionSummary(session);
   if (!summary || !summary.session_id) {
     return Array.isArray(recentSessions) ? recentSessions.slice(0, maxActiveSessions) : [];
   }
 
+  const items = Array.isArray(recentSessions) ? recentSessions.filter((item) => item && typeof item === "object") : [];
+  if (options.promote === false) {
+    let found = false;
+    const nextItems = items.map((item) => {
+      if (item?.session_id === summary.session_id) {
+        found = true;
+        return summary;
+      }
+      return buildActiveSessionSummary(item) || item;
+    }).filter(Boolean);
+    if (!found) {
+      nextItems.unshift(summary);
+    }
+    return nextItems.slice(0, maxActiveSessions);
+  }
+
   return [
     summary,
-    ...(Array.isArray(recentSessions) ? recentSessions : []).filter((item) => item?.session_id !== summary.session_id),
+    ...items.filter((item) => item?.session_id !== summary.session_id),
   ].slice(0, maxActiveSessions);
+}
+
+function updateStoredActiveSession(sessionId, patch) {
+  const normalizedId = String(sessionId || "").trim();
+  if (!normalizedId) {
+    throw new Error("session_id is required.");
+  }
+
+  const store = readActiveSessionStore();
+  const recentSessions = Array.isArray(store.recent_sessions) ? store.recent_sessions : [];
+  const baseSession = store.current_session?.session_id === normalizedId
+    ? normalizeActiveSession(store.current_session)
+    : normalizeActiveSession(recentSessions.find((session) => session?.session_id === normalizedId));
+
+  if (!baseSession) {
+    return null;
+  }
+
+  const nextSession = normalizeActiveSession({
+    ...baseSession,
+    ...patch,
+    review_note: Object.prototype.hasOwnProperty.call(patch || {}, "review_note")
+      ? normalizeReviewNote(patch.review_note)
+      : baseSession.review_note,
+    retention_status: Object.prototype.hasOwnProperty.call(patch || {}, "retention_status")
+      ? normalizeRetentionStatus(patch.retention_status)
+      : baseSession.retention_status,
+  });
+
+  if (store.current_session?.session_id === normalizedId) {
+    store.current_session = nextSession;
+  } else {
+    store.current_session = normalizeActiveSession(store.current_session);
+  }
+
+  store.recent_sessions = upsertRecentSessionSummary(recentSessions, nextSession, { promote: false });
+  const written = writeActiveSessionStore(store);
+  return written.current_session?.session_id === normalizedId
+    ? written.current_session
+    : written.recent_sessions.find((session) => session?.session_id === normalizedId) || buildActiveSessionSummary(nextSession);
 }
 
 function ensureCurrentActiveSession() {
@@ -3542,6 +3626,74 @@ async function handleApiRequest(request, response, requestUrl) {
   if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/active/sessions") {
     const store = readActiveSessionStore();
     sendJson(response, 200, { ok: true, sessions: store.recent_sessions.slice(0, maxActiveSessions) });
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/api/ghoti/active/session/review") {
+    const body = await readJsonBody(request);
+    requireFields(body, ["session_id"]);
+    const sessionId = String(body.session_id).trim();
+    const reviewNote = normalizeReviewNote(body.review_note);
+    const session = updateStoredActiveSession(sessionId, {
+      reviewed: true,
+      reviewed_at_utc: new Date().toISOString(),
+      review_note: reviewNote,
+    });
+    if (!session) {
+      sendJson(response, 404, { ok: false, error: "Active session not found." });
+      return;
+    }
+    pushAction({
+      actionType: "status",
+      label: "Reviewed active session",
+      status: "success",
+      summary: reviewNote
+        ? `Marked ${sessionId} reviewed. Note saved locally.`
+        : `Marked ${sessionId} reviewed.`,
+    });
+    sendJson(response, 200, { ok: true, action: "review", session });
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/api/ghoti/active/session/keep") {
+    const body = await readJsonBody(request);
+    requireFields(body, ["session_id"]);
+    const sessionId = String(body.session_id).trim();
+    const session = updateStoredActiveSession(sessionId, {
+      retention_status: "kept",
+    });
+    if (!session) {
+      sendJson(response, 404, { ok: false, error: "Active session not found." });
+      return;
+    }
+    pushAction({
+      actionType: "status",
+      label: "Kept active session metadata",
+      status: "success",
+      summary: `Marked ${sessionId} as kept. No files were deleted.`,
+    });
+    sendJson(response, 200, { ok: true, action: "keep", session });
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/api/ghoti/active/session/discard") {
+    const body = await readJsonBody(request);
+    requireFields(body, ["session_id"]);
+    const sessionId = String(body.session_id).trim();
+    const session = updateStoredActiveSession(sessionId, {
+      retention_status: "discarded",
+    });
+    if (!session) {
+      sendJson(response, 404, { ok: false, error: "Active session not found." });
+      return;
+    }
+    pushAction({
+      actionType: "status",
+      label: "Discarded active session metadata",
+      status: "success",
+      summary: `Marked ${sessionId} discarded. Capture files remain untouched until a future explicit operator action.`,
+    });
+    sendJson(response, 200, { ok: true, action: "discard", session });
     return;
   }
 

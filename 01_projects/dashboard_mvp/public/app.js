@@ -4391,6 +4391,21 @@ function renderCaptureState(captureState) {
   }
 }
 
+function getActiveSessionReviewStatus(session) {
+  return session?.reviewed ? "Reviewed" : "Pending";
+}
+
+function getActiveSessionRetentionStatus(session) {
+  switch (String(session?.retention_status || "default").toLowerCase()) {
+    case "kept":
+      return "Kept";
+    case "discarded":
+      return "Discarded";
+    default:
+      return "Default";
+  }
+}
+
 function renderCurrentActiveSession(session) {
   const empty = document.getElementById("ghoti-session-empty");
   const current = document.getElementById("ghoti-session-current");
@@ -4406,6 +4421,8 @@ function renderCurrentActiveSession(session) {
     current.hidden = true;
     badge.classList.add("ghoti-active-pill-off");
     badge.textContent = "IDLE";
+    setText("ghoti-session-reviewed", "Pending");
+    setText("ghoti-session-retention", "Default");
     setText("ghoti-session-note", "Capture stays local-only and only starts when you explicitly press Start Screen Capture.");
     return;
   }
@@ -4426,13 +4443,21 @@ function renderCurrentActiveSession(session) {
   setText("ghoti-session-started", session.started_at_utc ? formatTimeStamp(session.started_at_utc) : "—");
   setText("ghoti-session-stopped", session.stopped_at_utc ? formatTimeStamp(session.stopped_at_utc) : "—");
   setText("ghoti-session-frame-count", String(session.frame_count || 0));
+  setText("ghoti-session-reviewed", session.reviewed_at_utc ? `${getActiveSessionReviewStatus(session)} · ${formatTimeStamp(session.reviewed_at_utc)}` : getActiveSessionReviewStatus(session));
+  setText("ghoti-session-retention", getActiveSessionRetentionStatus(session));
 
-  const note = session.capture_running
+  const baseNote = session.capture_running
     ? "Capture is currently running locally. Stop Screen Capture to freeze the latest gallery."
     : session.status === "stopped"
       ? "This session is closed. The gallery below shows the most recent locally retained frames from it."
       : "Ghoti is active, but capture is still off until the operator explicitly starts it.";
-  setText("ghoti-session-note", note);
+  const reviewNote = session.review_note ? `Review note: ${session.review_note}` : "";
+  const retentionNote = session.retention_status === "discarded"
+    ? "Discard only affects the local archive label. It does not delete capture files."
+    : session.retention_status === "kept"
+      ? "This session is explicitly marked to keep in the local archive."
+      : "Retention is still on the default local setting.";
+  setText("ghoti-session-note", [baseNote, retentionNote, reviewNote].filter(Boolean).join(" "));
 }
 
 function renderRecentActiveSessions(sessions) {
@@ -4459,9 +4484,17 @@ function renderRecentActiveSessions(sessions) {
     const badgeClass = session.status === "stopped"
       ? "ghoti-active-pill-off"
       : session.capture_running ? "ghoti-active-pill-on" : "ghoti-active-pill-waiting";
+    const reviewStatus = session.reviewed_at_utc
+      ? `${getActiveSessionReviewStatus(session)} · ${formatTimeStamp(session.reviewed_at_utc)}`
+      : getActiveSessionReviewStatus(session);
+    const retentionStatus = getActiveSessionRetentionStatus(session);
+    const reviewLabel = session.reviewed ? "Update review" : "Mark reviewed";
+    const reviewPlaceholder = session.reviewed
+      ? "Update the local review note for this session"
+      : "Optional local review note for this session";
 
     return `
-      <article class="ghoti-session-history-item">
+      <article class="ghoti-session-history-item" data-session-id="${escapeHtml(session.session_id || "")}">
         <div class="ghoti-session-history-top">
           <strong class="ghoti-session-history-id">${escapeHtml((session.session_id || "session").slice(0, 28))}</strong>
           <span class="state-pill ${badgeClass}">${escapeHtml(statusText)}</span>
@@ -4471,7 +4504,19 @@ function renderRecentActiveSessions(sessions) {
           <span>Stopped <strong>${escapeHtml(session.stopped_at_utc ? formatTimeStamp(session.stopped_at_utc) : "—")}</strong></span>
           <span>Frames <strong>${escapeHtml(String(session.frame_count || 0))}</strong></span>
           <span>Latest <strong>${escapeHtml(session.latest_frame_utc ? formatTimeStamp(session.latest_frame_utc) : "—")}</strong></span>
+          <span>Reviewed <strong>${escapeHtml(reviewStatus)}</strong></span>
+          <span>Retention <strong>${escapeHtml(retentionStatus)}</strong></span>
         </div>
+        <label class="ghoti-session-review-field">
+          <span>Review note</span>
+          <textarea class="ghoti-session-review-note" data-session-id="${escapeHtml(session.session_id || "")}" rows="2" placeholder="${escapeHtml(reviewPlaceholder)}">${escapeHtml(session.review_note || "")}</textarea>
+        </label>
+        <div class="ghoti-session-history-actions">
+          <button class="button-secondary ghoti-session-action-btn" type="button" data-active-session-action="review" data-session-id="${escapeHtml(session.session_id || "")}">${escapeHtml(reviewLabel)}</button>
+          <button class="button-secondary ghoti-session-action-btn" type="button" data-active-session-action="keep" data-session-id="${escapeHtml(session.session_id || "")}">Keep session</button>
+          <button class="button-secondary ghoti-session-action-btn" type="button" data-active-session-action="discard" data-session-id="${escapeHtml(session.session_id || "")}">Discard metadata</button>
+        </div>
+        <p class="ghoti-session-retention-copy">Local-only archive controls. Discard changes session metadata only and does not delete capture files.</p>
       </article>
     `;
   }).join("");
@@ -4508,6 +4553,55 @@ function renderActiveSessionFrames(payload) {
   }).join("");
 }
 
+async function updateActiveSessionArchive(action, sessionId, reviewNote = "") {
+  const normalizedId = String(sessionId || "").trim();
+  if (!normalizedId) {
+    setActiveFeedback("Session action failed: session id is missing.", true);
+    return;
+  }
+
+  const routeMap = {
+    review: "/api/ghoti/active/session/review",
+    keep: "/api/ghoti/active/session/keep",
+    discard: "/api/ghoti/active/session/discard",
+  };
+  const route = routeMap[action];
+  if (!route) {
+    return;
+  }
+
+  const payload = { session_id: normalizedId };
+  if (action === "review") {
+    payload.review_note = String(reviewNote || "");
+  }
+
+  const pendingMessage = action === "review"
+    ? "Saving local session review..."
+    : action === "keep"
+      ? "Marking session kept locally..."
+      : "Marking session discarded in local metadata...";
+  setActiveFeedback(pendingMessage, false);
+
+  try {
+    const data = await requestJson(route, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    if (!data?.ok) {
+      throw new Error(data?.error || "Session archive update failed.");
+    }
+    const successMessage = action === "review"
+      ? "Session review saved locally."
+      : action === "keep"
+        ? "Session marked kept locally."
+        : "Session marked discarded in metadata. No files were deleted.";
+    setActiveFeedback(successMessage, false);
+    await refreshActiveSessionData();
+  } catch (error) {
+    setActiveFeedback(`Session action failed: ${error.message}`, true);
+  }
+}
+
 async function refreshActiveSessionData() {
   try {
     const [currentData, sessionsData, framesData] = await Promise.all([
@@ -4528,6 +4622,23 @@ async function refreshCaptureState() {
     const data = await requestJson("/api/ghoti/active/capture-state");
     renderCaptureState(data.captureState);
   } catch { /* silent */ }
+}
+
+const ghotiSessionHistory = document.getElementById("ghoti-session-history");
+if (ghotiSessionHistory) {
+  ghotiSessionHistory.addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-active-session-action]");
+    if (!button) {
+      return;
+    }
+
+    const action = String(button.dataset.activeSessionAction || "").trim();
+    const sessionId = String(button.dataset.sessionId || button.closest("[data-session-id]")?.dataset.sessionId || "").trim();
+    const sessionCard = button.closest("[data-session-id]");
+    const noteField = sessionCard?.querySelector(".ghoti-session-review-note");
+    const reviewNote = noteField ? noteField.value : "";
+    await updateActiveSessionArchive(action, sessionId, reviewNote);
+  });
 }
 
 document.getElementById("ghoti-capture-start-btn").addEventListener("click", async () => {
