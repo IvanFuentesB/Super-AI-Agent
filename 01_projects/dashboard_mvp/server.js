@@ -15,6 +15,28 @@ const desktopCheckScriptPath = path.join(desktopPlaygroundRoot, "check_desktop_p
 const desktopActionsScriptPath = path.join(desktopPlaygroundRoot, "desktop_bridge_actions.ps1");
 const dashboardPort = Number.parseInt(process.env.PORT || "3210", 10);
 const maxRecentActions = 25;
+
+// Boot-time constants
+let _bootCommitHash = null;
+try {
+  const r = spawnSync("git", ["rev-parse", "--short", "HEAD"], { encoding: "utf8", timeout: 2000 });
+  if (r.status === 0) _bootCommitHash = r.stdout.trim() || null;
+} catch { /* git not available */ }
+
+// Vision status cache (10s TTL) to avoid probing Ollama on every /health request
+let _visionStatusCache = null;
+let _visionStatusCacheAt = 0;
+const _visionCacheTtlMs = 10000;
+
+async function getCachedOllamaVisionStatus() {
+  const now = Date.now();
+  if (_visionStatusCache && (now - _visionStatusCacheAt) < _visionCacheTtlMs) {
+    return _visionStatusCache;
+  }
+  _visionStatusCache = await getOllamaVisionStatus();
+  _visionStatusCacheAt = now;
+  return _visionStatusCache;
+}
 const runtimeDataDir = path.join(runtimeProjectRoot, "runtime_data");
 const activeModeStateFile = path.join(runtimeDataDir, "active_mode_state.json");
 const activeSessionsFile = path.join(runtimeDataDir, "active_capture_sessions.json");
@@ -5145,6 +5167,74 @@ async function handleApiRequest(request, response, requestUrl) {
         goal: task.goal,
         created_at: task.created_at,
       },
+    });
+    return;
+  }
+
+  if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/system/health") {
+    const activeState = readActiveModeState();
+    const captureState = readCaptureState();
+    const voiceState = readVoiceState();
+    const observations = readObservations();
+    const lastObs = observations[0] || null;
+    const pending = pendingApprovals();
+    const allApprovals = readApprovals();
+    const visionStatus = await getCachedOllamaVisionStatus();
+    sendJson(response, 200, {
+      ok: true,
+      health: {
+        active_mode: {
+          active: Boolean(activeState.active),
+          session_id: activeState.active ? (activeState.session_id || null) : null,
+        },
+        capture: {
+          capturing: Boolean(captureState.capturing),
+          frame_count: captureState.frame_count || 0,
+          last_frame_utc: captureState.latest_frame_utc || null,
+        },
+        approvals: {
+          pending_count: pending.length,
+          enforced_on: ["cleanup_capture_files"],
+          enforced_stub_for: [
+            "delete_file", "write_outside_repo", "send_network_request",
+            "click", "type_text", "run_shell", "browser_submit", "desktop_action", "browser_action",
+          ],
+        },
+        ollama: {
+          reachable: visionStatus.reason !== "ollama_unreachable",
+          host: "127.0.0.1:11434",
+        },
+        vision: {
+          available: visionStatus.available,
+          model: visionStatus.model,
+          all_models: visionStatus.all_models,
+          reason: visionStatus.reason,
+        },
+        observer: {
+          wired: true,
+          read_only: true,
+          last_observation_utc: lastObs?.completed_at_utc || lastObs?.requested_at_utc || null,
+          observations_total: observations.length,
+        },
+        voice: {
+          mode: "scaffold",
+          real_audio: false,
+          muted: Boolean(voiceState.muted),
+        },
+        youtube: {
+          status: "scaffold",
+          real: false,
+        },
+        overlay: {
+          kind: "browser",
+          native_always_on_top: false,
+        },
+      },
+      server: {
+        port: dashboardPort,
+        commit: _bootCommitHash,
+      },
+      updated_at_utc: new Date().toISOString(),
     });
     return;
   }

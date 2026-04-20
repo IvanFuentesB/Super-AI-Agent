@@ -4561,242 +4561,242 @@ function renderRecentActiveSessions(sessions) {
   }).join("");
 }
 
-
-function formatObserverStatus(status) {
-  switch (String(status || "").trim()) {
-    case "ok":
-      return "Observation recorded";
-    case "no_vision_model_available":
-      return "No vision model available";
-    case "ollama_unreachable":
-      return "Ollama unreachable";
-    case "no_frame":
-      return "No latest frame";
-    case "timeout":
-      return "Ollama timed out";
-    case "observation_in_flight":
-      return "Observation already running";
-    case "session_id_required":
-      return "Session id required";
-    case "invalid_session_id":
-      return "Invalid session id";
-    case "session_not_found":
-      return "Session not found";
-    default:
-      return status ? String(status) : "Observer idle";
-  }
-}
-
-function truncateObserverText(value, maxLength = 120) {
-  const text = String(value || "").trim();
-  if (!text) {
-    return "";
-  }
-  return text.length > maxLength ? `${text.slice(0, maxLength - 1)}…` : text;
-}
-
-function syncObserverSessionInput(session) {
-  const input = document.getElementById("ghoti-observer-session-id");
-  if (!input) {
-    return;
-  }
-
-  const nextId = session?.session_id || activeCaptureSessionId || "";
-  if (nextId && (!input.value || input.value === observerSuggestedSessionId)) {
-    input.value = nextId;
-    observerSuggestedSessionId = nextId;
-    return;
-  }
-
-  if (!nextId && input.value === observerSuggestedSessionId) {
-    input.value = "";
-    observerSuggestedSessionId = "";
-  }
-}
-
-function getObserverSessionId() {
-  const input = document.getElementById("ghoti-observer-session-id");
-  return String(input?.value || activeCaptureSessionId || observerSuggestedSessionId || "").trim();
-}
-
-function renderObserverVisionStatus(payload, lastObservationAtUtc = null) {
-  const availabilityEl = document.getElementById("ghoti-observer-availability");
-  const modelEl = document.getElementById("ghoti-observer-model");
-  const lastEl = document.getElementById("ghoti-observer-last");
-  const noteEl = document.getElementById("ghoti-observer-note");
-  if (!availabilityEl || !modelEl || !lastEl || !noteEl) {
-    return;
-  }
-
-  ACTIVE_PILL_CLASSES.forEach((cls) => availabilityEl.classList.remove(cls));
-
-  const vision = payload?.vision || {};
-  if (!payload?.ok) {
-    availabilityEl.classList.add("ghoti-active-pill-error");
-    availabilityEl.textContent = "Observer unavailable";
-    modelEl.textContent = "—";
-    lastEl.textContent = lastObservationAtUtc ? formatTimeStamp(lastObservationAtUtc) : "Never";
-    noteEl.textContent = "Could not load local Ollama observer status.";
-    return;
-  }
-
-  if (vision.available) {
-    availabilityEl.classList.add("ghoti-active-pill-on");
-    availabilityEl.textContent = "Observer ready";
-  } else if (vision.reason === "no_vision_model_available") {
-    availabilityEl.classList.add("ghoti-active-pill-waiting");
-    availabilityEl.textContent = "No vision model";
-  } else {
-    availabilityEl.classList.add("ghoti-active-pill-off");
-    availabilityEl.textContent = "Ollama unavailable";
-  }
-
-  modelEl.textContent = vision.model || "None";
-  lastEl.textContent = lastObservationAtUtc ? formatTimeStamp(lastObservationAtUtc) : "Never";
-  noteEl.textContent = vision.note || "Read-only observer status unavailable.";
-}
-
-function renderObserverResult(payload = null, options = {}) {
-  const resultEl = document.getElementById("ghoti-observer-result");
-  if (!resultEl) {
-    return;
-  }
-
-  if (options.message && !payload) {
-    resultEl.innerHTML = `<div class="result-panel${options.isError ? " is-error" : ""}"><p>${escapeHtml(options.message)}</p></div>`;
-    return;
-  }
-
-  const observation = payload?.observation || null;
-  const status = observation?.status || payload?.error || "idle";
-  const headline = observation?.status === "ok"
-    ? "Observation recorded"
-    : formatObserverStatus(status);
-  const model = observation?.model || "none";
-  const latencyText = observation?.latency_ms != null ? `${observation.latency_ms} ms` : "—";
-  const description = observation?.description || "";
-  const errorText = observation?.error || payload?.error || "";
-  const hintText = payload?.hint || "";
-  const detail = description || errorText || options.message || "No observation has been recorded yet.";
-  const resultClass = observation?.status === "ok"
-    ? "result-panel is-success"
-    : (status === "no_vision_model_available" || status === "no_frame" || status === "session_id_required" || status === "invalid_session_id" || status === "session_not_found" || status === "observation_in_flight")
-      ? "result-panel"
-      : "result-panel is-error";
-
-  resultEl.innerHTML = `
-    <div class="${resultClass}">
-      <p><strong>${escapeHtml(headline)}</strong></p>
-      <p>${escapeHtml(detail)}</p>
-      <p class="ghoti-observer-result-meta">status=${escapeHtml(String(status || "idle"))} · model=${escapeHtml(model)} · latency=${escapeHtml(latencyText)}</p>
-      ${hintText ? `<p class="ghoti-observer-result-meta">Hint: ${escapeHtml(hintText)}</p>` : ""}
-    </div>
-  `;
-}
-
-function renderObserverHistory(payload) {
-  const empty = document.getElementById("ghoti-observer-history-empty");
-  const container = document.getElementById("ghoti-observer-history");
-  if (!empty || !container) {
-    return;
-  }
-
-  const items = Array.isArray(payload?.observations) ? payload.observations.slice(0, 10) : [];
-  if (!items.length) {
-    empty.hidden = false;
-    container.hidden = true;
-    container.innerHTML = "";
-    empty.textContent = payload?.error === "invalid_session_id"
-      ? "The selected session id is invalid for local observations."
-      : "No observations recorded yet for the selected session.";
-    return;
-  }
-
-  empty.hidden = true;
-  container.hidden = false;
-  container.innerHTML = items.map((item) => {
-    const timeLabel = item.completed_at_utc || item.requested_at_utc || null;
-    const excerpt = truncateObserverText(item.description || item.error || "No detail recorded.", 120);
-    return `
-      <article class="ghoti-observer-history-item">
-        <div class="ghoti-observer-history-top">
-          <strong>${escapeHtml(timeLabel ? formatTimeStamp(timeLabel) : item.id || "Observation")}</strong>
-          <span class="state-pill ${item.status === "ok" ? "ghoti-active-pill-on" : item.status === "no_vision_model_available" ? "ghoti-active-pill-waiting" : "ghoti-active-pill-off"}">${escapeHtml(formatObserverStatus(item.status))}</span>
-        </div>
-        <div class="ghoti-observer-history-meta">${escapeHtml(item.model || "none")} · ${escapeHtml(item.session_id || "no session")}</div>
-        <p class="ghoti-observer-history-copy">${escapeHtml(excerpt)}</p>
-      </article>
-    `;
-  }).join("");
-}
-
-async function refreshObserverPanel() {
-  const sessionId = getObserverSessionId();
-  const observationUrl = sessionId
-    ? `/api/ghoti/active/observations?session_id=${encodeURIComponent(sessionId)}&limit=10`
-    : "/api/ghoti/active/observations?limit=10";
-
-  try {
-    const [visionData, observationsData] = await Promise.all([
-      requestJson("/api/ghoti/brain/vision-status"),
-      requestJson(observationUrl),
-    ]);
-    const observations = Array.isArray(observationsData?.observations) ? observationsData.observations : [];
-    const lastObservationAtUtc = observations[0]?.completed_at_utc || observations[0]?.requested_at_utc || null;
-    renderObserverVisionStatus(visionData, lastObservationAtUtc);
-    renderObserverHistory(observationsData);
-  } catch (error) {
-    renderObserverVisionStatus({ ok: false }, null);
-    renderObserverHistory({ observations: [] });
-    console.warn("Could not load observer panel:", error);
-  }
-}
-
-async function runFrameObservation() {
-  const button = document.getElementById("ghoti-observer-run-btn");
-  if (!button || observerRequestInFlight) {
-    return;
-  }
-
-  const sessionId = getObserverSessionId();
-  const promptValue = String(document.getElementById("ghoti-observer-prompt")?.value || "").trim();
-  if (!sessionId) {
-    renderObserverResult({ ok: false, error: "session_id_required" });
-    setActiveFeedback("Provide a session id before requesting an observation.", true);
-    return;
-  }
-
-  observerRequestInFlight = true;
-  const originalLabel = button.textContent;
-  button.disabled = true;
-  button.textContent = "Observing…";
-  renderObserverResult(null, { message: "Waiting for local Ollama to describe the latest frame...", isError: false });
-
-  try {
-    const payload = { session_id: sessionId };
-    if (promptValue) {
-      payload.prompt = promptValue;
-    }
-    const result = await requestJson("/api/ghoti/active/observe-frame", {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
-    renderObserverResult(result);
-    if (result.ok) {
-      setActiveFeedback("Latest frame described locally by the read-only observer.", false);
-    } else {
-      setActiveFeedback(`Observer response: ${formatObserverStatus(result.error)}`, result.error !== "no_vision_model_available" && result.error !== "no_frame");
-    }
-  } catch (error) {
-    renderObserverResult(null, { message: `Observation request failed: ${error.message}`, isError: true });
-    setActiveFeedback(`Observation request failed: ${error.message}`, true);
-  } finally {
-    observerRequestInFlight = false;
-    button.disabled = false;
-    button.textContent = originalLabel;
-    await refreshObserverPanel();
-  }
-}
+
+function formatObserverStatus(status) {
+  switch (String(status || "").trim()) {
+    case "ok":
+      return "Observation recorded";
+    case "no_vision_model_available":
+      return "No vision model available";
+    case "ollama_unreachable":
+      return "Ollama unreachable";
+    case "no_frame":
+      return "No latest frame";
+    case "timeout":
+      return "Ollama timed out";
+    case "observation_in_flight":
+      return "Observation already running";
+    case "session_id_required":
+      return "Session id required";
+    case "invalid_session_id":
+      return "Invalid session id";
+    case "session_not_found":
+      return "Session not found";
+    default:
+      return status ? String(status) : "Observer idle";
+  }
+}
+
+function truncateObserverText(value, maxLength = 120) {
+  const text = String(value || "").trim();
+  if (!text) {
+    return "";
+  }
+  return text.length > maxLength ? `${text.slice(0, maxLength - 1)}…` : text;
+}
+
+function syncObserverSessionInput(session) {
+  const input = document.getElementById("ghoti-observer-session-id");
+  if (!input) {
+    return;
+  }
+
+  const nextId = session?.session_id || activeCaptureSessionId || "";
+  if (nextId && (!input.value || input.value === observerSuggestedSessionId)) {
+    input.value = nextId;
+    observerSuggestedSessionId = nextId;
+    return;
+  }
+
+  if (!nextId && input.value === observerSuggestedSessionId) {
+    input.value = "";
+    observerSuggestedSessionId = "";
+  }
+}
+
+function getObserverSessionId() {
+  const input = document.getElementById("ghoti-observer-session-id");
+  return String(input?.value || activeCaptureSessionId || observerSuggestedSessionId || "").trim();
+}
+
+function renderObserverVisionStatus(payload, lastObservationAtUtc = null) {
+  const availabilityEl = document.getElementById("ghoti-observer-availability");
+  const modelEl = document.getElementById("ghoti-observer-model");
+  const lastEl = document.getElementById("ghoti-observer-last");
+  const noteEl = document.getElementById("ghoti-observer-note");
+  if (!availabilityEl || !modelEl || !lastEl || !noteEl) {
+    return;
+  }
+
+  ACTIVE_PILL_CLASSES.forEach((cls) => availabilityEl.classList.remove(cls));
+
+  const vision = payload?.vision || {};
+  if (!payload?.ok) {
+    availabilityEl.classList.add("ghoti-active-pill-error");
+    availabilityEl.textContent = "Observer unavailable";
+    modelEl.textContent = "—";
+    lastEl.textContent = lastObservationAtUtc ? formatTimeStamp(lastObservationAtUtc) : "Never";
+    noteEl.textContent = "Could not load local Ollama observer status.";
+    return;
+  }
+
+  if (vision.available) {
+    availabilityEl.classList.add("ghoti-active-pill-on");
+    availabilityEl.textContent = "Observer ready";
+  } else if (vision.reason === "no_vision_model_available") {
+    availabilityEl.classList.add("ghoti-active-pill-waiting");
+    availabilityEl.textContent = "No vision model";
+  } else {
+    availabilityEl.classList.add("ghoti-active-pill-off");
+    availabilityEl.textContent = "Ollama unavailable";
+  }
+
+  modelEl.textContent = vision.model || "None";
+  lastEl.textContent = lastObservationAtUtc ? formatTimeStamp(lastObservationAtUtc) : "Never";
+  noteEl.textContent = vision.note || "Read-only observer status unavailable.";
+}
+
+function renderObserverResult(payload = null, options = {}) {
+  const resultEl = document.getElementById("ghoti-observer-result");
+  if (!resultEl) {
+    return;
+  }
+
+  if (options.message && !payload) {
+    resultEl.innerHTML = `<div class="result-panel${options.isError ? " is-error" : ""}"><p>${escapeHtml(options.message)}</p></div>`;
+    return;
+  }
+
+  const observation = payload?.observation || null;
+  const status = observation?.status || payload?.error || "idle";
+  const headline = observation?.status === "ok"
+    ? "Observation recorded"
+    : formatObserverStatus(status);
+  const model = observation?.model || "none";
+  const latencyText = observation?.latency_ms != null ? `${observation.latency_ms} ms` : "—";
+  const description = observation?.description || "";
+  const errorText = observation?.error || payload?.error || "";
+  const hintText = payload?.hint || "";
+  const detail = description || errorText || options.message || "No observation has been recorded yet.";
+  const resultClass = observation?.status === "ok"
+    ? "result-panel is-success"
+    : (status === "no_vision_model_available" || status === "no_frame" || status === "session_id_required" || status === "invalid_session_id" || status === "session_not_found" || status === "observation_in_flight")
+      ? "result-panel"
+      : "result-panel is-error";
+
+  resultEl.innerHTML = `
+    <div class="${resultClass}">
+      <p><strong>${escapeHtml(headline)}</strong></p>
+      <p>${escapeHtml(detail)}</p>
+      <p class="ghoti-observer-result-meta">status=${escapeHtml(String(status || "idle"))} · model=${escapeHtml(model)} · latency=${escapeHtml(latencyText)}</p>
+      ${hintText ? `<p class="ghoti-observer-result-meta">Hint: ${escapeHtml(hintText)}</p>` : ""}
+    </div>
+  `;
+}
+
+function renderObserverHistory(payload) {
+  const empty = document.getElementById("ghoti-observer-history-empty");
+  const container = document.getElementById("ghoti-observer-history");
+  if (!empty || !container) {
+    return;
+  }
+
+  const items = Array.isArray(payload?.observations) ? payload.observations.slice(0, 10) : [];
+  if (!items.length) {
+    empty.hidden = false;
+    container.hidden = true;
+    container.innerHTML = "";
+    empty.textContent = payload?.error === "invalid_session_id"
+      ? "The selected session id is invalid for local observations."
+      : "No observations recorded yet for the selected session.";
+    return;
+  }
+
+  empty.hidden = true;
+  container.hidden = false;
+  container.innerHTML = items.map((item) => {
+    const timeLabel = item.completed_at_utc || item.requested_at_utc || null;
+    const excerpt = truncateObserverText(item.description || item.error || "No detail recorded.", 120);
+    return `
+      <article class="ghoti-observer-history-item">
+        <div class="ghoti-observer-history-top">
+          <strong>${escapeHtml(timeLabel ? formatTimeStamp(timeLabel) : item.id || "Observation")}</strong>
+          <span class="state-pill ${item.status === "ok" ? "ghoti-active-pill-on" : item.status === "no_vision_model_available" ? "ghoti-active-pill-waiting" : "ghoti-active-pill-off"}">${escapeHtml(formatObserverStatus(item.status))}</span>
+        </div>
+        <div class="ghoti-observer-history-meta">${escapeHtml(item.model || "none")} · ${escapeHtml(item.session_id || "no session")}</div>
+        <p class="ghoti-observer-history-copy">${escapeHtml(excerpt)}</p>
+      </article>
+    `;
+  }).join("");
+}
+
+async function refreshObserverPanel() {
+  const sessionId = getObserverSessionId();
+  const observationUrl = sessionId
+    ? `/api/ghoti/active/observations?session_id=${encodeURIComponent(sessionId)}&limit=10`
+    : "/api/ghoti/active/observations?limit=10";
+
+  try {
+    const [visionData, observationsData] = await Promise.all([
+      requestJson("/api/ghoti/brain/vision-status"),
+      requestJson(observationUrl),
+    ]);
+    const observations = Array.isArray(observationsData?.observations) ? observationsData.observations : [];
+    const lastObservationAtUtc = observations[0]?.completed_at_utc || observations[0]?.requested_at_utc || null;
+    renderObserverVisionStatus(visionData, lastObservationAtUtc);
+    renderObserverHistory(observationsData);
+  } catch (error) {
+    renderObserverVisionStatus({ ok: false }, null);
+    renderObserverHistory({ observations: [] });
+    console.warn("Could not load observer panel:", error);
+  }
+}
+
+async function runFrameObservation() {
+  const button = document.getElementById("ghoti-observer-run-btn");
+  if (!button || observerRequestInFlight) {
+    return;
+  }
+
+  const sessionId = getObserverSessionId();
+  const promptValue = String(document.getElementById("ghoti-observer-prompt")?.value || "").trim();
+  if (!sessionId) {
+    renderObserverResult({ ok: false, error: "session_id_required" });
+    setActiveFeedback("Provide a session id before requesting an observation.", true);
+    return;
+  }
+
+  observerRequestInFlight = true;
+  const originalLabel = button.textContent;
+  button.disabled = true;
+  button.textContent = "Observing…";
+  renderObserverResult(null, { message: "Waiting for local Ollama to describe the latest frame...", isError: false });
+
+  try {
+    const payload = { session_id: sessionId };
+    if (promptValue) {
+      payload.prompt = promptValue;
+    }
+    const result = await requestJson("/api/ghoti/active/observe-frame", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    renderObserverResult(result);
+    if (result.ok) {
+      setActiveFeedback("Latest frame described locally by the read-only observer.", false);
+    } else {
+      setActiveFeedback(`Observer response: ${formatObserverStatus(result.error)}`, result.error !== "no_vision_model_available" && result.error !== "no_frame");
+    }
+  } catch (error) {
+    renderObserverResult(null, { message: `Observation request failed: ${error.message}`, isError: true });
+    setActiveFeedback(`Observation request failed: ${error.message}`, true);
+  } finally {
+    observerRequestInFlight = false;
+    button.disabled = false;
+    button.textContent = originalLabel;
+    await refreshObserverPanel();
+  }
+}
 
 function renderActiveSessionFrames(payload) {
   const empty = document.getElementById("ghoti-capture-gallery-empty");
@@ -5184,4 +5184,200 @@ if (ghotiApprovalsPanel) {
 
 refreshGhotiApprovalQueue();
 setInterval(refreshGhotiApprovalQueue, 3000);
+
+/* ============================================================
+   PHASE B — SYSTEM HEALTH POLLER + SIDEBAR HANDLERS
+   ============================================================ */
+
+function _chipClass(state) {
+  if (state === "ok")       return "chip chip--ok";
+  if (state === "warn")     return "chip chip--warn";
+  if (state === "err")      return "chip chip--err";
+  if (state === "scaffold") return "chip chip--scaffold";
+  return "chip chip--idle";
+}
+
+function _setChip(id, label, state) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.className = _chipClass(state);
+  el.textContent = label;
+}
+
+function _setText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
+}
+
+function applyHealthPayload(h) {
+  if (!h || !h.ok) return;
+  const health = h.health || {};
+
+  // ── Overview chips ──
+  const activeMode = health.active_mode || {};
+  _setChip("overview-chip-active", activeMode.active ? "Active" : "Idle", activeMode.active ? "ok" : "idle");
+
+  const approvals = health.approvals || {};
+  const pendingN = approvals.pending_count || 0;
+  _setChip("overview-chip-approvals", pendingN > 0 ? `${pendingN} Pending` : "Clear", pendingN > 0 ? "warn" : "ok");
+
+  const vision = health.vision || {};
+  const visionState = vision.available ? "ok" : (vision.reason === "no_vision_model_available" ? "idle" : "warn");
+  _setChip("overview-chip-vision", vision.available ? (vision.model || "Ready") : "No Model", visionState);
+
+  // ── Tab badge (sidebar) ──
+  const badge = document.getElementById("tab-badge-approvals");
+  if (badge) {
+    badge.textContent = pendingN > 0 ? String(pendingN) : "";
+    badge.classList.toggle("visible", pendingN > 0);
+  }
+
+  // ── Health table rows ──
+  // active_mode
+  const capState = health.capture || {};
+  _setChip("health-chip-active", activeMode.active ? "Active" : "Idle", activeMode.active ? "ok" : "idle");
+  _setText("health-detail-active", activeMode.session_id ? `session ${activeMode.session_id}` : "—");
+
+  // capture
+  const capturing = Boolean(capState.capturing);
+  _setChip("health-chip-capture", capturing ? `Watching (${capState.frame_count || 0} frames)` : "Off", capturing ? "ok" : "idle");
+  _setText("health-detail-capture", capState.last_frame_utc ? `Last: ${new Date(capState.last_frame_utc).toLocaleTimeString()}` : "—");
+
+  // ollama
+  const ollama = health.ollama || {};
+  _setChip("health-chip-ollama", ollama.reachable ? "Reachable" : "Unreachable", ollama.reachable ? "ok" : "err");
+  _setText("health-detail-ollama", ollama.host || "127.0.0.1:11434");
+
+  // vision
+  _setChip("health-chip-vision", vision.available ? (vision.model || "Ready") : "No Model", visionState);
+  _setText("health-detail-vision", vision.all_models?.length ? vision.all_models.join(", ") : (vision.reason || "—"));
+
+  // observer
+  const observer = health.observer || {};
+  _setChip("health-chip-observer", observer.wired ? (observer.last_observation_utc ? "Active" : "Wired") : "Off", observer.wired ? "ok" : "idle");
+  _setText("health-detail-observer", observer.last_observation_utc ? `Last: ${new Date(observer.last_observation_utc).toLocaleTimeString()} · ${observer.observations_total || 0} obs` : `${observer.observations_total || 0} observations`);
+
+  // approvals
+  _setChip("health-chip-approvals", pendingN > 0 ? `${pendingN} Pending` : "Clear", pendingN > 0 ? "warn" : "ok");
+  _setText("health-detail-approvals", approvals.enforced_on?.length ? `guards: ${approvals.enforced_on.join(", ")}` : "—");
+
+  // voice
+  const voiceH = health.voice || {};
+  _setChip("health-chip-voice", voiceH.mode === "scaffold" ? "Scaffold" : (voiceH.muted ? "Muted" : "Live"), voiceH.mode === "scaffold" ? "scaffold" : (voiceH.muted ? "idle" : "ok"));
+  _setText("health-detail-voice", voiceH.mode === "scaffold" ? "real audio: false" : (voiceH.muted ? "muted" : "unmuted"));
+
+  // youtube
+  const yt = health.youtube || {};
+  _setChip("health-chip-youtube", yt.status === "scaffold" ? "Scaffold" : "Active", yt.status === "scaffold" ? "scaffold" : "ok");
+  _setText("health-detail-youtube", "real: false");
+
+  // overlay
+  const overlay = health.overlay || {};
+  _setChip("health-chip-overlay", "Browser", "ok");
+  _setText("health-detail-overlay", `native always-on-top: ${overlay.native_always_on_top ? "yes" : "no"}`);
+
+  // ── Next actions ──
+  const actions = [];
+  if (!activeMode.active) actions.push("Start Active Mode to enable Ghoti.");
+  if (!ollama.reachable)  actions.push("Start Ollama to enable vision observer.");
+  if (!vision.available)  actions.push("Pull a vision model in Ollama (e.g. llava).");
+  if (pendingN > 0)       actions.push(`Review ${pendingN} pending approval${pendingN !== 1 ? "s" : ""} in Approvals.`);
+  if (!capturing)         actions.push("Start capture to feed frames to the observer.");
+  if (actions.length === 0) actions.push("System nominal — no actions required.");
+
+  const listEl = document.getElementById("next-actions-list");
+  if (listEl) {
+    listEl.innerHTML = actions.map(a => `<li>${escapeHtml(a)}</li>`).join("");
+  }
+
+  // ── Sidebar commit info ──
+  const srv = h.server || {};
+  if (srv.commit) {
+    _setText("sidebar-commit-info", `commit ${srv.commit}`);
+    _setText("about-commit", srv.commit);
+  }
+
+  // ── Observer no-model banner visibility ──
+  const noModelBanner = document.getElementById("observer-no-model-banner");
+  if (noModelBanner) noModelBanner.hidden = vision.available;
+}
+
+async function startHealthPoll() {
+  async function poll() {
+    try {
+      const res = await fetch("/api/ghoti/system/health");
+      if (res.ok) {
+        const data = await res.json();
+        applyHealthPayload(data);
+      }
+    } catch { /* server unreachable — stay silent */ }
+  }
+  await poll();
+  setInterval(poll, 5000);
+}
+
+startHealthPoll();
+
+// ── Runbook copy buttons ──
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".runbook-copy-btn");
+  if (!btn) return;
+  const targetId = btn.dataset.copyTarget;
+  const source = targetId ? document.getElementById(targetId) : btn.previousElementSibling;
+  if (!source) return;
+  navigator.clipboard.writeText(source.textContent).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = "Copied!";
+    setTimeout(() => { btn.textContent = orig; }, 1500);
+  }).catch(() => {});
+});
+
+// ── Voice controls in #section-voice ──
+document.getElementById("ghoti-voice-mute-btn")?.addEventListener("click", async () => {
+  try {
+    const data = await requestJson("/api/ghoti/voice/mute", { method: "POST", body: "{}" });
+    if (!data.ok) throw new Error(data.error || "mute failed");
+  } catch (err) { console.warn("voice mute:", err.message); }
+});
+
+document.getElementById("ghoti-voice-unmute-btn")?.addEventListener("click", async () => {
+  try {
+    const data = await requestJson("/api/ghoti/voice/unmute", { method: "POST", body: "{}" });
+    if (!data.ok) throw new Error(data.error || "unmute failed");
+  } catch (err) { console.warn("voice unmute:", err.message); }
+});
+
+// ── YouTube queue button in #section-youtube ──
+document.getElementById("ghoti-yt-queue-btn")?.addEventListener("click", async () => {
+  const url   = document.getElementById("ghoti-yt-url-input")?.value?.trim();
+  const goal  = document.getElementById("ghoti-yt-goal-input")?.value?.trim();
+  if (!url) { alert("Enter a YouTube URL."); return; }
+  try {
+    const data = await requestJson("/api/ghoti/youtube-follower/queue", {
+      method: "POST",
+      body: JSON.stringify({ url, goal: goal || "" }),
+    });
+    if (!data.ok) throw new Error(data.error || "queue failed");
+    const urlEl = document.getElementById("ghoti-yt-url-input");
+    if (urlEl) urlEl.value = "";
+  } catch (err) { alert(`Queue failed: ${err.message}`); }
+});
+
+// ── Sidebar active-link highlight on scroll ──
+(function initSidebarHighlight() {
+  const sections = document.querySelectorAll(".content-section[id]");
+  const navLinks  = document.querySelectorAll(".sidebar-nav a[href^='#']");
+  if (!sections.length || !navLinks.length) return;
+
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      const link = document.querySelector(`.sidebar-nav a[href='#${entry.target.id}']`);
+      if (!link) return;
+      if (entry.isIntersecting) link.classList.add("active");
+      else link.classList.remove("active");
+    });
+  }, { rootMargin: "-40% 0px -55% 0px" });
+
+  sections.forEach(s => obs.observe(s));
+})();
 

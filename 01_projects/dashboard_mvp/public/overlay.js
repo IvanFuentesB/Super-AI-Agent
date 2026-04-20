@@ -1,6 +1,6 @@
 "use strict";
 
-const DASHBOARD_URL = "http://127.0.0.1:3210";
+const DASHBOARD_URL = "";
 const POLL_INTERVAL_MS = 2000;
 const FRAME_REFRESH_MS = 2000;
 
