@@ -2017,6 +2017,53 @@ This file was queued through the safe repo-local executor.
             <div id="ghoti-capture-error" class="ghoti-capture-error" aria-live="polite" hidden></div>
           </div>
 
+          <section class="ghoti-observer-section" aria-labelledby="ghoti-observer-heading">
+            <div class="ghoti-session-card-head ghoti-observer-head">
+              <div>
+                <p class="ghoti-active-label">Read-Only Observer</p>
+                <h3 id="ghoti-observer-heading">Ollama Frame Reading</h3>
+                <p id="ghoti-observer-note" class="ghoti-session-subtitle">Checking local Ollama vision status for the read-only observer.</p>
+              </div>
+              <span id="ghoti-observer-availability" class="state-pill ghoti-active-pill-off">Checking…</span>
+            </div>
+            <div class="ghoti-observer-status-grid">
+              <article class="ghoti-observer-stat">
+                <span>Vision model</span>
+                <strong id="ghoti-observer-model">—</strong>
+              </article>
+              <article class="ghoti-observer-stat">
+                <span>Last observation</span>
+                <strong id="ghoti-observer-last">Never</strong>
+              </article>
+              <article class="ghoti-observer-stat">
+                <span>Mode</span>
+                <strong>Read-only</strong>
+              </article>
+            </div>
+            <div class="ghoti-observer-form">
+              <label class="ghoti-observer-field" for="ghoti-observer-session-id">
+                <span>Session ID</span>
+                <input id="ghoti-observer-session-id" type="text" placeholder="ghoti-session-..." />
+              </label>
+              <label class="ghoti-observer-field ghoti-observer-field-wide" for="ghoti-observer-prompt">
+                <span>Observation prompt</span>
+                <textarea id="ghoti-observer-prompt" rows="3" placeholder="Describe what is visible on screen in 2-4 sentences. Only describe visible UI or objects. Do not guess intent. Do not propose actions."></textarea>
+              </label>
+              <div class="ghoti-observer-form-actions">
+                <button id="ghoti-observer-run-btn" class="action-btn action-btn-primary" type="button">Observe latest frame</button>
+              </div>
+            </div>
+            <div id="ghoti-observer-result" class="ghoti-observer-result" aria-live="polite">
+              Read-only observer is idle until you request a frame description.
+            </div>
+            <div class="ghoti-capture-gallery-head ghoti-observer-history-head">
+              <p class="ghoti-active-label">Recent observations</p>
+              <p class="ghoti-session-subtitle">Last 10 local observations. Descriptions are stored locally and never trigger actions.</p>
+            </div>
+            <div id="ghoti-observer-history-empty" class="ghoti-session-empty">No observations recorded yet for the selected session.</div>
+            <div id="ghoti-observer-history" class="ghoti-observer-history" hidden></div>
+          </section>
+
           <div class="ghoti-active-instruction-row">
             <label for="ghoti-active-msg-input" class="ghoti-active-label">Tell Ghoti what to focus on</label>
             <textarea id="ghoti-active-msg-input" class="ghoti-active-textarea" rows="3" placeholder="Describe the task or area to focus on. Approval required before any action."></textarea>

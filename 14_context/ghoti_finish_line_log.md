@@ -141,8 +141,8 @@ Reason: approval gates now exist. The next safest step is read-only understandin
 Date: 2026-04-19
 Milestone: Approval Queue Hardening Patch (N+1.1)
 Branch: feat/ghoti-visible-operator-stack
-Commit: TBD (post-commit)
-Pushed: TBD
+Commit: e731fc5
+Pushed: YES
 Port: 3210
 
 ### Discovery findings
@@ -520,3 +520,139 @@ Browser visual verification not available from CLI — see honest note below.
 Add voice mute state API (`GET/POST /api/ghoti/voice/state`) with muted/unmuted toggle,
 update overlay to use real mute state, and add a mute button to the main dashboard Active tab.
 This is the cheapest "real" step before tackling browser operator or YouTube-following.
+
+
+---
+
+## 2026-04-20 — Ollama Frame-Reading Read-Only Observer
+
+### Milestone
+Ollama Frame-Reading Read-Only Observer
+
+### Current UTC date
+2026-04-20T07:25:42Z
+
+### Branch
+`feat/ghoti-visible-operator-stack`
+
+### Commit hash after commit
+To be recorded from git after the milestone commit is created in this run. This log entry is included inside that same commit, so the exact final hash is reported in git metadata and the release report.
+
+### Push status
+Pending at log-write time. Final push result is recorded in the release report for this run.
+
+### Discovery
+- Current git branch/head before commit: `feat/ghoti-visible-operator-stack` @ `e731fc5`
+- Dashboard files used:
+  - `01_projects/dashboard_mvp/server.js`
+  - `01_projects/dashboard_mvp/public/index.html`
+  - `01_projects/dashboard_mvp/public/app.js`
+  - `01_projects/dashboard_mvp/public/overlay.html`
+  - `01_projects/dashboard_mvp/public/overlay.js`
+  - `01_projects/dashboard_mvp/public/styles.css`
+- Ollama reachable: **yes** at `127.0.0.1:11434`
+- Models found: `[]`
+- Vision model selected: **none**
+- Frame path method used: per-session `latest.png` under `01_projects/dashboard_mvp/.tmp-screenshots/capture_frames/<session_id>/latest.png`, resolved via existing session helpers
+- Validation server port: **3212**
+  - Port `3210` was occupied by a stale listener outside this session and could not be stopped due `Access denied`, so live validation used a clean local port without changing product behavior.
+
+### What is real
+- `GET /api/ghoti/brain/vision-status` returns honest Ollama/vision availability, selected model, all local models, and a note that read-only observation does not drive actions.
+- `POST /api/ghoti/active/observe-frame` is real and writes observation records to ignored runtime storage.
+- `GET /api/ghoti/active/observations` lists recent observations, newest first, bounded.
+- Missing session, missing frame, and no-model cases are handled explicitly and stored with honest statuses.
+- `GET /api/ghoti/operator/status` now exposes a real `vision` block with observation counters and timestamps.
+- Dashboard Active tab now has a read-only observer panel with session input, prompt box, run button, result area, and recent observations list.
+- Overlay now shows a minimal observer status indicator.
+- Frame data is sent only to local Ollama at `127.0.0.1:11434` and nowhere else.
+
+### What is scaffold
+- Vision description happy path is **not validated yet** because no vision-capable Ollama model is installed locally.
+- Overlay is still a browser-served overlay page, not a native always-on-top window.
+- Voice remains placeholder-only.
+- YouTube follower remains scaffold-only.
+
+### What is not implemented
+- No action planning from observations.
+- No clicks, typing, browser execution, shell automation, or external action wiring from the observer.
+- No autonomous action loop.
+- No real voice/STT/TTS integration.
+- No real browser/YouTube execution from observer output.
+
+### Honest status
+| Area | Status |
+|---|---|
+| Ollama frame observer | **Real read-only path** |
+| Vision model installed locally | **No** |
+| Observation storage | **Real** |
+| Dashboard observer panel | **Real** |
+| Overlay observer indicator | **Real** |
+| Action planning | **Not implemented** |
+| Autonomous actions | **Not implemented** |
+| Active Mode capture/gallery/archive/cleanup | **Still working after regression validation** |
+| Full Ghoti estimate | **~40%** honest total vision completion |
+
+### External repo truth table
+| Repo/concept | Truth |
+|---|---|
+| `claw-code` | Reference only. Not imported, not called, not runtime. |
+| `mithi/robotics-coursework` | Concept/reference only. Not cloned into product runtime and not used in code. |
+
+### Files modified
+- `01_projects/dashboard_mvp/server.js`
+- `01_projects/dashboard_mvp/public/index.html`
+- `01_projects/dashboard_mvp/public/app.js`
+- `01_projects/dashboard_mvp/public/overlay.html`
+- `01_projects/dashboard_mvp/public/overlay.js`
+- `01_projects/dashboard_mvp/public/styles.css`
+- `14_context/ghoti_finish_line_log.md`
+
+### Files created
+- None tracked in source for this milestone.
+
+### Runtime files not committed
+- `01_projects/runtime_mvp/runtime_data/observations.json`
+- `01_projects/runtime_mvp/runtime_data/active_mode_state.json`
+- `01_projects/runtime_mvp/runtime_data/active_capture_sessions.json`
+- `01_projects/runtime_mvp/runtime_data/screen_capture_state.json`
+- `01_projects/runtime_mvp/runtime_data/approvals.json`
+- `01_projects/dashboard_mvp/.tmp-screenshots/capture_frames/**`
+
+### Files intentionally not staged
+- `21_repos/third_party/.gitkeep`
+- `01_projects/mcp_server/test.txt`
+- all `01_projects/runtime_mvp/runtime_data/*.json`
+- all `01_projects/dashboard_mvp/.tmp-screenshots/**`
+
+### Validation commands/results
+- `node --check 01_projects/dashboard_mvp/server.js` → OK
+- `node --check 01_projects/dashboard_mvp/public/app.js` → OK
+- `node --check 01_projects/dashboard_mvp/public/overlay.js` → OK
+- `git check-ignore -v ...observations.json ...latest.png` → ignored as expected
+- `curl http://127.0.0.1:11434/api/tags` → 200, `{"models":[]}`
+- `GET /api/ghoti/brain/vision-status` → OK, `available:false`, `reason:no_vision_model_available`
+- `GET /api/ghoti/operator/status` → OK, `vision` block present
+- `GET /api/ghoti/active/observations` → OK, returns list
+- `GET /overlay` → 200
+- Active Mode regression → PASS on port 3212
+  - start session: PASS
+  - start capture: PASS
+  - wait 4s: `frame_count > 0`
+  - latest-frame: `200 image/png`
+  - observe-frame missing session: `session_id_required`
+  - observe-frame before frame: `no_frame`
+  - observe-frame with frame: `no_vision_model_available` (acceptable honest path)
+- Approval queue regression → PASS
+  - create approval: PASS
+  - approve: PASS
+  - consume: PASS
+  - replay consume: FAILS with `already_consumed` as expected
+- Cleanup approval guard regression → PASS
+  - cleanup preview: PASS
+  - cleanup confirm without approval: `approval_required:true`
+
+### Next milestone recommendation
+**Recommended:** install and validate one local vision-capable Ollama model, then add a bounded “compare consecutive observations” panel that highlights visible UI changes only.
+
+**Reason:** the read-only observer path is now real, but the happy-path description generation cannot be validated until at least one supported local vision model is available. The next safest step is still observational, not agentic.

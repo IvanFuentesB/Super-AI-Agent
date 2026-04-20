@@ -18,6 +18,8 @@ const voiceDot = document.getElementById("voice-dot");
 const voiceLabel = document.getElementById("voice-label");
 const brainDot = document.getElementById("brain-dot");
 const brainLabel = document.getElementById("brain-label");
+const observerDot = document.getElementById("observer-dot");
+const observerLabel = document.getElementById("observer-label");
 const operatorDot = document.getElementById("operator-dot");
 const operatorLabel = document.getElementById("operator-label");
 const ytDot = document.getElementById("yt-dot");
@@ -121,12 +123,42 @@ function applyVoiceState(v) {
 
 function applyBrainState(payload) {
   if (!payload?.ok) { brainLabel.textContent = "Brain: unavailable"; setDot(brainDot, "warn"); return; }
-  const s = payload.summary || {};
-  const provider = s.activeProvider || payload.activeProvider || "unknown";
-  const model = s.activeModel || payload.activeModel || "none";
-  const ready = s.inferenceReady || payload.inferenceReady;
-  brainLabel.textContent = `Brain: ${provider} / ${model}`;
-  setDot(brainDot, ready ? "on" : "off");
+  const brain = payload.brain || {};
+  const provider = brain.provider || payload.provider || "none";
+  const model = brain.active_model || brain.model || payload.active_model || "none";
+  const reachable = Boolean(brain.reachable);
+  brainLabel.textContent = `Brain: ${provider} / ${model || "none"}`;
+  setDot(brainDot, reachable ? "on" : (model && model !== "none" ? "warn" : "off"));
+}
+
+function applyObserverState(visionPayload, operatorPayload) {
+  if (!observerLabel || !observerDot) {
+    return;
+  }
+  if (!visionPayload?.ok) {
+    observerLabel.textContent = "Observer: unavailable";
+    setDot(observerDot, "warn");
+    return;
+  }
+
+  const vision = visionPayload.vision || {};
+  const lastObservedUtc = operatorPayload?.vision?.last_observation_at_utc || null;
+  const lastObservedText = lastObservedUtc ? ` · last observed ${formatTime(lastObservedUtc)}` : "";
+
+  if (vision.available) {
+    observerLabel.textContent = `Observer: ready${vision.model ? ` · ${vision.model}` : ""}${lastObservedText}`;
+    setDot(observerDot, "on");
+    return;
+  }
+
+  if (vision.reason === "no_vision_model_available") {
+    observerLabel.textContent = `Observer: no model${lastObservedText}`;
+    setDot(observerDot, "off");
+    return;
+  }
+
+  observerLabel.textContent = `Observer: unavailable${lastObservedText}`;
+  setDot(observerDot, "warn");
 }
 
 function applyOperatorState(payload) {
@@ -193,12 +225,13 @@ async function safeFetch(url) {
 }
 
 async function fetchState() {
-  const [activeData, captureData, voiceData, operatorData, brainData, ytData] = await Promise.all([
+  const [activeData, captureData, voiceData, operatorData, brainData, observerData, ytData] = await Promise.all([
     safeFetch("/api/ghoti/active-state"),
     safeFetch("/api/ghoti/active/capture-state"),
     safeFetch("/api/ghoti/voice/state"),
     safeFetch("/api/ghoti/operator/status"),
     safeFetch("/api/ghoti/brain/status"),
+    safeFetch("/api/ghoti/brain/vision-status"),
     safeFetch("/api/ghoti/youtube-follower/status"),
   ]);
 
@@ -210,6 +243,7 @@ async function fetchState() {
 
   applyVoiceState(voiceData?.voice || null);
   applyBrainState(brainData);
+  applyObserverState(observerData, operatorData);
   applyOperatorState(operatorData);
   applyYoutubeState(ytData);
 }

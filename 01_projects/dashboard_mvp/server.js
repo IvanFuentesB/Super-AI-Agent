@@ -26,15 +26,30 @@ const captureSidecarScript = path.join(runtimeProjectRoot, "src", "super_ai_agen
 const voiceStateFile = path.join(runtimeDataDir, "voice_state.json");
 const youtubeFollowerTasksFile = path.join(runtimeDataDir, "youtube_follower_tasks.json");
 const approvalsFile = path.join(runtimeDataDir, "approvals.json");
+const observationsFile = path.join(runtimeDataDir, "observations.json");
 const maxActiveSessions = 5;
 const maxYoutubeFollowerTasks = 20;
 const maxSessionFrames = 12;
+const maxObservations = 500;
+const defaultObservationLimit = 20;
+const maxObservationLimit = 100;
+const observeFrameTimeoutMs = 60000;
+const defaultObservationPrompt = "Describe what is visible on screen in 2-4 sentences. Only describe visible UI or objects. Do not guess intent. Do not propose actions.";
+const ollamaVisionModelHints = [
+  "llava:7b",
+  "llava",
+  "moondream",
+  "llama3.2-vision",
+  "bakllava",
+  "minicpm-v",
+];
 const activeSessionSafetyNote = "Local-only screen capture. Frames are only collected while the operator explicitly keeps capture running.";
 
 let captureInterval = null;
 let captureFrameCount = 0;
 let captureTickRunning = false;
 let currentCaptureSessionId = null;
+const observationRequestsInFlight = new Set();
 const previewableExtensions = new Set([
   ".md",
   ".markdown",
@@ -347,6 +362,216 @@ function checkOllamaReachable() {
     });
     req.on("error", () => resolve({ reachable: false, models: [] }));
     req.on("timeout", () => { req.destroy(); resolve({ reachable: false, models: [] }); });
+  });
+}
+
+function toRepoRelativePath(targetPath) {
+  if (!targetPath) {
+    return null;
+  }
+  const relative = path.relative(repoRoot, targetPath);
+  return relative ? relative.replace(/\\/g, "/") : null;
+}
+
+function pickVisionModelName(allModels) {
+  const entries = (Array.isArray(allModels) ? allModels : [])
+    .map((model) => String(model || "").trim())
+    .filter(Boolean)
+    .map((model) => {
+      const lower = model.toLowerCase();
+      const short = lower.split("/").pop() || lower;
+      return { model, lower, short };
+    });
+
+  for (const hint of ollamaVisionModelHints) {
+    const normalizedHint = hint.toLowerCase();
+    const match = entries.find((entry) => (
+      entry.lower === normalizedHint
+      || entry.lower.startsWith(`${normalizedHint}:`)
+      || entry.short === normalizedHint
+      || entry.short.startsWith(`${normalizedHint}:`)
+      || entry.lower.includes(normalizedHint)
+      || entry.short.includes(normalizedHint)
+    ));
+    if (match) {
+      return match.model;
+    }
+  }
+
+  return null;
+}
+
+function buildVisionStatusNote(visionStatus) {
+  if (visionStatus.available) {
+    return "Vision-capable Ollama model detected. Read-only frame observer can describe frames. It does not drive operator actions.";
+  }
+  if (visionStatus.reason === "no_vision_model_available") {
+    return "No vision-capable Ollama model found. Install one with: ollama pull llava:7b";
+  }
+  return "Ollama not reachable at 127.0.0.1:11434.";
+}
+
+async function getOllamaVisionStatus() {
+  const { reachable, models } = await checkOllamaReachable();
+  const allModels = Array.isArray(models)
+    ? models.map((model) => String(model || "").trim()).filter(Boolean)
+    : [];
+
+  if (!reachable) {
+    return {
+      available: false,
+      model: null,
+      all_models: allModels,
+      reason: "ollama_unreachable",
+    };
+  }
+
+  const model = pickVisionModelName(allModels);
+  if (!model) {
+    return {
+      available: false,
+      model: null,
+      all_models: allModels,
+      reason: "no_vision_model_available",
+    };
+  }
+
+  return {
+    available: true,
+    model,
+    all_models: allModels,
+    reason: null,
+  };
+}
+
+function normalizeObservationRecord(record) {
+  const allowedStatuses = new Set([
+    "ok",
+    "no_vision_model_available",
+    "ollama_unreachable",
+    "no_frame",
+    "timeout",
+    "error",
+  ]);
+
+  return {
+    id: typeof record?.id === "string" ? record.id : `obs-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    session_id: sanitizeSessionId(record?.session_id) || null,
+    frame_path: typeof record?.frame_path === "string" ? record.frame_path : null,
+    frame_ts_utc: typeof record?.frame_ts_utc === "string" ? record.frame_ts_utc : null,
+    requested_at_utc: typeof record?.requested_at_utc === "string" ? record.requested_at_utc : new Date().toISOString(),
+    completed_at_utc: typeof record?.completed_at_utc === "string" ? record.completed_at_utc : null,
+    model: typeof record?.model === "string" ? record.model : null,
+    prompt: typeof record?.prompt === "string" && record.prompt.trim()
+      ? record.prompt.trim().slice(0, 4000)
+      : defaultObservationPrompt,
+    description: typeof record?.description === "string" ? record.description.trim().slice(0, 12000) : "",
+    latency_ms: Number.isFinite(Number(record?.latency_ms)) ? Number(record.latency_ms) : null,
+    status: allowedStatuses.has(String(record?.status || "").trim()) ? String(record.status).trim() : "error",
+    error: typeof record?.error === "string" && record.error.trim() ? record.error.trim().slice(0, 4000) : null,
+  };
+}
+
+function readObservations() {
+  try {
+    if (!fs.existsSync(observationsFile)) {
+      return [];
+    }
+    const parsed = JSON.parse(fs.readFileSync(observationsFile, "utf8"));
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+    return parsed
+      .filter((item) => item && typeof item === "object")
+      .map((item) => normalizeObservationRecord(item))
+      .slice(0, maxObservations);
+  } catch {
+    return [];
+  }
+}
+
+function writeObservations(list) {
+  if (!fs.existsSync(runtimeDataDir)) {
+    fs.mkdirSync(runtimeDataDir, { recursive: true });
+  }
+  const bounded = (Array.isArray(list) ? list : [])
+    .filter((item) => item && typeof item === "object")
+    .map((item) => normalizeObservationRecord(item))
+    .slice(0, maxObservations);
+  const tmpPath = `${observationsFile}.tmp-${process.pid}-${Date.now()}`;
+  try {
+    fs.writeFileSync(tmpPath, JSON.stringify(bounded, null, 2), "utf8");
+    fs.renameSync(tmpPath, observationsFile);
+  } finally {
+    if (fs.existsSync(tmpPath)) {
+      try { fs.unlinkSync(tmpPath); } catch { /* ignore cleanup errors */ }
+    }
+  }
+  return bounded;
+}
+
+function appendObservation(record) {
+  const observation = normalizeObservationRecord(record);
+  const next = [observation, ...readObservations().filter((item) => item.id !== observation.id)].slice(0, maxObservations);
+  writeObservations(next);
+  return observation;
+}
+
+function listObservations(sessionId, limit = defaultObservationLimit) {
+  const safeLimit = Math.max(1, Math.min(maxObservationLimit, Number.parseInt(String(limit || defaultObservationLimit), 10) || defaultObservationLimit));
+  const safeId = sessionId ? sanitizeSessionId(sessionId) : null;
+  const items = readObservations().filter((item) => !safeId || item.session_id === safeId);
+  return items.slice(0, safeLimit);
+}
+
+function requestOllamaVisionDescription(model, prompt, imageBase64) {
+  return new Promise((resolve, reject) => {
+    const body = JSON.stringify({
+      model,
+      prompt,
+      images: [imageBase64],
+      stream: false,
+    });
+
+    const req = http.request({
+      hostname: "127.0.0.1",
+      port: 11434,
+      path: "/api/generate",
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Content-Length": Buffer.byteLength(body),
+      },
+      timeout: observeFrameTimeoutMs,
+    }, (res) => {
+      let data = "";
+      res.on("data", (chunk) => { data += chunk; });
+      res.on("end", () => {
+        if (res.statusCode < 200 || res.statusCode >= 300) {
+          const err = new Error(`ollama_http_${res.statusCode}`);
+          err.code = "OLLAMA_HTTP_ERROR";
+          err.details = data;
+          reject(err);
+          return;
+        }
+        try {
+          resolve(JSON.parse(data || "{}"));
+        } catch {
+          const err = new Error("ollama_invalid_json");
+          err.code = "OLLAMA_INVALID_JSON";
+          reject(err);
+        }
+      });
+    });
+
+    req.on("error", (error) => reject(error));
+    req.on("timeout", () => {
+      const err = new Error("ollama_timeout");
+      err.code = "OLLAMA_TIMEOUT";
+      req.destroy(err);
+    });
+    req.write(body);
+    req.end();
   });
 }
 
@@ -930,6 +1155,26 @@ function closeCurrentActiveSession() {
   store.current_session = next;
   store.recent_sessions = upsertRecentSessionSummary(store.recent_sessions, next);
   return writeActiveSessionStore(store).current_session;
+}
+
+function getStoredSessionById(sessionId) {
+  const safeId = sanitizeSessionId(sessionId);
+  if (!safeId) {
+    return null;
+  }
+  const store = readActiveSessionStore();
+  return safeId === store.current_session?.session_id
+    ? normalizeActiveSession(store.current_session)
+    : normalizeActiveSession((store.recent_sessions || []).find((session) => session?.session_id === safeId));
+}
+
+function resolveLatestFramePathForSession(sessionId) {
+  const safeId = sanitizeSessionId(sessionId);
+  if (!safeId) {
+    return null;
+  }
+  const candidate = resolveSessionFramePath(safeId, "latest.png");
+  return candidate && fs.existsSync(candidate) ? candidate : null;
 }
 
 function resolveFramePathForSession(sessionId, frameName) {
@@ -4318,6 +4563,156 @@ async function handleApiRequest(request, response, requestUrl) {
     return;
   }
 
+  if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/active/observations") {
+    const rawSessionId = String(requestUrl.searchParams.get("session_id") || "").trim();
+    if (rawSessionId && !sanitizeSessionId(rawSessionId)) {
+      sendJson(response, 200, { ok: false, error: "invalid_session_id", observations: [] });
+      return;
+    }
+    const rawLimit = requestUrl.searchParams.get("limit");
+    const observations = listObservations(rawSessionId || null, rawLimit || defaultObservationLimit);
+    sendJson(response, 200, {
+      ok: true,
+      observations,
+      session_id: rawSessionId || null,
+      limit: observations.length,
+    });
+    return;
+  }
+
+  // FUTURE ACTION HOOK - scaffold only:
+  // If an observation is ever used to trigger an action such as click, type, browser navigation,
+  // shell, file write, or external request, that action must go through requiresOperatorApproval
+  // plus action-bound and payload-bound approval consumption. Observations alone never authorize actions.
+  // Do not wire this milestone.
+  if (request.method === "POST" && requestUrl.pathname === "/api/ghoti/active/observe-frame") {
+    const body = await readJsonBody(request);
+    const rawSessionId = String(body.session_id || "").trim();
+    const customPrompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
+
+    if (!rawSessionId) {
+      sendJson(response, 200, { ok: false, error: "session_id_required" });
+      return;
+    }
+
+    const sessionId = sanitizeSessionId(rawSessionId);
+    if (!sessionId) {
+      sendJson(response, 200, { ok: false, error: "invalid_session_id" });
+      return;
+    }
+
+    const session = getStoredSessionById(sessionId);
+    if (!session) {
+      sendJson(response, 200, { ok: false, error: "session_not_found" });
+      return;
+    }
+
+    if (observationRequestsInFlight.has(sessionId)) {
+      sendJson(response, 200, { ok: false, error: "observation_in_flight" });
+      return;
+    }
+
+    const prompt = customPrompt || defaultObservationPrompt;
+    const requestedAtUtc = new Date().toISOString();
+    const framePath = resolveLatestFramePathForSession(sessionId);
+    const framePathRelative = toRepoRelativePath(framePath);
+    const frameTsUtc = typeof session.latest_frame_utc === "string" ? session.latest_frame_utc : null;
+
+    observationRequestsInFlight.add(sessionId);
+
+    try {
+      if (!framePath) {
+        const observation = appendObservation({
+          session_id: sessionId,
+          frame_path: framePathRelative,
+          frame_ts_utc: frameTsUtc,
+          requested_at_utc: requestedAtUtc,
+          completed_at_utc: new Date().toISOString(),
+          model: null,
+          prompt,
+          description: "",
+          latency_ms: null,
+          status: "no_frame",
+          error: "No latest frame available for this session.",
+        });
+        sendJson(response, 200, { ok: false, error: "no_frame", observation });
+        return;
+      }
+
+      const visionStatus = await getOllamaVisionStatus();
+      if (!visionStatus.available) {
+        const observation = appendObservation({
+          session_id: sessionId,
+          frame_path: framePathRelative,
+          frame_ts_utc: frameTsUtc,
+          requested_at_utc: requestedAtUtc,
+          completed_at_utc: new Date().toISOString(),
+          model: null,
+          prompt,
+          description: "",
+          latency_ms: null,
+          status: visionStatus.reason,
+          error: visionStatus.reason === "ollama_unreachable"
+            ? "Ollama not reachable at 127.0.0.1:11434."
+            : "No vision-capable Ollama model found.",
+        });
+        sendJson(response, 200, {
+          ok: false,
+          error: visionStatus.reason,
+          hint: visionStatus.reason === "no_vision_model_available" ? "Run: ollama pull llava:7b" : null,
+          observation,
+        });
+        return;
+      }
+
+      const imageBase64 = fs.readFileSync(framePath).toString("base64");
+      const startedAt = Date.now();
+      const ollamaPayload = await requestOllamaVisionDescription(visionStatus.model, prompt, imageBase64);
+      const description = String(ollamaPayload?.response || "").trim();
+      if (!description) {
+        throw new Error("ollama_empty_response");
+      }
+
+      const observation = appendObservation({
+        session_id: sessionId,
+        frame_path: framePathRelative,
+        frame_ts_utc: frameTsUtc,
+        requested_at_utc: requestedAtUtc,
+        completed_at_utc: new Date().toISOString(),
+        model: visionStatus.model,
+        prompt,
+        description,
+        latency_ms: Date.now() - startedAt,
+        status: "ok",
+        error: null,
+      });
+      sendJson(response, 200, { ok: true, observation });
+      return;
+    } catch (error) {
+      const status = error?.code === "OLLAMA_TIMEOUT" ? "timeout" : "error";
+      const errorMessage = error?.details
+        ? `${error.message}: ${String(error.details).trim().slice(0, 1000)}`
+        : (error?.message || "Observer request failed.");
+      const observation = appendObservation({
+        session_id: sessionId,
+        frame_path: framePathRelative,
+        frame_ts_utc: frameTsUtc,
+        requested_at_utc: requestedAtUtc,
+        completed_at_utc: new Date().toISOString(),
+        model: null,
+        prompt,
+        description: "",
+        latency_ms: null,
+        status,
+        error: errorMessage,
+      });
+      sendJson(response, 200, { ok: false, error: status, observation });
+      return;
+    } finally {
+      observationRequestsInFlight.delete(sessionId);
+    }
+  }
+
   if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/active/session/cleanup-preview") {
     const rawSessionId = String(requestUrl.searchParams.get("session_id") || "").trim();
     if (!rawSessionId) {
@@ -4527,6 +4922,9 @@ async function handleApiRequest(request, response, requestUrl) {
     const isActive = Boolean(activeState.active);
     const isCapturing = Boolean(captureState.capturing);
     const operatorStatus = isCapturing ? "watching" : isActive ? "active" : "idle";
+    const visionStatus = await getOllamaVisionStatus();
+    const observations = readObservations();
+    const lastObservation = observations[0] || null;
     sendJson(response, 200, {
       ok: true,
       status: operatorStatus,
@@ -4547,11 +4945,19 @@ async function handleApiRequest(request, response, requestUrl) {
         listening: Boolean(voiceState.listening),
       },
       brain: {
-        provider: "none",
-        reachable: false,
-        model: null,
+        provider: visionStatus.reason === "ollama_unreachable" ? "none" : "ollama",
+        reachable: visionStatus.reason !== "ollama_unreachable",
+        model: visionStatus.model,
         drives_operator: false,
-        note: "Brain not checked inline. Use /api/ghoti/brain/status for live Ollama probe.",
+        note: "Ollama visibility is read-only here. Reachable does not mean wired. Observations never plan or execute actions.",
+      },
+      vision: {
+        available: visionStatus.available,
+        model: visionStatus.model,
+        observations_total: observations.length,
+        last_observation_at_utc: lastObservation?.completed_at_utc || lastObservation?.requested_at_utc || null,
+        read_only: true,
+        drives_operator: false,
       },
       operator: {
         desktop_actions_available: desktopBridgeExists,
@@ -4582,23 +4988,37 @@ async function handleApiRequest(request, response, requestUrl) {
     return;
   }
 
+  if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/brain/vision-status") {
+    const visionStatus = await getOllamaVisionStatus();
+    sendJson(response, 200, {
+      ok: true,
+      vision: {
+        ...visionStatus,
+        note: buildVisionStatusNote(visionStatus),
+      },
+      updated_at_utc: new Date().toISOString(),
+    });
+    return;
+  }
+
   // Brain status — probes Ollama directly; always 200 (reachable:false = not configured, not an error)
   if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/brain/status") {
-    const { reachable, models } = await checkOllamaReachable();
-    const modelCount = models.length;
+    const visionStatus = await getOllamaVisionStatus();
     sendJson(response, 200, {
       ok: true,
       brain: {
-        provider: reachable ? "ollama" : "none",
-        reachable,
-        models,
-        active_model: models[0] || null,
+        provider: visionStatus.reason === "ollama_unreachable" ? "none" : "ollama",
+        reachable: visionStatus.reason !== "ollama_unreachable",
+        models: visionStatus.all_models,
+        active_model: visionStatus.model || visionStatus.all_models[0] || null,
         drives_operator: false,
-        frame_understanding: false,
+        frame_understanding: Boolean(visionStatus.available),
         action_planning: false,
-        note: reachable
-          ? `Ollama reachable at 127.0.0.1:11434. Models loaded: ${modelCount}. Not wired to drive operator. No frame understanding. No action planning.`
-          : "Ollama not reachable at 127.0.0.1:11434. No local brain available. Not wired to drive operator. No frame understanding. No action planning.",
+        note: visionStatus.available
+          ? `Ollama reachable at 127.0.0.1:11434. Vision model detected: ${visionStatus.model}. Read-only frame observer can describe captured frames. It does not drive operator actions.`
+          : visionStatus.reason === "no_vision_model_available"
+            ? "Ollama reachable at 127.0.0.1:11434, but no vision-capable model is installed. Run: ollama pull llava:7b. Not wired to drive operator actions."
+            : "Ollama not reachable at 127.0.0.1:11434. No local brain available. Not wired to drive operator actions.",
       },
     });
     return;
