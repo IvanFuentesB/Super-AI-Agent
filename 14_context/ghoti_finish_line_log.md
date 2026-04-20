@@ -736,10 +736,10 @@ Recommended: validate the observer with a pulled local vision model (`ollama pul
 feat/ghoti-visible-operator-stack
 
 ### Commit hash
-(set after commit below)
+a0f0afe
 
 ### Push status
-(set after push)
+PENDING — run manually: git push origin feat/ghoti-visible-operator-stack
 
 ### Audit summary
 - HEAD and remote both at adea7b1 ✓
