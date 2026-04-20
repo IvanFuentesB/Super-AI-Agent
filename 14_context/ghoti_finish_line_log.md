@@ -818,3 +818,1019 @@ What remains scaffold:
 ### Next milestone recommendation
 
 Recommended: Install or restore Gemma model inventory (`ollama pull gemma3`), then re-run model diagnostic probe to validate local text model. Do not recommend LLaVA unless user explicitly asks.
+
+---
+
+## Milestone N+1.5 — Dashboard UX Rebuild — Clean Operator Console (FINAL)
+
+### Date
+2026-04-20
+
+### Branch
+feat/ghoti-visible-operator-stack
+
+### Starting local HEAD
+5e0f186
+
+### Starting remote HEAD
+adea7b1
+
+### Final commit hash
+(see git log after this commit)
+
+### Push status
+(recorded after push)
+
+### Files modified
+- `01_projects/dashboard_mvp/public/index.html` — new console shell: topbar (48px), sidebar (240px, 10 views), per-view panels, right-side drawer (400px), KPI strip on Overview; old sections preserved hidden in ui-staging-root
+- `01_projects/dashboard_mvp/public/styles.css` — full design token rewrite: Linear/Vercel/Stripe aesthetic, light monochrome, one accent (#2563eb), 14px base, --drawer-width:400px; all old styles purged
+- `01_projects/dashboard_mvp/public/app.js` — localStorage removed; new console view switching (CONSOLE_VIEWS); setActiveConsoleView(); openConsoleDrawer/closeConsoleDrawer; topbar meta update; global-refresh-btn wired; topbar-settings-btn wired
+- `14_context/ghoti_finish_line_log.md` — this entry
+
+### Phase A audit summary
+- 525 DOM IDs audited, 189 getElementById targets, 66 API URLs
+- 3 Phase A routes returning 500 (approval-inbox, manual-queue, supervisor/status, pipeline-items) — preserved honest as-is
+- /api/ghoti/system/health returns 404 — preserved honest (backend not in scope)
+- localStorage usage in old code confirmed and removed in rebuild
+
+### UI rebuild summary
+- New console shell: topbar 48px, sidebar 240px always-visible, 10 nav sections exactly per spec
+- Sidebar sections: Overview, Active Mode, Approvals, Executor, Desktop, Browser, Artifacts, Personal Ops, GitHub, System
+- KPI strip: 4 dense cards (Pending, Ready, Active, Frames), 80px each on Overview
+- One global refresh button in topbar only
+- Right-side drawer, 400px, one at a time (approval, task, artifact modes)
+- Tab switching via JS data-console-view attributes, no page reload
+- All old sections preserved hidden in ui-staging-root for DOM ID compatibility
+- Legacy-compat IDs fully intact (no duplicates)
+- localStorage fully removed (no handoff preferences stored, no tab persistence stored)
+- Design tokens: all 14 tokens match spec exactly
+- Animations: 150ms drawer fade/slide via CSS transition
+- Scaffold labels: Voice, YouTube Follower, Observer all labeled correctly
+- Honesty labels: local-only frames, Ollama not driving operator, overlay browser-based
+
+### Validation results
+| Check | Result |
+|---|---|
+| node --check server.js | PASS |
+| node --check app.js | PASS |
+| node --check overlay.js | PASS |
+| GET / | 200 |
+| GET /overlay | 200 |
+| GET /api/ghoti/approvals?status=pending | 200 |
+| GET /api/ghoti/active-state | 200 |
+| GET /api/ghoti/brain/vision-status | 200 |
+| GET /api/operator-status | 200 |
+| GET /api/github-updates | 200 |
+| GET /api/ghoti/system/health | 404 (backend route missing — honest, not hidden) |
+| GET /api/ghoti/approval-inbox | 500 (known Phase A — honest) |
+| GET /api/ghoti/manual-queue | 500 (known Phase A — honest) |
+| GET /api/supervisor/status | 500 (known Phase A — honest) |
+| GET /api/ghoti/pipeline-items | 500 (known Phase A — honest) |
+| Duplicate DOM IDs | PASS — none found |
+| localStorage usage | PASS — none in new code |
+| Visible refresh buttons | PASS — one only (global-refresh-btn) |
+| Design tokens | PASS — all 14 match spec |
+| Topbar height | PASS — 48px |
+| Sidebar width | PASS — 240px |
+| Drawer width | PASS — 400px |
+
+### Active Mode regression result
+- Session start: PASS (ok: true)
+- Capture start: PASS (ok: true)
+- frame_count after 5s: 5 frames ✓
+- latest-frame: PASS — 200 image/png
+- Capture stop: PASS (ok: true)
+- Active stop: PASS (ok: true)
+
+### Approval lifecycle result
+- Create (token redacted to [REDACTED]): PASS
+- Approve: PASS (status: approved)
+- Consume (correct action_type): PASS (status: consumed)
+- Replay consume: PASS (error: already_consumed)
+
+### Overlay result
+- GET /overlay: 200 ✓
+
+### Duplicate ID result
+- PASS: no duplicates found
+
+### Manual browser checklist
+- [ ] Overview dense KPI strip visible — 4 cards: Pending, Ready, Active, Frames
+- [ ] Sidebar tab switching works — 10 nav items, JS-driven, no page reload
+- [ ] Approvals table/list renders — Approval Queue in Approvals view
+- [ ] Active Mode panel still works — session, capture, gallery, observer
+- [ ] Local Brain Truth still honest — Ollama reachable, drives_operator:false, action_planning:false
+- [ ] Scaffold labels visible — Voice, YouTube, Observer all labeled
+- [ ] No extra refresh buttons visible — only global-refresh-btn in topbar
+- [ ] Drawer opens/closes only on explicit inspect/preview
+
+### Honest status
+- UI rebuilt: YES — new console shell with topbar, sidebar, per-view panels, drawer
+- Zero backend behavior change: YES — no server.js edits, no route changes
+- All scaffold labels preserved: YES — Voice scaffold, YouTube scaffold, Observer diagnostic probe
+- No autonomous action added: YES — no autonomy, no hidden execution
+- LocalStorage removed: YES — no handoff preferences or tab state stored
+
+### Files intentionally not staged
+- `21_repos/third_party/.gitkeep`
+- `01_projects/mcp_server/test.txt`
+- `01_projects/runtime_mvp/runtime_data/*.json`
+- `01_projects/dashboard_mvp/.tmp-screenshots/**`
+
+### Next milestone recommendation
+**Recommended: Pull and validate a local vision model**
+`ollama pull llava:7b` or `ollama pull moondream` then re-run observe-frame to validate the happy-path observer description. This is read-only and does not add any autonomous execution.
+
+---
+## 2026-04-20T18:26:46Z — Dashboard UX Rebuild — Clean Operator Console (N+1.5) — Phase A Audit
+- Branch: `feat/ghoti-visible-operator-stack`
+- Starting local HEAD: `5e0f186`
+- Starting remote HEAD: `adea7b1`
+- Current git truth: local branch is ahead by 2 commits (`a0f0afe`, `5e0f186`); preserve local N+1.4 work.
+- Current dashboard port in code: `3210` default via `process.env.PORT || "3210"`.
+- Live audit port used: `3212` because `3210` was occupied by a stale listener outside this session.
+
+### Phase A route inventory used by current UI
+| Method | Path | Current live status | Response shape / note |
+|---|---|---:|---|
+| POST | `/api/approvals/decision` | not probed | write action, dynamic path, or template URL |
+| GET | `/api/approvals/item?approvalId=${encodeURIComponent(approvalId)}` | not probed | write action, dynamic path, or template URL |
+| GET | `/api/approvals/pending` | 200 | summary.count/requests[] |
+| GET | `/api/artifacts` | 200 | artifacts[] recent local artifacts |
+| POST | `/api/artifacts/preview` | not probed | write action, dynamic path, or template URL |
+| GET | `/api/capability-summary` | 200 | summary.capabilities/availableCount/blockedCount |
+| POST | `/api/desktop-bridge/check` | not probed | write action, dynamic path, or template URL |
+| GET | `/api/desktop-bridge/handoff-targets` | 200 | summary.codexCandidates/chatgptCandidates |
+| GET | `/api/desktop-bridge/status` | 200 | summary mode/headline/tool availability |
+| POST | `/api/executor/queue` | not probed | write action, dynamic path, or template URL |
+| GET | `/api/executor/tasks` | not probed | write action, dynamic path, or template URL |
+| GET | `/api/ghoti/active-state` | 200 | state.active/mode/screen_view_enabled |
+| GET | `/api/ghoti/active/capture-state` | 200 | captureState.capturing/frame_count/latest_frame_path |
+| POST | `/api/ghoti/active/capture/start` | not probed | write action, dynamic path, or template URL |
+| POST | `/api/ghoti/active/capture/stop` | not probed | write action, dynamic path, or template URL |
+| GET | `/api/ghoti/active/frames` | 200 | session + frames[] |
+| POST | `/api/ghoti/active/observe-frame` | not probed | write action, dynamic path, or template URL |
+| GET | `/api/ghoti/active/session` | 200 | session current active/stopped session record |
+| POST | `/api/ghoti/active/session/cleanup-confirm` | not probed | write action, dynamic path, or template URL |
+| GET | `/api/ghoti/active/session/cleanup-preview?session_id=${encodeURIComponent(sessionId)}` | not probed | write action, dynamic path, or template URL |
+| GET | `/api/ghoti/active/sessions` | 200 | sessions[] recent bounded sessions |
+| GET | `/api/ghoti/approval-inbox` | 500 | server-side error in current backend |
+| POST | `/api/ghoti/approval/approve` | not probed | write action, dynamic path, or template URL |
+| POST | `/api/ghoti/approval/reject` | not probed | write action, dynamic path, or template URL |
+| POST | `/api/ghoti/approvals/${encodeURIComponent(id)}/approve` | not probed | write action, dynamic path, or template URL |
+| POST | `/api/ghoti/approvals/${encodeURIComponent(id)}/reject` | not probed | write action, dynamic path, or template URL |
+| GET | `/api/ghoti/approvals?status=all` | not probed | write action, dynamic path, or template URL |
+| GET | `/api/ghoti/audit-trace?approval_id=${encodeURIComponent(approvalId)}` | not probed | write action, dynamic path, or template URL |
+| GET | `/api/ghoti/brain/vision-status` | 200 | vision.available/model/reason/note |
+| GET | `/api/ghoti/control-center-state` | 200 | summary.latest_operator_state/lifecycle_health |
+| GET | `/api/ghoti/control-center?${query.toString()}` | not probed | write action, dynamic path, or template URL |
+| GET | `/api/ghoti/manual-queue` | 500 | server-side error in current backend |
+| POST | `/api/ghoti/manual-queue/review` | not probed | write action, dynamic path, or template URL |
+| POST | `/api/ghoti/models/gemma-probe` | not probed | write action, dynamic path, or template URL |
+| GET | `/api/ghoti/models/probes?limit=5` | not probed | write action, dynamic path, or template URL |
+| GET | `/api/ghoti/pipeline-items` | 500 | server-side error in current backend |
+| GET | `/api/ghoti/pipeline-state` | 200 | summary.pending_approvals/ready_items/reviewed_items |
+| GET | `/api/ghoti/system/health` | 404 | route missing in current backend |
+| POST | `/api/ghoti/voice/mute` | not probed | write action, dynamic path, or template URL |
+| POST | `/api/ghoti/voice/unmute` | not probed | write action, dynamic path, or template URL |
+| POST | `/api/ghoti/youtube-follower/queue` | not probed | write action, dynamic path, or template URL |
+| GET | `/api/github-updates` | 200 | summary.branch/clean/remoteWritePossible/commits |
+| GET | `/api/operator-status` | 200 | headline/dashboardUrl/liveNow/scaffoldOnly/notImplementedYet |
+| GET | `/api/recent-actions` | 200 | actions[] recent dashboard/local actions |
+| GET | `/api/supervisor/status` | 500 | server-side error in current backend |
+| POST | `/api/tasks/action` | not probed | write action, dynamic path, or template URL |
+| GET | `/api/tasks/item?taskId=${encodeURIComponent(taskId)}` | not probed | write action, dynamic path, or template URL |
+
+### Phase A DOM ID list (pre-edit)
+Count: **525**
+
+```text
+ghoti-state-indicator
+ghoti-indicator-state
+ghoti-indicator-note
+ghoti-overlay-watchdog-pill
+ghoti-overlay-watchdog-count
+ghoti-overlay-watchdog-summary
+ghoti-overlay-target-label
+ghoti-overlay-target-detail
+ghoti-overlay-hotkey
+ghoti-target-marker
+ghoti-target-marker-label
+ghoti-target-marker-detail
+ghoti-active-mode-rail
+ghoti-active-rail-label
+sidebar
+tab-badge-approvals
+sidebar-commit-info
+page-main
+section-overview
+overview-chip-row
+overview-chip-active
+overview-chip-approvals
+overview-chip-vision
+next-actions-card
+next-actions-list
+section-health
+ghoti-brain-truth-card
+ghoti-models-ollama
+ghoti-models-count
+ghoti-models-gemma
+ghoti-models-selected
+ghoti-models-vision
+ghoti-models-drives-operator
+ghoti-models-action-planning
+ghoti-models-probe-btn
+ghoti-models-probe-result
+ghoti-models-probe-history
+health-table
+health-row-active
+health-chip-active
+health-detail-active
+health-row-capture
+health-chip-capture
+health-detail-capture
+health-row-approvals
+health-chip-approvals
+health-detail-approvals
+health-row-ollama
+health-chip-ollama
+health-detail-ollama
+health-row-vision
+health-chip-vision
+health-detail-vision
+health-row-observer
+health-chip-observer
+health-detail-observer
+health-row-voice
+health-row-youtube
+health-row-overlay
+section-active
+ghoti-active-mode-panel
+ghoti-active-pill
+ghoti-active-last-event
+ghoti-active-start-btn
+ghoti-active-stop-btn
+ghoti-active-snapshot-btn
+ghoti-session-status-badge
+ghoti-session-empty
+ghoti-session-current
+ghoti-session-id
+ghoti-session-started
+ghoti-session-stopped
+ghoti-session-frame-count
+ghoti-session-reviewed
+ghoti-session-retention
+ghoti-session-note
+ghoti-session-history-empty
+ghoti-session-history
+ghoti-capture-start-btn
+ghoti-capture-stop-btn
+ghoti-capture-pill
+ghoti-capture-meta
+ghoti-capture-fps
+ghoti-capture-count
+ghoti-capture-time
+ghoti-capture-preview-row
+ghoti-capture-latest-link
+ghoti-capture-latest-img
+ghoti-capture-gallery-empty
+ghoti-capture-gallery
+ghoti-capture-error
+ghoti-active-msg-input
+ghoti-active-send-btn
+ghoti-active-snapshot-preview
+ghoti-active-snapshot-link
+ghoti-active-feedback
+section-approvals
+ghoti-approval-queue-panel
+ghoti-approvals-refresh
+ghoti-approvals-pending-count
+ghoti-approvals-pending-list
+ghoti-approvals-result
+ghoti-approvals-recent-list
+ghoti-approval-inbox-panel
+refresh-approval-inbox
+approval-inbox-summary
+approval-inbox-list
+approval-inbox-action-result
+approval-inbox-reject-form
+approval-inbox-reject-id
+approval-inbox-reject-reason
+approval-inbox-reject-confirm
+approval-inbox-reject-cancel
+ghoti-manual-queue-panel
+refresh-manual-queue
+manual-queue-summary
+manual-queue-list
+manual-queue-action-result
+manual-queue-review-form
+manual-queue-review-id
+manual-queue-review-note
+manual-queue-review-confirm
+manual-queue-review-cancel
+ghoti-audit-trace-panel
+refresh-audit-trace
+audit-trace-id-input
+audit-trace-summary
+audit-trace-body
+section-observer
+observer-no-model-banner
+ghoti-observer-heading
+ghoti-observer-note
+ghoti-observer-availability
+ghoti-observer-model
+ghoti-observer-last
+ghoti-observer-session-id
+ghoti-observer-prompt
+ghoti-observer-run-btn
+ghoti-observer-result
+ghoti-observer-history-empty
+ghoti-observer-history
+section-voice
+ghoti-voice-note
+ghoti-voice-mute-btn
+ghoti-voice-unmute-btn
+section-youtube
+ghoti-yt-url-input
+ghoti-yt-goal-input
+ghoti-yt-queue-btn
+ghoti-yt-result
+section-runbook
+runbook-no-vision
+runbook-vision-code
+runbook-port-code
+runbook-start-code
+runbook-validate-code
+section-about
+about-commit
+legacy-compat
+legacy-tab-nav
+tab-dashboard
+tab-approvals
+tab-pipeline
+tab-control
+tab-tools
+tab-system
+tab-active
+panel-dashboard
+ghoti-needs-action-panel
+refresh-needs-action
+needs-action-banner
+needs-action-message
+needs-action-pending-count
+needs-action-ready-count
+needs-action-items
+needs-action-goto-approvals
+needs-action-goto-queue
+dashboard-activity-note
+dashboard-activity-list
+dashboard-errors-note
+dashboard-errors-list
+dashboard-strip-decision
+dashboard-strip-action
+dashboard-strip-pending
+dashboard-strip-ready
+dashboard-strip-status
+operator-headline
+operator-next-step
+supervisor-headline
+supervisor-quick-note
+capability-headline
+capability-counts
+github-headline
+github-quick-note
+desktop-headline
+desktop-quick-note
+panel-approvals
+refresh-supervisor
+supervisor-status
+supervisor-pending-count
+supervisor-human-needed-count
+supervisor-waiting-count
+supervisor-ready-count
+supervisor-interrupted-count
+ghoti-state-panel
+ghoti-state-label
+ghoti-state-pill
+ghoti-state-reason
+ghoti-next-step
+ghoti-resource-guard-count
+ghoti-resource-guard-list
+supervisor-summary
+pending-approvals-list
+approval-detail-summary
+approval-detail-id
+approval-detail-status
+approval-detail-risk
+approval-detail-task-id
+approval-detail-action-label
+approval-detail-reason
+approval-detail-scope
+approval-detail-target-paths
+approval-detail-workspace-scope
+approval-detail-workspace-policy
+approval-detail-workspace-reason
+approval-detail-allowed-root
+approval-detail-rollback
+approval-detail-admin
+approval-detail-updated-at
+approval-decision-note
+approval-approve
+approval-deny
+approval-defer
+approval-action-result
+approval-history-list
+approval-detail-raw
+human-needed-list
+interrupted-tasks-list
+waiting-tasks-list
+ready-to-resume-list
+task-detail-summary
+task-detail-id
+task-detail-status
+task-detail-risk
+task-detail-approval-state
+task-detail-title
+task-detail-description
+task-detail-executor-action
+task-detail-executor-target
+task-detail-workspace-scope
+task-detail-workspace-policy
+task-detail-workspace-reason
+task-detail-allowed-root
+task-detail-waiting-for
+task-detail-blocked-reason
+task-detail-next-action
+task-detail-last-note
+task-detail-retry-limit
+task-detail-last-attempt-count
+task-detail-last-execution-status
+task-detail-last-execution-summary
+task-detail-last-artifact-path
+task-detail-last-failure-reason
+task-detail-last-interruption-reason
+task-detail-last-resource-guard-reason
+task-action-note
+task-review
+task-resume
+task-requeue
+task-execute
+task-action-result
+task-visibility-filter
+task-recency-filter
+task-history-list
+task-execution-history-list
+task-recipe-panel
+task-detail-recipe-name
+task-detail-recipe-status
+task-detail-recipe-run-count
+task-detail-recipe-summary
+task-detail-recipe-last-run
+task-detail-recipe-source-window
+task-detail-recipe-target-window
+task-detail-recipe-source-selection-mode
+task-detail-recipe-target-selection-mode
+task-detail-recipe-source-candidate
+task-detail-recipe-target-candidate
+task-detail-recipe-clipboard-mode
+task-detail-recipe-fallback-denied
+task-detail-recipe-target-resolution
+task-detail-recipe-payload-classification
+task-detail-recipe-paste-allowed
+task-detail-recipe-send-behavior
+task-detail-recipe-send-allowed
+task-detail-recipe-source-match
+task-detail-recipe-target-match
+task-detail-recipe-blocked-payload-repeats
+task-detail-recipe-payload-preview
+task-detail-recipe-stop-reason
+task-recipe-step-list
+task-recipe-history-list
+task-detail-raw
+supervisor-raw
+panel-pipeline
+refresh-pipeline-state
+pipeline-operator-decision
+pipeline-proposed-action
+pipeline-pending-approvals
+pipeline-approved-count
+pipeline-ready-items
+pipeline-reviewed-items
+pipeline-latest-approved-id
+pipeline-latest-ready-id
+pipeline-state-summary
+refresh-pipeline-items
+pipeline-items-summary
+pipeline-items-list
+panel-control
+ghoti-refresh-state
+ghoti-control-state
+ghoti-control-reason
+ghoti-control-hotkey
+ghoti-control-hotkey-note
+ghoti-control-current-task
+ghoti-control-current-task-note
+ghoti-control-pending
+ghoti-control-blocked
+ghoti-control-actionable
+ghoti-control-failures
+ghoti-control-capabilities
+ghoti-control-artifacts
+ghoti-task-visibility-filter
+ghoti-task-limit-filter
+ghoti-task-type-filter
+ghoti-task-status-filter
+ghoti-task-active-only
+ghoti-control-filter-note
+ghoti-show-approvals
+ghoti-show-active-tasks
+ghoti-show-artifacts
+ghoti-queue-observe-desktop
+ghoti-queue-clipboard-read
+ghoti-run-runtime-checker
+ghoti-run-dashboard-checker
+ghoti-queue-handoff
+ghoti-quick-clipboard-text
+ghoti-queue-clipboard-write
+ghoti-quick-focus-window
+ghoti-queue-focus-window
+ghoti-control-action-summary
+ghoti-actionable-task-list
+ghoti-brain-provider
+ghoti-brain-model
+ghoti-brain-ready
+ghoti-brain-current-task-use
+ghoti-brain-last-call
+ghoti-brain-current-task-detail
+ghoti-brain-note
+ghoti-brain-notes
+ghoti-role-current
+ghoti-role-provider
+ghoti-role-sensitivity
+ghoti-role-count
+ghoti-role-note
+ghoti-role-roles
+ghoti-browser-use-installed
+ghoti-browser-use-ready
+ghoti-playwright-ready
+ghoti-browser-role
+ghoti-browser-action
+ghoti-browser-note
+ghoti-browser-notes
+ghoti-relay-state
+ghoti-relay-step
+ghoti-relay-source
+ghoti-relay-destination
+ghoti-relay-preset
+ghoti-relay-status
+ghoti-relay-reset
+ghoti-relay-note
+ghoti-relay-notes
+ghoti-memory-ready
+ghoti-memory-markdown-ready
+ghoti-memory-file-count
+ghoti-memory-note
+ghoti-memory-notes
+ghoti-failure-task-list
+ghoti-watchdog-state
+ghoti-watchdog-wrong-window
+ghoti-watchdog-stalled
+ghoti-watchdog-did-not-complete
+ghoti-watchdog-headline
+ghoti-watchdog-alerts
+ghoti-watchdog-handoff-hint
+ghoti-can-do-list
+ghoti-control-next-step-copy
+ghoti-next-step-list
+ghoti-cli-command-list
+ghoti-control-no-delete-note
+panel-tools
+refresh-console
+refresh-github
+quick-internship
+quick-showcase
+quick-portfolio
+quick-browser-smoke
+quick-browser-visible
+quick-desktop-check
+refresh-executor-tasks
+queue-runtime-checker
+queue-dashboard-checker
+queue-git-status
+queue-git-diff
+executor-form
+executor-queue-summary
+executor-task-list
+executor-raw
+run-browser-smoke
+browser-smoke-summary
+browser-smoke-raw
+run-browser-visible
+browser-visible-summary
+browser-visible-raw
+refresh-desktop-bridge
+desktop-powershell
+desktop-shell
+desktop-launcher
+desktop-control
+desktop-failsafe
+desktop-terminal-windows
+desktop-powershell-processes
+desktop-node-processes
+desktop-python-processes
+desktop-ollama
+desktop-resource-summary
+desktop-summary
+desktop-available-list
+desktop-missing-list
+queue-desktop-list-windows
+queue-desktop-active-window
+queue-desktop-focus-terminal
+queue-desktop-focus-vscode
+queue-desktop-open-terminal
+queue-desktop-screenshot
+queue-desktop-read-clipboard
+queue-desktop-copy-selection
+queue-desktop-paste-clipboard
+desktop-clipboard-text
+queue-desktop-set-clipboard
+desktop-hotkey-window
+desktop-hotkey-value
+queue-desktop-hotkey
+desktop-wait-seconds
+queue-desktop-wait-seconds
+desktop-wait-window
+queue-desktop-wait-window
+desktop-mouse-window
+desktop-mouse-mode
+desktop-mouse-x
+desktop-mouse-y
+queue-desktop-move-mouse
+queue-desktop-left-click
+queue-desktop-double-click
+queue-desktop-right-click
+desktop-scroll-delta
+queue-desktop-scroll
+desktop-action-summary
+desktop-task-list
+run-desktop-bridge-check
+desktop-check-summary
+desktop-raw
+queue-recipe-observe-desktop
+queue-recipe-focus-terminal
+queue-recipe-copy-focused
+queue-recipe-paste-dashboard
+queue-recipe-wait-step
+handoff-source-window
+handoff-target-window
+handoff-wait-seconds
+handoff-source-candidate
+handoff-target-candidate
+handoff-use-prepared-clipboard
+handoff-allow-send
+handoff-remember-targets
+refresh-handoff-targets
+handoff-target-summary
+handoff-target-memory-note
+queue-recipe-codex-handoff
+recipe-action-summary
+recipe-task-list
+internship-form
+internship-summary
+internship-raw
+showcase-form
+showcase-summary
+showcase-raw
+portfolio-form
+portfolio-summary
+portfolio-raw
+panel-system
+refresh-github-panel
+github-branch
+github-commits
+github-auth
+github-remote-write
+github-clean
+github-raw
+refresh-capabilities-panel
+capability-available-count
+capability-blocked-count
+capability-list
+capability-raw
+recent-actions-output
+artifacts-output
+refresh-artifacts
+artifact-preview-title
+artifact-preview-meta
+artifact-preview-status
+artifact-preview-body
+panel-active
+live-now-list
+scaffold-only-list
+not-implemented-list
+ghoti-pipeline-items-panel
+ghoti-pipeline-state-panel
+```
+
+### Phase A selector and fetch summary (pre-edit)
+- `getElementById(...)` targets: **189**
+- `querySelector(...)` targets: **4**
+- `querySelectorAll(...)` targets: **9**
+- API/overlay URL strings referenced in app.js: **66**
+
+#### getElementById targets
+```text
+approval-approve
+approval-decision-note
+approval-defer
+approval-deny
+approval-history-list
+approval-inbox-action-result
+approval-inbox-list
+approval-inbox-reject-cancel
+approval-inbox-reject-confirm
+approval-inbox-reject-form
+approval-inbox-reject-id
+approval-inbox-reject-reason
+artifact-preview-body
+artifacts-output
+audit-trace-body
+audit-trace-id-input
+capability-list
+dashboard-activity-list
+dashboard-activity-note
+dashboard-errors-list
+dashboard-errors-note
+desktop-task-list
+executor-form
+executor-task-list
+ghoti-active-feedback
+ghoti-active-last-event
+ghoti-active-mode-rail
+ghoti-active-msg-input
+ghoti-active-pill
+ghoti-active-rail-label
+ghoti-active-send-btn
+ghoti-active-snapshot-btn
+ghoti-active-snapshot-link
+ghoti-active-snapshot-preview
+ghoti-active-start-btn
+ghoti-active-stop-btn
+ghoti-approval-queue-panel
+ghoti-approvals-pending-count
+ghoti-approvals-pending-list
+ghoti-approvals-recent-list
+ghoti-approvals-refresh
+ghoti-approvals-result
+ghoti-capture-count
+ghoti-capture-error
+ghoti-capture-fps
+ghoti-capture-gallery
+ghoti-capture-gallery-empty
+ghoti-capture-latest-img
+ghoti-capture-latest-link
+ghoti-capture-meta
+ghoti-capture-pill
+ghoti-capture-preview-row
+ghoti-capture-start-btn
+ghoti-capture-stop-btn
+ghoti-capture-time
+ghoti-models-probe-btn
+ghoti-models-probe-history
+ghoti-models-probe-result
+ghoti-observer-availability
+ghoti-observer-history
+ghoti-observer-history-empty
+ghoti-observer-last
+ghoti-observer-model
+ghoti-observer-note
+ghoti-observer-prompt
+ghoti-observer-result
+ghoti-observer-run-btn
+ghoti-observer-session-id
+ghoti-overlay-watchdog-pill
+ghoti-queue-clipboard-read
+ghoti-queue-clipboard-write
+ghoti-queue-focus-window
+ghoti-queue-handoff
+ghoti-queue-observe-desktop
+ghoti-refresh-state
+ghoti-resource-guard-list
+ghoti-run-dashboard-checker
+ghoti-run-runtime-checker
+ghoti-session-current
+ghoti-session-empty
+ghoti-session-history
+ghoti-session-history-empty
+ghoti-session-status-badge
+ghoti-show-active-tasks
+ghoti-show-approvals
+ghoti-show-artifacts
+ghoti-state-indicator
+ghoti-state-panel
+ghoti-state-pill
+ghoti-target-marker
+ghoti-task-active-only
+ghoti-task-limit-filter
+ghoti-task-status-filter
+ghoti-task-type-filter
+ghoti-task-visibility-filter
+ghoti-voice-mute-btn
+ghoti-voice-unmute-btn
+ghoti-yt-goal-input
+ghoti-yt-queue-btn
+ghoti-yt-url-input
+github-commits
+handoff-remember-targets
+handoff-source-candidate
+handoff-target-candidate
+internship-form
+manual-queue-action-result
+manual-queue-list
+manual-queue-review-cancel
+manual-queue-review-confirm
+manual-queue-review-form
+manual-queue-review-id
+manual-queue-review-note
+needs-action-banner
+needs-action-goto-approvals
+needs-action-goto-queue
+needs-action-items
+next-actions-list
+observer-no-model-banner
+pending-approvals-list
+pipeline-items-list
+portfolio-form
+queue-dashboard-checker
+queue-desktop-active-window
+queue-desktop-copy-selection
+queue-desktop-double-click
+queue-desktop-focus-terminal
+queue-desktop-focus-vscode
+queue-desktop-hotkey
+queue-desktop-left-click
+queue-desktop-list-windows
+queue-desktop-move-mouse
+queue-desktop-open-terminal
+queue-desktop-paste-clipboard
+queue-desktop-read-clipboard
+queue-desktop-right-click
+queue-desktop-screenshot
+queue-desktop-scroll
+queue-desktop-set-clipboard
+queue-desktop-wait-seconds
+queue-desktop-wait-window
+queue-git-diff
+queue-git-status
+queue-recipe-codex-handoff
+queue-recipe-copy-focused
+queue-recipe-focus-terminal
+queue-recipe-observe-desktop
+queue-recipe-paste-dashboard
+queue-recipe-wait-step
+queue-runtime-checker
+quick-browser-smoke
+quick-browser-visible
+quick-desktop-check
+quick-internship
+quick-portfolio
+quick-showcase
+recent-actions-output
+recipe-task-list
+refresh-approval-inbox
+refresh-artifacts
+refresh-audit-trace
+refresh-capabilities-panel
+refresh-console
+refresh-desktop-bridge
+refresh-executor-tasks
+refresh-github
+refresh-github-panel
+refresh-handoff-targets
+refresh-manual-queue
+refresh-needs-action
+refresh-pipeline-items
+refresh-pipeline-state
+refresh-supervisor
+run-browser-smoke
+run-browser-visible
+run-desktop-bridge-check
+showcase-form
+tab-badge-approvals
+task-action-note
+task-execute
+task-execution-history-list
+task-history-list
+task-recency-filter
+task-recipe-history-list
+task-recipe-panel
+task-recipe-step-list
+task-requeue
+task-resume
+task-review
+task-visibility-filter
+```
+
+#### querySelector targets
+```text
+.ghoti-cleanup-confirm-input
+.ghoti-cleanup-result
+.ghoti-session-cleanup-area
+.ghoti-session-review-note
+```
+
+#### querySelectorAll targets
+```text
+.approve-inbox-btn
+.content-section[id]
+.reject-inbox-btn
+.review-queue-btn
+.tab-btn[data-tab]
+.view-inbox-trace-btn
+.view-queue-trace-btn
+.view-trace-btn
+[data-tab-panel]
+```
+
+#### URL strings in app.js
+```text
+/api/approvals/decision
+/api/approvals/item?approvalId=${encodeURIComponent(approvalId)}
+/api/approvals/pending
+/api/artifacts
+/api/artifacts/open
+/api/artifacts/preview
+/api/artifacts/reveal
+/api/browser/smoke
+/api/browser/visible
+/api/capability-summary
+/api/desktop-bridge/check
+/api/desktop-bridge/handoff-targets
+/api/desktop-bridge/status
+/api/executor/queue
+/api/executor/tasks
+/api/ghoti/active-state
+/api/ghoti/active/capture-state
+/api/ghoti/active/capture/start
+/api/ghoti/active/capture/stop
+/api/ghoti/active/frame?name=${encodeURIComponent(frameName)}&session_id=${encodeURIComponent(sessionId)}
+/api/ghoti/active/frames
+/api/ghoti/active/latest-frame
+/api/ghoti/active/latest-frame?session_id=${encodeURIComponent(sessionId)}
+/api/ghoti/active/message
+/api/ghoti/active/observations?limit=10
+/api/ghoti/active/observations?session_id=${encodeURIComponent(sessionId)}&limit=10
+/api/ghoti/active/observe-frame
+/api/ghoti/active/session
+/api/ghoti/active/session/cleanup-confirm
+/api/ghoti/active/session/cleanup-preview?session_id=${encodeURIComponent(sessionId)}
+/api/ghoti/active/session/discard
+/api/ghoti/active/session/keep
+/api/ghoti/active/session/review
+/api/ghoti/active/sessions
+/api/ghoti/active/snapshot
+/api/ghoti/active/start
+/api/ghoti/active/stop
+/api/ghoti/approval-inbox
+/api/ghoti/approval/approve
+/api/ghoti/approval/reject
+/api/ghoti/approvals/${encodeURIComponent(id)}/approve
+/api/ghoti/approvals/${encodeURIComponent(id)}/reject
+/api/ghoti/approvals?status=all
+/api/ghoti/audit-trace?approval_id=${encodeURIComponent(approvalId)}
+/api/ghoti/brain/vision-status
+/api/ghoti/control-center-state
+/api/ghoti/control-center?${query.toString()}
+/api/ghoti/manual-queue
+/api/ghoti/manual-queue/review
+/api/ghoti/models/gemma-probe
+/api/ghoti/models/probes?limit=5
+/api/ghoti/pipeline-items
+/api/ghoti/pipeline-state
+/api/ghoti/system/health
+/api/ghoti/voice/mute
+/api/ghoti/voice/unmute
+/api/ghoti/youtube-follower/queue
+/api/github-updates
+/api/operator-status
+/api/recent-actions
+/api/scaffold/internship
+/api/scaffold/portfolio
+/api/scaffold/showcase
+/api/supervisor/status
+/api/tasks/action
+/api/tasks/item?taskId=${encodeURIComponent(taskId)}
+```
+
+### Honest pre-edit findings
+- The current dashboard already mixes two UI generations: visible page sections plus a large hidden legacy compatibility surface.
+- Current app.js uses `localStorage` for tab persistence and handoff target memory, which conflicts with the new light-shell rebuild constraints and will need to be removed or neutralized in UI code only.
+- The current UI still exposes many visible refresh buttons; this conflicts with the single global refresh requirement.
+- The current UI calls at least one missing route (`/api/ghoti/system/health`) and several routes that currently return `500`; the rebuild must stay honest about those failures and must not hide them behind fake-green UI.
+- Backend changes are explicitly out of scope for N+1.5; the rebuild must preserve route usage and surface backend truth clearly.
+
+### Phase B plan
+- Rebuild only `index.html`, `styles.css`, and the minimum safe `app.js` UI wiring.
+- Preserve every existing DOM ID from this audit.
+- Keep existing API calls and action behavior intact.
+- Introduce one top bar, one sidebar, one visible tab panel at a time, one global refresh control, and one right-side drawer.

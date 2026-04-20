@@ -10,10 +10,29 @@ const uiState = {
   handoffTargetsPayload: null,
   latestControlCenterSummary: null,
   activeConsoleTab: "dashboard",
+  activeConsoleView: "overview",
+  drawerMode: "",
+  handoffTargetPreferences: {
+    rememberSelectedCandidates: false,
+    sourceCandidateId: "",
+    targetCandidateId: "",
+  },
 };
 const HANDOFF_TARGET_PREFERENCES_KEY = "ghoti.handoffTargetPreferences.v1";
 const CONSOLE_TAB_STORAGE_KEY = "ghoti.consoleActiveTab.v1";
 const CONSOLE_TABS = ["dashboard", "approvals", "pipeline", "control", "tools", "system", "active"];
+const CONSOLE_VIEWS = [
+  "overview",
+  "active-mode",
+  "approvals",
+  "executor",
+  "desktop",
+  "browser",
+  "artifacts",
+  "personal-ops",
+  "github",
+  "system",
+];
 
 const desktopActionTypes = new Set([
   "list_windows",
@@ -86,52 +105,27 @@ function setValue(id, value) {
 }
 
 function loadHandoffTargetPreferences() {
-  try {
-    const raw = window.localStorage.getItem(HANDOFF_TARGET_PREFERENCES_KEY);
-    if (!raw) {
-      return {
-        rememberSelectedCandidates: false,
-        sourceCandidateId: "",
-        targetCandidateId: "",
-      };
-    }
-
-    const parsed = JSON.parse(raw);
-    return {
-      rememberSelectedCandidates: Boolean(parsed?.rememberSelectedCandidates),
-      sourceCandidateId: String(parsed?.sourceCandidateId || ""),
-      targetCandidateId: String(parsed?.targetCandidateId || ""),
-    };
-  } catch (error) {
-    return {
-      rememberSelectedCandidates: false,
-      sourceCandidateId: "",
-      targetCandidateId: "",
-    };
-  }
+  return {
+    rememberSelectedCandidates: Boolean(uiState.handoffTargetPreferences?.rememberSelectedCandidates),
+    sourceCandidateId: String(uiState.handoffTargetPreferences?.sourceCandidateId || ""),
+    targetCandidateId: String(uiState.handoffTargetPreferences?.targetCandidateId || ""),
+  };
 }
 
 function saveHandoffTargetPreferences(preferences) {
-  try {
-    window.localStorage.setItem(
-      HANDOFF_TARGET_PREFERENCES_KEY,
-      JSON.stringify({
-        rememberSelectedCandidates: Boolean(preferences?.rememberSelectedCandidates),
-        sourceCandidateId: String(preferences?.sourceCandidateId || ""),
-        targetCandidateId: String(preferences?.targetCandidateId || ""),
-      }),
-    );
-  } catch (error) {
-    // Ignore local storage errors and keep the handoff flow usable.
-  }
+  uiState.handoffTargetPreferences = {
+    rememberSelectedCandidates: Boolean(preferences?.rememberSelectedCandidates),
+    sourceCandidateId: String(preferences?.sourceCandidateId || ""),
+    targetCandidateId: String(preferences?.targetCandidateId || ""),
+  };
 }
 
 function clearHandoffTargetPreferences() {
-  try {
-    window.localStorage.removeItem(HANDOFF_TARGET_PREFERENCES_KEY);
-  } catch (error) {
-    // Ignore local storage errors and keep the handoff flow usable.
-  }
+  uiState.handoffTargetPreferences = {
+    rememberSelectedCandidates: false,
+    sourceCandidateId: "",
+    targetCandidateId: "",
+  };
 }
 
 function setSelectOptions(id, options, preferredValue = "") {
@@ -413,20 +407,11 @@ function getGhotiControlCenterFilters() {
 }
 
 function readStoredConsoleTab() {
-  try {
-    const raw = window.localStorage.getItem(CONSOLE_TAB_STORAGE_KEY);
-    return CONSOLE_TABS.includes(raw) ? raw : "";
-  } catch (_error) {
-    return "";
-  }
+  return CONSOLE_TABS.includes(uiState.activeConsoleTab) ? uiState.activeConsoleTab : "";
 }
 
 function storeConsoleTab(tabName) {
-  try {
-    window.localStorage.setItem(CONSOLE_TAB_STORAGE_KEY, tabName);
-  } catch (_error) {
-    // Ignore localStorage write failures.
-  }
+  uiState.activeConsoleTab = CONSOLE_TABS.includes(tabName) ? tabName : "dashboard";
 }
 
 function setActiveConsoleTab(tabName, options = {}) {
@@ -497,6 +482,11 @@ function scrollToElement(targetId) {
     return;
   }
 
+  const mappedView = getConsoleViewForTarget(targetId, element);
+  if (mappedView) {
+    setActiveConsoleView(mappedView, { focus: false });
+  }
+
   const panel = element.closest('[data-tab-panel]');
   if (panel?.dataset?.tabPanel) {
     setActiveConsoleTab(panel.dataset.tabPanel);
@@ -516,6 +506,620 @@ function scrollToElement(targetId) {
       block: 'start',
     });
   });
+}
+
+const TARGET_VIEW_BY_ID = {
+  "ghoti-audit-trace-panel": "approvals",
+  "ghoti-approval-inbox-panel": "approvals",
+  "ghoti-manual-queue-panel": "approvals",
+  "pending-approvals-list": "executor",
+  "human-needed-list": "executor",
+  "waiting-tasks-list": "executor",
+  "ready-to-resume-list": "executor",
+  "interrupted-tasks-list": "executor",
+  "executor-task-list": "executor",
+  "desktop-task-list": "desktop",
+  "recipe-task-list": "browser",
+  "artifacts-output": "artifacts",
+  "section-active": "active-mode",
+  "section-approvals": "approvals",
+  "section-health": "system",
+  "section-observer": "system",
+  "section-voice": "system",
+  "section-youtube": "system",
+  "section-runbook": "system",
+  "section-about": "system",
+};
+
+function getConsoleViewForTarget(targetId, element = null) {
+  const mapped = TARGET_VIEW_BY_ID[targetId];
+  if (mapped) {
+    return mapped;
+  }
+
+  const target = element || document.getElementById(targetId);
+  if (!target) {
+    return "";
+  }
+
+  const explicitPanel = target.closest("[data-console-view-panel]");
+  if (explicitPanel?.dataset?.consoleViewPanel) {
+    return explicitPanel.dataset.consoleViewPanel;
+  }
+
+  const currentSection = target.closest(".content-section");
+  if (!currentSection) {
+    return "";
+  }
+  return TARGET_VIEW_BY_ID[currentSection.id] || "";
+}
+
+function setActiveConsoleView(viewName, options = {}) {
+  const nextView = CONSOLE_VIEWS.includes(viewName) ? viewName : "overview";
+  uiState.activeConsoleView = nextView;
+
+  document.querySelectorAll(".console-nav-item[data-console-view]").forEach((button) => {
+    const isActive = button.dataset.consoleView === nextView;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-current", isActive ? "page" : "false");
+  });
+
+  document.querySelectorAll("[data-console-view-panel]").forEach((panel) => {
+    const isActive = panel.dataset.consoleViewPanel === nextView;
+    panel.hidden = !isActive;
+    panel.classList.toggle("is-active", isActive);
+  });
+
+  if (options.focus !== false) {
+    document.querySelector(`.console-nav-item[data-console-view="${nextView}"]`)?.focus();
+  }
+}
+
+function updateTopbarMeta(branchText = "", commitText = "") {
+  const branchEl = document.getElementById("topbar-branch");
+  const commitEl = document.getElementById("topbar-commit");
+  if (branchEl && branchText) {
+    branchEl.textContent = branchText;
+  }
+  if (commitEl && commitText) {
+    commitEl.textContent = commitText;
+  }
+}
+
+function closeConsoleDrawer() {
+  const drawer = document.getElementById("console-detail-drawer");
+  if (!drawer) {
+    return;
+  }
+  drawer.hidden = true;
+  drawer.setAttribute("aria-hidden", "true");
+  drawer.classList.remove("is-open");
+  document.body.classList.remove("drawer-open");
+  uiState.drawerMode = "";
+  document.querySelectorAll(".console-drawer-panel").forEach((panel) => {
+    panel.hidden = true;
+  });
+}
+
+function openConsoleDrawer(mode, title, kicker = "Details") {
+  const drawer = document.getElementById("console-detail-drawer");
+  if (!drawer) {
+    return;
+  }
+  uiState.drawerMode = mode;
+  document.getElementById("console-drawer-kicker")?.replaceChildren(document.createTextNode(kicker));
+  document.getElementById("console-drawer-title")?.replaceChildren(document.createTextNode(title));
+  document.querySelectorAll(".console-drawer-panel").forEach((panel) => {
+    panel.hidden = panel.id !== `console-drawer-${mode}`;
+  });
+  drawer.hidden = false;
+  drawer.setAttribute("aria-hidden", "false");
+  drawer.classList.add("is-open");
+  document.body.classList.add("drawer-open");
+}
+
+function createConsoleCard(title, description = "", options = {}) {
+  const article = document.createElement("section");
+  article.className = `console-subcard ${options.className || ""}`.trim();
+  if (options.id) {
+    article.id = options.id;
+  }
+
+  if (title || description) {
+    const header = document.createElement("div");
+    header.className = "console-subcard-header";
+
+    const copy = document.createElement("div");
+    if (title) {
+      const heading = document.createElement("h3");
+      heading.textContent = title;
+      copy.appendChild(heading);
+    }
+    if (description) {
+      const note = document.createElement("p");
+      note.textContent = description;
+      copy.appendChild(note);
+    }
+    header.appendChild(copy);
+    article.appendChild(header);
+  }
+
+  const body = document.createElement("div");
+  body.className = `console-subcard-body ${options.bodyClass || ""}`.trim();
+  article.appendChild(body);
+  return { article, body };
+}
+
+function mountNodeById(id, target) {
+  const node = document.getElementById(id);
+  if (!node || !target) {
+    return null;
+  }
+  target.appendChild(node);
+  return node;
+}
+
+function mountNodes(ids, target) {
+  ids.forEach((id) => {
+    mountNodeById(id, target);
+  });
+}
+
+function appendFieldRows(target, rows) {
+  rows.forEach((row) => {
+    const nodeIds = Array.isArray(row.ids) ? row.ids : [row.id];
+    const present = nodeIds
+      .map((id) => document.getElementById(id))
+      .filter(Boolean);
+    if (!present.length) {
+      return;
+    }
+
+    const item = document.createElement("div");
+    item.className = "console-data-row";
+    const label = document.createElement("span");
+    label.className = "console-data-label";
+    label.textContent = row.label;
+    const value = document.createElement("div");
+    value.className = "console-data-value";
+    present.forEach((node) => value.appendChild(node));
+    item.append(label, value);
+    target.appendChild(item);
+  });
+}
+
+function appendDebugDetails(target, title, ids) {
+  const details = document.createElement("details");
+  details.className = "console-debug-details";
+  const summary = document.createElement("summary");
+  summary.textContent = title;
+  details.appendChild(summary);
+  const body = document.createElement("div");
+  body.className = "console-debug-body";
+  mountNodes(ids, body);
+  details.appendChild(body);
+  target.appendChild(details);
+}
+
+function mountDashboardUxShell() {
+  const stagingRoot = document.getElementById("ui-staging-root");
+  if (!stagingRoot || stagingRoot.dataset.mounted === "true") {
+    return;
+  }
+  stagingRoot.dataset.mounted = "true";
+
+  mountNodeById("section-overview", document.getElementById("overview-section-slot"));
+  mountNodeById("section-active", document.getElementById("active-mode-slot"));
+  mountNodeById("section-approvals", document.getElementById("approvals-slot"));
+  mountNodeById("section-health", document.getElementById("system-health-slot"));
+
+  const overviewDashboardSlot = document.getElementById("overview-dashboard-slot");
+  if (overviewDashboardSlot) {
+    const needsActionCard = createConsoleCard("Needs Action Now", "Pending approvals, ready queue items, and operator-required next steps.");
+    mountNodeById("ghoti-needs-action-panel", needsActionCard.body);
+    overviewDashboardSlot.appendChild(needsActionCard.article);
+
+    const activityCard = createConsoleCard("Recent activity", "Latest local and supervised lifecycle events.");
+    mountNodes(["dashboard-activity-note", "dashboard-activity-list"], activityCard.body);
+    overviewDashboardSlot.appendChild(activityCard.article);
+
+    const errorCard = createConsoleCard("Recent activity / errors", "Human-readable warnings stay visible. Debug stays in dedicated blocks.");
+    mountNodes(["dashboard-errors-note", "dashboard-errors-list"], errorCard.body);
+    overviewDashboardSlot.appendChild(errorCard.article);
+
+    const summaryCard = createConsoleCard("Operator summary", "Cross-surface summary text from the existing runtime reads.");
+    appendFieldRows(summaryCard.body, [
+      { label: "Operator", id: "operator-headline" },
+      { label: "Next step", id: "operator-next-step" },
+      { label: "Supervisor", id: "supervisor-headline" },
+      { label: "Supervisor note", id: "supervisor-quick-note" },
+      { label: "Capabilities", id: "capability-headline" },
+      { label: "Capability counts", id: "capability-counts" },
+      { label: "GitHub", id: "github-headline" },
+      { label: "GitHub note", id: "github-quick-note" },
+      { label: "Desktop", id: "desktop-headline" },
+      { label: "Desktop note", id: "desktop-quick-note" },
+    ]);
+    overviewDashboardSlot.appendChild(summaryCard.article);
+  }
+
+  const overviewPipelineSlot = document.getElementById("overview-pipeline-slot");
+  if (overviewPipelineSlot) {
+    const stripCard = createConsoleCard("Pipeline strip", "Decision, proposed action, and counts from the supervised control-center state.");
+    appendFieldRows(stripCard.body, [
+      { label: "Decision", id: "dashboard-strip-decision" },
+      { label: "Action", id: "dashboard-strip-action" },
+      { label: "Pending", id: "dashboard-strip-pending" },
+      { label: "Ready", id: "dashboard-strip-ready" },
+      { label: "Status", id: "dashboard-strip-status" },
+    ]);
+    overviewPipelineSlot.appendChild(stripCard.article);
+
+    const pipelineCard = createConsoleCard("Pipeline state", "Recent pipeline status and visible items.");
+    appendFieldRows(pipelineCard.body, [
+      { label: "Operator decision", id: "pipeline-operator-decision" },
+      { label: "Proposed action", id: "pipeline-proposed-action" },
+      { label: "Pending approvals", id: "pipeline-pending-approvals" },
+      { label: "Approved", id: "pipeline-approved-count" },
+      { label: "Ready", id: "pipeline-ready-items" },
+      { label: "Reviewed", id: "pipeline-reviewed-items" },
+      { label: "Latest approved", id: "pipeline-latest-approved-id" },
+      { label: "Latest ready", id: "pipeline-latest-ready-id" },
+    ]);
+    mountNodes(["pipeline-state-summary", "pipeline-items-summary", "pipeline-items-list"], pipelineCard.body);
+    overviewPipelineSlot.appendChild(pipelineCard.article);
+  }
+
+  const executorSupervisorSlot = document.getElementById("executor-supervisor-slot");
+  if (executorSupervisorSlot) {
+    const supervisorCard = createConsoleCard("Supervisor state", "Legacy stopped-task lifecycle for human-needed queue management.");
+    appendFieldRows(supervisorCard.body, [
+      { label: "Status", id: "supervisor-status" },
+      { label: "Pending approvals", id: "supervisor-pending-count" },
+      { label: "Human needed", id: "supervisor-human-needed-count" },
+      { label: "Waiting", id: "supervisor-waiting-count" },
+      { label: "Ready", id: "supervisor-ready-count" },
+      { label: "Interrupted", id: "supervisor-interrupted-count" },
+    ]);
+    mountNodes(["supervisor-summary", "pending-approvals-list", "human-needed-list", "waiting-tasks-list", "ready-to-resume-list", "interrupted-tasks-list"], supervisorCard.body);
+    executorSupervisorSlot.appendChild(supervisorCard.article);
+  }
+
+  const executorQueueSlot = document.getElementById("executor-queue-slot");
+  if (executorQueueSlot) {
+    const queueCard = createConsoleCard("Repo executor queue", "Inline queue form plus dense repo-local task list.");
+    mountNodes(["executor-form", "executor-queue-summary", "executor-task-list"], queueCard.body);
+    appendDebugDetails(queueCard.body, "Executor raw debug", ["executor-raw"]);
+    executorQueueSlot.appendChild(queueCard.article);
+  }
+
+  const desktopStatusSlot = document.getElementById("desktop-status-slot");
+  if (desktopStatusSlot) {
+    const statusCard = createConsoleCard("Desktop bridge", "Status only. Narrow desktop-aware actions only.");
+    appendFieldRows(statusCard.body, [
+      { label: "Summary", id: "desktop-summary" },
+      { label: "PowerShell", id: "desktop-powershell" },
+      { label: "Shell command", id: "desktop-shell" },
+      { label: "Launcher", id: "desktop-launcher" },
+      { label: "Desktop control", id: "desktop-control" },
+      { label: "Failsafe", id: "desktop-failsafe" },
+      { label: "Terminal windows", id: "desktop-terminal-windows" },
+      { label: "PowerShell processes", id: "desktop-powershell-processes" },
+      { label: "Node processes", id: "desktop-node-processes" },
+      { label: "Python processes", id: "desktop-python-processes" },
+      { label: "Ollama", id: "desktop-ollama" },
+    ]);
+    mountNodes(["desktop-resource-summary", "desktop-available-list", "desktop-missing-list"], statusCard.body);
+    desktopStatusSlot.appendChild(statusCard.article);
+  }
+
+  const desktopControlsSlot = document.getElementById("desktop-controls-slot");
+  if (desktopControlsSlot) {
+    const controlsCard = createConsoleCard("Desktop queue controls", "Inline operator-triggered desktop queue controls.");
+    mountNodes([
+      "queue-desktop-list-windows",
+      "queue-desktop-active-window",
+      "queue-desktop-focus-terminal",
+      "queue-desktop-focus-vscode",
+      "queue-desktop-open-terminal",
+      "queue-desktop-screenshot",
+      "queue-desktop-read-clipboard",
+      "queue-desktop-copy-selection",
+      "queue-desktop-paste-clipboard",
+      "desktop-clipboard-text",
+      "queue-desktop-set-clipboard",
+      "desktop-hotkey-window",
+      "desktop-hotkey-value",
+      "queue-desktop-hotkey",
+      "desktop-wait-seconds",
+      "queue-desktop-wait-seconds",
+      "desktop-wait-window",
+      "queue-desktop-wait-window",
+      "desktop-mouse-window",
+      "desktop-mouse-mode",
+      "desktop-mouse-x",
+      "desktop-mouse-y",
+      "queue-desktop-move-mouse",
+      "queue-desktop-left-click",
+      "queue-desktop-double-click",
+      "queue-desktop-right-click",
+      "desktop-scroll-delta",
+      "queue-desktop-scroll",
+      "desktop-action-summary",
+      "desktop-task-list",
+      "run-desktop-bridge-check",
+      "desktop-check-summary",
+    ], controlsCard.body);
+    appendDebugDetails(controlsCard.body, "Desktop debug output", ["desktop-raw"]);
+    desktopControlsSlot.appendChild(controlsCard.article);
+  }
+
+  const browserStatusSlot = document.getElementById("browser-status-slot");
+  if (browserStatusSlot) {
+    const note = document.createElement("p");
+    note.className = "console-honest-note";
+    note.textContent = "Overlay is browser-based, not a native always-on-top desktop window.";
+    browserStatusSlot.appendChild(note);
+
+    const browserCard = createConsoleCard("Browser truth", "Current browser readiness and relay metadata. Scaffold features stay marked as scaffold.");
+    appendFieldRows(browserCard.body, [
+      { label: "Browser-use installed", id: "ghoti-browser-use-installed" },
+      { label: "Browser-use ready", id: "ghoti-browser-use-ready" },
+      { label: "Playwright ready", id: "ghoti-playwright-ready" },
+      { label: "Browser role", id: "ghoti-browser-role" },
+      { label: "Browser action", id: "ghoti-browser-action" },
+      { label: "Browser note", id: "ghoti-browser-note" },
+      { label: "Relay state", id: "ghoti-relay-state" },
+      { label: "Relay step", id: "ghoti-relay-step" },
+      { label: "Relay source", id: "ghoti-relay-source" },
+      { label: "Relay destination", id: "ghoti-relay-destination" },
+      { label: "Relay preset", id: "ghoti-relay-preset" },
+      { label: "Relay status", id: "ghoti-relay-status" },
+      { label: "Relay reset", id: "ghoti-relay-reset" },
+      { label: "Relay note", id: "ghoti-relay-note" },
+    ]);
+    mountNodes([
+      "ghoti-browser-notes",
+      "ghoti-relay-notes",
+      "run-browser-smoke",
+      "browser-smoke-summary",
+      "run-browser-visible",
+      "browser-visible-summary",
+    ], browserCard.body);
+    appendDebugDetails(browserCard.body, "Browser debug output", ["browser-smoke-raw", "browser-visible-raw"]);
+    browserStatusSlot.appendChild(browserCard.article);
+  }
+
+  const browserActionsSlot = document.getElementById("browser-actions-slot");
+  if (browserActionsSlot) {
+    const recipeCard = createConsoleCard("Operator recipes and handoff", "Existing safe handoff and recipe controls, kept inline.");
+    mountNodes([
+      "queue-recipe-observe-desktop",
+      "queue-recipe-focus-terminal",
+      "queue-recipe-copy-focused",
+      "queue-recipe-paste-dashboard",
+      "queue-recipe-wait-step",
+      "handoff-source-window",
+      "handoff-target-window",
+      "handoff-wait-seconds",
+      "handoff-source-candidate",
+      "handoff-target-candidate",
+      "handoff-use-prepared-clipboard",
+      "handoff-allow-send",
+      "handoff-remember-targets",
+      "handoff-target-summary",
+      "handoff-target-memory-note",
+      "queue-recipe-codex-handoff",
+      "recipe-action-summary",
+      "recipe-task-list",
+    ], recipeCard.body);
+    browserActionsSlot.appendChild(recipeCard.article);
+  }
+
+  const artifactsActivitySlot = document.getElementById("artifacts-activity-slot");
+  if (artifactsActivitySlot) {
+    const actionsCard = createConsoleCard("Recent actions", "Recent actions across the operator console.");
+    mountNodeById("recent-actions-output", actionsCard.body);
+    artifactsActivitySlot.appendChild(actionsCard.article);
+  }
+
+  const artifactsSlot = document.getElementById("artifacts-slot");
+  if (artifactsSlot) {
+    const artifactsCard = createConsoleCard("Recent artifacts", "Recent artifacts list with preview drawer.");
+    mountNodeById("artifacts-output", artifactsCard.body);
+    artifactsSlot.appendChild(artifactsCard.article);
+  }
+
+  const personalOpsSlot = document.getElementById("personal-ops-slot");
+  if (personalOpsSlot) {
+    const opsCard = createConsoleCard("Artifact generators", "Personal ops generators stay inline and repo-local.");
+    mountNodes([
+      "internship-form",
+      "internship-summary",
+      "showcase-form",
+      "showcase-summary",
+      "portfolio-form",
+      "portfolio-summary",
+    ], opsCard.body);
+    appendDebugDetails(opsCard.body, "Generator debug output", ["internship-raw", "showcase-raw", "portfolio-raw"]);
+    personalOpsSlot.appendChild(opsCard.article);
+  }
+
+  const githubSlot = document.getElementById("github-slot");
+  if (githubSlot) {
+    const githubCard = createConsoleCard("Repository status", "Branch, auth, cleanliness, and recent commits.");
+    appendFieldRows(githubCard.body, [
+      { label: "Branch", id: "github-branch" },
+      { label: "Auth", id: "github-auth" },
+      { label: "Remote write", id: "github-remote-write" },
+      { label: "Working tree", id: "github-clean" },
+      { label: "Summary", id: "github-summary" },
+    ]);
+    mountNodeById("github-commits", githubCard.body);
+    appendDebugDetails(githubCard.body, "GitHub debug output", ["github-raw"]);
+    githubSlot.appendChild(githubCard.article);
+  }
+
+  const systemCapabilitiesSlot = document.getElementById("system-capabilities-slot");
+  if (systemCapabilitiesSlot) {
+    const controlCard = createConsoleCard("Ghoti control center", "Honest local status only. No autonomous action planning.");
+    appendFieldRows(controlCard.body, [
+      { label: "State", id: "ghoti-control-state" },
+      { label: "Reason", id: "ghoti-control-reason" },
+      { label: "Current task", id: "ghoti-control-current-task" },
+      { label: "Current task note", id: "ghoti-control-current-task-note" },
+      { label: "Pending", id: "ghoti-control-pending" },
+      { label: "Blocked", id: "ghoti-control-blocked" },
+      { label: "Actionable", id: "ghoti-control-actionable" },
+      { label: "Failures", id: "ghoti-control-failures" },
+      { label: "Capabilities", id: "ghoti-control-capabilities" },
+      { label: "Artifacts", id: "ghoti-control-artifacts" },
+      { label: "Brain provider", id: "ghoti-brain-provider" },
+      { label: "Brain model", id: "ghoti-brain-model" },
+      { label: "Brain ready", id: "ghoti-brain-ready" },
+      { label: "Current task use", id: "ghoti-brain-current-task-use" },
+      { label: "Brain note", id: "ghoti-brain-note" },
+      { label: "Role", id: "ghoti-role-current" },
+      { label: "Role provider", id: "ghoti-role-provider" },
+      { label: "Sensitivity", id: "ghoti-role-sensitivity" },
+      { label: "Watchdog", id: "ghoti-watchdog-state" },
+      { label: "Wrong window", id: "ghoti-watchdog-wrong-window" },
+      { label: "Stalled", id: "ghoti-watchdog-stalled" },
+      { label: "Did not complete", id: "ghoti-watchdog-did-not-complete" },
+      { label: "Watchdog headline", id: "ghoti-watchdog-headline" },
+      { label: "Memory ready", id: "ghoti-memory-ready" },
+      { label: "Markdown memory", id: "ghoti-memory-markdown-ready" },
+      { label: "Memory file count", id: "ghoti-memory-file-count" },
+      { label: "Memory note", id: "ghoti-memory-note" },
+      { label: "Capabilities available", id: "capability-available-count" },
+      { label: "Capabilities blocked", id: "capability-blocked-count" },
+    ]);
+    mountNodes([
+      "ghoti-task-visibility-filter",
+      "ghoti-task-limit-filter",
+      "ghoti-task-type-filter",
+      "ghoti-task-status-filter",
+      "ghoti-task-active-only",
+      "ghoti-control-filter-note",
+      "ghoti-show-approvals",
+      "ghoti-show-active-tasks",
+      "ghoti-show-artifacts",
+      "ghoti-queue-observe-desktop",
+      "ghoti-queue-clipboard-read",
+      "ghoti-run-runtime-checker",
+      "ghoti-run-dashboard-checker",
+      "ghoti-queue-handoff",
+      "ghoti-quick-clipboard-text",
+      "ghoti-queue-clipboard-write",
+      "ghoti-quick-focus-window",
+      "ghoti-queue-focus-window",
+      "ghoti-control-action-summary",
+      "ghoti-actionable-task-list",
+      "ghoti-failure-task-list",
+      "ghoti-brain-notes",
+      "ghoti-role-note",
+      "ghoti-role-roles",
+      "ghoti-watchdog-alerts",
+      "ghoti-watchdog-handoff-hint",
+      "ghoti-memory-notes",
+      "live-now-list",
+      "scaffold-only-list",
+      "not-implemented-list",
+      "capability-list",
+      "ghoti-can-do-list",
+      "ghoti-next-step-list",
+      "ghoti-cli-command-list",
+    ], controlCard.body);
+    const boundaryNote = document.createElement("p");
+    boundaryNote.className = "console-honest-note";
+    boundaryNote.textContent = "Ollama reachable ≠ wired to drive operator.";
+    controlCard.body.appendChild(boundaryNote);
+    mountNodes(["ghoti-control-no-delete-note"], controlCard.body);
+    appendDebugDetails(controlCard.body, "Capability debug output", ["capability-raw"]);
+    systemCapabilitiesSlot.appendChild(controlCard.article);
+  }
+
+  const systemScaffoldsSlot = document.getElementById("system-scaffolds-slot");
+  if (systemScaffoldsSlot) {
+    mountNodes(["section-observer", "section-voice", "section-youtube", "section-runbook", "section-about"], systemScaffoldsSlot);
+  }
+
+  const drawerApprovalSlot = document.getElementById("drawer-approval-slot");
+  if (drawerApprovalSlot) {
+    const approvalCard = createConsoleCard("Approval detail", "Selected approval detail and operator decision form.");
+    appendFieldRows(approvalCard.body, [
+      { label: "Approval", id: "approval-detail-id" },
+      { label: "Status", id: "approval-detail-status" },
+      { label: "Risk", id: "approval-detail-risk" },
+      { label: "Task", id: "approval-detail-task-id" },
+      { label: "Action", id: "approval-detail-action-label" },
+      { label: "Reason", id: "approval-detail-reason" },
+      { label: "Scope", id: "approval-detail-scope" },
+      { label: "Target paths", id: "approval-detail-target-paths" },
+      { label: "Workspace scope", id: "approval-detail-workspace-scope" },
+      { label: "Workspace policy", id: "approval-detail-workspace-policy" },
+      { label: "Workspace reason", id: "approval-detail-workspace-reason" },
+      { label: "Allowed root", id: "approval-detail-allowed-root" },
+      { label: "Rollback", id: "approval-detail-rollback" },
+      { label: "Requires admin", id: "approval-detail-admin" },
+      { label: "Updated", id: "approval-detail-updated-at" },
+    ]);
+    mountNodes(["approval-detail-summary", "approval-decision-note", "approval-approve", "approval-deny", "approval-defer", "approval-action-result", "approval-history-list"], approvalCard.body);
+    appendDebugDetails(approvalCard.body, "Approval debug payload", ["approval-detail-raw"]);
+    drawerApprovalSlot.appendChild(approvalCard.article);
+  }
+
+  const drawerTaskSlot = document.getElementById("drawer-task-slot");
+  if (drawerTaskSlot) {
+    const taskCard = createConsoleCard("Task detail", "Selected task detail, review actions, and execution history.");
+    appendFieldRows(taskCard.body, [
+      { label: "Task", id: "task-detail-id" },
+      { label: "Status", id: "task-detail-status" },
+      { label: "Risk", id: "task-detail-risk" },
+      { label: "Approval state", id: "task-detail-approval-state" },
+      { label: "Title", id: "task-detail-title" },
+      { label: "Description", id: "task-detail-description" },
+      { label: "Executor action", id: "task-detail-executor-action" },
+      { label: "Executor target", id: "task-detail-executor-target" },
+      { label: "Workspace scope", id: "task-detail-workspace-scope" },
+      { label: "Workspace policy", id: "task-detail-workspace-policy" },
+      { label: "Workspace reason", id: "task-detail-workspace-reason" },
+      { label: "Allowed root", id: "task-detail-allowed-root" },
+      { label: "Waiting for", id: "task-detail-waiting-for" },
+      { label: "Blocked reason", id: "task-detail-blocked-reason" },
+      { label: "Next action", id: "task-detail-next-action" },
+      { label: "Last note", id: "task-detail-last-note" },
+      { label: "Retry limit", id: "task-detail-retry-limit" },
+      { label: "Attempt count", id: "task-detail-last-attempt-count" },
+      { label: "Execution status", id: "task-detail-last-execution-status" },
+      { label: "Execution summary", id: "task-detail-last-execution-summary" },
+      { label: "Last artifact", id: "task-detail-last-artifact-path" },
+      { label: "Failure reason", id: "task-detail-last-failure-reason" },
+      { label: "Interruption reason", id: "task-detail-last-interruption-reason" },
+      { label: "Resource guard", id: "task-detail-last-resource-guard-reason" },
+    ]);
+    mountNodes([
+      "task-detail-summary",
+      "task-action-note",
+      "task-review",
+      "task-resume",
+      "task-requeue",
+      "task-execute",
+      "task-action-result",
+      "task-history-list",
+      "task-execution-history-list",
+      "task-recipe-panel",
+    ], taskCard.body);
+    appendDebugDetails(taskCard.body, "Task debug payload", ["task-detail-raw", "supervisor-raw"]);
+    drawerTaskSlot.appendChild(taskCard.article);
+  }
+
+  const drawerArtifactSlot = document.getElementById("drawer-artifact-slot");
+  if (drawerArtifactSlot) {
+    const artifactCard = createConsoleCard("Artifact preview", "Preview body and debug surface for the selected artifact.");
+    mountNodes(["artifact-preview-title", "artifact-preview-meta", "artifact-preview-status", "artifact-preview-body"], artifactCard.body);
+    drawerArtifactSlot.appendChild(artifactCard.article);
+  }
 }
 
 function applyTaskListFilters(items) {
@@ -1069,6 +1673,9 @@ function renderGithubUpdates(payload) {
       ? commits.map((item) => `<li>${escapeHtml(item)}</li>`).join("")
       : "<li>No commits reported.</li>";
   }
+
+  const firstCommit = typeof commits[0] === "string" ? commits[0].trim().split(/\s+/)[0] : "";
+  updateTopbarMeta(summary.branch || "", firstCommit || document.getElementById("topbar-commit")?.textContent || "");
 
   renderRaw("github-raw", payload);
 }
@@ -2102,6 +2709,9 @@ async function previewArtifactPath(artifactPath, options = {}) {
     );
     renderArtifactPreview(result.preview);
     setResultPanel("artifact-preview-status", "success", result.summary?.headline || "Preview loaded.", result.preview.path);
+    if (!silent) {
+      openConsoleDrawer("artifact", result.preview?.name || "Artifact preview", "Artifact");
+    }
     if (actionId) {
       updateLocalAction(actionId, "success", result.summary?.headline || "Artifact preview loaded.");
     }
@@ -2586,8 +3196,11 @@ function renderInlineErrorCard(title, message, debugPayload) {
 
 function updateApprovalsTabBadge(summary = {}) {
   const badge = document.getElementById("tab-badge-approvals");
+  const navBadge = document.getElementById("console-nav-badge-approvals");
   if (!badge) {
-    return;
+    if (!navBadge) {
+      return;
+    }
   }
   const attention = summary.attention_summary || {};
   const inbox = summary.approval_inbox_summary || {};
@@ -2595,8 +3208,16 @@ function updateApprovalsTabBadge(summary = {}) {
   const pending = Number(attention.pending_approvals_count ?? inbox.pending_count ?? 0) || 0;
   const ready = Number(attention.ready_queue_count ?? queue.ready_count ?? 0) || 0;
   const total = pending + ready;
-  badge.textContent = total > 0 ? String(total) : "";
-  badge.title = total > 0 ? `${pending} pending approvals, ${ready} ready manual items` : "";
+  if (badge) {
+    badge.textContent = total > 0 ? String(total) : "";
+    badge.title = total > 0 ? `${pending} pending approvals, ${ready} ready manual items` : "";
+    badge.hidden = total <= 0;
+  }
+  if (navBadge) {
+    navBadge.textContent = total > 0 ? String(total) : "";
+    navBadge.title = total > 0 ? `${pending} pending approvals, ${ready} ready manual items` : "";
+    navBadge.hidden = total <= 0;
+  }
 }
 
 function buildDashboardIssues(summary = {}, payload = {}) {
@@ -2652,6 +3273,10 @@ function renderDashboardStrip(summary = {}, payload = {}) {
   setText("dashboard-strip-pending", pendingText);
   setText("dashboard-strip-ready", readyText);
   setText("dashboard-strip-status", statusText);
+  setText("overview-kpi-pending-value", pendingText);
+  setText("overview-kpi-pending-meta", queue.available === false ? "approval inbox unavailable" : "approval inbox");
+  setText("overview-kpi-ready-value", String(readyCount));
+  setText("overview-kpi-ready-meta", queue.available === false ? "manual queue unavailable" : "manual queue ready");
 }
 
 function renderDashboardRecentActivity(summary = {}) {
@@ -2858,6 +3483,7 @@ async function refreshApprovalDetail(approvalId, options = {}) {
     const payload = await requestJson(`/api/approvals/item?approvalId=${encodeURIComponent(approvalId)}`);
     renderApprovalDetail(payload);
     if (!silent) {
+      openConsoleDrawer("approval", approvalId || "Approval detail", "Approval");
       setResultPanel("approval-action-result", "success", "Approval details loaded.", approvalId);
     }
     return payload;
@@ -2881,6 +3507,7 @@ async function refreshTaskDetail(taskId, options = {}) {
     const payload = await requestJson(`/api/tasks/item?taskId=${encodeURIComponent(taskId)}`);
     renderTaskDetail(payload);
     if (!silent) {
+      openConsoleDrawer("task", taskId || "Task detail", "Task");
       setResultPanel("task-action-result", "success", "Task details loaded.", taskId);
     }
     return payload;
@@ -4253,6 +4880,9 @@ function renderActiveModeState(state) {
   if (state.error) {
     setActiveFeedback("Error: " + state.error, true);
   }
+
+  setText("overview-kpi-active-value", active ? "1" : "0");
+  setText("overview-kpi-active-meta", active ? (state.session_id ? `session ${state.session_id}` : "active") : "idle");
 }
 
 function setActiveFeedback(msg, isError) {
@@ -4406,6 +5036,9 @@ function renderCaptureState(captureState) {
       errorEl.hidden = true;
     }
   }
+
+  setText("overview-kpi-frames-value", String(captureState.frame_count || 0));
+  setText("overview-kpi-frames-meta", capturing ? "capture running" : (captureState.frame_count ? "last captured frames" : "capture idle"));
 }
 
 function getActiveSessionReviewStatus(session) {
@@ -5224,12 +5857,21 @@ function applyHealthPayload(h) {
   const vision = health.vision || {};
   const visionState = vision.available ? "ok" : (vision.reason === "no_vision_model_available" ? "idle" : "warn");
   _setChip("overview-chip-vision", vision.available ? (vision.model || "Ready") : "No Model", visionState);
+  _setText("overview-kpi-active-value", activeMode.active ? "1" : "0");
+  _setText("overview-kpi-active-meta", activeMode.session_id ? `session ${activeMode.session_id}` : "Active Mode");
+  _setText("overview-kpi-pending-value", String(pendingN));
+  _setText("overview-kpi-pending-meta", pendingN > 0 ? "operator action required" : "approval inbox clear");
+  _setText("overview-kpi-ready-value", String(health.capture?.capturing ? (health.capture?.frame_count || 0) : (health.approvals?.ready_count || 0)));
+  _setText("overview-kpi-ready-meta", health.capture?.capturing ? "capture frames" : "manual queue ready");
+  _setText("overview-kpi-frames-value", String(health.capture?.frame_count || 0));
+  _setText("overview-kpi-frames-meta", health.capture?.capturing ? "capture running" : "capture idle");
 
   // ── Tab badge (sidebar) ──
   const badge = document.getElementById("tab-badge-approvals");
   if (badge) {
     badge.textContent = pendingN > 0 ? String(pendingN) : "";
     badge.classList.toggle("visible", pendingN > 0);
+    badge.hidden = pendingN <= 0;
   }
 
   // ── Health table rows ──
@@ -5295,6 +5937,7 @@ function applyHealthPayload(h) {
   if (srv.commit) {
     _setText("sidebar-commit-info", `commit ${srv.commit}`);
     _setText("about-commit", srv.commit);
+    updateTopbarMeta(srv.branch || document.getElementById("topbar-branch")?.textContent || "", srv.commit);
   }
 
   // ── Observer no-model banner visibility ──
@@ -5434,4 +6077,79 @@ document.getElementById("ghoti-yt-queue-btn")?.addEventListener("click", async (
 
   sections.forEach(s => obs.observe(s));
 })();
+
+async function refreshGlobalConsoleView() {
+  await Promise.allSettled([
+    refreshConsole(),
+    refreshActiveModeState(),
+    refreshCaptureState(),
+    refreshActiveSessionData(),
+    refreshObserverPanel(),
+    refreshProbeHistory(),
+    refreshGhotiApprovalQueue(),
+  ]);
+}
+
+function initDashboardUxRebuild() {
+  mountDashboardUxShell();
+  setActiveConsoleView("overview", { focus: false });
+
+  document.querySelectorAll(".console-nav-item[data-console-view]").forEach((button) => {
+    button.addEventListener("click", () => {
+      setActiveConsoleView(button.dataset.consoleView || "overview", { focus: false });
+    });
+  });
+
+  document.getElementById("global-refresh-btn")?.addEventListener("click", async (event) => {
+    await runRefresh(
+      event.currentTarget,
+      "Refresh operator console",
+      "Refreshing…",
+      refreshGlobalConsoleView,
+      (error) => {
+        console.warn("Global refresh failed:", error);
+      },
+    );
+  });
+
+  document.getElementById("topbar-settings-btn")?.addEventListener("click", () => {
+    setActiveConsoleView("system", { focus: false });
+  });
+
+  document.getElementById("console-drawer-close")?.addEventListener("click", closeConsoleDrawer);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      closeConsoleDrawer();
+    }
+  });
+
+  document.addEventListener("click", (event) => {
+    if (event.defaultPrevented) {
+      return;
+    }
+    const interactiveTarget = event.target.closest("button, a, input, textarea, select, label, summary");
+    if (interactiveTarget) {
+      return;
+    }
+
+    const taskRow = event.target.closest("#pending-approvals-list .approval-item, #human-needed-list .approval-item, #waiting-tasks-list .approval-item, #ready-to-resume-list .approval-item, #interrupted-tasks-list .approval-item, #executor-task-list .approval-item, #desktop-task-list .approval-item, #recipe-task-list .approval-item");
+    if (taskRow) {
+      taskRow.querySelector("[data-task-action='inspect']")?.click();
+      return;
+    }
+
+    const approvalRow = event.target.closest("#approval-inbox-list .approval-item, #manual-queue-list .approval-item, #pipeline-items-list .approval-item");
+    if (approvalRow) {
+      approvalRow.querySelector(".view-inbox-trace-btn, .view-queue-trace-btn, .view-trace-btn")?.click();
+      return;
+    }
+
+    const artifactRow = event.target.closest("#artifacts-output .artifact-item");
+    if (artifactRow) {
+      artifactRow.querySelector("[data-artifact-action='preview']")?.click();
+    }
+  });
+}
+
+initDashboardUxRebuild();
 

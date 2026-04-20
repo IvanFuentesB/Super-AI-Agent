@@ -38,6 +38,340 @@
       <a href="/overlay" target="_blank" rel="noopener" class="ghoti-overlay-link" title="Open Ghoti presence overlay">&#11041; Overlay</a>
     </div>
 
+    <div class="console-shell">
+      <header class="console-topbar">
+        <div class="console-topbar-brand">
+          <strong class="console-wordmark">Ghoti</strong>
+        </div>
+        <div class="console-topbar-meta mono" aria-live="polite">
+          <span id="topbar-branch">feat/ghoti-visible-operator-stack</span>
+          <span class="console-topbar-separator">•</span>
+          <span id="topbar-commit">loading…</span>
+        </div>
+        <div class="console-topbar-actions">
+          <button id="global-refresh-btn" class="topbar-button" type="button">Refresh</button>
+          <button id="topbar-settings-btn" class="topbar-icon-button" type="button" aria-label="Open System tab">⚙</button>
+        </div>
+      </header>
+
+      <div class="console-frame">
+        <aside class="console-sidebar-shell" aria-label="Primary navigation">
+          <nav class="console-nav">
+            <button class="console-nav-item is-active" type="button" data-console-view="overview">
+              <span>Overview</span>
+            </button>
+            <button class="console-nav-item" type="button" data-console-view="active-mode">
+              <span>Active Mode</span>
+            </button>
+            <button class="console-nav-item" type="button" data-console-view="approvals">
+              <span>Approvals</span>
+              <span id="console-nav-badge-approvals" class="console-nav-badge" hidden></span>
+            </button>
+            <button class="console-nav-item" type="button" data-console-view="executor">
+              <span>Executor</span>
+            </button>
+            <button class="console-nav-item" type="button" data-console-view="desktop">
+              <span>Desktop</span>
+            </button>
+            <button class="console-nav-item" type="button" data-console-view="browser">
+              <span>Browser</span>
+            </button>
+            <button class="console-nav-item" type="button" data-console-view="artifacts">
+              <span>Artifacts</span>
+            </button>
+            <button class="console-nav-item" type="button" data-console-view="personal-ops">
+              <span>Personal Ops</span>
+            </button>
+            <button class="console-nav-item" type="button" data-console-view="github">
+              <span>GitHub</span>
+            </button>
+            <button class="console-nav-item" type="button" data-console-view="system">
+              <span>System</span>
+            </button>
+          </nav>
+        </aside>
+
+        <main class="console-main-shell">
+          <section class="console-view is-active" data-console-view-panel="overview" aria-labelledby="console-view-overview-title">
+            <div class="console-view-header">
+              <div>
+                <h1 id="console-view-overview-title">Overview</h1>
+                <p>Local supervised operator state at a glance. No autonomous execution.</p>
+              </div>
+            </div>
+            <div class="kpi-strip">
+              <article class="kpi-card">
+                <span class="kpi-label">Pending</span>
+                <strong class="kpi-value" id="overview-kpi-pending-value">0</strong>
+                <span class="kpi-meta" id="overview-kpi-pending-meta">Approval inbox</span>
+              </article>
+              <article class="kpi-card">
+                <span class="kpi-label">Ready</span>
+                <strong class="kpi-value" id="overview-kpi-ready-value">0</strong>
+                <span class="kpi-meta" id="overview-kpi-ready-meta">Manual queue</span>
+              </article>
+              <article class="kpi-card">
+                <span class="kpi-label">Active</span>
+                <strong class="kpi-value" id="overview-kpi-active-value">0</strong>
+                <span class="kpi-meta" id="overview-kpi-active-meta">Session status</span>
+              </article>
+              <article class="kpi-card">
+                <span class="kpi-label">Frames</span>
+                <strong class="kpi-value" id="overview-kpi-frames-value">0</strong>
+                <span class="kpi-meta" id="overview-kpi-frames-meta">Local capture only</span>
+              </article>
+            </div>
+            <div class="console-grid console-grid-overview">
+              <section class="console-card">
+                <div class="console-card-header">
+                  <div>
+                    <h2>System strip</h2>
+                    <p>Dense KPI and next-step summary.</p>
+                  </div>
+                </div>
+                <div id="overview-section-slot" class="slot-root"></div>
+              </section>
+              <section class="console-card">
+                <div class="console-card-header">
+                  <div>
+                    <h2>Needs Action Now</h2>
+                    <p>Operator-facing lifecycle state.</p>
+                  </div>
+                </div>
+                <div id="overview-dashboard-slot" class="slot-root"></div>
+              </section>
+              <section class="console-card console-card-span-2">
+                <div class="console-card-header">
+                  <div>
+                    <h2>Pipeline flow</h2>
+                    <p>Pending → approved → ready → reviewed.</p>
+                  </div>
+                </div>
+                <div id="overview-pipeline-slot" class="slot-root"></div>
+              </section>
+            </div>
+          </section>
+
+          <section class="console-view" data-console-view-panel="active-mode" aria-labelledby="console-view-active-title" hidden>
+            <div class="console-view-header">
+              <div>
+                <h1 id="console-view-active-title">Active Mode</h1>
+                <p>Explicit operator-controlled activation and local capture timeline.</p>
+              </div>
+            </div>
+            <div id="active-mode-slot" class="stack-slot"></div>
+          </section>
+
+          <section class="console-view" data-console-view-panel="approvals" aria-labelledby="console-view-approvals-title" hidden>
+            <div class="console-view-header">
+              <div>
+                <h1 id="console-view-approvals-title">Approvals</h1>
+                <p>Approval inbox and manual queue. Nothing executes automatically.</p>
+              </div>
+            </div>
+            <div id="approvals-slot" class="stack-slot"></div>
+          </section>
+
+          <section class="console-view" data-console-view-panel="executor" aria-labelledby="console-view-executor-title" hidden>
+            <div class="console-view-header">
+              <div>
+                <h1 id="console-view-executor-title">Executor</h1>
+                <p>Dense stopped-task and queue surfaces. Review in drawer before acting.</p>
+              </div>
+            </div>
+            <div class="console-grid">
+              <section class="console-card">
+                <div class="console-card-header">
+                  <div>
+                    <h2>Supervisor queue</h2>
+                    <p>Human-needed, waiting, interrupted, and ready tasks.</p>
+                  </div>
+                </div>
+                <div id="executor-supervisor-slot" class="slot-root"></div>
+              </section>
+              <section class="console-card">
+                <div class="console-card-header">
+                  <div>
+                    <h2>Repo executor</h2>
+                    <p>Repo-local queue and safe operator actions.</p>
+                  </div>
+                </div>
+                <div id="executor-queue-slot" class="slot-root"></div>
+              </section>
+            </div>
+          </section>
+
+          <section class="console-view" data-console-view-panel="desktop" aria-labelledby="console-view-desktop-title" hidden>
+            <div class="console-view-header">
+              <div>
+                <h1 id="console-view-desktop-title">Desktop</h1>
+                <p>Narrow desktop-aware controls only. Approval-gated and locally visible.</p>
+              </div>
+            </div>
+            <div class="console-grid">
+              <section class="console-card">
+                <div class="console-card-header">
+                  <div>
+                    <h2>Desktop status</h2>
+                    <p>Shell, launcher, processes, and guard state.</p>
+                  </div>
+                </div>
+                <div id="desktop-status-slot" class="slot-root"></div>
+              </section>
+              <section class="console-card">
+                <div class="console-card-header">
+                  <div>
+                    <h2>Desktop actions</h2>
+                    <p>Queued desktop operations. No arbitrary control.</p>
+                  </div>
+                </div>
+                <div id="desktop-controls-slot" class="slot-root"></div>
+              </section>
+            </div>
+          </section>
+
+          <section class="console-view" data-console-view-panel="browser" aria-labelledby="console-view-browser-title" hidden>
+            <div class="console-view-header">
+              <div>
+                <h1 id="console-view-browser-title">Browser</h1>
+                <p>Browser smoke checks, overlay truth, and window handoff recipes.</p>
+              </div>
+            </div>
+            <div class="console-grid">
+              <section class="console-card">
+                <div class="console-card-header">
+                  <div>
+                    <h2>Browser / relay truth</h2>
+                    <p>Visibility only. No hidden browser execution.</p>
+                  </div>
+                </div>
+                <div id="browser-status-slot" class="slot-root"></div>
+              </section>
+              <section class="console-card">
+                <div class="console-card-header">
+                  <div>
+                    <h2>Recipes and handoff</h2>
+                    <p>Operator-managed browser/window recipes.</p>
+                  </div>
+                </div>
+                <div id="browser-actions-slot" class="slot-root"></div>
+              </section>
+            </div>
+          </section>
+
+          <section class="console-view" data-console-view-panel="artifacts" aria-labelledby="console-view-artifacts-title" hidden>
+            <div class="console-view-header">
+              <div>
+                <h1 id="console-view-artifacts-title">Artifacts</h1>
+                <p>Recent actions, artifacts, and previews. Raw output stays in debug blocks.</p>
+              </div>
+            </div>
+            <div class="console-grid">
+              <section class="console-card">
+                <div class="console-card-header">
+                  <div>
+                    <h2>Recent activity</h2>
+                    <p>Latest local and server-side operator events.</p>
+                  </div>
+                </div>
+                <div id="artifacts-activity-slot" class="slot-root"></div>
+              </section>
+              <section class="console-card">
+                <div class="console-card-header">
+                  <div>
+                    <h2>Artifacts</h2>
+                    <p>Dense list with preview drawer.</p>
+                  </div>
+                </div>
+                <div id="artifacts-slot" class="slot-root"></div>
+              </section>
+            </div>
+          </section>
+
+          <section class="console-view" data-console-view-panel="personal-ops" aria-labelledby="console-view-personal-ops-title" hidden>
+            <div class="console-view-header">
+              <div>
+                <h1 id="console-view-personal-ops-title">Personal Ops</h1>
+                <p>Inline artifact generators for internship, showcase, and portfolio workflows.</p>
+              </div>
+            </div>
+            <div id="personal-ops-slot" class="stack-slot"></div>
+          </section>
+
+          <section class="console-view" data-console-view-panel="github" aria-labelledby="console-view-github-title" hidden>
+            <div class="console-view-header">
+              <div>
+                <h1 id="console-view-github-title">GitHub</h1>
+                <p>Branch, auth, remote write truth, and recent commits.</p>
+              </div>
+            </div>
+            <div id="github-slot" class="stack-slot"></div>
+          </section>
+
+          <section class="console-view" data-console-view-panel="system" aria-labelledby="console-view-system-title" hidden>
+            <div class="console-view-header">
+              <div>
+                <h1 id="console-view-system-title">System</h1>
+                <p>Health, observer truth, scaffolds, and control-center diagnostics.</p>
+              </div>
+            </div>
+            <div class="console-grid">
+              <section class="console-card">
+                <div class="console-card-header">
+                  <div>
+                    <h2>Live boundary</h2>
+                    <p>Health and control-center truth. Scaffold labels stay visible.</p>
+                  </div>
+                </div>
+                <div id="system-health-slot" class="slot-root"></div>
+              </section>
+              <section class="console-card">
+                <div class="console-card-header">
+                  <div>
+                    <h2>Capabilities</h2>
+                    <p>Readiness, blockers, and role/provider notes.</p>
+                  </div>
+                </div>
+                <div id="system-capabilities-slot" class="slot-root"></div>
+              </section>
+              <section class="console-card console-card-span-2">
+                <div class="console-card-header">
+                  <div>
+                    <h2>Observer and scaffolds</h2>
+                    <p>Ollama truth, voice scaffold, YouTube scaffold, and runbook notes.</p>
+                  </div>
+                </div>
+                <div id="system-scaffolds-slot" class="slot-root"></div>
+              </section>
+            </div>
+          </section>
+        </main>
+
+        <aside id="console-detail-drawer" class="console-drawer" aria-hidden="true" hidden>
+          <div class="console-drawer-header">
+            <div>
+              <p class="console-drawer-kicker" id="console-drawer-kicker">Details</p>
+              <h2 id="console-drawer-title">Inspector</h2>
+            </div>
+            <button id="console-drawer-close" class="topbar-icon-button" type="button" aria-label="Close detail drawer">×</button>
+          </div>
+          <div class="console-drawer-body">
+            <section id="console-drawer-approval" class="console-drawer-panel" hidden>
+              <div id="drawer-approval-slot" class="slot-root"></div>
+            </section>
+            <section id="console-drawer-task" class="console-drawer-panel" hidden>
+              <div id="drawer-task-slot" class="slot-root"></div>
+            </section>
+            <section id="console-drawer-artifact" class="console-drawer-panel" hidden>
+              <div id="drawer-artifact-slot" class="slot-root"></div>
+            </section>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <div id="ui-staging-root" hidden>
+
     <!-- App layout -->
     <div class="app-layout">
       <!-- Sidebar -->
@@ -447,7 +781,7 @@
             <h2>YouTube Follower <span class="chip chip--scaffold">scaffold only</span></h2>
           </div>
           <div class="banner banner--scaffold">
-            Scaffold only. No video parsing, no execution. Tasks are logged locally but never executed.
+            YouTube follower is scaffold only. No video parsing, no execution. Tasks are logged locally but never executed.
           </div>
           <div class="card">
             <h3 class="card-title">Queue a Task (placeholder)</h3>
@@ -515,7 +849,8 @@ node server.js</pre>
             <div class="runbook-code-block">
               <pre id="runbook-validate-code">$PORT = 3210   # or 3212 fallback
 $base = "http://127.0.0.1:$PORT"
-Invoke-RestMethod -Uri "$base/api/ghoti/system/health" -Method Get | ConvertTo-Json -Depth 8</pre>
+Invoke-RestMethod -Uri "$base/api/operator-status" -Method Get | ConvertTo-Json -Depth 8
+Invoke-RestMethod -Uri "$base/api/ghoti/control-center-state" -Method Get | ConvertTo-Json -Depth 8</pre>
               <button class="runbook-copy-btn btn-secondary" type="button" data-copy-target="runbook-validate-code">Copy</button>
             </div>
           </div>
@@ -543,7 +878,7 @@ Invoke-RestMethod -Uri "$base/api/ghoti/system/health" -Method Get | ConvertTo-J
               <li>Real voice / browser / desktop actions — not implemented</li>
             </ul>
             <div class="about-meta" style="margin-top:1rem;">
-              <p class="summary-note">Milestone: Dashboard UX Polish + System Health Control Center (N+1.3)</p>
+              <p class="summary-note">Milestone: Dashboard UX Rebuild — Clean Operator Console (N+1.5)</p>
               <p class="summary-note">Branch: feat/ghoti-visible-operator-stack</p>
               <p class="mono summary-note" id="about-commit">Commit: loading…</p>
             </div>
@@ -1017,6 +1352,7 @@ Invoke-RestMethod -Uri "$base/api/ghoti/system/health" -Method Get | ConvertTo-J
       <div id="ghoti-pipeline-items-panel" style="display:none"></div>
       <div id="ghoti-pipeline-state-panel" style="display:none"></div>
     </div><!-- #legacy-compat -->
+    </div><!-- #ui-staging-root -->
 
     <script src="/app.js"></script>
   </body>
