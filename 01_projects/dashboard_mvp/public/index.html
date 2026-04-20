@@ -941,8 +941,6 @@ Invoke-RestMethod -Uri "$base/api/ghoti/system/health" -Method Get | ConvertTo-J
         </form>
         <div id="portfolio-summary" class="result-panel" aria-live="polite"></div>
         <pre id="portfolio-raw"></pre>
-        <div id="handoff-source-candidate" style="display:none"></div>
-        <div id="handoff-target-candidate" style="display:none"></div>
       </section>
 
       <!-- Legacy panel-system -->
@@ -966,7 +964,6 @@ Invoke-RestMethod -Uri "$base/api/ghoti/system/health" -Method Get | ConvertTo-J
         <div id="artifact-preview-meta"></div>
         <div id="artifact-preview-status" class="result-panel" aria-live="polite"></div>
         <div id="artifact-preview-body" class="artifact-preview-body"></div>
-        <div id="handoff-source-window" style="display:none"></div>
       </section>
 
       <!-- Legacy panel-active (empty — content moved to section-active/section-observer) -->
@@ -978,11 +975,8 @@ Invoke-RestMethod -Uri "$base/api/ghoti/system/health" -Method Get | ConvertTo-J
       <div id="live-now-list"></div>
       <div id="scaffold-only-list"></div>
       <div id="not-implemented-list"></div>
-      <div id="ghoti-next-step-list" style="display:none"></div>
-      <div id="ghoti-approval-inbox-panel" style="display:none"></div>
       <div id="ghoti-pipeline-items-panel" style="display:none"></div>
       <div id="ghoti-pipeline-state-panel" style="display:none"></div>
-      <div id="ghoti-actionable-task-list" style="display:none"></div>
     </div><!-- #legacy-compat -->
 
     <script src="/app.js"></script>
