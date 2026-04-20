@@ -836,10 +836,10 @@ feat/ghoti-visible-operator-stack
 adea7b1
 
 ### Final commit hash
-(see git log after this commit)
+ec4b791
 
 ### Push status
-(recorded after push)
+PENDING — run manually: git push origin feat/ghoti-visible-operator-stack
 
 ### Files modified
 - `01_projects/dashboard_mvp/public/index.html` — new console shell: topbar (48px), sidebar (240px, 10 views), per-view panels, right-side drawer (400px), KPI strip on Overview; old sections preserved hidden in ui-staging-root
