@@ -56,7 +56,7 @@
               <span class="chip chip--warn" id="tab-badge-approvals" hidden></span>
             </a>
           </li>
-          <li><a href="#section-observer" class="sidebar-link">Observer <span class="chip chip--scaffold">read-only</span></a></li>
+          <li><a href="#section-observer" class="sidebar-link">Observer <span class="chip chip--scaffold">diagnostic probe</span></a></li>
           <li><a href="#section-voice" class="sidebar-link">Voice <span class="chip chip--scaffold">scaffold</span></a></li>
           <li><a href="#section-youtube" class="sidebar-link">YouTube <span class="chip chip--scaffold">scaffold</span></a></li>
           <li><a href="#section-runbook" class="sidebar-link">Runbook</a></li>
@@ -107,6 +107,45 @@
           <div class="section-hdr">
             <h2>System Health</h2>
             <p class="section-sub">Real-time subsystem status. Scaffold labels are permanent until replaced by real code.</p>
+          </div>
+          <div class="card" id="ghoti-brain-truth-card" style="margin-bottom:var(--gap,1rem);">
+            <h3 class="card-title">Local Brain Truth</h3>
+            <div class="health-table" style="margin-bottom:0.75rem;">
+              <div class="health-row">
+                <span class="health-label">Ollama reachable</span>
+                <span class="chip chip--idle" id="ghoti-models-ollama">checking</span>
+              </div>
+              <div class="health-row">
+                <span class="health-label">All models</span>
+                <span class="chip chip--idle" id="ghoti-models-count">—</span>
+              </div>
+              <div class="health-row">
+                <span class="health-label">Gemma candidates</span>
+                <span class="health-detail mono" id="ghoti-models-gemma">—</span>
+              </div>
+              <div class="health-row">
+                <span class="health-label">Selected text model</span>
+                <span class="health-detail mono" id="ghoti-models-selected">—</span>
+              </div>
+              <div class="health-row">
+                <span class="health-label">Vision candidates</span>
+                <span class="health-detail mono" id="ghoti-models-vision">—</span>
+              </div>
+              <div class="health-row">
+                <span class="health-label">Drives operator</span>
+                <span class="chip chip--scaffold" id="ghoti-models-drives-operator">false</span>
+              </div>
+              <div class="health-row">
+                <span class="health-label">Action planning</span>
+                <span class="chip chip--scaffold" id="ghoti-models-action-planning">false</span>
+              </div>
+            </div>
+            <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;margin-bottom:0.5rem;">
+              <button id="ghoti-models-probe-btn" class="action-btn" type="button">Run Gemma diagnostic probe</button>
+            </div>
+            <div id="ghoti-models-probe-result" class="result-panel" aria-live="polite" style="min-height:2rem;">—</div>
+            <p class="ghoti-active-label" style="margin-top:0.75rem;">Recent diagnostic probes</p>
+            <div id="ghoti-models-probe-history" class="ghoti-observer-history" aria-live="polite"></div>
           </div>
           <div class="health-table" id="health-table" aria-live="polite">
             <div class="health-row" id="health-row-active">
@@ -226,8 +265,8 @@
                 <img id="ghoti-capture-latest-img" src="" alt="Live screen preview" class="ghoti-capture-preview-img" hidden />
               </div>
               <div class="ghoti-capture-gallery-head">
-                <p class="ghoti-active-label">Recent frames</p>
-                <p class="ghoti-session-subtitle">Last 12 frames for the current session. Local-only.</p>
+                <p class="ghoti-active-label">Local Frame Gallery</p>
+                <p class="ghoti-session-subtitle">These are local screenshots captured by Active Mode. This is not automatic AI screen-sharing. Frames stay on this machine. A frame is only sent to local Ollama when you manually trigger Observe latest frame.</p>
               </div>
               <div id="ghoti-capture-gallery-empty" class="ghoti-session-empty">No recent frames yet.</div>
               <div id="ghoti-capture-gallery" class="ghoti-capture-gallery" hidden></div>
@@ -332,8 +371,8 @@
         <!-- ═══════════════════════════════════════════════════════════════════ -->
         <section class="content-section" id="section-observer">
           <div class="section-hdr">
-            <h2>Observer <span class="chip chip--scaffold">read-only</span></h2>
-            <p class="section-sub">Ollama frame description. Read-only — observer never drives operator actions. Not wired to execution.</p>
+            <h2>Observer <span class="chip chip--scaffold">diagnostic probe</span></h2>
+            <p class="section-sub">Ollama frame description. Diagnostic probe only — observer never clicks, types, or decides actions. It can describe a selected/latest frame only when a compatible local model exists. Not wired to execution.</p>
           </div>
           <div class="banner banner--warn" id="observer-no-model-banner" hidden>
             No vision model installed. Run: <code>ollama pull llava:7b</code>
@@ -341,9 +380,9 @@
           <section class="card ghoti-observer-section" aria-labelledby="ghoti-observer-heading">
             <div class="ghoti-session-card-head ghoti-observer-head">
               <div>
-                <p class="ghoti-active-label">Read-Only Observer</p>
+                <p class="ghoti-active-label">Diagnostic Probe Observer</p>
                 <h3 id="ghoti-observer-heading">Ollama Frame Reading</h3>
-                <p id="ghoti-observer-note" class="ghoti-session-subtitle">Checking local Ollama vision status for the read-only observer.</p>
+                <p id="ghoti-observer-note" class="ghoti-session-subtitle">Checking local Ollama vision status for the diagnostic probe observer.</p>
               </div>
               <span id="ghoti-observer-availability" class="state-pill ghoti-active-pill-off">Checking…</span>
             </div>

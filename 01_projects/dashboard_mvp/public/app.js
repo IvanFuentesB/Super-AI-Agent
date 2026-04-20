@@ -5300,6 +5300,37 @@ function applyHealthPayload(h) {
   // ── Observer no-model banner visibility ──
   const noModelBanner = document.getElementById("observer-no-model-banner");
   if (noModelBanner) noModelBanner.hidden = vision.available;
+
+  // ── Local Brain Truth card (folded from health.models) ──
+  const models = health.models || {};
+  const ollamaReachable = (health.ollama || {}).reachable;
+  _setChip("ghoti-models-ollama", ollamaReachable ? "Reachable" : "Unreachable", ollamaReachable ? "ok" : "err");
+  _setText("ghoti-models-count", String(models.all_count ?? "—"));
+  _setText("ghoti-models-gemma", models.gemma_available ? (models.selected_text_model || "detected") : "none");
+  _setText("ghoti-models-selected", models.selected_text_model || "none");
+  _setText("ghoti-models-vision", String(models.all_count > 0 ? "check /api/ghoti/models/status" : "none"));
+}
+
+async function refreshProbeHistory() {
+  try {
+    const data = await requestJson("/api/ghoti/models/probes?limit=5");
+    const el = document.getElementById("ghoti-models-probe-history");
+    if (!el) return;
+    const probes = data.probes || [];
+    if (probes.length === 0) { el.innerHTML = "<p class='ghoti-session-empty'>No probes recorded yet.</p>"; return; }
+    el.innerHTML = probes.map((p) => {
+      const ts = p.completed_at_utc ? new Date(p.completed_at_utc).toLocaleTimeString() : "—";
+      const statusClass = p.status === "ok" ? "chip--ok" : "chip--err";
+      return `<div class="ghoti-observer-history-item" style="margin-bottom:0.5rem;">
+        <span class="chip ${statusClass}" style="font-size:0.7rem;">${escapeHtml(p.status || "?")}</span>
+        <span class="mono" style="font-size:0.75rem;margin:0 0.4rem;">${escapeHtml(p.model || "—")}</span>
+        <span style="font-size:0.75rem;color:var(--text-dim);">${ts}</span>
+        ${p.latency_ms != null ? `<span style="font-size:0.72rem;color:var(--text-dim);margin-left:0.3rem;">${p.latency_ms}ms</span>` : ""}
+        ${p.response ? `<p style="font-size:0.78rem;margin:0.2rem 0 0;">${escapeHtml(p.response.slice(0, 300))}</p>` : ""}
+        ${p.error ? `<p style="font-size:0.78rem;color:var(--c-warn);margin:0.2rem 0 0;">${escapeHtml(p.error)}</p>` : ""}
+      </div>`;
+    }).join("");
+  } catch { /* silent */ }
 }
 
 async function startHealthPoll() {
@@ -5317,6 +5348,29 @@ async function startHealthPoll() {
 }
 
 startHealthPoll();
+refreshProbeHistory();
+
+document.getElementById("ghoti-models-probe-btn")?.addEventListener("click", async () => {
+  const btn = document.getElementById("ghoti-models-probe-btn");
+  const result = document.getElementById("ghoti-models-probe-result");
+  if (btn) { btn.disabled = true; btn.textContent = "Running…"; }
+  if (result) result.textContent = "Running diagnostic probe…";
+  try {
+    const data = await requestJson("/api/ghoti/models/gemma-probe", { method: "POST", body: "{}", headers: { "Content-Type": "application/json" } });
+    if (data.ok) {
+      const probe = data.probe || {};
+      if (result) result.textContent = probe.response ? `OK (${probe.latency_ms}ms): ${probe.response.slice(0, 400)}` : "Probe returned no response text.";
+    } else {
+      const errMsg = data.error === "no_gemma_model_available" ? "No Gemma model installed. Install one with: ollama pull gemma3" : (data.error === "ollama_unreachable" ? "Ollama not reachable." : (data.error || "Unknown error"));
+      if (result) result.textContent = `Probe failed: ${errMsg}`;
+    }
+    await refreshProbeHistory();
+  } catch (err) {
+    if (result) result.textContent = `Error: ${err.message}`;
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "Run Gemma diagnostic probe"; }
+  }
+});
 
 // ── Runbook copy buttons ──
 document.addEventListener("click", (e) => {

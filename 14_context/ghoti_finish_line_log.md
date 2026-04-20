@@ -724,3 +724,97 @@ The first N+1.3 local commit (`294a630`) was not pushed. It introduced useful UI
 ### Next milestone recommendation
 
 Recommended: validate the observer with a pulled local vision model (`ollama pull llava:7b`) before moving to voice/browser/desktop control.
+
+---
+
+## Milestone Run: Gemma/Ollama Truth + Token-Resilient Operator Foundation (N+1.4)
+
+### Date
+2026-04-20
+
+### Branch
+feat/ghoti-visible-operator-stack
+
+### Commit hash
+(set after commit below)
+
+### Push status
+(set after push)
+
+### Audit summary
+- HEAD and remote both at adea7b1 ✓
+- Duplicate IDs: PASS (none found)
+- Finish-line log preserved: YES (726 lines before this entry)
+- Ollama reachable: YES (0 models installed)
+
+### Model inventory truth
+- Gemma available: NO (Ollama reachable, 0 models)
+- Selected text model: null
+- Vision model available: NO
+- Gemma drives operator: false
+- Action planning: false
+- Autonomous actions: false
+
+### Gemma diagnostic probe result
+- Probe returns `ok:false, error:"no_gemma_model_available"` — correct honest behavior
+- Probe record written to `runtime_data/model_probes.json` (gitignored)
+
+### Capture gallery clarification added
+YES — "Local Frame Gallery" note added. Clarifies: local-only screenshots, not AI screen-sharing, frame only sent to Ollama on manual trigger.
+
+### Token-resilience truth
+- state_persisted: true
+- runtime_data_gitignored: true
+- finish_line_log_present: true
+- current_prompt_path: 14_context/ghoti_current_prompt.md
+- can_resume_after_chat_limits: true
+- note: Long-running autonomy is not implemented. Current resilience is checkpoint/log/prompt based.
+
+### Validation results
+- GET /: PASS (200)
+- GET /overlay: PASS (200)
+- GET /api/ghoti/system/health (with models + token_resilience): PASS
+- GET /api/ghoti/models/status: PASS
+- GET /api/ghoti/models/probes: PASS
+- POST /api/ghoti/models/gemma-probe (no model): PASS (ok:false, error:no_gemma_model_available)
+- Approval queue regression (create, redact, approve, wrong-type rejected, correct-consume, replay rejected): PASS
+- Active Mode regression (start, capture, latest-frame 200 image/png, stop): PASS
+- Duplicate IDs: PASS
+- model_probes.json gitignored: CONFIRMED
+
+### Files modified
+- `01_projects/dashboard_mvp/server.js` — added model inventory status, Gemma diagnostic probe routes, extended health endpoint with models + token_resilience blocks
+- `01_projects/dashboard_mvp/public/index.html` — added Local Brain Truth card, updated Observer to "diagnostic probe" wording, clarified Local Frame Gallery
+- `01_projects/dashboard_mvp/public/app.js` — folded model status into health poll, added probe button handler and probe history display
+- `14_context/ghoti_finish_line_log.md` — appended this entry
+
+### Files intentionally not staged
+- `21_repos/third_party/.gitkeep`
+- `01_projects/mcp_server/test.txt`
+- `01_projects/runtime_mvp/runtime_data/*.json`
+- `01_projects/dashboard_mvp/.tmp-screenshots/**`
+
+### Honest status
+
+What is real:
+- Active Mode capture/gallery/cleanup: ~90% real
+- Approval queue hardening: ~95% real
+- System health endpoint (with models + token_resilience): real
+- Ollama reachability probe: real
+- Model inventory endpoint: real
+- Gemma diagnostic probe route: real (honest no_gemma_model_available when no model)
+- Token-resilience status: real (checkpoint/log/prompt based, not daemon)
+- Local Brain Truth UI card: real
+- Capture gallery / Local Frame Gallery clarification: real
+- Observer "diagnostic probe" relabeling: real
+
+What remains scaffold:
+- Voice: scaffold only
+- YouTube follower: scaffold only
+- Autonomous computer control: not implemented
+- Gemma as action brain: not wired (no model installed)
+- Native always-on-top overlay: not implemented
+
+### Next milestone recommendation
+
+Recommended: Install or restore Gemma model inventory (`ollama pull gemma3`), then re-run model diagnostic probe to validate local text model. Do not recommend LLaVA unless user explicitly asks.

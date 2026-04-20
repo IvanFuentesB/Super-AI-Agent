@@ -49,12 +49,17 @@ const voiceStateFile = path.join(runtimeDataDir, "voice_state.json");
 const youtubeFollowerTasksFile = path.join(runtimeDataDir, "youtube_follower_tasks.json");
 const approvalsFile = path.join(runtimeDataDir, "approvals.json");
 const observationsFile = path.join(runtimeDataDir, "observations.json");
+const modelProbesFile = path.join(runtimeDataDir, "model_probes.json");
 const maxActiveSessions = 5;
 const maxYoutubeFollowerTasks = 20;
 const maxSessionFrames = 12;
 const maxObservations = 500;
 const defaultObservationLimit = 20;
 const maxObservationLimit = 100;
+const maxModelProbes = 200;
+const defaultProbeLimit = 20;
+const maxProbeLimit = 100;
+const gemmaProbeTimeoutMs = 60000;
 const observeFrameTimeoutMs = 60000;
 const defaultObservationPrompt = "Describe what is visible on screen in 2-4 sentences. Only describe visible UI or objects. Do not guess intent. Do not propose actions.";
 const ollamaVisionModelHints = [
@@ -423,6 +428,53 @@ function pickVisionModelName(allModels) {
   return null;
 }
 
+function pickGemmaModelName(allModels) {
+  const entries = (Array.isArray(allModels) ? allModels : [])
+    .map((m) => String(m || "").trim())
+    .filter(Boolean);
+  return entries.find((m) => m.toLowerCase().includes("gemma")) || null;
+}
+
+function pickVisionCandidates(allModels) {
+  const entries = (Array.isArray(allModels) ? allModels : [])
+    .map((m) => String(m || "").trim())
+    .filter(Boolean);
+  return entries.filter((m) => {
+    const lower = m.toLowerCase();
+    return ollamaVisionModelHints.some((hint) => lower.includes(hint.toLowerCase()));
+  });
+}
+
+async function getModelInventoryStatus() {
+  const { reachable, models } = await checkOllamaReachable();
+  const allModels = (Array.isArray(models) ? models : []).map((m) => String(m || "").trim()).filter(Boolean);
+  const gemmaCandidates = allModels.filter((m) => m.toLowerCase().includes("gemma"));
+  const visionCandidates = pickVisionCandidates(allModels);
+  const selectedText = gemmaCandidates[0] || null;
+  const selectedVision = pickVisionModelName(allModels);
+  return {
+    ok: true,
+    ollama: { reachable, host: "127.0.0.1:11434" },
+    models: {
+      all: allModels,
+      count: allModels.length,
+      gemma_candidates: gemmaCandidates,
+      selected_text_model: selectedText,
+      vision_candidates: visionCandidates,
+      selected_vision_model: selectedVision,
+    },
+    truth: {
+      gemma_available: gemmaCandidates.length > 0,
+      gemma_wired_for_diagnostic_probe: true,
+      gemma_drives_operator: false,
+      frame_understanding: selectedVision ? "vision_model_present" : "not_validated_without_vision_model",
+      action_planning: false,
+      autonomous_actions: false,
+    },
+    updated_at_utc: new Date().toISOString(),
+  };
+}
+
 function buildVisionStatusNote(visionStatus) {
   if (visionStatus.available) {
     return "Vision-capable Ollama model detected. Read-only frame observer can describe frames. It does not drive operator actions.";
@@ -544,6 +596,62 @@ function listObservations(sessionId, limit = defaultObservationLimit) {
   const safeId = sessionId ? sanitizeSessionId(sessionId) : null;
   const items = readObservations().filter((item) => !safeId || item.session_id === safeId);
   return items.slice(0, safeLimit);
+}
+
+// ── Model probe helpers ──────────────────────────────────────────────────────
+
+function readModelProbes() {
+  try {
+    if (!fs.existsSync(modelProbesFile)) return [];
+    const parsed = JSON.parse(fs.readFileSync(modelProbesFile, "utf8"));
+    return Array.isArray(parsed) ? parsed : [];
+  } catch { return []; }
+}
+
+function writeModelProbes(list) {
+  if (!fs.existsSync(runtimeDataDir)) fs.mkdirSync(runtimeDataDir, { recursive: true });
+  const bounded = (Array.isArray(list) ? list : []).slice(0, maxModelProbes);
+  const tmp = `${modelProbesFile}.tmp-${process.pid}-${Date.now()}`;
+  try {
+    fs.writeFileSync(tmp, JSON.stringify(bounded, null, 2), "utf8");
+    fs.renameSync(tmp, modelProbesFile);
+  } finally {
+    if (fs.existsSync(tmp)) { try { fs.unlinkSync(tmp); } catch { /* ignore */ } }
+  }
+  return bounded;
+}
+
+function appendModelProbe(record) {
+  const bounded = [record, ...readModelProbes()].slice(0, maxModelProbes);
+  writeModelProbes(bounded);
+  return record;
+}
+
+function requestOllamaGenerate(model, prompt) {
+  return new Promise((resolve, reject) => {
+    const body = JSON.stringify({ model, prompt, stream: false });
+    const req = http.request({
+      hostname: "127.0.0.1",
+      port: 11434,
+      path: "/api/generate",
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
+      timeout: gemmaProbeTimeoutMs,
+    }, (res) => {
+      let data = "";
+      res.on("data", (chunk) => { data += chunk; });
+      res.on("end", () => {
+        try {
+          const parsed = JSON.parse(data);
+          resolve(parsed);
+        } catch { reject(new Error("ollama_invalid_json")); }
+      });
+    });
+    req.on("error", reject);
+    req.on("timeout", () => { req.destroy(); reject(new Error("ollama_timeout")); });
+    req.write(body);
+    req.end();
+  });
 }
 
 function requestOllamaVisionDescription(model, prompt, imageBase64) {
@@ -5180,6 +5288,11 @@ async function handleApiRequest(request, response, requestUrl) {
     const pending = pendingApprovals();
     const allApprovals = readApprovals();
     const visionStatus = await getCachedOllamaVisionStatus();
+    const probes = readModelProbes();
+    const lastProbe = probes[0] || null;
+    const allModels = Array.isArray(visionStatus.all_models) ? visionStatus.all_models : [];
+    const gemmaCandidates = allModels.filter((m) => m.toLowerCase().includes("gemma"));
+    const finishLogExists = fs.existsSync(path.join(repoRoot, "14_context", "ghoti_finish_line_log.md"));
     sendJson(response, 200, {
       ok: true,
       health: {
@@ -5229,6 +5342,21 @@ async function handleApiRequest(request, response, requestUrl) {
           kind: "browser",
           native_always_on_top: false,
         },
+        models: {
+          all_count: allModels.length,
+          gemma_available: gemmaCandidates.length > 0,
+          selected_text_model: gemmaCandidates[0] || null,
+          last_probe_at_utc: lastProbe?.completed_at_utc || null,
+          probe_count: probes.length,
+        },
+        token_resilience: {
+          state_persisted: true,
+          runtime_data_gitignored: true,
+          finish_line_log_present: finishLogExists,
+          current_prompt_path: "14_context/ghoti_current_prompt.md",
+          can_resume_after_chat_limits: true,
+          note: "Long-running autonomy is not implemented. Current resilience is checkpoint/log/prompt based.",
+        },
       },
       server: {
         port: dashboardPort,
@@ -5236,6 +5364,64 @@ async function handleApiRequest(request, response, requestUrl) {
       },
       updated_at_utc: new Date().toISOString(),
     });
+    return;
+  }
+
+  if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/models/status") {
+    const status = await getModelInventoryStatus();
+    sendJson(response, 200, status);
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/api/ghoti/models/gemma-probe") {
+    let body = "";
+    await new Promise((resolve) => {
+      request.on("data", (chunk) => { body += chunk; });
+      request.on("end", resolve);
+    });
+    let userPrompt = null;
+    try { userPrompt = JSON.parse(body).prompt || null; } catch { /* ignore */ }
+    const probePrompt = userPrompt || "You are Ghoti's local diagnostic model probe. Summarize this system state in 3 short bullets. Do not suggest actions. Do not claim to control the computer.";
+    const probeId = `probe-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const requestedAt = new Date().toISOString();
+
+    const inv = await getModelInventoryStatus();
+    if (!inv.ollama.reachable) {
+      const rec = { id: probeId, model: null, prompt: probePrompt, status: "error", error: "ollama_unreachable", requested_at_utc: requestedAt, completed_at_utc: new Date().toISOString(), latency_ms: null, response: null };
+      appendModelProbe(rec);
+      sendJson(response, 200, { ok: false, error: "ollama_unreachable", probe: rec });
+      return;
+    }
+    if (!inv.models.selected_text_model) {
+      const rec = { id: probeId, model: null, prompt: probePrompt, status: "error", error: "no_gemma_model_available", requested_at_utc: requestedAt, completed_at_utc: new Date().toISOString(), latency_ms: null, response: null };
+      appendModelProbe(rec);
+      sendJson(response, 200, { ok: false, error: "no_gemma_model_available", probe: rec });
+      return;
+    }
+    const model = inv.models.selected_text_model;
+    const t0 = Date.now();
+    try {
+      const result = await requestOllamaGenerate(model, probePrompt);
+      const latency = Date.now() - t0;
+      const responseText = String(result?.response || "").trim();
+      const rec = { id: probeId, model, prompt: probePrompt, status: "ok", error: null, requested_at_utc: requestedAt, completed_at_utc: new Date().toISOString(), latency_ms: latency, response: responseText };
+      appendModelProbe(rec);
+      sendJson(response, 200, { ok: true, probe: rec });
+    } catch (err) {
+      const latency = Date.now() - t0;
+      const errMsg = err.message === "ollama_timeout" ? "timeout" : (err.message || "error");
+      const rec = { id: probeId, model, prompt: probePrompt, status: "error", error: errMsg, requested_at_utc: requestedAt, completed_at_utc: new Date().toISOString(), latency_ms: latency, response: null };
+      appendModelProbe(rec);
+      sendJson(response, 200, { ok: false, error: errMsg, probe: rec });
+    }
+    return;
+  }
+
+  if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/models/probes") {
+    const rawLimit = requestUrl.searchParams?.get("limit") || String(defaultProbeLimit);
+    const safeLimit = Math.max(1, Math.min(maxProbeLimit, Number.parseInt(rawLimit, 10) || defaultProbeLimit));
+    const probes = readModelProbes().slice(0, safeLimit);
+    sendJson(response, 200, { ok: true, probes, count: probes.length });
     return;
   }
 
