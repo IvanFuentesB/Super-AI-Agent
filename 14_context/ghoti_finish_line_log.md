@@ -2,6 +2,118 @@
 
 ---
 
+## Milestone Run: N+1.6 Safe Codex CLI Install + Bridge Proof + Claude Skills Prep
+
+Date: 2026-04-24
+Branch: feat/ghoti-visible-operator-stack
+Previous HEAD: 263ddef (was already pushed — confirmed)
+Port: 3218
+
+### Git state before
+
+- Local HEAD `263ddef` matched `origin/feat/ghoti-visible-operator-stack` — already pushed
+- Dirty unrelated files: overlay.css, overlay.html, overlay.js, .gitkeep, test.txt, .claude/skills/, prompt files, CVs — not staged
+
+### Install actions
+
+| Tool | Action | Result |
+|------|--------|--------|
+| Codex CLI | `npm i -g @openai/codex` | SUCCESS — `@openai/codex@0.124.0`, `codex-cli 0.124.0` |
+
+### Codex sign-in
+
+Pending — user must run `codex` once manually to authenticate.
+
+Safe first run:
+```powershell
+cd C:\Users\ai_sandbox\Documents\AI_Managed_Only
+codex
+```
+
+### Claude ↔ Codex bridge
+
+- Status: `manual_handoff_only`
+- Codex CLI installed, but no runtime bridge, no codex-plugin, no automated connection
+- Bridge proof document updated: `14_context/claude_codex_bridge_status.md`
+
+### Claude skills
+
+- Repo-local `.claude/skills/` EXISTS (untracked, not staged)
+- User-level `%USERPROFILE%\.claude\skills\` does NOT exist
+- `21_repos/third_party/awesome-claude-skills` EXISTS (reference intake only)
+- Status doc: `14_context/claude_skills_status.md`
+
+### OpenClaw
+
+- Both `openclaw` and `OpenClaw` folders confirmed present (duplicate clone)
+- Neither wired nor running — local reference only
+- Plan doc updated: `14_context/openclaw_local_multi_agent_plan.md`
+
+### Validation results (port 3218)
+
+| Check | Result |
+|---|---|
+| node --check server.js | PASS |
+| node --check app.js | PASS |
+| node --check overlay.js | PASS |
+| GET / | 200 OK |
+| GET /overlay | 200 OK |
+| GET /api/ghoti/tooling/status | ok: true, codex: available=true v0.124.0 |
+| GET /api/ghoti/continuity/status | ok: true |
+| GET /api/ghoti/models/inventory | ok: true |
+| Duplicate IDs | none found |
+
+### Live tooling route (codex now available)
+
+| Tool | Available | Version |
+|------|-----------|---------|
+| rustc | YES | 1.95.0 |
+| cargo | YES | 1.95.0 |
+| codex | YES | codex-cli 0.124.0 |
+| claude | YES | 2.1.119 |
+| claude_skills.repo_folder_exists | YES | — |
+| claude_skills.user_folder_exists | NO | — |
+| openclaw.local_paths_found | YES | — |
+| bridge.status | — | manual_handoff_only |
+
+### Safety / blocks
+
+| Check | Result |
+|---|---|
+| Cap bypass attempted | NO |
+| Fake engagement automation added | NO |
+| Phone farm automation added | NO |
+| Autonomous trading/investing added | NO |
+| OpenClaw runtime wired | NO |
+| Approval gates weakened | NO |
+
+### Files modified / created
+
+- `01_projects/dashboard_mvp/server.js` — added `repo_folder_exists`/`user_folder_exists` to `claude_skills` in tooling endpoint
+- `14_context/codex_cli_install_status.md` — created
+- `14_context/claude_codex_bridge_status.md` — updated milestone N+1.5→N+1.6, codex now installed
+- `14_context/claude_skills_status.md` — created
+- `14_context/openclaw_local_multi_agent_plan.md` — updated milestone header
+- `14_context/ghoti_finish_line_log.md` — this update
+
+### Files intentionally not staged
+
+- `01_projects/dashboard_mvp/public/overlay.css`
+- `01_projects/dashboard_mvp/public/overlay.html`
+- `01_projects/dashboard_mvp/public/overlay.js`
+- `21_repos/third_party/.gitkeep`
+- `01_projects/mcp_server/test.txt`
+- `14_context/ghoti_current_prompt.md`
+- `14_context/ghoti_current_prompt_N1_6.md`
+- `.claude/skills/`
+- `*.docx`
+
+### Next recommendation
+
+N+1.7: Run `codex` once to complete sign-in, then test a simple `codex exec` against a controlled task to prove the CLI works. Document the result as the first real bridge evidence (manual CLI invocation, not automatic). Optionally: install one or two useful skills from `awesome-claude-skills` after inspecting them individually.
+
+---
+
 ## Milestone Run: N+1.5 Safe Tooling Bootstrap + Bridge Proof + OpenClaw Prep
 
 Date: 2026-04-24

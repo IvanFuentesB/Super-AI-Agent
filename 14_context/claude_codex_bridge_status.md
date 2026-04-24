@@ -1,6 +1,6 @@
 # Claude ↔ Codex Bridge Status
 
-Milestone: N+1.5
+Milestone: N+1.6 (updated from N+1.5)
 Date: 2026-04-24
 
 ---
@@ -37,7 +37,7 @@ Matches on `codex`, `handoff`, `claude.*codex`, `codex.*claude`:
 | Component | Exists |
 |-----------|--------|
 | Claude Code CLI (`claude`) | YES — at npm global |
-| Codex CLI (`codex`) | NO |
+| Codex CLI (`codex`) | YES — `@openai/codex@0.124.0` installed N+1.6 |
 | Runtime bridge plugin | NO |
 | codex-plugin npm package | NO |
 | Claude ↔ Codex shared config | NO |
@@ -47,7 +47,6 @@ Matches on `codex`, `handoff`, `claude.*codex`, `codex.*claude`:
 
 ## What Is Not Installed
 
-- OpenAI Codex CLI
 - Any npm package bridging Claude Code and Codex
 - Any config file wiring the two systems together
 - Any automated prompt-routing between Claude and Codex

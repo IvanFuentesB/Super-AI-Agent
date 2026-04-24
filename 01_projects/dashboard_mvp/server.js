@@ -5557,10 +5557,11 @@ async function handleApiRequest(request, response, requestUrl) {
       path.join(repoRoot, "21_repos", "third_party", "openclaw"),
       path.join(repoRoot, "21_repos", "third_party", "OpenClaw"),
     ];
-    const claudeSkillsPath = path.join(
+    const claudeSkillsUserPath = path.join(
       process.env.USERPROFILE || process.env.HOME || "",
       ".claude", "skills"
     );
+    const claudeSkillsRepoPath = path.join(repoRoot, ".claude", "skills");
 
     sendJson(response, 200, {
       ok: true,
@@ -5583,8 +5584,10 @@ async function handleApiRequest(request, response, requestUrl) {
         note: "local reference/prep only — not connected to Ghoti runtime",
       },
       claude_skills: {
-        folder_exists: fs.existsSync(claudeSkillsPath),
-        path_checked: claudeSkillsPath,
+        repo_folder_exists: fs.existsSync(claudeSkillsRepoPath),
+        user_folder_exists: fs.existsSync(claudeSkillsUserPath),
+        repo_path_checked: claudeSkillsRepoPath,
+        user_path_checked: claudeSkillsUserPath,
       },
       bridge: {
         status: "manual_handoff_only",

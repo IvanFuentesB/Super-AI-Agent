@@ -1,6 +1,6 @@
 # OpenClaw Local Multi-Agent Plan
 
-Milestone: N+1.5
+Milestone: N+1.6 (updated from N+1.5)
 Date: 2026-04-24
 Status: **research/prep only — not wired**
 
