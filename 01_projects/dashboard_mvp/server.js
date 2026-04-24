@@ -762,6 +762,25 @@ function resolveCommand(candidates, versionArgs) {
   return null;
 }
 
+function probeTool(commands, timeoutMs) {
+  const t = timeoutMs || 2000;
+  for (const entry of commands) {
+    try {
+      const r = spawnSync(entry.cmd, entry.args || ["--version"], {
+        encoding: "utf8",
+        timeout: t,
+        windowsHide: true,
+        shell: process.platform === "win32",
+      });
+      if (r.status === 0) {
+        const ver = (r.stdout || r.stderr || "").trim().split("\n")[0];
+        return { available: true, version: ver || "ok" };
+      }
+    } catch { /* command not found */ }
+  }
+  return { available: false, error: "not_found" };
+}
+
 function resolvePython() {
   const candidates = [];
   if (process.env.SUPER_AGENT_PYTHON) {
@@ -5523,24 +5542,61 @@ async function handleApiRequest(request, response, requestUrl) {
     return;
   }
 
-  // GET /api/ghoti/tooling/status — honest truth about future tools; nothing claims to be installed
+  // GET /api/ghoti/tooling/status — live checks with short timeouts; no heavy recursive search
   if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/tooling/status") {
+    const cargoHome = path.join(
+      process.env.USERPROFILE || process.env.HOME || "",
+      ".cargo", "bin"
+    );
+    const probeWithCargoFallback = (name) => probeTool([
+      { cmd: name },
+      { cmd: path.join(cargoHome, `${name}.exe`) },
+    ]);
+
+    const openclawPaths = [
+      path.join(repoRoot, "21_repos", "third_party", "openclaw"),
+      path.join(repoRoot, "21_repos", "third_party", "OpenClaw"),
+    ];
+    const claudeSkillsPath = path.join(
+      process.env.USERPROFILE || process.env.HOME || "",
+      ".claude", "skills"
+    );
+
     sendJson(response, 200, {
       ok: true,
-      openclaw: { status: "future_research", installed_this_milestone: false },
-      rust: { status: "check_only", installed_this_milestone: false },
-      claude_cowork: { status: "external_operator_tool_reference" },
-      anthropic_skills: { status: "priority_research_reference" },
-      codex_plugin_bridge: { status: "future_verify_before_use" },
-      postiz: { status: "future_social_workflow_reference" },
-      scrapling: { status: "future_legal_research_reference" },
-      tensortrade: { status: "future_paper_trading_reference" },
+      checked_at: new Date().toISOString(),
+      rustc: probeWithCargoFallback("rustc"),
+      cargo: probeWithCargoFallback("cargo"),
+      git: probeTool([{ cmd: "git" }]),
+      node: probeTool([{ cmd: "node" }]),
+      npm: probeTool([{ cmd: "npm" }]),
+      pnpm: probeTool([{ cmd: "pnpm" }]),
+      python: probeTool([{ cmd: "python" }, { cmd: "py", args: ["-3", "--version"] }]),
+      uv: probeTool([{ cmd: "uv" }]),
+      ollama: probeTool([{ cmd: "ollama" }]),
+      gh: probeTool([{ cmd: "gh" }]),
+      codex: probeTool([{ cmd: "codex" }]),
+      claude: probeTool([{ cmd: "claude" }]),
+      openclaw: {
+        local_paths_found: openclawPaths.some((op) => fs.existsSync(op)),
+        not_wired: true,
+        note: "local reference/prep only — not connected to Ghoti runtime",
+      },
+      claude_skills: {
+        folder_exists: fs.existsSync(claudeSkillsPath),
+        path_checked: claudeSkillsPath,
+      },
+      bridge: {
+        status: "manual_handoff_only",
+        note: "No codex-plugin or runtime bridge found in local repo search",
+      },
       blocked: {
         quota_bypass: true,
         phone_farm_automation: true,
         fake_engagement: true,
         autonomous_real_money_trading: true,
         weapon_guidance: true,
+        autonomous_actions: true,
       },
     });
     return;

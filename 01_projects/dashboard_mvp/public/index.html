@@ -905,6 +905,18 @@ Invoke-RestMethod -Uri "$base/api/ghoti/control-center-state" -Method Get | Conv
             </ul>
             <p class="summary-note" style="margin-top:0.5rem;">Full registry: <code>14_context/future_concepts_registry.md</code></p>
           </div>
+          <div class="card" id="tooling-truth-card" style="margin-top:var(--gap);">
+            <h3 class="card-title">Tooling Truth (N+1.5)</h3>
+            <ul class="status-list" style="margin-top:0.75rem;">
+              <li><strong>OpenClaw:</strong> local reference/prep only — not wired to Ghoti</li>
+              <li><strong>Claude ↔ Codex bridge:</strong> manual_handoff_only — no runtime plugin installed</li>
+              <li><strong>Rust:</strong> installed via winget (rustup 1.29.0) — accessible at <code>~/.cargo/bin/</code></li>
+              <li><strong>Claude skills folder:</strong> not found at <code>~/.claude/skills/</code></li>
+              <li><strong>Cap bypass:</strong> <em>blocked</em> — not attempted, permanently off limits</li>
+              <li><strong>Autonomous actions:</strong> not implemented — approval gates intact</li>
+            </ul>
+            <p class="summary-note" style="margin-top:0.5rem;">Live check: <code>GET /api/ghoti/tooling/status</code></p>
+          </div>
         </section>
 
       </main><!-- .main-content -->

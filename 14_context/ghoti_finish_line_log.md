@@ -2,6 +2,108 @@
 
 ---
 
+## Milestone Run: N+1.5 Safe Tooling Bootstrap + Bridge Proof + OpenClaw Prep
+
+Date: 2026-04-24
+Milestone: N+1.5 Safe Tooling Bootstrap + Bridge Proof + OpenClaw Prep
+Branch: feat/ghoti-visible-operator-stack
+Previous HEAD: 67afae9
+Port: 3217
+
+### Audit findings
+
+- Local HEAD 67afae9 matched origin — no push needed at start
+- Dirty but unrelated: overlay.css, overlay.html, overlay.js, .gitkeep, test.txt, .claude/skills/, prompt files, CVs — not staged
+- Node syntax check: server.js, app.js, overlay.js — all PASS
+- No duplicate IDs in index.html
+
+### Install actions
+
+| Tool | Action | Result |
+|------|--------|--------|
+| Rust (rustup) | winget install --id Rustlang.Rustup -e | SUCCESS — rustup 1.29.0, rustc 1.95.0, cargo 1.95.0 |
+| pnpm | already present (10.33.0) | no action |
+| All others | check-only | documented in tooling_bootstrap_status.md |
+
+### Claude ↔ Codex bridge
+
+- Status: `manual_handoff_only`
+- No codex-plugin, no runtime bridge found in local search
+- codex CLI: not installed
+- Claude Code CLI: installed at npm/claude
+
+### OpenClaw
+
+- Folders found: `21_repos/third_party/openclaw` AND `21_repos/third_party/OpenClaw` (same content)
+- Stack: TypeScript/Node, Docker, multi-channel personal assistant
+- Not wired, not installed — read-only reference
+- Plan: 14_context/openclaw_local_multi_agent_plan.md
+
+### Live tooling route results (port 3217)
+
+| Tool | Available | Version |
+|------|-----------|---------|
+| rustc | YES | 1.95.0 |
+| cargo | YES | 1.95.0 |
+| git | YES | 2.49.0.windows.1 |
+| node | YES | v22.16.0 |
+| npm | YES | 10.9.2 |
+| pnpm | YES | 10.33.0 |
+| python | YES | 3.13.12 |
+| uv | YES | 0.11.3 |
+| ollama | YES | 0.21.2 |
+| gh | YES | 2.89.0 |
+| codex | NO | not_found |
+| claude | YES | 2.1.119 |
+| openclaw.local_paths_found | YES | — |
+| claude_skills.folder_exists | NO | — |
+| bridge.status | — | manual_handoff_only |
+
+### Validation results
+
+| Check | Result |
+|---|---|
+| node --check server.js | PASS |
+| node --check app.js | PASS |
+| node --check overlay.js | PASS |
+| GET / | 200 OK |
+| GET /overlay | 200 OK |
+| GET /api/ghoti/system/health | ok: true |
+| GET /api/ghoti/tooling/status | ok: true, live checks |
+| GET /api/ghoti/continuity/status | ok: true |
+| GET /api/ghoti/models/inventory | ok: true |
+| GET /api/ghoti/models/probes?limit=5 | ok: true |
+| Duplicate IDs | none found |
+
+### Safety / blocks
+
+| Check | Result |
+|---|---|
+| Cap bypass attempted | NO |
+| Fake engagement automation added | NO |
+| Phone farm automation added | NO |
+| Autonomous trading/investing added | NO |
+| Autonomous permit/legal filing added | NO |
+| Weapon/guided rocket implementation added | NO |
+| Approval gates weakened | NO |
+
+### Files modified / created
+
+- `01_projects/dashboard_mvp/server.js` — live tooling status route with probeTool helper
+- `01_projects/dashboard_mvp/public/index.html` — tooling truth card in About section
+- `14_context/tooling_bootstrap_status.md` — created
+- `14_context/claude_codex_bridge_status.md` — created
+- `14_context/openclaw_local_multi_agent_plan.md` — created
+- `14_context/future_concepts_registry.md` — updated with N+1.5 items
+- `14_context/ghoti_finish_line_log.md` — this update
+
+### Next recommended milestone
+
+Recommend: **A) Verify/install Gemma model and run diagnostic probe**
+Reason: Ollama is running (v0.21.2), Rust is now installed, live tooling route confirms full stack. The next gap is the vision model — pull `gemma:2b` or `gemma3:4b` with explicit user confirmation and run the existing diagnostic probe route to close the frame observer gap.
+
+---
+
 ## Milestone Run: Approval Queue + Route Guards
 
 Date: 2026-04-19

@@ -1,6 +1,6 @@
 # Ghoti Future Concepts Registry
 
-Last updated: 2026-04-24
+Last updated: 2026-04-24 (N+1.5 update)
 
 ## Rules
 - Registry item does not mean implemented.
@@ -31,10 +31,14 @@ Last updated: 2026-04-24
 
 | Item | Status |
 |------|--------|
-| OpenClaw local multi-agent dashboard | future research — not installed |
+| OpenClaw local multi-agent dashboard | local ref found in 21_repos/third_party/ — not wired |
 | Local multi-agent orchestration (Claude Code + Codex + ChatGPT) | future research |
+| Agentic OS concept | future research direction |
+| Low-cost smarter/self-evolving agents | future research — safety gates required |
 | Anthropic Claude skills from GitHub | priority research — not installed this milestone |
 | Skills marketplace / index approach | future research |
+| MiroFish | decision-support reference |
+| Fincept Terminal | future research reference |
 | Gemma/Ollama as local brain candidate | research in progress — diagnostic only |
 | Less-restrictive local models for local analysis | future — law/safety/human-approval gates required |
 | Native overlay (Tauri / always-on-top) | future milestone |
@@ -45,10 +49,14 @@ Last updated: 2026-04-24
 
 | Item | Status |
 |------|--------|
-| Claude Cowork / Dispatch / Projects / Scheduled | external operator tool reference |
+| Claude Cowork / Dispatch / Projects / Scheduled / Customize | external operator tool reference |
 | Claude Code skills (Anthropic GitHub) | priority research reference |
-| Codex plugin bridge | future — verify before use |
-| Promptible / Notion prompt libraries | future research reference |
+| Large Claude skills websites / indexes | future research reference |
+| Antigravity awesome-skills list | future research reference |
+| Claude new design tool | future reference — not released as of N+1.5 |
+| Claude Code planning model vs execution model idea | future architecture concept |
+| Claude Code ↔ Codex plugin/bridge | manual_handoff_only — verify before claiming installed |
+| Promptible / Nano Banana prompt-saving site / Notion libraries | future research reference |
 
 ---
 
@@ -60,7 +68,9 @@ Last updated: 2026-04-24
 | Faceless TikTok / Instagram / YouTube channels | income diversification — not automated |
 | Arcads + Claude AI content factory | future research reference |
 | Postiz / social scheduling | future social workflow reference — not installed |
-| Seedance / Higgsfield-like video tooling | future reference |
+| Seedance 2.0 | future reference |
+| Higgsfield-like tools | future reference |
+| Distribution channel / Vloxo-like traffic systems | future research reference |
 | Autonomous posting | blocked until approval gates + TOS checks complete |
 
 ---
@@ -69,10 +79,14 @@ Last updated: 2026-04-24
 
 | Item | Status |
 |------|--------|
-| KaloData / Atlas AI ad research | future research reference |
-| Figma / Shopify AI toolkit / store builders | future research reference |
+| KaloData | future research reference |
+| Atlas AI | future research reference |
+| Figma / store builders | future research reference |
+| Shopify AI toolkit | future research reference |
+| Lovable vs Claude evaluation | future — compare for store/app building |
+| Ad strategy / market meta research | future research reference |
 | Secure ad-supported web apps | future — includes political debate/fact-check leaderboard site idea |
-| Distribution channels research | future reference |
+| Distribution channels / Vloxo-like traffic systems | future reference |
 
 ---
 
@@ -80,9 +94,11 @@ Last updated: 2026-04-24
 
 | Item | Status |
 |------|--------|
-| High-end UI/UX design systems | future reference |
-| Infinite grid / foundation-style design references | future reference |
-| CAD / project builder workflows | future reference |
+| High-end UI/UX / infinite grid / foundation design systems | future reference |
+| Emil Kowalski / taste / design inspiration | future reference |
+| Schematik / vibe-coding-company inspiration | future reference |
+| Skill Lync / app recreation ideas | future reference |
+| CAD / project builder / Claude CAD workflows | future reference |
 | lum1104/understand-anything | future research reference |
 | Trellis.2 Windows feasibility | future research reference |
 | LightningPixel / Moldy-style image-to-3D | future reference |
@@ -95,7 +111,12 @@ Last updated: 2026-04-24
 
 | Item | Status |
 |------|--------|
-| MiroFish / TensorTrade / parking-lot / investment analysis | decision-support only — no autonomous trading |
+| MiroFish | decision-support reference |
+| TensorTrade | paper trading/simulation only — no real-money execution |
+| Parking lot acquisition analysis | decision-support only — human reviews all financial decisions |
+| Permits / payment system / cost-revenue simulations | decision-support only — no autonomous filing |
+| Alternative investment comparison | decision-support only |
+| Fincept Terminal | future research reference |
 | Autonomous real-money trading/investing | **blocked** — requires human review at every step |
 
 ---
@@ -106,7 +127,7 @@ Last updated: 2026-04-24
 |------|--------|
 | Scrapling / legal web scraping | future legal research reference |
 | OSINT tools (SpiderFoot, Metagoofil, IntelX, WiGLE, Hudson Rock, etc.) | future reference — legal/authorized use only |
-| Rusternets / Shannon / security tooling | future research reference |
+| Shannon security repo | future research reference — legal/authorized use only |
 | Chrome DevTools MCP | future reference |
 | Sentinel / security MCP v2 | future reference |
 | Anubis defense | future reference |
@@ -120,7 +141,7 @@ Last updated: 2026-04-24
 | CDN / load balancer / DB / auth / queues | future architecture reference |
 | Background jobs / monitoring / storage / secrets | future architecture reference |
 | Sentient Desk / SaaS video-generation research | future research reference |
-| Rust (language) | check-only this milestone — not installed |
+| Rust (language) | **installed N+1.5** via winget rustup 1.29.0 — binaries at ~/.cargo/bin/ |
 
 ---
 
@@ -138,6 +159,6 @@ Last updated: 2026-04-24
 | Guided rockets / weaponized aerospace | **blocked** — safe aerospace education/simulation/legal-compliance only |
 | OSINT against real people without authorization | **blocked** |
 | Non-localhost model API calls | **blocked** this milestone |
-| OpenClaw install | deferred — future research only |
-| Rust install | deferred to a future milestone |
+| OpenClaw install / wiring | deferred — local reference only, requires WSL2 + Docker + explicit approval |
+| Rust install | **completed N+1.5** via winget |
 | Ollama model pulls (LLaVA, Gemma, etc.) | deferred — not this milestone |
