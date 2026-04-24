@@ -2288,3 +2288,81 @@ Browser/visual smoke:
 ### Next Recommendation
 
 Do a narrow overlay interaction pass next: verify Diagnostics open/close, Start/Stop Ghoti button behavior, and whether the overlay should show a small capture/observer summary without making scaffold features look real.
+
+## Milestone Run: N+1.9 Plugin/Skill Strategy + Overlay Interaction Validation
+
+Date: 2026-04-24
+Branch: `feat/ghoti-visible-operator-stack`
+Starting HEAD: `5d4f0cf`
+Commit hash after commit: recorded in final milestone report
+
+### Files Changed
+
+- Created: `14_context/ghoti_skills_strategy.md`
+- Updated: `14_context/ghoti_finish_line_log.md`
+- Overlay source files were not changed in this milestone.
+
+### Plugin / Skill Strategy Truth
+
+- New strategy doc status label: `strategy_only / not_runtime_wired`
+- Codex plugins and skills remain Codex app/session capabilities, not Ghoti runtime integrations.
+- GitHub and Playwright are useful now for repo and local UI validation.
+- Jam-style bug reporting is a recommended future operator-side workflow, not a wired runtime feature.
+- Cloud/deployment plugins remain out of scope until explicitly requested.
+- No external service was connected.
+- No deployment was performed.
+- No approval gate was weakened.
+
+### Validation Commands / Results
+
+Static checks:
+
+- `node --check 01_projects/dashboard_mvp/server.js`: PASS
+- `node --check 01_projects/dashboard_mvp/public/app.js`: PASS
+- `node --check 01_projects/dashboard_mvp/public/overlay.js`: PASS
+- Duplicate ID check on `01_projects/dashboard_mvp/public/overlay.html`: PASS, 44 IDs / 44 unique / 0 duplicates
+- Duplicate ID check on `01_projects/dashboard_mvp/public/index.html`: PASS, 578 IDs / 578 unique / 0 duplicates
+
+Route smoke checks on fallback port `3221`:
+
+| Route | Result |
+|---|---|
+| `GET /` | 200 |
+| `GET /overlay` | 200 |
+| `GET /api/ghoti/system/health` | 200 |
+| `GET /api/ghoti/tooling/status` | 200 |
+| `GET /api/ghoti/continuity/status` | 200 |
+| `GET /api/ghoti/models/inventory` | 200 |
+| `GET /api/ghoti/approvals?status=pending` | 200 |
+
+Overlay interaction smoke:
+
+- `/overlay` opened in headless Chromium using the repo-local Playwright dependency.
+- Diagnostics drawer hidden by default: PASS.
+- Diagnostics drawer opens: PASS.
+- Diagnostics drawer closes: PASS.
+- Local-only / approval-gated badges visible: PASS.
+- Browser-overlay honesty wording visible: PASS.
+- Start Ghoti button changes overlay to running state: PASS.
+- Stop Ghoti button returns Active Mode API state to `active:false`, `mode:idle`: PASS.
+- Browser console/page errors during smoke: 0.
+- Capture/observer summary area: not implemented as a dedicated overlay section in this milestone.
+
+Known minor observation:
+
+- A hidden status element can retain stale text after the overlay returns to the idle empty-state view. It is not visible to the operator and was left unchanged to avoid broadening this docs/validation milestone.
+
+### Files Intentionally Not Staged
+
+- `21_repos/third_party/.gitkeep`
+- `.claude/skills/`
+- `01_projects/mcp_server/test.txt`
+- `14_context/ghoti_current_prompt_N1_6.md`
+- CV `.docx` files
+- `output/`
+- runtime data files
+- `.tmp-screenshots` capture artifacts
+
+### Next Recommendation
+
+Create the first actual Ghoti-specific Codex skill package only after choosing one narrow candidate. Best first candidate: `ghoti-git-safety`, because it directly protects every later milestone from accidentally staging runtime/private/local artifacts.
