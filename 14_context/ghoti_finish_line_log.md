@@ -2104,3 +2104,94 @@ Branch: feat/ghoti-visible-operator-stack
 ### Next recommended milestone
 Recommend: **C) Gemma diagnostic validation if model exists**
 Reason: The gemma-diagnostic route is now live but untested with a real model. The logical next step is to run `ollama pull gemma:2b` (with user confirmation), then execute a live diagnostic probe to close the observation gap.
+
+---
+
+## Milestone Run: N+1.7 Codex App Operator Proof + Dirty Workspace Triage
+
+Date: 2026-04-24
+Branch: feat/ghoti-visible-operator-stack
+
+### Current Git Truth
+
+- Starting HEAD: `42fb0f7`
+- Starting remote HEAD: `42fb0f7`
+- Remote matched local before edits: YES
+- Previous pushed milestone: `42fb0f7 feat(ghoti): install Codex CLI and prove bridge status (N+1.6)`
+
+### Dirty Files Found And Left Unstaged
+
+| Path | Classification | Action |
+|------|----------------|--------|
+| `01_projects/dashboard_mvp/public/overlay.css` | likely overlay redesign from another run | left unstaged |
+| `01_projects/dashboard_mvp/public/overlay.html` | likely overlay redesign from another run | left unstaged |
+| `01_projects/dashboard_mvp/public/overlay.js` | likely overlay redesign from another run | left unstaged |
+| `21_repos/third_party/.gitkeep` | third-party folder marker | left unstaged |
+| `.claude/skills/` | local Claude skills content | left unstaged |
+| `01_projects/mcp_server/test.txt` | scratch file | left unstaged |
+| `14_context/ghoti_current_prompt_N1_6.md` | prompt scratch/handoff artifact | left unstaged |
+| `CV_Ivan_EN_v2.docx` | generated/local document | left unstaged |
+| `CV_Ivan_Fuentes_Bedereu_EN.docx` | generated/local document | left unstaged |
+| `CV_Ivan_Fuentes_Bedereu_NL.docx` | generated/local document | left unstaged |
+| `CV_Ivan_NL_v2.docx` | generated/local document | left unstaged |
+
+### Validation Results
+
+- `node --check 01_projects/dashboard_mvp/server.js`: PASS
+- `node --check 01_projects/dashboard_mvp/public/app.js`: PASS
+- `node --check 01_projects/dashboard_mvp/public/overlay.js`: PASS
+- Duplicate ID check on `index.html`: PASS, 578 IDs / 578 unique / 0 duplicates
+- Dashboard validated on fallback port `3219`
+
+Route validation on `http://127.0.0.1:3219`:
+
+| Route | Result |
+|-------|--------|
+| `GET /` | 200 |
+| `GET /overlay` | 200 |
+| `GET /api/ghoti/system/health` | 200 / `ok:true` |
+| `GET /api/ghoti/tooling/status` | 200 / `ok:true` |
+| `GET /api/ghoti/continuity/status` | 200 / `ok:true` |
+| `GET /api/ghoti/models/inventory` | 200 / `ok:true` |
+| `GET /api/ghoti/models/status` | 200 / `ok:true` |
+| `GET /api/ghoti/models/probes?limit=5` | 200 / `ok:true` |
+| `GET /api/ghoti/brain/status` | 200 / `ok:true` |
+| `GET /api/ghoti/brain/vision-status` | 200 / `ok:true` |
+| `GET /api/ghoti/approvals?status=pending` | 200 / `ok:true` |
+
+### Codex App / CLI Status
+
+- Codex app executable visible: YES
+- `codex.cmd` visible in this PowerShell session: NO
+- `codex --version` launch from WindowsApps path: blocked by access denied in this shell
+- Dashboard `tooling/status` was adjusted to report the visible packaged Codex app surface honestly rather than only returning `not_found`.
+
+### Bridge Truth
+
+- Automatic Claude Code <-> Codex bridge: NOT PROVEN
+- Current bridge status: `manual_handoff_only`
+- Ghoti has supervised handoff concepts and operator recipes, but no verified automatic Claude-Code-to-Codex runtime bridge.
+
+### Files Modified / Created
+
+- Created: `14_context/codex_app_operator_status.md`
+- Updated: `14_context/claude_codex_bridge_status.md`
+- Updated: `14_context/tooling_bootstrap_status.md`
+- Updated: `14_context/ghoti_finish_line_log.md`
+- Updated: `01_projects/dashboard_mvp/server.js` only to improve honest Codex tool detection in `/api/ghoti/tooling/status`
+
+### Files Intentionally Not Staged
+
+- `01_projects/dashboard_mvp/public/overlay.css`
+- `01_projects/dashboard_mvp/public/overlay.html`
+- `01_projects/dashboard_mvp/public/overlay.js`
+- `21_repos/third_party/.gitkeep`
+- `.claude/skills/`
+- `01_projects/mcp_server/test.txt`
+- `14_context/ghoti_current_prompt_N1_6.md`
+- CV `.docx` files
+- runtime data and screenshot artifacts
+
+### Next Recommendation
+
+Run a narrow N+1.8 milestone to resolve the overlay redesign deliberately: either commit it as a validated overlay UX milestone or leave it documented as unrelated dirty work. Do not mix it with bridge/tooling truth changes.

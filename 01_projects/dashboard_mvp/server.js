@@ -781,6 +781,49 @@ function probeTool(commands, timeoutMs) {
   return { available: false, error: "not_found" };
 }
 
+function probeCodexTool() {
+  const direct = probeTool([{ cmd: "codex.cmd" }, { cmd: "codex" }]);
+  if (direct.available) {
+    return {
+      ...direct,
+      command: direct.version ? "codex.cmd/codex" : "codex",
+      app_operator_surface: true,
+      cli_invocable: true,
+    };
+  }
+
+  if (process.platform !== "win32") {
+    return { available: false, error: direct.error || "not_found" };
+  }
+
+  try {
+    const ps = spawnSync("powershell.exe", [
+      "-NoProfile",
+      "-Command",
+      "$cmd = Get-Command codex -ErrorAction SilentlyContinue; if (-not $cmd) { $cmd = Get-Command codex.cmd -ErrorAction SilentlyContinue }; if ($cmd) { $cmd.Source }",
+    ], {
+      encoding: "utf8",
+      timeout: 2000,
+      windowsHide: true,
+    });
+    const source = (ps.stdout || "").trim().split(/\r?\n/).find(Boolean);
+    if (source) {
+      return {
+        available: true,
+        command_visible: true,
+        cli_invocable: false,
+        command: source.toLowerCase().endsWith("codex.cmd") ? "codex.cmd" : "codex",
+        path: source,
+        error: "version_probe_failed_or_access_denied",
+        note: "Codex app executable is visible to this shell, but --version could not be launched from the dashboard process.",
+        app_operator_surface: true,
+      };
+    }
+  } catch { /* keep not_found fallback */ }
+
+  return { available: false, error: direct.error || "not_found" };
+}
+
 function resolvePython() {
   const candidates = [];
   if (process.env.SUPER_AGENT_PYTHON) {
@@ -5576,7 +5619,7 @@ async function handleApiRequest(request, response, requestUrl) {
       uv: probeTool([{ cmd: "uv" }]),
       ollama: probeTool([{ cmd: "ollama" }]),
       gh: probeTool([{ cmd: "gh" }]),
-      codex: probeTool([{ cmd: "codex" }]),
+      codex: probeCodexTool(),
       claude: probeTool([{ cmd: "claude" }]),
       openclaw: {
         local_paths_found: openclawPaths.some((op) => fs.existsSync(op)),

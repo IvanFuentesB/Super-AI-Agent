@@ -166,3 +166,16 @@ Any serious web product deployed at scale requires all of the following:
 | Security headers | CSP, HSTS, X-Frame-Options, input validation, OWASP top 10 |
 
 Nothing in Ghoti's current dashboard MVP has these production layers. This reminder is here to prevent premature "production" claims.
+
+---
+
+## N+1.7 Codex App Operator Note
+
+Date: 2026-04-24
+
+- Codex app is the preferred temporary executor/reviewer while Claude Code credits are unavailable.
+- The Codex app executable is visible from this shell, but `codex.cmd` is not visible in this PowerShell session.
+- Use `codex.cmd` in PowerShell when it is available, because `codex.ps1` may hit execution policy restrictions.
+- Do not treat Codex app usage as an automatic bridge.
+- Current bridge truth remains `manual_handoff_only`.
+- Ghoti approval gates remain the operator boundary.

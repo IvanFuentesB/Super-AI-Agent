@@ -89,3 +89,24 @@ This workflow is:
 - Safe from cross-system prompt injection
 
 There is no daemon, no scheduler, no webhook. The operator decides when to hand off.
+
+---
+
+## N+1.7 Update — Codex App Operator Proof
+
+Date: 2026-04-24
+
+Verified current bridge truth remains:
+
+| Item | Status |
+|------|--------|
+| Codex app usable by user | YES |
+| Codex executable visible in this shell | YES — packaged app executable found |
+| `codex.cmd` visible in this PowerShell session | NO |
+| Automatic Claude Code <-> Codex bridge | NOT PROVEN |
+| Current status | `manual_handoff_only` |
+| Ghoti automatic runtime bridge to Codex | NO |
+
+Do not overclaim integration. Ghoti has handoff concepts, target selection, and manual operator recipes, but there is still no verified automatic Claude-Code-to-Codex runtime bridge.
+
+Claude Code is currently limited by user-side credits. Codex app usage is the preferred temporary execution/review surface, but it does not change the bridge status.
