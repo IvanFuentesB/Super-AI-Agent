@@ -1834,3 +1834,59 @@ task-visibility-filter
 - Preserve every existing DOM ID from this audit.
 - Keep existing API calls and action behavior intact.
 - Introduce one top bar, one sidebar, one visible tab panel at a time, one global refresh control, and one right-side drawer.
+
+---
+
+## N+1.4 — Gemma/Ollama Truth + Agentic OS Future Registry + Token-Resilient Foundation
+Date: 2026-04-24
+Branch: feat/ghoti-visible-operator-stack
+
+### What was added
+
+**server.js — 4 new routes:**
+- `GET /api/ghoti/models/inventory` — honest inventory with required truth fields: `gemma_drives_operator:false`, `frame_understanding`, `action_planning:false`, `autonomous_actions:false`, `model_pulls_allowed_this_milestone:false`, `llava_pull_deferred:true`
+- `POST /api/ghoti/models/gemma-diagnostic` — diagnostic-only Gemma probe with truth fields `diagnostic_only:true`, `drives_operator:false`, `action_planning:false`; returns `no_gemma_model_available` if no model exists; appends to probe history; 60s timeout
+- `GET /api/ghoti/continuity/status` — token resilience truth: checkpoint/log/prompt based, not autonomous daemon, not unlimited context; reflects live file presence
+- `GET /api/ghoti/tooling/status` — honest tooling truth listing OpenClaw/Rust/skills as future research, not installed; blocked fields included
+
+**index.html — 2 changes:**
+- Capture gallery wording updated to required copy: "Capture gallery = local screenshot frames saved on this machine. It is not AI screen sharing, not cloud streaming, and not autonomous understanding."
+- Future Registry card added in About section listing: OpenClaw future research, Claude skills priority, Whop clipping, faceless channels, token resilience, cap bypass blocked, phone farm blocked
+
+**14_context/future_concepts_registry.md — CREATED:**
+- Priority 0–8 registry covering all N+1.4 strategic concepts from the milestone prompt
+- Explicit blocked/deferred table included
+
+### What remains unimplemented
+- No Gemma model currently pulled (Ollama reachability not verified — gemma-diagnostic returns no_gemma_model_available if unreachable/missing)
+- Native overlay (Tauri) — future milestone
+- Real voice/browser/desktop actions — future milestones
+- OpenClaw, Rust, LLaVA — deferred per safety rules
+
+### Safety blocks preserved
+- No model pulls executed
+- No non-localhost API calls added
+- No cap/quota bypass attempted
+- No autonomous actions, fake engagement, phone farm, or trading automation added
+- All approval gates intact
+
+### Files modified
+- `01_projects/dashboard_mvp/server.js` — 4 new routes added
+- `01_projects/dashboard_mvp/public/index.html` — capture gallery copy + future registry card
+
+### Files created
+- `14_context/future_concepts_registry.md`
+
+### Files NOT staged
+- `21_repos/third_party/.gitkeep`
+- `01_projects/mcp_server/test.txt`
+- `01_projects/runtime_mvp/runtime_data/*.json`
+- `01_projects/dashboard_mvp/.tmp-screenshots/**`
+- `14_context/ghoti_current_prompt.md`
+- `01_projects/dashboard_mvp/public/overlay.css`
+- `01_projects/dashboard_mvp/public/overlay.html`
+- `01_projects/dashboard_mvp/public/overlay.js`
+
+### Next recommended milestone
+Recommend: **C) Gemma diagnostic validation if model exists**
+Reason: The gemma-diagnostic route is now live but untested with a real model. The logical next step is to run `ollama pull gemma:2b` (with user confirmation), then execute a live diagnostic probe to close the observation gap.

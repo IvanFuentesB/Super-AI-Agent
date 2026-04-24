@@ -5425,6 +5425,127 @@ async function handleApiRequest(request, response, requestUrl) {
     return;
   }
 
+  // GET /api/ghoti/models/inventory — honest inventory with required N+1.4 truth fields
+  if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/models/inventory") {
+    const inv = await getModelInventoryStatus();
+    sendJson(response, 200, {
+      ok: true,
+      ollama: inv.ollama,
+      models: inv.models,
+      truth: {
+        gemma_available: inv.models.gemma_candidates.length > 0,
+        gemma_drives_operator: false,
+        frame_understanding: inv.models.selected_vision_model
+          ? "vision_model_present"
+          : "not_validated_without_vision_model",
+        action_planning: false,
+        autonomous_actions: false,
+        model_pulls_allowed_this_milestone: false,
+        llava_pull_deferred: true,
+      },
+      updated_at_utc: inv.updated_at_utc,
+    });
+    return;
+  }
+
+  // POST /api/ghoti/models/gemma-diagnostic — diagnostic text only; drives nothing
+  if (request.method === "POST" && requestUrl.pathname === "/api/ghoti/models/gemma-diagnostic") {
+    let body = "";
+    await new Promise((resolve) => {
+      request.on("data", (chunk) => { body += chunk; });
+      request.on("end", resolve);
+    });
+    let userPrompt = null;
+    try { userPrompt = JSON.parse(body).prompt || null; } catch { /* ignore */ }
+    const diagnosticPrompt = userPrompt ||
+      "In one short paragraph, say what you are and whether you are running locally. Do not claim to control the operator.";
+    const probeId = `diag-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const requestedAt = new Date().toISOString();
+    const inv = await getModelInventoryStatus();
+    if (!inv.ollama.reachable) {
+      sendJson(response, 200, { ok: false, error: "ollama_unreachable", hint: "Ollama not reachable at 127.0.0.1:11434." });
+      return;
+    }
+    const gemmaModel = inv.models.selected_text_model;
+    if (!gemmaModel) {
+      sendJson(response, 200, { ok: false, error: "no_gemma_model_available", hint: "No model pull is allowed in this milestone." });
+      return;
+    }
+    const t0 = Date.now();
+    try {
+      const result = await requestOllamaGenerate(gemmaModel, diagnosticPrompt);
+      const latency = Date.now() - t0;
+      const responseText = String(result?.response || "").trim();
+      const rec = {
+        id: probeId, kind: "diagnostic", model: gemmaModel,
+        prompt: diagnosticPrompt, status: "ok", error: null,
+        requested_at_utc: requestedAt, completed_at_utc: new Date().toISOString(),
+        latency_ms: latency, response: responseText,
+        truth: { diagnostic_only: true, drives_operator: false, action_planning: false },
+      };
+      appendModelProbe(rec);
+      sendJson(response, 200, { ok: true, probe: rec });
+    } catch (err) {
+      const latency = Date.now() - t0;
+      const errMsg = err.message === "ollama_timeout" ? "timeout" : (err.message || "error");
+      const rec = {
+        id: probeId, kind: "diagnostic", model: gemmaModel,
+        prompt: diagnosticPrompt, status: "error", error: errMsg,
+        requested_at_utc: requestedAt, completed_at_utc: new Date().toISOString(),
+        latency_ms: latency, response: null,
+        truth: { diagnostic_only: true, drives_operator: false, action_planning: false },
+      };
+      appendModelProbe(rec);
+      sendJson(response, 200, { ok: false, error: errMsg, probe: rec });
+    }
+    return;
+  }
+
+  // GET /api/ghoti/continuity/status — token resilience truth
+  if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/continuity/status") {
+    const finishLogExists = fs.existsSync(path.join(repoRoot, "14_context", "ghoti_finish_line_log.md"));
+    const registryExists = fs.existsSync(path.join(repoRoot, "14_context", "future_concepts_registry.md"));
+    const compactMemExists = fs.existsSync(path.join(repoRoot, "14_context", "compact_memory"));
+    const currentPromptExists = fs.existsSync(path.join(repoRoot, "14_context", "ghoti_current_prompt.md"));
+    sendJson(response, 200, {
+      ok: true,
+      token_resilience_kind: "checkpoint_log_prompt_continuity",
+      autonomous_daemon: false,
+      unlimited_context: false,
+      current_prompt_file: "14_context/ghoti_current_prompt.md",
+      current_prompt_exists: currentPromptExists,
+      finish_line_log_exists: finishLogExists,
+      future_concepts_registry_exists: registryExists,
+      compact_memory_exists: compactMemExists,
+      handoff_ready: true,
+      note: "Token resilience means durable checkpoints, prompts, logs, and handoffs; it does not bypass model limits.",
+    });
+    return;
+  }
+
+  // GET /api/ghoti/tooling/status — honest truth about future tools; nothing claims to be installed
+  if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/tooling/status") {
+    sendJson(response, 200, {
+      ok: true,
+      openclaw: { status: "future_research", installed_this_milestone: false },
+      rust: { status: "check_only", installed_this_milestone: false },
+      claude_cowork: { status: "external_operator_tool_reference" },
+      anthropic_skills: { status: "priority_research_reference" },
+      codex_plugin_bridge: { status: "future_verify_before_use" },
+      postiz: { status: "future_social_workflow_reference" },
+      scrapling: { status: "future_legal_research_reference" },
+      tensortrade: { status: "future_paper_trading_reference" },
+      blocked: {
+        quota_bypass: true,
+        phone_farm_automation: true,
+        fake_engagement: true,
+        autonomous_real_money_trading: true,
+        weapon_guidance: true,
+      },
+    });
+    return;
+  }
+
   sendJson(response, 404, {
     ok: false,
     error: "Route not found.",
