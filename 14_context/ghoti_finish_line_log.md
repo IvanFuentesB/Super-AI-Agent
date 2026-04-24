@@ -2372,7 +2372,7 @@ Create the first actual Ghoti-specific Codex skill package only after choosing o
 Date: 2026-04-25
 Branch: `feat/ghoti-visible-operator-stack`
 Starting HEAD: `56c5429`
-Commit hash after commit: TBD — recorded after push
+Commit hash after commit: e7573b0
 
 ### Files Changed
 
@@ -2419,3 +2419,70 @@ Commit hash after commit: TBD — recorded after push
 ### Next Recommendation
 
 The next milestone should implement the second Ghoti-specific skill package: `ghoti-finish-line-log-update`, which enforces the standard append-only log format and validates that milestone entries include all required fields before committing. Alternatively, use `ghoti-git-safety` live for the first time in the next commit and document any workflow gaps found.
+
+---
+
+## Milestone Run: N+2.1 Create second Ghoti-specific Codex skill: ghoti-finish-line-log-update
+
+Date: 2026-04-25
+Branch: `feat/ghoti-visible-operator-stack`
+Starting HEAD: `e7573b0`
+Commit hash after commit: b705313 before amend; final amended hash recorded in final report
+Pushed: TBD before push
+
+### Files Changed
+
+- Created: `13_prompts/codex_skills/ghoti-finish-line-log-update/SKILL.md`
+- Updated: `13_prompts/codex_skills/README.md`
+- Updated: `14_context/ghoti_skills_strategy.md`
+- Updated: `14_context/ghoti_finish_line_log.md`
+
+### Finish-Line-Log Reconciliation
+
+- Existing local modification in `14_context/ghoti_finish_line_log.md` was inspected before new edits.
+- `git diff --ignore-space-at-eol -- 14_context/ghoti_finish_line_log.md` showed the meaningful pre-existing change was `Commit hash after commit: TBD — recorded after push` to `Commit hash after commit: e7573b0` for N+2.0.
+- That N+2.0 reconciliation is correct because local and remote HEAD both showed `e7573b0`.
+- The reconciliation is included intentionally in this milestone.
+
+### Validation Commands / Results
+
+- `git status --short`: PASS — only expected dirty/local files plus intentional N+2.1 docs are present
+- `git diff --cached --name-status`: PASS before edits — no staged files at milestone start
+- `git diff --ignore-space-at-eol -- 14_context/ghoti_finish_line_log.md`: PASS — N+2.0 reconciliation reduced to the commit-hash truth change
+- `git diff --check`: PASS
+- New `SKILL.md` exists: PASS
+- New `SKILL.md` contains `skill_package_created / not_runtime_wired`: PASS
+- New `SKILL.md` contains append-only workflow: PASS
+- New `SKILL.md` contains milestone log template: PASS
+- Staged-file allowlist check: PASS — staged files are only the four intended N+2.1 docs
+
+### Skill Package Truth
+
+- Skill name: `ghoti-finish-line-log-update`
+- Status: `skill_package_created / not_runtime_wired`
+- Runtime wired: NO
+- Purpose: standardize append-only finish-line-log entries with exact commit hash, push truth, validation evidence, dirty-file truth, and honest runtime capability labels.
+
+### Dirty Files Intentionally Not Staged
+
+- `21_repos/third_party/.gitkeep` — expected local/third-party marker dirt
+- `.claude/skills/` — local Claude skills material, not part of this Codex skill milestone
+- `01_projects/mcp_server/test.txt` — scratch/test file
+- `14_context/ghoti_current_prompt_N1_6.md` — prompt scratch/handoff artifact
+- CV `.docx` files — local personal document artifacts
+- `output/` — local output/screenshot artifacts
+- runtime data and screenshot artifacts — not milestone source/docs
+
+### What Remains Manual / Unproven
+
+- `ghoti-finish-line-log-update` is a Codex operator-side skill package only.
+- It is not wired into the Ghoti runtime, dashboard, MCP server, approval queue, or executor.
+- Codex plugins/skills remain session/operator capabilities unless future repo code proves runtime integration.
+
+### Recovery Notes
+
+- None so far.
+
+### Next Recommendation
+
+Create `ghoti-dashboard-route-validation` next, because it turns the repeated dashboard route smoke checks into a reusable operator-side validation package without adding runtime autonomy.

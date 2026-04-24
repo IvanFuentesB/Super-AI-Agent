@@ -86,10 +86,13 @@ Ghoti remains local-first, supervised, manual, and approval-gated. Skills do not
 
 ### ghoti-finish-line-log-update
 
+**Created in milestone N+2.1 — status: skill_package_created / not_runtime_wired**
+**File:** `13_prompts/codex_skills/ghoti-finish-line-log-update/SKILL.md`
+
 - Purpose: keep milestone history accurate and append-only.
 - When to use: every milestone before commit.
 - Forbidden uses: rewriting prior history to make outcomes look cleaner.
-- Validation/checks: include date, branch, HEAD, files changed, validation results, what is real, what is scaffold, what remains manual.
+- Validation/checks: include date, branch, HEAD, commit hash, push truth, files changed, validation results, dirty files left unstaged, what is real, what is scaffold, and what remains manual.
 - Output artifact/file: `14_context/ghoti_finish_line_log.md`.
 
 ### ghoti-codex-claude-handoff

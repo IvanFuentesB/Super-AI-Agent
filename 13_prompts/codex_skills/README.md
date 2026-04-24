@@ -13,6 +13,7 @@ These are Ghoti-specific Codex skill packages — strategy and workflow document
 | Skill | Status | Purpose |
 |---|---|---|
 | ghoti-git-safety | skill_package_created / not_runtime_wired | Prevent accidental staging of runtime, private, or local artifacts before every Ghoti commit |
+| ghoti-finish-line-log-update | skill_package_created / not_runtime_wired | Keep the Ghoti finish-line log append-only, evidence-based, and honest after each milestone |
 
 ## Operating Rule
 
