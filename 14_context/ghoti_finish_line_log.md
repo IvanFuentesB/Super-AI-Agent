@@ -2195,3 +2195,96 @@ Route validation on `http://127.0.0.1:3219`:
 ### Next Recommendation
 
 Run a narrow N+1.8 milestone to resolve the overlay redesign deliberately: either commit it as a validated overlay UX milestone or leave it documented as unrelated dirty work. Do not mix it with bridge/tooling truth changes.
+
+## Milestone Run: N+1.8 Overlay Triage + Skills/Plugin Truth Pass
+
+Date: 2026-04-24
+Branch: `feat/ghoti-visible-operator-stack`
+Starting HEAD: `4f1c8c5`
+Starting remote HEAD: `4f1c8c5`
+
+### Overlay Triage Result
+
+The dirty overlay files were inspected directly and treated as a focused overlay redesign, not as random runtime work.
+
+| File | Verdict |
+|---|---|
+| `01_projects/dashboard_mvp/public/overlay.html` | Intentional overlay dock redesign; preserves compatibility IDs in a hidden legacy block |
+| `01_projects/dashboard_mvp/public/overlay.css` | Intentional light operator-dock styling; includes `[hidden] { display: none !important; }` fix after visual validation found the diagnostics drawer visible by default |
+| `01_projects/dashboard_mvp/public/overlay.js` | Intentional simplified overlay controller; uses relative local API URLs and does not add autonomous behavior |
+
+Safety checks:
+
+- Local-only / browser-overlay honesty remains visible.
+- Overlay still says it is browser-based, not a native always-on-top window.
+- The redesign does not add hidden recording.
+- The redesign does not add autonomous execution.
+- API calls remain relative to the dashboard origin, not hardcoded to `127.0.0.1:3210`.
+
+Overlay verdict: committed as a dedicated overlay UX improvement if final staging/commit succeeds.
+
+### Validation Results
+
+Static checks:
+
+- `node --check 01_projects/dashboard_mvp/server.js`: PASS
+- `node --check 01_projects/dashboard_mvp/public/app.js`: PASS
+- `node --check 01_projects/dashboard_mvp/public/overlay.js`: PASS
+- Duplicate ID check on `01_projects/dashboard_mvp/public/overlay.html`: PASS, 44 IDs / 44 unique / 0 duplicates
+- Duplicate ID check on `01_projects/dashboard_mvp/public/index.html`: PASS, 578 IDs / 578 unique / 0 duplicates
+- Overlay JS selector check: PASS, no missing `document.getElementById(...)` references
+
+Live checks on fallback port `3220`:
+
+| Route | Result |
+|---|---|
+| `GET /` | 200 |
+| `GET /overlay` | 200 |
+| `GET /api/ghoti/system/health` | 200 / `ok:true` |
+| `GET /api/ghoti/tooling/status` | 200 / `ok:true` / bridge `manual_handoff_only` |
+| `GET /api/ghoti/continuity/status` | 200 / `ok:true` |
+| `GET /api/ghoti/models/inventory` | 200 / `ok:true` |
+| `GET /api/ghoti/approvals?status=pending` | 200 / `ok:true` |
+
+Browser/visual smoke:
+
+- Playwright screenshot smoke was run against `/overlay`.
+- First screenshot found the diagnostics drawer visible by default.
+- CSS was corrected with `[hidden] { display: none !important; }`.
+- Second screenshot confirmed the top-right dock rendered with `LOCAL ONLY`, `APPROVAL GATED`, Start Ghoti, Diagnostics, Open dashboard, and the browser-overlay honesty footer.
+- Deeper console-event automation via importable Playwright module was unavailable in this shell, so the browser result is route + screenshot smoke, not a full interactive trace.
+
+### Plugin / Skills Truth
+
+- Codex plugins and skills are available to the Codex app/session only.
+- They are not automatically wired into Ghoti runtime.
+- GitHub is useful now for repo/branch/push work.
+- Playwright is useful now for local browser smoke testing.
+- Vercel, Neon, Cloudflare, Sentry, Hugging Face, Cloudinary, and Expo are not runtime integrations in Ghoti.
+- No deployment was performed.
+- No external paid service was connected.
+- No API keys or secrets were added.
+- No plugin named exactly `Computer Use` was found or proven.
+
+### Files Modified / Created
+
+- Modified: `01_projects/dashboard_mvp/public/overlay.css`
+- Modified: `01_projects/dashboard_mvp/public/overlay.html`
+- Modified: `01_projects/dashboard_mvp/public/overlay.js`
+- Created: `14_context/codex_plugins_skills_status.md`
+- Modified: `14_context/ghoti_finish_line_log.md`
+
+### Files Intentionally Not Staged
+
+- `21_repos/third_party/.gitkeep`
+- `.claude/skills/`
+- `01_projects/mcp_server/test.txt`
+- `14_context/ghoti_current_prompt_N1_6.md`
+- CV `.docx` files
+- `output/` Playwright screenshots
+- runtime data files
+- `.tmp-screenshots` capture artifacts
+
+### Next Recommendation
+
+Do a narrow overlay interaction pass next: verify Diagnostics open/close, Start/Stop Ghoti button behavior, and whether the overlay should show a small capture/observer summary without making scaffold features look real.

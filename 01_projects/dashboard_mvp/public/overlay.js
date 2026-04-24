@@ -1,318 +1,227 @@
 "use strict";
 
-const DASHBOARD_URL = "";
-const POLL_INTERVAL_MS = 2000;
-const FRAME_REFRESH_MS = 2000;
+const POLL_MS = 2500;
 
-let isGhotiActive = false;
-let isCapturing = false;
-let isMuted = true;
-let captureSessionId = null;
-let frameRefreshTimer = null;
+let isActive = false;
 
-const activeDot = document.getElementById("active-dot");
-const activeLabel = document.getElementById("active-label");
-const captureDot = document.getElementById("capture-dot");
-const captureLabel = document.getElementById("capture-label");
-const voiceDot = document.getElementById("voice-dot");
-const voiceLabel = document.getElementById("voice-label");
-const brainDot = document.getElementById("brain-dot");
-const brainLabel = document.getElementById("brain-label");
-const observerDot = document.getElementById("observer-dot");
-const observerLabel = document.getElementById("observer-label");
-const operatorDot = document.getElementById("operator-dot");
-const operatorLabel = document.getElementById("operator-label");
-const ytDot = document.getElementById("yt-dot");
-const ytLabel = document.getElementById("yt-label");
-const approvalsDot = document.getElementById("approvals-dot");
-const approvalsLabel = document.getElementById("approvals-label");
-const framePreviewRow = document.getElementById("frame-preview-row");
-const latestFrameImg = document.getElementById("latest-frame-img");
-const frameTimestamp = document.getElementById("frame-timestamp");
-const feedbackEl = document.getElementById("overlay-feedback");
-const toggleActiveBtn = document.getElementById("toggle-active-btn");
-const toggleCaptureBtn = document.getElementById("toggle-capture-btn");
-const toggleMuteBtn = document.getElementById("toggle-mute-btn");
-const refreshBtn = document.getElementById("refresh-btn");
+const dock = document.getElementById("operator-dock");
+const emptyState = document.getElementById("dock-empty-state");
+const dockStatus = document.getElementById("dock-status");
+const dockStatusValue = document.getElementById("dock-status-value");
+const dockTargetValue = document.getElementById("dock-target-value");
+const dockAlertsValue = document.getElementById("dock-alerts-value");
+const dockApprovalsValue = document.getElementById("dock-approvals-value");
+const dockNextValue = document.getElementById("dock-next-value");
+const dockStartBtn = document.getElementById("dock-start-btn");
+const dockDiagBtn = document.getElementById("dock-diag-btn");
+const dockCaptureRow = document.getElementById("dock-capture-row");
+const dockCaptureLabel = document.getElementById("dock-capture-label");
 
-function showFeedback(msg, isError) {
-  feedbackEl.textContent = msg;
-  feedbackEl.className = "overlay-feedback" + (isError ? " is-error" : "");
-  feedbackEl.hidden = false;
-  clearTimeout(showFeedback._timer);
-  showFeedback._timer = setTimeout(() => { feedbackEl.hidden = true; }, 4000);
-}
+const diagDrawer = document.getElementById("diag-drawer");
+const diagCloseBtn = document.getElementById("diag-close-btn");
+const diagRoutesEl = document.getElementById("diag-routes");
+const diagBuildEl = document.getElementById("diag-build");
+const diagBrainEl = document.getElementById("diag-brain");
+const diagRawStateEl = document.getElementById("diag-raw-state");
+const diagVoiceEl = document.getElementById("diag-voice");
 
-function formatTime(utcString) {
-  if (!utcString) return "";
-  try { return new Date(utcString).toLocaleTimeString(); }
-  catch { return utcString; }
-}
-
-function setDot(dotEl, state) {
-  dotEl.className = "status-dot";
-  if (state === "on") dotEl.classList.add("dot-on");
-  else if (state === "warn") dotEl.classList.add("dot-warn");
-  else dotEl.classList.add("dot-off");
-}
-
-function updateActiveButton() {
-  toggleActiveBtn.textContent = isGhotiActive ? "Stop Ghoti" : "Start Ghoti";
-  toggleActiveBtn.classList.toggle("is-stop", isGhotiActive);
-}
-
-function updateCaptureButton() {
-  toggleCaptureBtn.disabled = !isGhotiActive;
-  toggleCaptureBtn.textContent = isCapturing ? "Stop Watching" : "Start Watching";
-  toggleCaptureBtn.classList.toggle("is-stop", isCapturing);
-}
-
-function updateMuteButton() {
-  toggleMuteBtn.textContent = isMuted ? "Unmute" : "Mute";
-  toggleMuteBtn.classList.toggle("is-stop", !isMuted);
-}
-
-function applyActiveState(state) {
-  isGhotiActive = Boolean(state?.active);
-  if (isGhotiActive) {
-    setDot(activeDot, "on");
-    activeLabel.textContent = "Active";
-  } else {
-    setDot(activeDot, "off");
-    activeLabel.textContent = "Idle";
-  }
-  updateActiveButton();
-  updateCaptureButton();
-}
-
-function applyCaptureState(cs) {
-  isCapturing = Boolean(cs?.capturing);
-  captureSessionId = cs?.session_id || null;
-
-  if (cs?.error && !isCapturing) {
-    setDot(captureDot, "warn");
-    captureLabel.textContent = "Capture error";
-  } else if (isCapturing) {
-    setDot(captureDot, "on");
-    const count = cs.frame_count || 0;
-    captureLabel.textContent = `Watching — ${count} frame${count !== 1 ? "s" : ""}`;
-  } else {
-    setDot(captureDot, "off");
-    captureLabel.textContent = "Not watching";
-  }
-
-  const hasFrames = (cs?.frame_count || 0) > 0;
-  framePreviewRow.hidden = !hasFrames;
-  if (hasFrames) {
-    frameTimestamp.textContent = cs.latest_frame_utc ? `Last: ${formatTime(cs.latest_frame_utc)}` : "";
-  }
-
-  updateCaptureButton();
-  manageFrameRefresh();
-}
-
-function applyVoiceState(v) {
-  if (!v) { voiceLabel.textContent = "Voice: unavailable"; setDot(voiceDot, "warn"); return; }
-  isMuted = Boolean(v.muted);
-  const muteText = v.muted ? "Muted" : "Unmuted";
-  const listenText = v.listening ? "Listening" : "Not listening";
-  voiceLabel.textContent = `Voice: ${muteText} / ${listenText} (placeholder)`;
-  setDot(voiceDot, v.muted ? "off" : "warn");
-  updateMuteButton();
-}
-
-function applyBrainState(payload) {
-  if (!payload?.ok) { brainLabel.textContent = "Brain: unavailable"; setDot(brainDot, "warn"); return; }
-  const brain = payload.brain || {};
-  const provider = brain.provider || payload.provider || "none";
-  const model = brain.active_model || brain.model || payload.active_model || "none";
-  const reachable = Boolean(brain.reachable);
-  brainLabel.textContent = `Brain: ${provider} / ${model || "none"}`;
-  setDot(brainDot, reachable ? "on" : (model && model !== "none" ? "warn" : "off"));
-}
-
-function applyObserverState(visionPayload, operatorPayload) {
-  if (!observerLabel || !observerDot) {
-    return;
-  }
-  if (!visionPayload?.ok) {
-    observerLabel.textContent = "Observer: unavailable";
-    setDot(observerDot, "warn");
-    return;
-  }
-
-  const vision = visionPayload.vision || {};
-  const lastObservedUtc = operatorPayload?.vision?.last_observation_at_utc || null;
-  const lastObservedText = lastObservedUtc ? ` · last observed ${formatTime(lastObservedUtc)}` : "";
-
-  if (vision.available) {
-    observerLabel.textContent = `Observer: ready${vision.model ? ` · ${vision.model}` : ""}${lastObservedText}`;
-    setDot(observerDot, "on");
-    return;
-  }
-
-  if (vision.reason === "no_vision_model_available") {
-    observerLabel.textContent = `Observer: no model${lastObservedText}`;
-    setDot(observerDot, "off");
-    return;
-  }
-
-  observerLabel.textContent = `Observer: unavailable${lastObservedText}`;
-  setDot(observerDot, "warn");
-}
-
-function applyOperatorState(payload) {
-  if (!payload?.ok) { operatorLabel.textContent = "Operator: unavailable"; setDot(operatorDot, "warn"); return; }
-  const op = payload.operator || {};
-  const desktop = op.desktop_actions_available ? "Desktop: available" : "Desktop: unavailable";
-  const browser = op.browser_actions_available ? "Browser: available" : "Browser: not integrated";
-  operatorLabel.textContent = `${desktop} | ${browser}`;
-  setDot(operatorDot, op.desktop_actions_available ? "warn" : "off");
-}
-
-function applyYoutubeState(payload) {
-  if (!payload?.ok) { ytLabel.textContent = "YouTube follower: unavailable"; setDot(ytDot, "warn"); return; }
-  const count = payload.task_count || 0;
-  ytLabel.textContent = `YouTube follower: scaffold only (${count} task${count !== 1 ? "s" : ""})`;
-  setDot(ytDot, "off");
-}
-
-function applyApprovalsState(payload) {
-  if (!payload?.ok) {
-    approvalsLabel.textContent = "Approvals: unavailable";
-    setDot(approvalsDot, "warn");
-    return;
-  }
-  const n = payload.pending_count || 0;
-  if (n > 0) {
-    approvalsLabel.textContent = `Pending approvals: ${n} — action required`;
-    approvalsLabel.className = "status-label approvals-pending";
-    setDot(approvalsDot, "warn");
-  } else {
-    approvalsLabel.textContent = "Pending approvals: 0";
-    approvalsLabel.className = "status-label";
-    setDot(approvalsDot, "off");
-  }
-}
-
-function buildLatestFrameUrl(sessionId) {
-  const base = sessionId
-    ? `/api/ghoti/active/latest-frame?session_id=${encodeURIComponent(sessionId)}`
-    : "/api/ghoti/active/latest-frame";
-  return base + (base.includes("?") ? "&" : "?") + "t=" + Date.now();
-}
-
-function refreshLatestFrame() {
-  if (latestFrameImg && !framePreviewRow.hidden) {
-    latestFrameImg.src = buildLatestFrameUrl(captureSessionId);
-  }
-}
-
-function manageFrameRefresh() {
-  clearInterval(frameRefreshTimer);
-  if (isCapturing) {
-    frameRefreshTimer = setInterval(refreshLatestFrame, FRAME_REFRESH_MS);
-    refreshLatestFrame();
-  }
-}
+let lastRawState = {};
 
 async function safeFetch(url) {
   try {
-    const res = await fetch(`${DASHBOARD_URL}${url}`);
-    if (!res.ok) return null;
-    return res.json();
-  } catch { return null; }
+    const res = await fetch(url);
+    if (!res.ok) return { _status: res.status, _url: url, ok: false };
+    return await res.json();
+  } catch {
+    return { _error: "unreachable", _url: url, ok: false };
+  }
+}
+
+function setDockEmptyState() {
+  if (emptyState) emptyState.hidden = false;
+  if (dockStatus) dockStatus.hidden = true;
+  if (dock) dock.dataset.status = "Idle";
+}
+
+function setDockActiveState() {
+  if (emptyState) emptyState.hidden = true;
+  if (dockStatus) dockStatus.hidden = false;
 }
 
 async function fetchState() {
-  const [activeData, captureData, voiceData, operatorData, brainData, observerData, ytData] = await Promise.all([
+  const [activeData, operatorData, approvalsData] = await Promise.all([
     safeFetch("/api/ghoti/active-state"),
-    safeFetch("/api/ghoti/active/capture-state"),
-    safeFetch("/api/ghoti/voice/state"),
     safeFetch("/api/ghoti/operator/status"),
-    safeFetch("/api/ghoti/brain/status"),
-    safeFetch("/api/ghoti/brain/vision-status"),
-    safeFetch("/api/ghoti/youtube-follower/status"),
+    safeFetch("/api/ghoti/approvals?status=pending"),
   ]);
 
-  if (activeData) applyActiveState(activeData.state);
-  else { setDot(activeDot, "warn"); activeLabel.textContent = "Dashboard unreachable"; }
+  lastRawState = { activeData, operatorData, approvalsData };
 
-  if (captureData) applyCaptureState(captureData.captureState);
-  else { setDot(captureDot, "off"); captureLabel.textContent = "—"; }
+  isActive = Boolean(activeData?.state?.active);
+  const watchdog = operatorData?.operator?.watchdog || operatorData?.watchdog || {};
+  const overlayTarget = operatorData?.operator?.overlayTarget || operatorData?.overlayTarget || watchdog.overlayTarget || {};
+  const alertCount = Array.isArray(watchdog.alerts) ? watchdog.alerts.length : 0;
+  const pendingApprovals = approvalsData?.pending_count ?? 0;
+  const targetLabel = overlayTarget.label || null;
 
-  applyVoiceState(voiceData?.voice || null);
-  applyBrainState(brainData);
-  applyObserverState(observerData, operatorData);
-  applyOperatorState(operatorData);
-  applyYoutubeState(ytData);
+  // Show empty state when Ghoti is idle, no target, no alerts
+  if (!isActive && !targetLabel && alertCount === 0) {
+    setDockEmptyState();
+  } else {
+    setDockActiveState();
+
+    const statusLabel = isActive ? "Running" : (alertCount > 0 ? "Alert" : "Idle");
+    if (dockStatusValue) {
+      dockStatusValue.textContent = statusLabel;
+      dockStatusValue.className = "dock-value " + (isActive ? "dock-value-active" : "dock-value-idle");
+    }
+
+    if (dockTargetValue) {
+      dockTargetValue.textContent = targetLabel || "No target selected";
+    }
+
+    if (dockAlertsValue) {
+      dockAlertsValue.textContent = String(alertCount);
+    }
+
+    if (dockApprovalsValue) {
+      dockApprovalsValue.textContent = pendingApprovals > 0
+        ? `${pendingApprovals} pending — action needed`
+        : "0 pending";
+    }
+
+    if (dockNextValue) {
+      if (pendingApprovals > 0) {
+        dockNextValue.textContent = "Open Approvals in dashboard to unblock";
+      } else if (isActive) {
+        dockNextValue.textContent = "Task running — watch for alerts";
+      } else if (alertCount > 0) {
+        dockNextValue.textContent = "Review alerts in dashboard";
+      } else {
+        dockNextValue.textContent = "Queue a task from the dashboard";
+      }
+    }
+  }
+
+  if (dock) dock.dataset.status = isActive ? "Running" : "Idle";
+
+  if (dockStartBtn) {
+    dockStartBtn.textContent = isActive ? "Stop Ghoti" : "Start Ghoti";
+    dockStartBtn.classList.toggle("btn-stop", isActive);
+  }
 }
 
-async function fetchApprovalsState() {
-  const approvalsData = await safeFetch("/api/ghoti/approvals?status=pending");
-  applyApprovalsState(approvalsData);
+async function fetchCaptureState() {
+  const data = await safeFetch("/api/ghoti/active/capture-state");
+  const capturing = Boolean(data?.captureState?.capturing);
+  if (dockCaptureRow) dockCaptureRow.hidden = !capturing;
+  if (capturing && dockCaptureLabel) {
+    const count = data.captureState.frame_count || 0;
+    dockCaptureLabel.textContent = `Watching — ${count} frame${count !== 1 ? "s" : ""}`;
+  }
 }
 
-async function postAction(path) {
-  const res = await fetch(`${DASHBOARD_URL}${path}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+async function openDiagnostics() {
+  if (!diagDrawer) return;
+  diagDrawer.hidden = false;
+  diagDrawer.removeAttribute("aria-hidden");
+
+  // Route health check
+  const routeTargets = [
+    "/api/ghoti/active-state",
+    "/api/ghoti/models/status",
+    "/api/ghoti/brain/status",
+    "/api/ghoti/active/capture-state",
+    "/api/operator-status",
+  ];
+
+  const routeResults = await Promise.all(
+    routeTargets.map(async (url) => {
+      try {
+        const res = await fetch(url);
+        return `${res.status}  ${url}`;
+      } catch {
+        return `ERR  ${url}`;
+      }
+    }),
+  );
+
+  if (diagRoutesEl) diagRoutesEl.textContent = routeResults.join("\n");
+
+  // Build / model truth
+  const modelStatus = await safeFetch("/api/ghoti/models/status");
+  if (diagBuildEl) {
+    if (modelStatus?.ok) {
+      const t = modelStatus.truth || {};
+      const m = modelStatus.models || {};
+      diagBuildEl.textContent = [
+        `Port:                  3210 (default) or $PORT`,
+        `Ollama reachable:      ${modelStatus.ollama?.reachable ?? "?"}`,
+        `Models found:          ${m.count ?? 0}`,
+        `Gemma candidates:      ${(m.gemma_candidates || []).join(", ") || "none"}`,
+        `Selected text model:   ${m.selected_text_model || "none"}`,
+        `Gemma drives operator: ${t.gemma_drives_operator ?? false}`,
+        `Action planning wired: ${t.action_planning ?? false}`,
+        `Autonomous actions:    ${t.autonomous_actions ?? false}`,
+        `Updated:               ${modelStatus.updated_at_utc || "?"}`,
+      ].join("\n");
+    } else {
+      diagBuildEl.textContent = "Could not reach /api/ghoti/models/status";
+    }
+  }
+
+  // Brain state
+  const brainData = await safeFetch("/api/ghoti/brain/status");
+  if (diagBrainEl) diagBrainEl.textContent = JSON.stringify(brainData, null, 2);
+
+  // Raw operator state
+  if (diagRawStateEl) diagRawStateEl.textContent = JSON.stringify(lastRawState, null, 2);
+
+  // Voice state
+  const voiceData = await safeFetch("/api/ghoti/voice/state");
+  if (diagVoiceEl) diagVoiceEl.textContent = JSON.stringify(voiceData, null, 2);
+}
+
+function closeDiagnostics() {
+  if (!diagDrawer) return;
+  diagDrawer.hidden = true;
+  diagDrawer.setAttribute("aria-hidden", "true");
+}
+
+// ── Event listeners ───────────────────────────────────────────
+
+if (dockStartBtn) {
+  dockStartBtn.addEventListener("click", async () => {
+    dockStartBtn.disabled = true;
+    try {
+      const route = isActive ? "/api/ghoti/active/stop" : "/api/ghoti/active/start";
+      await fetch(route, { method: "POST", headers: { "Content-Type": "application/json" } });
+      await fetchState();
+    } catch { /* ignore */ } finally {
+      dockStartBtn.disabled = false;
+    }
   });
-  return res.json();
 }
 
-toggleActiveBtn.addEventListener("click", async () => {
-  toggleActiveBtn.disabled = true;
-  try {
-    const route = isGhotiActive ? "/api/ghoti/active/stop" : "/api/ghoti/active/start";
-    const data = await postAction(route);
-    if (!data.ok) throw new Error(data.error || "Action failed");
-    showFeedback(isGhotiActive ? "Ghoti stopped." : "Ghoti started.", false);
-    await fetchState();
-  } catch (err) {
-    showFeedback(err.message, true);
-  } finally {
-    toggleActiveBtn.disabled = false;
-  }
-});
+if (dockDiagBtn) {
+  dockDiagBtn.addEventListener("click", openDiagnostics);
+}
 
-toggleCaptureBtn.addEventListener("click", async () => {
-  toggleCaptureBtn.disabled = true;
-  try {
-    const route = isCapturing ? "/api/ghoti/active/capture/stop" : "/api/ghoti/active/capture/start";
-    const data = await postAction(route);
-    if (!data.ok) throw new Error(data.error || "Action failed");
-    showFeedback(isCapturing ? "Capture stopped." : "Capture started.", false);
-    await fetchState();
-  } catch (err) {
-    showFeedback(err.message, true);
-  } finally {
-    toggleCaptureBtn.disabled = false;
-  }
-});
+if (diagCloseBtn) {
+  diagCloseBtn.addEventListener("click", closeDiagnostics);
+}
 
-toggleMuteBtn.addEventListener("click", async () => {
-  toggleMuteBtn.disabled = true;
-  try {
-    const route = isMuted ? "/api/ghoti/voice/unmute" : "/api/ghoti/voice/mute";
-    const data = await postAction(route);
-    if (!data.ok) throw new Error(data.error || "Action failed");
-    applyVoiceState(data.voice);
-    showFeedback(isMuted ? "Voice unmuted." : "Voice muted.", false);
-  } catch (err) {
-    showFeedback(err.message, true);
-  } finally {
-    toggleMuteBtn.disabled = false;
-  }
-});
+// Responsive collapse for narrow viewports
+if (window.innerWidth < 600 && dock) {
+  dock.classList.add("is-collapsed");
+  dock.addEventListener("click", () => {
+    dock.classList.toggle("is-collapsed");
+  });
+}
 
-refreshBtn.addEventListener("click", async () => {
-  refreshBtn.disabled = true;
-  await fetchState();
-  refreshBtn.disabled = false;
-});
+// ── Initial load + polling ────────────────────────────────────
 
 fetchState();
-setInterval(fetchState, POLL_INTERVAL_MS);
-fetchApprovalsState();
-setInterval(fetchApprovalsState, 3000);
+fetchCaptureState();
+setInterval(fetchState, POLL_MS);
+setInterval(fetchCaptureState, POLL_MS);
