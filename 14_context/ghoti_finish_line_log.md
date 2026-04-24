@@ -2366,3 +2366,56 @@ Known minor observation:
 ### Next Recommendation
 
 Create the first actual Ghoti-specific Codex skill package only after choosing one narrow candidate. Best first candidate: `ghoti-git-safety`, because it directly protects every later milestone from accidentally staging runtime/private/local artifacts.
+
+## Milestone Run: N+2.0 Create first Ghoti-specific Codex skill: ghoti-git-safety
+
+Date: 2026-04-25
+Branch: `feat/ghoti-visible-operator-stack`
+Starting HEAD: `56c5429`
+Commit hash after commit: TBD — recorded after push
+
+### Files Changed
+
+- Created: `13_prompts/codex_skills/ghoti-git-safety/SKILL.md`
+- Created: `13_prompts/codex_skills/README.md`
+- Updated: `14_context/ghoti_skills_strategy.md` (added N+2.0 created note to ghoti-git-safety entry)
+- Updated: `14_context/ghoti_finish_line_log.md` (this entry)
+
+### Validation Commands / Results
+
+- `git status --short`: only expected dirty files remain; SKILL.md and README.md show as new untracked additions
+- SKILL.md contains status label `skill_package_created / not_runtime_wired`: PASS
+- SKILL.md contains Blocklist section covering runtime data, output/, .claude/skills/, CV files, third-party: PASS
+- SKILL.md contains Allowlist section covering 14_context/*.md, 13_prompts/codex_skills/: PASS
+- SKILL.md contains Recovery behavior section: PASS
+- No dashboard/JS files were changed: PASS (no runtime validation required)
+- `git diff --check`: PASS
+
+### Skill Package Truth
+
+- Skill name: `ghoti-git-safety`
+- Status label: `skill_package_created / not_runtime_wired`
+- Location: `13_prompts/codex_skills/ghoti-git-safety/SKILL.md`
+- Purpose: protect every future milestone from accidentally staging runtime, private, or local artifacts
+- Runtime wiring: NO. This is a Codex operator-side workflow document only.
+- Integration: none. Not connected to dashboard, approval queue, executor, or MCP server.
+
+### Files Intentionally Not Staged
+
+- `21_repos/third_party/.gitkeep`
+- `.claude/skills/`
+- `01_projects/mcp_server/test.txt`
+- `14_context/ghoti_current_prompt_N1_6.md`
+- `CV_*.docx` files
+- `output/`
+- `output/playwright/` screenshots
+
+### Honest Status Labels
+
+- ghoti-git-safety skill package: `skill_package_created / not_runtime_wired`
+- Codex bridge: `manual_handoff_only` (unchanged)
+- Ghoti runtime: not autonomous
+
+### Next Recommendation
+
+The next milestone should implement the second Ghoti-specific skill package: `ghoti-finish-line-log-update`, which enforces the standard append-only log format and validates that milestone entries include all required fields before committing. Alternatively, use `ghoti-git-safety` live for the first time in the next commit and document any workflow gaps found.

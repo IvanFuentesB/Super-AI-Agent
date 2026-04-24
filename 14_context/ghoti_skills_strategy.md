@@ -59,6 +59,9 @@ Ghoti remains local-first, supervised, manual, and approval-gated. Skills do not
 
 ### ghoti-git-safety
 
+**Created in milestone N+2.0 — status: skill_package_created / not_runtime_wired**
+**File:** `13_prompts/codex_skills/ghoti-git-safety/SKILL.md`
+
 - Purpose: prevent accidental staging or committing of runtime, private, third-party, or scratch files.
 - When to use: before every Ghoti commit or push.
 - Forbidden uses: deleting files, rewriting history, force-pushing, or staging with `git add .`.
