@@ -15,6 +15,7 @@ These are Ghoti-specific Codex skill packages — strategy and workflow document
 | ghoti-git-safety | skill_package_created / not_runtime_wired | Prevent accidental staging of runtime, private, or local artifacts before every Ghoti commit |
 | ghoti-finish-line-log-update | skill_package_created / not_runtime_wired | Keep the Ghoti finish-line log append-only, evidence-based, and honest after each milestone |
 | ghoti-dashboard-route-validation | skill_package_created / not_runtime_wired | Validate dashboard routes, duplicate DOM IDs, JS syntax, and overlay smoke behavior before dashboard-facing commits |
+| ghoti-overlay-ui-smoke-test | skill_package_created / not_runtime_wired | Validate browser-overlay diagnostics, Start/Stop Ghoti, safety wording, and console/page error truth |
 
 ## Operating Rule
 

@@ -81,10 +81,13 @@ Ghoti remains local-first, supervised, manual, and approval-gated. Skills do not
 
 ### ghoti-overlay-ui-smoke-test
 
+**Created in milestone N+2.3 — status: skill_package_created / not_runtime_wired**
+**File:** `13_prompts/codex_skills/ghoti-overlay-ui-smoke-test/SKILL.md`
+
 - Purpose: validate overlay rendering and interactions without claiming native always-on-top behavior.
 - When to use: after changes to `overlay.html`, `overlay.css`, or `overlay.js`.
-- Forbidden uses: hidden recording, autonomous clicking outside the browser test page, broad desktop control.
-- Validation/checks: `/overlay` 200, no duplicate IDs, diagnostics hidden/open/close, Start/Stop Ghoti button behavior, screenshot evidence when useful.
+- Forbidden uses: hidden recording, autonomous clicking outside the browser test page, broad desktop control, or claiming AI screen sharing/native overlay behavior without proof.
+- Validation/checks: `/overlay` 200, diagnostics hidden/open/close, Start/Stop Ghoti button behavior, Active Mode final idle state, local-only/approval-gated/browser-overlay wording, console/page errors, and artifact handling.
 - Output artifact/file: append overlay results to `14_context/ghoti_finish_line_log.md`.
 
 ### ghoti-finish-line-log-update
