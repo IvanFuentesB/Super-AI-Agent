@@ -2796,3 +2796,75 @@ Pushed: TBD before push; final push truth recorded in final report
 ### Next Recommendation
 
 Create `ghoti-investment-simulation-safe` next, because investment and scenario workflows need a narrower paper-only skill with explicit no-trading/no-money-movement boundaries.
+
+---
+
+## Milestone Run: N+2.6 Ghoti external repo/tool intake registry + Rust setup plan
+
+Date: 2026-04-25
+Branch: `feat/ghoti-visible-operator-stack`
+Starting HEAD: `0951bfa`
+Commit hash after commit: TBD before commit; final hash recorded in final report
+Pushed: TBD before push; final push truth recorded in final report
+
+### Files Changed
+
+- Created: `14_context/ghoti_external_repo_tool_intake.md`
+- Created: `14_context/rust_setup_plan.md`
+- Updated: `14_context/ghoti_finish_line_log.md`
+
+### Precondition Truth
+
+- Local branch: `feat/ghoti-visible-operator-stack`
+- Local HEAD before N+2.6: `0951bfa`
+- `origin/feat/ghoti-visible-operator-stack` included `0951bfa` before N+2.6 work continued.
+- No staged files existed at milestone start.
+
+### Validation Commands / Results
+
+- `git status --short`: PASS — only expected dirty/local files plus intentional N+2.6 docs are present
+- `git diff --check`: PASS — no whitespace errors; Git reported the existing LF-to-CRLF working-copy warning for `14_context/ghoti_finish_line_log.md`
+- `14_context/ghoti_external_repo_tool_intake.md` exists: PASS
+- `14_context/rust_setup_plan.md` exists: PASS
+- Intake registry includes `registry_created / research_only / not_runtime_wired`: PASS
+- Rust setup plan includes `plan_only / do_not_install_yet / not_runtime_wired`: PASS
+- No clone/install/runtime wiring occurred: YES
+- Staged-file allowlist check: PASS — staged files are only the three intended N+2.6 docs
+
+### Registry Truth
+
+- Status label: `registry_created / research_only / not_runtime_wired`
+- Purpose: track external repos, tools, services, and concepts before cloning, installing, paying, deploying, or wiring anything into Ghoti.
+- Runtime wired: NO
+- Third-party repos cloned: NO
+- Paid/cloud services connected: NO
+
+### Rust Setup Truth
+
+- Status label: `plan_only / do_not_install_yet / not_runtime_wired`
+- Rust installed by this milestone: NO
+- Rust code added by this milestone: NO
+- Runtime wired: NO
+- The document provides Windows install options, verification commands, rollback notes, and safety boundaries for a later explicitly approved setup task.
+
+### Dirty Files Intentionally Not Staged
+
+- `21_repos/third_party/.gitkeep` — expected local/third-party marker dirt
+- `.claude/skills/` — local Claude skills material, not part of this milestone
+- `01_projects/mcp_server/test.txt` — scratch/test file
+- `14_context/ghoti_current_prompt_N1_6.md` — prompt scratch/handoff artifact
+- `14_context/ghoti_current_prompt.md` — live/stale prompt file, not part of this milestone
+- CV `.docx` files — local personal document artifacts
+- `output/` — local output/screenshot artifacts
+- runtime data and screenshot artifacts — not milestone source/docs
+
+### What Remains Manual / Unproven
+
+- The intake registry is a planning/control document only.
+- The Rust setup plan is not an installation and does not prove Rust availability.
+- No external repo, tool, service, or concept in the registry is integrated with Ghoti runtime.
+- Any clone, install, model pull, paid service connection, or runtime integration still requires an explicit later milestone.
+
+### Next Recommendation
+
+Create a `ghoti-external-repo-evaluation-template` skill or doc next, so each future repo/tool can be scored for purpose, license, runtime requirements, safety risk, and approval-gated integration path before cloning.
