@@ -2569,8 +2569,8 @@ Create `ghoti-overlay-ui-smoke-test` next, because it will isolate browser-overl
 Date: 2026-04-25
 Branch: `feat/ghoti-visible-operator-stack`
 Starting HEAD: `105ab93`
-Commit hash after commit: TBD before commit; final hash recorded in final report
-Pushed: TBD before push; final push truth recorded in final report
+Commit hash after commit: d65ba9d
+Pushed: YES
 
 ### Files Changed
 
@@ -2638,3 +2638,83 @@ Pushed: TBD before push; final push truth recorded in final report
 ### Next Recommendation
 
 Create `ghoti-codex-claude-handoff` next, because the manual handoff boundary is central to the project and should be captured as a reusable operator-side workflow without claiming an automatic bridge.
+
+---
+
+## Milestone Run: N+2.4 Create fifth Ghoti-specific Codex skill: ghoti-codex-claude-handoff
+
+Date: 2026-04-25
+Branch: `feat/ghoti-visible-operator-stack`
+Starting HEAD: `d65ba9d`
+Commit hash after commit: TBD before commit; final hash recorded in final report
+Pushed: TBD before push; final push truth recorded in final report
+
+### Files Changed
+
+- Created: `13_prompts/codex_skills/ghoti-codex-claude-handoff/SKILL.md`
+- Updated: `13_prompts/codex_skills/README.md`
+- Updated: `14_context/ghoti_skills_strategy.md`
+- Updated: `14_context/ghoti_finish_line_log.md`
+
+### Precondition Truth
+
+- Local branch: `feat/ghoti-visible-operator-stack`
+- Local HEAD before N+2.4: `d65ba9d`
+- `origin/feat/ghoti-visible-operator-stack` included `d65ba9d` before N+2.4 work continued.
+- No staged files existed at milestone start.
+
+### Validation Commands / Results
+
+- `git status --short`: PASS — only expected dirty/local files plus intentional N+2.4 docs are present
+- `git branch --show-current`: PASS — `feat/ghoti-visible-operator-stack`
+- `git log --oneline origin/feat/ghoti-visible-operator-stack -5`: PASS — included `d65ba9d`
+- `git diff --cached --name-status`: PASS before edits — no staged files at milestone start
+- `git diff --check`: PASS
+- New `SKILL.md` exists: PASS
+- New `SKILL.md` contains `skill_package_created / not_runtime_wired`: PASS
+- New `SKILL.md` contains `manual_handoff_only`: PASS
+- New `SKILL.md` contains Claude Code file rule and command rule: PASS
+- New `SKILL.md` contains Codex and Claude chat plain-text rules: PASS
+- New `SKILL.md` contains missing prompt file recovery: PASS
+- New `SKILL.md` contains Claude Code auth failure recovery: PASS
+- Staged-file allowlist check: PASS — staged files are only the four intended N+2.4 docs
+
+### Skill Package Truth
+
+- Skill name: `ghoti-codex-claude-handoff`
+- Status: `skill_package_created / not_runtime_wired`
+- Bridge truth: `manual_handoff_only`
+- Runtime wired: NO
+- Purpose: standardize safe manual handoffs among ChatGPT, Codex app, Claude chat, and Claude Code without claiming an automatic bridge.
+
+### Bridge Truth
+
+- Claude Code <-> Codex automatic bridge remains `manual_handoff_only`.
+- Codex plugins/skills remain session/operator capabilities, not Ghoti runtime integrations unless proven.
+- Claude Code prompt-file workflow is documented, but not automated by Ghoti runtime.
+
+### Dirty Files Intentionally Not Staged
+
+- `21_repos/third_party/.gitkeep` — expected local/third-party marker dirt
+- `.claude/skills/` — local Claude skills material, not part of this Codex skill milestone
+- `01_projects/mcp_server/test.txt` — scratch/test file
+- `14_context/ghoti_current_prompt_N1_6.md` — prompt scratch/handoff artifact
+- `14_context/ghoti_current_prompt.md` — existing live/stale prompt file, inspected but not staged
+- CV `.docx` files — local personal document artifacts
+- `output/` — local output/screenshot artifacts
+- runtime data and screenshot artifacts — not milestone source/docs
+
+### What Remains Manual / Unproven
+
+- `ghoti-codex-claude-handoff` is a Codex operator-side skill package only.
+- It is not wired into the Ghoti runtime, dashboard, MCP server, approval queue, Claude Code, Codex plugins, or executor.
+- Actual cross-tool handoff remains manual copy/paste or operator-managed prompt-file movement.
+
+### Recovery Notes
+
+- `14_context/ghoti_current_prompt.md` was present but stale from N+2.3; this milestone did not stage or update it.
+- The new skill explicitly requires prompt-file freshness checks before launching Claude Code.
+
+### Next Recommendation
+
+Create `ghoti-business-research-safe` next, because business/content/research workflows need clear safe-use boundaries before they become reusable prompt or workflow packages.

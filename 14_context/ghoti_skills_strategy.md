@@ -103,10 +103,14 @@ Ghoti remains local-first, supervised, manual, and approval-gated. Skills do not
 
 ### ghoti-codex-claude-handoff
 
+**Created in milestone N+2.4 — status: skill_package_created / not_runtime_wired**
+**Bridge truth:** `manual_handoff_only`
+**File:** `13_prompts/codex_skills/ghoti-codex-claude-handoff/SKILL.md`
+
 - Purpose: maintain honest manual handoff between ChatGPT, Codex app, and later Claude Code.
 - When to use: when creating prompt files, handoff summaries, or next-run instructions.
-- Forbidden uses: claiming automatic Claude Code <-> Codex bridge, quota bypass, or hidden cross-agent control.
-- Validation/checks: explicitly label `manual_handoff_only` unless runtime proof exists.
+- Forbidden uses: claiming automatic Claude Code <-> Codex bridge, quota bypass, hidden cross-agent control, stale Claude Code prompt files, or treating Codex plugins as Ghoti runtime integrations.
+- Validation/checks: explicitly label `manual_handoff_only`, require Claude Code prompt-file freshness checks, and keep Codex/Claude chat/ChatGPT handoffs as plain copy-paste text unless a future runtime proof exists.
 - Output artifact/file: `14_context/claude_codex_bridge_status.md` or a scoped handoff file.
 
 ### ghoti-business-research-safe
