@@ -70,10 +70,13 @@ Ghoti remains local-first, supervised, manual, and approval-gated. Skills do not
 
 ### ghoti-dashboard-route-validation
 
+**Created in milestone N+2.2 — status: skill_package_created / not_runtime_wired**
+**File:** `13_prompts/codex_skills/ghoti-dashboard-route-validation/SKILL.md`
+
 - Purpose: validate local dashboard API routes and honesty/status endpoints.
 - When to use: after dashboard/server changes or before UI milestone commits.
-- Forbidden uses: deployment, paid service calls, hidden state mutation beyond explicit local route tests.
-- Validation/checks: node syntax checks, local server smoke, required route table, route response shape summary.
+- Forbidden uses: deployment, paid service calls, hidden state mutation beyond explicit local route tests, or changing runtime behavior just to make validation pass.
+- Validation/checks: node syntax checks, duplicate-ID checks, local server smoke, required route table, API truth checks, and browser/Playwright overlay interaction smoke when available.
 - Output artifact/file: append validation table to `14_context/ghoti_finish_line_log.md`.
 
 ### ghoti-overlay-ui-smoke-test

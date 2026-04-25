@@ -2486,3 +2486,78 @@ Pushed: YES
 ### Next Recommendation
 
 Create `ghoti-dashboard-route-validation` next, because it turns the repeated dashboard route smoke checks into a reusable operator-side validation package without adding runtime autonomy.
+
+---
+
+## Milestone Run: N+2.2 Create third Ghoti-specific Codex skill: ghoti-dashboard-route-validation
+
+Date: 2026-04-25
+Branch: `feat/ghoti-visible-operator-stack`
+Starting HEAD: `e6582cd`
+Commit hash after commit: TBD before commit; final hash recorded in final report
+Pushed: TBD before push; final push truth recorded in final report
+
+### Files Changed
+
+- Created: `13_prompts/codex_skills/ghoti-dashboard-route-validation/SKILL.md`
+- Updated: `13_prompts/codex_skills/README.md`
+- Updated: `14_context/ghoti_skills_strategy.md`
+- Updated: `14_context/ghoti_finish_line_log.md`
+
+### Precondition Truth
+
+- Local branch: `feat/ghoti-visible-operator-stack`
+- Local HEAD before N+2.2: `e6582cd`
+- `origin/feat/ghoti-visible-operator-stack` included `e6582cd` before N+2.2 work continued.
+- No staged files existed at milestone start.
+
+### Validation Commands / Results
+
+- `git status --short`: PASS — only expected dirty/local files plus intentional N+2.2 docs are present
+- `git branch --show-current`: PASS — `feat/ghoti-visible-operator-stack`
+- `git log --oneline origin/feat/ghoti-visible-operator-stack -5`: PASS — included `e6582cd`
+- `git diff --cached --name-status`: PASS before edits — no staged files at milestone start
+- `git diff --check`: PASS
+- New `SKILL.md` exists: PASS
+- New `SKILL.md` contains `skill_package_created / not_runtime_wired`: PASS
+- New `SKILL.md` contains route validation workflow: PASS
+- New `SKILL.md` contains required route list: PASS
+- New `SKILL.md` contains duplicate-ID and JavaScript syntax checks: PASS
+- Staged-file allowlist check: PASS — staged files are only the four intended N+2.2 docs
+
+### Skill Package Truth
+
+- Skill name: `ghoti-dashboard-route-validation`
+- Status: `skill_package_created / not_runtime_wired`
+- Runtime wired: NO
+- Purpose: standardize local dashboard route smoke checks, API truth checks, duplicate-ID checks, JavaScript syntax checks, and browser/Playwright overlay smoke validation.
+
+### Dashboard Route Validation Skill Truth
+
+- The skill defines dashboard validation workflow only.
+- It does not add new routes, change existing routes, start background workers, or modify runtime behavior.
+- It explicitly forbids hiding errors, claiming native overlay behavior, claiming AI screen sharing, deploying, connecting external services, or staging validation artifacts.
+
+### Dirty Files Intentionally Not Staged
+
+- `21_repos/third_party/.gitkeep` — expected local/third-party marker dirt
+- `.claude/skills/` — local Claude skills material, not part of this Codex skill milestone
+- `01_projects/mcp_server/test.txt` — scratch/test file
+- `14_context/ghoti_current_prompt_N1_6.md` — prompt scratch/handoff artifact
+- CV `.docx` files — local personal document artifacts
+- `output/` — local output/screenshot artifacts
+- runtime data and screenshot artifacts — not milestone source/docs
+
+### What Remains Manual / Unproven
+
+- `ghoti-dashboard-route-validation` is a Codex operator-side skill package only.
+- It is not wired into the Ghoti runtime, dashboard, MCP server, approval queue, or executor.
+- Actual route validation still requires Codex/operator execution of the documented workflow.
+
+### Recovery Notes
+
+- `rg` was unavailable due an access-denied error in the bundled Codex app path, so dashboard context inspection used PowerShell `Select-String` instead.
+
+### Next Recommendation
+
+Create `ghoti-overlay-ui-smoke-test` next, because it will isolate browser-overlay interaction testing from broader route validation while preserving the honest browser-based, not-native-overlay boundary.
