@@ -2718,3 +2718,81 @@ Pushed: TBD before push; final push truth recorded in final report
 ### Next Recommendation
 
 Create `ghoti-business-research-safe` next, because business/content/research workflows need clear safe-use boundaries before they become reusable prompt or workflow packages.
+
+---
+
+## Milestone Run: N+2.5 Create sixth Ghoti-specific Codex skill: ghoti-business-research-safe
+
+Date: 2026-04-25
+Branch: `feat/ghoti-visible-operator-stack`
+Starting HEAD: `26b6acc`
+Commit hash after commit: TBD before commit; final hash recorded in final report
+Pushed: TBD before push; final push truth recorded in final report
+
+### Files Changed
+
+- Created: `13_prompts/codex_skills/ghoti-business-research-safe/SKILL.md`
+- Updated: `13_prompts/codex_skills/README.md`
+- Updated: `14_context/ghoti_skills_strategy.md`
+- Updated: `14_context/ghoti_finish_line_log.md`
+
+### Precondition Truth
+
+- Local branch: `feat/ghoti-visible-operator-stack`
+- Local HEAD before N+2.5: `26b6acc`
+- `origin/feat/ghoti-visible-operator-stack` included `26b6acc` before N+2.5 work continued.
+- No staged files existed at milestone start.
+
+### Validation Commands / Results
+
+- `git status --short`: PASS — only expected dirty/local files plus intentional N+2.5 docs are present
+- `git branch --show-current`: PASS — `feat/ghoti-visible-operator-stack`
+- `git log --oneline origin/feat/ghoti-visible-operator-stack -8`: PASS — included `26b6acc`
+- `git diff --cached --name-status`: PASS before edits — no staged files at milestone start
+- `git diff --check`: PASS
+- New `SKILL.md` exists: PASS
+- New `SKILL.md` contains `skill_package_created / not_runtime_wired`: PASS
+- New `SKILL.md` contains legal/TOS-aware research rules: PASS
+- New `SKILL.md` contains human approval gates: PASS
+- New `SKILL.md` contains outreach boundaries: PASS
+- New `SKILL.md` contains financial/legal/tax boundaries: PASS
+- New `SKILL.md` contains fake engagement/spam/cap bypass prohibitions: PASS
+- Staged-file allowlist check: PASS — staged files are only the four intended N+2.5 docs
+
+### Skill Package Truth
+
+- Skill name: `ghoti-business-research-safe`
+- Status: `skill_package_created / not_runtime_wired`
+- Runtime wired: NO
+- Purpose: define safe, legal, TOS-aware, human-reviewed boundaries for business, content, store/e-commerce, investment simulation, lead research, outreach draft, and public-source OSINT workflows.
+
+### Safety Boundary Truth
+
+- The skill allows research-only and draft-only business workflows with source/evidence rules and human approval gates.
+- It forbids spam, fake engagement, fake accounts, impersonation, credential abuse, illegal/TOS-violating scraping, autonomous outreach, autonomous purchases, autonomous money movement, autonomous legal/tax filings, regulated advice without review, malware/phishing/social engineering, and unsafe weapon/aerospace guidance.
+- It does not add runtime code, external integrations, cloud services, paid tools, browser automation, outreach automation, or trading/legal/tax execution.
+
+### Dirty Files Intentionally Not Staged
+
+- `21_repos/third_party/.gitkeep` — expected local/third-party marker dirt
+- `.claude/skills/` — local Claude skills material, not part of this Codex skill milestone
+- `01_projects/mcp_server/test.txt` — scratch/test file
+- `14_context/ghoti_current_prompt_N1_6.md` — prompt scratch/handoff artifact
+- `14_context/ghoti_current_prompt.md` — live/stale prompt file, not part of this milestone
+- CV `.docx` files — local personal document artifacts, including new v3 files
+- `output/` — local output/screenshot artifacts
+- runtime data and screenshot artifacts — not milestone source/docs
+
+### What Remains Manual / Unproven
+
+- `ghoti-business-research-safe` is a Codex operator-side skill package only.
+- It is not wired into Ghoti runtime, dashboard, MCP server, approval queue, browser executor, outreach executor, payment flow, trading flow, or external services.
+- All business, content, store, lead, OSINT, investment, tax, and legal outputs remain research/draft/decision-support only unless a future supervised workflow proves otherwise.
+
+### Recovery Notes
+
+- None so far.
+
+### Next Recommendation
+
+Create `ghoti-investment-simulation-safe` next, because investment and scenario workflows need a narrower paper-only skill with explicit no-trading/no-money-movement boundaries.

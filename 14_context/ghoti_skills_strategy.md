@@ -115,10 +115,13 @@ Ghoti remains local-first, supervised, manual, and approval-gated. Skills do not
 
 ### ghoti-business-research-safe
 
+**Created in milestone N+2.5 — status: skill_package_created / not_runtime_wired**
+**File:** `13_prompts/codex_skills/ghoti-business-research-safe/SKILL.md`
+
 - Purpose: support legitimate business research and planning.
 - When to use: market scans, competitor notes, owned-account planning, outreach drafts.
-- Forbidden uses: spam, fake engagement, account farming, impersonation, scraping that violates law/TOS, or autonomous sending.
-- Validation/checks: source list, assumptions, risk flags, human-review checkpoint.
+- Forbidden uses: spam, fake engagement, account farming, impersonation, credential abuse, illegal/TOS-violating scraping, autonomous outreach, autonomous purchases, autonomous money movement, autonomous legal/tax filings, or regulated advice without human review.
+- Validation/checks: source list, assumptions, risk flags, legal/TOS-aware source notes, privacy/PII check, human-review checkpoint, and explicit blocked-action list.
 - Output artifact/file: research note under `08_research/` or `14_context/`.
 
 ### ghoti-investment-simulation-safe

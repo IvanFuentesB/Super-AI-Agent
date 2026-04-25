@@ -17,6 +17,7 @@ These are Ghoti-specific Codex skill packages — strategy and workflow document
 | ghoti-dashboard-route-validation | skill_package_created / not_runtime_wired | Validate dashboard routes, duplicate DOM IDs, JS syntax, and overlay smoke behavior before dashboard-facing commits |
 | ghoti-overlay-ui-smoke-test | skill_package_created / not_runtime_wired | Validate browser-overlay diagnostics, Start/Stop Ghoti, safety wording, and console/page error truth |
 | ghoti-codex-claude-handoff | skill_package_created / not_runtime_wired | Keep ChatGPT, Codex app, Claude chat, and Claude Code handoffs manual, explicit, and honest |
+| ghoti-business-research-safe | skill_package_created / not_runtime_wired | Define legal, TOS-aware, human-reviewed boundaries for business, content, store, investment, lead, and OSINT research |
 
 ## Operating Rule
 
