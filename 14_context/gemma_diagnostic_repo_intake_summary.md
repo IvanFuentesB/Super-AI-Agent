@@ -42,3 +42,39 @@ NAME    ID    SIZE    MODIFIED
 ## Next Safe Step
 
 If the operator explicitly approves a later model setup milestone, install or pull an approved local Gemma model, then rerun this diagnostic as a read-only local model check.
+
+---
+
+## N+2.8 Re-Check (2026-04-26)
+
+Commands re-run during milestone N+2.8:
+
+```
+$ ollama --version
+ollama version is 0.9.2
+
+$ ollama list
+NAME    ID    SIZE    MODIFIED
+(empty — 0 models installed)
+```
+
+### N+2.8 Diagnostic Truth
+
+- Ollama client installed: YES (version 0.9.2)
+- Ollama service running: NO (no connection warning this run, but `ollama list` still returns 0 models — service may be starting/idle)
+- Gemma model available: NO (ollama list returned 0 models)
+- Prompt run: NO
+- Runtime wired: NO
+- Operator driver: NO
+- Model pull performed: NO
+- Gemma drives Ghoti: NO
+
+Status label: `gemma_diagnostic_skipped / no_models_installed / not_runtime_wired / not_operator_driver`
+
+### Next Safe Step (updated N+2.8)
+
+To enable Gemma diagnostics, the operator must explicitly approve:
+1. `ollama pull gemma3:4b` (or another approved model tag) — pulls ~2.5GB locally
+2. Then re-run: `ollama run gemma3:4b "Summarize X in 5 bullets"`
+
+Do not pull a model without explicit operator approval in terminal.

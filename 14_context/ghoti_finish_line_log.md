@@ -3197,3 +3197,33 @@ Pushed: TBD
 ### Next Recommendation
 
 N+2.9: AutoBrowser read-only evaluation — fill evaluation template for `LvcidPsyche/auto-browser` and compare with Obscura as browser/operator candidates. Before any RUFLO clone/install, a separate explicit-approval milestone (N+3.0) is required.
+
+---
+
+## Addendum: N+2.8.1 — Security-Focused RUFLO Evaluation + Gemma Recheck
+
+Date: 2026-04-26
+Branch: `feat/ghoti-visible-operator-stack`
+Previous HEAD: `a978571` (docs(ghoti): reconcile N+2.8 finish-line log)
+
+Context: N+2.8 was already committed and pushed. This addendum adds a new structured RUFLO evaluation using the full evaluation template format, plus a Gemma/Ollama re-check. The prior N+2.8 session created `ruflo_read_only_source_docs_license_evaluation.md` via raw file fetches. This session creates `ruflo_read_only_evaluation.md` using WebSearch public metadata and the evaluation template, capturing critical security findings.
+
+### Additional Files Created / Updated
+
+- Created: `14_context/ruflo_read_only_evaluation.md` — structured template evaluation; verdict: `research only`
+- Updated: `14_context/gemma_diagnostic_repo_intake_summary.md` — N+2.8.1 re-check; Ollama 0.9.2 present, 0 models, no pull
+
+### Critical Security Findings Added
+
+- Prompt injection via MCP tool descriptions directing Claude to add repo owner as contributor without consent (Issue #1375)
+- Obfuscated malicious preinstall (v3.1.0-alpha.55–v3.5.2) silently deleting directories; removed after external disclosure with no maintainer explanation
+- SQL injection vulnerabilities; remediated in v3.5.40
+
+### Runtime / Clone / Wiring Truth
+
+- Runtime wired: NO | Repos cloned: NO | Rust installed: NO | Model pulled: NO
+
+### Dirty Files Intentionally Left Unstaged
+
+- `21_repos/third_party/.gitkeep`, `.claude/skills/`, `01_projects/mcp_server/test.txt`
+- `14_context/ghoti_current_prompt*.md`, CV `.docx` files, `output/`
