@@ -3227,3 +3227,94 @@ Context: N+2.8 was already committed and pushed. This addendum adds a new struct
 
 - `21_repos/third_party/.gitkeep`, `.claude/skills/`, `01_projects/mcp_server/test.txt`
 - `14_context/ghoti_current_prompt*.md`, CV `.docx` files, `output/`
+
+---
+
+## Milestone Run: N+2.9 Audit external operator candidates and plan implementation
+
+Date: 2026-04-26
+Branch: `feat/ghoti-visible-operator-stack`
+Starting HEAD: `fd94030`
+Commit hash after commit: TBD before commit; final hash recorded in final report
+Pushed: TBD before push; final push truth recorded in final report
+
+### Files Changed
+
+- Created: `14_context/external_operator_candidates_audit.md`
+- Created: `14_context/external_operator_implementation_plan.md`
+- Updated: `14_context/ghoti_external_repo_tool_intake.md`
+- Updated: `14_context/ghoti_finish_line_log.md`
+
+### Precondition Truth
+
+- Local branch: `feat/ghoti-visible-operator-stack`
+- Local HEAD before N+2.9: `fd94030`
+- `origin/feat/ghoti-visible-operator-stack` initially lagged local HEAD; N+2.8.1 was pushed before N+2.9 docs were created.
+- No staged files existed at milestone start.
+
+### Source / Docs / License Sources Checked
+
+- `https://github.com/LvcidPsyche/auto-browser`
+- `https://raw.githubusercontent.com/LvcidPsyche/auto-browser/main/README.md`
+- `https://raw.githubusercontent.com/LvcidPsyche/auto-browser/main/LICENSE`
+- `https://raw.githubusercontent.com/LvcidPsyche/auto-browser/main/SECURITY.md`
+- `https://github.com/h4ckf0r0day/obscura`
+- `https://raw.githubusercontent.com/h4ckf0r0day/obscura/main/README.md`
+- `https://raw.githubusercontent.com/h4ckf0r0day/obscura/main/LICENSE`
+- `https://github.com/browser-use/browser-use`
+- `https://raw.githubusercontent.com/browser-use/browser-use/main/README.md`
+- `https://raw.githubusercontent.com/browser-use/browser-use/main/LICENSE`
+- `https://github.com/inventree/InvenTree`
+- `https://raw.githubusercontent.com/inventree/InvenTree/master/README.md`
+- `https://raw.githubusercontent.com/inventree/InvenTree/master/LICENSE`
+- `https://github.com/calesthio/OpenMontage`
+- `https://raw.githubusercontent.com/calesthio/OpenMontage/main/README.md`
+- `https://raw.githubusercontent.com/calesthio/OpenMontage/main/LICENSE`
+
+### Validation Commands / Results
+
+- `git status --short`: PASS — only expected dirty/local files plus intentional N+2.9 docs are present
+- `git diff --check`: PASS — no whitespace errors; Git reported LF-to-CRLF working-copy warnings for markdown files
+- External operator candidates audit exists: PASS
+- External operator implementation plan exists: PASS
+- Registry updated with N+2.9 recommendations: PASS
+- No repos cloned: YES
+- No tools installed: YES
+- No runtime wiring occurred: YES
+- Staged-file allowlist check: PASS — staged files are only the four intended N+2.9 docs
+
+### Candidate Truth
+
+- Auto Browser: best next external browser-control candidate, but not cloned, installed, run, or wired.
+- RUFLO: architecture reference only; still research-only due security/trust concerns.
+- Obscura: research-only / do-not-integrate-now because stealth/anti-detect/scraping positioning conflicts with Ghoti safety boundaries.
+- Browser Use: useful reference, but cloud/stealth/CAPTCHA/proxy positioning makes it lower priority for Ghoti.
+- InvenTree: good adjacent inventory/project tracking candidate, not operator runtime.
+- OpenMontage: content workflow reference only; AGPLv3 and media/provider implications require separation.
+- Apify: legal/TOS-aware research only; not core runtime.
+
+### Implementation Plan Truth
+
+- Status label: `implementation_plan_created / not_runtime_wired`
+- Recommended first coding slice: native Ghoti `ActionIntent` and `CapabilityAdapter` contract with approval-bound and payload-bound consumption.
+- External tools should become adapters only after Ghoti owns the safety contract.
+- No external candidate is marked `runtime_wired`.
+
+### Dirty Files Intentionally Not Staged
+
+- `21_repos/third_party/.gitkeep` — expected local/third-party marker dirt
+- `.claude/skills/` — local Claude skills material
+- `01_projects/mcp_server/test.txt` — scratch/test file
+- `14_context/ghoti_current_prompt_N1_6.md` — prompt scratch/handoff artifact
+- CV `.docx` files — local personal document artifacts
+- `output/` — local output/screenshot artifacts
+
+### What Remains Manual / Unproven
+
+- No external operator candidate has been cloned, installed, run, or wired.
+- Public claims about safety, approvals, stealth, memory, or orchestration were not locally verified.
+- Any future Auto Browser, RUFLO, Obscura, Browser Use, InvenTree, OpenMontage, or Apify use requires a separate explicit approval milestone.
+
+### Next Recommendation
+
+Implement the native Ghoti action-intent contract next: proposed action state, adapter status model, action-bound approval creation, payload-bound approval consumption, audit trace, and dashboard read model. No adapter execution yet.

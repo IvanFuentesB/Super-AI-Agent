@@ -4,7 +4,7 @@ Date: 2026-04-25
 Branch: feat/ghoti-visible-operator-stack
 Status label: registry_created / research_only / not_runtime_wired
 
-Latest update: 2026-04-26 (N+2.8) — RUFLO read-only evaluation complete (`14_context/ruflo_read_only_evaluation.md`); verdict is `research only` due to critical security history (obfuscated preinstall, prompt injection via MCP, SQL injection — all reportedly remediated in v3.5.40, but trust not yet independently restored). RUFLO remains TOP PRIORITY for multi-agent orchestration; next step is isolated clone/install only after explicit operator approval in a future milestone. AutoBrowser is high priority after RUFLO. Obscura is high priority research after RUFLO/AutoBrowser, with Rust/legal/TOS-aware review required. Gemma remains diagnostic only; no model pull approved.
+Latest update: 2026-04-26 (N+2.9) — external operator candidates audited in `14_context/external_operator_candidates_audit.md`; implementation plan created in `14_context/external_operator_implementation_plan.md`. Auto Browser is the best next external browser-control candidate, but Ghoti should build its own supervised `ActionIntent` / `CapabilityAdapter` contract first. RUFLO remains research-only due security/trust history. Obscura remains research-only / do-not-integrate-now because stealth/scraping positioning conflicts with Ghoti safety boundaries. Gemma remains diagnostic only; no model pull approved.
 
 ## Purpose
 
@@ -68,20 +68,20 @@ Items or use patterns that conflict with safety, legality, TOS, or Ghoti's super
 
 | Item | Category | Priority | Current truth | Risk notes | Next safe step |
 |---|---|---|---|---|---|
-| RUFLO | Multi-agent orchestration | TOP PRIORITY | Read-only evaluation complete (`14_context/ruflo_read_only_evaluation.md`); not cloned, not installed, not wired; verdict: `research only` — critical security history (obfuscated preinstall, prompt injection, SQL injection); remediated in v3.5.40 but trust not yet independently confirmed | Must avoid account abuse, usage-limit bypass, broad filesystem permissions, autonomous actions; Windows PowerShell/nvm compatibility issues known; requires Anthropic API key | Isolated clone/install only after explicit operator approval in a future milestone; full source audit + npm audit before any install |
-| `LvcidPsyche/auto-browser` | Browser automation repo | High priority | Mentioned only; not cloned or wired | Could expand browser control/autonomy; must remain supervised and approval-gated | Evaluate as supervised browser-control layer; read README/license only first |
-| Obscura | Rust/headless browser candidate | High priority | Mentioned only; not cloned or wired | Headless/stealth-adjacent tools can create TOS, privacy, and cap-bypass risk | Research legal/TOS-aware use only; no stealth, evasion, or cap-bypass abuse |
+| RUFLO | Multi-agent orchestration | TOP PRIORITY reference, not install priority | Read-only evaluation complete (`14_context/ruflo_read_only_evaluation.md`); not cloned, not installed, not wired; verdict: `research only` — critical security history (obfuscated preinstall, prompt injection, SQL injection); remediated in v3.5.40 but trust not yet independently confirmed | Must avoid account abuse, usage-limit bypass, broad filesystem permissions, autonomous actions; Windows PowerShell/nvm compatibility issues known; requires Anthropic API key | Keep as architecture reference; isolated clone/source audit only after explicit operator approval |
+| `LvcidPsyche/auto-browser` | Browser automation repo | Best next external browser candidate | Read-only candidate audit complete (`14_context/external_operator_candidates_audit.md`); not cloned or wired | Could expand browser control/autonomy; auth profiles and MCP endpoint require strict approval gates; Docker/browser artifacts need isolation | Build Ghoti `ActionIntent` contract first; then evaluate Auto Browser in isolated clone only if approved |
+| Obscura | Rust/headless browser candidate | Research only / do-not-integrate-now | Read-only candidate audit complete (`14_context/external_operator_candidates_audit.md`); not cloned or wired | README emphasizes stealth, anti-detect, anti-fingerprinting, and scraping at scale; TOS/legal risk is high | Do not integrate into Ghoti operator path now; evaluate only legal/authorized/non-stealth use if ever revisited |
 | Rust install | Toolchain | Use soon | Verified available in `14_context/local_tool_readiness_check.md`; prior setup plan remains approval-gated | Native toolchain use can change build/runtime paths; no new install occurred in N+2.7 | Verify first, install only after explicit approval if missing in a future environment |
-| `inventree/InvenTree` | Inventory/product/business ops | High priority | Mentioned only; not cloned or wired | Large app; may require Docker/database; not needed in runtime now | Evaluate for inventory/project hardware tracking, not runtime automation |
+| `inventree/InvenTree` | Inventory/product/business ops | Adjacent use-soon app candidate | Read-only candidate audit complete (`14_context/external_operator_candidates_audit.md`); not cloned or wired | Large app; may require Docker/database; not needed in runtime now | Evaluate for inventory/project hardware tracking, not runtime automation |
 | Guri Singh GitHub/page | Person/reference | Watchlist | Mentioned only; no repo selected | Personal profile research may drift into privacy/PII | Only public professional review if a specific purpose is approved |
 | Arcads AI | Content/ad creative tool | Watchlist | Mentioned only; no account/service connected | Paid/cloud/content generation; ad claims risk; no cap bypass or unlimited-generation abuse | Public feature/pricing research only |
 | Kling 3.0 / Kling AI | Video generation tool | Watchlist | Mentioned only; no account/service connected | Paid/cloud media generation; rights/deepfake risks; no cap bypass or unlimited-generation abuse | Public capability/pricing research only |
 | Higgsfield | Video/creative AI tool | Watchlist | Mentioned only; no account/service connected | Paid/cloud media generation; rights/deepfake risks; no cap bypass or unlimited-generation abuse | Public capability/pricing research only |
 | Seedance | Video generation tool | Watchlist | Mentioned only; no account/service connected | Paid/cloud media generation; rights/deepfake risks; no cap bypass or unlimited-generation abuse | Public capability/pricing research only |
-| OpenMontage | Content/video workflow | Research next | Mentioned only; not cloned or wired | Could affect content automation; AGPL/commercial implications may matter; must avoid reupload/copyright issues | Evaluate license, AGPL/commercial implications, and safe content boundaries first |
+| OpenMontage | Content/video workflow | Research only | Read-only candidate audit complete (`14_context/external_operator_candidates_audit.md`); not cloned or wired | AGPLv3, provider/API/media rights implications, copyright/reupload risk | Keep as content workflow reference; do not mix with core operator runtime |
 | Claude Council / contrarian / first-principles agent structures | Agent architecture concept | Use soon | Concept only; not runtime-wired | Could overclaim multi-agent autonomy | Capture as prompt pattern / review checklist first |
 | Code review graph | Engineering analysis concept | Research next | Concept only; not runtime-wired | Could require repo mining; privacy/sensitive-code risks | Define local-only analysis scope |
-| Apify | Scraping/automation platform | Research next | Mentioned only; no account/service connected | Scraping/TOS/paid cloud risks; must not become spam or unauthorized scraping | Evaluate later for jobs/internship/business research workflows, TOS-aware only |
+| Apify | Scraping/automation platform | Research later only | Read-only candidate audit complete (`14_context/external_operator_candidates_audit.md`); no account/service connected | Scraping/TOS/paid cloud risks; must not become spam or unauthorized scraping | Evaluate later for jobs/internship/business research workflows, TOS-aware only |
 | PRD requirement for projects/apps | Process concept | Use soon | Concept only | Low risk if used as docs process | Add PRD checklist before app/project builds |
 | Supabase / Firebase | Backend/cloud platforms | Watchlist | Mentioned only; no service connected | Cloud, auth, billing, data exposure | Architecture comparison only until approved |
 | Adapty.io | Subscription/paywall tool | Watchlist | Mentioned only; no service connected | Billing/app-store/payment implications | Public docs/pricing research only |
@@ -116,9 +116,9 @@ Items or use patterns that conflict with safety, legality, TOS, or Ghoti's super
 
 ## Next Milestone Recommendations
 
-1. **N+2.9: AutoBrowser read-only evaluation** — fill `14_context/external_repo_evaluation_template.md` for AutoBrowser (`LvcidPsyche/auto-browser`); compare with Obscura as supervised browser-control candidates; assess legal/TOS boundaries, Windows feasibility, and sandbox needs.
-2. **N+3.0: RUFLO isolated clone approval milestone** — if operator explicitly approves, clone RUFLO into `21_repos/third_party/ruflo-eval/`, run `npm audit`, inspect preinstall scripts and MCP tool descriptions for remaining injection risks, run no-network smoke test.
-3. **N+3.1: PRD checklist skill or doc** — make every app/project idea start with a small PRD and safety boundary.
+1. **N+3.0: Native Ghoti action-intent contract** — add supervised proposed-action state and approval-bound consumption before any external adapter execution.
+2. **N+3.1: Auto Browser isolated source/dependency audit** — only if explicitly approved; no Docker start, no MCP registration, no auth profiles, no real credentials.
+3. **N+3.2: PRD checklist skill or doc** — make every app/project idea start with a small PRD and safety boundary.
 
 ## Current Status
 
@@ -129,3 +129,5 @@ Items or use patterns that conflict with safety, legality, TOS, or Ghoti's super
 - Paid/cloud services connected: NO
 - Clone/install approval granted: NO
 - RUFLO source/docs/license evaluated read-only: YES
+- External operator candidates audited: YES
+- Operator implementation plan created: YES
