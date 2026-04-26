@@ -2868,3 +2868,94 @@ Pushed: TBD before push; final push truth recorded in final report
 ### Next Recommendation
 
 Create a `ghoti-external-repo-evaluation-template` skill or doc next, so each future repo/tool can be scored for purpose, license, runtime requirements, safety risk, and approval-gated integration path before cloning.
+
+---
+
+## Milestone Run: N+2.7 RUFLO-priority external repo evaluation template + local readiness verification + Gemma diagnostic work item
+
+Date: 2026-04-26
+Branch: `feat/ghoti-visible-operator-stack`
+Starting HEAD: `a014b0e`
+Commit hash after commit: TBD before commit; final hash recorded in final report
+Pushed: TBD before push; final push truth recorded in final report
+
+### Files Changed
+
+- Created: `14_context/external_repo_evaluation_template.md`
+- Created: `14_context/local_tool_readiness_check.md`
+- Created: `14_context/gemma_diagnostic_repo_intake_summary.md`
+- Created: `14_context/ruflo_priority_evaluation_plan.md`
+- Updated: `14_context/ghoti_external_repo_tool_intake.md`
+- Updated: `14_context/ghoti_finish_line_log.md`
+
+### Precondition Truth
+
+- Local branch: `feat/ghoti-visible-operator-stack`
+- Local HEAD before N+2.7: `a014b0e`
+- `origin/feat/ghoti-visible-operator-stack` included `a014b0e` before N+2.7 work continued.
+- No staged files existed at milestone start.
+
+### Validation Commands / Results
+
+- `git status --short`: PASS — only expected dirty/local files plus intentional N+2.7 docs are present
+- `git diff --check`: PASS — no whitespace errors; Git reported LF-to-CRLF working-copy warnings for markdown files
+- New evaluation template exists: PASS
+- Local readiness check exists: PASS
+- Gemma diagnostic file exists: PASS
+- RUFLO priority plan exists: PASS
+- RUFLO marked TOP PRIORITY: PASS
+- No repos cloned: YES
+- No Rust install performed: YES
+- No runtime wiring occurred: YES
+- Staged-file allowlist check: PASS — staged files are only the six intended N+2.7 docs
+
+### Local Tool Readiness Truth
+
+- Git, GitHub CLI, Node, npm, Python, Rust, Cargo, and Ollama were checked with read-only version/list commands.
+- Rust and Cargo are already visible from this shell; this milestone did not install Rust.
+- Ollama is installed, but `ollama list` returned no installed models.
+- `21_repos/third_party`, `18_download_queue`, and `19_models` exist.
+
+### Gemma Diagnostic Truth
+
+- Status label: `gemma_diagnostic_output_only / not_runtime_wired / not_operator_driver`
+- Result: skipped because Ollama has no listed models and no Gemma model is available.
+- Model pull performed: NO
+- Runtime wired: NO
+- Operator driver: NO
+
+### RUFLO Priority Truth
+
+- RUFLO is now documented as TOP PRIORITY for multi-agent orchestration evaluation.
+- RUFLO is not cloned, installed, or runtime-wired.
+- Any future RUFLO clone/install must go through explicit approval and the evaluation template.
+
+### Registry / Evaluation Truth
+
+- Status label: `evaluation_template_created / verification_only / not_runtime_wired`
+- AutoBrowser and Obscura are marked high-priority browser/operator candidates.
+- InvenTree is marked high priority for inventory/project hardware tracking evaluation.
+- OpenMontage remains research-next with license/commercial implications to check first.
+- Apify remains legal/TOS-aware research only; no scraping automation was added.
+- Content tools remain research-only with no cap bypass or unlimited-generation abuse.
+
+### Dirty Files Intentionally Not Staged
+
+- `21_repos/third_party/.gitkeep` — expected local/third-party marker dirt
+- `.claude/skills/` — local Claude skills material, not part of this milestone
+- `01_projects/mcp_server/test.txt` — scratch/test file
+- `14_context/ghoti_current_prompt_N1_6.md` — prompt scratch/handoff artifact
+- CV `.docx` files — local personal document artifacts
+- `output/` — local output/screenshot artifacts
+- runtime data and screenshot artifacts — not milestone source/docs
+
+### What Remains Manual / Unproven
+
+- The evaluation pipeline is docs-only.
+- No repo/tool was cloned, installed, run, or integrated.
+- No external service, paid platform, browser automation layer, model, or agent framework was connected to Ghoti runtime.
+- RUFLO, AutoBrowser, Obscura, InvenTree, OpenMontage, Apify, Claude-agent structures, and content tools all remain candidates for future evaluation only.
+
+### Next Recommendation
+
+Perform a read-only RUFLO source/docs evaluation next using `14_context/external_repo_evaluation_template.md`, then decide whether a later isolated clone/install milestone is justified.

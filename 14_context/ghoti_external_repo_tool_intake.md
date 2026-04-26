@@ -4,6 +4,8 @@ Date: 2026-04-25
 Branch: feat/ghoti-visible-operator-stack
 Status label: registry_created / research_only / not_runtime_wired
 
+Latest update: 2026-04-26 — RUFLO is TOP PRIORITY for multi-agent orchestration evaluation. AutoBrowser and Obscura are high-priority browser/operator candidates. Rust is verified/planned only; clone/install/runtime wiring still require explicit approval.
+
 ## Purpose
 
 Track newly mentioned external repos, tools, services, and concepts before anyone clones, installs, pays for, deploys, or wires them into Ghoti.
@@ -19,6 +21,8 @@ This registry is an intake and evaluation surface only. It does not make any too
 - Do not connect paid/cloud services without explicit user approval.
 - Do not wire external tools into Ghoti runtime until a separate implementation milestone proves approval gates, logging, rollback, and local safety boundaries.
 - Keep all business, content, OSINT, lead-gen, store, and finance work aligned with `ghoti-business-research-safe`.
+- RUFLO, AutoBrowser, Obscura, and similar operator tools must be evaluated through `14_context/external_repo_evaluation_template.md` before clone/install.
+- ChatGPT should carry most high-level reasoning/planning; Claude/Codex should be used for concrete repo execution, verification, and implementation when they are the better fit.
 
 ## Evaluation Gates Before Cloning / Installing
 
@@ -64,18 +68,20 @@ Items or use patterns that conflict with safety, legality, TOS, or Ghoti's super
 
 | Item | Category | Priority | Current truth | Risk notes | Next safe step |
 |---|---|---|---|---|---|
-| `LvcidPsyche/auto-browser` | Browser automation repo | Research next | Mentioned only; not cloned or wired | Could expand browser control/autonomy; must remain supervised and approval-gated | Read README/license only; compare to existing Playwright/browser playground |
-| Rust install | Toolchain | Use soon | Plan only in `14_context/rust_setup_plan.md`; do not install yet | Native toolchain changes machine state | Follow setup checklist only after explicit approval |
-| `inventree/InvenTree` | Inventory/product/business ops | Research next | Mentioned only; not cloned or wired | Large app; may require Docker/database; not needed in runtime now | Read docs for inventory/workflow inspiration |
+| RUFLO | Multi-agent orchestration | TOP PRIORITY | Mentioned only; not cloned, installed, or wired | Could enable multi-agent orchestration; must avoid account abuse, usage-limit bypass, broad filesystem permissions, and autonomous external actions | Use `14_context/ruflo_priority_evaluation_plan.md`; fill evaluation template before clone/install |
+| `LvcidPsyche/auto-browser` | Browser automation repo | High priority | Mentioned only; not cloned or wired | Could expand browser control/autonomy; must remain supervised and approval-gated | Evaluate as supervised browser-control layer; read README/license only first |
+| Obscura | Rust/headless browser candidate | High priority | Mentioned only; not cloned or wired | Headless/stealth-adjacent tools can create TOS, privacy, and cap-bypass risk | Research legal/TOS-aware use only; no stealth, evasion, or cap-bypass abuse |
+| Rust install | Toolchain | Use soon | Verified available in `14_context/local_tool_readiness_check.md`; prior setup plan remains approval-gated | Native toolchain use can change build/runtime paths; no new install occurred in N+2.7 | Verify first, install only after explicit approval if missing in a future environment |
+| `inventree/InvenTree` | Inventory/product/business ops | High priority | Mentioned only; not cloned or wired | Large app; may require Docker/database; not needed in runtime now | Evaluate for inventory/project hardware tracking, not runtime automation |
 | Guri Singh GitHub/page | Person/reference | Watchlist | Mentioned only; no repo selected | Personal profile research may drift into privacy/PII | Only public professional review if a specific purpose is approved |
-| Arcads AI | Content/ad creative tool | Watchlist | Mentioned only; no account/service connected | Paid/cloud/content generation; ad claims risk | Public feature/pricing research only |
-| Kling 3.0 / Kling AI | Video generation tool | Watchlist | Mentioned only; no account/service connected | Paid/cloud media generation; rights/deepfake risks | Public capability/pricing research only |
-| Higgsfield | Video/creative AI tool | Watchlist | Mentioned only; no account/service connected | Paid/cloud media generation; rights/deepfake risks | Public capability/pricing research only |
-| Seedance | Video generation tool | Watchlist | Mentioned only; no account/service connected | Paid/cloud media generation; rights/deepfake risks | Public capability/pricing research only |
-| OpenMontage | Content/video workflow | Research next | Mentioned only; not cloned or wired | Could affect content automation; must avoid reupload/copyright issues | Read public docs/repo if identified |
+| Arcads AI | Content/ad creative tool | Watchlist | Mentioned only; no account/service connected | Paid/cloud/content generation; ad claims risk; no cap bypass or unlimited-generation abuse | Public feature/pricing research only |
+| Kling 3.0 / Kling AI | Video generation tool | Watchlist | Mentioned only; no account/service connected | Paid/cloud media generation; rights/deepfake risks; no cap bypass or unlimited-generation abuse | Public capability/pricing research only |
+| Higgsfield | Video/creative AI tool | Watchlist | Mentioned only; no account/service connected | Paid/cloud media generation; rights/deepfake risks; no cap bypass or unlimited-generation abuse | Public capability/pricing research only |
+| Seedance | Video generation tool | Watchlist | Mentioned only; no account/service connected | Paid/cloud media generation; rights/deepfake risks; no cap bypass or unlimited-generation abuse | Public capability/pricing research only |
+| OpenMontage | Content/video workflow | Research next | Mentioned only; not cloned or wired | Could affect content automation; AGPL/commercial implications may matter; must avoid reupload/copyright issues | Evaluate license, AGPL/commercial implications, and safe content boundaries first |
 | Claude Council / contrarian / first-principles agent structures | Agent architecture concept | Use soon | Concept only; not runtime-wired | Could overclaim multi-agent autonomy | Capture as prompt pattern / review checklist first |
 | Code review graph | Engineering analysis concept | Research next | Concept only; not runtime-wired | Could require repo mining; privacy/sensitive-code risks | Define local-only analysis scope |
-| Apify | Scraping/automation platform | Watchlist | Mentioned only; no account/service connected | Scraping/TOS/paid cloud risks | Use only for legal/TOS-aware research after approval |
+| Apify | Scraping/automation platform | Research next | Mentioned only; no account/service connected | Scraping/TOS/paid cloud risks; must not become spam or unauthorized scraping | Evaluate later for jobs/internship/business research workflows, TOS-aware only |
 | PRD requirement for projects/apps | Process concept | Use soon | Concept only | Low risk if used as docs process | Add PRD checklist before app/project builds |
 | Supabase / Firebase | Backend/cloud platforms | Watchlist | Mentioned only; no service connected | Cloud, auth, billing, data exposure | Architecture comparison only until approved |
 | Adapty.io | Subscription/paywall tool | Watchlist | Mentioned only; no service connected | Billing/app-store/payment implications | Public docs/pricing research only |
@@ -92,7 +98,7 @@ Items or use patterns that conflict with safety, legality, TOS, or Ghoti's super
 | AI agent traps | Safety/security concept | Use soon | Mentioned only | Could involve adversarial examples | Capture as safety checklist |
 | Service arbitrage / local lead-gen ideas | Business research | Research next | Concept only | Spam/outreach/fake claim risk | Use `ghoti-business-research-safe`; draft only |
 | Real-estate wholesaling-style ideas | Business research | Watchlist | Concept only | Legal/regulatory/ethics risk; jurisdiction-specific | Research-only; no outreach/contracts |
-| Many single-purpose Claude agents with shared local memory | Agent architecture concept | Research next | Concept only; not runtime-wired | Could overclaim autonomy; memory privacy risk | Design local, supervised, role-labeled plan only |
+| Many single-purpose Claude agents with shared local memory | Agent architecture concept | High priority | Concept only; not runtime-wired | Could overclaim autonomy; memory privacy risk | Design local, supervised, role-labeled plan only; align with RUFLO evaluation |
 
 ## Do Not Use / Blocked Patterns
 
@@ -109,9 +115,9 @@ Items or use patterns that conflict with safety, legality, TOS, or Ghoti's super
 
 ## Next Milestone Recommendations
 
-1. **N+2.7: Rust setup verification-only pass** — check current Rust state and prepare exact install command, but install only after explicit approval.
-2. **N+2.8: PRD checklist skill or doc** — make every app/project idea start with a small PRD and safety boundary.
-3. **N+2.9: External repo evaluation template** — standardize README/license/risks/usefulness scoring before cloning.
+1. **N+2.8: RUFLO docs/license evaluation** — fill `14_context/external_repo_evaluation_template.md` for RUFLO before any clone/install decision.
+2. **N+2.9: AutoBrowser / Obscura comparison** — compare supervised browser-control candidates, legal/TOS boundaries, Windows feasibility, and sandbox needs.
+3. **N+3.0: PRD checklist skill or doc** — make every app/project idea start with a small PRD and safety boundary.
 
 ## Current Status
 
@@ -120,3 +126,4 @@ Items or use patterns that conflict with safety, legality, TOS, or Ghoti's super
 - Installed new tools: NO
 - Runtime wired: NO
 - Paid/cloud services connected: NO
+- Clone/install approval granted: NO
