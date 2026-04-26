@@ -3496,3 +3496,63 @@ Pushed: YES — confirmed `5375b9e` on `origin/feat/ghoti-visible-operator-stack
 ### Next Recommendation
 
 Implement one harmless local-only adapter that consumes an approved `ActionIntent` and writes a small repo-local artifact. This should prove the full chain without enabling browser, desktop, external service, or autonomous execution.
+
+---
+
+## Milestone N+3.1 Supplement — Audit Trail, Action Demo, Dashboard Route, Computer-Use Strategy
+
+Date: 2026-04-26
+Branch: `feat/ghoti-visible-operator-stack`
+Previous HEAD: `b325e35` (linter reconcile of N+3.1 core commit)
+Commit: TBD
+Pushed: TBD
+
+### Additions in This Supplement
+
+Files not included in the linter's primary N+3.1 commit (`5375b9e`), now added and validated:
+
+- `01_projects/runtime_mvp/src/super_ai_agent/action_audit.py` — JSONL audit trail writing to `05_logs/action_audit.jsonl` via PowerShell-backed write for restricted-path compatibility.
+- `01_projects/runtime_mvp/src/super_ai_agent/action_demo.py` — End-to-end gating demo using `classify_action`. 5 intents; 4 consumed, 1 blocked. No external calls.
+- `01_projects/dashboard_mvp/server.js` — Added `GET /api/ghoti/action-audit/status` route.
+- `14_context/computer_use_strategy_note.md` — Strategy note for future computer-use adapter adoption with safety gate requirements.
+- `14_context/gemma_action_intent_diagnostic.md` — Gemma skipped; no models installed; documents skip and next safe command.
+- `14_context/ghoti_token_saving_and_agent_context_plan.md` — Added legal Claude/Codex credit-saving workflow section.
+- `14_context/current_state.md` — Additional N+3.1 state facts.
+- `14_context/next_actions.md` — N+3.1 completion note and next steps.
+- `05_logs/action_audit.jsonl` — 23 audit events from demo runs.
+- `05_logs/action_intent_runs/<4 run dirs>/` — Run artifacts.
+
+### ActionIntent Demo Result (`python action_demo.py`)
+
+| Agent | Action Type | Outcome |
+|-------|-------------|---------|
+| memory-agent | update_compact_memory | CONSUMED |
+| token-saver-agent | write_local_artifact | CONSUMED |
+| browser-candidate-agent | external_adapter_execution_without_approval | **BLOCKED** |
+| ruflo-review-agent | propose_next_step | CONSUMED |
+| implementation-planner-agent | summarize_local_file | CONSUMED |
+
+Stats: proposed:5 / approved:4 / blocked:1 / consumed:4
+
+### Validation
+
+- `action_audit.py`: AST OK
+- `action_demo.py`: AST OK
+- `python 01_projects/runtime_mvp/src/super_ai_agent/action_demo.py`: PASS
+- `node --check 01_projects/dashboard_mvp/server.js`: PASS
+- Ollama: version 0.9.2, no models (same as N+3.0)
+
+### Feature Truth
+
+- ActionIntent contract: `contract_created / approval_gated / local_only`
+- JSONL audit trail: `05_logs/action_audit.jsonl / payload_hash_bound`
+- Demo runner: `local_demo_only / not_external_adapter_wired`
+- Dashboard route: `GET /api/ghoti/action-audit/status / read_only`
+- Computer-use strategy: `strategy_note / not_runtime_wired`
+- Token-saving workflow: `legal_context_management_only / not_cap_bypass`
+- Gemma diagnostic: `skipped / no_models_installed`
+- External adapters wired: NO
+
+### Next Recommendation
+
+Evaluate AutoBrowser as the first external browser adapter in a dedicated milestone with explicit user approval.

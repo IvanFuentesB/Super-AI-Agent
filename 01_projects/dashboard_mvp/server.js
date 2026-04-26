@@ -5446,6 +5446,42 @@ async function handleApiRequest(request, response, requestUrl) {
     return;
   }
 
+  if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/action-audit/status") {
+    const auditPath = path.join(repoRoot, "05_logs", "action_audit.jsonl");
+    const runsDir = path.join(repoRoot, "05_logs", "action_intent_runs");
+    let auditEventCount = 0;
+    let latestEventType = null;
+    if (fs.existsSync(auditPath)) {
+      const lines = fs.readFileSync(auditPath, "utf8").split("\n").filter(l => l.trim());
+      auditEventCount = lines.length;
+      if (lines.length > 0) {
+        try { latestEventType = JSON.parse(lines[lines.length - 1]).event_type; } catch { /* ignore */ }
+      }
+    }
+    let latestRunSummaryPath = null;
+    if (fs.existsSync(runsDir)) {
+      const runs = fs.readdirSync(runsDir).sort().reverse();
+      if (runs.length > 0) {
+        const candidate = path.join(runsDir, runs[0], "action_intent_demo_summary.md");
+        if (fs.existsSync(candidate)) {
+          latestRunSummaryPath = path.relative(repoRoot, candidate).replace(/\\/g, "/");
+        }
+      }
+    }
+    sendJson(response, 200, {
+      ok: true,
+      latest_audit_path: auditPath ? "05_logs/action_audit.jsonl" : null,
+      audit_event_count: auditEventCount,
+      latest_event_type: latestEventType,
+      latest_run_summary_path: latestRunSummaryPath,
+      action_intent_runtime: "local_demo_only",
+      external_adapters_wired: false,
+      approval_gate_truth: "action_intents require approval before future adapter execution",
+      updated_at_utc: new Date().toISOString(),
+    });
+    return;
+  }
+
   if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/models/status") {
     const status = await getModelInventoryStatus();
     sendJson(response, 200, status);

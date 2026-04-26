@@ -1,0 +1,154 @@
+[
+  {
+    "intent_id": "intent-38d3899a854c",
+    "created_at_utc": "2026-04-26T20:47:56Z",
+    "requested_by_agent": "memory-agent",
+    "adapter_id": "native-demo-adapter",
+    "action_type": "update_compact_memory",
+    "target": "14_context/multi_agent_shared_memory.json",
+    "payload": {
+      "update_scope": "current_priorities"
+    },
+    "payload_hash": "6581b22bc827b1d0",
+    "risk_level": "low",
+    "status": "consumed",
+    "requires_approval": true,
+    "approval_id": "approval-ecd4377109aa",
+    "approval_status": "approved",
+    "result_status": "local_demo_no_execution",
+    "reason": "Refresh compact memory after N+3.1 ActionIntent milestone.",
+    "errors": [],
+    "audit_tags": [
+      "milestone:N+3.1",
+      "role:memory-agent",
+      "approved_by:local-demo-auto-approver",
+      "consumed_by:native-demo-adapter"
+    ],
+    "execution_performed": false,
+    "approved_by": "local-demo-auto-approver",
+    "approved_at_utc": "2026-04-26T20:47:56Z",
+    "consumed_at_utc": "2026-04-26T20:47:56Z",
+    "consumed_by_adapter_id": "native-demo-adapter"
+  },
+  {
+    "intent_id": "intent-839143738fe6",
+    "created_at_utc": "2026-04-26T20:47:56Z",
+    "requested_by_agent": "token-saver-agent",
+    "adapter_id": "native-demo-adapter",
+    "action_type": "write_local_artifact",
+    "target": "05_logs/token_saver_checkpoint.md",
+    "payload": {
+      "content_type": "checkpoint_summary"
+    },
+    "payload_hash": "ed7fcebcc29de9a2",
+    "risk_level": "low",
+    "status": "consumed",
+    "requires_approval": true,
+    "approval_id": "approval-dbd7b18e039d",
+    "approval_status": "approved",
+    "result_status": "local_demo_no_execution",
+    "reason": "Write a token-saving checkpoint artifact for this milestone.",
+    "errors": [],
+    "audit_tags": [
+      "milestone:N+3.1",
+      "role:token-saver-agent",
+      "approved_by:local-demo-auto-approver",
+      "consumed_by:native-demo-adapter"
+    ],
+    "execution_performed": false,
+    "approved_by": "local-demo-auto-approver",
+    "approved_at_utc": "2026-04-26T20:47:56Z",
+    "consumed_at_utc": "2026-04-26T20:47:57Z",
+    "consumed_by_adapter_id": "native-demo-adapter"
+  },
+  {
+    "intent_id": "intent-8b9a552c6103",
+    "created_at_utc": "2026-04-26T20:47:57Z",
+    "requested_by_agent": "browser-candidate-agent",
+    "adapter_id": "native-demo-adapter",
+    "action_type": "external_adapter_execution_without_approval",
+    "target": "autobrowser://start",
+    "payload": {
+      "adapter": "autobrowser"
+    },
+    "payload_hash": "a9b95b2a1b7b1cea",
+    "risk_level": "blocked",
+    "status": "blocked",
+    "requires_approval": true,
+    "approval_id": null,
+    "approval_status": "not_created",
+    "result_status": "blocked",
+    "reason": "Attempting AutoBrowser \u2014 must be blocked by policy gate.",
+    "errors": [
+      "forbidden_action_type"
+    ],
+    "audit_tags": [
+      "milestone:N+3.1",
+      "role:browser-candidate-agent",
+      "should_block"
+    ],
+    "execution_performed": false
+  },
+  {
+    "intent_id": "intent-91dea7060859",
+    "created_at_utc": "2026-04-26T20:47:57Z",
+    "requested_by_agent": "ruflo-review-agent",
+    "adapter_id": "native-demo-adapter",
+    "action_type": "propose_next_step",
+    "target": "14_context/next_actions.md",
+    "payload": {
+      "proposal": "Evaluate AutoBrowser after ActionIntent gate is validated."
+    },
+    "payload_hash": "219fb821702f6b4f",
+    "risk_level": "low",
+    "status": "consumed",
+    "requires_approval": true,
+    "approval_id": "approval-3bc182582602",
+    "approval_status": "approved",
+    "result_status": "local_demo_no_execution",
+    "reason": "Propose safe next architecture step based on RUFLO audit.",
+    "errors": [],
+    "audit_tags": [
+      "milestone:N+3.1",
+      "role:ruflo-review-agent",
+      "approved_by:local-demo-auto-approver",
+      "consumed_by:native-demo-adapter"
+    ],
+    "execution_performed": false,
+    "approved_by": "local-demo-auto-approver",
+    "approved_at_utc": "2026-04-26T20:47:57Z",
+    "consumed_at_utc": "2026-04-26T20:47:57Z",
+    "consumed_by_adapter_id": "native-demo-adapter"
+  },
+  {
+    "intent_id": "intent-3a88933566c2",
+    "created_at_utc": "2026-04-26T20:47:57Z",
+    "requested_by_agent": "implementation-planner-agent",
+    "adapter_id": "native-demo-adapter",
+    "action_type": "summarize_local_file",
+    "target": "14_context/ghoti_external_repo_tool_intake.md",
+    "payload": {
+      "max_chars": 2000
+    },
+    "payload_hash": "e02bd7165b9ba539",
+    "risk_level": "low",
+    "status": "consumed",
+    "requires_approval": true,
+    "approval_id": "approval-cd539f7ea99a",
+    "approval_status": "approved",
+    "result_status": "local_demo_no_execution",
+    "reason": "Summarize external repo tool intake for planning context.",
+    "errors": [],
+    "audit_tags": [
+      "milestone:N+3.1",
+      "role:implementation-planner-agent",
+      "approved_by:local-demo-auto-approver",
+      "consumed_by:native-demo-adapter"
+    ],
+    "execution_performed": false,
+    "approved_by": "local-demo-auto-approver",
+    "approved_at_utc": "2026-04-26T20:47:58Z",
+    "consumed_at_utc": "2026-04-26T20:47:58Z",
+    "consumed_by_adapter_id": "native-demo-adapter"
+  }
+]

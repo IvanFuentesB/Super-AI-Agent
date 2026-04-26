@@ -200,3 +200,9 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Native `ActionIntent` and `CapabilityAdapter` contracts now exist at `01_projects/runtime_mvp/src/super_ai_agent/action_intent.py`
 - ActionIntent creation opens an approval inbox item, consumption requires approved action/payload/adapter matches, replay consumption is rejected, and no adapter execution is performed
 - Dashboard backend exposes the read-only ActionIntent read model at `/api/ghoti/action-intents`
+- Approval-bound JSONL audit trail now exists at `01_projects/runtime_mvp/src/super_ai_agent/action_audit.py`, writing to `05_logs/action_audit.jsonl`
+- ActionIntent demo runner now exists at `01_projects/runtime_mvp/src/super_ai_agent/action_demo.py`; demo creates 5 intents, auto-approves 4 low-risk local actions, blocks 1 forbidden action, consumes 4, writes artifacts to `05_logs/action_intent_runs/<run_id>/`
+- Dashboard now has a read-only `GET /api/ghoti/action-audit/status` route reporting audit event count, latest event type, and latest run summary path
+- Computer-use strategy note exists at `14_context/computer_use_strategy_note.md`; Ghoti is NOT using computer use yet; document defines safety gates required before any adapter is wired
+- Token-saving legal workflow section added to `14_context/ghoti_token_saving_and_agent_context_plan.md`
+- External adapters (AutoBrowser, Browser Use, RUFLO, Obscura, Claude computer use, Playwright) remain NOT wired in runtime

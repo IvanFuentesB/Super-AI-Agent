@@ -1,5 +1,9 @@
 # Next Actions
 
+- N+3.1 delivered: ActionIntent contracts, CapabilityAdapterDescriptor, approval-bound gating demo, JSONL audit trail, dashboard read route, computer-use strategy note, and token-saving workflow update
+- Validate N+3.1 demo output: run `python 01_projects/runtime_mvp/src/super_ai_agent/action_demo.py` and check `05_logs/action_audit.jsonl` and `05_logs/action_intent_runs/<latest>/action_intent_demo_summary.md`
+- Evaluate AutoBrowser as the first external browser adapter: create a CapabilityAdapterDescriptor, design the ActionIntent approval flow, and propose in a separate milestone with explicit user approval
+- Connect the approval inbox to the ActionIntent flow in a future milestone so the dashboard shows pending action intents under the approval queue
 - Use the visible Ghoti operator stack in dashboard and CLI for the next manual operator-validation pass instead of adding new surface area
 - Use the new desktop action cue, target marker, and desktop-action truth as the default operator view during real desktop validation
 - Manually validate visible mouse aiming, clicking, waiting, and controlled one-line typing with the new overlay cue before adding broader desktop behaviors

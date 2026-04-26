@@ -62,6 +62,46 @@ Define legal, safe context-management patterns for Ghoti's multi-agent workflow.
 - Claude Code: execute one prepared repo-local prompt when credits/auth are available.
 - User: approval gate for risky actions and final operator judgment.
 
+## Legal Claude/Codex Credit-Saving Workflow (added N+3.1)
+
+This section defines the approved workflow for reducing token/credit consumption
+legally, without bypassing any provider limits, quotas, or subscriptions.
+
+### Allowed Patterns
+
+- Compact CLAUDE.md: keep project instructions short and file-referenced, not duplicated.
+- Smaller subagent prompts: each Claude Code invocation gets one narrow repo task.
+- Checkpoint files: each milestone writes a finish-line log and compact memory update.
+- Prompt libraries: reusable skill files under `.claude/skills/` reduce repeated prompt text.
+- Summarized run artifacts: agents write short markdown summaries, not full transcripts.
+- Local Gemma diagnostics: after a model is approved and available, run only for offline summarization.
+- File references instead of pasting: long docs are referenced by path, not pasted into prompts.
+- Agent separation: ChatGPT/planning vs Claude/Codex execution reduces re-explaining context.
+
+### Forbidden Patterns
+
+- Quota, cap, subscription, or usage-limit bypass.
+- Fake accounts, account sharing abuse, or identity rotation.
+- Deleting, modifying, or hiding provider usage-limit storage.
+- Hidden usage evasion.
+- Removing safety context from handoffs to shorten prompts.
+
+### Practical Workflow (N+3.1 confirmed)
+
+1. ChatGPT creates architecture and full prompts (ghoti_current_prompt.md).
+2. Claude Code executes narrow repo tasks from the prepared prompt.
+3. Each milestone updates ghoti_finish_line_log.md and compact memory.
+4. Long docs are referenced by path, not pasted.
+5. Agents get one job each (see multi_agent_mvp.py pattern).
+6. Handoff files carry only the current run context, not full history.
+
+### Current Status
+
+- Plan status: `token_saving_plan / legal_context_management_only / not_cap_bypass`
+- Runtime wired: partially as local MVP memory/artifact pattern (N+3.0 + N+3.1).
+- Cap bypass implemented: NO.
+- Provider-limit evasion implemented: NO.
+
 ## Current Status
 
 - Plan status: `token_saving_plan / legal_context_management_only / not_cap_bypass`
