@@ -2972,3 +2972,135 @@ Pushed: BLOCKED — push denied by operator permission gate; run manually: `git 
 ### Next Recommendation
 
 Perform a read-only RUFLO source/docs evaluation next using `14_context/external_repo_evaluation_template.md`, then decide whether a later isolated clone/install milestone is justified.
+
+---
+
+## Milestone Run: N+2.7.1 Push/reconcile N+2.7
+
+Date: 2026-04-26
+Branch: `feat/ghoti-visible-operator-stack`
+Starting HEAD: `126655b`
+Commit hash after commit: no new commit for N+2.7.1
+Pushed: YES — `git push origin feat/ghoti-visible-operator-stack` pushed `126655b`
+
+### Files Changed
+
+- None.
+
+### Reconciliation Truth
+
+- Local HEAD before push: `126655b`
+- Origin before push: `ba5c026`
+- Local branch was ahead of origin by one N+2.7 reconciliation commit.
+- Push succeeded and origin now includes `126655b`.
+
+### Validation Commands / Results
+
+- `git status --short`: PASS — no staged files; only expected dirty/local files remained
+- `git diff --cached --name-status`: PASS — no staged files
+- `git show --stat --oneline --decorate -1 HEAD`: PASS — confirmed local N+2.7 reconciliation commit
+- `git push origin feat/ghoti-visible-operator-stack`: PASS
+
+### Dirty Files Intentionally Not Staged
+
+- `21_repos/third_party/.gitkeep` — expected local/third-party marker dirt
+- `.claude/skills/` — local Claude skills material
+- `01_projects/mcp_server/test.txt` — scratch/test file
+- `14_context/ghoti_current_prompt_N1_6.md` — prompt scratch/handoff artifact
+- CV `.docx` files — local personal document artifacts
+- `output/` — local output/screenshot artifacts
+
+### Next Recommendation
+
+Proceed with N+2.8 read-only RUFLO source/docs/license evaluation and Gemma/Ollama readiness verification.
+
+---
+
+## Milestone Run: N+2.8 Read-only RUFLO source/docs/license evaluation + Gemma/Ollama readiness step
+
+Date: 2026-04-26
+Branch: `feat/ghoti-visible-operator-stack`
+Starting HEAD: `126655b`
+Commit hash after commit: TBD before commit; final hash recorded in final report
+Pushed: TBD before push; final push truth recorded in final report
+
+### Files Changed
+
+- Created: `14_context/ruflo_read_only_source_docs_license_evaluation.md`
+- Created: `14_context/gemma_ollama_readiness_step.md`
+- Updated: `14_context/local_tool_readiness_check.md`
+- Updated: `14_context/ghoti_external_repo_tool_intake.md`
+- Updated: `14_context/ruflo_priority_evaluation_plan.md`
+- Updated: `14_context/ghoti_finish_line_log.md`
+
+### Source / Docs / License Sources Checked
+
+- `https://github.com/ruvnet/ruflo`
+- `https://raw.githubusercontent.com/ruvnet/ruflo/main/README.md`
+- `https://raw.githubusercontent.com/ruvnet/ruflo/main/package.json`
+- `https://raw.githubusercontent.com/ruvnet/ruflo/main/LICENSE`
+- `https://raw.githubusercontent.com/ruvnet/ruflo/main/SECURITY.md`
+- `https://raw.githubusercontent.com/ruvnet/ruflo/main/AGENTS.md`
+- `https://raw.githubusercontent.com/ruvnet/ruflo/main/scripts/install.sh`
+
+### Validation Commands / Results
+
+- `git status --short`: PASS — only expected dirty/local files plus intentional N+2.8 docs are present
+- `git diff --check`: PASS — no whitespace errors; Git reported LF-to-CRLF working-copy warnings for markdown files
+- RUFLO evaluation doc exists: PASS
+- Gemma/Ollama readiness doc exists: PASS
+- Local readiness check updated: PASS
+- RUFLO remains not cloned/install/runtime-wired: YES
+- Gemma/Ollama remains not runtime-wired: YES
+- Staged-file allowlist check: PASS — staged files are only the six intended N+2.8 docs
+
+### RUFLO Evaluation Truth
+
+- Status label: `source_docs_license_evaluated / research_only / not_runtime_wired`
+- Public source identified: `ruvnet/ruflo`
+- License observed: MIT
+- Runtime requirements observed: Node >=20 from `package.json`; broad optional dependency and MCP/Claude/Codex integration surface
+- Install risk observed: installer can use npx/npm, configure MCP, run doctor/init, and attempt Claude Code CLI installation
+- Clone/install/run performed: NO
+- Runtime wired: NO
+- Final verdict: research-only now; isolated clone/dependency audit only after explicit approval
+
+### Gemma / Ollama Readiness Truth
+
+- Status label: `readiness_checked / no_model_available / not_runtime_wired / not_operator_driver`
+- `ollama --version`: `ollama version is 0.21.2`
+- `ollama list`: no models listed
+- Gemma model available: NO
+- Model pull performed: NO
+- Diagnostic prompt run: NO
+- Runtime wired: NO
+
+### Local Tool Readiness Truth
+
+- git, gh, node, npm, python, rustc, cargo, and ollama were verified from this shell.
+- Rust/Cargo are visible from this shell.
+- Ollama is visible, but no models are installed/listed.
+- No tools were installed.
+
+### Dirty Files Intentionally Not Staged
+
+- `21_repos/third_party/.gitkeep` — expected local/third-party marker dirt
+- `.claude/skills/` — local Claude skills material, not part of this milestone
+- `01_projects/mcp_server/test.txt` — scratch/test file
+- `14_context/ghoti_current_prompt_N1_6.md` — prompt scratch/handoff artifact
+- `14_context/ruflo_read_only_evaluation.md` — separate untracked evaluation draft, inspected but not staged
+- `14_context/gemma_diagnostic_repo_intake_summary.md` — pre-existing local tracked modification, inspected but not staged in this controlled slice
+- CV `.docx` files — local personal document artifacts
+- `output/` — local output/screenshot artifacts
+- runtime data and screenshot artifacts — not milestone source/docs
+
+### What Remains Manual / Unproven
+
+- RUFLO was not cloned, installed, run, or wired.
+- RUFLO claims about multi-agent orchestration, Codex/Claude integration, memory, security, and cost/token optimization remain unvalidated by local execution.
+- Gemma/Ollama is not usable for diagnostics until a model is approved and available.
+- Ghoti remains supervised/manual/approval-gated only.
+
+### Next Recommendation
+
+If approved, run an isolated RUFLO clone/dependency audit next without install scripts, MCP setup, init, daemon, provider config, or runtime wiring.

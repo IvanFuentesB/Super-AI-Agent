@@ -96,6 +96,7 @@ No install should happen until a later milestone explicitly approves it.
 ## Current Status
 
 - Priority: TOP PRIORITY for multi-agent orchestration evaluation.
+- Source/docs/license evaluated read-only: YES — see `14_context/ruflo_read_only_source_docs_license_evaluation.md`.
 - Installed: NO.
 - Cloned by this milestone: NO.
 - Runtime wired: NO.

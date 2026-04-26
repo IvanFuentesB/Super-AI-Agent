@@ -4,7 +4,7 @@ Date: 2026-04-25
 Branch: feat/ghoti-visible-operator-stack
 Status label: registry_created / research_only / not_runtime_wired
 
-Latest update: 2026-04-26 — RUFLO is TOP PRIORITY for multi-agent orchestration evaluation. AutoBrowser and Obscura are high-priority browser/operator candidates. Rust is verified/planned only; clone/install/runtime wiring still require explicit approval.
+Latest update: 2026-04-26 (N+2.8) — RUFLO read-only evaluation complete (`14_context/ruflo_read_only_evaluation.md`); verdict is `research only` due to critical security history (obfuscated preinstall, prompt injection via MCP, SQL injection — all reportedly remediated in v3.5.40, but trust not yet independently restored). RUFLO remains TOP PRIORITY for multi-agent orchestration; next step is isolated clone/install only after explicit operator approval in a future milestone. AutoBrowser is high priority after RUFLO. Obscura is high priority research after RUFLO/AutoBrowser, with Rust/legal/TOS-aware review required. Gemma remains diagnostic only; no model pull approved.
 
 ## Purpose
 
@@ -68,7 +68,7 @@ Items or use patterns that conflict with safety, legality, TOS, or Ghoti's super
 
 | Item | Category | Priority | Current truth | Risk notes | Next safe step |
 |---|---|---|---|---|---|
-| RUFLO | Multi-agent orchestration | TOP PRIORITY | Mentioned only; not cloned, installed, or wired | Could enable multi-agent orchestration; must avoid account abuse, usage-limit bypass, broad filesystem permissions, and autonomous external actions | Use `14_context/ruflo_priority_evaluation_plan.md`; fill evaluation template before clone/install |
+| RUFLO | Multi-agent orchestration | TOP PRIORITY | Read-only evaluation complete (`14_context/ruflo_read_only_evaluation.md`); not cloned, not installed, not wired; verdict: `research only` — critical security history (obfuscated preinstall, prompt injection, SQL injection); remediated in v3.5.40 but trust not yet independently confirmed | Must avoid account abuse, usage-limit bypass, broad filesystem permissions, autonomous actions; Windows PowerShell/nvm compatibility issues known; requires Anthropic API key | Isolated clone/install only after explicit operator approval in a future milestone; full source audit + npm audit before any install |
 | `LvcidPsyche/auto-browser` | Browser automation repo | High priority | Mentioned only; not cloned or wired | Could expand browser control/autonomy; must remain supervised and approval-gated | Evaluate as supervised browser-control layer; read README/license only first |
 | Obscura | Rust/headless browser candidate | High priority | Mentioned only; not cloned or wired | Headless/stealth-adjacent tools can create TOS, privacy, and cap-bypass risk | Research legal/TOS-aware use only; no stealth, evasion, or cap-bypass abuse |
 | Rust install | Toolchain | Use soon | Verified available in `14_context/local_tool_readiness_check.md`; prior setup plan remains approval-gated | Native toolchain use can change build/runtime paths; no new install occurred in N+2.7 | Verify first, install only after explicit approval if missing in a future environment |
@@ -116,9 +116,9 @@ Items or use patterns that conflict with safety, legality, TOS, or Ghoti's super
 
 ## Next Milestone Recommendations
 
-1. **N+2.8: RUFLO docs/license evaluation** — fill `14_context/external_repo_evaluation_template.md` for RUFLO before any clone/install decision.
-2. **N+2.9: AutoBrowser / Obscura comparison** — compare supervised browser-control candidates, legal/TOS boundaries, Windows feasibility, and sandbox needs.
-3. **N+3.0: PRD checklist skill or doc** — make every app/project idea start with a small PRD and safety boundary.
+1. **N+2.9: AutoBrowser read-only evaluation** — fill `14_context/external_repo_evaluation_template.md` for AutoBrowser (`LvcidPsyche/auto-browser`); compare with Obscura as supervised browser-control candidates; assess legal/TOS boundaries, Windows feasibility, and sandbox needs.
+2. **N+3.0: RUFLO isolated clone approval milestone** — if operator explicitly approves, clone RUFLO into `21_repos/third_party/ruflo-eval/`, run `npm audit`, inspect preinstall scripts and MCP tool descriptions for remaining injection risks, run no-network smoke test.
+3. **N+3.1: PRD checklist skill or doc** — make every app/project idea start with a small PRD and safety boundary.
 
 ## Current Status
 
@@ -128,3 +128,4 @@ Items or use patterns that conflict with safety, legality, TOS, or Ghoti's super
 - Runtime wired: NO
 - Paid/cloud services connected: NO
 - Clone/install approval granted: NO
+- RUFLO source/docs/license evaluated read-only: YES
