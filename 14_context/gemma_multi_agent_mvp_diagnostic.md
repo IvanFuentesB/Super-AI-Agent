@@ -16,7 +16,7 @@ Skipped.
 
 ```powershell
 > ollama --version
-ollama version is 0.21.2
+ollama version is 0.9.2
 
 > ollama list
 NAME    ID    SIZE    MODIFIED
