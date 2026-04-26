@@ -95,6 +95,7 @@ Items or use patterns that conflict with safety, legality, TOS, or Ghoti's super
 | Token saver MCP | MCP/tooling concept | Research next | Mentioned only; not wired | MCP integration could affect runtime | Docs-only review first |
 | Rust token killer | Tooling concept | Research next | Mentioned only; exact repo unknown | Native install/build risk | Identify exact repo; no install yet |
 | Legalize / legal AI agent law repos | Legal AI research | Research next | Mentioned only | Legal advice and filing risk | Research-only with disclaimers; no filings |
+| AI SEO / agent-trap / prompt-injection research | Safety/security/SEO concept | Research next | Mentioned only; no tools connected | Research target for understanding AI-indexed content, agent-visible SEO traps, and adversarial prompt injection in scraped content | Research-only; read public security/SEO research; capture safety patterns |
 | AI agent traps | Safety/security concept | Use soon | Mentioned only | Could involve adversarial examples | Capture as safety checklist |
 | Service arbitrage / local lead-gen ideas | Business research | Research next | Concept only | Spam/outreach/fake claim risk | Use `ghoti-business-research-safe`; draft only |
 | Real-estate wholesaling-style ideas | Business research | Watchlist | Concept only | Legal/regulatory/ethics risk; jurisdiction-specific | Research-only; no outreach/contracts |

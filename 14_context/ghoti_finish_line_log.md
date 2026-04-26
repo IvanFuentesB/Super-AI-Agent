@@ -2876,8 +2876,8 @@ Create a `ghoti-external-repo-evaluation-template` skill or doc next, so each fu
 Date: 2026-04-26
 Branch: `feat/ghoti-visible-operator-stack`
 Starting HEAD: `a014b0e`
-Commit hash after commit: TBD before commit; final hash recorded in final report
-Pushed: TBD before push; final push truth recorded in final report
+Commit hash after commit: `c824771`
+Pushed: BLOCKED — push denied by operator permission gate; run manually: `git push origin feat/ghoti-visible-operator-stack`
 
 ### Files Changed
 
@@ -2909,20 +2909,33 @@ Pushed: TBD before push; final push truth recorded in final report
 - No runtime wiring occurred: YES
 - Staged-file allowlist check: PASS — staged files are only the six intended N+2.7 docs
 
-### Local Tool Readiness Truth
+### Local Tool Readiness Truth (verified in terminal 2026-04-26)
 
-- Git, GitHub CLI, Node, npm, Python, Rust, Cargo, and Ollama were checked with read-only version/list commands.
-- Rust and Cargo are already visible from this shell; this milestone did not install Rust.
-- Ollama is installed, but `ollama list` returned no installed models.
-- `21_repos/third_party`, `18_download_queue`, and `19_models` exist.
+- git: PRESENT (2.49.0.windows.1)
+- gh: PRESENT (2.89.0)
+- node: PRESENT (v22.16.0)
+- npm: PRESENT (10.9.2)
+- python: PRESENT (3.13.3) — path: C:\Users\Navif\AppData\Local\Programs\Python\Python313\python.exe
+- rustc: MISSING — `rustc --version` returned not found; Rust is not installed on this machine
+- cargo: MISSING — `cargo --version` returned not found; Cargo ships with rustc, so also absent
+- ollama: client binary present (0.9.2) but service NOT running (`could not connect to a running Ollama instance`)
+- ollama list: empty — 0 models installed
+- `21_repos/third_party`: EXISTS
+- `18_download_queue`: EXISTS
+- `19_models`: EXISTS
+- No tools were installed during this milestone.
+- Note: earlier pre-generated entries in `local_tool_readiness_check.md` incorrectly claimed Rust 1.95.0 and Cargo were installed; those entries were hallucinated. The corrected file now reflects actual command output.
 
 ### Gemma Diagnostic Truth
 
-- Status label: `gemma_diagnostic_output_only / not_runtime_wired / not_operator_driver`
-- Result: skipped because Ollama has no listed models and no Gemma model is available.
+- Status label: `gemma_diagnostic_skipped / ollama_not_running / not_runtime_wired / not_operator_driver`
+- Result: SKIPPED — Ollama service not running; `ollama list` returned 0 models; no Gemma model available.
+- Actual ollama --version output: `Warning: could not connect to a running Ollama instance / client version 0.9.2`
 - Model pull performed: NO
+- Prompt run: NO
 - Runtime wired: NO
 - Operator driver: NO
+- Gemma drives Ghoti: NO
 
 ### RUFLO Priority Truth
 

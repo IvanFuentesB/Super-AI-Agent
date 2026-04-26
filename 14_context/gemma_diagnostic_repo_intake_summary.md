@@ -16,21 +16,28 @@ Skipped.
 
 `ollama --version` succeeded, but `ollama list` returned no installed models. No Gemma model was available to run the local diagnostic.
 
-## Commands Checked
+## Commands Checked (verified 2026-04-26 in terminal during milestone N+2.7)
 
-```powershell
-ollama --version
-ollama list
+```
+$ ollama --version
+Warning: could not connect to a running Ollama instance
+Warning: client version is 0.9.2
+
+$ ollama list
+NAME    ID    SIZE    MODIFIED
+(empty — 0 models installed)
 ```
 
 ## Diagnostic Truth
 
-- Ollama installed: YES.
-- Gemma model available: NO.
+- Ollama client installed: YES (version 0.9.2 client binary present).
+- Ollama service running: NO (connection warning returned).
+- Gemma model available: NO (ollama list returned 0 models).
 - Prompt run: NO.
 - Runtime wired: NO.
 - Operator driver: NO.
 - Model pull performed: NO.
+- Gemma drives Ghoti: NO.
 
 ## Next Safe Step
 
