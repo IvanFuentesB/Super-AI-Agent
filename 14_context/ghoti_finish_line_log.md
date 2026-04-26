@@ -3424,3 +3424,75 @@ Pushed: YES — confirmed `bb694f1` on `origin/feat/ghoti-visible-operator-stack
 ### Next Recommendation
 
 Implement native Ghoti `ActionIntent` + `CapabilityAdapter` contracts next, with proposed action state, adapter status model, action-bound approval creation, payload-bound approval consumption, audit trace, and dashboard read model. Do not execute external adapters yet.
+
+---
+
+## Milestone Run: N+3.1 Native ActionIntent + CapabilityAdapter Contracts + Approval-Bound Audit Trail + Dashboard Read Model
+
+Date: 2026-04-26
+Branch: `feat/ghoti-visible-operator-stack`
+Starting HEAD: `d6a31c5`
+Commit hash after commit: TBD before commit
+Pushed: TBD before push
+
+### Files Changed
+
+- Created/Updated: `01_projects/runtime_mvp/src/super_ai_agent/action_intent.py`
+- Updated: `01_projects/runtime_mvp/src/super_ai_agent/cli.py`
+- Updated: `01_projects/dashboard_mvp/server.js`
+- Created: `14_context/action_intent_capability_adapter_contracts.md`
+- Updated: `14_context/current_state.md`
+- Updated: `14_context/next_actions.md`
+- Updated: `14_context/ghoti_finish_line_log.md`
+
+### Validation Commands / Results
+
+- `git push origin feat/ghoti-visible-operator-stack`: PASS — reconciled prior N+3.0 finish-line-log commit `d6a31c5` to origin before N+3.1 work.
+- `python -m py_compile 01_projects/runtime_mvp/src/super_ai_agent/action_intent.py 01_projects/runtime_mvp/src/super_ai_agent/cli.py`: PASS.
+- `node --check 01_projects/dashboard_mvp/server.js`: PASS.
+- `python -m super_ai_agent.cli ghoti-action-intents`: PASS with supervised JSON envelope.
+- `python -m super_ai_agent.cli ghoti-action-intent-create ... summarize_local_file ...`: PASS — created intent `intent-89b28f2f8088439a833be7b9c59a835d` and approval `approval-50d39c97a9184df98a6932da56d33dd5`.
+- `python -m super_ai_agent.cli ghoti-approval-approve approval-50d39c97a9184df98a6932da56d33dd5`: PASS — existing approval bridge remained visible and manual-only.
+- `python -m super_ai_agent.cli ghoti-action-intent-consume intent-89b28f2f8088439a833be7b9c59a835d ...`: PASS — approval/payload/adapter matched, `execution_performed:false`.
+- Replay consume of the same intent: PASS — rejected with `intent_already_consumed`.
+- Blocked intent test with `cap_bypass`: PASS — rejected by safety policy with `forbidden_action_type`.
+- `GET /api/ghoti/action-intents` on local port `3222`: PASS — returned HTTP 200.
+- `GET /api/ghoti/pipeline-items` on local port `3222`: PASS — returned HTTP 200.
+- `GET /api/ghoti/control-center-state` on local port `3222`: PASS — returned HTTP 200.
+- `git check-ignore -v 01_projects/runtime_mvp/runtime_data/action_intents.json 01_projects/runtime_mvp/runtime_data/action_intent_audit.json`: PASS — runtime ActionIntent state is ignored by `.gitignore`.
+
+### Feature Truth
+
+- ActionIntent contract: `contract_created / approval_gated / local_only`.
+- CapabilityAdapter descriptors: `descriptor_only / can_execute_false / not_external_adapter_wired`.
+- Audit trail: `runtime_data_json / payload_hash_bound / not_committed`.
+- Dashboard read model: `read_only_api_route / cli_json_backed`.
+- Runtime wired adapters: NO.
+- External adapters wired: NO.
+- Autonomous actions added: NO.
+- Approval gates weakened: NO.
+
+### Dirty Files Intentionally Not Staged
+
+- `14_context/ghoti_external_repo_tool_intake.md` — pre-existing local modification from isolated clone audit notes; not part of N+3.1.
+- `21_repos/third_party/.gitkeep` — expected local/third-party marker dirt.
+- `.claude/skills/` — local Claude skills material.
+- `01_projects/mcp_server/test.txt` — scratch/test file.
+- `01_projects/runtime_mvp/src/super_ai_agent/action_audit.py` — pre-existing/untracked older N+3.1-style demo file using stale ActionIntent APIs; not staged.
+- `01_projects/runtime_mvp/src/super_ai_agent/action_demo.py` — pre-existing/untracked older demo file using stale ActionIntent APIs; not staged.
+- `01_projects/runtime_mvp/runtime_data/action_intents.json` — generated local runtime state; ignored and not committed.
+- `01_projects/runtime_mvp/runtime_data/action_intent_audit.json` — generated local runtime audit state; ignored and not committed.
+- `14_context/ghoti_current_prompt_N1_6.md` and `14_context/ghoti_current_prompt.md` if present — prompt scratch/handoff artifacts.
+- CV `.docx` files — local personal document artifacts.
+- `output/` — local output/screenshot artifacts.
+
+### What Remains Manual / Unproven
+
+- No real adapter execution exists yet.
+- No local-only adapter implementation exists beyond approval-bound consumption.
+- Dashboard UI panel for ActionIntent is not yet added; the dashboard backend read model route exists and is validated.
+- External operator candidates remain research-only.
+
+### Next Recommendation
+
+Implement one harmless local-only adapter that consumes an approved `ActionIntent` and writes a small repo-local artifact. This should prove the full chain without enabling browser, desktop, external service, or autonomous execution.

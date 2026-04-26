@@ -3543,6 +3543,11 @@ async function buildPipelineItemsResponse(statusFilter) {
   return buildCliSummaryResponse(raw, "Pipeline items");
 }
 
+async function buildActionIntentsResponse() {
+  const raw = await runRuntimeCli(["ghoti-action-intents"]);
+  return buildCliSummaryResponse(raw, "Action intents");
+}
+
 async function buildGithubUpdatesResponse() {
   const statusRaw = await runRuntimeCli(["github-status"]);
   const capabilityRaw = await runRuntimeCli(["github-remote-capability"]);
@@ -3661,6 +3666,18 @@ async function handleApiRequest(request, response, requestUrl) {
         label: "Viewed Ghoti pipeline items",
         status: payload.ok ? "success" : "error",
         summary: payload.ok ? `Pipeline items loaded${statusFilter ? ` (filter: ${statusFilter})` : ""}.` : "Pipeline items unavailable.",
+      });
+      sendJson(response, payload.ok ? 200 : 500, payload);
+      return;
+    }
+
+    if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/action-intents") {
+      const payload = await buildActionIntentsResponse();
+      pushAction({
+        actionType: "status",
+        label: "Viewed Ghoti action intents",
+        status: payload.ok ? "success" : "error",
+        summary: payload.ok ? "ActionIntent read model loaded." : "ActionIntent read model unavailable.",
       });
       sendJson(response, payload.ok ? 200 : 500, payload);
       return;

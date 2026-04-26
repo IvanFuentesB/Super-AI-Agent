@@ -41,6 +41,12 @@ from .relay_loop import (
     update_relay_loop_state,
 )
 from .notion_adapter import build_notion_update_plan
+from .action_intent import (
+    create_action_intent,
+    consume_action_intent,
+    get_action_intent_read_model,
+    list_capability_adapters,
+)
 from .control_center_state import get_full_control_center_state, get_pipeline_items_overview
 from .operator_loop import (
     APPROVAL_INBOX_PATH,
@@ -850,6 +856,21 @@ def _build_parser() -> argparse.ArgumentParser:
         choices=["pending", "approved", "rejected", "ready", "reviewed"],
         default=None,
     )
+    action_intents_parser = subparsers.add_parser("ghoti-action-intents")
+    action_intents_parser.add_argument("--limit", type=int, default=20)
+    subparsers.add_parser("ghoti-capability-adapters")
+    action_intent_create_parser = subparsers.add_parser("ghoti-action-intent-create")
+    action_intent_create_parser.add_argument("--requested-by-agent", default="operator")
+    action_intent_create_parser.add_argument("--adapter-id", default="native-demo-adapter")
+    action_intent_create_parser.add_argument("--action-type", required=True)
+    action_intent_create_parser.add_argument("--target", default="")
+    action_intent_create_parser.add_argument("--payload-json", default="{}")
+    action_intent_create_parser.add_argument("--reason", default="")
+    action_intent_consume_parser = subparsers.add_parser("ghoti-action-intent-consume")
+    action_intent_consume_parser.add_argument("intent_id")
+    action_intent_consume_parser.add_argument("--adapter-id", required=True)
+    action_intent_consume_parser.add_argument("--action-type", required=True)
+    action_intent_consume_parser.add_argument("--payload-json", default="{}")
     subparsers.add_parser("ghoti-hotkeys")
     subparsers.add_parser("ghoti-recent")
 
@@ -1721,6 +1742,134 @@ def main(argv: list[str] | None = None) -> int:
             )
             _emit_supervised_json("ghoti_pipeline_items:", payload)
             return 0 if overview.get("status") in {"ok", "partial"} else 1
+
+        if args.command == "ghoti-action-intents":
+            state = get_action_intent_read_model(getattr(args, "limit", 20))
+            payload = _build_supervised_payload(
+                status=state.get("status", "unknown"),
+                summary=state.get("summary", {}),
+                items=state.get("intents", []) if state.get("status") != "error" else [],
+                errors=[state.get("reason", "unknown")] if state.get("status") == "error" and state.get("reason") else [],
+                adapters=state.get("adapters", []),
+                audit=state.get("audit", []),
+                honest_status=state.get("honest_status", {}),
+            )
+            _emit_supervised_json("ghoti_action_intents:", payload)
+            return 0 if state.get("status") == "ok" else 1
+
+        if args.command == "ghoti-capability-adapters":
+            adapters = list_capability_adapters()
+            payload = _build_supervised_payload(
+                status="ok",
+                summary={
+                    "adapter_count": len(adapters),
+                    "runtime_wired_adapters": sum(1 for adapter in adapters if adapter.get("can_execute") is True),
+                    "external_adapters_wired": False,
+                    "autonomous_execution": False,
+                },
+                items=adapters,
+                adapters=adapters,
+            )
+            _emit_supervised_json("ghoti_capability_adapters:", payload)
+            return 0
+
+        if args.command == "ghoti-action-intent-create":
+            try:
+                payload_json = json.loads(args.payload_json)
+                if not isinstance(payload_json, dict):
+                    raise ValueError("payload_json_must_be_object")
+            except (json.JSONDecodeError, ValueError) as exc:
+                payload = _build_supervised_payload(
+                    status="error",
+                    summary={"headline": "ActionIntent create failed.", "reason": f"invalid_payload_json: {exc}"},
+                    errors=[f"invalid_payload_json: {exc}"],
+                )
+                _emit_supervised_json("ghoti_action_intent_create:", payload)
+                return 1
+            result = create_action_intent(
+                requested_by_agent=args.requested_by_agent,
+                adapter_id=args.adapter_id,
+                action_type=args.action_type,
+                target=args.target,
+                payload=payload_json,
+                reason=args.reason,
+                audit_tags=["cli_created"],
+            )
+            intent = result.get("intent") if isinstance(result.get("intent"), dict) else None
+            approval_item = result.get("approval_item") if isinstance(result.get("approval_item"), dict) else None
+            status = result.get("status", "unknown")
+            headline = (
+                "ActionIntent created and approval item opened."
+                if status == "ok" and approval_item
+                else "ActionIntent blocked by safety policy."
+                if status == "blocked"
+                else result.get("reason", "ActionIntent create failed.")
+            )
+            payload = _build_supervised_payload(
+                status=status,
+                summary={
+                    "headline": headline,
+                    "intent_id": intent.get("intent_id") if intent else None,
+                    "approval_id": approval_item.get("id") if approval_item else None,
+                    "risk_level": intent.get("risk_level") if intent else None,
+                    "intent_status": intent.get("status") if intent else None,
+                    "approval_bound": bool(result.get("approval_bound", False)),
+                    "payload_bound": bool(result.get("payload_bound", True)),
+                    "execution_performed": False,
+                },
+                item=intent,
+                errors=result.get("intent", {}).get("errors", []) if status == "blocked" else ([result.get("reason", "unknown")] if status == "error" and result.get("reason") else []),
+                approval_item=approval_item,
+                execution_performed=False,
+            )
+            _emit_supervised_json("ghoti_action_intent_create:", payload)
+            return 0 if status == "ok" else 1
+
+        if args.command == "ghoti-action-intent-consume":
+            try:
+                payload_json = json.loads(args.payload_json)
+                if not isinstance(payload_json, dict):
+                    raise ValueError("payload_json_must_be_object")
+            except (json.JSONDecodeError, ValueError) as exc:
+                payload = _build_supervised_payload(
+                    status="error",
+                    summary={"headline": "ActionIntent consume failed.", "reason": f"invalid_payload_json: {exc}"},
+                    errors=[f"invalid_payload_json: {exc}"],
+                )
+                _emit_supervised_json("ghoti_action_intent_consume:", payload)
+                return 1
+            result = consume_action_intent(
+                intent_id=args.intent_id,
+                adapter_id=args.adapter_id,
+                action_type=args.action_type,
+                payload=payload_json,
+            )
+            intent = result.get("intent") if isinstance(result.get("intent"), dict) else None
+            status = result.get("status", "unknown")
+            headline = (
+                "ActionIntent approval consumed. No adapter execution performed."
+                if status == "ok"
+                else result.get("reason", "ActionIntent consume failed.")
+            )
+            payload = _build_supervised_payload(
+                status=status,
+                summary={
+                    "headline": headline,
+                    "intent_id": args.intent_id,
+                    "adapter_id": args.adapter_id,
+                    "approval_bound": bool(result.get("approval_bound", False)),
+                    "payload_bound": bool(result.get("payload_bound", False)),
+                    "execution_performed": False,
+                    "reason": result.get("reason", ""),
+                },
+                item=intent,
+                errors=[result.get("reason", "unknown")] if status != "ok" and result.get("reason") else [],
+                approval_item=result.get("approval_item") if isinstance(result.get("approval_item"), dict) else None,
+                execution_performed=False,
+                next_required_step=result.get("next_required_step", ""),
+            )
+            _emit_supervised_json("ghoti_action_intent_consume:", payload)
+            return 0 if status == "ok" else 1
 
         if args.command == "ghoti-manual-queue-mark-reviewed":
             result = update_manual_queue_item_review(args.item_id, args.note)

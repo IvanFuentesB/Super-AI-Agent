@@ -197,3 +197,6 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - The multi-agent MVP can run five deterministic repo-local agents concurrently, write per-agent artifacts, update compact shared memory, and create a supervisor summary under `05_logs/multi_agent_runs`
 - Multi-agent shared memory now exists at `14_context/multi_agent_shared_memory.json`
 - The multi-agent MVP is not autonomous, does not call external services, does not install/clone/build external tools, and does not wire RUFLO, AutoBrowser, Obscura, Browser Use, or Gemma into runtime
+- Native `ActionIntent` and `CapabilityAdapter` contracts now exist at `01_projects/runtime_mvp/src/super_ai_agent/action_intent.py`
+- ActionIntent creation opens an approval inbox item, consumption requires approved action/payload/adapter matches, replay consumption is rejected, and no adapter execution is performed
+- Dashboard backend exposes the read-only ActionIntent read model at `/api/ghoti/action-intents`
