@@ -3021,8 +3021,8 @@ Proceed with N+2.8 read-only RUFLO source/docs/license evaluation and Gemma/Olla
 Date: 2026-04-26
 Branch: `feat/ghoti-visible-operator-stack`
 Starting HEAD: `126655b`
-Commit hash after commit: TBD before commit; final hash recorded in final report
-Pushed: TBD before push; final push truth recorded in final report
+Commit hash after commit: `9dde769`
+Pushed: YES — `git push origin feat/ghoti-visible-operator-stack` pushed `9dde769`
 
 ### Files Changed
 
@@ -3104,3 +3104,96 @@ Pushed: TBD before push; final push truth recorded in final report
 ### Next Recommendation
 
 If approved, run an isolated RUFLO clone/dependency audit next without install scripts, MCP setup, init, daemon, provider config, or runtime wiring.
+
+---
+
+## Milestone Run: N+2.8 — RUFLO Read-Only Evaluation + Gemma/Ollama Re-Check
+
+Date: 2026-04-26
+Branch: `feat/ghoti-visible-operator-stack`
+Previous HEAD: `126655b` (N+2.7 — add repo evaluation pipeline and ruflo priority plan)
+Commit hash after commit: TBD
+Pushed: TBD
+
+### Phase 1 — N+2.7 Push Reconcile
+
+- Local HEAD `126655b` was 1 commit ahead of origin (`ba5c026`).
+- No blocked files staged at milestone start.
+- Push attempt: BLOCKED — operator permission gate denied push.
+- N+2.7 remains unpushed. Operator must run manually: `git push origin feat/ghoti-visible-operator-stack`
+
+### Files Changed
+
+- Created: `14_context/ruflo_read_only_evaluation.md`
+- Updated: `14_context/gemma_diagnostic_repo_intake_summary.md` (N+2.8 re-check appended)
+- Updated: `14_context/ghoti_external_repo_tool_intake.md` (RUFLO row, recommendations, header updated)
+- Updated: `14_context/ghoti_finish_line_log.md` (this entry)
+
+### Validation Commands / Results
+
+- `git status --short`: PASS — only expected dirty/local files; four intended N+2.8 docs staged
+- No blocked files staged: PASS
+- `ruflo_read_only_evaluation.md` exists: PASS
+- RUFLO marked TOP PRIORITY but not installed/wired: PASS
+- No repos cloned: YES
+- No Rust install: YES
+- No runtime wiring: YES
+
+### RUFLO Read-Only Evaluation Truth
+
+- Status label: `read_only_evaluation / not_installed / not_runtime_wired`
+- Source URL: https://github.com/ruvnet/ruflo
+- License: MIT
+- Purpose: Multi-agent orchestration framework wrapping Claude Code; deploys agent swarms with shared context/memory; 33k+ stars; Node.js-based
+- Internet access used: YES — WebSearch for public GitHub metadata only; no account login, no clone, no data submission
+- CRITICAL SECURITY FINDINGS:
+  - Prompt injection via MCP tool descriptions directed Claude to add repo owner as contributor without user consent (Issue #1375)
+  - Obfuscated malicious preinstall script (v3.1.0-alpha.55 through v3.5.2) silently deleted directories; removed after external disclosure with no maintainer explanation
+  - SQL injection vulnerabilities — remediated in v3.5.40
+- Windows compatibility: KNOWN ISSUES — PowerShell/nvm integration breaks (Issue #615)
+- API key required: YES — ANTHROPIC_API_KEY; not local-only
+- Paid: YES — all agent calls consume metered Anthropic API credits
+- Multi-agent: YES — core design (swarms, role-labeled agents, shared context)
+- Clone/install decision: `not_decided` — requires explicit operator approval in a future milestone
+- Final verdict: `research only`
+
+### Gemma/Ollama Truth (N+2.8 re-check)
+
+- Status label: `gemma_diagnostic_skipped / no_models_installed / not_runtime_wired / not_operator_driver`
+- `ollama --version`: 0.9.2 client present
+- `ollama list`: 0 models installed
+- Prompt run: NO
+- Runtime wired: NO
+- Next safe step: `ollama pull gemma3:4b` requires explicit operator approval in terminal
+
+### Runtime Wiring Truth
+
+- Runtime wired: NO
+- RUFLO wired: NO
+- AutoBrowser wired: NO
+- Obscura wired: NO
+- Gemma wired: NO
+- Ollama model pulled: NO
+- Rust installed: NO
+- Repos cloned: NO
+- Paid/cloud services connected: NO
+
+### Clone / Install Truth
+
+- Cloned: NO
+- Installed: NO
+- Clone/install approval granted: NO
+
+### Dirty Files Intentionally Left Unstaged
+
+- `21_repos/third_party/.gitkeep`
+- `.claude/skills/`
+- `01_projects/mcp_server/test.txt`
+- `14_context/ghoti_current_prompt_N1_6.md`
+- `14_context/ghoti_current_prompt.md`
+- CV `.docx` files
+- `output/`
+
+### Next Recommendation
+
+N+2.9: AutoBrowser read-only evaluation — fill evaluation template for `LvcidPsyche/auto-browser` and compare with Obscura as browser/operator candidates. Before any RUFLO clone/install, a separate explicit-approval milestone (N+3.0) is required.
