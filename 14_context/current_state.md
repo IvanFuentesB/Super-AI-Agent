@@ -147,6 +147,8 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - The visible operator stack now exists in both dashboard and CLI, and the next practical step is to validate the new specialist-role, browser-capability, and compact-memory truth in that same operator surface instead of pretending a multi-agent browser stack already exists
 - The visible supervised desktop-operator foundation now exists, so the next practical step is to validate real operator use of the target marker, controlled typing, and desktop-action truth before widening autonomy
 - Pull the configured Gemma model into Ollama before claiming live local inference readiness
+- Use the native multi-agent MVP as the first visible proof of concurrent local agents before widening into external adapters
+- Build native `ActionIntent` and `CapabilityAdapter` contracts before any external browser or orchestration integration
 - Decide the first narrow task path that should intentionally call the local brain later, but keep the provider layer separable from approvals, dashboard, recipes, and executor control
 - Install Browser Use later only when a real browser-role task path is ready to use it honestly
 - Keep Playwright as the current deterministic browser-control fallback while Browser Use remains absent
@@ -191,3 +193,7 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Task history is large and noisy even after the first filter pass, and the operator console still needs better operator-facing filtering so stale failures do not crowd current work
 - Third-party intake repos are valuable comparison material, but most of their surface area is still too heavy to adopt directly
 - Ollama is available locally in this environment, but `ollama list` is currently empty, so the configured Gemma model cannot actually run yet
+- Native Ghoti multi-agent MVP now exists at `01_projects/runtime_mvp/src/super_ai_agent/multi_agent_mvp.py`
+- The multi-agent MVP can run five deterministic repo-local agents concurrently, write per-agent artifacts, update compact shared memory, and create a supervisor summary under `05_logs/multi_agent_runs`
+- Multi-agent shared memory now exists at `14_context/multi_agent_shared_memory.json`
+- The multi-agent MVP is not autonomous, does not call external services, does not install/clone/build external tools, and does not wire RUFLO, AutoBrowser, Obscura, Browser Use, or Gemma into runtime

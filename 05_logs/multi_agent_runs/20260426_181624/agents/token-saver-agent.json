@@ -1,0 +1,14 @@
+{
+  "agent_id": "token-saver-agent",
+  "artifacts": [
+    "05_logs/multi_agent_runs/20260426_181624/agents/token-saver-agent.md"
+  ],
+  "errors": [
+    "cap bypass / usage-limit evasion"
+  ],
+  "finished_at": "2026-04-26T18:16:24Z",
+  "memory_updates": {},
+  "started_at": "2026-04-26T18:16:24Z",
+  "status": "skipped",
+  "summary": "Skipped by safety gate: cap bypass / usage-limit evasion."
+}

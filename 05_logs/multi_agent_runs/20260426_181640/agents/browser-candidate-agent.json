@@ -1,0 +1,23 @@
+{
+  "agent_id": "browser-candidate-agent",
+  "artifacts": [
+    "05_logs/multi_agent_runs/20260426_181640/agents/browser-candidate-agent.md"
+  ],
+  "errors": [],
+  "finished_at": "2026-04-26T18:16:40Z",
+  "memory_updates": {
+    "candidate_tools": {
+      "auto_browser": "best_next_external_browser_candidate_after_action_intent",
+      "obscura": "research_only_do_not_integrate_now"
+    },
+    "compact_findings": [
+      {
+        "finding": "Auto Browser aligns best with supervised browser control; Obscura should not be first adapter.",
+        "source": "browser-candidate-agent"
+      }
+    ]
+  },
+  "started_at": "2026-04-26T18:16:40Z",
+  "status": "done",
+  "summary": "Auto Browser is the best future browser candidate; Obscura remains research-only due stealth/scraping posture."
+}

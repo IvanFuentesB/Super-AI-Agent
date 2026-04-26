@@ -3318,3 +3318,109 @@ Pushed: TBD before push; final push truth recorded in final report
 ### Next Recommendation
 
 Implement the native Ghoti action-intent contract next: proposed action state, adapter status model, action-bound approval creation, payload-bound approval consumption, audit trace, and dashboard read model. No adapter execution yet.
+
+---
+
+## Milestone Run: N+3.0 Native Ghoti Multi-Agent Runtime MVP + Shared Memory + Token-Saving Foundation
+
+Date: 2026-04-26
+Branch: `feat/ghoti-visible-operator-stack`
+Starting HEAD: `abecc94`
+Commit hash after commit: TBD before commit; final hash recorded in final report
+Pushed: TBD before push; final push truth recorded in final report
+
+### Files Changed
+
+- Created: `01_projects/runtime_mvp/src/super_ai_agent/multi_agent_mvp.py`
+- Created: `14_context/ghoti_token_saving_and_agent_context_plan.md`
+- Created: `14_context/claude_agents_parallel_workflow_plan.md`
+- Created: `14_context/gemma_multi_agent_mvp_diagnostic.md`
+- Created: `14_context/multi_agent_shared_memory.json`
+- Created: `05_logs/multi_agent_runs/20260426_181624/`
+- Created: `05_logs/multi_agent_runs/20260426_181640/`
+- Created: `05_logs/multi_agent_runs/20260426_181701/`
+- Updated: `14_context/current_state.md`
+- Updated: `14_context/next_actions.md`
+- Updated: `14_context/ghoti_finish_line_log.md`
+
+### Validation Commands / Results
+
+- `git status --short`: PASS — expected dirty/local files plus intentional N+3.0 files are present
+- `git diff --check`: PASS — no whitespace errors; Git reported LF-to-CRLF working-copy warnings for markdown files
+- `python -m py_compile 01_projects/runtime_mvp/src/super_ai_agent/multi_agent_mvp.py`: PASS
+- `python 01_projects/runtime_mvp/src/super_ai_agent/multi_agent_mvp.py`: PASS on final run `20260426_181701`
+- `ollama --version`: PASS — `ollama version is 0.21.2`
+- `ollama list`: PASS — command returned no installed models
+- Staged-file allowlist check: PASS — staged files are only the intentional N+3.0 runner, docs, shared memory, and small run artifacts
+
+### Multi-Agent Run Truth
+
+- MVP runner: `01_projects/runtime_mvp/src/super_ai_agent/multi_agent_mvp.py`
+- Final validated run id: `20260426_181701`
+- Artifact path: `05_logs/multi_agent_runs/20260426_181701`
+- Supervisor summary: `05_logs/multi_agent_runs/20260426_181701/supervisor_summary.md`
+- Agents completed:
+  - `ruflo-review-agent`: done
+  - `browser-candidate-agent`: done
+  - `memory-agent`: done
+  - `token-saver-agent`: done
+  - `implementation-planner-agent`: done
+- Concurrency truth: runner uses `asyncio.gather` with explicit scheduling points; each agent writes separate markdown and JSON artifacts.
+- First run `20260426_181624` skipped token-saver due an over-broad safety regex matching the phrase "without cap bypass"; the task wording was narrowed and rerun.
+- Second run `20260426_181640` completed all agents.
+- Final run `20260426_181701` completed all agents after shared-memory dedupe logic was added.
+
+### Shared Memory Truth
+
+- Shared memory file: `14_context/multi_agent_shared_memory.json`
+- Format: compact JSON.
+- Contents: project truths, current priorities, blocked actions, candidate tool statuses, compact findings, and `last_updated`.
+- Memory is compact and file-backed; it stores findings and paths, not full transcripts.
+
+### Token-Saving Truth
+
+- Token-saving plan: `14_context/ghoti_token_saving_and_agent_context_plan.md`
+- Status label: `token_saving_plan / legal_context_management_only / not_cap_bypass`
+- Implemented patterns: compact memory, per-agent tasks, file-backed artifacts, supervisor summaries, file references.
+- Forbidden patterns remain blocked: provider quota/cap bypass, fake accounts, hidden usage evasion, deleting/modifying provider limit storage.
+
+### Claude Agents Plan Truth
+
+- Plan file: `14_context/claude_agents_parallel_workflow_plan.md`
+- Status label: `future_agent_plan / not_runtime_wired / manual_handoff_only`
+- It defines future roles such as `repo-cartographer`, `safety-gatekeeper`, `implementation-planner`, `test-runner`, `doc-finisher`, `external-repo-auditor`, and `token-budget-keeper`.
+- It is not wired into Claude Code, Codex, dashboard, MCP, or runtime execution.
+
+### Gemma Diagnostic Truth
+
+- Diagnostic file: `14_context/gemma_multi_agent_mvp_diagnostic.md`
+- Status label: `gemma_diagnostic_skipped / no_models_installed / not_runtime_wired / not_operator_driver`
+- Ollama is installed, but `ollama list` returned no installed models.
+- Prompt run: NO
+- Model pull: NO
+- Gemma drives Ghoti: NO
+
+### Runtime Wiring Truth
+
+- Native deterministic multi-agent runner exists and was validated locally.
+- External repos/tools wired: NO
+- Dashboard integration: deferred; the CLI/demo runner was safer and sufficient for this milestone.
+- Autonomous actions added: NO
+- Paid/cloud services connected: NO
+- Third-party clone/install/build performed: NO
+- Approval gates weakened: NO
+
+### Dirty Files Intentionally Not Staged
+
+- `14_context/ghoti_external_repo_tool_intake.md` — pre-existing local modification from isolated clone audit notes; not part of this N+3.0 implementation slice
+- `21_repos/third_party/.gitkeep` — expected local/third-party marker dirt
+- `.claude/skills/` — local Claude skills material
+- `01_projects/mcp_server/test.txt` — scratch/test file
+- `14_context/ghoti_current_prompt_N1_6.md` — prompt scratch/handoff artifact
+- `14_context/ghoti_current_prompt.md` — live/stale prompt file if present
+- CV `.docx` files — local personal document artifacts
+- `output/` — local output/screenshot artifacts
+
+### Next Recommendation
+
+Implement native Ghoti `ActionIntent` + `CapabilityAdapter` contracts next, with proposed action state, adapter status model, action-bound approval creation, payload-bound approval consumption, audit trace, and dashboard read model. Do not execute external adapters yet.

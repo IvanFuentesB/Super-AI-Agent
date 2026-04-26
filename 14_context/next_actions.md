@@ -5,6 +5,9 @@
 - Manually validate visible mouse aiming, clicking, waiting, and controlled one-line typing with the new overlay cue before adding broader desktop behaviors
 - Confirm that `type_text` stays narrow: explicit allowlisted target only, no freeform broad typing, and no auto-submit unless a later recipe explicitly opts in
 - Pull the configured Gemma model into Ollama and rerun `python -m super_ai_agent.cli brain-status` until `brain_inference_ready: yes` is true
+- Run `python 01_projects/runtime_mvp/src/super_ai_agent/multi_agent_mvp.py` when a visible local multi-agent coordination demo is needed
+- Implement native `ActionIntent` + `CapabilityAdapter` next, before wiring AutoBrowser, RUFLO, Obscura, Browser Use, or any external operator candidate
+- Keep multi-agent shared memory compact and file-backed; cite run artifacts instead of pasting large summaries into prompts
 - Choose one narrow approval-aware task path later that should explicitly call the local brain so `current_task_used_model_inference` can become true for real work instead of remaining a dashboard-only truth field
 - Keep the provider/model layer swappable so Gemma local can be the default local brain without locking the operator core to a single vendor or model
 - Keep the floating overlay, target marker, and Operator Watchdog visible during manual desktop and handoff validation so wrong-window blocks and stalled work are obvious immediately
