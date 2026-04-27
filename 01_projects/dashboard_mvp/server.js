@@ -5533,6 +5533,62 @@ async function handleApiRequest(request, response, requestUrl) {
     return;
   }
 
+  // GET /api/ghoti/computer-use/candidates — read-only CUA candidate status (N+3.4)
+  if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/computer-use/candidates") {
+    sendJson(response, 200, {
+      ok: true,
+      candidates: {
+        cua_driver: {
+          status: "descriptor_only",
+          runtime_wired: false,
+          adapter_id: "cua-driver-reference",
+          source: "github.com/trycua/cua",
+          windows_compatible: false,
+          notes: "Canonical trycua/cua requires macOS/Apple Silicon (Lume). Windows alternative needed.",
+          sandbox_profile: "23_configs/cua_sandbox_profile.example.json",
+          evaluation_doc: "14_context/cua_trycua_exact_source_evaluation.md",
+        },
+        screenpipe: {
+          status: "retention_plan_only",
+          runtime_wired: false,
+          capture_started: false,
+          notes: "3-day retention policy defined. Cleanup script at 03_scripts/screenpipe_retention_cleanup.ps1. No capture started.",
+          plan_doc: "14_context/screenpipe_local_capture_plan.md",
+        },
+        obscura: {
+          status: "runtime_verified",
+          runtime_wired: false,
+          build_path: "C:/tmp/obscura_build/release/obscura.exe",
+          cdp_confirmed: true,
+          stealth_used: false,
+          notes: "Binary built outside repo in N+3.2. CDP confirmed. Not wired into Ghoti runtime.",
+          verification_doc: "14_context/obscura_runtime_verification.md",
+        },
+        autobrowser: {
+          status: "cloned_audited",
+          runtime_wired: false,
+          clone_path: "21_repos/third_party/evals/auto-browser",
+          docker_run: false,
+          notes: "Cloned and audited in N+2.9. Most aligned with Ghoti supervised browser model. No Docker run yet.",
+          audit_doc: "14_context/autobrowser_isolated_clone_audit.md",
+        },
+        ruflo: {
+          status: "research_only",
+          runtime_wired: false,
+          clone_path: "21_repos/third_party/evals/ruflo",
+          npm_install: false,
+          risk: "high",
+          notes: "Prior security incidents. 314 MCP tools. No install. Not wired.",
+          audit_doc: "14_context/ruflo_isolated_clone_audit.md",
+        },
+      },
+      runtime_wiring_truth: "no_computer_use_adapter_wired",
+      autonomous_execution_enabled: false,
+      updated_at_utc: new Date().toISOString(),
+    });
+    return;
+  }
+
   if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/models/status") {
     const status = await getModelInventoryStatus();
     sendJson(response, 200, status);

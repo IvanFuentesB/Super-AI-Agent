@@ -316,6 +316,33 @@ _DEFAULT_SEEDS = [
         risk_level="low",
         notes="Vault created at 14_context/obsidian_vault/ in N+3.3. Use vault notes to reduce token usage.",
     ),
+    dict(
+        title="CUA exact source confirmed — trycua/cua canonical repo evaluated",
+        wait_type="external_result",
+        repo_relative_context="14_context/cua_trycua_exact_source_evaluation.md",
+        resume_command="(evaluation complete — see cua_trycua_exact_source_evaluation.md; Windows incompatible with canonical Lume layer; identify Docker-based alternative)",
+        approval_required=False,
+        risk_level="low",
+        notes="Canonical source github.com/trycua/cua identified in N+3.4. macOS/Apple Silicon only. Windows alternative needed before any install.",
+    ),
+    dict(
+        title="CUA sandbox profile operator approval — review 23_configs/cua_sandbox_profile.example.json",
+        wait_type="user_approval",
+        repo_relative_context="23_configs/cua_sandbox_profile.example.json",
+        resume_command="(manual — operator reviews sandbox profile, confirms enabled=false, approves first screenshot-only test)",
+        approval_required=True,
+        risk_level="high",
+        notes="Profile created in N+3.4. enabled=false. Screenshots only. Click/type disabled. No live accounts. Retention 3 days.",
+    ),
+    dict(
+        title="First screenshot-only CUA sandbox smoke test",
+        wait_type="user_approval",
+        repo_relative_context="14_context/cua_sandbox_profile_plan.md",
+        resume_command="(manual — operator confirms CUA driver installed in sandbox, approves first observe-only action against local test page)",
+        approval_required=True,
+        risk_level="high",
+        notes="Smoke test: screenshot only, local test page, no click, no type, no live account. Audit log entry required.",
+    ),
 ]
 
 

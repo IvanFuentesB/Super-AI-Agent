@@ -3780,3 +3780,55 @@ Stats: proposed:5 / approved:4 / blocked:1 / consumed:4
 ### Next Recommendation
 
 Evaluate AutoBrowser as the first external browser adapter in a dedicated milestone with explicit user approval.
+
+---
+
+## Milestone Run: N+3.4 CUA Source Evaluation + Sandbox Profile + No-Execution Adapter Descriptor
+
+Date: 2026-04-27
+Branch: feat/ghoti-visible-operator-stack
+Previous HEAD: ad022a0
+Status: `cua_source_evaluated / sandbox_profile_created / adapter_descriptor_added / dashboard_route_added / no_runtime_wiring`
+
+### Actions taken
+
+| Action | Result |
+|--------|--------|
+| Phase 1: Repo truth | PASS — branch feat/ghoti-visible-operator-stack, local=origin=ad022a0, no staged files at start |
+| Phase 2: Three cloned repos truth | PASS — RUFLO (01070ed), AutoBrowser (e646a48), Obscura (99e75f1 + built to C:\tmp) — all not runtime-wired; doc at three_repo_clone_usage_truth_n3_4.md |
+| Phase 3: Untracked audit docs triage | PASS — 5 docs marked for commit; triage doc at untracked_audit_docs_triage_n3_4.md |
+| Phase 4: CUA/TryCUA exact source evaluation | PASS — canonical github.com/trycua/cua identified; Windows-incompatible (macOS/Apple Silicon only); no install; doc at cua_trycua_exact_source_evaluation.md |
+| Phase 5: CUA sandbox profile | PASS — example JSON at 23_configs/cua_sandbox_profile.example.json; plan at cua_sandbox_profile_plan.md |
+| Phase 6: No-execution CUA adapter descriptor | PASS — cua-driver-reference added to action_intent.py; descriptor_only, can_execute=false |
+| Phase 7: Dashboard read model | PASS — GET /api/ghoti/computer-use/candidates added to server.js; static JSON, all candidates not wired |
+| Phase 8: Wait/resume update | PASS — 3 new N+3.4 seeds added to wait_resume_supervisor.py (CUA source confirmed, sandbox profile approval, smoke test); total default seeds: 15 |
+| Phase 9: State docs | PASS — current_state.md, next_actions.md, ghoti_finish_line_log.md updated |
+| Phase 10: Validation | PASS — all checks below |
+
+### Validation results
+
+| Check | Result |
+|-------|--------|
+| AST parse — action_intent.py | PASS |
+| AST parse — wait_resume_supervisor.py | PASS |
+| node --check server.js | PASS |
+| python -m json.tool — cua_sandbox_profile.example.json | PASS |
+| git diff --check | WARNING — trailing whitespace in server.js additions (Windows CRLF artifact, non-blocking, consistent with prior milestones) |
+| wait_resume_supervisor.py direct run | PASS — 12 active pending items (existing file not re-seeded; new seeds active for next fresh init) |
+| External adapter execution | NO — no CUA install, no Screenpipe capture, no live accounts |
+| Blocked files staged | NO — CVs, .claude/skills/, output/, prompt files, third-party repo contents all excluded |
+
+### Feature Truth
+
+- CUA exact source: `github.com/trycua/cua / MIT / macOS-only / not_installed / not_runtime_wired`
+- CUA sandbox profile: `23_configs/cua_sandbox_profile.example.json / example_only / enabled=false`
+- CUA adapter descriptor: `cua-driver-reference / descriptor_only / can_execute=false`
+- Dashboard computer-use route: `GET /api/ghoti/computer-use/candidates / read_only / static_json`
+- Three repos truth: `ruflo + autobrowser + obscura / all not_runtime_wired`
+- Untracked docs committed: `ruflo + autobrowser + obscura audits + next_implementation_plan + gemma_triage`
+- Wait/resume seeds: 15 default (12 from N+3.3, 3 new in N+3.4)
+- External adapters wired: NO
+
+### Next Recommendation
+
+Identify a Windows-compatible CUA path (Docker-based cua-agent or AutoBrowser) and evaluate AutoBrowser Docker run as the first supervised browser milestone.

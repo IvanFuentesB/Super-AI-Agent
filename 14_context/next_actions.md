@@ -56,3 +56,7 @@
 - Keep the business-outreach review scaffold planning-only until identification, drafting, review, and approval checkpoints are each explicit
 - Add a real notification channel later
 - Expand the executor layer later only if each new action stays allowlisted, workspace-bound, and approval-aware
+- Identify a Windows-compatible CUA alternative (Docker-based cua-agent or AutoBrowser as supervised CUA path); canonical trycua/cua requires macOS/Apple Silicon and cannot run on Windows
+- Request operator approval to enable the CUA sandbox profile before any CUA driver evaluation begins; review `23_configs/cua_sandbox_profile.example.json` first
+- Run first screenshot-only CUA sandbox smoke test against local test page only, with ActionIntent approval gate, after operator approves sandbox profile
+- Evaluate AutoBrowser Docker run as the next supervised browser milestone (requires Docker Desktop confirmation and operator approval)

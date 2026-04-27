@@ -258,6 +258,25 @@ def list_capability_adapters() -> list[dict]:
             external_service_required=True,
             notes="Research only. Stealth/scraping capabilities carry TOS/legal risk and are not wired.",
         ),
+        CapabilityAdapterDescriptor(
+            adapter_id="cua-driver-reference",
+            display_name="CUA Driver / TryCUA Reference Adapter",
+            status="descriptor_only",
+            can_execute=False,
+            supported_capabilities=["observe_screen", "propose_click", "propose_type"],
+            allowed_actions=[],
+            forbidden_actions=sorted(FORBIDDEN_ACTION_TYPES),
+            requires_human_approval=True,
+            external_service_required=True,
+            notes=(
+                "Sandbox-only descriptor. risk_level=high. No live accounts, no runtime wiring, no execution. "
+                "Canonical source: github.com/trycua/cua (MIT license; macOS/Apple Silicon only — "
+                "incompatible with current Windows host). "
+                "Supported action types: observe_screen, propose_click, propose_type — all disabled until sandbox approval. "
+                "Sandbox profile: 23_configs/cua_sandbox_profile.example.json. "
+                "Evaluation: 14_context/cua_trycua_exact_source_evaluation.md."
+            ),
+        ),
     ]
     return [adapter.to_dict() for adapter in adapters]
 
