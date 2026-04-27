@@ -361,6 +361,33 @@ _DEFAULT_SEEDS = [
         risk_level="medium",
         notes="All local CUA paths blocked: Lume=macOS-only, Windows Sandbox=Pro/Enterprise, Docker=not installed, WSL=not installed. Docker Desktop is the lowest-risk unlocker on Windows 11 Home.",
     ),
+    dict(
+        title="Docker Desktop install approval for CUA sandbox (N+3.6)",
+        wait_type="user_approval",
+        repo_relative_context="14_context/docker_desktop_cua_install_gate_n3_6.md",
+        resume_command="(manual — user must type: APPROVE DOCKER DESKTOP INSTALL FOR CUA SANDBOX)",
+        approval_required=True,
+        risk_level="high",
+        notes="Gate doc created N+3.6. Risks: admin install, WSL2 backend, background services, disk/network usage, container permissions. No install until exact approval phrase provided.",
+    ),
+    dict(
+        title="CUA Docker/Ubuntu screenshot-only smoke after Docker install (N+3.6)",
+        wait_type="user_approval",
+        repo_relative_context="14_context/cua_docker_ubuntu_sandbox_path_n3_6.md",
+        resume_command="(manual — only after Docker is installed and sandbox profile approved; Kasm/Ubuntu lightweight container; localhost only; no host mounts; no privileged; no credentials)",
+        approval_required=True,
+        risk_level="high",
+        notes="Smoke path documented N+3.6. Screenshot/observe only. No click, no type, no live account. Audit log required. DO NOT RUN until Docker installed and operator approves.",
+    ),
+    dict(
+        title="Screenpipe dashboard route + Obsidian vault sync fallback (N+3.6)",
+        wait_type="tool_available",
+        repo_relative_context="14_context/n3_6_execution_decision.md",
+        resume_command="(manual — operator types: DO SCREENPIPE DASHBOARD + OBSIDIAN SYNC FIRST)",
+        approval_required=False,
+        risk_level="low",
+        notes="Alternative to Docker install if operator prefers no new system installs. Dashboard route = read-only status panel, no capture started. Obsidian = compact markdown vault updates. Decision doc at n3_6_execution_decision.md.",
+    ),
 ]
 
 

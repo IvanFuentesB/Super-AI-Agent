@@ -2,6 +2,76 @@
 
 ---
 
+## Milestone Run: N+3.6 (Claude lane) — Docker/CUA Gate Reconcile + CUA Docker/Ubuntu Sandbox Plan + Screenpipe/Obsidian Decision
+
+Date: 2026-04-27
+Branch: feat/ghoti-visible-operator-stack
+Previous HEAD (at session start): aafc74c (Codex N+3.6 commit — local=origin)
+Status: `docker_cua_gate_documented / cua_ubuntu_path_documented / no_install / no_execution / not_runtime_wired`
+
+### Codex N+3.6 Reconcile
+
+| Field | Value |
+|---|---|
+| Codex N+3.6 commit | aafc74c — present locally and on origin |
+| Local=origin at start | YES |
+| Pull/rebase needed | NO |
+| Staged files at start | NONE |
+
+### Actions Taken
+
+| Phase | Action | Result |
+|---|---|---|
+| Phase 1 | Repo truth + fetch | PASS — local=origin=aafc74c; no staged files; no pull needed |
+| Phase 2 | Read context | PASS — all 4 Codex N+3.6 docs present; key context files read |
+| Phase 3 | Prerequisite checks | PASS — Docker=absent, WSL=not installed, Rust=absent, Python=3.13.3, Node=22.16.0, npm=10.9.2 |
+| Phase 4 | CUA clone inspection | PASS — HEAD=46dbcb47, remote=trycua/cua.git, Dockerfile+libs+examples confirmed; nothing staged |
+| Phase 5 | Create gate doc | PASS — 14_context/docker_desktop_cua_install_gate_n3_6.md |
+| Phase 5 | Create sandbox path doc | PASS — 14_context/cua_docker_ubuntu_sandbox_path_n3_6.md |
+| Phase 5 | Create decision record | PASS — 14_context/n3_6_execution_decision.md |
+| Phase 5 | Create status reconcile | PASS — 14_context/n3_6_status_reconcile.md |
+| Phase 6 | Update wait/resume seeds | PASS — 3 new N+3.6 seeds; total now 20 |
+| Phase 7 | Update current_state.md | PASS |
+| Phase 7 | Update next_actions.md | PASS |
+| Phase 7 | Update ghoti_finish_line_log.md | PASS (this entry) |
+| Phase 8 | Validation | see below |
+| Phase 9 | Stage/commit/push | TBD |
+
+### Docker / CUA Truth
+
+| Check | Result |
+|---|---|
+| Docker installed | NO |
+| WSL installed | NO |
+| CUA container run | NO |
+| CUA install | NO |
+| Live accounts used | NO |
+| Screenpipe capture started | NO |
+| Runtime wiring | NO |
+| Third-party staged | NO |
+
+### Dirty Files Intentionally Left Unstaged
+
+- `14_context/ghoti_external_repo_tool_intake.md` (modified; not part of this milestone)
+- `21_repos/third_party/.gitkeep` (modified; third-party area)
+- `.claude/skills/` (untracked; excluded per prompt rules)
+- `01_projects/mcp_server/test.txt` (untracked; not part of this milestone)
+- `14_context/ghoti_current_prompt_N1_6.md` (untracked prompt file; excluded)
+- `CV_*.docx` files (untracked; excluded per safety rules)
+- `output/` (untracked; excluded per prompt rules)
+
+### Push Status
+
+TBD — pending validation pass and commit.
+
+### Next Recommended Milestone
+
+N+3.7 — operator decision determines path:
+- If `APPROVE DOCKER DESKTOP INSTALL FOR CUA SANDBOX`: install Docker Desktop, verify, plan CUA screenshot-only smoke
+- If `DO SCREENPIPE DASHBOARD + OBSIDIAN SYNC FIRST`: Screenpipe read-only dashboard route + Obsidian vault compact update
+
+---
+
 ## Milestone Run: N+3.5 — CUA/TryCUA Exact Clone Audit + Sandbox-Only Descriptor Path
 
 Date: 2026-04-27
