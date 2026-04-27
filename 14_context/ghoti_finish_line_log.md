@@ -2,6 +2,44 @@
 
 ---
 
+## Milestone Run: N+3.2 Obscura Source Build + Runtime Verification
+
+Date: 2026-04-26
+Branch: feat/ghoti-visible-operator-stack
+Status: `runtime_verified / binary_built / cdp_confirmed / no_stealth`
+
+### Actions taken
+
+| Action | Result |
+|--------|--------|
+| `rustup default stable` | PASS — stable-x86_64-pc-windows-msvc / rustc 1.95.0 re-installed |
+| `cargo build --release` (CARGO_TARGET_DIR=C:\tmp\obscura_build) | PASS — 1m 30s, 0 errors, minor warnings |
+| `obscura --help` | PASS — CLI functional, subcommands: serve, fetch, scrape |
+| `obscura fetch https://example.com --eval "document.title"` | PASS — returns "Example Domain" |
+| `obscura serve --port 9222` + CDP probe | PASS — ws://127.0.0.1:9222/devtools/browser, Protocol-Version 1.3 |
+
+### Blockers encountered and resolved
+
+- Rustup had no installed toolchains (regression from N+1.6). Resolved: `rustup default stable` with operator approval.
+- First `cargo build` failed with `os error 2` (Windows MAX_PATH). Resolved: `CARGO_TARGET_DIR=C:/tmp/obscura_build`.
+
+### What was NOT done
+
+- `--stealth` not compiled or tested (TOS gate)
+- Playwright CDP connection not tested (deferred to N+3.2a)
+- Third-party sites not used
+- Source in `21_repos/third_party/evals/obscura` not modified
+
+### Deliverable
+
+`14_context/obscura_runtime_verification.md` — created
+
+### Push
+
+Pending operator decision.
+
+---
+
 ## Milestone Run: N+1.6 Safe Codex CLI Install + Bridge Proof + Claude Skills Prep
 
 Date: 2026-04-24
@@ -3504,8 +3542,8 @@ Implement one harmless local-only adapter that consumes an approved `ActionInten
 Date: 2026-04-26
 Branch: `feat/ghoti-visible-operator-stack`
 Previous HEAD: `b325e35` (linter reconcile of N+3.1 core commit)
-Commit: TBD
-Pushed: TBD
+Commit: `8b4cdb0`
+Pushed: push_pending (denied in session — run: git push origin feat/ghoti-visible-operator-stack)
 
 ### Additions in This Supplement
 
