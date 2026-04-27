@@ -1,6 +1,6 @@
 # Next Actions
 
-- **N+3.9 delivered (Claude lane)**: Docker daemon verified NOT running; WSL2 NOT installed; verdict: docker_installed_daemon_not_running + wsl_setup_required; daemon verification doc + CUA image/source truth doc + CUA smoke exact plan created; wait/resume updated to 25 seeds — commit and push pending
+- **N+3.9 delivered (Claude lane)**: Docker daemon verified NOT running; WSL2 NOT installed; verdict: docker_installed_daemon_not_running + wsl_setup_required; daemon verification doc + CUA image/source truth doc + CUA smoke exact plan created; wait/resume updated to 25 seeds — commit 6f95359 pushed (ff75f8e)
 - **IMMEDIATE OPERATOR MANUAL ACTION REQUIRED** — launch Docker Desktop to start daemon and install WSL2:
   1. Open Start menu → search "Docker Desktop" → click to launch
   2. Accept any WSL2 install prompts that appear on first launch

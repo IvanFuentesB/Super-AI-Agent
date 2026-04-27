@@ -137,9 +137,8 @@ Status: `docker_installed_daemon_not_running / wsl_setup_required / cua_smoke_bl
 
 ### Push Status
 
-`push_pending` — push denied in this session.
-Run when ready: `git push origin feat/ghoti-visible-operator-stack`
-Note: this will also push the prior unpushed N+3.8 commit (45335fa).
+`pushed` — commits 6f95359 and ff75f8e pushed to origin/feat/ghoti-visible-operator-stack.
+N+3.8 commit (45335fa) was included in the same push.
 
 ### Next Recommended Milestone
 
