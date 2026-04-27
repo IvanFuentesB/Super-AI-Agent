@@ -206,3 +206,13 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Computer-use strategy note exists at `14_context/computer_use_strategy_note.md`; Ghoti is NOT using computer use yet; document defines safety gates required before any adapter is wired
 - Token-saving legal workflow section added to `14_context/ghoti_token_saving_and_agent_context_plan.md`
 - External adapters (AutoBrowser, Browser Use, RUFLO, Obscura, Claude computer use, Playwright) remain NOT wired in runtime
+- Wait/resume supervisor now exists at `01_projects/runtime_mvp/src/super_ai_agent/wait_resume_supervisor.py`
+- Wait/resume supervisor seeds 9 pending gates (push, Gemma, AutoBrowser, external adapter, dashboard integration, Obscura CDP, LOC refresh, TryCUA, tool intake) into `runtime_data/wait_resume_items.json`
+- Dashboard now has a read-only `GET /api/ghoti/wait-resume/status` route with honest runtime_wiring_truth and autonomous_execution_enabled fields
+- LOC report now exists at `14_context/ghoti_code_line_count_report.md` — 386 git-tracked files, 53,631 lines
+- Computer-use strategy note updated with TryCUA/CUA Driver gate requirements and external Claude computer use truth
+- Token-saving plan updated with wait/resume, LOC, and compact state patterns (N+3.2)
+- Tool intake for new candidates (LTX-2, ComfyUI, Shannon, Proxima, TryCUA, LibreChat, AnythingLLM, Perplexica, Open WebUI, Nellavio) now exists at `14_context/tool_intake_new_candidates_n3_2.md`
+- Gemma diagnostic updated: Ollama v0.9.2 present, no models installed; diagnostic skipped with Claude summary as substitute
+- Obscura source build and CDP smoke verified (N+3.2-obscura); committed at 87357f1
+- No computer-use adapter is runtime-wired; TryCUA/CUA Driver is in wait/resume queue pending sandboxed evaluation

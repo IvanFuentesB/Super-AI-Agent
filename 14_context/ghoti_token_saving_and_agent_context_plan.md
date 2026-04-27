@@ -102,9 +102,30 @@ legally, without bypassing any provider limits, quotas, or subscriptions.
 - Cap bypass implemented: NO.
 - Provider-limit evasion implemented: NO.
 
+## N+3.2 Update — Wait/Resume, LOC Report, and Compact State
+
+Date: 2026-04-27
+
+### New Token-Saving Patterns (N+3.2)
+
+- **Wait/resume items reduce wasted user time**: The wait/resume supervisor tracks pending
+  pushes, approvals, and evaluation gates in a compact JSON file. The next session opens the
+  supervisor summary instead of re-reading the full finish-line log to find pending items.
+- **Compact wait state for session resumption**: `runtime_data/wait_resume_items.json` is
+  small and self-describing. A fresh Claude Code session can load it in one read call.
+- **LOC report targets refactors**: `14_context/ghoti_code_line_count_report.md` identifies
+  `queue.py` (3,146 lines) and `cli.py` (3,059 lines) as candidates for future splitting.
+  Targeted refactors reduce the size of files Claude must read in full.
+- **ChatGPT remains architecture brain; Claude/Codex execute narrow tasks**: This division
+  is confirmed and working. Do not expand Claude Code session scope beyond one prompt file.
+- **Legal local memory and compaction only**: All session-saving, compact memory, checkpoint,
+  and wait/resume patterns are legal, local, and do not bypass any provider limit.
+- **No cap bypass implementation**: Nothing in N+3.2 or prior milestones bypasses any
+  provider usage limit, quota, or subscription.
+
 ## Current Status
 
 - Plan status: `token_saving_plan / legal_context_management_only / not_cap_bypass`
-- Runtime wired: partially as local MVP memory/artifact pattern only.
+- Runtime wired: partially as local MVP memory/artifact pattern (N+3.0 + N+3.1 + N+3.2).
 - Cap bypass implemented: NO.
 - Provider-limit evasion implemented: NO.

@@ -70,3 +70,52 @@ Prefer more precise tools first:
 - Capturing screenshots autonomously without operator-enabled session.
 - Storing or forwarding credentials without explicit per-intent approval.
 - Taking automated actions on owned accounts (social, email, banking) without approval.
+
+---
+
+## N+3.2 Update — TryCUA/CUA Driver + External Claude Computer Use
+
+Date: 2026-04-27
+Status label: strategy_note / not_runtime_wired / N+3.2
+
+### Claude Computer Use (External)
+
+Claude computer use exists as a live Anthropic capability (e.g., via the Anthropic API's
+`computer_use` tool type). Ghoti has NOT wired it. No computer-use tool calls have been
+made. This note exists to track the decision path.
+
+### TryCUA / CUA Driver
+
+TryCUA and its companion CUA Driver are candidate frameworks for structured
+computer-use/operator capability. Key properties:
+
+- Execute UI actions (click, type, screenshot) via a controlled agent loop.
+- API-style action dispatch: fits naturally with Ghoti's ActionIntent gate pattern.
+- Must be evaluated in a fully sandboxed environment before any live use.
+
+**Ghoti gate before any TryCUA/CUA Driver wiring:**
+
+1. Propose an ActionIntent for each UI action.
+2. Wait for explicit operator approval per intent.
+3. Consume exactly the approved payload — no payload mutation.
+4. Write a full audit trace entry per action.
+5. Expose status via dashboard read route.
+6. Stop immediately on mismatch, replay attempt, or risk escalation.
+7. Run only in a local sandbox / controlled VM until explicitly promoted by operator.
+
+**Never:**
+- Live account access before sandbox gate is passed.
+- Full desktop autonomy without per-intent approval.
+- Stealth operation or background autonomous loops.
+
+### Browser-Specific Adapters First
+
+Browser-specific adapters (AutoBrowser, Obscura CDP) remain lower blast-radius
+than full desktop control. They are still pending approval — but they are the safer
+path to test the ActionIntent gate before escalating to full TryCUA/CUA Driver.
+
+### Runtime Status (N+3.2)
+
+No computer-use adapter is runtime-wired. TryCUA/CUA Driver is in the wait/resume
+queue (see `14_context/tool_intake_new_candidates_n3_2.md`) pending operator approval
+and sandboxed evaluation.

@@ -1,5 +1,11 @@
 # Next Actions
 
+- N+3.2 delivered: wait/resume supervisor, dashboard wait-resume read route, LOC report, computer-use/CUA strategy update, token-saving update, tool intake for new candidates, Gemma diagnostic, Obscura recovery commit (87357f1)
+- Review wait/resume queue: run `python 01_projects/runtime_mvp/src/super_ai_agent/wait_resume_supervisor.py` to see active gates and resume commands
+- Decide first candidate from tool_intake_new_candidates_n3_2.md to evaluate next (AnythingLLM or Open WebUI are lowest-risk local-UI options)
+- Operator approval required before: Gemma pull, AutoBrowser wiring, TryCUA eval, any external adapter execution
+- Push N+3.2 commit to origin after operator confirms (already staged above; push command: `git push origin feat/ghoti-visible-operator-stack`)
+
 - N+3.1 delivered: ActionIntent contracts, CapabilityAdapterDescriptor, approval-bound gating demo, JSONL audit trail, dashboard read route, computer-use strategy note, and token-saving workflow update
 - Validate N+3.1 demo output: run `python 01_projects/runtime_mvp/src/super_ai_agent/action_demo.py` and check `05_logs/action_audit.jsonl` and `05_logs/action_intent_runs/<latest>/action_intent_demo_summary.md`
 - Evaluate AutoBrowser as the first external browser adapter: create a CapabilityAdapterDescriptor, design the ActionIntent approval flow, and propose in a separate milestone with explicit user approval

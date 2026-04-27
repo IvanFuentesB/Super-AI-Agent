@@ -2,6 +2,96 @@
 
 ---
 
+## Milestone Run: N+3.2 Wait/Resume Supervisor + LOC Report
+
+Date: 2026-04-27
+Branch: feat/ghoti-visible-operator-stack
+Previous HEAD (before N+3.2 main): 87357f1 (Obscura recovery commit)
+Status: `wait_resume_local_only / dashboard_route_added / loc_report_generated / no_external_adapter_wired`
+
+### Actions taken
+
+| Action | Result |
+|--------|--------|
+| Phase 1: Repo truth | PASS — branch feat/ghoti-visible-operator-stack, local=origin=8b4cdb0 at start |
+| Phase 2: Obscura recovery commit | PASS — 87357f1, staged obscura_runtime_verification.md + finish_line_log.md |
+| Phase 3: Read existing context | PASS — action_intent.py, storage.py, server.js, state docs read |
+| Phase 4: wait_resume_supervisor.py | PASS — 9 seeds, direct run prints summary |
+| Phase 5: CLI visibility | SKIPPED — CLI pattern too broad to touch safely; direct script is sufficient |
+| Phase 6: Dashboard read route | PASS — GET /api/ghoti/wait-resume/status added to server.js |
+| Phase 7: LOC report | PASS — 386 files, 53,631 lines, top 20 listed |
+| Phase 8: Computer-use strategy update | PASS — TryCUA/CUA Driver gates and external Claude CU truth added |
+| Phase 9: Token-saving update | PASS — wait/resume, LOC, compact state patterns added |
+| Phase 10: Tool intake N+3.2 | PASS — 10 candidates documented with boundaries |
+| Phase 11: Gemma/Ollama check | PASS — ollama v0.9.2 present, no models; diagnostic created with Claude summary |
+| Phase 12: Validation | PASS — AST OK, node --check OK (server.js + app.js + overlay.js), direct script runs |
+| Phase 13: State docs update | PASS — current_state.md, next_actions.md, finish_line_log.md updated |
+| Phase 14: Stage/commit/push | TBD — below |
+
+### Validation results
+
+| Check | Result |
+|-------|--------|
+| AST parse — wait_resume_supervisor.py | PASS |
+| node --check server.js | PASS |
+| node --check app.js | PASS |
+| node --check overlay.js | PASS |
+| git diff --check | WARNING — trailing whitespace in server.js additions (Windows CRLF artifact, non-blocking) |
+| wait_resume_supervisor.py direct run | PASS — 9 items seeded, summary printed |
+| Dashboard route added | PASS — GET /api/ghoti/wait-resume/status |
+
+### Files changed (N+3.2 main commit)
+
+- `01_projects/runtime_mvp/src/super_ai_agent/wait_resume_supervisor.py` — NEW
+- `01_projects/runtime_mvp/runtime_data/wait_resume_items.json` — NEW (seeded at runtime)
+- `01_projects/dashboard_mvp/server.js` — modified (wait-resume route added)
+- `14_context/ghoti_code_line_count_report.md` — NEW
+- `14_context/computer_use_strategy_note.md` — modified (TryCUA/CUA gate added)
+- `14_context/ghoti_token_saving_and_agent_context_plan.md` — modified (N+3.2 update)
+- `14_context/tool_intake_new_candidates_n3_2.md` — NEW
+- `14_context/gemma_wait_resume_diagnostic.md` — NEW
+- `14_context/current_state.md` — modified
+- `14_context/next_actions.md` — modified
+- `14_context/ghoti_finish_line_log.md` — modified (this entry)
+
+### Truth table
+
+| Truth | Value |
+|-------|-------|
+| Obscura recovery | committed 87357f1, push TBD |
+| Wait/resume supervisor | local_wait_resume_only — no external calls |
+| Dashboard route | GET /api/ghoti/wait-resume/status — read-only |
+| LOC report | 386 files, 53,631 lines — git-tracked only |
+| Computer-use/CUA strategy | updated — TryCUA sandbox-first gate defined |
+| Token-saving | updated — wait/resume and LOC patterns added |
+| Tool intake | 10 candidates documented |
+| Gemma diagnostic | skipped — no model installed |
+| Runtime wiring | local_wait_resume_only — no external adapter wired |
+| External adapter execution | false |
+| Autonomous execution | false |
+
+### Dirty files intentionally left unstaged
+
+- `21_repos/third_party/.gitkeep`
+- `.claude/skills/`
+- `01_projects/mcp_server/test.txt`
+- `14_context/ghoti_current_prompt*.md`
+- CV `.docx` files
+- `output/`
+- `01_projects/runtime_mvp/runtime_data/*.tmp-*` (stale temp files, pre-existing)
+
+### Push
+
+TBD — new commit hash pending; push command: `git push origin feat/ghoti-visible-operator-stack`
+
+### Next milestone
+
+N+3.3 — Gemma model pull + local inference smoke test (operator approval required)
+or
+N+3.2a — Playwright-CDP smoke test for Obscura (optional, operator approval required)
+
+---
+
 ## Milestone Run: N+3.2 Obscura Source Build + Runtime Verification
 
 Date: 2026-04-26

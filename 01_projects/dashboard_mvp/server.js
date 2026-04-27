@@ -5446,6 +5446,57 @@ async function handleApiRequest(request, response, requestUrl) {
     return;
   }
 
+  // GET /api/ghoti/wait-resume/status — read-only wait/resume supervisor state (N+3.2)
+  if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/wait-resume/status") {
+    const waitResumePath = path.join(runtimeDataDir, "wait_resume_items.json");
+    let items = [];
+    let parseError = null;
+    try {
+      if (fs.existsSync(waitResumePath)) {
+        items = JSON.parse(fs.readFileSync(waitResumePath, "utf8"));
+        if (!Array.isArray(items)) items = [];
+      }
+    } catch (e) {
+      parseError = String(e.message || e);
+      items = [];
+    }
+    const counts = { pending: 0, ready: 0, done: 0, blocked: 0, expired: 0 };
+    let latestUpdatedAt = "";
+    for (const item of items) {
+      const s = item.status || "unknown";
+      if (s in counts) counts[s]++;
+      const ts = item.updated_at_utc || "";
+      if (ts > latestUpdatedAt) latestUpdatedAt = ts;
+    }
+    const activeItems = items
+      .filter(i => i.status !== "done" && i.status !== "expired")
+      .map(i => ({
+        wait_id: i.wait_id,
+        title: i.title,
+        status: i.status,
+        wait_type: i.wait_type,
+        risk_level: i.risk_level,
+        approval_required: i.approval_required,
+        resume_command: i.resume_command,
+        updated_at_utc: i.updated_at_utc,
+      }));
+    sendJson(response, 200, {
+      ok: true,
+      pending_count: counts.pending,
+      ready_count: counts.ready,
+      blocked_count: counts.blocked,
+      done_count: counts.done,
+      total: items.length,
+      latest_updated_at_utc: latestUpdatedAt || new Date().toISOString(),
+      items: activeItems,
+      runtime_wiring_truth: "local_wait_resume_only",
+      autonomous_execution_enabled: false,
+      external_actions_enabled: false,
+      parse_error: parseError,
+    });
+    return;
+  }
+
   if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/action-audit/status") {
     const auditPath = path.join(repoRoot, "05_logs", "action_audit.jsonl");
     const runsDir = path.join(repoRoot, "05_logs", "action_intent_runs");
