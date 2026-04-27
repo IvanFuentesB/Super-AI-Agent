@@ -415,6 +415,24 @@ _DEFAULT_SEEDS = [
         risk_level="high",
         notes="Smoke plan at cua_next_screenshot_smoke_after_docker_n3_8.md. ActionIntent required. Payload hash required. localhost or example.com only. No click, no type, no host mounts, no privileged, no live accounts. Audit event required. Output under 05_logs/cua_smoke_runs/<run_id>/. DO NOT RUN until Docker daemon is verified and operator provides explicit separate approval.",
     ),
+    dict(
+        title="Docker Desktop manual launch / WSL2 setup required before CUA smoke (N+3.9)",
+        wait_type="user_approval",
+        repo_relative_context="14_context/docker_daemon_post_install_verification_n3_9.md",
+        resume_command="(manual — open Docker Desktop from Start menu; accept WSL2 install prompts; wait for 'Docker is running' green status; reboot if prompted; then verify: docker info shows Server section + wsl --status shows WSL2 installed; then request CUA smoke approval separately)",
+        approval_required=True,
+        risk_level="medium",
+        notes="Verified N+3.9: Docker CLI 29.4.0 present; Docker Compose v5.1.2 present; Docker Desktop.exe present. Daemon NOT running — npipe not found. WSL2 NOT installed. Verdict: docker_installed_daemon_not_running + wsl_setup_required. CUA smoke blocked. See docker_daemon_post_install_verification_n3_9.md for exact steps.",
+    ),
+    dict(
+        title="CUA screenshot smoke exact plan ready — approval and daemon required (N+3.9)",
+        wait_type="user_approval",
+        repo_relative_context="14_context/cua_screenshot_smoke_exact_plan_n3_9.md",
+        resume_command="(manual — after Docker daemon verified and WSL2 installed: pin trycua/cua-ubuntu:latest to exact sha256 digest; obtain image approval; create ActionIntent; compute payload hash; obtain smoke approval; then follow exact plan in cua_screenshot_smoke_exact_plan_n3_9.md)",
+        approval_required=True,
+        risk_level="high",
+        notes="Smoke plan updated N+3.9. Image: trycua/cua-ubuntu:latest (kasmweb/core-ubuntu-jammy:1.17.0 base). No privileged mode. No host mounts. Localhost port only. Screenshot-only. Payload hash required before approval. Audit event required. DO NOT RUN until daemon verified + image digest approved + separate smoke approval obtained.",
+    ),
 ]
 
 

@@ -2,6 +2,151 @@
 
 ---
 
+## Milestone Run: N+3.9 (Claude lane) — Docker Daemon Verification + CUA Screenshot Smoke Preparation
+
+Date: 2026-04-27
+Branch: feat/ghoti-visible-operator-stack
+Starting HEAD: 45335fa (feat/ghoti milestone N+3.8 — verify Docker Desktop gate for CUA sandbox)
+Status: `docker_installed_daemon_not_running / wsl_setup_required / cua_smoke_blocked / plan_written / not_executed / not_runtime_wired`
+
+### Actions Taken
+
+| Phase | Action | Result |
+|---|---|---|
+| Phase 1 | Repo truth + fetch | PASS — branch feat/ghoti-visible-operator-stack; local=45335fa (1 commit ahead of origin 88f0368); no staged files; fetch OK |
+| Phase 2 | Read context | PASS — all required N+3.8 docs, supervisor, current_state, next_actions read |
+| Phase 3 | Docker daemon check | docker CLI 29.4.0 confirmed via explicit path; Docker Compose v5.1.2 confirmed; docker info: client OK, server UNREACHABLE (npipe not found); Docker Desktop process NOT running (Get-Process empty) |
+| Phase 3 | WSL check | wsl --status exit code 50; subsystem NOT installed; same state as N+3.8 end |
+| Phase 3 | Docker Desktop path | C:\Program Files\Docker\Docker\Docker Desktop.exe EXISTS |
+| Phase 3 | Verdict | docker_installed_daemon_not_running + wsl_setup_required — STOP before any CUA/container work |
+| Phase 4 | CUA source inspection | Read-only: libs/kasm/Dockerfile, root Dockerfile, blog/ubuntu-docker-support.md, kasm README, prior audit docs; CUA HEAD hash 46dbcb47 confirmed |
+| Phase 5 | Write daemon verification doc | PASS — 14_context/docker_daemon_post_install_verification_n3_9.md |
+| Phase 6 | Write CUA image/source truth doc | PASS — 14_context/cua_docker_image_source_truth_n3_9.md |
+| Phase 7 | Write CUA smoke exact plan | PASS — 14_context/cua_screenshot_smoke_exact_plan_n3_9.md (plan only, not executed) |
+| Phase 8 | Update wait/resume supervisor | PASS — 2 new N+3.9 seeds added; total default seeds now 25 |
+| Phase 9 | Update current_state.md | PASS — N+3.9 truth appended |
+| Phase 9 | Update next_actions.md | PASS — immediate manual action at top |
+| Phase 9 | Update ghoti_finish_line_log.md | PASS (this entry) |
+| Phase 10 | Validation | see below |
+| Phase 11 | Stage/commit/push | TBD |
+
+### Docker / WSL Verification Truth
+
+| Check | Result |
+|---|---|
+| Docker CLI | PRESENT — `C:\Program Files\Docker\Docker\resources\bin\docker.exe` v29.4.0 |
+| Docker Compose | PRESENT — `C:\Program Files\Docker\Docker\resources\bin\docker-compose.exe` v5.1.2 |
+| Docker Desktop.exe | EXISTS — `C:\Program Files\Docker\Docker\Docker Desktop.exe` |
+| Docker Desktop process | NOT RUNNING — Get-Process 'Docker Desktop' returned empty |
+| Docker daemon | NOT RUNNING — npipe:////./pipe/docker_engine: The system cannot find the file specified. |
+| WSL2 | NOT INSTALLED — wsl --status exit code 50; subsystem not installed |
+| Final verdict | `docker_installed_daemon_not_running` + `wsl_setup_required` |
+
+### CUA Image / Source Truth
+
+| Check | Result |
+|---|---|
+| CUA repo path | `21_repos/third_party/evals/cua` |
+| CUA HEAD | `46dbcb47802e2c712c87e9a34d4d5b06829a2932` |
+| Remote | `https://github.com/trycua/cua.git` |
+| Recommended image | `trycua/cua-ubuntu:latest` (Docker Hub; kasmweb/core-ubuntu-jammy:1.17.0 base) |
+| Privileged mode required | NO |
+| Host mounts required | NO |
+| Network required (pull) | YES — must be approved |
+| Localhost port | 6901 (KasmVNC web viewer) |
+| Non-root user in container | YES — kasm-user uid 1000 |
+| Image tag pinned | NOT YET — `latest` must be resolved to exact sha256 digest before approval |
+| Smoke verdict | `blocked_until_docker_daemon_running` |
+
+### CUA Smoke Plan Truth
+
+| Field | Value |
+|---|---|
+| Smoke plan | 14_context/cua_screenshot_smoke_exact_plan_n3_9.md |
+| ActionIntent type | computer.observe_screenshot |
+| Target | localhost_test_page or https://example.com |
+| Click allowed | NO |
+| Type allowed | NO |
+| Live accounts | NO |
+| Privileged container | NO |
+| Host mounts | NO |
+| Payload hash | required before approval |
+| Audit log | required before and after action |
+| Output path | 05_logs/cua_smoke_runs/<run_id>/ |
+| Smoke executed | NO |
+| Smoke approval present | NO — separate approval required |
+
+### Runtime / Capture / Live Account Truth
+
+| Check | Result |
+|---|---|
+| CUA container run | NO |
+| Docker build | NO |
+| Docker pull | NO |
+| Runtime wiring changed | NO |
+| Live accounts used | NO |
+| Screenpipe capture started | NO |
+| Click/type automation | NO |
+| Third-party repo contents staged | NO |
+| Prompt files staged | NO |
+
+### Wait/Resume Supervisor Truth
+
+| Field | Value |
+|---|---|
+| New N+3.9 seeds | 2 (Docker manual launch gate + CUA smoke exact plan gate) |
+| Total default seeds | 25 |
+| Supervisor AST | PASS (see validation) |
+
+### Dirty Files Intentionally Left Unstaged
+
+- `14_context/ghoti_external_repo_tool_intake.md` (modified; not part of this milestone)
+- `21_repos/third_party/.gitkeep` (modified; third-party area)
+- `.claude/skills/` (untracked; excluded per prompt rules)
+- `01_projects/mcp_server/test.txt` (untracked; not part of milestone)
+- `14_context/ghoti_current_prompt_N1_6.md` (untracked prompt file; excluded)
+- `14_context/ghoti_current_prompt.md` (untracked prompt file; excluded)
+- `CV_*.docx` files (untracked; excluded per safety rules)
+- `output/` (untracked; excluded per prompt rules)
+
+### Files Changed
+
+- `14_context/docker_daemon_post_install_verification_n3_9.md` — NEW
+- `14_context/cua_docker_image_source_truth_n3_9.md` — NEW
+- `14_context/cua_screenshot_smoke_exact_plan_n3_9.md` — NEW
+- `01_projects/runtime_mvp/src/super_ai_agent/wait_resume_supervisor.py` — 2 new N+3.9 seeds
+- `14_context/current_state.md` — N+3.9 truth appended
+- `14_context/next_actions.md` — immediate operator action at top, N+3.9 entry added
+- `14_context/ghoti_finish_line_log.md` — this entry
+
+### Validation
+
+| Check | Result |
+|---|---|
+| AST parse — wait_resume_supervisor.py | PASS |
+| node --check — server.js | PASS |
+| node --check — app.js | PASS |
+| node --check — overlay.js | PASS |
+| python -m json.tool — cua_sandbox_profile.example.json | PASS |
+| wait_resume_supervisor.py direct run | PASS — 12 active items from runtime file; 25 code-level default seeds |
+| git diff --check | CRLF trailing-carriage-return warnings in current_state.md and next_actions.md (existing Windows CRLF file; no actual trailing spaces introduced — same artifact pattern as N+3.7) |
+
+### Push Status
+
+TBD — pending commit and push permission gate.
+
+### Next Recommended Milestone
+
+N+3.10 — after operator launches Docker Desktop and verifies daemon running:
+- Verify `docker info` shows server section (new terminal)
+- Verify `wsl --status` shows WSL2 installed
+- Pin `trycua/cua-ubuntu:latest` to exact sha256 digest; request image digest approval
+- Create ActionIntent with computer.observe_screenshot; compute payload hash
+- Request explicit CUA screenshot-only smoke approval
+- Execute one screenshot-only observe action per approved plan at 14_context/cua_screenshot_smoke_exact_plan_n3_9.md
+
+---
+
 ## Milestone Run: N+3.6 (Claude lane) — Docker/CUA Gate Reconcile + CUA Docker/Ubuntu Sandbox Plan + Screenpipe/Obsidian Decision
 
 Date: 2026-04-27

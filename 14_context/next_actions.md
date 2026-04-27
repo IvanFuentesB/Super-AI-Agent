@@ -1,13 +1,16 @@
 # Next Actions
 
-- N+3.8 delivered (Claude lane): Docker Desktop 4.70.0 installed via winget; CLI verified (29.4.0); Compose verified (v5.1.2); install verification doc created; CUA smoke plan doc created; wait/resume updated to 23 seeds — commit and push pending
-- OPERATOR MANUAL ACTION REQUIRED — launch Docker Desktop from Start menu to start daemon:
-  1. Open Start menu → "Docker Desktop" → launch
-  2. Accept any WSL2 install prompts (first launch installs WSL2)
-  3. Wait for "Docker is running" green status in system tray
-  4. Reboot if prompted
-  5. After daemon running: verify in new terminal: `docker info`
-- NEXT MILESTONE after daemon verified: CUA screenshot-only smoke (separate prompt/approval required; see `14_context/cua_next_screenshot_smoke_after_docker_n3_8.md`)
+- **N+3.9 delivered (Claude lane)**: Docker daemon verified NOT running; WSL2 NOT installed; verdict: docker_installed_daemon_not_running + wsl_setup_required; daemon verification doc + CUA image/source truth doc + CUA smoke exact plan created; wait/resume updated to 25 seeds — commit and push pending
+- **IMMEDIATE OPERATOR MANUAL ACTION REQUIRED** — launch Docker Desktop to start daemon and install WSL2:
+  1. Open Start menu → search "Docker Desktop" → click to launch
+  2. Accept any WSL2 install prompts that appear on first launch
+  3. Wait for "Docker is running" green icon in system tray
+  4. Reboot if prompted; then relaunch Docker Desktop
+  5. After daemon running: verify in a **new** terminal:
+     - `docker info` — must show Server section with daemon details
+     - `wsl --status` — must confirm WSL2 installed
+- **NEXT MILESTONE after daemon verified**: request separate CUA screenshot-only smoke approval (image digest must be pinned and approved before any pull; see `14_context/cua_screenshot_smoke_exact_plan_n3_9.md`)
+- N+3.8 delivered (Claude lane): Docker Desktop 4.70.0 installed via winget; CLI verified (29.4.0); Compose verified (v5.1.2); install verification doc created; CUA smoke plan doc created; wait/resume updated to 23 seeds — commit 45335fa (push pending)
 - N+3.7 delivered (Claude lane, PATH B): Screenpipe read-only dashboard status route added (`GET /api/ghoti/screenpipe/status`), Obsidian vault notes synced (00_Index, 01_Current_State, 04_Tools, 05_Safety_Gates), wait/resume updated to 21 seeds — commit eee0cc0 included in N+3.8 push
 - N+3.6 delivered (Claude lane): Docker/CUA install gate doc, CUA Docker/Ubuntu sandbox path doc, execution decision record, status reconcile doc, wait/resume updated to 20 seeds, state docs updated
 
