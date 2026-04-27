@@ -56,7 +56,11 @@
 - Keep the business-outreach review scaffold planning-only until identification, drafting, review, and approval checkpoints are each explicit
 - Add a real notification channel later
 - Expand the executor layer later only if each new action stays allowlisted, workspace-bound, and approval-aware
-- Identify a Windows-compatible CUA alternative (Docker-based cua-agent or AutoBrowser as supervised CUA path); canonical trycua/cua requires macOS/Apple Silicon and cannot run on Windows
+- N+3.5 delivered: CUA exact source verified (ls-remote HEAD 46dbcb47), shallow clone at 21_repos/third_party/evals/cua, isolated clone audit doc, sandbox profile validated, descriptor confirmed, wait/resume updated (17 seeds), state docs updated
+- CUA all local paths currently blocked on Windows 11 Home: Lume=macOS-only, Cua Driver=macOS-only, Windows Sandbox=Pro/Enterprise required, Docker=not installed, WSL=not installed
+- Request operator approval to install Docker Desktop — this is the lowest-risk path to unlock CUA Docker/Ubuntu containers and AutoBrowser on Windows 11 Home
+- Once Docker Desktop approved and installed: evaluate `21_repos/third_party/evals/cua/libs/qemu-docker/linux` for Ubuntu container CUA agent
+- Once Docker Desktop approved and installed: evaluate AutoBrowser Docker Compose run as supervised browser milestone
 - Request operator approval to enable the CUA sandbox profile before any CUA driver evaluation begins; review `23_configs/cua_sandbox_profile.example.json` first
-- Run first screenshot-only CUA sandbox smoke test against local test page only, with ActionIntent approval gate, after operator approves sandbox profile
-- Evaluate AutoBrowser Docker run as the next supervised browser milestone (requires Docker Desktop confirmation and operator approval)
+- Run first screenshot-only CUA sandbox smoke test against local test page only, with ActionIntent approval gate, after Docker Desktop install and operator approves sandbox profile
+- CUA descriptor in action_intent.py is confirmed as descriptor_only / can_execute=false — no changes needed until Docker path is unlocked

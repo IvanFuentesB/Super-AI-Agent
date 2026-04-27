@@ -343,6 +343,24 @@ _DEFAULT_SEEDS = [
         risk_level="high",
         notes="Smoke test: screenshot only, local test page, no click, no type, no live account. Audit log entry required.",
     ),
+    dict(
+        title="CUA descriptor-only adapter reviewed — no execution, no install, sandbox-only (N+3.5)",
+        wait_type="external_result",
+        repo_relative_context="14_context/cua_adapter_descriptor_design_n3_5.md",
+        resume_command="(descriptor in action_intent.py: adapter_id=cua-driver-reference, status=descriptor_only, can_execute=false)",
+        approval_required=False,
+        risk_level="low",
+        notes="Descriptor confirmed in action_intent.py in N+3.4/N+3.5. No execution path. No imports from CUA. Sandbox profile at 23_configs/cua_sandbox_profile.example.json.",
+    ),
+    dict(
+        title="Docker Desktop install approval — required before CUA Docker/Ubuntu path can proceed (N+3.5)",
+        wait_type="user_approval",
+        repo_relative_context="14_context/cua_trycua_isolated_clone_audit_n3_5.md",
+        resume_command="(manual — operator approves Docker Desktop install; then evaluate libs/qemu-docker/linux path for Ubuntu container agent)",
+        approval_required=True,
+        risk_level="medium",
+        notes="All local CUA paths blocked: Lume=macOS-only, Windows Sandbox=Pro/Enterprise, Docker=not installed, WSL=not installed. Docker Desktop is the lowest-risk unlocker on Windows 11 Home.",
+    ),
 ]
 
 

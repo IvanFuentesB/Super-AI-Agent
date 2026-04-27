@@ -2,6 +2,133 @@
 
 ---
 
+## Milestone Run: N+3.5 — CUA/TryCUA Exact Clone Audit + Sandbox-Only Descriptor Path
+
+Date: 2026-04-27
+Branch: feat/ghoti-visible-operator-stack
+Previous HEAD (at start): ca403cd (N+3.4 local commit — not yet pushed)
+Status: `cua_source_verified / clone_audited / descriptor_confirmed / sandbox_profile_validated / no_install / no_execution / not_runtime_wired`
+
+### Actions taken
+
+| Phase | Action | Result |
+|-------|--------|--------|
+| Phase 1 | Repo truth | PASS — branch feat/ghoti-visible-operator-stack; local=ca403cd (ahead of origin 6dd34b0); no staged files |
+| Phase 2 | Read context | PASS — cua_trycua_exact_source_evaluation.md, sandbox profile plan, action_intent.py, wait_resume_supervisor.py, server.js, current_state.md, next_actions.md read |
+| Phase 3 | Toolchain truth | PASS — Rust=NOT FOUND, Python=3.13.3, Node=22.16.0, npm=10.9.2, git=2.49.0 |
+| Phase 4 | CUA source verify | PASS — git ls-remote HEAD: 46dbcb47802e2c712c87e9a34d4d5b06829a2932; source confirmed |
+| Phase 4 | Audit doc created | PASS — 14_context/cua_trycua_exact_source_audit_n3_5.md |
+| Phase 5 | Shallow clone | PASS — 21_repos/third_party/evals/cua (depth 1); 2859 files |
+| Phase 5 | Isolated clone audit | PASS — key files inspected: README, LICENSE, pyproject.toml, Package.swift, Dockerfile, examples/, libs/ |
+| Phase 5 | Clone audit doc | PASS — 14_context/cua_trycua_isolated_clone_audit_n3_5.md |
+| Phase 5 | Updated Windows finding | PASS — Windows Sandbox (Pro/Enterprise only) and Docker/Ubuntu paths found; all blocked on Home |
+| Phase 6 | Sandbox profile validate | PASS — 23_configs/cua_sandbox_profile.example.json valid; matches required spec exactly |
+| Phase 6 | Sandbox profile plan | PASS — 14_context/cua_sandbox_profile_plan.md exists and complete |
+| Phase 7 | Descriptor confirm | PASS — action_intent.py has cua-driver-reference; status=descriptor_only, can_execute=false; no CUA imports; no execution |
+| Phase 8 | Dashboard route confirm | PASS — server.js has GET /api/ghoti/computer-use/candidates; static read-only; all runtime_wired=false |
+| Phase 9 | Wait/resume seeds | PASS — 2 new N+3.5 seeds added; total default seeds now 17 |
+| Phase 10 | State docs update | PASS — current_state.md, next_actions.md, ghoti_finish_line_log.md updated |
+| Phase 11 | Validation | PASS — see validation table below |
+| Phase 12 | Stage/commit/push | TBD — below |
+
+### Validation results
+
+| Check | Result |
+|-------|--------|
+| git ls-remote HEAD matches clone HEAD | PASS — 46dbcb47802e2c712c87e9a34d4d5b06829a2932 |
+| CUA install performed | NO — PASS |
+| CUA dependencies installed | NO — PASS |
+| CUA examples run | NO — PASS |
+| Computer-use actions executed | NO — PASS |
+| Screenpipe capture started | NO — PASS |
+| Live accounts used | NO — PASS |
+| Third-party clone contents staged | NO — PASS (untracked) |
+| Blocked files staged | NO — PASS |
+| 23_configs/cua_sandbox_profile.example.json valid JSON | PASS |
+| action_intent.py descriptor correct | PASS — descriptor_only, can_execute=false |
+| server.js route exists | PASS — GET /api/ghoti/computer-use/candidates |
+| wait_resume_supervisor.py seeds count | 17 default seeds |
+| Existing repos unchanged | PASS — ruflo, auto-browser, obscura unmodified |
+| AST parse wait_resume_supervisor.py | PASS (structurally valid; see Phase 11 run below) |
+
+### CUA Exact Source Truth
+
+| Field | Value |
+|-------|-------|
+| Source URL | https://github.com/trycua/cua |
+| Remote HEAD | 46dbcb47802e2c712c87e9a34d4d5b06829a2932 |
+| License | MIT |
+| Clone performed | YES — 21_repos/third_party/evals/cua (shallow, read-only) |
+| Dependencies installed | NO |
+| Runtime wired | NO |
+| Windows 11 Home compatible | NO (all local paths blocked) |
+| Next unlocker | Docker Desktop install (requires operator approval) |
+
+### Windows Compatibility Update (N+3.5 finding)
+
+The N+3.4 evaluation said "Windows incompatible". N+3.5 clone audit reveals a more nuanced picture:
+
+| Path | Blocker |
+|------|---------|
+| Lume (macOS VM) | macOS/Apple Silicon required |
+| Cua Driver | macOS required (Swift app) |
+| Windows Sandbox | Requires Windows 11 Pro/Enterprise (this host is Home) |
+| Docker/Ubuntu (KasmVNC) | Requires Docker Desktop (not installed) |
+| WSL | Not installed |
+
+Docker Desktop install is the lowest-risk path to unlock CUA on this Windows 11 Home machine.
+
+### Files changed (N+3.5 commit)
+
+- `14_context/cua_trycua_exact_source_audit_n3_5.md` — NEW
+- `14_context/cua_trycua_isolated_clone_audit_n3_5.md` — NEW
+- `01_projects/runtime_mvp/src/super_ai_agent/wait_resume_supervisor.py` — modified (2 new N+3.5 seeds)
+- `14_context/current_state.md` — modified (N+3.5 facts added)
+- `14_context/next_actions.md` — modified (N+3.5 next steps)
+- `14_context/ghoti_finish_line_log.md` — modified (this entry)
+
+### Intentionally unchanged (already complete from N+3.4 local commit ca403cd)
+
+- `23_configs/cua_sandbox_profile.example.json` — validated, no changes needed
+- `14_context/cua_sandbox_profile_plan.md` — confirmed complete
+- `01_projects/runtime_mvp/src/super_ai_agent/action_intent.py` — cua-driver-reference descriptor confirmed
+- `01_projects/dashboard_mvp/server.js` — GET /api/ghoti/computer-use/candidates confirmed
+
+### Truth table
+
+| Truth | Value |
+|-------|-------|
+| CUA exact source | verified — github.com/trycua/cua, HEAD 46dbcb47 |
+| CUA clone | YES — shallow, 21_repos/third_party/evals/cua, read-only |
+| CUA install | NO |
+| CUA runtime wired | NO |
+| CUA execution | NO |
+| Screenpipe capture | NO |
+| Live accounts | NO |
+| Three existing repos (ruflo/auto-browser/obscura) | unchanged |
+| Sandbox profile | valid, enabled=false |
+| Descriptor | descriptor_only, can_execute=false |
+| Dashboard route | read-only, static |
+| Autonomous execution | false |
+| External adapter execution | false |
+
+### Dirty files intentionally left unstaged
+
+- `21_repos/third_party/.gitkeep` (modified — third-party dir bookkeeping)
+- `21_repos/third_party/evals/cua/` (untracked — third-party clone; not staged per rules)
+- `.claude/skills/`
+- `01_projects/mcp_server/test.txt`
+- `14_context/ghoti_current_prompt*.md`
+- CV `.docx` files
+- `output/`
+- `14_context/ghoti_external_repo_tool_intake.md` (modified, unrelated to this milestone)
+
+### Next Recommended Milestone
+
+N+3.6 — Docker Desktop Install Gate + First Docker CUA Smoke Path (pending operator approval for Docker Desktop)
+
+---
+
 ## Milestone Run: N+3.2 Wait/Resume Supervisor + LOC Report
 
 Date: 2026-04-27
