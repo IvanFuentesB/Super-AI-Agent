@@ -279,3 +279,4 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Wait/resume supervisor updated with 2 new N+3.9 seeds: Docker manual launch gate + CUA smoke exact plan gate; total default seeds now 25 (N+3.9)
 - No CUA container run; no docker build; no docker pull; no runtime wiring changed; no Screenpipe capture; no live accounts used (N+3.9)
 - Next required manual action: launch Docker Desktop from Start menu → WSL2 will install on first launch → reboot if prompted → verify daemon running with `docker info` + `wsl --status` → then request separate CUA smoke approval (N+3.9)
+- N+3.9 re-verified at HEAD 9850c46 (2026-04-27): Docker daemon still NOT running; WSL still NOT installed; verdict unchanged: docker_installed_daemon_not_running + wsl_setup_required; all docs and seeds already at 25; no new files added; push of 9850c46 pending (N+3.9 re-run)

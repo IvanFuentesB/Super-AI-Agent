@@ -2,6 +2,73 @@
 
 ---
 
+## Milestone Run: N+3.9 re-run (Claude lane) — Re-verify Docker Daemon State
+
+Date: 2026-04-27
+Branch: feat/ghoti-visible-operator-stack
+Starting HEAD: 9850c46 (docs/ghoti N+3.9 — correct push status in finish line log and next actions)
+Status: `docker_installed_daemon_not_running / wsl_setup_required / state_unchanged / push_pending`
+
+### Summary
+
+Re-execution of the N+3.9 prompt (`ghoti_current_prompt.md`). Docker daemon is still NOT running. WSL still NOT installed. All prior N+3.9 docs and seeds remain accurate. No new files added. One commit (`9850c46`) was pending push to remote at start of this re-run.
+
+### Verification Results
+
+| Check | Result |
+|---|---|
+| Docker CLI | 29.4.0 — confirmed via explicit path |
+| Docker Compose | v5.1.2 — confirmed |
+| Docker daemon | NOT RUNNING — npipe:////./pipe/docker_engine not found |
+| Docker Desktop process | NOT RUNNING — Get-Process empty |
+| Docker Desktop.exe | EXISTS |
+| WSL status | Exit code 50 — "El Subsistema de Windows para Linux no está instalado" |
+| CUA repo HEAD | 46dbcb47802e2c712c87e9a34d4d5b06829a2932 (unchanged) |
+| Final verdict | `docker_installed_daemon_not_running` + `wsl_setup_required` |
+
+### Files Changed
+
+- `14_context/docker_daemon_post_install_verification_n3_9.md` — re-verification HEAD added
+- `14_context/current_state.md` — re-verification line appended
+- `14_context/next_actions.md` — re-verified entry at top
+- `14_context/ghoti_finish_line_log.md` — this entry
+
+### Files Unchanged (already correct)
+
+- `14_context/cua_docker_image_source_truth_n3_9.md` — no change needed
+- `14_context/cua_screenshot_smoke_exact_plan_n3_9.md` — no change needed
+- `01_projects/runtime_mvp/src/super_ai_agent/wait_resume_supervisor.py` — N+3.9 seeds (24+25) already present
+
+### Dirty Files Intentionally Left Unstaged
+
+- `14_context/ghoti_external_repo_tool_intake.md` (modified; not this milestone)
+- `21_repos/third_party/.gitkeep` (modified; third-party area)
+- `.claude/skills/` (untracked; excluded)
+- `01_projects/mcp_server/test.txt` (untracked; excluded)
+- `14_context/ghoti_current_prompt_N1_6.md` (untracked prompt file; excluded)
+- `CV_*.docx` files (untracked; excluded)
+- `output/` (untracked; excluded)
+
+### Commit
+
+TBD — staged after validation
+
+### Push Status
+
+TBD
+
+### Next Recommended Milestone
+
+N+3.10 — after operator launches Docker Desktop and verifies daemon running:
+- Verify `docker info` shows server section (new terminal)
+- Verify `wsl --status` shows WSL2 installed
+- Pin `trycua/cua-ubuntu:latest` to exact sha256 digest; request image digest approval
+- Create ActionIntent with computer.observe_screenshot; compute payload hash
+- Request explicit CUA screenshot-only smoke approval
+- Execute one screenshot-only observe action per approved plan
+
+---
+
 ## Milestone Run: N+3.9 (Claude lane) — Docker Daemon Verification + CUA Screenshot Smoke Preparation
 
 Date: 2026-04-27

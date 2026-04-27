@@ -3,7 +3,8 @@
 Date: 2026-04-27
 Branch: feat/ghoti-visible-operator-stack
 Milestone: N+3.9
-Starting HEAD: 45335fa
+Starting HEAD (original run): 45335fa
+Re-verified at HEAD: 9850c46 (2026-04-27 re-run)
 
 ---
 
@@ -71,7 +72,8 @@ wsl --status
 
 | Field | Value |
 |---|---|
-| Starting HEAD | 45335fa |
+| Starting HEAD (original run) | 45335fa |
+| Re-verified HEAD | 9850c46 |
 | Docker CLI path | `C:\Program Files\Docker\Docker\resources\bin\docker.exe` |
 | Docker CLI version | 29.4.0, build 9d7ad9f |
 | Docker Compose path | `C:\Program Files\Docker\Docker\resources\bin\docker-compose.exe` |
