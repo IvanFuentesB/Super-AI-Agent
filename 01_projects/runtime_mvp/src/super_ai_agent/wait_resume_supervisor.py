@@ -397,6 +397,24 @@ _DEFAULT_SEEDS = [
         risk_level="low",
         notes="PATH B completed N+3.7. Dashboard status route added to server.js (no capture, no delete, policy inspection only). Vault notes updated: 00_Index, 01_Current_State, 04_Tools, 05_Safety_Gates. Docker/CUA gate still pending — type APPROVE DOCKER DESKTOP INSTALL FOR CUA SANDBOX to unlock.",
     ),
+    dict(
+        title="Docker Desktop verified — CUA screenshot-only smoke is next approval gate (N+3.8)",
+        wait_type="user_approval",
+        repo_relative_context="14_context/docker_desktop_install_verification_n3_8.md",
+        resume_command="(manual — open Docker Desktop from Start menu; verify docker info shows daemon running; then request CUA smoke approval)",
+        approval_required=True,
+        risk_level="medium",
+        notes="Docker Desktop 4.70.0 installed via winget in N+3.8. CLI at C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe. Daemon not yet running — operator must launch Docker Desktop manually. WSL2 not yet installed — Docker Desktop will install on first launch. After daemon is verified, CUA screenshot-only smoke is next gate (separate approval required).",
+    ),
+    dict(
+        title="CUA screenshot-only smoke — separate approval required after Docker daemon verified (N+3.8)",
+        wait_type="user_approval",
+        repo_relative_context="14_context/cua_next_screenshot_smoke_after_docker_n3_8.md",
+        resume_command="(manual — verify docker info running, then request CUA smoke approval; see cua_next_screenshot_smoke_after_docker_n3_8.md for exact workflow)",
+        approval_required=True,
+        risk_level="high",
+        notes="Smoke plan at cua_next_screenshot_smoke_after_docker_n3_8.md. ActionIntent required. Payload hash required. localhost or example.com only. No click, no type, no host mounts, no privileged, no live accounts. Audit event required. Output under 05_logs/cua_smoke_runs/<run_id>/. DO NOT RUN until Docker daemon is verified and operator provides explicit separate approval.",
+    ),
 ]
 
 

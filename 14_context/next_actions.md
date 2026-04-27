@@ -1,9 +1,14 @@
 # Next Actions
 
-- N+3.7 delivered (Claude lane, PATH B): Screenpipe read-only dashboard status route added (`GET /api/ghoti/screenpipe/status`), Obsidian vault notes synced (00_Index, 01_Current_State, 04_Tools, 05_Safety_Gates), wait/resume updated to 21 seeds — commit and push pending
-- USER DECISION REQUIRED for N+3.8:
-  - `APPROVE DOCKER DESKTOP INSTALL FOR CUA SANDBOX` → install Docker Desktop, verify Docker/WSL, plan screenshot-only CUA smoke (see `14_context/docker_desktop_cua_install_gate_n3_6.md`)
-  - Docker still not installed; WSL still not installed; all CUA execution paths remain blocked until approval
+- N+3.8 delivered (Claude lane): Docker Desktop 4.70.0 installed via winget; CLI verified (29.4.0); Compose verified (v5.1.2); install verification doc created; CUA smoke plan doc created; wait/resume updated to 23 seeds — commit and push pending
+- OPERATOR MANUAL ACTION REQUIRED — launch Docker Desktop from Start menu to start daemon:
+  1. Open Start menu → "Docker Desktop" → launch
+  2. Accept any WSL2 install prompts (first launch installs WSL2)
+  3. Wait for "Docker is running" green status in system tray
+  4. Reboot if prompted
+  5. After daemon running: verify in new terminal: `docker info`
+- NEXT MILESTONE after daemon verified: CUA screenshot-only smoke (separate prompt/approval required; see `14_context/cua_next_screenshot_smoke_after_docker_n3_8.md`)
+- N+3.7 delivered (Claude lane, PATH B): Screenpipe read-only dashboard status route added (`GET /api/ghoti/screenpipe/status`), Obsidian vault notes synced (00_Index, 01_Current_State, 04_Tools, 05_Safety_Gates), wait/resume updated to 21 seeds — commit eee0cc0 included in N+3.8 push
 - N+3.6 delivered (Claude lane): Docker/CUA install gate doc, CUA Docker/Ubuntu sandbox path doc, execution decision record, status reconcile doc, wait/resume updated to 20 seeds, state docs updated
 
 - N+3.3 delivered: CUA Driver readiness plan, OpenFang Rust candidate plan, Screenpipe retention plan + policy JSON + cleanup script, Obsidian local vault (00_Index, 01_Current_State, 04_Tools, 05_Safety_Gates), wait/resume updated to 12 gates

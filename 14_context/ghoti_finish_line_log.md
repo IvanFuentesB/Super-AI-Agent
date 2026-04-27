@@ -199,7 +199,8 @@ Status: `screenpipe_status_route_added / obsidian_vault_synced / no_docker_insta
 
 ### Push Status
 
-TBD — pending commit.
+PUSH PENDING — commit eee0cc0 is local only; push was denied in this session.
+Run: `git push origin feat/ghoti-visible-operator-stack`
 
 ### Next Recommended Milestone
 
@@ -4164,3 +4165,86 @@ Status: `cua_source_evaluated / sandbox_profile_created / adapter_descriptor_add
 ### Next Recommendation
 
 Identify a Windows-compatible CUA path (Docker-based cua-agent or AutoBrowser) and evaluate AutoBrowser Docker run as the first supervised browser milestone.
+
+---
+
+## Milestone N+3.8 — Docker Desktop Install Gate + CUA Unlock Verification
+
+Date: 2026-04-27
+Branch: feat/ghoti-visible-operator-stack
+Commit: TBD (see git log after push)
+Pushed: PENDING (push requires user approval; N+3.7 commit eee0cc0 also included in push)
+
+### Local commits reconciled
+
+- eee0cc0: feat/ghoti milestone N+3.7 — Screenpipe status route + Obsidian vault sync (unpushed from N+3.7)
+- Remote was at faff2b5 before this milestone started
+
+### Docker Desktop Install Truth
+
+| Field | Value |
+|---|---|
+| Install attempted | YES |
+| Install command | `winget install --id Docker.DockerDesktop -e --accept-package-agreements --accept-source-agreements` |
+| Install result | Installed successfully (Instalado correctamente) |
+| Docker Desktop version | 4.70.0 |
+| Docker CLI path | `C:\Program Files\Docker\Docker\resources\bin\docker.exe` |
+| Docker CLI version | 29.4.0, build 9d7ad9f |
+| Docker Compose version | v5.1.2 |
+| Admin/elevation needed | NO (winget handled without UAC in this shell) |
+| GUI/manual action needed | YES — must open Docker Desktop from Start menu to start daemon |
+| Reboot required | UNKNOWN — no prompt shown; possible on first WSL2 install |
+| Docker daemon running | NO — not yet started |
+| Docker on bash PATH | NO — PATH not updated in current shell; available in new shells after launch |
+
+### WSL Truth
+
+- wsl.exe: `C:\Windows\system32\wsl.exe` — present
+- WSL subsystem: NOT installed — Docker Desktop will install WSL2 on first launch
+
+### Windows System Truth
+
+- Windows 10 Home Single Language
+- Hypervisor detected
+
+### CUA Smoke Unlock Status
+
+- Docker CLI installed: YES
+- Docker daemon running: NO — must launch Docker Desktop manually
+- WSL2 installed: NO — will install on first Docker Desktop launch
+- CUA smoke unlocked: PARTIAL — completes after manual Docker Desktop launch + daemon verification
+- CUA container run: NO
+- Runtime wiring changed: NO
+- Screenpipe capture: NO
+- Live accounts: NO
+
+### Files Created
+
+- `14_context/docker_desktop_install_verification_n3_8.md`
+- `14_context/cua_next_screenshot_smoke_after_docker_n3_8.md`
+
+### Files Modified
+
+- `01_projects/runtime_mvp/src/super_ai_agent/wait_resume_supervisor.py` — 2 new N+3.8 seeds (total: 23)
+- `14_context/current_state.md`
+- `14_context/next_actions.md`
+- `14_context/ghoti_finish_line_log.md`
+
+### Files Intentionally Not Staged
+
+- `21_repos/third_party/.gitkeep`, `.claude/skills/`, `01_projects/mcp_server/test.txt`,
+  `14_context/ghoti_current_prompt_N1_6.md`, `CV_Ivan_*.docx`, `output/`
+
+### Required Next Manual Action
+
+1. Open Docker Desktop from Start menu
+2. Accept WSL2 install prompts on first launch
+3. Wait for "Docker is running" green status in system tray
+4. Reboot if prompted; relaunch Docker Desktop
+5. In new terminal: `docker info` to confirm daemon running
+6. Then request CUA screenshot-only smoke in a separate milestone
+
+### Next Milestone Recommendation
+
+CUA screenshot-only smoke — separate prompt required; exact design at
+`14_context/cua_next_screenshot_smoke_after_docker_n3_8.md`.
