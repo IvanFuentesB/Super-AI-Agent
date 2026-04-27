@@ -216,3 +216,8 @@ C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Gemma diagnostic updated: Ollama v0.9.2 present, no models installed; diagnostic skipped with Claude summary as substitute
 - Obscura source build and CDP smoke verified (N+3.2-obscura); committed at 87357f1
 - No computer-use adapter is runtime-wired; TryCUA/CUA Driver is in wait/resume queue pending sandboxed evaluation
+- CUA Driver readiness plan created at `14_context/cua_driver_readiness_plan.md`; status: evaluation_plan / sandbox_first / not_runtime_wired (N+3.3)
+- OpenFang Rust candidate plan created at `14_context/openfang_rust_readiness_plan.md`; Rust not installed; exact repo unconfirmed (N+3.3)
+- Screenpipe local capture plan created at `14_context/screenpipe_local_capture_plan.md`; 3-day retention policy JSON at `23_configs/screenpipe_retention_policy.example.json`; cleanup script at `03_scripts/screenpipe_retention_cleanup.ps1`; no capture started (N+3.3)
+- Obsidian-style local vault created at `14_context/obsidian_vault/` with index, current-state, tools, and safety-gates notes; vault plan at `14_context/obsidian_token_saving_vault_plan.md` (N+3.3)
+- Wait/resume supervisor updated with 3 new N+3.3 gates (OpenFang, Screenpipe, Obsidian); total active wait items now 12

@@ -80,9 +80,105 @@ Status: `wait_resume_local_only / dashboard_route_added / loc_report_generated /
 - `output/`
 - `01_projects/runtime_mvp/runtime_data/*.tmp-*` (stale temp files, pre-existing)
 
+### Commits
+
+- 87357f1 — docs/verification milestone N+3.2-obscura — record source build and CDP smoke
+- bd6a76f — feat/ghoti milestone N+3.2 — add wait resume supervisor and LOC report
+
 ### Push
 
-TBD — new commit hash pending; push command: `git push origin feat/ghoti-visible-operator-stack`
+`push_pending` — denied in session. Run when ready:
+```
+git push origin feat/ghoti-visible-operator-stack
+```
+
+---
+
+## Milestone Run: N+3.3 CUA/OpenFang/Screenpipe + Obsidian Token-Saving Vault
+
+Date: 2026-04-27
+Branch: feat/ghoti-visible-operator-stack
+Previous HEAD (before N+3.3): bd6a76f (N+3.2 wait/resume + LOC report)
+Status: `cua_plan_created / openfang_evaluated / screenpipe_retention_created / obsidian_vault_created / no_runtime_wiring / no_capture_started`
+
+### Actions taken
+
+| Action | Result |
+|--------|--------|
+| Phase 1: Repo truth | PASS — local bd6a76f ahead of origin be2069d by 1 commit; push denied |
+| Phase 2: Read context | PASS — current_state, next_actions, wait_resume_supervisor, finish_line_log read |
+| Phase 3: CUA Driver readiness plan | PASS — 14_context/cua_driver_readiness_plan.md created |
+| Phase 4: OpenFang Rust plan | PASS — 14_context/openfang_rust_readiness_plan.md created; Rust not installed |
+| Phase 5: Screenpipe retention | PASS — screenpipe_local_capture_plan.md, screenpipe_retention_policy.example.json, screenpipe_retention_cleanup.ps1 created |
+| Phase 6: Obsidian vault | PASS — obsidian_token_saving_vault_plan.md + 4 vault files created |
+| Phase 7: Wait/resume update | PASS — 3 new items added (OpenFang, Screenpipe, Obsidian); total 12 active gates |
+| Phase 8: State docs update | PASS — current_state.md, next_actions.md, finish_line_log.md updated |
+| Phase 9: Validation | PASS — see below |
+| Phase 10: Commit/push | push_pending — see below |
+
+### Validation results
+
+| Check | Result |
+|-------|--------|
+| AST parse — wait_resume_supervisor.py | PASS |
+| JSON parse — screenpipe_retention_policy.example.json | PASS |
+| PowerShell dry-run — screenpipe_retention_cleanup.ps1 | PASS — root path does not exist, nothing deleted |
+| git diff --check | PASS — no whitespace issues |
+| wait_resume_supervisor.py direct run | PASS — 12 items, 3 new N+3.3 gates confirmed |
+| rustc --version | NOT FOUND — Rust not installed |
+| cargo --version | NOT FOUND — Rust not installed |
+| No external adapter wired | PASS |
+| No screen capture started | PASS |
+| No repos cloned | PASS |
+| No installs performed | PASS |
+
+### Files changed (N+3.3 commit)
+
+- `14_context/cua_driver_readiness_plan.md` — NEW
+- `14_context/openfang_rust_readiness_plan.md` — NEW
+- `14_context/screenpipe_local_capture_plan.md` — NEW
+- `23_configs/screenpipe_retention_policy.example.json` — NEW
+- `03_scripts/screenpipe_retention_cleanup.ps1` — NEW
+- `14_context/obsidian_token_saving_vault_plan.md` — NEW
+- `14_context/obsidian_vault/00_Index.md` — NEW
+- `14_context/obsidian_vault/01_Current_State.md` — NEW
+- `14_context/obsidian_vault/04_Tools.md` — NEW
+- `14_context/obsidian_vault/05_Safety_Gates.md` — NEW
+- `01_projects/runtime_mvp/src/super_ai_agent/wait_resume_supervisor.py` — modified (3 new default seeds)
+- `01_projects/runtime_mvp/runtime_data/wait_resume_items.json` — modified (3 new items, TryCUA context updated)
+- `14_context/current_state.md` — modified
+- `14_context/next_actions.md` — modified
+- `14_context/ghoti_finish_line_log.md` — modified (this entry)
+
+### Truth table
+
+| Truth | Value |
+|-------|-------|
+| CUA Driver readiness | evaluation_plan / sandbox_first / not_runtime_wired |
+| OpenFang Rust candidate | exact_repo_unknown / rust_not_installed / evaluation_only |
+| Screenpipe retention | retention_plan_created / no_capture_started / not_runtime_wired |
+| Obsidian vault | vault_created / 4_notes / local_markdown / not_runtime_wired |
+| Wait/resume supervisor | 12 active gates (pending) / local_only |
+| Runtime wiring | local_only — no external adapter wired |
+| Autonomous execution | false |
+| External actions | false |
+
+### Dirty files intentionally left unstaged
+
+- `21_repos/third_party/.gitkeep`
+- `.claude/skills/`
+- `01_projects/mcp_server/test.txt`
+- `14_context/ghoti_current_prompt*.md`
+- `14_context/ghoti_external_repo_tool_intake.md` (pre-existing unstaged changes)
+- CV `.docx` files
+- `output/`
+
+### Push
+
+`push_pending` — denied in session. Run when ready:
+```
+git push origin feat/ghoti-visible-operator-stack
+```
 
 ### Next milestone
 

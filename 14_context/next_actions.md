@@ -1,10 +1,12 @@
 # Next Actions
 
+- N+3.3 delivered: CUA Driver readiness plan, OpenFang Rust candidate plan, Screenpipe retention plan + policy JSON + cleanup script, Obsidian local vault (00_Index, 01_Current_State, 04_Tools, 05_Safety_Gates), wait/resume updated to 12 gates
+- Push N+3.3 commit to origin after operator confirms (push command: `git push origin feat/ghoti-visible-operator-stack`)
+- Operator approval required before: Gemma pull, AutoBrowser wiring, TryCUA eval, OpenFang clone, Screenpipe capture start, any external adapter execution
+- Start using vault notes at `14_context/obsidian_vault/` in future prompts to reduce token usage — reference vault note + file path instead of re-pasting context
+- Decide first candidate from tool_intake_new_candidates_n3_2.md to evaluate next (AnythingLLM or Open WebUI are lowest-risk local-UI options)
 - N+3.2 delivered: wait/resume supervisor, dashboard wait-resume read route, LOC report, computer-use/CUA strategy update, token-saving update, tool intake for new candidates, Gemma diagnostic, Obscura recovery commit (87357f1)
 - Review wait/resume queue: run `python 01_projects/runtime_mvp/src/super_ai_agent/wait_resume_supervisor.py` to see active gates and resume commands
-- Decide first candidate from tool_intake_new_candidates_n3_2.md to evaluate next (AnythingLLM or Open WebUI are lowest-risk local-UI options)
-- Operator approval required before: Gemma pull, AutoBrowser wiring, TryCUA eval, any external adapter execution
-- Push N+3.2 commit to origin after operator confirms (already staged above; push command: `git push origin feat/ghoti-visible-operator-stack`)
 
 - N+3.1 delivered: ActionIntent contracts, CapabilityAdapterDescriptor, approval-bound gating demo, JSONL audit trail, dashboard read route, computer-use strategy note, and token-saving workflow update
 - Validate N+3.1 demo output: run `python 01_projects/runtime_mvp/src/super_ai_agent/action_demo.py` and check `05_logs/action_audit.jsonl` and `05_logs/action_intent_runs/<latest>/action_intent_demo_summary.md`

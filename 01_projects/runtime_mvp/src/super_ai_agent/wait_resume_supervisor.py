@@ -289,6 +289,33 @@ _DEFAULT_SEEDS = [
         risk_level="medium",
         notes="Local-first candidates. No paid/cloud connection without explicit approval.",
     ),
+    dict(
+        title="OpenFang exact repo identification and Rust install approval",
+        wait_type="user_approval",
+        repo_relative_context="14_context/openfang_rust_readiness_plan.md",
+        resume_command="(manual — identify exact OpenFang repo, confirm license, then request operator approval for rustup install and isolated clone)",
+        approval_required=True,
+        risk_level="medium",
+        notes="Rust not installed. Exact repo URL unconfirmed. No clone until repo identified, license checked, and operator approves rustup install.",
+    ),
+    dict(
+        title="Screenpipe local capture retention setup — 3-day retention, operator-start only",
+        wait_type="user_approval",
+        repo_relative_context="14_context/screenpipe_local_capture_plan.md",
+        resume_command="(manual — review screenpipe_local_capture_plan.md, confirm retention policy, operator-start capture only)",
+        approval_required=True,
+        risk_level="medium",
+        notes="Retention policy + cleanup script created in N+3.3. Capture disabled by default. No capture until operator starts.",
+    ),
+    dict(
+        title="Obsidian vault token-saving workflow — use compact notes in prompts",
+        wait_type="tool_available",
+        repo_relative_context="14_context/obsidian_vault/00_Index.md",
+        resume_command="(start referencing vault notes in prompts instead of re-pasting context)",
+        approval_required=False,
+        risk_level="low",
+        notes="Vault created at 14_context/obsidian_vault/ in N+3.3. Use vault notes to reduce token usage.",
+    ),
 ]
 
 
