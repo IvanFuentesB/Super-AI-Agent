@@ -72,6 +72,141 @@ N+3.7 — operator decision determines path:
 
 ---
 
+## Milestone Run: N+3.7 (Claude lane, PATH B) — Screenpipe Status Route + Obsidian Vault Sync
+
+Date: 2026-04-27
+Branch: feat/ghoti-visible-operator-stack
+Starting HEAD: b902dca (docs/feature milestone N+3.6)
+Status: `screenpipe_status_route_added / obsidian_vault_synced / no_docker_install / no_capture / not_runtime_wired`
+
+### Codex N+3.7 Reconcile
+
+| Field | Value |
+|---|---|
+| Local HEAD | b902dca — matches origin (no push needed) |
+| Pull/rebase needed | NO |
+| Staged files at start | NONE |
+| PATH chosen | B — Docker approval phrase absent |
+
+### Environment Truth (Phase 3)
+
+| Tool | Status |
+|---|---|
+| Docker | NOT installed |
+| WSL | NOT installed |
+| Node | v22.16.0 |
+| Python | 3.13.3 |
+| npm | 10.9.2 |
+| winget | v1.28.240 |
+
+### Actions Taken
+
+| Phase | Action | Result |
+|---|---|---|
+| Phase 1 | Repo truth + remote compare | PASS — local=origin=b902dca; no push needed |
+| Phase 2 | Read context | PASS — current_state, next_actions, supervisor, server.js header read |
+| Phase 3 | Environment checks | PASS — Docker absent, WSL absent, Node/Python/npm confirmed |
+| Phase 4B | Add screenpipe status route | PASS — GET /api/ghoti/screenpipe/status in server.js |
+| Phase 4B | Create screenpipe_dashboard_status_route_n3_7.md | PASS |
+| Phase 4B | Create obsidian_vault_sync_n3_7.md | PASS |
+| Phase 4B | Update obsidian_vault/00_Index.md | PASS |
+| Phase 4B | Update obsidian_vault/01_Current_State.md | PASS |
+| Phase 4B | Update obsidian_vault/04_Tools.md | PASS |
+| Phase 4B | Update obsidian_vault/05_Safety_Gates.md | PASS |
+| Phase 5 | Update wait_resume_supervisor.py (1 new seed, total 21) | PASS |
+| Phase 6 | Update current_state.md | PASS |
+| Phase 6 | Update next_actions.md | PASS |
+| Phase 6 | Update ghoti_finish_line_log.md | PASS (this entry) |
+| Phase 7 | Validation | see below |
+| Phase 8 | Stage/commit/push | TBD |
+
+### Validation Results
+
+| Check | Result |
+|---|---|
+| AST OK — wait_resume_supervisor.py | PASS |
+| node --check — server.js | PASS |
+| node --check — app.js | PASS |
+| node --check — overlay.js | PASS |
+| python -m json.tool — screenpipe policy JSON | PASS |
+| git diff --check | CRLF trailing-carriage-return only (existing CRLF Windows file; no actual trailing spaces introduced) |
+
+### Docker / CUA Truth
+
+| Check | Result |
+|---|---|
+| Docker installed | NO |
+| WSL installed | NO |
+| CUA container run | NO |
+| CUA install | NO |
+| Live accounts used | NO |
+| Screenpipe capture started | NO |
+| Runtime wiring | NO |
+| Third-party staged | NO |
+
+### Screenpipe Truth
+
+| Check | Result |
+|---|---|
+| Dashboard status route | GET /api/ghoti/screenpipe/status — ADDED |
+| Capture started | NO |
+| Screenshots read | NO |
+| Files deleted | NO |
+| Policy file | exists (23_configs/screenpipe_retention_policy.example.json) |
+| Cleanup script | exists (03_scripts/screenpipe_retention_cleanup.ps1) |
+
+### Obsidian Vault Truth
+
+| Note | Updated |
+|---|---|
+| 00_Index.md | YES — milestone N+3.7 |
+| 01_Current_State.md | YES — N+3.4–N+3.7 additions |
+| 04_Tools.md | YES — Screenpipe/CUA/Docker truth updated |
+| 05_Safety_Gates.md | YES — N+3.7 gates added |
+
+### Wait/Resume Truth
+
+| Field | Value |
+|---|---|
+| Default seeds total | 21 |
+| New N+3.7 seed | Screenpipe status route + Obsidian vault sync done (PATH B) |
+| Docker gate | Still pending — approval phrase required |
+
+### Files Changed
+
+- `01_projects/dashboard_mvp/server.js` — added GET /api/ghoti/screenpipe/status route
+- `01_projects/runtime_mvp/src/super_ai_agent/wait_resume_supervisor.py` — 1 new N+3.7 seed
+- `14_context/screenpipe_dashboard_status_route_n3_7.md` — new
+- `14_context/obsidian_vault_sync_n3_7.md` — new
+- `14_context/obsidian_vault/00_Index.md` — updated
+- `14_context/obsidian_vault/01_Current_State.md` — updated
+- `14_context/obsidian_vault/04_Tools.md` — updated
+- `14_context/obsidian_vault/05_Safety_Gates.md` — updated
+- `14_context/current_state.md` — updated
+- `14_context/next_actions.md` — updated
+- `14_context/ghoti_finish_line_log.md` — updated (this entry)
+
+### Dirty Files Intentionally Left Unstaged
+
+- `14_context/ghoti_external_repo_tool_intake.md` (modified; not part of this milestone)
+- `21_repos/third_party/.gitkeep` (modified; third-party area)
+- `.claude/skills/` (untracked; excluded per prompt rules)
+- `01_projects/mcp_server/test.txt` (untracked; not part of milestone)
+- `14_context/ghoti_current_prompt_N1_6.md` (untracked prompt file; excluded)
+- `14_context/ghoti_current_prompt.md` (untracked prompt file; excluded)
+- `CV_*.docx` files (untracked; excluded per safety rules)
+- `output/` (untracked; excluded per prompt rules)
+
+### Push Status
+
+TBD — pending commit.
+
+### Next Recommended Milestone
+
+N+3.8 — type `APPROVE DOCKER DESKTOP INSTALL FOR CUA SANDBOX` to unlock Docker/WSL/CUA path.
+
+---
+
 ## Milestone Run: N+3.5 — CUA/TryCUA Exact Clone Audit + Sandbox-Only Descriptor Path
 
 Date: 2026-04-27

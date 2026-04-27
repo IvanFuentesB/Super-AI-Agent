@@ -1,11 +1,10 @@
 # Next Actions
 
-- N+3.6 delivered (Claude lane): Docker/CUA install gate doc, CUA Docker/Ubuntu sandbox path doc, execution decision record, status reconcile doc, wait/resume updated to 20 seeds, state docs updated — commit and push pending
-- USER DECISION REQUIRED — type exactly one of:
+- N+3.7 delivered (Claude lane, PATH B): Screenpipe read-only dashboard status route added (`GET /api/ghoti/screenpipe/status`), Obsidian vault notes synced (00_Index, 01_Current_State, 04_Tools, 05_Safety_Gates), wait/resume updated to 21 seeds — commit and push pending
+- USER DECISION REQUIRED for N+3.8:
   - `APPROVE DOCKER DESKTOP INSTALL FOR CUA SANDBOX` → install Docker Desktop, verify Docker/WSL, plan screenshot-only CUA smoke (see `14_context/docker_desktop_cua_install_gate_n3_6.md`)
-  - `DO SCREENPIPE DASHBOARD + OBSIDIAN SYNC FIRST` → implement Screenpipe read-only dashboard route + Obsidian vault compact updates, revisit Docker/CUA after
-- If Docker approved: install Docker Desktop → verify `docker --version` + `docker info` + `wsl --status` → inspect Docker settings → do NOT run any CUA container yet → report truth and update wait/resume
-- If Screenpipe/Obsidian first: add read-only Screenpipe status panel to dashboard (no capture), update Obsidian vault notes, keep Docker/CUA gate open for later
+  - Docker still not installed; WSL still not installed; all CUA execution paths remain blocked until approval
+- N+3.6 delivered (Claude lane): Docker/CUA install gate doc, CUA Docker/Ubuntu sandbox path doc, execution decision record, status reconcile doc, wait/resume updated to 20 seeds, state docs updated
 
 - N+3.3 delivered: CUA Driver readiness plan, OpenFang Rust candidate plan, Screenpipe retention plan + policy JSON + cleanup script, Obsidian local vault (00_Index, 01_Current_State, 04_Tools, 05_Safety_Gates), wait/resume updated to 12 gates
 - Push N+3.3 commit to origin after operator confirms (push command: `git push origin feat/ghoti-visible-operator-stack`)

@@ -2,7 +2,7 @@
 
 **Branch:** `feat/ghoti-visible-operator-stack`
 **Last updated:** 2026-04-27
-**Milestone:** N+3.3
+**Milestone:** N+3.7
 
 ---
 
@@ -36,3 +36,9 @@
 | `01_Current_State.md` | `14_context/current_state.md` |
 | `04_Tools.md` | `14_context/tool_intake_new_candidates_n3_2.md` |
 | `05_Safety_Gates.md` | `14_context/computer_use_strategy_note.md`, `01_projects/runtime_mvp/src/super_ai_agent/action_intent.py` |
+
+## Sync Docs
+
+| Sync Doc | Milestone |
+|----------|-----------|
+| `14_context/obsidian_vault_sync_n3_7.md` | N+3.7 |

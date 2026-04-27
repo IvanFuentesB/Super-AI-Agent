@@ -388,6 +388,15 @@ _DEFAULT_SEEDS = [
         risk_level="low",
         notes="Alternative to Docker install if operator prefers no new system installs. Dashboard route = read-only status panel, no capture started. Obsidian = compact markdown vault updates. Decision doc at n3_6_execution_decision.md.",
     ),
+    dict(
+        title="Screenpipe read-only status route + Obsidian vault sync done (N+3.7 PATH B)",
+        wait_type="tool_available",
+        repo_relative_context="14_context/screenpipe_dashboard_status_route_n3_7.md",
+        resume_command="GET /api/ghoti/screenpipe/status — no capture started; use vault notes from 14_context/obsidian_vault/ in prompts",
+        approval_required=False,
+        risk_level="low",
+        notes="PATH B completed N+3.7. Dashboard status route added to server.js (no capture, no delete, policy inspection only). Vault notes updated: 00_Index, 01_Current_State, 04_Tools, 05_Safety_Gates. Docker/CUA gate still pending — type APPROVE DOCKER DESKTOP INSTALL FOR CUA SANDBOX to unlock.",
+    ),
 ]
 
 

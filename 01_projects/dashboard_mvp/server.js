@@ -5808,6 +5808,60 @@ async function handleApiRequest(request, response, requestUrl) {
     return;
   }
 
+  // GET /api/ghoti/screenpipe/status — read-only policy existence check (N+3.7)
+  // Does NOT start capture, read frames, serve screenshots, or delete anything.
+  if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/screenpipe/status") {
+    const policyFilePath = path.join(repoRoot, "23_configs", "screenpipe_retention_policy.example.json");
+    const cleanupScriptPath = path.join(repoRoot, "03_scripts", "screenpipe_retention_cleanup.ps1");
+    const outputScreenpipePath = path.join(repoRoot, "output", "screenpipe");
+    const logsScreenpipePath = path.join(repoRoot, "05_logs", "screenpipe");
+
+    const policyFileExists = fs.existsSync(policyFilePath);
+    const cleanupScriptExists = fs.existsSync(cleanupScriptPath);
+    let retentionDays = null;
+    let dryRunDefault = null;
+    let allowedRoots = [];
+
+    if (policyFileExists) {
+      try {
+        const policy = JSON.parse(fs.readFileSync(policyFilePath, "utf8"));
+        retentionDays = policy.retention_days ?? null;
+        dryRunDefault = policy.dry_run_default ?? null;
+        allowedRoots = Array.isArray(policy.allowed_roots) ? policy.allowed_roots : [];
+      } catch { /* parse error — leave nulls */ }
+    }
+
+    const outputScreenpipeExists = fs.existsSync(outputScreenpipePath);
+    let outputScreenpipeFileCount = 0;
+    if (outputScreenpipeExists) {
+      try { outputScreenpipeFileCount = fs.readdirSync(outputScreenpipePath).length; } catch { /* ignore */ }
+    }
+
+    const logsScreenpipeExists = fs.existsSync(logsScreenpipePath);
+    let logsScreenpipeFileCount = 0;
+    if (logsScreenpipeExists) {
+      try { logsScreenpipeFileCount = fs.readdirSync(logsScreenpipePath).length; } catch { /* ignore */ }
+    }
+
+    sendJson(response, 200, {
+      ok: true,
+      capture_started: false,
+      runtime_wired: false,
+      retention_days: retentionDays,
+      dry_run_default: dryRunDefault,
+      policy_file_exists: policyFileExists,
+      cleanup_script_exists: cleanupScriptExists,
+      allowed_roots: allowedRoots,
+      output_screenpipe_exists: outputScreenpipeExists,
+      output_screenpipe_file_count: outputScreenpipeFileCount,
+      logs_screenpipe_exists: logsScreenpipeExists,
+      logs_screenpipe_file_count: logsScreenpipeFileCount,
+      deletion_performed: false,
+      updated_at_utc: new Date().toISOString(),
+    });
+    return;
+  }
+
   sendJson(response, 404, {
     ok: false,
     error: "Route not found.",
