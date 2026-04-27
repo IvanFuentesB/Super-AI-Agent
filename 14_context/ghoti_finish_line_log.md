@@ -131,9 +131,15 @@ Status: `docker_installed_daemon_not_running / wsl_setup_required / cua_smoke_bl
 | wait_resume_supervisor.py direct run | PASS — 12 active items from runtime file; 25 code-level default seeds |
 | git diff --check | CRLF trailing-carriage-return warnings in current_state.md and next_actions.md (existing Windows CRLF file; no actual trailing spaces introduced — same artifact pattern as N+3.7) |
 
+### Commit
+
+`6f95359 feat/ghoti milestone N+3.9 — verify Docker daemon and prepare CUA screenshot smoke`
+
 ### Push Status
 
-TBD — pending commit and push permission gate.
+`push_pending` — push denied in this session.
+Run when ready: `git push origin feat/ghoti-visible-operator-stack`
+Note: this will also push the prior unpushed N+3.8 commit (45335fa).
 
 ### Next Recommended Milestone
 
