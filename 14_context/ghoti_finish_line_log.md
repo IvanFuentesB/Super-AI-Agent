@@ -367,9 +367,14 @@ feat/ghoti-visible-operator-stack
 - Local brain router preview: PASS
 - git diff --check: PASS
 
+### Commit Hash
+
+4ab078d
+
 ### Push Status
 
-push_pending — commit+push pending
+push_pending — push blocked by permission gate; operator must run:
+  git push origin feat/ghoti-visible-operator-stack
 
 ### Next Milestone
 
