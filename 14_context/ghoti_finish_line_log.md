@@ -195,3 +195,51 @@ Optional: APPROVE OLLAMA PULL GEMMA3:4B FOR LOCAL BRAIN SMOKE
 ### Next Milestone
 
 N+3.13 — CUA screenshot-only smoke execution (after both approval phrases provided)
+
+---
+
+## N+3.13 — CUA Screenshot Smoke and Gemma Local Brain Smoke
+
+### Date
+2026-04-28
+
+### Branch
+feat/ghoti-visible-operator-stack
+
+### Starting HEAD
+069a10e
+
+### What Was Delivered
+
+- Docker/WSL re-verified: all GO (Docker 29.4.1, Compose v5.1.3, WSL2 docker-desktop Running v2, context=desktop-linux, Server 29.4.1)
+- CUA image digest re-checked: sha256:2bb539bd42f59f9e2a889faa4ebcb535a0c06397a3b98e45fd5cc8a96c22014a UNCHANGED from N+3.11/N+3.12
+- Both approval phrases confirmed present in N+3.13 prompt
+- CUA screenshot-only smoke EXECUTED and PASSED:
+  - Image pulled (18.5 GB, pinned digest)
+  - Container ghoti-cua-smoke-n3-13 started (127.0.0.1:6901->6901/tcp)
+  - KasmVNC HTTP 401 confirmed at localhost:6901
+  - No click, no type, no login, no host mounts, no privileged
+  - Container stopped and removed cleanly (--rm)
+  - Results: 05_logs/cua_smoke_runs/n3_13_20260428_1400/
+- Gemma3:4b local brain smoke PASS:
+  - ollama pull gemma3:4b: SUCCESS (3.3 GB, model a2af6cc3eb7f)
+  - Smoke: ollama run gemma3:4b Return exactly: GHOTI_LOCAL_BRAIN_OK
+  - Output: GHOTI_LOCAL_BRAIN_OK (exact match)
+  - brain_inference_ready: YES (first time in project)
+- Dashboard launcher created: 03_scripts/run_dashboard.ps1
+  - Starts Node server at localhost:3210
+  - No service, no auto-start, operator-triggered only
+- Wait/resume supervisor updated with 3 new N+3.13 seeds (33-35); total default seeds now 35
+- Validation: AST OK, JSON OK, node --check OK, supervisor runs OK
+
+### Commit Hash
+
+TBD (pre-commit)
+
+### Push Status
+
+push_pending — will push after commit
+
+### Next Milestone
+
+N+3.14 — wire brain-infer to confirmed gemma3:4b path; update brain-status CLI truth; optionally activate CUA adapter descriptor or test dashboard shortcut

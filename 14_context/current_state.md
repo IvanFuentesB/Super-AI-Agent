@@ -15,3 +15,12 @@
 - Wait/resume supervisor updated with 3 new N+3.12 seeds (30: CUA ActionIntent + payload gate, 31: Gemma brain pull gate, 32: dashboard startup planning); total default seeds now 32 (N+3.12)
 - No CUA container run; no docker build; no docker pull; no runtime wiring changed; no Screenpipe capture; no live accounts used (N+3.12)
 - Next required operator actions: (1) APPROVE CUA IMAGE DIGEST sha256:2bb539bd42f59f9e2a889faa4ebcb535a0c06397a3b98e45fd5cc8a96c22014a FOR SCREENSHOT-ONLY SMOKE, then (2) APPROVE CUA SCREENSHOT-ONLY SMOKE WITH DIGEST sha256:2bb539bd42f59f9e2a889faa4ebcb535a0c06397a3b98e45fd5cc8a96c22014a AND PAYLOAD 69149d31f052bfce0d15e383797b3fbbeee80dc351f3a2e100f1746fb51418e4; optional: (3) APPROVE OLLAMA PULL GEMMA3:4B FOR LOCAL BRAIN SMOKE (N+3.12)
+
+- N+3.13 Docker/WSL re-verification (2026-04-28): All GO — Docker Desktop 3 PIDs running, Docker 29.4.1, Compose v5.1.3, WSL2 docker-desktop Running v2, context=desktop-linux, Server 29.4.1, 16 CPUs, 15.27 GiB (N+3.13)
+- N+3.13 CUA digest re-checked: sha256:2bb539bd42f59f9e2a889faa4ebcb535a0c06397a3b98e45fd5cc8a96c22014a confirmed UNCHANGED from N+3.11 and N+3.12; both approval phrases present in N+3.13 prompt (N+3.13)
+- N+3.13 CUA screenshot-only smoke EXECUTED and PASSED: image pulled (18.5 GB, sha256:2bb539bd); container ghoti-cua-smoke-n3-13 started; KasmVNC HTTP 401 confirmed at localhost:6901; no click, no type, no login, no host mounts, no privileged; container stopped and removed by --rm; results at 05_logs/cua_smoke_runs/n3_13_20260428_1400/ (N+3.13)
+- N+3.13 Gemma/Ollama local brain smoke COMPLETED: ollama pull gemma3:4b success (3.3 GB, model a2af6cc3eb7f); inference smoke returned GHOTI_LOCAL_BRAIN_OK exactly; brain_inference_ready: YES (first time) (N+3.13)
+- N+3.13 Dashboard PowerShell launcher created at 03_scripts/run_dashboard.ps1; starts Node server at localhost:3210; no service installed; no auto-start; operator-triggered only (N+3.13)
+- Wait/resume supervisor updated with 3 new N+3.13 seeds (33: CUA smoke done, 34: Gemma brain done, 35: dashboard launcher); total default seeds now 35 (N+3.13)
+- No runtime wiring changed; no live accounts used; no Screenpipe capture started; CUA not wired into runtime (N+3.13)
+- Next milestone: N+3.14 — runtime brain wiring (wire brain-status/brain-infer to confirmed gemma3:4b), CUA adapter activation planning, or dashboard shortcut creation

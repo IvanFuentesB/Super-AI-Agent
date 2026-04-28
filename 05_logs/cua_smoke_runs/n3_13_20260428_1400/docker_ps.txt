@@ -1,0 +1,13 @@
+## docker ps output — N+3.13 CUA Smoke (captured at ~10s after start)
+
+CONTAINER ID   IMAGE          COMMAND                  CREATED          STATUS          PORTS                      NAMES
+7d615149fa44   2bb539bd42f5   "/dockerstartup/kasm…"   17 seconds ago   Up 15 seconds   127.0.0.1:6901->6901/tcp   ghoti-cua-smoke-n3-13
+
+Result: Container running, port 127.0.0.1:6901->6901/tcp confirmed.
+
+## docker ps after stop (cleanup verification)
+
+CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
+(empty — container removed by --rm flag after stop)
+
+Cleanup: PASS — no container remains.

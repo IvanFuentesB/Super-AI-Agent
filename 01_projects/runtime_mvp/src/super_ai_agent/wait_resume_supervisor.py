@@ -520,6 +520,54 @@ _DEFAULT_SEEDS = [
             'Do NOT add Windows service without separate approval.'
         ),
     ),
+    dict(
+        title='CUA screenshot-only smoke completed safely (N+3.13)',
+        wait_type='external_result',
+        repo_relative_context='05_logs/cua_smoke_runs/n3_13_20260428_1400/screenshot_result.md',
+        resume_command=(
+            '(completed -- container started, KasmVNC HTTP 401 confirmed, container stopped; '
+            'see 05_logs/cua_smoke_runs/n3_13_20260428_1400/screenshot_result.md)'
+        ),
+        approval_required=False,
+        risk_level='low',
+        notes=(
+            'N+3.13: CUA smoke PASS. Image sha256:2bb539bd pulled (18.5 GB). '
+            'Container ghoti-cua-smoke-n3-13 started. KasmVNC HTTP 401 confirmed at localhost:6901. '
+            'No click, no type, no login, no host mounts, no privileged. '
+            'Container stopped and removed. CUA NOT runtime-wired.'
+        ),
+    ),
+    dict(
+        title='Gemma3:4b local brain smoke — pull and inference smoke (N+3.13)',
+        wait_type='external_result',
+        repo_relative_context='14_context/gemma_local_brain_smoke_n3_13.md',
+        resume_command=(
+            '(see 14_context/gemma_local_brain_smoke_n3_13.md for result; '
+            'if brain_inference_ready=YES: run brain-status from CLI to confirm)'
+        ),
+        approval_required=False,
+        risk_level='low',
+        notes=(
+            'N+3.13: Gemma3:4b pulled via ollama pull gemma3:4b (~3.3 GB main blob). '
+            'Smoke inference attempted: ollama run gemma3:4b "Return exactly: GHOTI_LOCAL_BRAIN_OK". '
+            'See result doc for brain_inference_ready truth.'
+        ),
+    ),
+    dict(
+        title='Dashboard PowerShell launcher created (N+3.13)',
+        wait_type='tool_available',
+        repo_relative_context='03_scripts/run_dashboard.ps1',
+        resume_command=(
+            'powershell.exe -ExecutionPolicy Bypass -File .\\03_scripts\\run_dashboard.ps1 -OpenBrowser'
+        ),
+        approval_required=False,
+        risk_level='low',
+        notes=(
+            'N+3.13: 03_scripts/run_dashboard.ps1 created. '
+            'Starts Node dashboard at http://localhost:3210. No service installed. No Startup folder. '
+            'Operator-triggered only. Next step: test via shortcut if desired.'
+        ),
+    ),
 ]
 
 

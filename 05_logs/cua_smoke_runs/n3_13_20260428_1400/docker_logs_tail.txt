@@ -1,0 +1,43 @@
+## docker logs ghoti-cua-smoke-n3-13 --tail 80 — N+3.13 CUA Smoke
+
+2026-04-28T15:46:32Z DEBUG (vnc_startup.sh): Executed custom startup script.
+Listening for incomming MPEG-TS Stream on https://127.0.0.1:8081/<secret>
+Awaiting WebSocket connections on wss://127.0.0.1:4901/
+ 2026-04-28 15:46:32,357 [DEBUG] Selection: Selection owner change for WM_S0
+ 2026-04-28 15:46:32,422 [DEBUG] Selection: Selection owner change for XFWM4_COMPOSITING_MANAGER
+ 2026-04-28 15:46:32,470 [DEBUG] Selection: Selection owner change for _XSETTINGS_S0
+ 2026-04-28 15:46:32,544 [DEBUG] Selection: Selection owner change for CLIPBOARD_MANAGER
+ 2026-04-28 15:46:32,895 [DEBUG] Selection: Selection owner change for _NET_DESKTOP_LAYOUT_S0
+ 2026-04-28 15:46:32,953 [DEBUG] Selection: Selection owner change for XFDESKTOP_SELECTION_0
+ 2026-04-28 15:46:32,953 [DEBUG] Selection: Selection owner change for _NET_DESKTOP_MANAGER_S0
+ 2026-04-28 15:46:32,982 [DEBUG] Selection: Selection owner change for _NET_SYSTEM_TRAY_S0
+ * Serving Flask app 'kasm_upload_server'
+ * Debug mode: off
+Stream Connected: ::ffff:127.0.0.1:44260
+Using Python 3.12.12 environment at: /usr
+_IceTransmkdir: ERROR: euid != 0,directory /tmp/.ICE-unix will not be created.
+xfce4-session: No SSH authentication agent found
+gpg-agent[165]: directory '/home/kasm-user/.gnupg' created
+gpg-agent[165]: directory '/home/kasm-user/.gnupg/private-keys-v1.d' created
+gpg-agent[166]: gpg-agent (GnuPG) 2.2.27 started
+(xfsettingsd:184): libupower-glib-WARNING **: 15:46:32.472: Couldn't connect to proxy
+Failed to unload module: Module module-pipe-source not loaded
+** (xiccd:220): CRITICAL **: 15:46:32.957: Failed to connect to colord
+(polkit-gnome-authentication-agent-1:234): polkit-gnome-1-WARNING **: 15:46:32.997: Error getting authority
+INFO:KasmPrintingService:Watching for PDF documents at /home/kasm-user/PDF
+service.py:79: DeprecationWarning: There is no current event loop
+(xfdesktop:206): GVFS-RemoteVolumeMonitor-WARNING **: remote volume monitor not supported
+(xfdesktop:206): WARNING: Failed to get system bus
+ERROR:KasmGamepadServer:Failed to connect input (/dev/input/event0-3): No such file or directory
+ * Running on all addresses (0.0.0.0)
+ * Running on https://127.0.0.1:4902
+ * Running on https://172.17.0.2:4902
+(uv pip install in progress - downloading cua-agent[all] packages)
+
+Notes:
+- KasmVNC startup successful (Xfce desktop booting)
+- "Stream Connected" confirms VNC stream active
+- Errors about colord, polkit, dbus are expected in Docker (no system bus)
+- KasmPrintingService started
+- uv pip install upgrading cua-computer-server and cua-agent[all] at startup
+- Container running correctly; initialization normal for Kasm Ubuntu

@@ -1,0 +1,26 @@
+## N+3.13 CUA Screenshot-Only Smoke — Docker Commands
+
+# Phase 4: Digest verified (no pull yet)
+docker manifest inspect trycua/cua-ubuntu:latest
+# Result: amd64 digest sha256:2bb539bd42f59f9e2a889faa4ebcb535a0c06397a3b98e45fd5cc8a96c22014a UNCHANGED
+
+# Phase 6: Pull pinned digest
+docker pull trycua/cua-ubuntu@sha256:2bb539bd42f59f9e2a889faa4ebcb535a0c06397a3b98e45fd5cc8a96c22014a
+
+# Phase 6: Run screenshot-only smoke (safe constraints)
+docker run --rm -d \
+  --name ghoti-cua-smoke-n3-13 \
+  -p 127.0.0.1:6901:6901 \
+  trycua/cua-ubuntu@sha256:2bb539bd42f59f9e2a889faa4ebcb535a0c06397a3b98e45fd5cc8a96c22014a
+# No --privileged | No -v host mounts | localhost-only port | detached
+
+# Phase 6: Inspect running container
+docker ps --filter name=ghoti-cua-smoke-n3-13
+docker logs ghoti-cua-smoke-n3-13 --tail 80
+
+# Phase 6: Localhost probe (header only, no login)
+# curl -s -I --max-time 10 http://127.0.0.1:6901
+
+# Phase 6: Cleanup
+docker stop ghoti-cua-smoke-n3-13
+docker ps --filter name=ghoti-cua-smoke-n3-13
