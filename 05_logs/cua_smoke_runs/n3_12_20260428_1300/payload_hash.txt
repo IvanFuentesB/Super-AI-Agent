@@ -1,0 +1,13 @@
+payload_hash: 69149d31f052bfce0d15e383797b3fbbeee80dc351f3a2e100f1746fb51418e4
+
+canonical_payload_json: {"allow_click":false,"allow_host_mounts":false,"allow_live_accounts":false,"allow_privileged":false,"allow_type":false,"allowed_network":"docker_pull_only + localhost_access_only","cleanup_required":true,"image":"trycua/cua-ubuntu@sha256:2bb539bd42f59f9e2a889faa4ebcb535a0c06397a3b98e45fd5cc8a96c22014a","output_dir":"05_logs/cua_smoke_runs/n3_12_20260428_1300","stop_after_seconds":120}
+
+hash_algorithm: sha256
+encoding: utf-8
+serialization: json.dumps(payload, sort_keys=True, separators=(',', ':'))
+
+computed_at: 2026-04-28T13:00:00Z
+milestone: N+3.12
+
+SECOND APPROVAL PHRASE REQUIRED (after first image digest approval):
+  APPROVE CUA SCREENSHOT-ONLY SMOKE WITH DIGEST sha256:2bb539bd42f59f9e2a889faa4ebcb535a0c06397a3b98e45fd5cc8a96c22014a AND PAYLOAD 69149d31f052bfce0d15e383797b3fbbeee80dc351f3a2e100f1746fb51418e4

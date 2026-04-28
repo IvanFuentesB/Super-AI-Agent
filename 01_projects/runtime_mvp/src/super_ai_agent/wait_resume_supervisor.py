@@ -469,6 +469,57 @@ _DEFAULT_SEEDS = [
         risk_level='medium',
         notes='N+3.11: Ollama 0.9.2 installed. No models installed. Gemma not available locally. Approval required for ollama pull gemma3:4b (~2.5 GB).',
     ),
+    dict(
+        title='CUA ActionIntent + payload hash ready — both digest and smoke approvals required (N+3.12)',
+        wait_type='user_approval',
+        repo_relative_context='14_context/cua_action_intent_payload_gate_n3_12.md',
+        resume_command=(
+            '(manual -- provide BOTH: '
+            '(1) APPROVE CUA IMAGE DIGEST sha256:2bb539bd42f59f9e2a889faa4ebcb535a0c06397a3b98e45fd5cc8a96c22014a FOR SCREENSHOT-ONLY SMOKE, '
+            'then (2) APPROVE CUA SCREENSHOT-ONLY SMOKE WITH DIGEST sha256:2bb539bd42f59f9e2a889faa4ebcb535a0c06397a3b98e45fd5cc8a96c22014a AND PAYLOAD 69149d31f052bfce0d15e383797b3fbbeee80dc351f3a2e100f1746fb51418e4)'
+        ),
+        approval_required=True,
+        risk_level='high',
+        notes=(
+            'N+3.12: ActionIntent created (intent-n3-12-cua-smoke-20260428-1300). '
+            'Payload hash: 69149d31f052bfce0d15e383797b3fbbeee80dc351f3a2e100f1746fb51418e4. '
+            'Image digest verified unchanged: sha256:2bb539bd42f59f9e2a889faa4ebcb535a0c06397a3b98e45fd5cc8a96c22014a. '
+            'Docker/WSL GO. Both approval phrases required before docker pull/run.'
+        ),
+    ),
+    dict(
+        title='Gemma local brain pull or smoke completion gate (N+3.12)',
+        wait_type='user_approval',
+        repo_relative_context='14_context/gemma_local_brain_path_n3_12.md',
+        resume_command=(
+            '(manual -- type: APPROVE OLLAMA PULL GEMMA3:4B FOR LOCAL BRAIN SMOKE; '
+            'then run: ollama pull gemma3:4b && ollama run gemma3:4b "Return exactly: GHOTI_LOCAL_BRAIN_OK")'
+        ),
+        approval_required=True,
+        risk_level='medium',
+        notes=(
+            'N+3.12: Ollama 0.9.2 confirmed installed, no models installed. '
+            'Gemma not locally available. brain_inference_ready=NO. '
+            'Approval phrase required before pull (~2.5 GB).'
+        ),
+    ),
+    dict(
+        title='Persistent dashboard/app startup planning — startup script and health check (N+3.12)',
+        wait_type='tool_available',
+        repo_relative_context='14_context/persistent_dashboard_app_plan_n3_12.md',
+        resume_command=(
+            '(manual -- review 14_context/persistent_dashboard_app_plan_n3_12.md; '
+            'decide: (A) PowerShell launcher shortcut or (B) Startup folder entry; '
+            'implement 03_scripts/run_dashboard.ps1 when ready)'
+        ),
+        approval_required=False,
+        risk_level='low',
+        notes=(
+            'N+3.12: Dashboard must be manually relaunched. Plan doc created. '
+            'Recommended first step: PowerShell launcher + shortcut (no admin, reversible). '
+            'Do NOT add Windows service without separate approval.'
+        ),
+    ),
 ]
 
 

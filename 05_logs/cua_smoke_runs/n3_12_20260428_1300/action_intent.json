@@ -1,0 +1,33 @@
+{
+  "intent_id": "intent-n3-12-cua-smoke-20260428-1300",
+  "created_at_utc": "2026-04-28T13:00:00Z",
+  "action_type": "computer.observe_screenshot",
+  "adapter_id": "cua-docker-ubuntu-screenshot-only",
+  "target": "local container web UI / screenshot-only",
+  "image": "trycua/cua-ubuntu@sha256:2bb539bd42f59f9e2a889faa4ebcb535a0c06397a3b98e45fd5cc8a96c22014a",
+  "payload": {
+    "allow_click": false,
+    "allow_host_mounts": false,
+    "allow_live_accounts": false,
+    "allow_privileged": false,
+    "allow_type": false,
+    "allowed_network": "docker_pull_only + localhost_access_only",
+    "cleanup_required": true,
+    "image": "trycua/cua-ubuntu@sha256:2bb539bd42f59f9e2a889faa4ebcb535a0c06397a3b98e45fd5cc8a96c22014a",
+    "output_dir": "05_logs/cua_smoke_runs/n3_12_20260428_1300",
+    "stop_after_seconds": 120
+  },
+  "payload_hash": "69149d31f052bfce0d15e383797b3fbbeee80dc351f3a2e100f1746fb51418e4",
+  "allow_click": false,
+  "allow_type": false,
+  "allow_live_accounts": false,
+  "allow_host_mounts": false,
+  "allow_privileged": false,
+  "allowed_network": "docker_pull_only + localhost_access_only",
+  "output_dir": "05_logs/cua_smoke_runs/n3_12_20260428_1300",
+  "stop_after_seconds": 120,
+  "cleanup_required": true,
+  "approval_status": "PENDING_AWAITING_OPERATOR_APPROVAL",
+  "execution_status": "NOT_EXECUTED",
+  "notes": "Phase 1 approval (image digest) still required. Phase 2 approval (smoke with payload hash) also required. Do not execute until both approvals are present."
+}

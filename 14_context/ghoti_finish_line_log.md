@@ -96,3 +96,102 @@ Requires:
   4. APPROVE CUA SCREENSHOT-ONLY SMOKE WITH DIGEST sha256:2bb539bd42f59f9e2a889faa4ebcb535a0c06397a3b98e45fd5cc8a96c22014a AND PAYLOAD <payload_hash>
 
 Parallel brain path if approved: APPROVE OLLAMA PULL GEMMA3:4B FOR LOCAL BRAIN SMOKE
+
+---
+
+## N+3.12 — CUA Screenshot Smoke and Local Brain Preparation
+
+Date: 2026-04-28
+Starting HEAD: 0bb4d63
+Branch: feat/ghoti-visible-operator-stack
+
+### Phase 1 — Repo Truth
+
+- Starting HEAD: 0bb4d63
+- Origin HEAD: 7af7321 (local 2 commits ahead — a15b629, 0bb4d63)
+- Push attempt: DENIED by permission gate → push_pending
+- Dirty files (intentionally excluded): 14_context/ghoti_external_repo_tool_intake.md, 21_repos/third_party/.gitkeep
+- Staged files: none
+
+### Phase 3 — Docker/WSL Readiness
+
+- Docker Desktop: RUNNING (3 PIDs, started ~12:52 PM)
+- Docker version: 29.4.1, build 055a478
+- Docker Compose: v5.1.3
+- WSL: default=docker-desktop, version=2, docker-desktop Running 2
+- Docker context: desktop-linux (active *)
+- Docker Server Version: 29.4.1
+- Verdict: GO
+
+### Phase 4 — CUA Image Digest Re-Check
+
+- Command: docker manifest inspect trycua/cua-ubuntu:latest
+- linux/amd64 digest: sha256:2bb539bd42f59f9e2a889faa4ebcb535a0c06397a3b98e45fd5cc8a96c22014a
+- Digest UNCHANGED from N+3.11: YES
+- Blocker doc: NOT REQUIRED
+
+### Phase 5 — ActionIntent + Payload Hash
+
+- Smoke run dir: 05_logs/cua_smoke_runs/n3_12_20260428_1300/
+- ActionIntent: intent-n3-12-cua-smoke-20260428-1300
+- Payload hash: 69149d31f052bfce0d15e383797b3fbbeee80dc351f3a2e100f1746fb51418e4
+- Approval 1 (image digest): NOT PROVIDED
+- Approval 2 (smoke + payload hash): NOT PROVIDED
+- Execution: NOT_EXECUTED_APPROVAL_REQUIRED
+
+### Phase 7 — Gemma/Ollama
+
+- Ollama version: 0.9.2
+- Models: NONE (ollama list empty)
+- Gemma: NOT available
+- brain_inference_ready: NO
+- Model pull approval: NOT PROVIDED
+
+### Phase 8 — Docs Written
+
+- 14_context/docker_wsl_ready_verification_n3_12.md
+- 14_context/cua_digest_recheck_n3_12.md
+- 14_context/cua_action_intent_payload_gate_n3_12.md
+- 14_context/cua_screenshot_smoke_result_n3_12.md (NOT_EXECUTED_APPROVAL_REQUIRED)
+- 14_context/gemma_local_brain_path_n3_12.md
+- 14_context/current_state.md (updated)
+- 14_context/next_actions.md (updated)
+- 14_context/ghoti_finish_line_log.md (this file)
+
+### Phase 9 — Dashboard Planning
+
+- 14_context/persistent_dashboard_app_plan_n3_12.md (planning_only)
+
+### wait_resume Seeds Added
+
+Seed 30: CUA ActionIntent + payload hash ready — both digest and smoke approvals required (N+3.12) - user_approval, high risk, approval_required=True
+Seed 31: Gemma local brain pull or smoke completion gate (N+3.12) - user_approval, medium risk, approval_required=True
+Seed 32: Persistent dashboard/app startup planning (N+3.12) - tool_available, low risk, approval_required=False
+
+Total wait/resume seeds: 32
+
+### CUA Clone (read-only)
+
+- 21_repos/third_party/evals/cua HEAD: 46dbcb47802e2c712c87e9a34d4d5b06829a2932
+- Remote: https://github.com/trycua/cua.git
+
+### Commit Hash
+
+TBD (pre-commit)
+
+### Push Status
+
+push_pending — push blocked by permission gate; operator must run:
+  git push origin feat/ghoti-visible-operator-stack
+
+### Next Required Approval Phrases
+
+1. APPROVE CUA IMAGE DIGEST sha256:2bb539bd42f59f9e2a889faa4ebcb535a0c06397a3b98e45fd5cc8a96c22014a FOR SCREENSHOT-ONLY SMOKE
+
+2. APPROVE CUA SCREENSHOT-ONLY SMOKE WITH DIGEST sha256:2bb539bd42f59f9e2a889faa4ebcb535a0c06397a3b98e45fd5cc8a96c22014a AND PAYLOAD 69149d31f052bfce0d15e383797b3fbbeee80dc351f3a2e100f1746fb51418e4
+
+Optional: APPROVE OLLAMA PULL GEMMA3:4B FOR LOCAL BRAIN SMOKE
+
+### Next Milestone
+
+N+3.13 — CUA screenshot-only smoke execution (after both approval phrases provided)
