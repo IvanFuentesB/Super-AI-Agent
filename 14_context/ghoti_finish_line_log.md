@@ -234,11 +234,11 @@ feat/ghoti-visible-operator-stack
 
 ### Commit Hash
 
-TBD (pre-commit)
+c0c06cc
 
 ### Push Status
 
-push_pending — will push after commit
+push_pending — push blocked by permission gate; operator must run: git push origin feat/ghoti-visible-operator-stack
 
 ### Next Milestone
 
