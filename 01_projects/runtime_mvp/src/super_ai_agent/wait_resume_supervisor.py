@@ -619,6 +619,117 @@ _DEFAULT_SEEDS = [
             'See agent_routing_policy_n3_14.md for routing hierarchy and safety rules.'
         ),
     ),
+    dict(
+        title='Local Gemma context compression route complete — compress_context task class ready (N+3.15)',
+        wait_type='external_result',
+        repo_relative_context='14_context/local_gemma_context_compression_n3_15.md',
+        resume_command=(
+            'python 01_projects/runtime_mvp/src/super_ai_agent/local_brain_router.py '
+            '--task compress_context --input 14_context/current_state.md --max-chars 12000'
+        ),
+        approval_required=False,
+        risk_level='low',
+        notes=(
+            'N+3.15: compress_context task class implemented in local_brain_router.py. '
+            'Safety gates: repo_root_only, no_external_api, no_model_output_execution, artifact_only_outputs. '
+            'Smoke tests PASS: Test A (current_state.md) and Test B (agent_routing_policy_n3_14.md). '
+            'Output goes to 05_logs/local_brain_runs/<run_id>/. '
+            'Model output never auto-committed or executed. No repo edits from model output.'
+        ),
+    ),
+    dict(
+        title='API-saving memory workflow established — Gemma for easy tasks, Claude Code for hard (N+3.15)',
+        wait_type='tool_available',
+        repo_relative_context='14_context/api_saving_memory_workflow_n3_15.md',
+        resume_command=(
+            '(use compress_context before each new Claude Code session to reduce input tokens; '
+            'see 14_context/api_saving_memory_workflow_n3_15.md for workflow steps)'
+        ),
+        approval_required=False,
+        risk_level='low',
+        notes=(
+            'N+3.15: API-saving workflow documented. Gemma handles: compression, checklists, risk labels. '
+            'Codex handles: audits, analysis docs. Claude Code handles: implementation, commits, push. '
+            'ChatGPT handles: planning, strategy, new milestone prompts. '
+            'Estimated savings: 3000-6000 tokens per compression task routed to Gemma instead of Claude Code. '
+            'Not cap bypass — legitimate local compute.'
+        ),
+    ),
+    dict(
+        title='Paperclip/OpenClaw/n8n evaluation remains approval-gated — no install until approved (N+3.15)',
+        wait_type='user_approval',
+        repo_relative_context='14_context/gemma_vs_claude_codex_task_split_n3_15.md',
+        resume_command=(
+            '(manual — operator must explicitly approve each candidate separately: '
+            'APPROVE PAPERCLIP INSTALL, APPROVE OPENCLAW RUNTIME WIRING, or APPROVE N8N INSTALL)'
+        ),
+        approval_required=True,
+        risk_level='medium',
+        notes=(
+            'N+3.15: All three orchestration candidates remain planning_only. '
+            'N+3.16 recommended next: use Gemma compression for real handoff/context-pack generation, '
+            'then optionally evaluate Paperclip isolated install plan. '
+            'No install, no runtime wiring, no container run for any of these until explicit operator approval.'
+        ),
+    ),
+    dict(
+        title='Local Gemma context compression route complete — money handoff ready (N+3.17)',
+        wait_type='tool_available',
+        repo_relative_context='14_context/local_gemma_context_compression_n3_17.md',
+        resume_command=(
+            'python 01_projects/runtime_mvp/src/super_ai_agent/local_brain_router.py '
+            '--task compress_context --input 14_context/current_state.md --max-chars 12000'
+        ),
+        approval_required=False,
+        risk_level='low',
+        notes=(
+            'N+3.17: Gemma compression route verified PASS (smoke A: current_state.md, smoke B: agent_routing_policy). '
+            'Money workflow foundation files created in 14_context/money_workflows/. '
+            'Use compress_context before money intake runs to reduce Claude Code token usage. '
+            'Gemma output = artifacts only. No external API. No auto-commit. Operator reviews before any use.'
+        ),
+    ),
+    dict(
+        title='Money workflow foundation ready for numbers-game experiments (N+3.17)',
+        wait_type='tool_available',
+        repo_relative_context='14_context/money_workflows/money_os_index.md',
+        resume_command=(
+            'python 03_scripts/money_workflow_new_experiment.py --dry-run --workflow-type <type> '
+            '--source <source> --product-idea <idea> --target-customer <customer> '
+            '--pain-point <pain> --offer <offer> --next-action <action>'
+        ),
+        approval_required=False,
+        risk_level='low',
+        notes=(
+            'N+3.17: 9 money workflow files created in 14_context/money_workflows/: '
+            'money_os_index.md, experiment_tracker.schema.json, experiment_tracker.jsonl (3 samples), '
+            'video_to_money_intake_template.md, digital_product_shot_template.md, content_batch_template.md, '
+            'simple_phone_game_pipeline.md, whop_workflow_plan.md, distribution_and_exposure_checklist.md. '
+            'Helper script at 03_scripts/money_workflow_new_experiment.py. '
+            'All templates only. No live posting/selling/outreach/payment/app-store actions.'
+        ),
+    ),
+    dict(
+        title='Paperclip/OpenClaw/n8n/Unity-MCP/Mythos safe intake doc completed — no installs (N+3.17)',
+        wait_type='user_approval',
+        repo_relative_context='14_context/tooling_intake_priority_n3_17.md',
+        resume_command=(
+            '(manual — operator reviews 14_context/tooling_intake_priority_n3_17.md; '
+            'then must type one of: APPROVE PAPERCLIP INSTALL, APPROVE OPENCLAW RUNTIME WIRING, '
+            'APPROVE N8N INSTALL, or APPROVE UNITY-MCP INSTALL before any action proceeds)'
+        ),
+        approval_required=True,
+        risk_level='medium',
+        notes=(
+            'N+3.17: Tooling intake priority doc created. '
+            'Paperclip, OpenClaw, n8n: planning_only, no install, no wiring. '
+            'Unity-MCP (ivanmurzak/Unity-MCP): tracked, not installed, approval required. '
+            'Mythos: audit-only, no leaked code. '
+            'Dolphin: evaluation-only, not installed. '
+            'CUDA: documentation-only, not installed. '
+            'No installs or wiring for any of these without separate explicit approval.'
+        ),
+    ),
 ]
 
 

@@ -12,6 +12,25 @@
     "compress_context",
     "suggest_worker_card"
   ],
+  "compress_context_defaults": {
+    "max_input_chars": 12000,
+    "allowed_file_extensions": [".md", ".txt", ".json", ".py", ".js", ".ps1"],
+    "output_dir": "05_logs/local_brain_runs"
+  },
+  "safety_gates": {
+    "repo_root_only": true,
+    "no_external_api": true,
+    "no_model_output_execution": true,
+    "artifact_only_outputs": true,
+    "max_input_chars_default": 12000,
+    "allowed_file_extensions": [".md", ".txt", ".json", ".py", ".js", ".ps1"]
+  },
+  "model_routing_guidance": {
+    "Gemma_via_Ollama": "easy local text compression, checklist drafts, risk label classification, markdown summarization — zero API cost, local-only",
+    "Codex": "independent audits, source crosschecks, medium-complexity implementation review, standalone analysis docs",
+    "Claude_Code": "hard multi-file implementation, difficult debugging, runtime wiring, validation, repo commits and push coordination",
+    "ChatGPT": "high-level planning, prompt design, strategic roadmap decisions, source-backed reasoning, milestone framing"
+  },
   "hard_task_classes_route_to": {
     "Claude Code": "hard multi-file or high-risk implementation",
     "Codex": "independent audit, docs, limited implementation",
@@ -37,5 +56,5 @@
     "money_or_legal_actions"
   ],
   "api_saving_policy": "Use Gemma/Ollama for easy local tasks to reduce paid API usage. Not cap bypass or quota evasion.",
-  "notes": "This is an example policy file. enabled=false means the router will not run tasks automatically. preview_only mode allows --preview smoke runs without live routing."
+  "notes": "This is an example policy file. enabled=false means the router will not run tasks automatically. preview_only mode allows --preview smoke runs and compress_context runs without live routing."
 }

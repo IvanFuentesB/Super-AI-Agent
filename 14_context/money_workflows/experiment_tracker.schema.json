@@ -1,0 +1,120 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GhotiExperiment",
+  "description": "Schema for a single Ghoti money experiment entry in experiment_tracker.jsonl",
+  "type": "object",
+  "required": [
+    "experiment_id",
+    "created_at",
+    "workflow_type",
+    "source",
+    "product_idea",
+    "target_customer",
+    "pain_point",
+    "offer",
+    "status",
+    "next_action",
+    "approval_required"
+  ],
+  "properties": {
+    "experiment_id": {
+      "type": "string",
+      "description": "Stable ID, e.g. exp_20260428_120000_a1b2c3"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "UTC ISO timestamp of record creation"
+    },
+    "workflow_type": {
+      "type": "string",
+      "description": "Category of experiment",
+      "examples": [
+        "digital_product",
+        "prompt_pack",
+        "video_to_business_system",
+        "whop_community",
+        "faceless_short_form",
+        "simple_phone_game",
+        "email_lead_magnet",
+        "productized_service"
+      ]
+    },
+    "source": {
+      "type": "string",
+      "description": "Origin of the idea (YouTube URL, transcript, user note, trend, etc.)"
+    },
+    "product_idea": {
+      "type": "string",
+      "description": "One-sentence description of what is being built or tested"
+    },
+    "target_customer": {
+      "type": "string",
+      "description": "Who the buyer, viewer, or subscriber is"
+    },
+    "pain_point": {
+      "type": "string",
+      "description": "The painful problem being solved"
+    },
+    "offer": {
+      "type": "string",
+      "description": "What is offered and how it solves the pain"
+    },
+    "price_test": {
+      "type": ["string", "null"],
+      "description": "Price range being tested, e.g. '$9–$27' or null if not priced yet"
+    },
+    "distribution_channels": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Planned distribution channels, e.g. ['email_list', 'tiktok', 'whop']"
+    },
+    "content_assets": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "List of content or asset files related to this experiment"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["idea", "selected", "asset_draft", "approval_needed", "published", "measuring", "done", "blocked", "killed"],
+      "description": "Current lifecycle status"
+    },
+    "next_action": {
+      "type": "string",
+      "description": "The single most important next step"
+    },
+    "metrics": {
+      "type": "object",
+      "description": "Observed performance metrics",
+      "properties": {
+        "impressions": { "type": "integer" },
+        "clicks": { "type": "integer" },
+        "opt_ins": { "type": "integer" },
+        "replies": { "type": "integer" },
+        "sales": { "type": "integer" },
+        "revenue_usd": { "type": "number" },
+        "time_spent_hours": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "risk_level": {
+      "type": "string",
+      "enum": ["low", "medium", "high"],
+      "description": "Operator-assessed risk level"
+    },
+    "approval_required": {
+      "type": "boolean",
+      "description": "True if any live action (posting, selling, outreach, payment, app-store) requires human approval before proceeding"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Free-text notes, learnings, or links to artifacts"
+    },
+    "files": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Repo-relative file paths of related assets"
+    }
+  },
+  "additionalProperties": false
+}

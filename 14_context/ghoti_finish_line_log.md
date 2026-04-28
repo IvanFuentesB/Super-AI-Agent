@@ -303,3 +303,74 @@ push_pending — push blocked by permission gate; operator must run:
 ### Next Milestone
 
 N+3.15 — Local Gemma Context Compression Route (route compress_context task class through Gemma; save API credits now)
+
+---
+
+## N+3.17 — Money Workflow Foundation + Gemma Compression Route
+
+### Date
+2026-04-28
+
+### Branch
+feat/ghoti-visible-operator-stack
+
+### Starting HEAD
+77bfb74
+
+### What Was Delivered
+
+- Gemma/Ollama verified: Ollama 0.9.2, gemma3:4b present (a2af6cc3eb7f, 3.3 GB), GHOTI_LOCAL_BRAIN_OK
+- compress_context route verified: smoke A (current_state.md) PASS → 05_logs/local_brain_runs/compress_20260428_203025_9cef4f; smoke B (agent_routing_policy_n3_14.md) PASS → 05_logs/local_brain_runs/compress_20260428_203107_a0b523
+- Money workflow foundation created at 14_context/money_workflows/ (9 files): money_os_index.md, experiment_tracker.schema.json, experiment_tracker.jsonl (3 samples), video_to_money_intake_template.md, digital_product_shot_template.md, content_batch_template.md, simple_phone_game_pipeline.md, whop_workflow_plan.md, distribution_and_exposure_checklist.md
+- Money workflow helper script at 03_scripts/money_workflow_new_experiment.py: stdlib only, JSONL append, dry-run, no external API, auto approval_required logic
+- Tooling intake priority doc at 14_context/tooling_intake_priority_n3_17.md: Gemma/Claude/Codex/ChatGPT roles; Paperclip/OpenClaw/n8n soon; Unity-MCP future game lane; Mythos audit-only; Dolphin eval-only; CUDA future
+- Wait/resume supervisor updated with 3 new N+3.17 seeds (42: Gemma compression handoff, 43: money foundation, 44: tooling intake gate); total default seeds now 44
+- N+3.17 context docs: local_gemma_context_compression_n3_17.md, api_saving_memory_workflow_n3_17.md, money_workflow_helper_n3_17.md
+- State docs updated: current_state.md, next_actions.md, ghoti_finish_line_log.md
+- No live posting, selling, outreach, payment, or app-store actions
+- Paperclip/OpenClaw/n8n/Unity-MCP remain planning_only; not installed, not runtime-wired
+
+### Files Changed
+
+- 01_projects/runtime_mvp/src/super_ai_agent/local_brain_router.py (MODIFIED — N+3.15 interrupted work included)
+- 01_projects/runtime_mvp/src/super_ai_agent/wait_resume_supervisor.py (MODIFIED — 3 new N+3.17 seeds)
+- 23_configs/local_brain_router_policy.example.json (MODIFIED — N+3.15 interrupted)
+- 03_scripts/money_workflow_new_experiment.py (NEW)
+- 14_context/money_workflows/money_os_index.md (NEW)
+- 14_context/money_workflows/experiment_tracker.schema.json (NEW)
+- 14_context/money_workflows/experiment_tracker.jsonl (NEW)
+- 14_context/money_workflows/video_to_money_intake_template.md (NEW)
+- 14_context/money_workflows/digital_product_shot_template.md (NEW)
+- 14_context/money_workflows/content_batch_template.md (NEW)
+- 14_context/money_workflows/simple_phone_game_pipeline.md (NEW)
+- 14_context/money_workflows/whop_workflow_plan.md (NEW)
+- 14_context/money_workflows/distribution_and_exposure_checklist.md (NEW)
+- 14_context/local_gemma_context_compression_n3_15.md (NEW — from N+3.15 interrupted)
+- 14_context/api_saving_memory_workflow_n3_15.md (NEW — from N+3.15 interrupted)
+- 14_context/gemma_vs_claude_codex_task_split_n3_15.md (NEW — from N+3.15 interrupted)
+- 14_context/tooling_intake_priority_n3_17.md (NEW)
+- 14_context/local_gemma_context_compression_n3_17.md (NEW)
+- 14_context/api_saving_memory_workflow_n3_17.md (NEW)
+- 14_context/money_workflow_helper_n3_17.md (NEW)
+- 14_context/current_state.md (MODIFIED)
+- 14_context/next_actions.md (MODIFIED)
+- 14_context/ghoti_finish_line_log.md (MODIFIED)
+
+### Validation
+
+- AST: local_brain_router.py PASS, money_workflow_new_experiment.py PASS, wait_resume_supervisor.py PASS
+- JSON lint: local_brain_router_policy.example.json PASS, experiment_tracker.schema.json PASS
+- node --check: server.js PASS, app.js PASS, overlay.js PASS
+- Gemma compression smoke A (current_state.md): PASS
+- Gemma compression smoke B (agent_routing_policy_n3_14.md): PASS
+- Money script dry-run: PASS
+- Local brain router preview: PASS
+- git diff --check: PASS
+
+### Push Status
+
+push_pending — commit+push pending
+
+### Next Milestone
+
+N+3.18 — Gemma Video-to-Money Intake Runner + Money Experiment Scoring
