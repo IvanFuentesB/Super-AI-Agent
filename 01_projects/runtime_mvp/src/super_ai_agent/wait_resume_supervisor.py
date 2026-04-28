@@ -433,6 +433,15 @@ _DEFAULT_SEEDS = [
         risk_level="high",
         notes="Smoke plan updated N+3.9. Image: trycua/cua-ubuntu:latest (kasmweb/core-ubuntu-jammy:1.17.0 base). No privileged mode. No host mounts. Localhost port only. Screenshot-only. Payload hash required before approval. Audit event required. DO NOT RUN until daemon verified + image digest approved + separate smoke approval obtained.",
     ),
+    dict(
+        title="Docker Desktop GUI running but engine start failed — WSL2 GUI setup required (N+3.10)",
+        wait_type="user_approval",
+        repo_relative_context="14_context/docker_desktop_post_launch_verification_n3_10.md",
+        resume_command="(manual — Docker Desktop window is open on screen; sign in or skip Docker Hub login; accept WSL2 install prompt; wait for 'Docker Engine running' green status; reboot if prompted; then verify: docker info shows Server section + wsl --status shows WSL2 installed; report result to start N+3.11)",
+        approval_required=True,
+        risk_level="medium",
+        notes="N+3.10 finding: Docker Desktop launched (4 PIDs), context=desktop-linux, license accepted, but engine HTTP 503 for 2+ min — WSL2 not installed. GUI open on screen. Operator must interact with Docker Desktop window. Reboot likely required after WSL2 install. See docker_desktop_post_launch_verification_n3_10.md for exact steps.",
+    ),
 ]
 
 
