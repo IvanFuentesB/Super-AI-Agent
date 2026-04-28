@@ -442,6 +442,33 @@ _DEFAULT_SEEDS = [
         risk_level="medium",
         notes="N+3.10 finding: Docker Desktop launched (4 PIDs), context=desktop-linux, license accepted, but engine HTTP 503 for 2+ min — WSL2 not installed. GUI open on screen. Operator must interact with Docker Desktop window. Reboot likely required after WSL2 install. See docker_desktop_post_launch_verification_n3_10.md for exact steps.",
     ),
+    dict(
+        title='Docker/WSL ready verified for CUA path (N+3.11)',
+        wait_type='external_result',
+        repo_relative_context='14_context/docker_wsl_ready_verification_n3_11.md',
+        resume_command='(verified -- docker info shows Server section; context=desktop-linux; 16 CPUs, 15.27 GiB; verdict: docker_wsl_ready)',
+        approval_required=False,
+        risk_level='low',
+        notes='N+3.11: Docker daemon reachable, WSL2 docker-desktop running, context desktop-linux, server 29.4.0, 16 CPUs, 15.27 GiB. CUA image digest pinned.',
+    ),
+    dict(
+        title='CUA image digest approval required before screenshot smoke (N+3.11)',
+        wait_type='user_approval',
+        repo_relative_context='14_context/cua_image_digest_gate_n3_11.md',
+        resume_command='(manual -- operator must type: APPROVE CUA IMAGE DIGEST sha256:2bb539bd42f59f9e2a889faa4ebcb535a0c06397a3b98e45fd5cc8a96c22014a FOR SCREENSHOT-ONLY SMOKE)',
+        approval_required=True,
+        risk_level='high',
+        notes='N+3.11: digest pinned via docker manifest inspect. amd64 digest: sha256:2bb539bd42f59f9e2a889faa4ebcb535a0c06397a3b98e45fd5cc8a96c22014a. Tag latest is mutable - must use digest reference. See cua_image_digest_gate_n3_11.md.',
+    ),
+    dict(
+        title='Gemma/Ollama local brain smoke pending - model pull approval required (N+3.11)',
+        wait_type='user_approval',
+        repo_relative_context='14_context/gemma_ollama_truth_check_n3_11.md',
+        resume_command='(manual -- operator must type: APPROVE OLLAMA PULL GEMMA3:4B FOR LOCAL BRAIN SMOKE)',
+        approval_required=True,
+        risk_level='medium',
+        notes='N+3.11: Ollama 0.9.2 installed. No models installed. Gemma not available locally. Approval required for ollama pull gemma3:4b (~2.5 GB).',
+    ),
 ]
 
 
