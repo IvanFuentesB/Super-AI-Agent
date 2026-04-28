@@ -568,6 +568,57 @@ _DEFAULT_SEEDS = [
             'Operator-triggered only. Next step: test via shortcut if desired.'
         ),
     ),
+    dict(
+        title='Local Gemma router preview complete — verify policy (N+3.14)',
+        wait_type='external_result',
+        repo_relative_context='14_context/local_gemma_router_preview_n3_14.md',
+        resume_command=(
+            'python 01_projects/runtime_mvp/src/super_ai_agent/local_brain_router.py --preview'
+        ),
+        approval_required=False,
+        risk_level='low',
+        notes=(
+            'N+3.14: local_brain_router.py created. Policy at 23_configs/local_brain_router_policy.example.json. '
+            'enabled=false, routing_mode=preview_only. '
+            'Preview runs safe draft_checklist task via ollama run gemma3:4b. '
+            'No external API. No model output executed. No repo edits from model output.'
+        ),
+    ),
+    dict(
+        title='Worker card registry created — agent routing policy established (N+3.14)',
+        wait_type='tool_available',
+        repo_relative_context='14_context/agent_registry/active_worker_cards_n3_14.md',
+        resume_command=(
+            '(review 14_context/agent_registry/active_worker_cards_n3_14.md and '
+            '14_context/agent_registry/agent_routing_policy_n3_14.md)'
+        ),
+        approval_required=False,
+        risk_level='low',
+        notes=(
+            'N+3.14: agent_registry/ created with worker_card_template.md, active_worker_cards_n3_14.md, '
+            'agent_routing_policy_n3_14.md. 6 worker cards defined: LOCAL-GEMMA-EASY-001, CODEX-AUDIT-001, '
+            'CLAUDECODE-IMPLEMENT-001, PAPERCLIP-CONTROL-PLANE-CANDIDATE, '
+            'OPENCLAW-WORKER-CANDIDATE, N8N-WORKFLOW-CANDIDATE.'
+        ),
+    ),
+    dict(
+        title='Paperclip/OpenClaw/n8n architecture remains planning only — no install/run (N+3.14)',
+        wait_type='user_approval',
+        repo_relative_context='14_context/agent_registry/agent_routing_policy_n3_14.md',
+        resume_command=(
+            '(manual — operator must explicitly approve each: '
+            'APPROVE PAPERCLIP INSTALL, APPROVE OPENCLAW RUNTIME WIRING, or APPROVE N8N INSTALL '
+            'before any install or runtime wiring proceeds)'
+        ),
+        approval_required=True,
+        risk_level='medium',
+        notes=(
+            'N+3.14: Paperclip, OpenClaw, n8n all remain planning_only. '
+            'No install, no run, no runtime wiring until explicit operator approval per candidate. '
+            'Worker cards exist as planning scaffolding only. '
+            'See agent_routing_policy_n3_14.md for routing hierarchy and safety rules.'
+        ),
+    ),
 ]
 
 

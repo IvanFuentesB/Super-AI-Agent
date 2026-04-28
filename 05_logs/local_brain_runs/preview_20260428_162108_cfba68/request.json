@@ -1,0 +1,11 @@
+{
+  "run_id": "preview_20260428_162108_cfba68",
+  "mode": "preview_only",
+  "enabled": false,
+  "provider": "ollama",
+  "model": "gemma3:4b",
+  "task_type": "draft_checklist",
+  "prompt": "Create a 5 item checklist for validating a local-only AI agent task before execution.",
+  "api_usage": "none",
+  "timestamp_utc": "2026-04-28T16:21:08Z"
+}

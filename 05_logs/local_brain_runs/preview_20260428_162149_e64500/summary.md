@@ -1,0 +1,70 @@
+# Local Brain Router Preview — preview_20260428_162149_e64500
+
+Date: 2026-04-28T16:22:12Z
+Status: PASS
+Mode: preview_only (enabled=false)
+Provider: ollama
+Model: gemma3:4b
+Task type: draft_checklist
+Exit code: 0
+API usage: none
+External calls: none
+Model output executed: NO
+Repo edits from model output: NO
+
+## Prompt
+
+Create a 5 item checklist for validating a local-only AI agent task before execution.
+
+## Response
+
+Okay, here's a 5-item checklist for validating a local-only AI agent task *before* execution, designed to catch common issues and ensure a smoother experience:
+
+**Local AI Agent Task Validation Checklist**
+
+**Task Name:** _________________________
+
+**Date:** _________________________
+
+**Validator:** _________________________
+
+**1.  Task Clarity & Scope (Priority: High)**
+   * **☐ Description Verified:** Is the task description completely clear, unambiguous, and understandable to both the agent and the validator?  No jargon or vague terms?
+   * **☐ Scope Defined:** Does the task clearly define the boundaries of the agent’s operation? (e.g., What data sources are allowed? What actions are permitted?)
+   * **☐ Expected Outcome Specified:**  What does a *successful* completion of the task look like?  (e.g., specific output format, criteria for accuracy).
+
+**2.  Data Source Availability & Access (Priority: High)**
+   * **☐ Source Verified:** Are all necessary data sources (files, APIs, databases) readily accessible to the agent?
+   * **☐ Permissions Checked:** Does the agent have the correct permissions to read, write, and/or interact with these data sources? (Especially critical for local systems.)
+   * **☐ Sample Data Provided:**  Is a small, representative sample of the data provided to the agent?
+
+**3.  Agent Configuration & Settings (Priority: Medium)**
+   * **☐ Parameter Values Checked:**  Are all the relevant parameters for the agent (temperature, max tokens, etc.) set to reasonable values? Are there any obvious defaults that could cause issues?
+   * **☐  Resource Limits Confirmed:**  Has the agent been allocated sufficient memory and CPU resources for the task?  (Especially important if the task is computationally intensive).
+   * **☐ Logging Enabled:**  Is agent logging enabled and configured to provide sufficient details for debugging?
+
+**4.  Initial Input Test (Priority: Medium)**
+   * **☐ Basic Input Test:** Feed the agent a simple, controlled input that *should* trigger a successful response.
+   * **☐ Response Observed:**  Did the agent produce a response?  Was it relevant to the input?  (Note:  A "no response" doesn't *always* indicate an error – it might just be a temporary issue).
+
+
+**5.  Error Handling & Fallback (Priority: Low)**
+   * **☐ Error Cases Considered:** Has the agent been designed to handle potential errors gracefully? (e.g., missing data, invalid input).
+   * **☐  Fallback Mechanism (if any):**  If the agent encounters a critical error, what is the fallback behavior?  (e.g., retry, alert, default response).  Is this fallback mechanism properly tested?
+
+---
+
+**Notes/Observations:** __________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________
+
+**Recommendations for Improvement:** __________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________
+
+**How to Use This Checklist:**
+
+*   **Customize:**  Adapt this checklist to the specifics of *your* AI agent and the particular task.
+*   **Iterate:**  Use the results of this validation to refine the agent’s configuration, data, or task definition before deploying it.
+*   **Record Everything:**  Detailed notes are crucial for troubleshooting and future improvements.
+
+Would you like me to:
+
+*   Expand on any of these items?
+*   Create a checklist tailored to a specific type of AI agent (e.g., a chatbot, an image generator)?

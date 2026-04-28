@@ -24,3 +24,11 @@
 - Wait/resume supervisor updated with 3 new N+3.13 seeds (33: CUA smoke done, 34: Gemma brain done, 35: dashboard launcher); total default seeds now 35 (N+3.13)
 - No runtime wiring changed; no live accounts used; no Screenpipe capture started; CUA not wired into runtime (N+3.13)
 - Next milestone: N+3.14 — runtime brain wiring (wire brain-status/brain-infer to confirmed gemma3:4b), CUA adapter activation planning, or dashboard shortcut creation
+- N+3.14 Local Gemma router preview implemented (2026-04-28): local_brain_router.py created; policy at 23_configs/local_brain_router_policy.example.json; enabled=false, routing_mode=preview_only; preview smoke runs draft_checklist task via ollama run gemma3:4b; no external API; no model output executed; no repo edits from model output (N+3.14)
+- N+3.14 Gemma/Ollama verified ready: ollama 0.9.2, gemma3:4b present (a2af6cc3eb7f, 3.3 GB), smoke GHOTI_LOCAL_BRAIN_OK, brain_inference_ready=YES; no pull needed (already pulled in N+3.13) (N+3.14)
+- N+3.14 Worker card registry created: 14_context/agent_registry/ with worker_card_template.md, active_worker_cards_n3_14.md, agent_routing_policy_n3_14.md; 6 worker cards: LOCAL-GEMMA-EASY-001, CODEX-AUDIT-001, CLAUDECODE-IMPLEMENT-001, PAPERCLIP-CONTROL-PLANE-CANDIDATE, OPENCLAW-WORKER-CANDIDATE, N8N-WORKFLOW-CANDIDATE (N+3.14)
+- N+3.14 Dashboard launcher checked: script exists, node --check PASS for server.js/app.js/overlay.js; launcher not started in this milestone; no service installed; no autostart (N+3.14)
+- N+3.14 Paperclip/OpenClaw/n8n remain planning_only — not installed, not runtime-wired; worker cards exist as scaffolding only; explicit operator approval required before any install or run (N+3.14)
+- N+3.14 Wait/resume supervisor updated with 3 new seeds (36: local Gemma router preview, 37: worker card registry, 38: Paperclip/OpenClaw/n8n planning-only gate); total default seeds now 38 (N+3.14)
+- No external actions; no live accounts; no CUA container run; no runtime wiring changed (N+3.14)
+- Next milestone: N+3.15 — Local Gemma Context Compression Route (route compress_context task class through Gemma; compare output quality; save API credits now)

@@ -243,3 +243,63 @@ push_pending — push blocked by permission gate; operator must run: git push or
 ### Next Milestone
 
 N+3.14 — wire brain-infer to confirmed gemma3:4b path; update brain-status CLI truth; optionally activate CUA adapter descriptor or test dashboard shortcut
+
+---
+
+## N+3.14 — Local Gemma Brain Router Preview + Worker Card Registry + Dashboard Launcher Check
+
+### Date
+2026-04-28
+
+### Branch
+feat/ghoti-visible-operator-stack
+
+### Starting HEAD
+bb48edd (2 commits ahead of origin at start)
+
+### What Was Delivered
+
+- Gemma/Ollama verified ready: ollama 0.9.2, gemma3:4b present (a2af6cc3eb7f, 3.3 GB), smoke GHOTI_LOCAL_BRAIN_OK, brain_inference_ready=YES, no pull needed
+- Local brain router preview implemented: local_brain_router.py created; policy at 23_configs/local_brain_router_policy.example.json; enabled=false, routing_mode=preview_only; runs draft_checklist task via ollama; no external API; no model output executed
+- Worker card registry created: 14_context/agent_registry/ with worker_card_template.md, active_worker_cards_n3_14.md, agent_routing_policy_n3_14.md; 6 worker cards defined
+- Dashboard launcher checked: node --check PASS for server.js/app.js/overlay.js; no service installed; no autostart
+- Wait/resume supervisor updated with 3 new N+3.14 seeds (36-38); total default seeds now 38
+- Summary docs: local_gemma_ready_verification_n3_14.md, local_gemma_router_preview_n3_14.md, n3_14_api_saving_agent_routing_summary.md, dashboard_launcher_check_n3_14.md
+- State docs updated: current_state.md, next_actions.md, ghoti_finish_line_log.md
+
+### Files Changed
+
+- 01_projects/runtime_mvp/src/super_ai_agent/local_brain_router.py (NEW)
+- 01_projects/runtime_mvp/src/super_ai_agent/wait_resume_supervisor.py (MODIFIED — 3 new seeds)
+- 23_configs/local_brain_router_policy.example.json (NEW)
+- 14_context/local_gemma_ready_verification_n3_14.md (NEW)
+- 14_context/local_gemma_router_preview_n3_14.md (NEW)
+- 14_context/n3_14_api_saving_agent_routing_summary.md (NEW)
+- 14_context/dashboard_launcher_check_n3_14.md (NEW)
+- 14_context/agent_registry/worker_card_template.md (NEW)
+- 14_context/agent_registry/active_worker_cards_n3_14.md (NEW)
+- 14_context/agent_registry/agent_routing_policy_n3_14.md (NEW)
+- 14_context/current_state.md (MODIFIED)
+- 14_context/next_actions.md (MODIFIED)
+- 14_context/ghoti_finish_line_log.md (MODIFIED)
+
+### Validation
+
+- AST parse: local_brain_router.py PASS, wait_resume_supervisor.py PASS
+- JSON lint: local_brain_router_policy.example.json PASS
+- node --check: server.js PASS, app.js PASS, overlay.js PASS
+- Local brain router preview: see 05_logs/local_brain_runs/ artifacts
+- git diff --check: PASS
+
+### Commit Hash
+
+TBD — see below after commit
+
+### Push Status
+
+push_pending — push blocked by permission gate; operator must run:
+  git push origin feat/ghoti-visible-operator-stack
+
+### Next Milestone
+
+N+3.15 — Local Gemma Context Compression Route (route compress_context task class through Gemma; save API credits now)
