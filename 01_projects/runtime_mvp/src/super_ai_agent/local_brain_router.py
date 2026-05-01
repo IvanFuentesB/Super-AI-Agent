@@ -29,6 +29,10 @@ _TIMEOUT_SECONDS = 120
 
 _DEFAULT_MAX_CHARS = 12000
 _ALLOWED_EXTENSIONS = {".md", ".txt", ".json", ".py", ".js", ".ps1"}
+_VIDEO_MONEY_ALLOWED_EXT = frozenset({".md", ".txt"})
+_MONEY_RUNS_ROOT = _REPO_ROOT / "05_logs" / "money_runs"
+_CANDIDATE_ANCHOR_KEYS = frozenset({"workflow_type", "product_idea", "name"})
+
 _COMPRESS_PROMPT_TEMPLATE = """\
 You are a context-compression assistant. Read the excerpt below and produce a compact summary.
 
@@ -370,6 +374,293 @@ def run_compress_context(policy: dict, input_arg: str, max_chars: int) -> int:
     return exit_code
 
 
+_VIDEO_TO_MONEY_PROMPT_TEMPLATE = """\
+You are a business-extraction assistant. Read the notes below and produce a structured money-making idea analysis.
+
+Return ONLY the following sections with exactly these headers (no preamble, no commentary outside sections):
+
+## SOURCE SUMMARY
+- (3-7 bullet points summarising the money/business idea from the source)
+
+## PRODUCT IDEAS
+(List 2-4 ideas. For each use this exact bullet format:)
+- name: <product name>
+- target_customer: <who buys this>
+- pain_point: <what problem it solves>
+- offer: <what is delivered>
+- mvp_asset: <minimum asset to ship>
+- price_test: <price range, e.g. $9-$27>
+- time_to_ship: <e.g. 1 day, 1 week>
+- risks: <key risks>
+- distribution_channels: <comma-separated channels>
+
+## CONTENT ANGLES
+(List 2-4 angles. For each:)
+- hook: <opening line or question>
+- format: <short-form, long-form, thread, etc.>
+- platform_fit: <TikTok, YouTube, Twitter/X, email, etc.>
+- cta: <call to action>
+- repurposing_options: <how to reuse this content across formats>
+
+## EXPERIMENT CANDIDATES
+(List 1-3 candidates. For each:)
+- workflow_type: <digital_product|prompt_pack|video_to_business_system|email_lead_magnet>
+- product_idea: <one sentence>
+- target_customer: <who>
+- pain_point: <pain>
+- offer: <offer>
+- next_action: <single most important next step>
+- approval_required: true
+
+## DISTRIBUTION PLAN
+- channel_1: <name>
+- strategy_1: <how to use it>
+- channel_2: <name>
+- strategy_2: <how to use it>
+- channel_3: <name>
+- strategy_3: <how to use it>
+- email_list_angle: <how email list amplifies distribution>
+- short_form_angle: <TikTok/Reels hook and angle>
+- repurposing_angle: <how to repurpose content across channels>
+- validation_metric: <how to measure if this is working>
+
+## RISK REVIEW
+- legal_tos_risk: <low|medium|high — description>
+- claims_risk: <low|medium|high — description>
+- fake_proof_risk: <low|medium|high — description>
+- spam_fake_engagement_risk: <low|medium|high — description>
+- live_account_risk: <low|medium|high — description>
+
+---
+
+NOTES:
+{excerpt}
+"""
+
+
+def _parse_sections(response_text: str) -> dict[str, str]:
+    sections: dict[str, str] = {}
+    current_key: str | None = None
+    current_lines: list[str] = []
+    for line in response_text.splitlines():
+        if line.startswith("## "):
+            if current_key is not None:
+                sections[current_key] = "\n".join(current_lines).strip()
+            current_key = line[3:].strip()
+            current_lines = []
+        elif current_key is not None:
+            current_lines.append(line)
+    if current_key is not None:
+        sections[current_key] = "\n".join(current_lines).strip()
+    return sections
+
+
+def _candidates_to_jsonl(candidates_text: str, run_id: str) -> str:
+    entries: list[dict] = []
+    current: dict[str, str] = {}
+    parse_warnings: list[str] = []
+    for raw_line in candidates_text.splitlines():
+        line = raw_line.strip()
+        if line.startswith("- ") and ": " in line[2:]:
+            key, _, val = line[2:].partition(": ")
+            norm_key = key.strip().lower().replace(" ", "_")
+            # Split on repeated anchor key: new candidate started without a blank line
+            if norm_key in _CANDIDATE_ANCHOR_KEYS and norm_key in current:
+                parse_warnings.append(f"split on repeated anchor key '{norm_key}'")
+                entries.append({"run_id": run_id, **current})
+                current = {}
+            current[norm_key] = val.strip()
+        elif not line and current:
+            entries.append({"run_id": run_id, **current})
+            current = {}
+    if current:
+        entries.append({"run_id": run_id, **current})
+    # Force approval_required to boolean True regardless of any model-emitted value
+    for entry in entries:
+        entry["approval_required"] = True
+    if parse_warnings:
+        for entry in entries:
+            entry.setdefault("_parse_warnings", parse_warnings)
+    if not entries:
+        entries.append({
+            "run_id": run_id,
+            "raw_text": candidates_text[:2000],
+            "approval_required": True,
+            "note": "Could not parse structured candidates from response",
+        })
+    return "\n".join(json.dumps(e, ensure_ascii=False) for e in entries) + "\n"
+
+
+def run_video_to_money(policy: dict, input_arg: str, max_chars: int) -> int:
+    model = policy.get("default_local_model", "gemma3:4b")
+    provider = policy.get("local_provider", "ollama")
+    run_id = f"vm_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}"
+    run_dir = _MONEY_RUNS_ROOT / run_id
+    _ensure_run_dir(run_dir)
+
+    print("[local_brain_router] VIDEO_TO_MONEY — artifact_only, no_external_api, no_auto_post")
+    print(f"[local_brain_router] provider={provider} model={model}")
+    print(f"[local_brain_router] input={input_arg} max_chars={max_chars}")
+    print(f"[local_brain_router] run_dir={run_dir.relative_to(_REPO_ROOT)}")
+    print()
+
+    input_path, err = _resolve_input_path(input_arg)
+    if input_path is None:
+        print(f"[local_brain_router] ERROR: {err}", file=sys.stderr)
+        _write_artifact(
+            run_dir / "run_summary.json",
+            json.dumps({"run_id": run_id, "status": "FAIL", "reason": err,
+                        "api_usage": "none", "timestamp_utc": _utc_now()}, indent=2) + "\n",
+        )
+        return 1
+
+    if input_path.suffix.lower() not in _VIDEO_MONEY_ALLOWED_EXT:
+        err = (
+            f"REJECTED: video_to_money requires .md or .txt input, "
+            f"got '{input_path.suffix}'"
+        )
+        print(f"[local_brain_router] ERROR: {err}", file=sys.stderr)
+        _write_artifact(
+            run_dir / "run_summary.json",
+            json.dumps({"run_id": run_id, "status": "FAIL", "reason": err,
+                        "api_usage": "none", "timestamp_utc": _utc_now()}, indent=2) + "\n",
+        )
+        return 1
+
+    try:
+        excerpt, clipped = _read_excerpt(input_path, max_chars)
+    except (OSError, ValueError) as exc:
+        msg = str(exc)
+        print(f"[local_brain_router] ERROR reading file: {msg}", file=sys.stderr)
+        _write_artifact(
+            run_dir / "run_summary.json",
+            json.dumps({"run_id": run_id, "status": "FAIL", "reason": msg,
+                        "api_usage": "none", "timestamp_utc": _utc_now()}, indent=2) + "\n",
+        )
+        return 1
+
+    rel_input = str(input_path.relative_to(_REPO_ROOT))
+    clip_note = f"\n\n[CLIPPED at {max_chars} chars — original file is larger]" if clipped else ""
+    excerpt_with_note = excerpt + clip_note
+
+    request_data = {
+        "run_id": run_id,
+        "task_type": "video_to_money",
+        "input_file": rel_input,
+        "input_chars_read": len(excerpt),
+        "input_clipped": clipped,
+        "max_chars": max_chars,
+        "provider": provider,
+        "model": model,
+        "api_usage": "none",
+        "external_calls": "none",
+        "model_output_executed": False,
+        "auto_post": False,
+        "auto_sell": False,
+        "auto_email": False,
+        "auto_commit_from_model": False,
+        "timestamp_utc": _utc_now(),
+    }
+    _write_artifact(run_dir / "request.json", json.dumps(request_data, indent=2) + "\n")
+    _write_artifact(run_dir / "source_excerpt.md", excerpt_with_note)
+
+    prompt = _VIDEO_TO_MONEY_PROMPT_TEMPLATE.format(excerpt=excerpt_with_note)
+
+    print(f"[local_brain_router] input file  : {rel_input}")
+    print(f"[local_brain_router] chars read  : {len(excerpt)}{' (clipped)' if clipped else ''}")
+    print(f"[local_brain_router] running video_to_money via {provider} run {model} ...")
+    print()
+
+    exit_code, stdout, stderr = _run_ollama(provider, model, prompt)
+
+    if "not found on PATH" in stderr or "timed out" in stderr:
+        print(f"[local_brain_router] ERROR: {stderr}", file=sys.stderr)
+        _write_artifact(
+            run_dir / "run_summary.json",
+            json.dumps({"run_id": run_id, "status": "FAIL", "reason": stderr,
+                        "api_usage": "none", "timestamp_utc": _utc_now()}, indent=2) + "\n",
+        )
+        return 1
+
+    response_text = stdout if stdout else f"(no stdout)\nstderr: {stderr}"
+    sections = _parse_sections(response_text)
+
+    source_summary = sections.get("SOURCE SUMMARY", response_text)
+    product_ideas = sections.get("PRODUCT IDEAS", "(not found in response)")
+    content_angles = sections.get("CONTENT ANGLES", "(not found in response)")
+    candidates_text = sections.get("EXPERIMENT CANDIDATES", "")
+    distribution_plan = sections.get("DISTRIBUTION PLAN", "(not found in response)")
+    risk_review = sections.get("RISK REVIEW", "(not found in response)")
+
+    _write_artifact(
+        run_dir / "source_summary.md",
+        f"# Source Summary\n\nRun: {run_id}\nInput: {rel_input}\n\n{source_summary}\n",
+    )
+    _write_artifact(
+        run_dir / "product_ideas.md",
+        f"# Product Ideas\n\nRun: {run_id}\n\n{product_ideas}\n",
+    )
+    _write_artifact(
+        run_dir / "content_angles.md",
+        f"# Content Angles\n\nRun: {run_id}\n\n{content_angles}\n",
+    )
+    _write_artifact(
+        run_dir / "experiment_candidates.jsonl",
+        _candidates_to_jsonl(candidates_text, run_id),
+    )
+    _write_artifact(
+        run_dir / "distribution_plan.md",
+        f"# Distribution Plan\n\nRun: {run_id}\n\n{distribution_plan}\n",
+    )
+    _write_artifact(
+        run_dir / "risk_review.md",
+        f"# Risk Review\n\nRun: {run_id}\n\n{risk_review}\n",
+    )
+
+    artifact_names = [
+        "request.json", "source_excerpt.md", "source_summary.md",
+        "product_ideas.md", "content_angles.md", "experiment_candidates.jsonl",
+        "distribution_plan.md", "risk_review.md", "run_summary.json",
+    ]
+    status = "PASS" if exit_code == 0 else "FAIL"
+    run_summary = {
+        "run_id": run_id,
+        "status": status,
+        "task_type": "video_to_money",
+        "input_file": rel_input,
+        "input_chars_read": len(excerpt),
+        "input_clipped": clipped,
+        "max_chars": max_chars,
+        "provider": provider,
+        "model": model,
+        "exit_code": exit_code,
+        "api_usage": "none",
+        "external_calls": "none",
+        "model_output_executed": False,
+        "auto_post": False,
+        "auto_sell": False,
+        "auto_email": False,
+        "auto_commit_from_model": False,
+        "approval_required_for_any_use": True,
+        "artifacts": [
+            str((run_dir / name).relative_to(_REPO_ROOT)) for name in artifact_names
+        ],
+        "timestamp_utc": _utc_now(),
+    }
+    _write_artifact(run_dir / "run_summary.json", json.dumps(run_summary, indent=2) + "\n")
+
+    print(f"[local_brain_router] exit_code={exit_code} status={status}")
+    print()
+    print("--- source summary ---")
+    print(_safe_display(source_summary[:800]))
+    if len(source_summary) > 800:
+        print("... (truncated for display)")
+    print("--- end ---")
+    print()
+    print(f"[local_brain_router] artifacts written to: {run_dir.relative_to(_REPO_ROOT)}")
+    return exit_code
+
+
 def _parse_args() -> dict:
     args = sys.argv[1:]
     result = {
@@ -407,12 +698,19 @@ def main() -> int:
             return 1
         return run_compress_context(policy, parsed["input"], parsed["max_chars"])
 
+    if parsed["task"] == "video_to_money":
+        if not parsed["input"]:
+            print("[local_brain_router] ERROR: --task video_to_money requires --input <path>", file=sys.stderr)
+            return 1
+        return run_video_to_money(policy, parsed["input"], parsed["max_chars"])
+
     if parsed["preview"]:
         return run_preview(policy)
 
     print("[local_brain_router] No action specified.")
     print("  --preview                                run draft_checklist preview task")
     print("  --task compress_context --input <path>   compress a local markdown/text file")
+    print("  --task video_to_money   --input <path>   extract money ideas from notes (.md/.txt only)")
     print("  --max-chars <number>                     clip input (default 12000)")
     print(f"  Policy: enabled={policy.get('enabled', False)}")
     print(f"  Routing mode: {policy.get('routing_mode', 'unknown')}")

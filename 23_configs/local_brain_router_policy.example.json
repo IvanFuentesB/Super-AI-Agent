@@ -10,12 +10,24 @@
     "classify_task_risk",
     "draft_checklist",
     "compress_context",
-    "suggest_worker_card"
+    "suggest_worker_card",
+    "video_to_money"
   ],
   "compress_context_defaults": {
     "max_input_chars": 12000,
     "allowed_file_extensions": [".md", ".txt", ".json", ".py", ".js", ".ps1"],
     "output_dir": "05_logs/local_brain_runs"
+  },
+  "video_to_money_defaults": {
+    "max_input_chars": 12000,
+    "allowed_file_extensions": [".md", ".txt"],
+    "output_dir": "05_logs/money_runs",
+    "artifact_only": true,
+    "no_external_api": true,
+    "no_auto_post": true,
+    "no_auto_sell": true,
+    "no_auto_email": true,
+    "approval_required_for_any_use": true
   },
   "safety_gates": {
     "repo_root_only": true,

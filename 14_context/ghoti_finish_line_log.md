@@ -379,3 +379,55 @@ push_pending — push blocked by permission gate; operator must run:
 ### Next Milestone
 
 N+3.18 — Gemma Video-to-Money Intake Runner + Money Experiment Scoring
+
+---
+
+## N+3.18 — Finish Gemma Video-to-Money Runner + Experiment Scoring
+
+### Date
+
+2026-05-01
+
+### Branch
+
+feat/ghoti-visible-operator-stack
+
+### Starting HEAD
+
+2e81aa0
+
+### Files Changed
+
+- 01_projects/runtime_mvp/src/super_ai_agent/local_brain_router.py
+- 03_scripts/money_workflow_new_experiment.py
+- 14_context/money_workflows/experiment_tracker.schema.json
+- 14_context/money_workflows/sample_video_notes_n3_18.md (untracked → staged)
+- 23_configs/local_brain_router_policy.example.json
+- 14_context/gemma_video_to_money_runner_n3_18.md (new)
+- 14_context/money_experiment_scoring_n3_18.md (new)
+- 14_context/money_runner_safety_review_n3_18.md (new)
+- 14_context/distribution_exposure_system_n3_18.md (new)
+- 14_context/current_state.md
+- 14_context/next_actions.md
+- 14_context/ghoti_finish_line_log.md
+- 01_projects/runtime_mvp/src/super_ai_agent/wait_resume_supervisor.py
+
+### Validation
+
+- AST parse local_brain_router.py: PASS
+- AST parse money_workflow_new_experiment.py: PASS
+- JSON parse experiment_tracker.schema.json: PASS
+- JSON parse local_brain_router_policy.example.json: PASS
+- JSONL parse experiment_tracker.jsonl: PASS
+- git diff --check: PASS
+- router help includes --task video_to_money: PASS
+- money script help includes scoring args and buckets: PASS
+- scored dry-run (total_score=41, bucket=A): PASS
+- partial scoring error test: PASS (exits 1 as expected)
+- video_to_money smoke with gemma3:4b (exit_code=0, status=PASS): PASS
+- approval_required type is bool True (not string): PASS
+- 9 artifacts written under 05_logs/money_runs/<run_id>/: PASS
+
+### Next Milestone
+
+N+3.29 — Weekly Money Review Artifact Generator

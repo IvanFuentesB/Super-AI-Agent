@@ -114,6 +114,67 @@
       "type": "array",
       "items": { "type": "string" },
       "description": "Repo-relative file paths of related assets"
+    },
+    "scoring": {
+      "type": "object",
+      "description": "Optional experiment priority scoring (all 10 fields required if scoring is present)",
+      "properties": {
+        "raw_scores": {
+          "type": "object",
+          "description": "Raw 1-5 scores as entered",
+          "required": [
+            "speed_to_ship", "pain_intensity", "buyer_access", "distribution_leverage",
+            "proof_difficulty", "build_complexity", "legal_tos_risk_score",
+            "monetization_clarity", "content_volume_potential", "email_list_potential"
+          ],
+          "properties": {
+            "speed_to_ship":           { "type": "integer", "minimum": 1, "maximum": 5 },
+            "pain_intensity":          { "type": "integer", "minimum": 1, "maximum": 5 },
+            "buyer_access":            { "type": "integer", "minimum": 1, "maximum": 5 },
+            "distribution_leverage":   { "type": "integer", "minimum": 1, "maximum": 5 },
+            "proof_difficulty":        { "type": "integer", "minimum": 1, "maximum": 5 },
+            "build_complexity":        { "type": "integer", "minimum": 1, "maximum": 5 },
+            "legal_tos_risk_score":    { "type": "integer", "minimum": 1, "maximum": 5 },
+            "monetization_clarity":    { "type": "integer", "minimum": 1, "maximum": 5 },
+            "content_volume_potential":{ "type": "integer", "minimum": 1, "maximum": 5 },
+            "email_list_potential":    { "type": "integer", "minimum": 1, "maximum": 5 }
+          },
+          "additionalProperties": false
+        },
+        "adjusted_scores": {
+          "type": "object",
+          "description": "Adjusted scores after inverting lower-is-better fields (6 - raw); range 1-5",
+          "required": [
+            "speed_to_ship", "pain_intensity", "buyer_access", "distribution_leverage",
+            "proof_difficulty", "build_complexity", "legal_tos_risk_score",
+            "monetization_clarity", "content_volume_potential", "email_list_potential"
+          ],
+          "properties": {
+            "speed_to_ship":           { "type": "integer", "minimum": 1, "maximum": 5 },
+            "pain_intensity":          { "type": "integer", "minimum": 1, "maximum": 5 },
+            "buyer_access":            { "type": "integer", "minimum": 1, "maximum": 5 },
+            "distribution_leverage":   { "type": "integer", "minimum": 1, "maximum": 5 },
+            "proof_difficulty":        { "type": "integer", "minimum": 1, "maximum": 5 },
+            "build_complexity":        { "type": "integer", "minimum": 1, "maximum": 5 },
+            "legal_tos_risk_score":    { "type": "integer", "minimum": 1, "maximum": 5 },
+            "monetization_clarity":    { "type": "integer", "minimum": 1, "maximum": 5 },
+            "content_volume_potential":{ "type": "integer", "minimum": 1, "maximum": 5 },
+            "email_list_potential":    { "type": "integer", "minimum": 1, "maximum": 5 }
+          },
+          "additionalProperties": false
+        },
+        "total_score": {
+          "type": "integer",
+          "description": "Sum of all adjusted scores (max 50). 40+=A, 32-39=B, 24-31=C, <24=D"
+        },
+        "priority_bucket": {
+          "type": "string",
+          "enum": ["A", "B", "C", "D"],
+          "description": "A=40+, B=32-39, C=24-31, D=<24"
+        }
+      },
+      "required": ["raw_scores", "adjusted_scores", "total_score", "priority_bucket"],
+      "additionalProperties": false
     }
   },
   "additionalProperties": false

@@ -730,6 +730,51 @@ _DEFAULT_SEEDS = [
             'No installs or wiring for any of these without separate explicit approval.'
         ),
     ),
+    dict(
+        title='video_to_money route live via Gemma — artifact_only, approval_required_for_any_use (N+3.18)',
+        wait_type='external_result',
+        repo_relative_context='14_context/gemma_video_to_money_runner_n3_18.md',
+        resume_command=(
+            'python 01_projects/runtime_mvp/src/super_ai_agent/local_brain_router.py '
+            '--task video_to_money '
+            '--input 14_context/money_workflows/sample_video_notes_n3_18.md '
+            '--max-chars 12000'
+        ),
+        approval_required=False,
+        risk_level='low',
+        notes=(
+            'N+3.18: video_to_money task class added to local_brain_router.py. '
+            'Accepts .md/.txt input only. Writes 9 artifacts to 05_logs/money_runs/<run_id>/. '
+            'Safety flags: api_usage=none, external_calls=none, model_output_executed=false, '
+            'auto_post=false, auto_sell=false, auto_email=false, auto_commit_from_model=false, '
+            'approval_required_for_any_use=true. '
+            'All outputs are planning drafts only. No revenue claims. No live accounts.'
+        ),
+    ),
+    dict(
+        title='Money experiment scoring available — planning heuristic only, not market proof (N+3.18)',
+        wait_type='tool_available',
+        repo_relative_context='14_context/money_experiment_scoring_n3_18.md',
+        resume_command=(
+            'python 03_scripts/money_workflow_new_experiment.py --dry-run '
+            '--workflow-type digital_product --source "local notes" '
+            '--product-idea "example" --target-customer "example" '
+            '--pain-point "example" --offer "example" --next-action "example" '
+            '--speed-to-ship 5 --pain-intensity 4 --buyer-access 3 '
+            '--distribution-leverage 4 --proof-difficulty 2 --build-complexity 2 '
+            '--legal-tos-risk 2 --monetization-clarity 4 '
+            '--content-volume-potential 5 --email-list-potential 4'
+        ),
+        approval_required=False,
+        risk_level='low',
+        notes=(
+            'N+3.18: 10-dimension scoring (1-5 each) added to money_workflow_new_experiment.py. '
+            'Lower-is-better fields inverted (6-raw). Buckets: A=40+, B=32-39, C=24-31, D=<24. '
+            'All-or-none rule enforced. Scoring is a planning heuristic only — '
+            'no market data, no validation results, no revenue proof behind the numbers. '
+            'Schema updated with required lists for raw_scores and adjusted_scores.'
+        ),
+    ),
 ]
 
 
