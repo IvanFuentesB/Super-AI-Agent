@@ -14,9 +14,11 @@ Codex found static validation passes for the dirty files, but no Claude commit, 
 
 ## Validators Claude Appears To Have Run
 
-No committed or artifact-based evidence was found that Claude ran the final N+3.18 validators.
+No committed evidence was found that Claude ran the final N+3.18 validators.
 
-There is no `05_logs/money_runs/` directory and no N+3.18 implementation docs recording smoke results.
+Late in the audit, an untracked `05_logs/money_runs/vm_20260501_082950_958735/` artifact directory appeared with a PASS `video_to_money` `run_summary.json`. It was not staged by Codex and is not a substitute for a finished N+3.18 commit.
+
+There are still no N+3.18 implementation docs recording the smoke results.
 
 ## Validators Codex Ran During This Audit
 
@@ -40,6 +42,49 @@ experiment_tracker.jsonl: parses, 3 rows
 
 These checks are helpful, but they do not prove N+3.18 complete.
 
+## Late Smoke Artifact Evidence
+
+Observed untracked artifact directory:
+
+```text
+05_logs/money_runs/vm_20260501_082950_958735/
+```
+
+Observed files:
+
+```text
+request.json
+source_excerpt.md
+source_summary.md
+product_ideas.md
+content_angles.md
+experiment_candidates.jsonl
+distribution_plan.md
+risk_review.md
+run_summary.json
+```
+
+Observed `run_summary.json` fields:
+
+```text
+status: PASS
+provider: ollama
+model: gemma3:4b
+exit_code: 0
+api_usage: none
+external_calls: none
+model_output_executed: false
+auto_post: false
+auto_sell: false
+auto_email: false
+auto_commit_from_model: false
+approval_required_for_any_use: true
+```
+
+Remaining caveat:
+
+This proves one local smoke artifact exists, but Claude still needs to inspect artifact quality, decide whether artifacts should remain untracked or be committed, and document the result in N+3.18 implementation docs.
+
 ## Validation Still Missing
 
 Claude still needs to run or record:
@@ -52,7 +97,7 @@ python 01_projects/runtime_mvp/src/super_ai_agent/local_brain_router.py
 python 03_scripts/money_workflow_new_experiment.py --help
 ```
 
-If local Gemma/Ollama remains available and the operator still approves local model smoke:
+If local Gemma/Ollama remains available and the operator still approves local model smoke, Claude may either inspect the existing untracked smoke run or rerun:
 
 ```powershell
 python 01_projects/runtime_mvp/src/super_ai_agent/local_brain_router.py --task video_to_money --input 14_context/money_workflows/sample_video_notes_n3_18.md --max-chars 12000
@@ -199,4 +244,4 @@ Commit only after:
 
 ## Validation Gap Verdict
 
-Static checks pass, but N+3.18 is not validated enough to commit as complete. The missing items are smoke artifacts, scoring dry-run proof, parser review, implementation docs, state/wait-resume updates, careful staging, commit, and push.
+Static checks pass, and one untracked `video_to_money` PASS artifact exists. N+3.18 is still not validated enough to commit as complete. The missing items are scoring dry-run proof, parser/artifact-quality review, implementation docs, state/wait-resume updates, careful staging, commit, and push.

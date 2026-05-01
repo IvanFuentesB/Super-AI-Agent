@@ -10,6 +10,8 @@ Current HEAD: 2e81aa0
 
 N+3.18 is still dirty and unresolved.
 
+Late audit evidence shows one untracked PASS `video_to_money` smoke artifact under `05_logs/money_runs/vm_20260501_082950_958735/`. This is promising, but it does not remove the sequence lock because the implementation remains uncommitted and the milestone docs/state updates are missing.
+
 Therefore, stop implementation sequencing until N+3.18 is finished or consciously paused.
 
 Do not implement N+3.29, N+3.30, N+3.31, N+3.32, or N+3.34 runtime/scaffolding layers on top of the current dirty N+3.18 state.

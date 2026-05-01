@@ -26,7 +26,9 @@ The working tree still contains the same dirty N+3.18 implementation files:
 14_context/money_workflows/sample_video_notes_n3_18.md
 ```
 
-No evidence was found that Claude finished or consciously paused N+3.18. There is no N+3.18 finish commit, no pushed implementation commit, no N+3.18 implementation docs, and no `05_logs/money_runs/` smoke artifact directory.
+No evidence was found that Claude finished or consciously paused N+3.18. There is no N+3.18 finish commit, no pushed implementation commit, and no N+3.18 implementation docs.
+
+Late audit note: after the initial repo-truth pass, an untracked `05_logs/money_runs/vm_20260501_082950_958735/` directory appeared with a PASS `video_to_money` run summary. Codex did not stage this artifact directory. The artifact is useful smoke evidence, but it does not make N+3.18 complete because the implementation files remain dirty/uncommitted and the required docs/state updates are still absent.
 
 ## Repo Truth Observed
 
@@ -66,6 +68,7 @@ M  21_repos/third_party/.gitkeep
 ?? .claude/skills/
 ?? 01_projects/mcp_server/test.txt
 ?? 05_logs/local_brain_runs/
+?? 05_logs/money_runs/
 ?? 14_context/ghoti_current_prompt_N1_6.md
 ?? CV_*.docx
 ?? output/
@@ -133,7 +136,7 @@ The sample notes are local-only, fictional, and explicitly state they were not s
 
 ## Validation Evidence Found
 
-No evidence was found that Claude ran or recorded the complete N+3.18 validation/smoke checklist.
+No evidence was found that Claude ran or recorded the complete N+3.18 validation/smoke checklist in committed implementation docs.
 
 Codex ran safe static validation during this audit:
 
@@ -151,11 +154,50 @@ Observed result:
 - `experiment_tracker.schema.json` parses
 - `experiment_tracker.jsonl` parses with 3 rows
 
-This is not enough to call N+3.18 finished because it does not prove the Gemma video-to-money smoke, artifact contents, scoring dry-run, docs, state updates, or commit/push.
+This is not enough to call N+3.18 finished because it does not prove the full Gemma video-to-money smoke workflow, scoring dry-run, docs, state updates, or commit/push.
 
 ## Smoke Test Evidence Found
 
-No `05_logs/money_runs/` directory was found.
+Late in the audit, an untracked money-run artifact appeared:
+
+```text
+05_logs/money_runs/vm_20260501_082950_958735/
+```
+
+Files observed:
+
+```text
+request.json
+source_excerpt.md
+source_summary.md
+product_ideas.md
+content_angles.md
+experiment_candidates.jsonl
+distribution_plan.md
+risk_review.md
+run_summary.json
+```
+
+`run_summary.json` reported:
+
+```text
+status: PASS
+task_type: video_to_money
+input_file: 14_context\money_workflows\sample_video_notes_n3_18.md
+provider: ollama
+model: gemma3:4b
+exit_code: 0
+api_usage: none
+external_calls: none
+model_output_executed: false
+auto_post: false
+auto_sell: false
+auto_email: false
+auto_commit_from_model: false
+approval_required_for_any_use: true
+```
+
+This improves smoke confidence, but it remains untracked local artifact evidence. Claude still needs to review artifact quality, decide whether any artifacts should be committed, complete scoring dry-runs, write implementation docs, update state/wait-resume docs, stage intentionally, commit, and push.
 
 Missing expected N+3.18 implementation docs:
 

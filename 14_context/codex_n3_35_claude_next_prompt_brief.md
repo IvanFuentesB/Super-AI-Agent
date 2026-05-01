@@ -26,6 +26,14 @@ Current HEAD and origin:
 
 No new Claude commit was found after N+3.34.
 
+Late audit evidence:
+
+```text
+05_logs/money_runs/vm_20260501_082950_958735/run_summary.json
+```
+
+This untracked run summary reports `status: PASS` for `video_to_money` using `ollama` / `gemma3:4b`, with no external calls, no model-output execution, no auto-post/sell/email, and approval required for use. Treat it as local smoke evidence to inspect, not as a completed milestone.
+
 Dirty N+3.18 files still present:
 
 ```text
@@ -58,6 +66,14 @@ Read:
 14_context/codex_n3_35_next_sequence_lock.md
 14_context/codex_n3_33_claude_resume_pack.md
 14_context/codex_n3_33_validation_matrix.md
+```
+
+Also inspect the untracked smoke artifacts if still present:
+
+```powershell
+Get-ChildItem 05_logs/money_runs/vm_20260501_082950_958735
+Get-Content 05_logs/money_runs/vm_20260501_082950_958735/run_summary.json
+Get-Content 05_logs/money_runs/vm_20260501_082950_958735/experiment_candidates.jsonl
 ```
 
 ## If Finishing N+3.18
@@ -103,7 +119,7 @@ python 01_projects/runtime_mvp/src/super_ai_agent/local_brain_router.py
 python 03_scripts/money_workflow_new_experiment.py --help
 ```
 
-Gemma smoke if local model approval still applies:
+Gemma smoke if local model approval still applies and Claude decides to rerun instead of relying on the existing untracked artifact:
 
 ```powershell
 python 01_projects/runtime_mvp/src/super_ai_agent/local_brain_router.py --task video_to_money --input 14_context/money_workflows/sample_video_notes_n3_18.md --max-chars 12000
