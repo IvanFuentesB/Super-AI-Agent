@@ -533,3 +533,67 @@ Commit: pending
 ### Next Milestone
 
 N+3.32 — Manual Decision Queue Read View And Operator Work Session Planner
+
+---
+
+## N+3.34 — Obsidian Vault + Compact Memory Scaffolding
+
+**Date:** 2026-05-05
+**Branch:** feat/ghoti-visible-operator-stack
+**Starting HEAD:** df57706 (in sync with origin)
+
+### Scope
+
+Docs/scaffolding/local files only. No runtime changes, no installs, no connectors,
+no live accounts, no posting, no paying, no scraping.
+
+### Vault Files Created
+
+- 14_context/obsidian_vault/02_Next_Actions.md
+- 14_context/obsidian_vault/03_Decisions.md
+- 14_context/obsidian_vault/04_Tools_And_Repos.md
+- 14_context/obsidian_vault/05_Money_OS.md
+- 14_context/obsidian_vault/06_Safety_Gates.md
+- 14_context/obsidian_vault/07_Agent_Routing.md
+- 14_context/obsidian_vault/08_Dirty_State.md
+- 14_context/obsidian_vault/09_Migration_Handoff.md
+
+### Vault Files Appended (not overwritten)
+
+- 14_context/obsidian_vault/00_Index.md (N+3.34 section added)
+- 14_context/obsidian_vault/01_Current_State.md (N+3.34 section added)
+
+### Vault Files Preserved Intact
+
+- 14_context/obsidian_vault/04_Tools.md (N+3.7 predecessor)
+- 14_context/obsidian_vault/05_Safety_Gates.md (N+3.7 predecessor)
+
+### Compact Memory Files Created
+
+- 14_context/compact_memory/project_state.md
+- 14_context/compact_memory/repo_and_tool_index.md
+- 14_context/compact_memory/money_os_memory.md
+- 14_context/compact_memory/agent_routing_memory.md
+- 14_context/compact_memory/safety_rules.md
+- 14_context/compact_memory/dirty_state_warning.md
+
+### Helper Script
+
+- 03_scripts/obsidian_memory_scaffold.py (stdlib only, no external APIs, no model calls)
+
+### Milestone Doc
+
+- 14_context/obsidian_compact_memory_scaffolding_n3_34.md
+
+### Validation
+
+- AST parse obsidian_memory_scaffold.py: PASS
+- --help smoke: PASS
+- --check smoke: all 16 target files present
+- --dry-run smoke: nothing to create
+- --apply smoke: nothing to create
+- git diff --check: PASS
+
+### Next Milestone
+
+N+3.43 — Agent Lane Locks And Parallel Execution Scaffolding

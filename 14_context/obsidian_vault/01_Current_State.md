@@ -49,3 +49,17 @@
 ---
 
 > Full detail: `14_context/current_state.md`
+
+---
+
+## N+3.34 Update (2026-05-05)
+
+- **N+3.18 resolved:** video-to-money runner + scoring implemented (dirty N+3.18 files remain unstaged by design)
+- **N+3.29–N+3.32:** weekly review, dashboard card, manual queue intake, manual queue read view — all implemented and pushed
+- **N+3.34 (this milestone):** Obsidian vault 10-file scaffold + compact memory 6-file set created
+- **Gemma3:4b:** installed and smoke-passed (N+3.13)
+- **Docker:** installed (N+3.11); CUA smoke pending approval phrase
+- **MCP:** ghoti-local MCP server connected read-only (N+3.36)
+- **Next milestone:** N+3.43 — Agent Lane Locks And Parallel Execution Scaffolding
+
+**Review status:** draft — Codex audit required after N+3.34 push.

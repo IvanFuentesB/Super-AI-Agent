@@ -42,3 +42,24 @@
 | Sync Doc | Milestone |
 |----------|-----------|
 | `14_context/obsidian_vault_sync_n3_7.md` | N+3.7 |
+| `14_context/obsidian_compact_memory_scaffolding_n3_34.md` | N+3.34 |
+
+---
+
+## N+3.34 Update (2026-05-05)
+
+Full vault scaffold completed. New notes added:
+
+- [[02_Next_Actions]] — Compact next-step list (new canonical)
+- [[03_Decisions]] — Key decisions and rationale
+- [[04_Tools_And_Repos]] — Tool/repo truth N+3.34+ (predecessor `04_Tools.md` intact)
+- [[05_Money_OS]] — Money OS workflow memory
+- [[06_Safety_Gates]] — Safety gates N+3.34 canonical (predecessor `05_Safety_Gates.md` intact)
+- [[07_Agent_Routing]] — Agent routing policy compact
+- [[08_Dirty_State]] — Dirty worktree warning
+- [[09_Migration_Handoff]] — Session handoff note
+
+Compact memory set also created at `14_context/compact_memory/` (6 new files).
+Helper script at `03_scripts/obsidian_memory_scaffold.py`.
+
+**Review status:** draft — Codex audit required after N+3.34 push.
