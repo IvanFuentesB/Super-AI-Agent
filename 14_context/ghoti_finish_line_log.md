@@ -497,3 +497,39 @@ Commit: pending
 ### Next Milestone
 
 N+3.31 — Manual Decision Candidate Review To Queue Draft Intake
+
+---
+
+## N+3.31 — Manual Decision Queue Intake
+
+Date: 2026-05-05
+Branch: feat/ghoti-visible-operator-stack
+Lane: Claude
+Commit: pending
+
+### Delivered
+
+- 03_scripts/manual_decision_queue_new_item.py: stdlib only, local only, no external API
+  - reads decisions_recommended.jsonl from latest weekly review run
+  - selects candidate by --candidate-id, --index, or first by default
+  - builds draft queue entry with all safety flags locked (false/approval_required=true)
+  - validates decision_type, risk_level, forbidden live-action phrases, non-local file paths
+  - dry-run mode (default): prints entry, writes nothing
+  - --append mode: validates pre/post queue JSONL, appends exactly one line
+  - never approves, never executes, never posts/sells/emails/scrapes/touches live accounts
+- 14_context/money_workflows/manual_decision_queue.schema.json: queue entry schema
+- 14_context/manual_decision_queue_intake_n3_31.md: milestone doc
+
+### Validation
+
+- AST parse manual_decision_queue_new_item.py: PASS
+- python -m json.tool manual_decision_queue.schema.json: PASS
+- --help smoke: PASS
+- --latest --dry-run smoke (temp artifacts): PASS
+- --latest --index 1 --dry-run smoke (temp artifacts): PASS
+- JSONL validation (queue missing ok): PASS
+- git diff --check: PASS
+
+### Next Milestone
+
+N+3.32 — Manual Decision Queue Read View And Operator Work Session Planner

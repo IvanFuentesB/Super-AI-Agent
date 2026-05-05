@@ -1,0 +1,209 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ManualDecisionQueueEntry",
+  "description": "A local draft queue entry created from a weekly review decision candidate. Never approved for live action until explicit human review.",
+  "type": "object",
+  "required": [
+    "queue_item_id",
+    "created_at",
+    "source_type",
+    "source_review_run_id",
+    "source_decision_id",
+    "source_file",
+    "decision_type",
+    "recommendation",
+    "reason",
+    "risk_level",
+    "next_manual_action",
+    "approval_required",
+    "status",
+    "public_action_allowed",
+    "live_account_action_allowed",
+    "external_action_allowed",
+    "model_output_executed",
+    "artifact_only",
+    "no_live_action_taken"
+  ],
+  "properties": {
+    "queue_item_id": {
+      "type": "string",
+      "description": "Unique stable ID for this queue entry (qdec_<timestamp>_<hash>)."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "UTC ISO-8601 timestamp when the entry was created."
+    },
+    "source_type": {
+      "type": "string",
+      "enum": ["weekly_review_candidate"],
+      "description": "Source type of the candidate."
+    },
+    "source_review_run_id": {
+      "type": "string",
+      "description": "Run ID of the weekly review that generated the candidate."
+    },
+    "source_decision_id": {
+      "type": "string",
+      "description": "decision_id from the source decisions_recommended.jsonl entry."
+    },
+    "source_file": {
+      "type": "string",
+      "description": "Repo-relative path to the source decisions_recommended.jsonl."
+    },
+    "title": {
+      "type": "string",
+      "description": "Human-readable title for the decision item."
+    },
+    "category": {
+      "type": "string",
+      "description": "Alias for decision_type."
+    },
+    "decision_type": {
+      "type": "string",
+      "enum": [
+        "DOUBLE_DOWN",
+        "ITERATE",
+        "PAUSE",
+        "KILL",
+        "BUILD_NEXT",
+        "CREATE_CONTENT_BATCH",
+        "CREATE_LEAD_MAGNET",
+        "REVIEW_LAUNCH_CHECKLIST",
+        "COLLECT_MORE_DATA"
+      ],
+      "description": "Allowed Money OS decision type."
+    },
+    "recommendation": {
+      "type": "string",
+      "description": "Short recommendation text from the candidate."
+    },
+    "rationale": {
+      "type": "string",
+      "description": "Reasoning behind the recommendation."
+    },
+    "reason": {
+      "type": "string",
+      "description": "Alias for rationale."
+    },
+    "risk_level": {
+      "type": "string",
+      "enum": ["low", "medium", "high"],
+      "description": "Operator-assessed risk level."
+    },
+    "next_local_step": {
+      "type": "string",
+      "description": "Next local manual step. Must not imply posting, selling, outreach, payment, scraping, upload, launch, or login."
+    },
+    "next_manual_action": {
+      "type": "string",
+      "description": "Alias for next_local_step."
+    },
+    "blocked_reason": {
+      "type": "string",
+      "description": "Reason the item is blocked, if applicable."
+    },
+    "human_review_note": {
+      "type": "string",
+      "description": "Note for the human reviewer."
+    },
+    "linked_experiment_id": {
+      "type": ["string", "null"],
+      "description": "Linked experiment ID from the tracker, if known."
+    },
+    "linked_product_id": {
+      "type": ["string", "null"],
+      "description": "Linked product ID, if applicable."
+    },
+    "deadline_optional": {
+      "type": ["string", "null"],
+      "description": "Optional deadline (ISO-8601 date), if applicable."
+    },
+    "approval_required": {
+      "type": "boolean",
+      "const": true,
+      "description": "Always true. Human approval required before any live step."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "candidate",
+        "accepted_for_manual_work",
+        "in_progress",
+        "completed",
+        "paused",
+        "killed",
+        "superseded"
+      ],
+      "description": "Queue item status. N+3.31 intake always starts as 'draft'."
+    },
+    "public_or_money_facing": {
+      "type": "boolean",
+      "const": false,
+      "description": "Always false at intake. No public or money-facing action permitted."
+    },
+    "public_action_allowed": {
+      "type": "boolean",
+      "const": false,
+      "description": "Always false. No public action permitted without explicit approval."
+    },
+    "live_account_action_allowed": {
+      "type": "boolean",
+      "const": false,
+      "description": "Always false. No live account action permitted."
+    },
+    "external_action_allowed": {
+      "type": "boolean",
+      "const": false,
+      "description": "Always false. No external action permitted."
+    },
+    "model_output_executed": {
+      "type": "boolean",
+      "const": false,
+      "description": "Always false. Model output is never auto-executed."
+    },
+    "artifact_only": {
+      "type": "boolean",
+      "const": true,
+      "description": "Always true. This is a local artifact only."
+    },
+    "no_live_action_taken": {
+      "type": "boolean",
+      "const": true,
+      "description": "Always true. No live action taken at queue time."
+    },
+    "safety_flags": {
+      "type": "object",
+      "description": "Safety gate flags confirming no live actions were taken.",
+      "properties": {
+        "external_api_used": { "type": "boolean", "const": false },
+        "scraping_enabled": { "type": "boolean", "const": false },
+        "live_account_actions_enabled": { "type": "boolean", "const": false },
+        "posting_enabled": { "type": "boolean", "const": false },
+        "selling_enabled": { "type": "boolean", "const": false },
+        "outreach_enabled": { "type": "boolean", "const": false },
+        "payment_actions_enabled": { "type": "boolean", "const": false },
+        "model_output_executed": { "type": "boolean", "const": false },
+        "manual_review_required": { "type": "boolean", "const": true }
+      }
+    },
+    "metrics_snapshot": {
+      "type": "object",
+      "description": "Snapshot of known metrics at queue time (typically all zeros at intake).",
+      "properties": {
+        "impressions": { "type": "integer" },
+        "clicks": { "type": "integer" },
+        "opt_ins": { "type": "integer" },
+        "sales": { "type": "integer" },
+        "revenue_usd": { "type": "number" }
+      }
+    },
+    "files": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Repo-relative file paths associated with this item. No external URLs."
+    }
+  },
+  "additionalProperties": false
+}
