@@ -5862,6 +5862,145 @@ async function handleApiRequest(request, response, requestUrl) {
     return;
   }
 
+  // GET /api/ghoti/money/weekly-review/latest — read-only weekly review artifact summary (N+3.30)
+  if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/money/weekly-review/latest") {
+    const moneyReviewsDir = path.join(repoRoot, "05_logs", "money_reviews");
+    const warnings = [];
+
+    if (!fs.existsSync(moneyReviewsDir)) {
+      sendJson(response, 200, {
+        ok: true,
+        status: "zero_state",
+        runs_total: 0,
+        latest_run_id: null,
+        warning: "No weekly review artifacts found. Run: python 03_scripts/weekly_money_review.py --since-days 30",
+        updated_at_utc: new Date().toISOString(),
+      });
+      return;
+    }
+
+    let runDirs;
+    try {
+      runDirs = fs.readdirSync(moneyReviewsDir)
+        .filter(name => {
+          try { return fs.statSync(path.join(moneyReviewsDir, name)).isDirectory(); } catch { return false; }
+        })
+        .sort()
+        .reverse();
+    } catch (e) {
+      sendJson(response, 200, {
+        ok: true,
+        status: "zero_state",
+        runs_total: 0,
+        latest_run_id: null,
+        warning: "Could not read money_reviews dir: " + e.message,
+        updated_at_utc: new Date().toISOString(),
+      });
+      return;
+    }
+
+    if (runDirs.length === 0) {
+      sendJson(response, 200, {
+        ok: true,
+        status: "zero_state",
+        runs_total: 0,
+        latest_run_id: null,
+        warning: "No weekly review artifacts found. Run: python 03_scripts/weekly_money_review.py --since-days 30",
+        updated_at_utc: new Date().toISOString(),
+      });
+      return;
+    }
+
+    const latestRunId = runDirs[0];
+    const latestDir = path.join(moneyReviewsDir, latestRunId);
+
+    let reviewData = null;
+    const reviewJsonPath = path.join(latestDir, "weekly_review.json");
+    try {
+      if (fs.existsSync(reviewJsonPath)) {
+        reviewData = JSON.parse(fs.readFileSync(reviewJsonPath, "utf8"));
+      } else {
+        warnings.push("weekly_review.json missing in latest run dir");
+      }
+    } catch (e) {
+      warnings.push("weekly_review.json parse error: " + e.message);
+    }
+
+    const decisionsPath = path.join(latestDir, "decisions_recommended.jsonl");
+    const candidates = [];
+    let decisionsParseErrors = 0;
+    if (fs.existsSync(decisionsPath)) {
+      try {
+        const lines = fs.readFileSync(decisionsPath, "utf8").split("\n").filter(l => l.trim());
+        for (const line of lines) {
+          try { candidates.push(JSON.parse(line)); } catch { decisionsParseErrors++; }
+        }
+        if (decisionsParseErrors > 0) warnings.push(decisionsParseErrors + " decision candidate line(s) could not be parsed");
+      } catch (e) {
+        warnings.push("decisions_recommended.jsonl read error: " + e.message);
+      }
+    } else {
+      warnings.push("decisions_recommended.jsonl missing");
+    }
+
+    const candidateCounts = {};
+    for (const c of candidates) {
+      const cat = String(c.category || c.recommendation || "UNKNOWN");
+      candidateCounts[cat] = (candidateCounts[cat] || 0) + 1;
+    }
+
+    const topCandidates = candidates.slice(0, 3).map(c => ({
+      decision_id: c.decision_id,
+      experiment_id: c.experiment_id,
+      title: c.title,
+      category: c.category || c.recommendation,
+      confidence: c.confidence,
+      risk_level: c.risk_level,
+      next_local_step: c.next_local_step,
+      approval_required: c.approval_required,
+    }));
+
+    const artifactFiles = ["weekly_review.json", "weekly_review.md", "decisions_recommended.jsonl", "source_index.json", "tracker_snapshot.json", "request.json"];
+    const artifactPaths = {};
+    for (const fname of artifactFiles) {
+      artifactPaths[fname] = {
+        relative: "05_logs/money_reviews/" + latestRunId + "/" + fname,
+        exists: fs.existsSync(path.join(latestDir, fname)),
+      };
+    }
+
+    const safetyFlags = reviewData && reviewData.safety_flags ? reviewData.safety_flags : null;
+    if (safetyFlags) {
+      const dangerous = Object.entries(safetyFlags).filter(([k, v]) => k !== "manual_review_required" && k !== "approval_required_for_public_actions" && v === true);
+      if (dangerous.length > 0) warnings.push("Safety anomaly: non-false flags: " + dangerous.map(([k]) => k).join(", "));
+    }
+
+    sendJson(response, 200, {
+      ok: true,
+      status: "found",
+      runs_total: runDirs.length,
+      latest_run_id: (reviewData && reviewData.run_id) || latestRunId,
+      created_at: (reviewData && reviewData.created_at) || null,
+      week_start: (reviewData && reviewData.week_start) || null,
+      week_end: (reviewData && reviewData.week_end) || null,
+      source_counts: (reviewData && reviewData.source_counts) || null,
+      total_experiments: reviewData != null ? (reviewData.total_experiments != null ? reviewData.total_experiments : null) : null,
+      total_money_runs: reviewData != null ? (reviewData.total_money_runs != null ? reviewData.total_money_runs : null) : null,
+      top_candidates: (reviewData && reviewData.top_candidates) || [],
+      next_local_actions: (reviewData && reviewData.next_local_actions) || [],
+      warnings: warnings.concat((reviewData && reviewData.warnings) || []),
+      safety_flags: safetyFlags,
+      approval_required_for_public_actions: reviewData != null ? (reviewData.approval_required_for_public_actions != null ? reviewData.approval_required_for_public_actions : true) : true,
+      candidate_counts: candidateCounts,
+      top_decision_candidates: topCandidates,
+      total_decision_candidates: candidates.length,
+      artifact_paths: artifactPaths,
+      artifact_dir: "05_logs/money_reviews/" + latestRunId,
+      updated_at_utc: new Date().toISOString(),
+    });
+    return;
+  }
+
   sendJson(response, 404, {
     ok: false,
     error: "Route not found.",

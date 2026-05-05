@@ -462,3 +462,38 @@ Commit: pending
 ### Next Milestone
 
 N+3.30 — Weekly Review Dashboard Reads Generated Artifacts
+
+## N+3.30 — Weekly Review Dashboard Read Card
+
+Date: 2026-05-05
+Branch: feat/ghoti-visible-operator-stack
+Lane: Claude
+Commit: pending
+
+### Delivered
+
+- server.js: added GET /api/ghoti/money/weekly-review/latest route
+  - Scans 05_logs/money_reviews/ for run dirs; latest by sort order
+  - Reads weekly_review.json + decisions_recommended.jsonl, tolerant parsing
+  - Zero-state: ok/zero_state if dir missing or empty
+  - Malformed lines: warnings, not crashes; no mutation; no live actions
+- index.html: added #section-money-review + sidebar link
+- app.js: added renderWeeklyReviewCard + refreshWeeklyReview
+  - Zero-state: empty message + generate command
+  - Found-state: run summary, top candidates, next actions, safety flags, artifact paths
+  - No approve/execute/post/sell/pay buttons
+- 14_context/weekly_money_dashboard_n3_30.md: milestone doc
+- Sample artifact at 05_logs/money_reviews/mrev_sample_n3_30_*/ for smoke (not staged)
+
+### Validation
+
+- node --check server.js: PASS
+- node --check app.js: PASS
+- git diff --check: PASS
+- AST parse weekly_money_review.py: PASS
+- Zero-state smoke: PASS
+- Found-state smoke: PASS (run_id, experiments=2, candidates=1, approval_required=true)
+
+### Next Milestone
+
+N+3.31 — Manual Decision Candidate Review To Queue Draft Intake

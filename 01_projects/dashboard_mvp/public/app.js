@@ -6151,5 +6151,92 @@ function initDashboardUxRebuild() {
   });
 }
 
-initDashboardUxRebuild();
 
+function renderWeeklyReviewCard(payload) {
+  var container = document.getElementById('money-review-card');
+  if (!container) return;
+
+  if (payload.status === 'zero_state' || !payload.latest_run_id) {
+    var warn = payload.warning ? escapeHtml(payload.warning) : 'No weekly review artifacts found yet.';
+    container.innerHTML =
+      '<h3 class="card-title">Money OS &#8212; Weekly Review</h3>' +
+      '<p class="summary-note">' + warn + '</p>' +
+      '<p class="summary-note">Generate locally: <code>python 03_scripts/weekly_money_review.py --since-days 30</code></p>';
+    return;
+  }
+
+  var warnings = Array.isArray(payload.warnings) ? payload.warnings : [];
+  var topCandidates = Array.isArray(payload.top_decision_candidates) ? payload.top_decision_candidates : [];
+  var nextActions = Array.isArray(payload.next_local_actions) ? payload.next_local_actions : [];
+  var artifactPaths = payload.artifact_paths || {};
+  var safetyFlags = payload.safety_flags || {};
+
+  var warningsHtml = warnings.length > 0
+    ? '<div class="banner banner--warn" style="margin-top:0.5rem;">' + warnings.map(function(w) { return escapeHtml(w); }).join('<br>') + '</div>'
+    : '';
+
+  var candidatesHtml = topCandidates.length > 0
+    ? topCandidates.map(function(c) {
+        return '<div class="approval-item" style="margin-bottom:0.5rem;">' +
+          '<strong>' + escapeHtml(c.title || c.experiment_id || '?') + '</strong> ' +
+          '<span class="chip">' + escapeHtml(c.category || '?') + '</span> ' +
+          '<span class="chip chip--scaffold">confidence: ' + escapeHtml(c.confidence || '?') + '</span> ' +
+          '<span class="chip chip--scaffold">risk: ' + escapeHtml(c.risk_level || '?') + '</span>' +
+          '<div style="font-size:0.85em;margin-top:0.2rem;">' + escapeHtml(c.next_local_step || '') + '</div>' +
+          '<div style="font-size:0.8em;color:#888;">Approval required: ' + (c.approval_required ? 'yes' : 'no') + '</div>' +
+          '</div>';
+      }).join('')
+    : '<p class="empty-state">No decision candidates.</p>';
+
+  var nextActionsHtml = nextActions.length > 0
+    ? '<ul class="status-list">' + nextActions.map(function(a) { return '<li>' + escapeHtml(a) + '</li>'; }).join('') + '</ul>'
+    : '<p class="empty-state">No next actions listed.</p>';
+
+  var safetyEntries = Object.entries(safetyFlags);
+  var safetyFlagsHtml = safetyEntries.length > 0
+    ? '<ul class="status-list">' + safetyEntries.map(function(pair) { return '<li><code>' + escapeHtml(pair[0]) + '</code>: ' + escapeHtml(String(pair[1])) + '</li>'; }).join('') + '</ul>'
+    : '<p class="empty-state">No safety flags.</p>';
+
+  var artifactEntries = Object.entries(artifactPaths);
+  var artifactPathsHtml = artifactEntries.map(function(pair) {
+    var name = pair[0], info = pair[1];
+    return '<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;">' +
+      '<code style="flex:1;font-size:0.8em;">' + escapeHtml(info.relative || name) + '</code>' +
+      (info.exists ? '' : ' <span class="chip chip--warn">missing</span>') +
+      '</div>';
+  }).join('');
+
+  container.innerHTML =
+    '<h3 class="card-title">Money OS &#8212; Weekly Review</h3>' +
+    '<p class="summary-note">Latest run: <strong>' + escapeHtml(payload.latest_run_id || '?') + '</strong>' +
+    (payload.created_at ? ' &nbsp;<span style="color:#888;">' + escapeHtml(payload.created_at) + '</span>' : '') +
+    '</p>' +
+    '<p class="summary-note">' +
+    'Experiments: <strong>' + (payload.total_experiments != null ? payload.total_experiments : '?') + '</strong> &nbsp;|&nbsp; ' +
+    'Money runs: <strong>' + (payload.total_money_runs != null ? payload.total_money_runs : '?') + '</strong> &nbsp;|&nbsp; ' +
+    'Candidates: <strong>' + (payload.total_decision_candidates != null ? payload.total_decision_candidates : '?') + '</strong> &nbsp;|&nbsp; ' +
+    'Total reviews: <strong>' + (payload.runs_total != null ? payload.runs_total : '?') + '</strong>' +
+    '</p>' +
+    warningsHtml +
+    '<details style="margin-top:0.75rem;"><summary><strong>Top Decision Candidates</strong></summary><div style="margin-top:0.5rem;">' + candidatesHtml + '</div></details>' +
+    '<details style="margin-top:0.5rem;"><summary><strong>Next Local Actions</strong></summary><div style="margin-top:0.5rem;">' + nextActionsHtml + '</div></details>' +
+    '<details style="margin-top:0.5rem;"><summary><strong>Safety Flags</strong></summary><div style="margin-top:0.5rem;">' + safetyFlagsHtml + '</div></details>' +
+    '<details style="margin-top:0.5rem;"><summary><strong>Artifact Paths</strong></summary><div style="margin-top:0.5rem;">' + artifactPathsHtml + '</div></details>';
+}
+
+async function refreshWeeklyReview() {
+  try {
+    var data = await requestJson('/api/ghoti/money/weekly-review/latest');
+    renderWeeklyReviewCard(data);
+  } catch (err) {
+    var container = document.getElementById('money-review-card');
+    if (container) {
+      container.innerHTML =
+        '<h3 class="card-title">Money OS &#8212; Weekly Review</h3>' +
+        '<p class="summary-note" style="color:red;">Failed to load: ' + escapeHtml(err.message) + '</p>';
+    }
+  }
+}
+
+initDashboardUxRebuild();
+refreshWeeklyReview();
