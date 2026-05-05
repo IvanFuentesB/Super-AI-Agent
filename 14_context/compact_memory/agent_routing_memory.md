@@ -69,3 +69,11 @@ Each model runs in its own session. No shared credential path.
 
 Update after model/router milestones or worker-card policy changes.
 Human review before autonomous routing is enabled.
+
+## N+3.43 Pointer Update
+
+- Agent lane scaffold: `14_context/agent_lanes/`
+- Lane helper: `03_scripts/agent_lane_status.py`
+- Milestone doc: `14_context/agent_lane_locks_n3_43.md`
+- Controlled parallel rule: branch per agent, lock shared files before writing, emit status beacons, merge one branch at a time.
+- Gate: controlled parallel execution can begin only after the N+3.43 implementation commit is pushed and Codex audit confirms lane locks pass.

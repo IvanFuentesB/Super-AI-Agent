@@ -69,3 +69,11 @@ Not a cap bypass. Not an autonomous routing claim. Routing guidance for operator
 - `14_context/agent_registry/agent_routing_policy_n3_14.md`
 - `14_context/obsidian_vault/03_Decisions.md`
 - `14_context/compact_memory/agent_routing_memory.md`
+
+## N+3.43 Agent Lane Pointer
+
+- Lane scaffold: `14_context/agent_lanes/`
+- Helper: `03_scripts/agent_lane_status.py`
+- Milestone doc: `14_context/agent_lane_locks_n3_43.md`
+- Rule: controlled parallel execution requires branch-per-agent, lock/status records, one writer per shared file, and merge one branch at a time.
+- Gate: controlled parallel execution can begin only after the N+3.43 implementation commit is pushed and Codex audit confirms lane locks pass.
