@@ -8,7 +8,6 @@
     ],
     "deny": [
       "Bash(rm -rf *)",
-      "Bash(git push*)",
       "Bash(git reset --hard*)",
       "Bash(git rebase*)",
       "Bash(* .env*)",
