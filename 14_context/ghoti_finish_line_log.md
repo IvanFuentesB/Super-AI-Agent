@@ -431,3 +431,34 @@ feat/ghoti-visible-operator-stack
 ### Next Milestone
 
 N+3.29 — Weekly Money Review Artifact Generator
+
+---
+
+## N+3.29 — Weekly Money Review Artifact Generator
+
+Date: 2026-05-05
+Branch: feat/ghoti-visible-operator-stack
+Lane: Claude
+Commit: pending
+
+### Delivered
+
+- `03_scripts/weekly_money_review.py` — stdlib only, local only, no external API, no model output execution, no live actions
+- `14_context/weekly_money_review_n3_29.md` — milestone doc
+
+### Validation
+
+- AST parse: PASS
+- git diff --check: PASS
+- JSONL validation (experiment_tracker.jsonl): PASS
+- --help smoke: PASS
+- --dry-run smoke: PASS (5 experiments, 0 warnings, no files written)
+- --since-days 30 smoke (temp output root): PASS
+  - Files: weekly_review.json, weekly_review.md, decisions_recommended.jsonl, source_index.json, tracker_snapshot.json, request.json
+  - weekly_review.json all required fields present
+  - decisions_recommended.jsonl 5 lines all approval_required=true, public_or_money_facing=false
+  - source_index.json valid
+
+### Next Milestone
+
+N+3.30 — Weekly Review Dashboard Reads Generated Artifacts
