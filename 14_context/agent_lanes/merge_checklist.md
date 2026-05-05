@@ -1,27 +1,35 @@
-# Agent Lane Merge Checklist
+# Merge Checklist — Agent Lane Branch
 
-Use this before merging any agent lane branch.
+Run this checklist before merging any agent lane branch into the main branch.
 
-1. Fetch first: `git fetch origin`.
-2. Compare local HEAD and origin for the lane branch.
-3. Inspect `14_context/agent_lanes/active_locks.jsonl`.
-4. Confirm no shared-file overlap with another active lane.
-5. Inspect staged files: `git diff --cached --name-only`.
-6. Confirm only intentional files are staged.
-7. Run validation for touched files.
-8. Confirm generated logs are not staged unless explicitly approved.
-9. Confirm no secrets, API keys, credentials, or tokens are staged.
-10. Commit on the lane branch.
-11. Push the lane branch.
-12. Merge one branch at a time.
-13. Update state docs only from the designated state-owner lane.
-14. Never run `git reset` or destructive cleanup without explicit human approval.
-15. Confirm no public/live side effects happened: no posting, email, payment, scraping, account creation, job application, giveaway entry, or product listing.
+## Pre-Merge Validation
 
-## Stop And Ask If
+- [ ] python 03_scripts/agent_lane_status.py --check -> PASS
+- [ ] python 03_scripts/agent_lane_status.py --list -> no unexpected active locks
+- [ ] git diff --check <base>...<branch> -> no trailing whitespace on new files
+- [ ] All new files are within the agent's declared allowed_paths
+- [ ] No shared locked files were modified by an agent that did not own the lock
+- [ ] agent_lane_registry.json still parses as valid JSON
+- [ ] active_locks.jsonl and lane_status.jsonl parse as valid JSONL
 
-- Branches diverged.
-- Another active lane locks the same shared file.
-- Runtime files and dashboard files are both touched unexpectedly.
-- A generated artifact contains secrets or live-account instructions.
-- A task requires public, money-facing, account, connector, browser, or scraping actions.
+## Safety Gates
+
+- [ ] No outbound/live/account actions in the diff
+- [ ] No install commands, no repo clones, no new MCP connections
+- [ ] No deletions of history, memory, task, or audit files
+- [ ] No course/exam impersonation, no credential fabrication
+- [ ] Human approval documented for any action that required it
+
+## Content Review
+
+- [ ] Commit message is accurate and follows repo convention
+- [ ] New docs do not overwrite large historical sections
+- [ ] CRLF/whitespace issues on new files are resolved (not masked)
+- [ ] Dirty/unrelated files were not staged
+
+## Post-Merge
+
+- [ ] Append released status to lane_status.jsonl for the merged lane
+- [ ] Update 14_context/current_state.md and 14_context/next_actions.md concisely
+- [ ] Update 14_context/ghoti_finish_line_log.md with milestone summary
+- [ ] Push to origin

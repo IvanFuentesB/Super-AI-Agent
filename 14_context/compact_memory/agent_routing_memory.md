@@ -77,3 +77,12 @@ Human review before autonomous routing is enabled.
 - Milestone doc: `14_context/agent_lane_locks_n3_43.md`
 - Controlled parallel rule: branch per agent, lock shared files before writing, emit status beacons, merge one branch at a time.
 - Gate: controlled parallel execution can begin only after the N+3.43 implementation commit is pushed and Codex audit confirms lane locks pass.
+
+## N+3.43 Agent Lane Locks — Added 2026-05-05
+
+- Lane scaffold: 14_context/agent_lanes/ (9 files: README, templates, registry, JSONL state files)
+- Helper CLI: 03_scripts/agent_lane_status.py (--check, --list, --new-lock, --new-status)
+- Milestone doc: 14_context/agent_lane_locks_n3_43.md
+- Gate: controlled parallel execution requires branch-per-agent, lock records, one writer per shared file
+- Status: scaffolding_only — no parallel agents run, no external tools, no live actions
+- Next: Codex N+3.44 audit to confirm lane locks pass before parallel execution begins

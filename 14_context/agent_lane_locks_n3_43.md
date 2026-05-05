@@ -1,106 +1,94 @@
-# N+3.43 Agent Lane Locks And Parallel Execution Scaffolding
+# N+3.43 — Agent Lane Locks And Parallel Execution Scaffolding
 
-Status: implemented by Codex recovery lane.
-Date: 2026-05-05
-Branch: `feat/ghoti-visible-operator-stack`
+Delivered: 2026-05-05
+Branch: feat/ghoti-visible-operator-stack
+Status: scaffolding_only — no parallel agents run, no external tools, no live actions
 
 ## Scope
 
-N+3.43 creates local scaffolding for controlled future parallel agents. It does not start parallel agents, connect external tools, install dependencies, create accounts, post, send, sell, pay, scrape, apply to jobs, enter giveaways, or touch live accounts.
+This milestone creates the local safety foundation for future controlled parallel agent execution. It does NOT run parallel agents, connect external tools, or perform any live actions. It adds: lane templates, registry, append-only JSONL state files, example lock files, docs, and a helper script.
 
 ## Files Created
 
-- `14_context/agent_lanes/README.md`
-- `14_context/agent_lanes/lane_template.md`
-- `14_context/agent_lanes/lock_template.md`
-- `14_context/agent_lanes/status_template.md`
-- `14_context/agent_lanes/merge_checklist.md`
-- `14_context/agent_lanes/shared_file_lock_policy.md`
-- `14_context/agent_lanes/agent_lane_registry.json`
-- `14_context/agent_lanes/active_locks.jsonl`
-- `14_context/agent_lanes/lane_status.jsonl`
-- `14_context/agent_lanes/examples/claude_code_impl_example_lock.md`
-- `14_context/agent_lanes/examples/codex_audit_example_lock.md`
-- `14_context/agent_lanes/examples/gemma_local_worker_example_lock.md`
-- `14_context/agent_lanes/examples/python_automation_worker_example_lock.md`
-- `03_scripts/agent_lane_status.py`
+### Agent Lane Folder (Part A)
+- 14_context/agent_lanes/README.md — lane system overview
+- 14_context/agent_lanes/lane_template.md — machine-readable lane declaration template
+- 14_context/agent_lanes/lock_template.md — shared-file lock record template
+- 14_context/agent_lanes/status_template.md — status beacon template
+- 14_context/agent_lanes/merge_checklist.md — pre-merge validation checklist
+- 14_context/agent_lanes/shared_file_lock_policy.md — shared files requiring locks
+- 14_context/agent_lanes/agent_lane_registry.json — 8 agent role definitions
+- 14_context/agent_lanes/active_locks.jsonl — append-only active lock records (starts empty)
+- 14_context/agent_lanes/lane_status.jsonl — append-only status beacons (starts empty)
+
+### Helper Script (Part B)
+- 03_scripts/agent_lane_status.py — CLI: --check, --list, --new-lock, --new-status
+
+### Example Lock Files (Part C)
+- 14_context/agent_lanes/examples/claude_code_impl_example_lock.md
+- 14_context/agent_lanes/examples/codex_audit_example_lock.md
+- 14_context/agent_lanes/examples/gemma_local_worker_example_lock.md
+- 14_context/agent_lanes/examples/python_automation_worker_example_lock.md
 
 ## Helper Script Usage
 
-```powershell
-python 03_scripts/agent_lane_status.py --help
-python 03_scripts/agent_lane_status.py --check
-python 03_scripts/agent_lane_status.py --list
-```
+  python 03_scripts/agent_lane_status.py --check
+  python 03_scripts/agent_lane_status.py --list
+  python 03_scripts/agent_lane_status.py --new-lock --agent-id claude_code_n3_43 --lane-type claude_code_impl --task-slug agent-lane-scaffolding --branch feat/ghoti-visible-operator-stack --locked-file 14_context/current_state.md --locked-file 14_context/next_actions.md --dry-run
+  python 03_scripts/agent_lane_status.py --new-status --agent-id claude_code_n3_43 --lane-type claude_code_impl --task-slug agent-lane-scaffolding --branch feat/ghoti-visible-operator-stack --current-state dry_run --dry-run
 
-Dry-run a new lock:
+## How to Start a Lane
 
-```powershell
-python 03_scripts/agent_lane_status.py --new-lock --agent-id claude_code_n3_43 --lane-type claude_code_impl --task-slug agent-lane-scaffolding --branch feat/ghoti-visible-operator-stack --locked-file 14_context/current_state.md --locked-file 14_context/next_actions.md --dry-run
-```
+1. Copy lane_template.md, fill all required fields.
+2. Create a branch: feat/ghoti-agent-<agent_id>-<task_slug>
+3. Declare locked shared files in locked_files field.
+4. Run --new-lock --apply to record the lock.
+5. Run --new-status --apply --current-state started to emit a beacon.
+6. Do the work within declared allowed_paths only.
+7. On completion: run --new-status --apply --current-state complete.
 
-Append a lock only after operator-approved lane scope:
+## How to Check Lanes
 
-```powershell
-python 03_scripts/agent_lane_status.py --new-lock --agent-id claude_code_next --lane-type claude_code_impl --task-slug small-safe-task --branch feat/ghoti-agent-claude-small-safe-task --locked-file 03_scripts/example.py --apply
-```
+  python 03_scripts/agent_lane_status.py --check
+  python 03_scripts/agent_lane_status.py --list
 
-Dry-run a status beacon:
+--check exits non-zero only on true validation failure (missing files, invalid JSON/JSONL).
+--list prints active locks and latest statuses; works with empty JSONL files.
 
-```powershell
-python 03_scripts/agent_lane_status.py --new-status --agent-id claude_code_n3_43 --lane-type claude_code_impl --task-slug agent-lane-scaffolding --branch feat/ghoti-visible-operator-stack --current-state dry_run --dry-run
-```
+## How to Merge Safely
 
-## How To Start A Lane
+1. Run --check -> PASS
+2. Review merge_checklist.md — every item ticked
+3. Confirm no shared-file lock conflicts
+4. Confirm no outbound/live actions in diff
+5. Merge branch; push to origin
+6. Append released status: --new-status --current-state released --apply
+7. Update current_state.md and next_actions.md concisely
 
-1. Fetch origin.
-2. Compare local HEAD to origin.
-3. Choose a branch-per-agent branch name.
-4. Create or dry-run a lock record.
-5. Confirm no shared-file overlap.
-6. Work only inside allowed paths.
-7. Emit status beacons.
-8. Validate.
-9. Stage only intentional files.
-10. Push the lane branch.
-11. Merge one branch at a time.
+## What Is Allowed After N+3.43
 
-## How To Check Lanes
+- Use agent_lane_status.py to declare and track lanes
+- Use lane templates to plan parallel agent work
+- Use example lock files as reference for real locks
+- Read agent_lane_registry.json to understand role boundaries
+- Run --check and --list at any time
 
-Run:
+## What Is Still Forbidden
 
-```powershell
-python 03_scripts/agent_lane_status.py --check
-python 03_scripts/agent_lane_status.py --list
-```
+- Uncontrolled parallel agent execution (no lane declaration)
+- Parallel execution before Codex audit confirms lane locks pass
+- Writing shared locked files without owning the lock
+- Any external/live/account/money actions without approval
+- Installing packages, cloning repos, connecting new MCP servers
+- Course impersonation, credential fabrication
+- Deleting history, memory, task, or audit files
 
-`--check` verifies required lane files, registry JSON, and lock/status JSONL. `--list` prints active locks and status records without mutating files.
+## Exact Command Examples
 
-## How To Merge Safely
-
-Use `14_context/agent_lanes/merge_checklist.md`.
-
-Key rule: shared state docs are owned by one state-owner lane per milestone. If a second lane needs the same file, stop and ask.
-
-## Allowed After N+3.43
-
-- Controlled lane planning.
-- Dry-run lock/status records.
-- Local-only status beacons.
-- Branch-per-agent workflows.
-- Codex audit/source/spec lanes.
-- Claude implementation lanes with explicit path ownership.
-- Gemma compression drafts.
-- Python deterministic local helper lanes.
-
-## Still Forbidden
-
-- Uncontrolled parallel execution.
-- External integrations.
-- Live account use.
-- Posting, sending, selling, payments, scraping, job applications, giveaway entries, app-store actions, or account creation.
-- Fake engagement, fake accounts, spam, credential fabrication, or certificate fabrication.
-- Model-output execution or autonomous public/money-facing actions.
+  python 03_scripts/agent_lane_status.py --check
+  python 03_scripts/agent_lane_status.py --list
+  python 03_scripts/agent_lane_status.py --new-lock --agent-id claude_code_n3_43 --lane-type claude_code_impl --task-slug agent-lane-scaffolding --branch feat/ghoti-visible-operator-stack --locked-file 14_context/current_state.md --locked-file 14_context/next_actions.md --dry-run
+  python 03_scripts/agent_lane_status.py --new-status --agent-id claude_code_n3_43 --lane-type claude_code_impl --task-slug agent-lane-scaffolding --branch feat/ghoti-visible-operator-stack --current-state dry_run --dry-run
 
 ## Controlled Parallel Pilot Note
 
@@ -108,8 +96,12 @@ Controlled parallel execution can begin only after this commit is pushed and Cod
 
 ## Course/Certificate Future Lane Safety Note
 
-Course support is limited to legitimate discovery, study plans, notes, quizzes, progress tracking, deadline reminders, certificate checklists, and portfolio evidence prep. It must not impersonate the user, cheat, bypass proctoring, fabricate certificates, submit assessments without user work/approval, or misrepresent credentials.
+The future_course_certificate_assistant lane is planning_only. When activated it must only provide: course discovery, study plans, notes, quizzes, progress tracking, deadline reminders, certificate checklists, and portfolio evidence preparation — all as local artifacts for human review. Forbidden: impersonation, cheating, proctoring bypass, fabricating certificates, submitting assessments without explicit human work and approval, misrepresenting credentials.
 
 ## Python Automation Worker Lane Note
 
-Python automation is useful for cheap deterministic tasks: JSONL parsing, markdown/report generation, validation checks, file organization inside approved repo folders, study trackers, and dashboard summaries. It must not use external accounts, send emails, post, pay, scrape without legal/TOS review, use credentials, or bypass approvals.
+The python_automation_worker lane handles cheap, deterministic, stdlib-only automation: file parsing, JSONL processing, report generation, markdown/CSV generation, study trackers, queue processing, dashboard summaries. No external accounts, no scraping, no credential use, no live sends/posts/payments.
+
+## Statement: Parallel Execution Gate
+
+Controlled parallel execution is permitted only after this commit is pushed and Codex audit confirms the lane locks pass.

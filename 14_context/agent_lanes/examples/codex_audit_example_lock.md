@@ -1,29 +1,34 @@
-# Example Lock: Codex Audit Lane
+# Example: Codex Audit Lock (post N+3.43 audit)
 
-This is an example only. It is not an active lock.
+This is an EXAMPLE ONLY — not an active lock.
 
-- lock_id: lock_example_codex_audit
-- agent_id: codex_example
-- lane_type: codex_audit
-- model_or_tool: Codex
-- branch: audit/ghoti-agent-codex-example-source-check
-- task_slug: example-source-check
-- locked_files:
-  - `14_context/codex_example_source_check.md`
-- allowed_paths:
-  - `14_context/`
-- forbidden_paths:
-  - `01_projects/`
-  - `03_scripts/`
-  - live account config files
-- expected_outputs:
-  - audit doc
-  - risk matrix
-  - next-sequence recommendation
-- validation_plan:
-  - `git diff --check`
-- safety_notes:
-  - docs/source-check only
-  - no runtime implementation
-  - no installs, clones, or external tool execution
-- human_approval_required_for_merge: yes
+{
+  "lock_id": "lock_20260505T140000Z_b2c3d4e5",
+  "agent_id": "codex_audit_n3_44",
+  "lane_type": "codex_audit",
+  "model_or_tool": "codex",
+  "branch": "audit/ghoti-agent-codex_audit-n3_44-lane-verification",
+  "task_slug": "n3-44-lane-verification",
+  "locked_files": [],
+  "allowed_paths": [
+    "14_context/"
+  ],
+  "forbidden_paths": [
+    "03_scripts/",
+    "01_projects/",
+    "21_repos/third_party/"
+  ],
+  "expected_outputs": [
+    "14_context/codex_n3_44_post_n3_43_audit.md",
+    "14_context/codex_n3_44_next_sequence_lock.md"
+  ],
+  "validation_plan": "Verify all 9 Part-A files exist; run agent_lane_status.py --check; confirm PASS; document findings in audit doc",
+  "merge_plan": "Push audit branch; human reviews audit doc; if PASS, controlled parallel execution may begin",
+  "human_approval_requirement": "Human must review audit doc before declaring parallel execution safe",
+  "safety_notes": "Audit only — no implementation, no runtime changes, no live actions",
+  "stop_conditions": [
+    "Any attempt to write implementation files",
+    "Any outbound/live action"
+  ],
+  "timestamp_utc": "2026-05-05T14:00:00Z"
+}

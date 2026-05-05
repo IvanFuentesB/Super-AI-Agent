@@ -1,239 +1,268 @@
 {
-  "version": "n3_43",
-  "status": "local_scaffolding",
-  "branch_naming": [
-    "feat/ghoti-agent-<agent_id>-<task_slug>",
-    "docs/ghoti-agent-<agent_id>-<task_slug>",
-    "audit/ghoti-agent-<agent_id>-<task_slug>"
-  ],
-  "lanes": {
-    "chatgpt_strategy": {
-      "lane_type": "chatgpt_strategy",
-      "default_allowed_work": [
-        "strategy",
-        "architecture",
-        "prompts",
-        "decisions",
-        "handoffs"
-      ],
-      "forbidden_work": [
-        "live actions",
-        "repo writes unless user explicitly asks via generated artifacts",
-        "account actions"
-      ],
-      "requires_human_approval_for": [
-        "repo writes",
-        "public actions",
-        "money-facing actions",
-        "account actions"
-      ],
-      "default_branch_prefix": "docs/ghoti-agent-chatgpt-",
-      "default_paths": [
-        "14_context/"
-      ]
-    },
-    "claude_code_impl": {
-      "lane_type": "claude_code_impl",
-      "default_allowed_work": [
-        "implementation",
-        "tests",
-        "docs tied to implementation",
-        "commits"
-      ],
-      "forbidden_work": [
-        "live actions",
-        "external tools unless explicitly approved",
-        "shared-file edits without lock in parallel mode"
-      ],
-      "requires_human_approval_for": [
-        "external tools",
-        "public actions",
-        "money-facing actions",
-        "account actions",
-        "merge into protected/shared branches"
-      ],
-      "default_branch_prefix": "feat/ghoti-agent-claude-",
-      "default_paths": [
-        "01_projects/",
-        "03_scripts/",
-        "14_context/"
-      ]
-    },
-    "codex_audit": {
-      "lane_type": "codex_audit",
-      "default_allowed_work": [
-        "audits",
-        "source-checks",
-        "specs",
-        "planning docs"
-      ],
-      "forbidden_work": [
-        "runtime implementation unless explicitly asked",
-        "live actions",
-        "external tool execution"
-      ],
-      "requires_human_approval_for": [
-        "runtime implementation",
-        "external tool execution",
-        "public actions",
-        "money-facing actions",
-        "account actions"
-      ],
-      "default_branch_prefix": "audit/ghoti-agent-codex-",
-      "default_paths": [
-        "14_context/"
-      ]
-    },
-    "gemma_local_worker": {
-      "lane_type": "gemma_local_worker",
-      "default_allowed_work": [
-        "cheap local summaries",
-        "compression",
-        "scoring",
-        "draft artifacts"
-      ],
-      "forbidden_work": [
-        "external API calls",
-        "live actions",
-        "being source of truth unless human promotes output"
-      ],
-      "requires_human_approval_for": [
-        "canonical memory promotion",
-        "public actions",
-        "money-facing actions",
-        "account actions"
-      ],
-      "default_branch_prefix": "docs/ghoti-agent-gemma-",
-      "default_paths": [
-        "05_logs/",
-        "14_context/compact_memory/",
-        "14_context/obsidian_vault/"
-      ]
-    },
-    "python_automation_worker": {
-      "lane_type": "python_automation_worker",
-      "default_allowed_work": [
-        "safe local Python scripts for deterministic repetitive tasks",
-        "parsing",
-        "validation",
-        "report generation",
-        "file organization inside approved repo folders",
-        "JSONL processing",
-        "markdown generation",
-        "study trackers",
-        "dashboard summaries"
-      ],
-      "forbidden_work": [
-        "external accounts",
-        "scraping",
-        "credential use",
-        "live sends",
-        "live posts",
-        "live payments"
-      ],
-      "requires_human_approval_for": [
-        "writes outside approved repo folders",
-        "public actions",
-        "money-facing actions",
-        "account actions"
-      ],
-      "default_branch_prefix": "feat/ghoti-agent-python-",
-      "default_paths": [
-        "03_scripts/",
-        "05_logs/",
-        "14_context/"
-      ]
-    },
-    "future_course_certificate_assistant": {
-      "lane_type": "future_course_certificate_assistant",
-      "default_allowed_work": [
-        "legitimate course discovery",
-        "study plans",
-        "notes",
-        "quizzes",
-        "progress tracking",
-        "deadline reminders",
-        "certificate checklists",
-        "portfolio evidence prep"
-      ],
-      "forbidden_work": [
-        "impersonation",
-        "cheating",
-        "bypassing proctoring",
-        "fake certificates",
-        "submitting assessments without human work/approval",
-        "misrepresenting credentials"
-      ],
-      "requires_human_approval_for": [
-        "course enrollment",
-        "assessment submission",
-        "certificate claims",
-        "account actions"
-      ],
-      "default_branch_prefix": "docs/ghoti-agent-course-",
-      "default_paths": [
-        "14_context/",
-        "05_logs/"
-      ]
-    },
-    "future_browser_operator": {
-      "lane_type": "future_browser_operator",
-      "default_allowed_work": [
-        "CUA after approval",
-        "Chrome DevTools MCP after approval",
-        "Firecrawl after approval",
-        "Glif after approval",
-        "Camofox after approval"
-      ],
-      "forbidden_work": [
-        "live accounts without explicit approval",
-        "scraping without legal/TOS review",
-        "posting",
-        "sending",
-        "payment"
-      ],
-      "requires_human_approval_for": [
-        "browser control",
-        "connector setup",
-        "account use",
-        "scraping",
-        "public actions",
-        "money-facing actions"
-      ],
-      "default_branch_prefix": "feat/ghoti-agent-browser-",
-      "default_paths": [
-        "14_context/",
-        "23_configs/"
-      ]
-    },
-    "future_orchestrator": {
-      "lane_type": "future_orchestrator",
-      "default_allowed_work": [
-        "OpenClaw after approval",
-        "Paperclip after approval",
-        "Ruflo after approval",
-        "n8n after approval"
-      ],
-      "forbidden_work": [
-        "bypassing approval gates",
-        "public actions without human approval",
-        "live actions without human approval",
-        "money actions without human approval"
-      ],
-      "requires_human_approval_for": [
-        "installation",
-        "runtime wiring",
-        "connector setup",
-        "workflow execution",
-        "public actions",
-        "money-facing actions",
-        "account actions"
-      ],
-      "default_branch_prefix": "feat/ghoti-agent-orchestrator-",
-      "default_paths": [
-        "14_context/",
-        "23_configs/"
-      ]
-    }
+  "_meta": {
+    "version": "N+3.43",
+    "description": "Agent lane registry — defines allowed and forbidden work per agent role",
+    "last_updated": "2026-05-05",
+    "note": "planning_only for future_* lanes — not active until separately approved"
+  },
+  "chatgpt_strategy": {
+    "lane_type": "strategy",
+    "default_allowed_work": [
+      "strategy",
+      "architecture",
+      "prompt design",
+      "next-milestone planning",
+      "handoff decisions",
+      "generated artifact drafts for human review"
+    ],
+    "forbidden_work": [
+      "direct repo writes without user explicitly requesting artifacts",
+      "live actions of any kind",
+      "account access",
+      "posting",
+      "selling",
+      "scraping",
+      "payments",
+      "job applications",
+      "course impersonation",
+      "fabricating credentials"
+    ],
+    "requires_human_approval_for": [
+      "any repo write",
+      "any external action",
+      "any artifact that will be committed"
+    ],
+    "default_branch_prefix": "docs/ghoti-agent-chatgpt_strategy-",
+    "default_paths": [
+      "14_context/",
+      "08_research/"
+    ]
+  },
+  "claude_code_impl": {
+    "lane_type": "implementation",
+    "default_allowed_work": [
+      "hard implementation",
+      "tests",
+      "docs tied to implementation",
+      "commits on assigned branch",
+      "repo-local file writes within allowed_paths",
+      "validation and smoke tests",
+      "milestone docs",
+      "state file updates when lock held"
+    ],
+    "forbidden_work": [
+      "live actions",
+      "account access",
+      "external API calls",
+      "writing shared files without lock",
+      "installing packages",
+      "cloning repos",
+      "connecting MCP servers",
+      "course impersonation",
+      "fabricating credentials",
+      "deleting history/memory/task files"
+    ],
+    "requires_human_approval_for": [
+      "any push to main branch",
+      "any live/outbound action",
+      "any install or clone",
+      "any new MCP server connection",
+      "any action beyond repo-local scope"
+    ],
+    "default_branch_prefix": "feat/ghoti-agent-claude_code_impl-",
+    "default_paths": [
+      "01_projects/",
+      "03_scripts/",
+      "14_context/",
+      "23_configs/"
+    ]
+  },
+  "codex_audit": {
+    "lane_type": "audit",
+    "default_allowed_work": [
+      "audit",
+      "source verification",
+      "spec writing",
+      "planning docs",
+      "milestone audit notes",
+      "safety register updates",
+      "backlog capture"
+    ],
+    "forbidden_work": [
+      "runtime implementation unless explicitly asked",
+      "live actions",
+      "account access",
+      "external API calls",
+      "writing shared files without lock",
+      "course impersonation",
+      "fabricating credentials"
+    ],
+    "requires_human_approval_for": [
+      "any implementation beyond audit/docs",
+      "any live/outbound action",
+      "any shared-file write without declared lock"
+    ],
+    "default_branch_prefix": "audit/ghoti-agent-codex_audit-",
+    "default_paths": [
+      "14_context/"
+    ]
+  },
+  "gemma_local_worker": {
+    "lane_type": "local_worker",
+    "default_allowed_work": [
+      "cheap local summaries",
+      "context compression",
+      "scoring drafts",
+      "artifact drafts for human promotion",
+      "local Ollama inference only"
+    ],
+    "forbidden_work": [
+      "external API calls",
+      "live actions",
+      "account access",
+      "acting as source of truth without human promotion",
+      "any action outside ollama/local inference scope",
+      "course impersonation",
+      "fabricating credentials"
+    ],
+    "requires_human_approval_for": [
+      "any output used as canonical truth",
+      "any live/outbound action",
+      "any model output executed as code or committed directly"
+    ],
+    "default_branch_prefix": "feat/ghoti-agent-gemma_local_worker-",
+    "default_paths": [
+      "05_logs/",
+      "output/"
+    ]
+  },
+  "python_automation_worker": {
+    "lane_type": "automation",
+    "default_allowed_work": [
+      "safe local Python scripts for repetitive deterministic tasks",
+      "file parsing and JSONL processing",
+      "validation checks",
+      "report generation",
+      "file organization inside allowed repo folders",
+      "markdown and CSV generation",
+      "study trackers",
+      "dashboard summaries",
+      "queue processing",
+      "money workflow artifact generation (local only)"
+    ],
+    "forbidden_work": [
+      "external account access",
+      "web scraping",
+      "credential use",
+      "live sends/posts/payments",
+      "job applications",
+      "course impersonation",
+      "fabricating credentials",
+      "installing packages",
+      "cloning repos",
+      "connecting external APIs or MCP servers"
+    ],
+    "requires_human_approval_for": [
+      "any live/outbound action",
+      "any script that reads credentials or env secrets",
+      "any script that writes outside repo root"
+    ],
+    "default_branch_prefix": "feat/ghoti-agent-python_automation_worker-",
+    "default_paths": [
+      "03_scripts/",
+      "05_logs/",
+      "14_context/money_workflows/",
+      "output/"
+    ]
+  },
+  "future_course_certificate_assistant": {
+    "lane_type": "future_learning_support",
+    "status": "planning_only",
+    "default_allowed_work": [
+      "course discovery (local research artifacts only)",
+      "study plan generation (local markdown only)",
+      "notes and summaries (local only)",
+      "quiz generation (local only, human-reviewed)",
+      "progress tracking (local JSONL only)",
+      "deadline reminders (local only)",
+      "certificate checklist (local only)",
+      "portfolio evidence preparation (local artifacts only)"
+    ],
+    "forbidden_work": [
+      "impersonating the user in any course, exam, or assessment",
+      "cheating or bypassing proctoring systems",
+      "fabricating certificates or credentials",
+      "submitting assessments without explicit human work and approval",
+      "misrepresenting credentials",
+      "posting certificates or portfolios without human review and approval",
+      "any live/outbound action without approval"
+    ],
+    "requires_human_approval_for": [
+      "any submission to a course platform",
+      "any outbound action",
+      "any credential-related artifact before sharing"
+    ],
+    "default_branch_prefix": "feat/ghoti-agent-future_course_cert-",
+    "default_paths": [
+      "05_logs/study_artifacts/",
+      "output/"
+    ]
+  },
+  "future_browser_operator": {
+    "lane_type": "future_browser",
+    "status": "planning_only",
+    "default_allowed_work": [
+      "CUA/Chrome DevTools/Firecrawl/Glif controlled browser actions after explicit approval only",
+      "screenshot-only smoke tests in approved sandbox",
+      "read-only page content extraction after TOS/legal check"
+    ],
+    "forbidden_work": [
+      "live account access without explicit approval",
+      "scraping without legal/TOS check",
+      "posting/sending/payment without approval",
+      "course impersonation",
+      "fabricating credentials",
+      "connecting browser tools without separate integration approval"
+    ],
+    "requires_human_approval_for": [
+      "every browser action type",
+      "every target URL",
+      "any account login or session",
+      "any data submission"
+    ],
+    "default_branch_prefix": "feat/ghoti-agent-future_browser_operator-",
+    "default_paths": [
+      "05_logs/browser_runs/",
+      "output/"
+    ]
+  },
+  "future_orchestrator": {
+    "lane_type": "future_orchestrator",
+    "status": "planning_only",
+    "default_allowed_work": [
+      "OpenClaw/Paperclip/Ruflo/n8n workflow orchestration after separate integration approval only",
+      "reading and routing already-approved task payloads",
+      "generating orchestration artifact plans for human review"
+    ],
+    "forbidden_work": [
+      "bypassing approval gates",
+      "executing public/live/money actions without human approval",
+      "connecting external services without explicit approval",
+      "account access",
+      "payments",
+      "posting",
+      "course impersonation",
+      "fabricating credentials"
+    ],
+    "requires_human_approval_for": [
+      "every orchestration integration",
+      "every external service connection",
+      "every live/outbound execution step"
+    ],
+    "default_branch_prefix": "feat/ghoti-agent-future_orchestrator-",
+    "default_paths": [
+      "05_logs/orchestration_runs/",
+      "output/"
+    ]
   }
 }

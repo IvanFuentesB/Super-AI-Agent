@@ -1,27 +1,37 @@
-# Agent Lane Status Template
+# Status Template
 
-Use this for human-readable status notes. Machine-readable lane status goes in `lane_status.jsonl`.
+Copy this file to emit a status beacon. Append the filled record to
+lane_status.jsonl using 03_scripts/agent_lane_status.py --new-status --apply.
 
-## Status
+status_id: "status_<YYYYMMDDTHHMMSSZ>_<hash8>"
+agent_id: ""
+lane_type: ""
+model_or_tool: ""
+branch: ""
+task_slug: ""
 
-- status_id:
-- agent_id:
-- lane_type:
-- branch:
-- task_slug:
-- current_state:
-- last_heartbeat:
-- latest_commit:
-- pushed:
-- validation_status:
-- blockers:
-- next_action:
-- notes:
+current_state: ""
 
-## Report Checklist
+notes:
+  - ""
 
-- files_changed:
-- files_staged:
-- validation_commands_run:
-- dirty_files_left_unstaged:
-- merge_ready:
+safety_notes: |
+  Any safety-relevant state for this beacon.
+
+stop_conditions:
+  - "Two consecutive failures on same root cause"
+  - "Any outbound/live action without approval"
+
+timestamp_utc: ""
+
+## Valid States
+
+| State | Meaning |
+|-------|---------|
+| started | Lane declared, work beginning |
+| in_progress | Actively writing files |
+| blocked | Waiting on lock from another agent |
+| waiting_approval | Waiting for human approval gate |
+| dry_run | Dry-run mode, no writes committed |
+| complete | Work done, outputs ready for review |
+| released | Lock released, branch merged or abandoned |
