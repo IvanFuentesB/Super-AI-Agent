@@ -6238,5 +6238,82 @@ async function refreshWeeklyReview() {
   }
 }
 
+function renderManualQueueCard(payload) {
+  var container = document.getElementById('manual-queue-card');
+  if (!container) return;
+
+  var queuePath = payload.queue_path || '14_context/money_workflows/manual_decision_queue.jsonl';
+
+  if (payload.status === 'zero_state' || payload.status === 'empty' || payload.item_count === 0) {
+    var note = (payload.warnings && payload.warnings.length > 0) ? escapeHtml(payload.warnings[0]) : 'No queue items yet.';
+    container.innerHTML =
+      '<h3 class="card-title">Money OS &#8212; Manual Decision Queue</h3>' +
+      '<p class="summary-note">' + note + '</p>' +
+      '<p class="summary-note">Queue path (read-only): <code>' + escapeHtml(queuePath) + '</code></p>' +
+      '<p class="summary-note">Add item locally: <code>python 03_scripts/manual_decision_queue_new_item.py --latest --dry-run</code></p>';
+    return;
+  }
+
+  var items = Array.isArray(payload.items) ? payload.items : [];
+  var warnings = Array.isArray(payload.warnings) ? payload.warnings : [];
+  var safetyFlags = payload.safety_flags || {};
+  var statusCounts = payload.status_counts || {};
+  var riskCounts = payload.risk_counts || {};
+
+  var warningsHtml = warnings.length > 0
+    ? '<div class="banner banner--warn" style="margin-top:0.5rem;">' + warnings.map(function(w) { return escapeHtml(w); }).join('<br>') + '</div>'
+    : '';
+
+  var statusCountsHtml = Object.entries(statusCounts).map(function(pair) {
+    return '<span class="chip">' + escapeHtml(pair[0]) + ': ' + pair[1] + '</span>';
+  }).join(' ');
+
+  var riskCountsHtml = Object.entries(riskCounts).map(function(pair) {
+    return '<span class="chip chip--scaffold">risk/' + escapeHtml(pair[0]) + ': ' + pair[1] + '</span>';
+  }).join(' ');
+
+  var topItems = items.slice(0, 5);
+  var itemsHtml = topItems.map(function(item) {
+    var blockedNote = item.blocked_reason ? '<div style="font-size:0.8em;color:#c00;">Blocked: ' + escapeHtml(item.blocked_reason) + '</div>' : '';
+    return '<div class="approval-item" style="margin-bottom:0.5rem;">' +
+      '<strong>' + escapeHtml(item.title || item.queue_item_id || '?') + '</strong> ' +
+      '<span class="chip">' + escapeHtml(item.category || '?') + '</span> ' +
+      '<span class="chip chip--scaffold">risk: ' + escapeHtml(item.risk_level || '?') + '</span> ' +
+      '<span class="chip">' + escapeHtml(item.status || '?') + '</span>' +
+      '<div style="font-size:0.85em;margin-top:0.2rem;">' + escapeHtml(item.next_local_step || '') + '</div>' +
+      '<div style="font-size:0.8em;color:#888;">Approval required: ' + (item.approval_required ? 'yes' : 'no') + '</div>' +
+      blockedNote +
+      '</div>';
+  }).join('');
+
+  var safetyEntries = Object.entries(safetyFlags);
+  var safetyFlagsHtml = safetyEntries.length > 0
+    ? '<ul class="status-list">' + safetyEntries.map(function(pair) { return '<li><code>' + escapeHtml(pair[0]) + '</code>: ' + escapeHtml(String(pair[1])) + '</li>'; }).join('') + '</ul>'
+    : '<p class="empty-state">No safety flags.</p>';
+
+  container.innerHTML =
+    '<h3 class="card-title">Money OS &#8212; Manual Decision Queue</h3>' +
+    '<p class="summary-note">Items: <strong>' + payload.item_count + '</strong> &nbsp;|&nbsp; ' + statusCountsHtml + ' ' + riskCountsHtml + '</p>' +
+    '<p class="summary-note">Queue path (copy only): <code>' + escapeHtml(queuePath) + '</code></p>' +
+    warningsHtml +
+    '<details style="margin-top:0.75rem;"><summary><strong>Queue Items (top 5)</strong></summary><div style="margin-top:0.5rem;">' + (itemsHtml || '<p class="empty-state">No items.</p>') + '</div></details>' +
+    '<details style="margin-top:0.5rem;"><summary><strong>Safety Flags</strong></summary><div style="margin-top:0.5rem;">' + safetyFlagsHtml + '</div></details>';
+}
+
+async function refreshManualQueue() {
+  try {
+    var data = await requestJson('/api/ghoti/money/manual-decision-queue');
+    renderManualQueueCard(data);
+  } catch (err) {
+    var container = document.getElementById('manual-queue-card');
+    if (container) {
+      container.innerHTML =
+        '<h3 class="card-title">Money OS &#8212; Manual Decision Queue</h3>' +
+        '<p class="summary-note" style="color:red;">Failed to load: ' + escapeHtml(err.message) + '</p>';
+    }
+  }
+}
+
 initDashboardUxRebuild();
 refreshWeeklyReview();
+refreshManualQueue();

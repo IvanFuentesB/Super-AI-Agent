@@ -6001,6 +6001,108 @@ async function handleApiRequest(request, response, requestUrl) {
     return;
   }
 
+  // GET /api/ghoti/money/manual-decision-queue — read-only manual decision queue (N+3.32)
+  if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/money/manual-decision-queue") {
+    const queuePath = path.join(repoRoot, "14_context", "money_workflows", "manual_decision_queue.jsonl");
+    const warnings = [];
+    const safetyFlags = {
+      external_api_used: false,
+      scraping_enabled: false,
+      live_account_actions_enabled: false,
+      posting_enabled: false,
+      selling_enabled: false,
+      outreach_enabled: false,
+      payment_actions_enabled: false,
+      model_output_executed: false,
+      manual_review_required: true,
+    };
+
+    if (!fs.existsSync(queuePath)) {
+      sendJson(response, 200, {
+        ok: true,
+        status: "zero_state",
+        queue_path: "14_context/money_workflows/manual_decision_queue.jsonl",
+        item_count: 0,
+        items: [],
+        warnings: ["Queue file not found. No items yet."],
+        safety_flags: safetyFlags,
+        generated_at: new Date().toISOString(),
+        suggested_command: "python 03_scripts/manual_decision_queue_new_item.py --latest --dry-run",
+      });
+      return;
+    }
+
+    let rawText;
+    try {
+      rawText = fs.readFileSync(queuePath, "utf8");
+    } catch (e) {
+      sendJson(response, 200, {
+        ok: true,
+        status: "read_error",
+        queue_path: "14_context/money_workflows/manual_decision_queue.jsonl",
+        item_count: 0,
+        items: [],
+        warnings: ["Could not read queue file: " + e.message],
+        safety_flags: safetyFlags,
+        generated_at: new Date().toISOString(),
+      });
+      return;
+    }
+
+    const items = [];
+    const lines = rawText.split("\n");
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+      try {
+        const obj = JSON.parse(line);
+        if (typeof obj === "object" && obj !== null && !Array.isArray(obj)) {
+          items.push({
+            queue_item_id: obj.queue_item_id || null,
+            created_at: obj.created_at || null,
+            source_review_run_id: obj.source_review_run_id || null,
+            source_decision_id: obj.source_decision_id || null,
+            title: obj.title || "",
+            category: obj.category || obj.decision_type || "",
+            recommendation: obj.recommendation || "",
+            risk_level: obj.risk_level || "",
+            approval_required: obj.approval_required !== false,
+            status: obj.status || "",
+            public_or_money_facing: obj.public_or_money_facing === true,
+            next_local_step: obj.next_local_step || obj.next_manual_action || "",
+            blocked_reason: obj.blocked_reason || "",
+            human_review_note: obj.human_review_note || "",
+          });
+        } else {
+          warnings.push("Line " + (i + 1) + ": non-object JSON, skipped");
+        }
+      } catch (e) {
+        warnings.push("Line " + (i + 1) + ": malformed JSONL — " + e.message);
+      }
+    }
+
+    const statusCounts = {};
+    const riskCounts = {};
+    for (const item of items) {
+      statusCounts[item.status] = (statusCounts[item.status] || 0) + 1;
+      riskCounts[item.risk_level] = (riskCounts[item.risk_level] || 0) + 1;
+    }
+
+    sendJson(response, 200, {
+      ok: true,
+      status: items.length > 0 ? "found" : "empty",
+      queue_path: "14_context/money_workflows/manual_decision_queue.jsonl",
+      item_count: items.length,
+      items,
+      status_counts: statusCounts,
+      risk_counts: riskCounts,
+      warnings,
+      safety_flags: safetyFlags,
+      generated_at: new Date().toISOString(),
+    });
+    return;
+  }
+
   sendJson(response, 404, {
     ok: false,
     error: "Route not found.",
