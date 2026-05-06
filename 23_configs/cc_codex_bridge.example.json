@@ -1,0 +1,18 @@
+{
+  "_comment": "CC/Codex Bridge config example. N+3.51A. CC/Codex automatic = NO.",
+  "bridge_type": "local_manual_file",
+  "automatic_send": false,
+  "clipboard": false,
+  "api_calls": false,
+  "outbox_dir": "14_context/bridge/outbox",
+  "inbox_dir": "14_context/bridge/inbox",
+  "archive_dir": "14_context/bridge/archive",
+  "status_dir": "14_context/bridge/status",
+  "targets": ["claude", "codex", "chatgpt"],
+  "safety": {
+    "no_auto_send": true,
+    "no_clipboard": true,
+    "no_api": true,
+    "human_paste_required": true
+  }
+}
