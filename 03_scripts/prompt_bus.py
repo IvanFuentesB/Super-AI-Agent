@@ -5,6 +5,7 @@ stdlib only, repo-local, no external APIs, no clipboard by default, no live acti
 """
 import argparse
 import datetime
+import json
 import pathlib
 import sys
 
@@ -155,6 +156,69 @@ def cmd_list_outbox(args):
         print(f"  {f.name}  ({size}b  {mtime})")
 
 
+
+
+def cmd_write_chatgpt(args):
+    if not args.title:
+        print("ERROR: --title required")
+        sys.exit(1)
+    if not args.body:
+        print("ERROR: --body required")
+        sys.exit(1)
+
+    ts = _utc_now_ts()
+    slug = args.title.lower().replace(" ", "_")[:40]
+    filename = "chatgpt_handoff_" + ts + "_" + slug + ".md"
+    dest = OUTBOX_DIR / filename
+
+    nl = chr(10)
+    header = (
+        "# ChatGPT Handoff -- " + args.title + nl + nl
+        + "Generated: " + ts + nl
+        + "Branch: " + _get_branch() + nl + nl
+        + "---" + nl + nl
+    )
+    content = header + args.body + nl
+
+    print("Target: " + str(dest.relative_to(REPO_ROOT)))
+    print("--- Preview (first 400 chars) ---")
+    print(content[:400])
+    print("---")
+
+    if args.apply:
+        OUTBOX_DIR.mkdir(parents=True, exist_ok=True)
+        dest.write_text(content, encoding="utf-8")
+        print("Written: " + str(dest.relative_to(REPO_ROOT)))
+        print("Copy-paste instruction: open the file above and paste into ChatGPT.")
+    else:
+        print("[DRY RUN] Would write to: " + str(dest.relative_to(REPO_ROOT)))
+        print("[DRY RUN] Pass --apply to write.")
+
+
+def cmd_status_json(args):
+    branch = _get_branch()
+    outbox_files = sorted(OUTBOX_DIR.glob("*.md")) if OUTBOX_DIR.exists() else []
+    inbox_files = sorted(INBOX_DIR.glob("*")) if INBOX_DIR.exists() else []
+    inbox_files = [f for f in inbox_files if f.name != ".gitkeep"]
+    prompt_exists = CANONICAL_CLAUDE_PROMPT.exists()
+    prompt_size = CANONICAL_CLAUDE_PROMPT.stat().st_size if prompt_exists else 0
+    status = {
+        "generated": _utc_now_ts(),
+        "branch": branch,
+        "canonical_prompt": {
+            "path": str(CANONICAL_CLAUDE_PROMPT.relative_to(REPO_ROOT)),
+            "exists": prompt_exists,
+            "size_bytes": prompt_size,
+        },
+        "outbox": {
+            "path": str(OUTBOX_DIR.relative_to(REPO_ROOT)),
+            "count": len(outbox_files),
+            "files": [f.name for f in outbox_files[-5:]],
+        },
+        "inbox": {"count": len(inbox_files)},
+    }
+    print(json.dumps(status, indent=2))
+
 def main():
     parser = argparse.ArgumentParser(
         description="Prompt Bus — local copy-paste manager. stdlib only, no live actions."
@@ -165,6 +229,8 @@ def main():
     group.add_argument("--write-claude", action="store_true", help="Write/overwrite canonical Claude prompt")
     group.add_argument("--write-codex", action="store_true", help="Write timestamped Codex prompt to outbox")
     group.add_argument("--list-outbox", action="store_true", help="List outbox prompt files")
+    group.add_argument("--write-chatgpt", action="store_true", help="Write timestamped ChatGPT handoff to outbox")
+    group.add_argument("--status-json", action="store_true", help="Print status as JSON to stdout")
 
     parser.add_argument("--title", help="Prompt title")
     parser.add_argument("--body", help="Prompt body text")
@@ -183,6 +249,10 @@ def main():
         cmd_write_codex(args)
     elif args.list_outbox:
         cmd_list_outbox(args)
+    elif args.write_chatgpt:
+        cmd_write_chatgpt(args)
+    elif args.status_json:
+        cmd_status_json(args)
 
 
 if __name__ == "__main__":

@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "version": "N+3.45A",
+    "version": "N+3.49A",
     "description": "Local worker routing config example. Copy to local_worker_routing.json and customize.",
     "note": "Do not add real API keys or credentials to this file. This is a schema example only.",
-    "last_updated": "2026-05-05"
+    "last_updated": "2026-05-06"
   },
   "python_automation_worker": {
     "enabled": true,
@@ -51,7 +51,7 @@
     ]
   },
   "claude_code_impl": {
-    "note": "Claude Code sessions — use for implementation, commits, reasoning, tests.",
+    "note": "Claude Code sessions \u2014 use for implementation, commits, reasoning, tests.",
     "prompt_path": "14_context/ghoti_current_prompt.md",
     "task_classes": [
       "implementation",
@@ -62,7 +62,7 @@
     ]
   },
   "codex_audit": {
-    "note": "Codex sessions — use for audit, source-check, safety gate, spec writing.",
+    "note": "Codex sessions \u2014 use for audit, source-check, safety gate, spec writing.",
     "prompt_template": "14_context/prompt_bus/templates/codex_prompt_template.md",
     "outbox_path": "14_context/prompt_bus/outbox/",
     "task_classes": [
@@ -73,13 +73,80 @@
     ]
   },
   "chatgpt_strategy": {
-    "note": "ChatGPT sessions — use for strategy, architecture, next-milestone planning.",
+    "note": "ChatGPT sessions \u2014 use for strategy, architecture, next-milestone planning.",
     "prompt_template": "14_context/prompt_bus/templates/chatgpt_handoff_template.md",
     "task_classes": [
       "strategy",
       "architecture",
       "next_milestone_planning",
       "prompt_design"
+    ]
+  },
+  "course_certificate_assistant": {
+    "enabled": true,
+    "note": "Study plan + cert tracking templates. Human does all coursework and assessments.",
+    "task_classes": [
+      "study_plan_template",
+      "certificate_tracker",
+      "course_backlog",
+      "learning_path_notes"
+    ],
+    "forbidden": [
+      "submit_assessments",
+      "impersonate_user",
+      "bypass_proctoring",
+      "fabricate_certificates",
+      "live_accounts"
+    ]
+  },
+  "ruflo_orchestrator_candidate": {
+    "enabled": false,
+    "note": "Ruflo/claude-flow swarm orchestration. NOT wired to Ghoti runtime. Enable only after safety gate review.",
+    "ruflo_path": "21_repos/third_party/evals/ruflo/",
+    "install_command": "npm install --ignore-scripts",
+    "safety_gate_required": true,
+    "task_classes": [
+      "swarm_orchestration",
+      "multi_agent_coord",
+      "claude_codex_dual_mode"
+    ],
+    "forbidden": [
+      "ghoti_runtime_wiring",
+      "live_accounts",
+      "external_api_without_approval"
+    ]
+  },
+  "obsidian_memory_worker": {
+    "enabled": true,
+    "note": "Obsidian vault read/note tasks. Use open_obsidian_vault.ps1 to open vault in UI.",
+    "vault_path": "14_context/obsidian_vault/",
+    "helper_script": "03_scripts/open_obsidian_vault.ps1",
+    "task_classes": [
+      "vault_check",
+      "daily_note",
+      "note_creation",
+      "obsidian_link"
+    ],
+    "forbidden": [
+      "external_api",
+      "live_accounts"
+    ]
+  },
+  "prompt_bus_worker": {
+    "enabled": true,
+    "note": "Prompt bus file operations via prompt_bus.py. Write/list prompt outbox files.",
+    "script": "03_scripts/prompt_bus.py",
+    "outbox_path": "14_context/prompt_bus/outbox/",
+    "task_classes": [
+      "write_claude_prompt",
+      "write_codex_prompt",
+      "write_chatgpt_handoff",
+      "list_outbox",
+      "status_json"
+    ],
+    "forbidden": [
+      "live_api_calls",
+      "external_send"
     ]
   },
   "human_approval_required": {
