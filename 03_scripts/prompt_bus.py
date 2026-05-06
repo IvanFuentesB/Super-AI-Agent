@@ -40,16 +40,15 @@ def _ensure_dirs():
 
 
 def cmd_init(args):
-    _ensure_dirs()
     if args.dry_run and not args.apply:
         print("[DRY RUN] Would create directories:")
         for d in [PROMPT_BUS_DIR, INBOX_DIR, OUTBOX_DIR, ARCHIVE_DIR, TEMPLATES_DIR]:
             print(f"  {d.relative_to(REPO_ROOT)}")
         print("[DRY RUN] Pass --apply to create.")
         return
+    _ensure_dirs()
     print("Directories verified/created:")
     for d in [PROMPT_BUS_DIR, INBOX_DIR, OUTBOX_DIR, ARCHIVE_DIR, TEMPLATES_DIR]:
-        d.mkdir(parents=True, exist_ok=True)
         print(f"  OK: {d.relative_to(REPO_ROOT)}")
     print("Init complete.")
 
