@@ -6317,3 +6317,89 @@ async function refreshManualQueue() {
 initDashboardUxRebuild();
 refreshWeeklyReview();
 refreshManualQueue();
+
+// ─── Local Orchestrator Card (N+3.50A) ────────────────────────────────────────
+
+function renderLocalOrchestratorCard(payload) {
+  var container = document.getElementById('local-orchestrator-card');
+  if (!container) return;
+  if (!payload || !payload.ok) {
+    container.innerHTML = '<h3 class="card-title">Local Orchestrator</h3><p class="summary-note" style="color:red;">Status unavailable.</p>';
+    return;
+  }
+
+  var e = function(s) { return escapeHtml(String(s == null ? '—' : s)); };
+  var chip = function(label, cls) { return '<span class="chip ' + (cls || '') + '">' + e(label) + '</span>'; };
+
+  var pb = payload.prompt_bus || {};
+  var al = payload.agent_lanes || {};
+  var ov = payload.obsidian_vault || {};
+  var cm = payload.compact_memory || {};
+  var rf = payload.ruflo || {};
+  var ol = payload.ollama || {};
+  var sf = payload.safety_flags || {};
+
+  var pbHtml =
+    '<div class="health-row"><span class="health-label">Outbox files</span>' + chip(pb.outbox_count != null ? pb.outbox_count : '?') + '</div>' +
+    '<div class="health-row"><span class="health-label">Latest outbox</span><span class="health-detail mono">' + e(pb.outbox_latest || '(none)') + '</span></div>';
+
+  var alHtml =
+    '<div class="health-row"><span class="health-label">Active locks</span>' + chip(al.active_locks_count != null ? al.active_locks_count : '?') + '</div>' +
+    '<div class="health-row"><span class="health-label">Status records</span>' + chip(al.status_records_count != null ? al.status_records_count : '?') + '</div>' +
+    '<div class="health-row"><span class="health-label">Latest agent</span><span class="health-detail mono">' + e(al.latest_agent) + '</span></div>' +
+    '<div class="health-row"><span class="health-label">Latest state</span><span class="health-detail mono">' + e(al.latest_state) + '</span></div>';
+
+  var memHtml =
+    '<div class="health-row"><span class="health-label">Obsidian vault</span>' + chip(ov.exists ? 'exists' : 'missing', ov.exists ? 'chip--ok' : 'chip--warn') + '<span class="health-detail mono">' + e(ov.file_count) + ' .md files</span></div>' +
+    '<div class="health-row"><span class="health-label">Compact memory</span>' + chip(cm.exists ? 'exists' : 'missing', cm.exists ? 'chip--ok' : 'chip--warn') + '<span class="health-detail mono">' + e(cm.file_count) + ' .md files</span></div>';
+
+  var rufloChip = rf.exists ? 'chip--ok' : 'chip--warn';
+  var rfHtml =
+    '<div class="health-row"><span class="health-label">Ruflo dir</span>' + chip(rf.exists ? 'exists' : 'missing', rufloChip) + '<span class="health-detail mono">' + e(rf.name) + ' v' + e(rf.version) + '</span></div>' +
+    '<div class="health-row"><span class="health-label">node_modules</span>' + chip(rf.node_modules ? 'installed' : 'not installed', rf.node_modules ? 'chip--ok' : 'chip--warn') + '</div>' +
+    '<div class="health-row"><span class="health-label">Lifecycle scripts</span>' + chip(rf.lifecycle_scripts && rf.lifecycle_scripts.length ? 'BLOCKED' : 'none (safe)', rf.install_blocked ? 'chip--warn' : 'chip--ok') + '</div>';
+
+  var ollamaChip = ol.found ? 'chip--ok' : 'chip--warn';
+  var gemmaChip = ol.gemma_found ? 'chip--ok' : 'chip--warn';
+  var olHtml =
+    '<div class="health-row"><span class="health-label">Ollama</span>' + chip(ol.found ? 'found' : 'not found', ollamaChip) + '</div>' +
+    '<div class="health-row"><span class="health-label">Gemma model</span>' + chip(ol.gemma_found ? 'found' : 'not found', gemmaChip) + '</div>';
+
+  var sfEntries = Object.entries(sf);
+  var sfHtml = sfEntries.map(function(pair) {
+    return '<div class="health-row"><span class="health-label">' + e(pair[0].replace(/_/g, ' ')) + '</span>' + chip(String(pair[1]), pair[1] ? 'chip--ok' : 'chip--warn') + '</div>';
+  }).join('');
+
+  var nextCmd = 'python 03_scripts/ghoti_dashboard.py --json';
+
+  container.innerHTML =
+    '<h3 class="card-title">Local Orchestrator <span class="chip chip--ok" style="font-size:0.65rem;">N+3.50A read-only</span></h3>' +
+    '<p class="summary-note">Branch: <code>' + e(payload.branch) + '</code> &nbsp;|&nbsp; Generated: ' + e(payload.generated_at) + '</p>' +
+    '<p class="summary-note" style="color:var(--text-dim);font-size:0.8rem;">Read-only status card. No live actions. No approve/execute/install buttons.</p>' +
+    '<div class="health-table" style="margin-bottom:0.75rem;">' +
+    '<p class="ghoti-active-label" style="margin:0.5rem 0 0.25rem;">Prompt Bus</p>' + pbHtml +
+    '<p class="ghoti-active-label" style="margin:0.5rem 0 0.25rem;">Agent Lanes</p>' + alHtml +
+    '<p class="ghoti-active-label" style="margin:0.5rem 0 0.25rem;">Obsidian / Compact Memory</p>' + memHtml +
+    '<p class="ghoti-active-label" style="margin:0.5rem 0 0.25rem;">Ruflo</p>' + rfHtml +
+    '<p class="ghoti-active-label" style="margin:0.5rem 0 0.25rem;">Gemma / Ollama</p>' + olHtml +
+    '<p class="ghoti-active-label" style="margin:0.5rem 0 0.25rem;">Safety Flags</p>' + sfHtml +
+    '</div>' +
+    '<p class="ghoti-active-label">Next Recommended Command</p>' +
+    '<div class="runbook-code-block"><pre>' + e(nextCmd) + '</pre></div>';
+}
+
+async function refreshLocalOrchestrator() {
+  try {
+    var data = await requestJson('/api/ghoti/local-orchestrator/status');
+    renderLocalOrchestratorCard(data);
+  } catch (err) {
+    var container = document.getElementById('local-orchestrator-card');
+    if (container) {
+      container.innerHTML =
+        '<h3 class="card-title">Local Orchestrator</h3>' +
+        '<p class="summary-note" style="color:red;">Failed to load: ' + escapeHtml(err.message) + '</p>';
+    }
+  }
+}
+
+refreshLocalOrchestrator();

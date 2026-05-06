@@ -1,0 +1,16 @@
+{
+  "ruflo_dir": "21_repos/third_party/evals/ruflo",
+  "install_command": "npm ci --ignore-scripts",
+  "install_blocked_if_lifecycle": ["preinstall", "postinstall", "prepare", "prepack", "postpack", "prepublish", "prepublishOnly"],
+  "no_global_install": true,
+  "no_npx": true,
+  "no_mcp_launch": true,
+  "no_swarm_launch": true,
+  "smoke_checks": ["package_exists", "node_modules_exists", "package_lock_exists", "npm_version"],
+  "report_output_dir": "05_logs/ruflo_smoke/",
+  "safety": {
+    "no_secrets": true,
+    "no_external_accounts": true,
+    "no_runtime_wiring": true
+  }
+}

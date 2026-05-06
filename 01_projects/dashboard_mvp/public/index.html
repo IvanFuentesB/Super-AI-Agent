@@ -396,6 +396,7 @@
           <li><a href="#section-money-review" class="sidebar-link">Money Review</a></li>
           <li><a href="#section-manual-queue" class="sidebar-link">Manual Queue</a></li>
           <li><a href="#section-runbook" class="sidebar-link">Runbook</a></li>
+          <li><a href="#section-local-orchestrator" class="sidebar-link">Local Orchestrator</a></li>
           <li><a href="#section-about" class="sidebar-link">About</a></li>
         </ul>
         <div class="sidebar-footer">
@@ -881,6 +882,19 @@ Invoke-RestMethod -Uri "$base/api/operator-status" -Method Get | ConvertTo-Json 
 Invoke-RestMethod -Uri "$base/api/ghoti/control-center-state" -Method Get | ConvertTo-Json -Depth 8</pre>
               <button class="runbook-copy-btn btn-secondary" type="button" data-copy-target="runbook-validate-code">Copy</button>
             </div>
+          </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- LOCAL ORCHESTRATOR (N+3.50A)                                        -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <section class="content-section" id="section-local-orchestrator">
+          <div class="section-hdr">
+            <h2>Local Orchestrator</h2>
+            <p class="section-sub">Read-only status: Prompt Bus, Agent Lanes, Obsidian, Compact Memory, Ruflo, Gemma/Ollama. No live actions. No approve/execute/install buttons.</p>
+          </div>
+          <div id="local-orchestrator-card" class="card">
+            <p class="empty-state">Loading local orchestrator status…</p>
           </div>
         </section>
 
