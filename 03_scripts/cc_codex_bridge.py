@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """CC/Codex Bridge — local file-based handoff bridge. No automatic CC/Codex. Human copy-paste only.
 
+N+3.56-FIX: added --init mode (explicit dir creation), _print_truth_labels() in all commands.
 N+3.51A: stdlib-only, local file bridge, no clipboard, no API, no auto-send.
 Truthfully states: CC/Codex automatic = NO.
 """
@@ -85,6 +86,38 @@ def _ensure_bridge_dirs():
         raise RuntimeError(f"Failed to create bridge dirs (rc={rc})")
 
 
+def _print_truth_labels():
+    print("CC/Codex automatic     : NO")
+    print("Bridge type            : local manual file handoff")
+    print("Clipboard              : NO")
+    print("API calls              : NO")
+    print("Auto-send              : NO")
+    print("Human copy-paste required: YES")
+
+
+def cmd_init(args):
+    if args.dry_run and not args.apply:
+        print("[DRY RUN] --init would create the following bridge directories:")
+        for d in BRIDGE_DIRS:
+            status = "already exists" if d.exists() else "would create"
+            print(f"  {status}: {d.relative_to(REPO_ROOT)}")
+        print("[DRY RUN] No directories created. Pass --apply to create.")
+        _print_truth_labels()
+        return
+
+    if args.apply:
+        try:
+            _ensure_bridge_dirs()
+        except RuntimeError as e:
+            print(f"ERROR: {e}")
+            sys.exit(1)
+        print("Bridge directories initialized:")
+        for d in BRIDGE_DIRS:
+            print(f"  OK: {d.relative_to(REPO_ROOT)}")
+        print()
+        _print_truth_labels()
+
+
 def cmd_status(args):
     print("=== CC/Codex Bridge Status ===")
     print(f"Branch          : {_get_branch()}")
@@ -93,7 +126,7 @@ def cmd_status(args):
     dirty_lines = [l for l in dirty_out.splitlines() if l.strip()] if dirty_out else []
     print(f"Dirty state     : {len(dirty_lines)} file(s)")
     print()
-    print("Bridge dirs:")
+    print("Bridge dirs (read-only check — --status never creates dirs):")
     for d in BRIDGE_DIRS:
         exists = d.exists()
         count = len(list(d.iterdir())) if exists else 0
@@ -104,9 +137,7 @@ def cmd_status(args):
     for f in outbox[-5:]:
         print(f"  {f.name}")
     print()
-    print("IMPORTANT: CC/Codex automatic = NO")
-    print("Bridge type    : local/manual file bridge")
-    print("No clipboard. No API. No auto-send. Human copies files manually.")
+    _print_truth_labels()
     print("=== End Status ===")
 
 
@@ -139,6 +170,8 @@ def cmd_write_pair(args):
             f"{body}\n\n"
             f"---\n\n"
             f"**IMPORTANT**: CC/Codex automatic = NO. Copy-paste this file manually into {t.title()}.\n"
+            f"Bridge type: local manual file handoff | Clipboard: NO | API calls: NO | Auto-send: NO\n"
+            f"Human copy-paste required: YES\n"
         )
         pairs.append((t, filename, content))
 
@@ -150,6 +183,7 @@ def cmd_write_pair(args):
             print(f"  [DRY RUN] {t}: {fn}")
             print(f"    Preview: {content[:200]}")
         print("[DRY RUN] Pass --apply to write.")
+        _print_truth_labels()
         return
 
     if args.apply:
@@ -164,7 +198,7 @@ def cmd_write_pair(args):
                 sys.exit(1)
         print()
         print("Copy-paste: Open each file above and paste into the target AI tool.")
-        print("IMPORTANT: CC/Codex automatic = NO. No clipboard. No API. Human paste required.")
+        _print_truth_labels()
 
 
 def cmd_next(args):
@@ -178,7 +212,7 @@ def cmd_next(args):
     print(f"Full path       : {next_file.relative_to(REPO_ROOT)}")
     print()
     print("Action: Open the file above and paste its contents into the appropriate AI tool.")
-    print("IMPORTANT: CC/Codex automatic = NO. Manual paste required.")
+    _print_truth_labels()
     if args.dry_run and not args.apply:
         print("[DRY RUN] No files moved. This is a read-only status report.")
     print("=== End Next ===")
@@ -194,6 +228,8 @@ def cmd_list(args):
         for f in files:
             size = f.stat().st_size
             print(f"  {f.name}  ({size}b)")
+    print()
+    _print_truth_labels()
     print("=== End List ===")
 
 
@@ -219,9 +255,7 @@ def cmd_verify(args):
             bad.append(f.name)
 
     print()
-    print("CONFIRMED: CC/Codex automatic = NO")
-    print("CONFIRMED: Bridge type = local/manual file bridge")
-    print("CONFIRMED: No clipboard, no API, no auto-send")
+    _print_truth_labels()
     if bad:
         print(f"WARNING: {len(bad)} files failed to read: {bad}")
     if ok and not bad:
@@ -235,6 +269,7 @@ def cmd_archive_done(args):
     outbox = _outbox_files()
     if not outbox:
         print("Outbox is empty. Nothing to archive.")
+        _print_truth_labels()
         return
 
     if args.dry_run and not args.apply:
@@ -242,6 +277,7 @@ def cmd_archive_done(args):
         for f in outbox:
             print(f"  {f.name}")
         print("[DRY RUN] Pass --apply to archive.")
+        _print_truth_labels()
         return
 
     if args.apply:
@@ -255,17 +291,20 @@ def cmd_archive_done(args):
                 print(f"Archived: {f.name}")
             except Exception as e:
                 print(f"ERROR archiving {f.name}: {e}")
+        _print_truth_labels()
 
 
 def main():
     parser = argparse.ArgumentParser(
         description=(
             "CC/Codex Bridge — local file-based handoff bridge. "
-            "CC/Codex automatic = NO. Human copy-paste only. N+3.51A."
+            "CC/Codex automatic = NO. Human copy-paste only. N+3.56-FIX."
         )
     )
     mode_group = parser.add_mutually_exclusive_group(required=True)
-    mode_group.add_argument("--status", action="store_true", help="Show bridge status")
+    mode_group.add_argument("--init", action="store_true",
+                            help="Initialize bridge directories (--dry-run or --apply)")
+    mode_group.add_argument("--status", action="store_true", help="Show bridge status (read-only)")
     mode_group.add_argument("--write-pair", action="store_true", help="Write Claude/Codex/ChatGPT handoff files")
     mode_group.add_argument("--next", action="store_true", help="Show next paste action")
     mode_group.add_argument("--list", action="store_true", help="List all bridge files")
@@ -282,7 +321,9 @@ def main():
 
     args = parser.parse_args()
 
-    if args.status:
+    if args.init:
+        cmd_init(args)
+    elif args.status:
         cmd_status(args)
     elif args.write_pair:
         cmd_write_pair(args)

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Gemma Compact Memory Worker — stdlib-only, local Ollama only, DRAFT output, no canonical writes.
 
+N+3.56-FIX: clearer --status output (Ollama found/version/Gemma found/selected model explicit).
 N+3.51A: added safe_write fallback (Node.js), --outbox option.
 """
 import argparse
@@ -119,25 +120,32 @@ def _pick_model(model_names):
 
 def cmd_status(args):
     print("=== Gemma Compact Memory Worker Status ===")
-    print(f"Repo root     : {REPO_ROOT}")
-    print(f"Compact memory: {COMPACT_MEMORY_DIR}")
+    print(f"Repo root       : {REPO_ROOT}")
+    print(f"Compact memory  : {COMPACT_MEMORY_DIR}")
     if COMPACT_MEMORY_DIR.exists():
         files = list(COMPACT_MEMORY_DIR.glob("*.md"))
-        print(f"Memory files  : {len(files)}")
+        print(f"Memory files    : {len(files)}")
     else:
-        print("Memory files  : directory MISSING")
+        print("Memory files    : directory MISSING")
 
     ver, models = _check_ollama()
     if ver is None:
-        print("Ollama        : NOT FOUND")
-        print("Gemma model   : UNAVAILABLE")
-        print("Recommendation: Install Ollama from https://ollama.com; then: ollama pull gemma3:4b")
+        print("Ollama found    : NO")
+        print("Ollama version  : N/A")
+        print("Gemma model found: NO")
+        print("Selected model  : N/A")
+        print("Recommendation  : Install Ollama from https://ollama.com; then: ollama pull gemma3:4b")
     else:
-        print(f"Ollama        : FOUND — {ver}")
-        print(f"Models        : {models if models else '(none)'}")
         picked = _pick_model(models or [])
-        print(f"Gemma model   : {picked if picked else 'NOT FOUND — run: ollama pull gemma3:4b'}")
-    print(f"Safe write    : Node.js fallback enabled")
+        print(f"Ollama found    : YES")
+        print(f"Ollama version  : {ver}")
+        print(f"Gemma model found: {'YES' if picked else 'NO'}")
+        print(f"Selected model  : {picked if picked else 'NOT FOUND — run: ollama pull gemma3:4b'}")
+        if not picked:
+            print("Recommendation  : ollama pull gemma3:4b")
+        print(f"All models      : {models if models else '(none)'}")
+    print(f"Safe write fallback: Node.js")
+    print("Output markers  : DRAFT_ONLY | NOT_CANONICAL | HUMAN_REVIEW_REQUIRED")
     print("=== End Status ===")
 
 

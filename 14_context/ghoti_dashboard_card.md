@@ -1,52 +1,60 @@
-# Ghoti Dashboard Card — N+3.51A
+# Ghoti Dashboard Card — N+3.56-FIX
 
-Generated: 2026-05-06 19:59 UTC
-Branch: `feat/ghoti-agent-claude-n3-51-ruflo-gemma-bridge-hardening` | HEAD: `56cf614` | Dirty: 41 dirty files
+Generated: 2026-05-06 20:57 UTC
+Branch: `feat/ghoti-agent-claude-n3-56-fix-bridge-ruflo-gemma-clean-pass` | HEAD: `1a2c6fd` | Dirty: 24 dirty files
 
 ## Bridge Status
 - CC/Codex automatic: NO
+- Bridge type: local manual file handoff
+- Clipboard: NO
+- API calls: NO
+- Auto-send: NO
+- Human copy-paste required: YES
+- Bridge helper (cc_codex_bridge.py): EXISTS
+- Init mode available: YES (--init --dry-run/--apply)
 - No Ruflo runtime wiring: CONFIRMED
 - No automatic CC/Codex control: CONFIRMED
-- Bridge type: local/manual copy-paste (stronger than N+3.50A)
-- Less manual now: context packs, lane locks, dashboard, Ruflo deps installable
-- Still manual: handing prompts between Claude/Codex/ChatGPT
 
 ## Prompt Bus
-- Outbox files: 1
-- Latest: codex_context_pack_20260506T195827Z_n3-51-codex.md
+- Outbox files: 0
+- Latest: (none)
 
 ## Agent Lanes
-- Active locks: 5
-- Status records: 8
-- Latest agent: claude_code_n3_51a
-- Latest state: implementation_in_progress
+- Active locks: 6
+- Status records: 10
+- Latest agent: claude_code_n3_56_fix
+- Latest state: implementation_started
 
 ## Obsidian Vault
 - Exists: YES
 - Markdown files: 12
+- Required files pass: YES
 
 ## Compact Memory
 - Exists: YES
 - Markdown files: 19
 
 ## Ruflo
-- Path exists: YES
-- Package: claude-flow v3.5.80
+- Source status: SOURCE_MISSING_BOOTSTRAPPABLE
+- Path exists: NO
+- Package: unknown vunknown
 - node_modules: NOT INSTALLED
 - Lifecycle scripts: NONE (safe)
 - Install blocked: False
 - Runtime wiring: NO
 
 ## Gemma / Ollama
-- Ollama: FOUND
+- Ollama: FOUND — ollama version is 0.9.2
 - Gemma model: FOUND
 
 ## Course/Certificate Helper
 - course_certificate_assistant.py: EXISTS
+- --goal supported: YES
 
-## Obsidian
-- Vault exists: YES
+## Obsidian App
+- obsidian_probe.py: EXISTS
 - Executable: FOUND — C:\Users\Navif\AppData\Local\Programs\Obsidian\Obsidian.exe
+- Winget installed: NOT DETECTED
 
 ## Safety Flags
 - Read-only card: YES
@@ -57,9 +65,10 @@ Branch: `feat/ghoti-agent-claude-n3-51-ruflo-gemma-bridge-hardening` | HEAD: `56
 
 ## Next Recommended Commands
 ```bash
+python 03_scripts/obsidian_probe.py --status
+python 03_scripts/ruflo_install_gate.py --source-status
 python 03_scripts/ruflo_install_gate.py --status
-python 03_scripts/ruflo_install_gate.py --install --dry-run
 python 03_scripts/gemma_compact_memory_worker.py --status
-python 03_scripts/prompt_bus.py --write-context-pack --target all --title n3-51 --include-status --include-memory --include-next-actions --dry-run
-powershell -ExecutionPolicy Bypass -File 03_scripts/open_obsidian_vault.ps1 -Check
+python 03_scripts/cc_codex_bridge.py --init --dry-run
+python 03_scripts/prompt_bus.py --write-context-pack --target all --title n3-56-fix --include-status --include-memory --include-next-actions --dry-run
 ```

@@ -1,6 +1,19 @@
 {
+  "_comment": "Ruflo Install Gate config example. N+3.56-FIX. Adds --source-status with SOURCE_PRESENT/SOURCE_MISSING codes.",
   "ruflo_dir": "21_repos/third_party/evals/ruflo",
   "install_command": "npm ci --ignore-scripts",
+  "source_status_codes": [
+    "SOURCE_PRESENT",
+    "SOURCE_MISSING_BOOTSTRAPPABLE",
+    "SOURCE_MISSING_NO_CONFIG",
+    "PACKAGE_LOCK_PRESENT",
+    "PACKAGE_LOCK_MISSING",
+    "NPM_PRESENT",
+    "NPM_MISSING",
+    "NODE_MODULES_INSTALLED",
+    "NODE_MODULES_MISSING",
+    "RUNTIME_WIRING_NO"
+  ],
   "install_blocked_if_lifecycle": ["preinstall", "postinstall", "prepare", "prepack", "postpack", "prepublish", "prepublishOnly"],
   "no_global_install": true,
   "no_npx": true,
@@ -11,6 +24,8 @@
   "safety": {
     "no_secrets": true,
     "no_external_accounts": true,
-    "no_runtime_wiring": true
+    "no_runtime_wiring": true,
+    "source_missing_is_not_unsafe": true,
+    "source_missing_note": "In a clean checkout, Ruflo source may be absent. This is expected. Bootstrap manually."
   }
 }

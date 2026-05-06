@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Ruflo Install Gate — stdlib-only, isolated npm ci, no global install, no runtime wiring.
 
+N+3.56-FIX: added --source-status with clear SOURCE_PRESENT/SOURCE_MISSING codes.
+             Truthful messaging for clean checkouts where source may be absent.
 N+3.51A: added safe_write fallback (Node.js), clearer install path messaging.
 Ruflo (claude-flow v3.5.80) has no lifecycle scripts — npm ci --ignore-scripts is safe.
 """
@@ -16,6 +18,7 @@ REPO_ROOT = pathlib.Path(__file__).parent.parent.resolve()
 RUFLO_DIR = REPO_ROOT / "21_repos" / "third_party" / "evals" / "ruflo"
 LOGS_DIR = REPO_ROOT / "05_logs" / "ruflo_smoke"
 TOOLING_DIR = REPO_ROOT / "14_context" / "tooling"
+CONFIGS_DIR = REPO_ROOT / "23_configs"
 
 LIFECYCLE_SCRIPTS = frozenset([
     "preinstall", "install", "postinstall",
@@ -88,6 +91,125 @@ def _check_node():
     return (ver if rc == 0 else None)
 
 
+def _get_ruflo_git_remote():
+    out, _, rc = _run(["git", "-C", str(RUFLO_DIR), "remote", "get-url", "origin"])
+    return out if rc == 0 else None
+
+
+def _get_ruflo_git_head():
+    out, _, rc = _run(["git", "-C", str(RUFLO_DIR), "rev-parse", "HEAD"])
+    return out if rc == 0 else None
+
+
+def cmd_source_status(args):
+    """Report Ruflo source presence with clear status codes. Truthful for clean checkouts."""
+    print("=== Ruflo Source Status ===")
+
+    ruflo_exists = RUFLO_DIR.exists()
+    pkg_path = RUFLO_DIR / "package.json"
+    lock_path = RUFLO_DIR / "package-lock.json"
+    nm_path = RUFLO_DIR / "node_modules"
+    npm_ver = _check_npm()
+    node_ver = _check_node()
+
+    if ruflo_exists and pkg_path.exists():
+        print("SOURCE_PRESENT")
+        print(f"  Ruflo dir          : {RUFLO_DIR.relative_to(REPO_ROOT)}")
+
+        # Try git remote
+        remote = _get_ruflo_git_remote()
+        head = _get_ruflo_git_head()
+        if remote:
+            print(f"  Git remote         : {remote}")
+        else:
+            print("  Git remote         : NOT DETECTED — source URL needs manual confirmation")
+        if head:
+            print(f"  Git HEAD           : {head}")
+
+        pkg, err = _read_package_json()
+        if pkg:
+            print(f"  Package name       : {pkg.get('name', '?')}")
+            print(f"  Package version    : {pkg.get('version', '?')}")
+            scripts = pkg.get("scripts", {})
+            lifecycle = _detect_lifecycle(scripts)
+            if lifecycle:
+                print(f"  Lifecycle scripts  : {lifecycle} — INSTALL BLOCKED")
+            else:
+                print("  Lifecycle scripts  : NONE (safe)")
+        else:
+            print(f"  Package JSON error : {err}")
+    elif ruflo_exists:
+        print("SOURCE_PRESENT (partial — dir exists but package.json missing)")
+        print(f"  Ruflo dir          : {RUFLO_DIR.relative_to(REPO_ROOT)}")
+    else:
+        # Determine if bootstrappable
+        source_config = CONFIGS_DIR / "ruflo_source.example.json"
+        if source_config.exists():
+            print("SOURCE_MISSING_BOOTSTRAPPABLE")
+            print(f"  Ruflo dir          : ABSENT in this checkout")
+            print(f"  Bootstrap config   : {source_config.relative_to(REPO_ROOT)} (check for clone instructions)")
+        else:
+            print("SOURCE_MISSING_NO_CONFIG")
+            print(f"  Ruflo dir          : ABSENT in this checkout")
+            print(f"  NOTE: Ruflo is an external tool. In a clean checkout its source")
+            print(f"        is not automatically present. It must be cloned/bootstrapped")
+            print(f"        manually before this gate can proceed.")
+
+    print()
+    if lock_path.exists():
+        print("PACKAGE_LOCK_PRESENT")
+    else:
+        print("PACKAGE_LOCK_MISSING (npm ci requires package-lock.json)")
+
+    if npm_ver:
+        print(f"NPM_PRESENT ({npm_ver})")
+    else:
+        print("NPM_MISSING — install Node.js/npm before running install")
+
+    if node_ver:
+        print(f"NODE_PRESENT ({node_ver})")
+    else:
+        print("NODE_MISSING")
+
+    if nm_path.exists():
+        try:
+            count = len([d for d in nm_path.iterdir() if d.is_dir()])
+            print(f"NODE_MODULES_INSTALLED ({count} top-level packages)")
+        except Exception:
+            print("NODE_MODULES_INSTALLED")
+    else:
+        print("NODE_MODULES_MISSING")
+
+    print("RUNTIME_WIRING_NO — isolated install only, no MCP/swarm launch")
+
+    # Write/update ruflo_source.example.json if remote detected
+    if ruflo_exists and pkg_path.exists():
+        remote = _get_ruflo_git_remote()
+        pkg, _ = _read_package_json()
+        if pkg and args.apply:
+            source_config = CONFIGS_DIR / "ruflo_source.example.json"
+            source_data = {
+                "_comment": "Ruflo source config. N+3.56-FIX auto-detected. Runtime wiring: NO.",
+                "local_path": str(RUFLO_DIR.relative_to(REPO_ROOT)),
+                "source_url": remote if remote else "UNKNOWN — manual confirmation required",
+                "expected_package_name": pkg.get("name", "claude-flow"),
+                "runtime_wiring": False,
+                "no_mcp_launch": True,
+                "no_swarm_launch": True,
+                "install_command": "npm ci --ignore-scripts",
+                "git_head": _get_ruflo_git_head() or "unknown",
+            }
+            try:
+                _safe_write_text(source_config, json.dumps(source_data, indent=2) + "\n")
+                print(f"\nWritten: {source_config.relative_to(REPO_ROOT)}")
+            except RuntimeError as e:
+                print(f"\nWARNING: Could not write ruflo_source.example.json: {e}")
+        elif args.dry_run:
+            print("\n[DRY RUN] Pass --apply to write/update 23_configs/ruflo_source.example.json")
+
+    print("=== End Ruflo Source Status ===")
+
+
 def cmd_status(args):
     print("=== Ruflo Install Gate Status ===")
     print(f"Repo root  : {REPO_ROOT}")
@@ -97,6 +219,8 @@ def cmd_status(args):
     pkg, err = _read_package_json()
     if err:
         print(f"Package    : ERROR — {err}")
+        if not RUFLO_DIR.exists():
+            print(f"NOTE: Ruflo source absent in this checkout. Run --source-status for details.")
     else:
         print(f"Package    : {pkg.get('name', '?')} v{pkg.get('version', '?')}")
         scripts = pkg.get("scripts", {})
@@ -122,6 +246,10 @@ def cmd_install(args):
     pkg, err = _read_package_json()
     if err:
         print(f"ERROR: {err}")
+        if not RUFLO_DIR.exists():
+            print("BLOCKED: Ruflo source not present in this checkout.")
+            print("Run: python 03_scripts/ruflo_install_gate.py --source-status")
+            print("Then bootstrap/clone Ruflo locally before installing.")
         sys.exit(1)
 
     scripts = pkg.get("scripts", {})
@@ -161,7 +289,7 @@ def cmd_install(args):
         print(f"Working dir: {RUFLO_DIR}")
         out, err_txt, rc = _run(cmd, cwd=RUFLO_DIR, timeout=180)
         if out:
-            print(out[-2000:])  # last 2000 chars of stdout
+            print(out[-2000:])
         if err_txt:
             print("[stderr]", err_txt[-500:])
         if rc == 0:
@@ -178,6 +306,9 @@ def cmd_smoke(args):
     pkg, err = _read_package_json()
     if err:
         print(f"package.json: ERROR — {err}")
+        if not RUFLO_DIR.exists():
+            print("NOTE: Source absent in this checkout — this is expected on a clean clone.")
+            print("Run --source-status for bootstrap instructions.")
     else:
         print(f"Package: {pkg.get('name', '?')} v{pkg.get('version', '?')}")
         scripts = pkg.get("scripts", {})
@@ -201,7 +332,6 @@ def cmd_smoke(args):
     print(f"node version: {node_ver or 'not found'}")
 
     if nm.exists():
-        # Count top-level packages
         try:
             pkg_count = len([d for d in nm.iterdir() if d.is_dir() and not d.name.startswith(".")])
             print(f"Installed packages (top-level): {pkg_count}")
@@ -239,11 +369,14 @@ def cmd_report(args):
         except Exception:
             pass
 
+    source_status = "SOURCE_PRESENT" if (RUFLO_DIR.exists() and (RUFLO_DIR / "package.json").exists()) else "SOURCE_MISSING"
+
     report = {
         "run_id": run_id,
         "generated_at": ts,
         "ruflo_dir": str(RUFLO_DIR.relative_to(REPO_ROOT)),
         "ruflo_exists": RUFLO_DIR.exists(),
+        "source_status": source_status,
         "package_name": pkg_name,
         "package_version": pkg_version,
         "package_json_error": pkg_err,
@@ -273,6 +406,7 @@ def cmd_report(args):
         "",
         f"- **Run ID**: {run_id}",
         f"- **Ruflo dir**: {report['ruflo_dir']}",
+        f"- **Source status**: {source_status}",
         f"- **Exists**: {report['ruflo_exists']}",
         f"- **Package**: {pkg_name} v{pkg_version}",
         f"- **node_modules**: {'INSTALLED (' + str(nm_pkg_count) + ' pkgs)' if nm.exists() else 'NOT INSTALLED'}",
@@ -344,11 +478,11 @@ def cmd_catalog(args):
         print()
         print("[DRY RUN] Catalog preview:")
         print(json.dumps(catalog, indent=2)[:600])
-        print("[DRY RUN] Pass --apply to write catalog to 14_context/tooling/ruflo_catalog_n3_51a.md")
+        print("[DRY RUN] Pass --apply to write catalog to 14_context/tooling/ruflo_catalog_n3_56_fix.md")
         return
 
     if args.apply:
-        dest = TOOLING_DIR / "ruflo_catalog_n3_51a.md"
+        dest = TOOLING_DIR / "ruflo_catalog_n3_56_fix.md"
         lines = [
             f"# Ruflo Catalog — {ts}",
             "",
@@ -381,7 +515,7 @@ def cmd_catalog(args):
             print(f"Written: {dest.relative_to(REPO_ROOT)}")
         except RuntimeError as e:
             print(f"ERROR: Write failed: {e}")
-            import sys; sys.exit(1)
+            sys.exit(1)
         print("NOTE: Catalog is read-only metadata. Ruflo NOT launched.")
     print("=== End Catalog ===")
 
@@ -390,11 +524,13 @@ def main():
     parser = argparse.ArgumentParser(
         description=(
             "Ruflo Install Gate — stdlib-only, isolated npm ci --ignore-scripts, no global install. "
-            "N+3.51A: safe write fallback, clearer install path, catalog mode. "
+            "N+3.56-FIX: --source-status with SOURCE_PRESENT/SOURCE_MISSING codes. "
             "Ruflo (claude-flow v3.5.80) has no lifecycle scripts."
         )
     )
     mode_group = parser.add_mutually_exclusive_group(required=True)
+    mode_group.add_argument("--source-status", action="store_true",
+                            help="Report source presence with clear status codes (SOURCE_PRESENT etc.)")
     mode_group.add_argument("--status", action="store_true", help="Print current Ruflo status")
     mode_group.add_argument("--install", action="store_true", help="Install Ruflo deps (--dry-run or --apply)")
     mode_group.add_argument("--smoke", action="store_true", help="Read-only smoke check")
@@ -407,7 +543,9 @@ def main():
 
     args = parser.parse_args()
 
-    if args.status:
+    if args.source_status:
+        cmd_source_status(args)
+    elif args.status:
         cmd_status(args)
     elif args.install:
         cmd_install(args)

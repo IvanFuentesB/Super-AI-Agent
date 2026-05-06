@@ -1,4 +1,5 @@
 {
+  "_comment": "Gemma Compact Memory Worker config. N+3.56-FIX. Clearer status output added.",
   "preferred_model": "gemma3:4b",
   "ollama_endpoint": "local",
   "max_chars_default": 12000,
@@ -7,6 +8,7 @@
   "draft_only": true,
   "canonical_update_requires_human": true,
   "output_markers": ["DRAFT_ONLY", "NOT_CANONICAL", "HUMAN_REVIEW_REQUIRED"],
+  "status_fields": ["ollama_found", "ollama_version", "gemma_model_found", "selected_model", "safe_write_fallback"],
   "safety": {
     "no_cloud_api": true,
     "no_canonical_memory_writes": true,

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Course/Certificate Assistant — study plans, checklists, trackers, certificate log.
 
+N+3.56-FIX: added --goal (optional, appears in plan output, never implies fake cert).
 N+3.51A: stdlib-only, local only. NO fake certificates, NO cheating, NO assessment submission.
 Human does all assessments. This tool only generates planning documents.
 """
@@ -71,6 +72,7 @@ def cmd_policy(args):
     print("  - Certificate logging (what you earned, date, provider, credential ID)")
     print("  - Reflection prompts and note templates")
     print("  - Note organization and vault structure")
+    print("  - --goal field: personal learning objective (study planning only)")
     print()
     print("FORBIDDEN (hard rules, non-negotiable):")
     print("  - Generating fake certificates or badges")
@@ -81,6 +83,7 @@ def cmd_policy(args):
     print("  - Providing answer keys for graded work")
     print()
     print("Human does all assessments. This tool only creates planning documents.")
+    print("--goal describes your personal learning objective — it does not imply certification or assessment.")
     print("=== End Policy ===")
 
 
@@ -94,6 +97,7 @@ def cmd_plan(args):
     provider = args.provider or "Unknown"
     hours = args.hours or 0
     deadline = args.deadline or "Not set"
+    goal = args.goal or None
 
     content_lines = [
         f"# Study Plan — {args.course_name}",
@@ -102,6 +106,17 @@ def cmd_plan(args):
         f"Provider: {provider}",
         f"Estimated hours: {hours}",
         f"Deadline: {deadline}",
+    ]
+
+    if goal:
+        content_lines += [
+            f"Goal: {goal}",
+            "",
+            "*(Goal is a personal learning objective for planning purposes only. "
+            "It does not imply fake certification, assessment submission, or any shortcut.)*",
+        ]
+
+    content_lines += [
         "",
         "---",
         "",
@@ -143,6 +158,8 @@ def cmd_plan(args):
     if args.dry_run and not args.apply:
         print(f"[DRY RUN] Course  : {args.course_name}")
         print(f"[DRY RUN] Provider: {provider}  Hours: {hours}  Deadline: {deadline}")
+        if goal:
+            print(f"[DRY RUN] Goal    : {goal}")
         print(f"[DRY RUN] Would write: 14_context/courses/plans/plan_{slug}_{ts}.md")
         print("[DRY RUN] Preview:")
         print(content[:400])
@@ -295,6 +312,7 @@ def cmd_status(args):
         print(f"  Cert logs    : {count} file(s)")
     print()
     print("Safety: NO fake certificates, NO assessment submission, NO cheating.")
+    print("--goal: supported (optional, planning purposes only, no fake cert implication).")
     print("=== End Status ===")
 
 
@@ -302,7 +320,7 @@ def main():
     parser = argparse.ArgumentParser(
         description=(
             "Course/Certificate Assistant — study plans, trackers, cert logs. "
-            "NO fake certs. NO cheating. Human does assessments. N+3.51A."
+            "NO fake certs. NO cheating. Human does assessments. N+3.56-FIX."
         )
     )
     mode_group = parser.add_mutually_exclusive_group(required=True)
@@ -317,6 +335,9 @@ def main():
     parser.add_argument("--provider", help="Course provider (e.g. Coursera, Local/Online)")
     parser.add_argument("--hours", type=float, help="Estimated study hours")
     parser.add_argument("--deadline", help="Completion deadline (e.g. 2026-06-01)")
+    parser.add_argument("--goal",
+                        help="Personal learning objective (optional; appears in plan; "
+                             "does not imply fake certification or assessment submission)")
     parser.add_argument("--dry-run", action="store_true", default=True)
     parser.add_argument("--apply", action="store_true")
 

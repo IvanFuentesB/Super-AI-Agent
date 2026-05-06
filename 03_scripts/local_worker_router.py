@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Local Worker Router — routing scaffold for Python/Gemma/Claude/Codex/ChatGPT task dispatch.
 
+N+3.56-FIX: bridge handoff tasks now route to cc_codex_bridge_worker (not generic codex_audit).
 stdlib only, repo-local, no external APIs, no live actions, no account actions.
 Ollama status check is read-only and disabled by default.
 """
@@ -15,6 +16,12 @@ LOCAL_WORKERS_DIR = REPO_ROOT / "14_context" / "local_workers"
 ROUTING_CONFIG = REPO_ROOT / "23_configs" / "local_worker_routing.example.json"
 
 ROUTE_RULES = [
+    {
+        "keywords": ["bridge handoff", "cc codex bridge", "codex bridge", "create bridge",
+                     "handoff for claude code and codex", "bridge for claude", "write handoff"],
+        "route": "cc_codex_bridge_worker",
+        "reason": "Bridge handoff task — route to cc_codex_bridge.py, not generic Codex. Local file bridge only.",
+    },
     {
         "keywords": ["json", "jsonl", "validate", "parse", "csv", "report", "file generation",
                      "file parsing", "validation", "generate", "list files", "count"],
@@ -36,7 +43,7 @@ ROUTE_RULES = [
     },
     {
         "keywords": ["audit", "source check", "source-check", "verify", "spec", "review safety",
-                     "check policy", "confirm", "gate", "security", "codex"],
+                     "check policy", "confirm", "gate", "security", "codex audit"],
         "route": "codex_audit",
         "reason": "Audit/verification task — route to Codex.",
     },
@@ -57,6 +64,12 @@ ROUTE_RULES = [
                      "agent swarm", "multi-agent orchestrat", "swarm orchestrat"],
         "route": "ruflo_orchestrator_candidate",
         "reason": "Ruflo/swarm orchestration candidate -- isolated from Ghoti runtime until safety gate passes.",
+    },
+    {
+        "keywords": ["compress memory with local", "gemma compress", "gemma memory",
+                     "local gemma", "ollama compress"],
+        "route": "gemma_local_worker",
+        "reason": "Local Gemma compression task — route to gemma_compact_memory_worker.py.",
     },
     {
         "keywords": ["obsidian vault", "vault note", "daily note", "note link", "obsidian memory",
@@ -85,6 +98,7 @@ ROUTE_RULES = [
 ]
 
 ROUTE_DESCRIPTIONS = {
+    "cc_codex_bridge_worker": "CC/Codex bridge lane. Routes to cc_codex_bridge.py — local file handoff only. CC/Codex automatic = NO.",
     "python_automation_worker": "Safe local Python script. stdlib only, no external APIs.",
     "gemma_local_worker": "Local Ollama/Gemma inference. Draft only — human review before canonical use.",
     "claude_code_impl": "Claude Code implementation. Use for reasoning, code, commits.",
@@ -216,7 +230,7 @@ def main():
     parser = argparse.ArgumentParser(
         description=(
             "Local Worker Router — recommend where to route a task. "
-            "stdlib only, no live actions, no API calls."
+            "stdlib only, no live actions, no API calls. N+3.56-FIX."
         )
     )
     group = parser.add_mutually_exclusive_group(required=True)

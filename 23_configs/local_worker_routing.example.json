@@ -1,9 +1,35 @@
 {
   "_meta": {
-    "version": "N+3.49A",
-    "description": "Local worker routing config example. Copy to local_worker_routing.json and customize.",
+    "version": "N+3.56-FIX",
+    "description": "Local worker routing config example. N+3.56-FIX: added cc_codex_bridge_worker for bridge handoff tasks.",
     "note": "Do not add real API keys or credentials to this file. This is a schema example only.",
     "last_updated": "2026-05-06"
+  },
+  "cc_codex_bridge_worker": {
+    "enabled": true,
+    "note": "Bridge handoff tasks route here. Uses cc_codex_bridge.py — local file only. CC/Codex automatic = NO.",
+    "script": "03_scripts/cc_codex_bridge.py",
+    "init_mode": "--init --dry-run then --apply to create dirs",
+    "task_classes": [
+      "bridge_handoff",
+      "write_claude_handoff",
+      "write_codex_handoff",
+      "write_chatgpt_handoff"
+    ],
+    "truth_labels": {
+      "cc_codex_automatic": false,
+      "bridge_type": "local_manual_file_handoff",
+      "clipboard": false,
+      "api_calls": false,
+      "auto_send": false,
+      "human_copy_paste_required": true
+    },
+    "forbidden": [
+      "automatic_send",
+      "clipboard_access",
+      "api_calls",
+      "live_accounts"
+    ]
   },
   "python_automation_worker": {
     "enabled": true,
@@ -51,7 +77,7 @@
     ]
   },
   "claude_code_impl": {
-    "note": "Claude Code sessions \u2014 use for implementation, commits, reasoning, tests.",
+    "note": "Claude Code sessions — use for implementation, commits, reasoning, tests.",
     "prompt_path": "14_context/ghoti_current_prompt.md",
     "task_classes": [
       "implementation",
@@ -62,7 +88,7 @@
     ]
   },
   "codex_audit": {
-    "note": "Codex sessions \u2014 use for audit, source-check, safety gate, spec writing.",
+    "note": "Codex sessions — use for audit, source-check, safety gate, spec writing. NOT for bridge handoff tasks.",
     "prompt_template": "14_context/prompt_bus/templates/codex_prompt_template.md",
     "outbox_path": "14_context/prompt_bus/outbox/",
     "task_classes": [
@@ -73,7 +99,7 @@
     ]
   },
   "chatgpt_strategy": {
-    "note": "ChatGPT sessions \u2014 use for strategy, architecture, next-milestone planning.",
+    "note": "ChatGPT sessions — use for strategy, architecture, next-milestone planning.",
     "prompt_template": "14_context/prompt_bus/templates/chatgpt_handoff_template.md",
     "task_classes": [
       "strategy",
@@ -84,7 +110,7 @@
   },
   "course_certificate_assistant": {
     "enabled": true,
-    "note": "Study plan + cert tracking templates. Human does all coursework and assessments.",
+    "note": "Study plan + cert tracking templates. --goal supported. Human does all coursework and assessments.",
     "task_classes": [
       "study_plan_template",
       "certificate_tracker",
@@ -103,7 +129,7 @@
     "enabled": false,
     "note": "Ruflo/claude-flow swarm orchestration. NOT wired to Ghoti runtime. Enable only after safety gate review.",
     "ruflo_path": "21_repos/third_party/evals/ruflo/",
-    "install_command": "npm install --ignore-scripts",
+    "install_command": "npm ci --ignore-scripts",
     "safety_gate_required": true,
     "task_classes": [
       "swarm_orchestration",
@@ -118,9 +144,10 @@
   },
   "obsidian_memory_worker": {
     "enabled": true,
-    "note": "Obsidian vault read/note tasks. Use open_obsidian_vault.ps1 to open vault in UI.",
+    "note": "Obsidian vault read/note tasks. Uses obsidian_probe.py for unified detection.",
     "vault_path": "14_context/obsidian_vault/",
     "helper_script": "03_scripts/open_obsidian_vault.ps1",
+    "probe_script": "03_scripts/obsidian_probe.py",
     "task_classes": [
       "vault_check",
       "daily_note",

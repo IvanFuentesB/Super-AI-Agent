@@ -1,5 +1,7 @@
 {
-  "_comment": "Course/Certificate Assistant config example. N+3.51A. No fake certs. No cheating.",
+  "_comment": "Course/Certificate Assistant config example. N+3.56-FIX. Supports --goal (optional). NO fake certs.",
+  "goal_supported": true,
+  "goal_note": "Optional --goal field appears in plan output as personal learning objective. Does not imply fake certification or assessment submission.",
   "output_dirs": {
     "plans": "14_context/courses/plans",
     "trackers": "14_context/courses/trackers",
@@ -10,7 +12,8 @@
     "no_cheating": true,
     "no_assessment_submission": true,
     "no_impersonation": true,
-    "human_does_all_assessments": true
+    "human_does_all_assessments": true,
+    "no_bypassing_proctoring": true
   },
   "allowed_operations": [
     "study_plans",

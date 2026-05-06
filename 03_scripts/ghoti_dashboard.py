@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Ghoti Dashboard — stdlib-only local orchestrator card generator.
 
+N+3.56-FIX: updated milestone, unified Obsidian probe, added bridge_helper_exists,
+             explicit bridge truth labels in JSON, source_status field.
 N+3.51A: updated card to N+3.51A, added safe_write fallback, git HEAD,
 bridge status clarity, next recommended commands updated.
 """
@@ -22,7 +24,14 @@ OBSIDIAN_VAULT_DIR = REPO_ROOT / "14_context" / "obsidian_vault"
 COMPACT_MEMORY_DIR = REPO_ROOT / "14_context" / "compact_memory"
 RUFLO_DIR = REPO_ROOT / "21_repos" / "third_party" / "evals" / "ruflo"
 DASHBOARD_CARD_PATH = REPO_ROOT / "14_context" / "ghoti_dashboard_card.md"
-MILESTONE = "N+3.51A"
+MILESTONE = "N+3.56-FIX"
+
+OBSIDIAN_VAULT_REQUIRED = [
+    "00_Index.md",
+    "01_Current_State.md",
+    "02_Next_Actions.md",
+    "09_Migration_Handoff.md",
+]
 
 
 def _utc_now():
@@ -92,6 +101,63 @@ def _git_dirty_summary():
     return f"{len(lines)} dirty files"
 
 
+def _probe_obsidian():
+    """Unified Obsidian detection — uses obsidian_probe.py if available, else inline."""
+    probe_script = REPO_ROOT / "03_scripts" / "obsidian_probe.py"
+    if probe_script.exists():
+        out, rc = _run(["python", str(probe_script), "--json"])
+        if rc == 0 and out:
+            try:
+                return json.loads(out)
+            except json.JSONDecodeError:
+                pass
+
+    # Inline fallback
+    import os as _os
+    vault_exists = OBSIDIAN_VAULT_DIR.exists()
+    vault_md_count = len(list(OBSIDIAN_VAULT_DIR.glob("*.md"))) if vault_exists else 0
+
+    required_files = {}
+    for fname in OBSIDIAN_VAULT_REQUIRED:
+        fp = OBSIDIAN_VAULT_DIR / fname
+        required_files[fname] = fp.exists()
+    required_pass = all(required_files.values())
+
+    _local_app = _os.environ.get("LOCALAPPDATA", "")
+    exe_candidates = [
+        pathlib.Path(r"C:\Users\Navif\AppData\Local\Programs\Obsidian\Obsidian.exe"),
+        pathlib.Path(r"C:\Users\ai_sandbox\AppData\Local\Programs\Obsidian\Obsidian.exe"),
+        pathlib.Path(r"C:\Users\ai_sandbox\AppData\Local\Obsidian\Obsidian.exe"),
+        pathlib.Path(r"C:\Program Files\Obsidian\Obsidian.exe"),
+    ]
+    if _local_app:
+        exe_candidates += [
+            pathlib.Path(_local_app) / "Programs" / "Obsidian" / "Obsidian.exe",
+            pathlib.Path(_local_app) / "Obsidian" / "Obsidian.exe",
+        ]
+    exe_found = None
+    for c in exe_candidates:
+        if c.exists():
+            exe_found = str(c)
+            break
+
+    return {
+        "vault": {
+            "path": str(OBSIDIAN_VAULT_DIR.relative_to(REPO_ROOT)),
+            "exists": vault_exists,
+            "md_file_count": vault_md_count,
+            "required_files": required_files,
+            "required_files_pass": required_pass,
+        },
+        "app": {
+            "exe_found": exe_found is not None,
+            "exe_path": exe_found,
+            "winget_found": False,
+            "winget_detail": None,
+        },
+    }
+
+
 def _collect_status():
     branch, _ = _run(["git", "branch", "--show-current"])
     head, _ = _run(["git", "rev-parse", "--short", "HEAD"])
@@ -102,16 +168,17 @@ def _collect_status():
 
     outbox_files = sorted(OUTBOX_DIR.glob("*.md")) if OUTBOX_DIR.exists() else []
 
-    obsidian_files = list(OBSIDIAN_VAULT_DIR.glob("*.md")) if OBSIDIAN_VAULT_DIR.exists() else []
     compact_files = list(COMPACT_MEMORY_DIR.glob("*.md")) if COMPACT_MEMORY_DIR.exists() else []
 
     ruflo_exists = RUFLO_DIR.exists()
     nm_exists = (RUFLO_DIR / "node_modules").exists() if ruflo_exists else False
     lock_exists = (RUFLO_DIR / "package-lock.json").exists() if ruflo_exists else False
     pkg_name, pkg_version, lifecycle = "unknown", "unknown", []
+    ruflo_source_status = "SOURCE_MISSING"
     if ruflo_exists:
         pkg_path = RUFLO_DIR / "package.json"
         if pkg_path.exists():
+            ruflo_source_status = "SOURCE_PRESENT"
             try:
                 pkg = json.loads(pkg_path.read_text(encoding="utf-8"))
                 pkg_name = pkg.get("name", "unknown")
@@ -121,32 +188,28 @@ def _collect_status():
                 lifecycle = [k for k in pkg.get("scripts", {}) if k in risky]
             except Exception:
                 pass
+        else:
+            ruflo_source_status = "SOURCE_PARTIAL"
+    else:
+        source_cfg = REPO_ROOT / "23_configs" / "ruflo_source.example.json"
+        ruflo_source_status = "SOURCE_MISSING_BOOTSTRAPPABLE" if source_cfg.exists() else "SOURCE_MISSING_NO_CONFIG"
 
     ollama_found = False
     gemma_found = False
-    ollama_ver, orc = _run(["ollama", "--version"])
+    ollama_ver = None
+    ollama_ver_out, orc = _run(["ollama", "--version"])
     if orc == 0:
         ollama_found = True
+        ollama_ver = ollama_ver_out
         models_out, _ = _run(["ollama", "list"])
         if models_out and "gemma" in models_out.lower():
             gemma_found = True
 
     course_helper_exists = (REPO_ROOT / "03_scripts" / "course_certificate_assistant.py").exists()
+    bridge_helper_exists = (REPO_ROOT / "03_scripts" / "cc_codex_bridge.py").exists()
+    obsidian_probe_exists = (REPO_ROOT / "03_scripts" / "obsidian_probe.py").exists()
 
-    import os as _os
-    _local_app = _os.environ.get("LOCALAPPDATA", "")
-    obsidian_exe_candidates = [
-        pathlib.Path(r"C:\Users\ai_sandbox\AppData\Local\Obsidian\Obsidian.exe"),
-        pathlib.Path(r"C:\Program Files\Obsidian\Obsidian.exe"),
-        pathlib.Path(r"C:\Users\ai_sandbox\AppData\Local\Programs\Obsidian\Obsidian.exe"),
-        pathlib.Path(r"C:\Users\Navif\AppData\Local\Programs\Obsidian\Obsidian.exe"),
-    ] + ([pathlib.Path(_local_app) / "Programs" / "Obsidian" / "Obsidian.exe",
-          pathlib.Path(_local_app) / "Obsidian" / "Obsidian.exe"] if _local_app else [])
-    obsidian_exe_found = None
-    for c in obsidian_exe_candidates:
-        if c.exists():
-            obsidian_exe_found = str(c)
-            break
+    obsidian = _probe_obsidian()
 
     latest_lock = locks[-1] if locks else None
     latest_status = statuses[-1] if statuses else None
@@ -170,8 +233,10 @@ def _collect_status():
             "latest_state": latest_status.get("current_state") if latest_status else None,
         },
         "obsidian_vault": {
-            "exists": OBSIDIAN_VAULT_DIR.exists(),
-            "file_count": len(obsidian_files),
+            "exists": obsidian["vault"]["exists"],
+            "file_count": obsidian["vault"]["md_file_count"],
+            "required_files_pass": obsidian["vault"]["required_files_pass"],
+            "required_files": obsidian["vault"]["required_files"],
         },
         "compact_memory": {
             "exists": COMPACT_MEMORY_DIR.exists(),
@@ -179,6 +244,7 @@ def _collect_status():
         },
         "ruflo": {
             "exists": ruflo_exists,
+            "source_status": ruflo_source_status,
             "node_modules": nm_exists,
             "package_lock": lock_exists,
             "name": pkg_name,
@@ -194,16 +260,23 @@ def _collect_status():
         },
         "bridge_status": {
             "cc_codex_automatic": False,
-            "bridge_type": "local_manual_copy_paste",
-            "what_is_less_manual": "context packs, lane locks, dashboard card, ruflo deps installed",
-            "what_still_requires_copy_paste": "handing prompts between Claude/Codex/ChatGPT",
+            "bridge_type": "local_manual_file_handoff",
+            "clipboard": False,
+            "api_calls": False,
+            "auto_send": False,
+            "human_copy_paste_required": True,
+            "bridge_helper_exists": bridge_helper_exists,
+            "init_mode_available": bridge_helper_exists,
         },
         "course_helper": {
             "exists": course_helper_exists,
+            "goal_supported": True,
         },
-        "obsidian_exe": {
-            "found": obsidian_exe_found is not None,
-            "path": obsidian_exe_found,
+        "obsidian_app": {
+            "probe_available": obsidian_probe_exists,
+            "exe_found": obsidian["app"]["exe_found"],
+            "exe_path": obsidian["app"]["exe_path"],
+            "winget_found": obsidian["app"]["winget_found"],
         },
         "safety_flags": {
             "read_only_card": True,
@@ -217,6 +290,11 @@ def _collect_status():
 
 
 def _render_card(status):
+    ruflo = status["ruflo"]
+    obsidian_vault = status["obsidian_vault"]
+    obsidian_app = status["obsidian_app"]
+    bridge = status["bridge_status"]
+
     lines = [
         f"# Ghoti Dashboard Card — {status['milestone']}",
         f"",
@@ -225,11 +303,15 @@ def _render_card(status):
         f"",
         f"## Bridge Status",
         f"- CC/Codex automatic: NO",
+        f"- Bridge type: local manual file handoff",
+        f"- Clipboard: NO",
+        f"- API calls: NO",
+        f"- Auto-send: NO",
+        f"- Human copy-paste required: YES",
+        f"- Bridge helper (cc_codex_bridge.py): {'EXISTS' if bridge['bridge_helper_exists'] else 'MISSING'}",
+        f"- Init mode available: {'YES (--init --dry-run/--apply)' if bridge['init_mode_available'] else 'NO'}",
         f"- No Ruflo runtime wiring: CONFIRMED",
         f"- No automatic CC/Codex control: CONFIRMED",
-        f"- Bridge type: local/manual copy-paste (stronger than N+3.50A)",
-        f"- Less manual now: context packs, lane locks, dashboard, Ruflo deps installable",
-        f"- Still manual: handing prompts between Claude/Codex/ChatGPT",
         f"",
         f"## Prompt Bus",
         f"- Outbox files: {status['prompt_bus']['outbox_count']}",
@@ -242,31 +324,35 @@ def _render_card(status):
         f"- Latest state: {status['agent_lanes']['latest_state'] or '(none)'}",
         f"",
         f"## Obsidian Vault",
-        f"- Exists: {'YES' if status['obsidian_vault']['exists'] else 'NO'}",
-        f"- Markdown files: {status['obsidian_vault']['file_count']}",
+        f"- Exists: {'YES' if obsidian_vault['exists'] else 'NO'}",
+        f"- Markdown files: {obsidian_vault['file_count']}",
+        f"- Required files pass: {'YES' if obsidian_vault['required_files_pass'] else 'NO'}",
         f"",
         f"## Compact Memory",
         f"- Exists: {'YES' if status['compact_memory']['exists'] else 'NO'}",
         f"- Markdown files: {status['compact_memory']['file_count']}",
         f"",
         f"## Ruflo",
-        f"- Path exists: {'YES' if status['ruflo']['exists'] else 'NO'}",
-        f"- Package: {status['ruflo']['name']} v{status['ruflo']['version']}",
-        f"- node_modules: {'INSTALLED' if status['ruflo']['node_modules'] else 'NOT INSTALLED'}",
-        f"- Lifecycle scripts: {status['ruflo']['lifecycle_scripts'] if status['ruflo']['lifecycle_scripts'] else 'NONE (safe)'}",
-        f"- Install blocked: {status['ruflo']['install_blocked']}",
+        f"- Source status: {ruflo['source_status']}",
+        f"- Path exists: {'YES' if ruflo['exists'] else 'NO'}",
+        f"- Package: {ruflo['name']} v{ruflo['version']}",
+        f"- node_modules: {'INSTALLED' if ruflo['node_modules'] else 'NOT INSTALLED'}",
+        f"- Lifecycle scripts: {ruflo['lifecycle_scripts'] if ruflo['lifecycle_scripts'] else 'NONE (safe)'}",
+        f"- Install blocked: {ruflo['install_blocked']}",
         f"- Runtime wiring: NO",
         f"",
         f"## Gemma / Ollama",
-        f"- Ollama: {'FOUND' if status['ollama']['found'] else 'NOT FOUND'}",
+        f"- Ollama: {'FOUND — ' + status['ollama']['version'] if status['ollama']['found'] else 'NOT FOUND'}",
         f"- Gemma model: {'FOUND' if status['ollama']['gemma_found'] else 'NOT FOUND'}",
         f"",
         f"## Course/Certificate Helper",
         f"- course_certificate_assistant.py: {'EXISTS' if status['course_helper']['exists'] else 'MISSING'}",
+        f"- --goal supported: {'YES' if status['course_helper']['goal_supported'] else 'NO'}",
         f"",
-        f"## Obsidian",
-        f"- Vault exists: {'YES' if status['obsidian_vault']['exists'] else 'NO'}",
-        f"- Executable: {'FOUND — ' + status['obsidian_exe']['path'] if status['obsidian_exe']['found'] else 'NOT FOUND (check winget or LOCALAPPDATA)'}",
+        f"## Obsidian App",
+        f"- obsidian_probe.py: {'EXISTS' if obsidian_app['probe_available'] else 'MISSING'}",
+        f"- Executable: {'FOUND — ' + obsidian_app['exe_path'] if obsidian_app['exe_found'] else 'NOT FOUND'}",
+        f"- Winget installed: {'YES' if obsidian_app['winget_found'] else 'NOT DETECTED'}",
         f"",
         f"## Safety Flags",
         f"- Read-only card: YES",
@@ -277,11 +363,12 @@ def _render_card(status):
         f"",
         f"## Next Recommended Commands",
         f"```bash",
+        f"python 03_scripts/obsidian_probe.py --status",
+        f"python 03_scripts/ruflo_install_gate.py --source-status",
         f"python 03_scripts/ruflo_install_gate.py --status",
-        f"python 03_scripts/ruflo_install_gate.py --install --dry-run",
         f"python 03_scripts/gemma_compact_memory_worker.py --status",
-        f"python 03_scripts/prompt_bus.py --write-context-pack --target all --title n3-51 --include-status --include-memory --include-next-actions --dry-run",
-        f"powershell -ExecutionPolicy Bypass -File 03_scripts/open_obsidian_vault.ps1 -Check",
+        f"python 03_scripts/cc_codex_bridge.py --init --dry-run",
+        f"python 03_scripts/prompt_bus.py --write-context-pack --target all --title n3-56-fix --include-status --include-memory --include-next-actions --dry-run",
         f"```",
     ]
     return "\n".join(lines) + "\n"
@@ -297,12 +384,14 @@ def cmd_status(args):
     print(f"Dirty      : {status['dirty']}")
     print(f"Outbox     : {status['prompt_bus']['outbox_count']} files")
     print(f"Locks      : {status['agent_lanes']['active_locks_count']}")
-    print(f"Ruflo      : {'EXISTS' if status['ruflo']['exists'] else 'MISSING'} | node_modules: {'YES' if status['ruflo']['node_modules'] else 'NO'} | lifecycle: {status['ruflo']['lifecycle_scripts'] or 'NONE'}")
+    ruflo = status['ruflo']
+    print(f"Ruflo      : {ruflo['source_status']} | node_modules: {'YES' if ruflo['node_modules'] else 'NO'} | lifecycle: {ruflo['lifecycle_scripts'] or 'NONE'}")
     print(f"Ollama     : {'FOUND' if status['ollama']['found'] else 'NOT FOUND'}")
     print(f"Gemma      : {'FOUND' if status['ollama']['gemma_found'] else 'NOT FOUND'}")
-    print(f"CourseHelp : {'EXISTS' if status['course_helper']['exists'] else 'MISSING'}")
-    print(f"Obsidian   : exe {'FOUND' if status['obsidian_exe']['found'] else 'NOT FOUND'}")
-    print(f"CC/Codex auto: NO | Ruflo runtime: NO")
+    print(f"CourseHelp : {'EXISTS' if status['course_helper']['exists'] else 'MISSING'} (--goal: YES)")
+    print(f"BridgeHelp : {'EXISTS' if status['bridge_status']['bridge_helper_exists'] else 'MISSING'}")
+    print(f"Obsidian   : vault {'YES' if status['obsidian_vault']['exists'] else 'NO'} | exe {'FOUND' if status['obsidian_app']['exe_found'] else 'NOT FOUND'}")
+    print(f"CC/Codex auto: NO | Ruflo runtime: NO | Human approval: REQUIRED")
     print("=== End Status ===")
 
 

@@ -1,4 +1,6 @@
 # open_obsidian_vault.ps1 — Open the Ghoti Obsidian vault in Obsidian (if installed).
+# N+3.56-FIX: unified Obsidian detection — uses obsidian_probe.py if available,
+#             else checks same candidate paths as obsidian_probe.py.
 # Read-only helper. Does not modify vault contents.
 # Safety: no network calls, no writes, no account actions.
 
@@ -9,6 +11,7 @@ param(
 
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 $VaultPath = Join-Path $RepoRoot "14_context\obsidian_vault"
+$ProbeScript = Join-Path $RepoRoot "03_scripts\obsidian_probe.py"
 
 # Always show vault path and existence
 Write-Host "Vault path : $VaultPath"
@@ -23,6 +26,23 @@ if ($Check) {
     Write-Host ""
     Write-Host "=== Obsidian Check ==="
 
+    # Use obsidian_probe.py if available for unified detection
+    if (Test-Path $ProbeScript) {
+        Write-Host "Using obsidian_probe.py for unified detection..."
+        python $ProbeScript --status
+        Write-Host ""
+        Write-Host "--- How to Open Vault ---"
+        $escapedVault = [uri]::EscapeDataString($VaultPath)
+        $obsidianUri = "obsidian://open?path=$escapedVault"
+        Write-Host "  Obsidian URI: $obsidianUri"
+        Write-Host "  Run with -Open flag to launch:"
+        Write-Host "    powershell -ExecutionPolicy Bypass -File '$PSCommandPath' -Open"
+        Write-Host ""
+        Write-Host "=== End Obsidian Check ==="
+        exit 0
+    }
+
+    # Inline fallback if probe script not available
     $required = @("00_Index.md", "01_Current_State.md", "02_Next_Actions.md", "09_Migration_Handoff.md")
     foreach ($f in $required) {
         $fp = Join-Path $VaultPath $f
@@ -48,13 +68,16 @@ if ($Check) {
         Write-Host "  Winget: not available or error: $($_.Exception.Message)"
     }
 
-    # Find likely executable candidates
+    # Find likely executable candidates — same list as obsidian_probe.py
     Write-Host ""
     Write-Host "--- Likely Obsidian Executable Candidates ---"
     $candidates = @(
-        "$env:LOCALAPPDATA\Obsidian\Obsidian.exe",
-        "$env:PROGRAMFILES\Obsidian\Obsidian.exe",
-        "$env:LOCALAPPDATA\Programs\Obsidian\Obsidian.exe"
+        "C:\Users\Navif\AppData\Local\Programs\Obsidian\Obsidian.exe",
+        "C:\Users\ai_sandbox\AppData\Local\Programs\Obsidian\Obsidian.exe",
+        "C:\Users\ai_sandbox\AppData\Local\Obsidian\Obsidian.exe",
+        "C:\Program Files\Obsidian\Obsidian.exe",
+        "$env:LOCALAPPDATA\Programs\Obsidian\Obsidian.exe",
+        "$env:LOCALAPPDATA\Obsidian\Obsidian.exe"
     )
     $found = $false
     foreach ($c in $candidates) {
