@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Ghoti Dashboard — stdlib-only local orchestrator card generator.
 
+N+3.58-FIX: wrapped _probe_obsidian in try/except; added _clean_markdown to
+             strip trailing whitespace from card output.
 N+3.58A: added language_truth section (tracked Java/Rust, Rust toolchain,
          repo language inventory and merge assistant existence fields).
 N+3.56-FIX: updated milestone, unified Obsidian probe, added bridge_helper_exists,
@@ -26,7 +28,7 @@ OBSIDIAN_VAULT_DIR = REPO_ROOT / "14_context" / "obsidian_vault"
 COMPACT_MEMORY_DIR = REPO_ROOT / "14_context" / "compact_memory"
 RUFLO_DIR = REPO_ROOT / "21_repos" / "third_party" / "evals" / "ruflo"
 DASHBOARD_CARD_PATH = REPO_ROOT / "14_context" / "ghoti_dashboard_card.md"
-MILESTONE = "N+3.58A"
+MILESTONE = "N+3.58-FIX"
 
 OBSIDIAN_VAULT_REQUIRED = [
     "00_Index.md",
@@ -34,6 +36,13 @@ OBSIDIAN_VAULT_REQUIRED = [
     "02_Next_Actions.md",
     "09_Migration_Handoff.md",
 ]
+
+
+def _safe_exists(path) -> bool:
+    try:
+        return path.exists()
+    except (PermissionError, OSError, FileNotFoundError):
+        return False
 
 
 def _utc_now():
@@ -59,7 +68,7 @@ def _safe_write_text(dest: pathlib.Path, content: str) -> None:
     """Write text to dest; fall back to Node.js if permission denied. Raises on total failure."""
     try:
         dest.parent.mkdir(parents=True, exist_ok=True)
-        dest.write_text(content, encoding="utf-8")
+        dest.write_text(content, encoding="utf-8", newline="\n")
         return
     except (PermissionError, OSError):
         pass
@@ -261,7 +270,28 @@ def _collect_status():
     bridge_helper_exists = (REPO_ROOT / "03_scripts" / "cc_codex_bridge.py").exists()
     obsidian_probe_exists = (REPO_ROOT / "03_scripts" / "obsidian_probe.py").exists()
 
-    obsidian = _probe_obsidian()
+    obsidian_probe_error = None
+    try:
+        obsidian = _probe_obsidian()
+    except Exception as _obe:
+        obsidian_probe_error = str(_obe)
+        obsidian = {
+            "vault": {
+                "path": "14_context/obsidian_vault",
+                "exists": _safe_exists(OBSIDIAN_VAULT_DIR),
+                "md_file_count": len(list(OBSIDIAN_VAULT_DIR.glob("*.md"))) if _safe_exists(OBSIDIAN_VAULT_DIR) else 0,
+                "required_files": {f: False for f in OBSIDIAN_VAULT_REQUIRED},
+                "required_files_pass": False,
+            },
+            "app": {
+                "exe_found": False,
+                "exe_path": None,
+                "winget_found": False,
+                "winget_detail": None,
+                "probe_error": obsidian_probe_error,
+                "inaccessible_candidates": [],
+            },
+        }
     language_truth = _collect_language_truth()
 
     latest_lock = locks[-1] if locks else None
@@ -340,7 +370,12 @@ def _collect_status():
             "no_automatic_cc_codex_control": True,
             "human_approval_required_for_all_actions": True,
         },
+        "obsidian_probe_error": obsidian_probe_error,
     }
+
+
+def _clean_markdown(text: str) -> str:
+    return "\n".join(line.rstrip() for line in text.splitlines()) + "\n"
 
 
 def _render_card(status):
@@ -438,7 +473,7 @@ def _render_card(status):
         f"python 03_scripts/cc_codex_bridge.py --init --dry-run",
         f"```",
     ]
-    return "\n".join(lines) + "\n"
+    return _clean_markdown("\n".join(lines))
 
 
 def cmd_status(args):
