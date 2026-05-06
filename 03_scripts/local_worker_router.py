@@ -41,6 +41,36 @@ ROUTE_RULES = [
         "reason": "Audit/verification task — route to Codex.",
     },
     {
+        "keywords": ["organize local prompt", "small python automation", "local prompt files",
+                     "automate local", "python automation", "automation script", "organize files"],
+        "route": "python_automation_worker",
+        "reason": "Python automation task -- stdlib file manipulation, no external APIs.",
+    },
+    {
+        "keywords": ["course certificate", "certificate tracker", "study plan", "study tracker",
+                     "coursera", "udemy", "linkedin learning", "badge", "learning path", "course cert"],
+        "route": "course_certificate_assistant",
+        "reason": "Course/cert planning task -- template generation and study tracking only, human does assessments.",
+    },
+    {
+        "keywords": ["ruflo", "orchestrate claude agents", "claude-flow", "ruv-swarm",
+                     "agent swarm", "multi-agent orchestrat", "swarm orchestrat"],
+        "route": "ruflo_orchestrator_candidate",
+        "reason": "Ruflo/swarm orchestration candidate -- isolated from Ghoti runtime until safety gate passes.",
+    },
+    {
+        "keywords": ["obsidian vault", "vault note", "daily note", "note link", "obsidian memory",
+                     "obsidian plugin", "markdown vault"],
+        "route": "obsidian_memory_worker",
+        "reason": "Obsidian vault task -- read-only inspection or local note creation.",
+    },
+    {
+        "keywords": ["prompt bus", "prompt handoff", "copy-paste prompt", "write prompt to outbox",
+                     "handoff to chatgpt", "prompt file outbox"],
+        "route": "prompt_bus_worker",
+        "reason": "Prompt bus task -- write or list prompt files via prompt_bus.py.",
+    },
+    {
         "keywords": ["strategy", "architecture", "plan", "design", "milestone", "roadmap",
                      "next steps", "prompt design", "chatgpt"],
         "route": "chatgpt_strategy",
@@ -60,6 +90,10 @@ ROUTE_DESCRIPTIONS = {
     "claude_code_impl": "Claude Code implementation. Use for reasoning, code, commits.",
     "codex_audit": "Codex audit lane. Use for source-check, spec, safety gate verification.",
     "chatgpt_strategy": "ChatGPT strategy lane. Use for planning, architecture, next-milestone design.",
+    "course_certificate_assistant": "Course/cert tracker. Templates + study plans. Human does all assessments.",
+    "ruflo_orchestrator_candidate": "Ruflo/claude-flow orchestration. Isolated from Ghoti until safety gate passes.",
+    "obsidian_memory_worker": "Obsidian vault tasks. Read-only inspect or local note creation.",
+    "prompt_bus_worker": "Prompt bus tasks. Write/list prompt files via prompt_bus.py.",
     "human_approval_required": "STOP. This task requires explicit human approval before any automation.",
 }
 
