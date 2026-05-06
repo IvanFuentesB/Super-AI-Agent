@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Local Worker Router — routing scaffold for Python/Gemma/Claude/Codex/ChatGPT task dispatch.
 
+N+3.58A: added routes for repo language inventory, Rust readiness, and merge assistant tasks.
 N+3.56-FIX: bridge handoff tasks now route to cc_codex_bridge_worker (not generic codex_audit).
 stdlib only, repo-local, no external APIs, no live actions, no account actions.
 Ollama status check is read-only and disabled by default.
@@ -40,6 +41,25 @@ ROUTE_RULES = [
                      "commit", "edit file", "refactor", "edit dashboard", "javascript", "python script"],
         "route": "claude_code_impl",
         "reason": "Implementation/reasoning task — requires Claude Code.",
+    },
+    {
+        "keywords": ["repo language", "github language", "github shows java", "why does github show",
+                     "java tracked", "no java", "language inventory", "tracked language",
+                     "language stats", "github stats"],
+        "route": "repo_language_inventory_worker",
+        "reason": "Repo language / GitHub language confusion — route to repo_language_inventory.py.",
+    },
+    {
+        "keywords": ["rust readiness", "rust core", "cargo", "rustup", "rustc",
+                     "introduce rust", "add rust", "rust for ghoti", "rust toolchain"],
+        "route": "rust_readiness_worker",
+        "reason": "Rust readiness / toolchain task — route to rust_readiness_probe.py.",
+    },
+    {
+        "keywords": ["merge branch", "merge assistant", "merge plan", "safe merge",
+                     "land branch", "merge audited", "merge n+3"],
+        "route": "merge_assistant_worker",
+        "reason": "Merge assistant task — route to ghoti_merge_assistant.py. Dry-run-first, no auto-merge.",
     },
     {
         "keywords": ["audit", "source check", "source-check", "verify", "spec", "review safety",
@@ -108,6 +128,9 @@ ROUTE_DESCRIPTIONS = {
     "ruflo_orchestrator_candidate": "Ruflo/claude-flow orchestration. Isolated from Ghoti until safety gate passes.",
     "obsidian_memory_worker": "Obsidian vault tasks. Read-only inspect or local note creation.",
     "prompt_bus_worker": "Prompt bus tasks. Write/list prompt files via prompt_bus.py.",
+    "repo_language_inventory_worker": "Repo language inventory. Routes to repo_language_inventory.py — explains GitHub language discrepancy, stdlib only.",
+    "rust_readiness_worker": "Rust readiness probe. Routes to rust_readiness_probe.py — no install, read-only toolchain detection.",
+    "merge_assistant_worker": "Merge assistant. Routes to ghoti_merge_assistant.py — generates merge commands only, no auto-merge.",
     "human_approval_required": "STOP. This task requires explicit human approval before any automation.",
 }
 
@@ -230,7 +253,7 @@ def main():
     parser = argparse.ArgumentParser(
         description=(
             "Local Worker Router — recommend where to route a task. "
-            "stdlib only, no live actions, no API calls. N+3.56-FIX."
+            "stdlib only, no live actions, no API calls. N+3.58A."
         )
     )
     group = parser.add_mutually_exclusive_group(required=True)

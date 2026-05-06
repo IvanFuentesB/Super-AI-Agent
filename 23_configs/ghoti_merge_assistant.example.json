@@ -1,0 +1,25 @@
+{
+  "milestone": "N+3.58A",
+  "script": "03_scripts/ghoti_merge_assistant.py",
+  "purpose": "Help the operator merge audited branches safely. Dry-run-first. No merge/push by default. Generates operator commands and validation checklist.",
+  "commands": {
+    "status": "python 03_scripts/ghoti_merge_assistant.py --status",
+    "plan_dry_run": "python 03_scripts/ghoti_merge_assistant.py --plan --target-branch origin/feat/ghoti-agent-claude-n3-56-fix-bridge-ruflo-gemma-clean-pass --dry-run",
+    "plan_apply": "python 03_scripts/ghoti_merge_assistant.py --plan --target-branch origin/feat/ghoti-agent-claude-n3-56-fix-bridge-ruflo-gemma-clean-pass --apply"
+  },
+  "output_path": "14_context/tooling/merge_assistant_n3_58.md",
+  "main_branch": "feat/ghoti-visible-operator-stack",
+  "safety": {
+    "no_auto_merge": true,
+    "no_auto_push": true,
+    "dry_run_first": true,
+    "commands_only": true,
+    "operator_executes_manually": true
+  },
+  "pre_merge_requirements": [
+    "Codex N+3.56-FIX audit must say PASS",
+    "Do not merge if Codex says BLOCKED",
+    "Primary worktree must be clean or dirt intentionally staged",
+    "All validation scripts must pass"
+  ]
+}

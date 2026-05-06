@@ -1,0 +1,21 @@
+{
+  "milestone": "N+3.58A",
+  "script": "03_scripts/repo_language_inventory.py",
+  "purpose": "Truthfully inspect tracked repository language files. Explains why GitHub may show Java/Rust when none is tracked.",
+  "commands": {
+    "status": "python 03_scripts/repo_language_inventory.py --status",
+    "json": "python 03_scripts/repo_language_inventory.py --json",
+    "report_dry_run": "python 03_scripts/repo_language_inventory.py --report --dry-run",
+    "report_apply": "python 03_scripts/repo_language_inventory.py --report --apply",
+    "status_untracked": "python 03_scripts/repo_language_inventory.py --status --include-untracked"
+  },
+  "output_path": "14_context/tooling/repo_language_inventory_n3_58.md",
+  "safety": {
+    "no_network": true,
+    "no_external_apis": true,
+    "stdlib_only": true,
+    "read_only_except_apply": true
+  },
+  "skip_dirs": [".git", "node_modules", ".venv", "venv", "__pycache__", "05_logs", "output"],
+  "notes": "GitHub may show Java due to untracked third-party content, generated files, or stale cache. git ls-files is the source of truth for tracked files."
+}

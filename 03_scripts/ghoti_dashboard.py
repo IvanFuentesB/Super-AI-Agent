@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Ghoti Dashboard — stdlib-only local orchestrator card generator.
 
+N+3.58A: added language_truth section (tracked Java/Rust, Rust toolchain,
+         repo language inventory and merge assistant existence fields).
 N+3.56-FIX: updated milestone, unified Obsidian probe, added bridge_helper_exists,
              explicit bridge truth labels in JSON, source_status field.
 N+3.51A: updated card to N+3.51A, added safe_write fallback, git HEAD,
@@ -24,7 +26,7 @@ OBSIDIAN_VAULT_DIR = REPO_ROOT / "14_context" / "obsidian_vault"
 COMPACT_MEMORY_DIR = REPO_ROOT / "14_context" / "compact_memory"
 RUFLO_DIR = REPO_ROOT / "21_repos" / "third_party" / "evals" / "ruflo"
 DASHBOARD_CARD_PATH = REPO_ROOT / "14_context" / "ghoti_dashboard_card.md"
-MILESTONE = "N+3.56-FIX"
+MILESTONE = "N+3.58A"
 
 OBSIDIAN_VAULT_REQUIRED = [
     "00_Index.md",
@@ -158,6 +160,56 @@ def _probe_obsidian():
     }
 
 
+def _collect_language_truth():
+    """Collect tracked Java/Rust status and Rust toolchain presence. Graceful fallback."""
+    try:
+        r = subprocess.run(
+            ["git", "ls-files"], capture_output=True, text=True,
+            cwd=str(REPO_ROOT), timeout=10
+        )
+        files = r.stdout.splitlines() if r.returncode == 0 else []
+        tracked_java = [f for f in files if f.endswith(".java")]
+        tracked_rs = [f for f in files if f.endswith(".rs")]
+        tracked_cargo = [f for f in files if f.endswith("Cargo.toml") or f.endswith("Cargo.lock")]
+    except Exception:
+        tracked_java, tracked_rs, tracked_cargo = [], [], []
+
+    def _probe_tool(cmd):
+        try:
+            res = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+            return res.returncode == 0, res.stdout.strip()
+        except Exception:
+            return False, None
+
+    rustc_ok, rustc_ver = _probe_tool(["rustc", "--version"])
+    cargo_ok, _ = _probe_tool(["cargo", "--version"])
+    rustup_ok, _ = _probe_tool(["rustup", "--version"])
+
+    lang_inv_exists = (REPO_ROOT / "03_scripts" / "repo_language_inventory.py").exists()
+    merge_asst_exists = (REPO_ROOT / "03_scripts" / "ghoti_merge_assistant.py").exists()
+    rust_probe_exists = (REPO_ROOT / "03_scripts" / "rust_readiness_probe.py").exists()
+
+    return {
+        "tracked_java": "NONE" if not tracked_java else str(len(tracked_java)),
+        "tracked_rust": "NONE" if not tracked_rs else str(len(tracked_rs)),
+        "tracked_cargo_manifests": "NONE" if not tracked_cargo else str(tracked_cargo),
+        "rust_toolchain": {
+            "rustc": rustc_ok,
+            "cargo": cargo_ok,
+            "rustup": rustup_ok,
+            "any_found": rustc_ok or cargo_ok or rustup_ok,
+        },
+        "runtime_language_truth": (
+            "Python + Node/JS + PowerShell currently; Rust later when stable core is justified"
+        ),
+        "repo_language_inventory_script": lang_inv_exists,
+        "merge_assistant_script": merge_asst_exists,
+        "rust_readiness_probe_script": rust_probe_exists,
+        "rewrite_to_rust_now": False,
+        "java_planned": False,
+    }
+
+
 def _collect_status():
     branch, _ = _run(["git", "branch", "--show-current"])
     head, _ = _run(["git", "rev-parse", "--short", "HEAD"])
@@ -210,6 +262,7 @@ def _collect_status():
     obsidian_probe_exists = (REPO_ROOT / "03_scripts" / "obsidian_probe.py").exists()
 
     obsidian = _probe_obsidian()
+    language_truth = _collect_language_truth()
 
     latest_lock = locks[-1] if locks else None
     latest_status = statuses[-1] if statuses else None
@@ -278,6 +331,7 @@ def _collect_status():
             "exe_path": obsidian["app"]["exe_path"],
             "winget_found": obsidian["app"]["winget_found"],
         },
+        "language_truth": language_truth,
         "safety_flags": {
             "read_only_card": True,
             "no_live_actions": True,
@@ -354,6 +408,19 @@ def _render_card(status):
         f"- Executable: {'FOUND — ' + obsidian_app['exe_path'] if obsidian_app['exe_found'] else 'NOT FOUND'}",
         f"- Winget installed: {'YES' if obsidian_app['winget_found'] else 'NOT DETECTED'}",
         f"",
+        f"## Language Truth (N+3.58A)",
+        f"- Tracked Java: {status['language_truth']['tracked_java']}",
+        f"- Tracked Rust: {status['language_truth']['tracked_rust']}",
+        f"- Rust toolchain (rustc): {'FOUND' if status['language_truth']['rust_toolchain']['rustc'] else 'NOT FOUND'}",
+        f"- Rust toolchain (cargo): {'FOUND' if status['language_truth']['rust_toolchain']['cargo'] else 'NOT FOUND'}",
+        f"- Rust toolchain (rustup): {'FOUND' if status['language_truth']['rust_toolchain']['rustup'] else 'NOT FOUND'}",
+        f"- Runtime language truth: {status['language_truth']['runtime_language_truth']}",
+        f"- repo_language_inventory.py: {'EXISTS' if status['language_truth']['repo_language_inventory_script'] else 'MISSING'}",
+        f"- merge_assistant.py: {'EXISTS' if status['language_truth']['merge_assistant_script'] else 'MISSING'}",
+        f"- rust_readiness_probe.py: {'EXISTS' if status['language_truth']['rust_readiness_probe_script'] else 'MISSING'}",
+        f"- Rewrite to Rust now: NO",
+        f"- Java planned: NO",
+        f"",
         f"## Safety Flags",
         f"- Read-only card: YES",
         f"- No live actions: YES",
@@ -363,12 +430,12 @@ def _render_card(status):
         f"",
         f"## Next Recommended Commands",
         f"```bash",
+        f"python 03_scripts/repo_language_inventory.py --status",
+        f"python 03_scripts/rust_readiness_probe.py --status",
+        f"python 03_scripts/ghoti_merge_assistant.py --status",
         f"python 03_scripts/obsidian_probe.py --status",
         f"python 03_scripts/ruflo_install_gate.py --source-status",
-        f"python 03_scripts/ruflo_install_gate.py --status",
-        f"python 03_scripts/gemma_compact_memory_worker.py --status",
         f"python 03_scripts/cc_codex_bridge.py --init --dry-run",
-        f"python 03_scripts/prompt_bus.py --write-context-pack --target all --title n3-56-fix --include-status --include-memory --include-next-actions --dry-run",
         f"```",
     ]
     return "\n".join(lines) + "\n"
@@ -391,6 +458,9 @@ def cmd_status(args):
     print(f"CourseHelp : {'EXISTS' if status['course_helper']['exists'] else 'MISSING'} (--goal: YES)")
     print(f"BridgeHelp : {'EXISTS' if status['bridge_status']['bridge_helper_exists'] else 'MISSING'}")
     print(f"Obsidian   : vault {'YES' if status['obsidian_vault']['exists'] else 'NO'} | exe {'FOUND' if status['obsidian_app']['exe_found'] else 'NOT FOUND'}")
+    lt = status["language_truth"]
+    print(f"LangInventory: {'EXISTS' if lt['repo_language_inventory_script'] else 'MISSING'} | MergeAsst: {'EXISTS' if lt['merge_assistant_script'] else 'MISSING'} | RustProbe: {'EXISTS' if lt['rust_readiness_probe_script'] else 'MISSING'}")
+    print(f"Tracked Java: {lt['tracked_java']} | Tracked Rust: {lt['tracked_rust']} | Rust toolchain: {'ANY FOUND' if lt['rust_toolchain']['any_found'] else 'NOT FOUND'}")
     print(f"CC/Codex auto: NO | Ruflo runtime: NO | Human approval: REQUIRED")
     print("=== End Status ===")
 

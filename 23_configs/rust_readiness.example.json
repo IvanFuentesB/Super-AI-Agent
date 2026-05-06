@@ -1,0 +1,29 @@
+{
+  "milestone": "N+3.58A",
+  "script": "03_scripts/rust_readiness_probe.py",
+  "purpose": "Check whether Rust tools exist locally. Decide whether Rust should be introduced now or later. No install by default.",
+  "commands": {
+    "status": "python 03_scripts/rust_readiness_probe.py --status",
+    "json": "python 03_scripts/rust_readiness_probe.py --json",
+    "bootstrap_plan_dry_run": "python 03_scripts/rust_readiness_probe.py --bootstrap-plan --dry-run",
+    "bootstrap_plan_apply": "python 03_scripts/rust_readiness_probe.py --bootstrap-plan --apply"
+  },
+  "output_path": "14_context/tooling/rust_readiness_n3_58.md",
+  "safety": {
+    "no_install": true,
+    "no_global_changes": true,
+    "no_network": true,
+    "stdlib_only": true,
+    "read_only_except_apply": true
+  },
+  "recommendation": {
+    "rewrite_now": false,
+    "statement": "Do not rewrite Python/Node MVP into Rust yet.",
+    "future_statement": "Introduce Rust later for stable runtime core only."
+  },
+  "future_install_doc_only": {
+    "note": "Do not execute without operator approval.",
+    "winget": "winget install Rustlang.Rustup",
+    "set_default": "rustup default stable"
+  }
+}
