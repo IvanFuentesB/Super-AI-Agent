@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Ghoti Dashboard — stdlib-only local orchestrator card generator.
 
+N+3.61A: added llm_council section (script/config existence, mode, external flag, safety).
 N+3.58-FIX: wrapped _probe_obsidian in try/except; added _clean_markdown to
              strip trailing whitespace from card output.
 N+3.58A: added language_truth section (tracked Java/Rust, Rust toolchain,
@@ -28,7 +29,7 @@ OBSIDIAN_VAULT_DIR = REPO_ROOT / "14_context" / "obsidian_vault"
 COMPACT_MEMORY_DIR = REPO_ROOT / "14_context" / "compact_memory"
 RUFLO_DIR = REPO_ROOT / "21_repos" / "third_party" / "evals" / "ruflo"
 DASHBOARD_CARD_PATH = REPO_ROOT / "14_context" / "ghoti_dashboard_card.md"
-MILESTONE = "N+3.58-FIX"
+MILESTONE = "N+3.61A"
 
 OBSIDIAN_VAULT_REQUIRED = [
     "00_Index.md",
@@ -169,6 +170,37 @@ def _probe_obsidian():
     }
 
 
+def _collect_llm_council():
+    """Collect LLM Council scaffold status. No external calls."""
+    script_exists = (REPO_ROOT / "03_scripts" / "llm_council_runner.py").exists()
+    config_path = REPO_ROOT / "23_configs" / "llm_council.example.json"
+    config_exists = config_path.exists()
+
+    default_mode = "local_demo"
+    external_enabled = False
+    if config_exists:
+        try:
+            cfg = json.loads(config_path.read_text(encoding="utf-8"))
+            default_mode = cfg.get("default_provider_mode", "local_demo")
+            external_enabled = cfg.get("external_enabled", False)
+        except Exception:
+            pass
+
+    sessions_dir = REPO_ROOT / "05_logs" / "llm_council_runs"
+    session_count = len(list(sessions_dir.glob("*.json"))) if sessions_dir.exists() else 0
+
+    return {
+        "script_exists": script_exists,
+        "config_exists": config_exists,
+        "default_mode": default_mode,
+        "external_enabled": external_enabled,
+        "local_demo_available": script_exists,
+        "runtime_wiring": False,
+        "autonomous_actions": False,
+        "session_count": session_count,
+    }
+
+
 def _collect_language_truth():
     """Collect tracked Java/Rust status and Rust toolchain presence. Graceful fallback."""
     try:
@@ -293,6 +325,7 @@ def _collect_status():
             },
         }
     language_truth = _collect_language_truth()
+    llm_council = _collect_llm_council()
 
     latest_lock = locks[-1] if locks else None
     latest_status = statuses[-1] if statuses else None
@@ -362,6 +395,7 @@ def _collect_status():
             "winget_found": obsidian["app"]["winget_found"],
         },
         "language_truth": language_truth,
+        "llm_council": llm_council,
         "safety_flags": {
             "read_only_card": True,
             "no_live_actions": True,
@@ -456,6 +490,15 @@ def _render_card(status):
         f"- Rewrite to Rust now: NO",
         f"- Java planned: NO",
         f"",
+        f"## LLM Council (N+3.61A)",
+        f"- LLM Council: {'scaffold EXISTS' if status['llm_council']['script_exists'] else 'MISSING'}",
+        f"- Config: {'EXISTS' if status['llm_council']['config_exists'] else 'MISSING'}",
+        f"- Default mode: {status['llm_council']['default_mode']}",
+        f"- External providers: {'ENABLED (check config!)' if status['llm_council']['external_enabled'] else 'DISABLED by default'}",
+        f"- Local demo available: {'YES' if status['llm_council']['local_demo_available'] else 'NO'}",
+        f"- Runtime wiring: {'YES (check!)' if status['llm_council']['runtime_wiring'] else 'NO autonomous actions'}",
+        f"- Human review: REQUIRED",
+        f"",
         f"## Safety Flags",
         f"- Read-only card: YES",
         f"- No live actions: YES",
@@ -497,6 +540,8 @@ def cmd_status(args):
     print(f"LangInventory: {'EXISTS' if lt['repo_language_inventory_script'] else 'MISSING'} | MergeAsst: {'EXISTS' if lt['merge_assistant_script'] else 'MISSING'} | RustProbe: {'EXISTS' if lt['rust_readiness_probe_script'] else 'MISSING'}")
     print(f"Tracked Java: {lt['tracked_java']} | Tracked Rust: {lt['tracked_rust']} | Rust toolchain: {'ANY FOUND' if lt['rust_toolchain']['any_found'] else 'NOT FOUND'}")
     print(f"CC/Codex auto: NO | Ruflo runtime: NO | Human approval: REQUIRED")
+    lc = status["llm_council"]
+    print(f"LLMCouncil : {'EXISTS' if lc['script_exists'] else 'MISSING'} | mode: {lc['default_mode']} | external: {'ENABLED' if lc['external_enabled'] else 'DISABLED'} | wiring: {'YES' if lc['runtime_wiring'] else 'NO'}")
     print("=== End Status ===")
 
 

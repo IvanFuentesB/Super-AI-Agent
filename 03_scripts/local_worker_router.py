@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Local Worker Router — routing scaffold for Python/Gemma/Claude/Codex/ChatGPT task dispatch.
 
+N+3.61A: added llm_council_worker route for Karpathy-style LLM council tasks.
 N+3.58A: added routes for repo language inventory, Rust readiness, and merge assistant tasks.
 N+3.56-FIX: bridge handoff tasks now route to cc_codex_bridge_worker (not generic codex_audit).
 stdlib only, repo-local, no external APIs, no live actions, no account actions.
@@ -17,6 +18,13 @@ LOCAL_WORKERS_DIR = REPO_ROOT / "14_context" / "local_workers"
 ROUTING_CONFIG = REPO_ROOT / "23_configs" / "local_worker_routing.example.json"
 
 ROUTE_RULES = [
+    {
+        "keywords": ["llm council", "model council", "ai council", "karpathy council",
+                     "multi model debate", "chairman synthesis", "peer review models",
+                     "ask multiple llms", "compare model answers"],
+        "route": "llm_council_worker",
+        "reason": "LLM council task — route to llm_council_runner.py. Local-first, no external API by default.",
+    },
     {
         "keywords": ["bridge handoff", "cc codex bridge", "codex bridge", "create bridge",
                      "handoff for claude code and codex", "bridge for claude", "write handoff"],
@@ -118,6 +126,7 @@ ROUTE_RULES = [
 ]
 
 ROUTE_DESCRIPTIONS = {
+    "llm_council_worker": "LLM Council lane. Routes to llm_council_runner.py — local-first 3-stage council. No external API by default. NO autonomous actions.",
     "cc_codex_bridge_worker": "CC/Codex bridge lane. Routes to cc_codex_bridge.py — local file handoff only. CC/Codex automatic = NO.",
     "python_automation_worker": "Safe local Python script. stdlib only, no external APIs.",
     "gemma_local_worker": "Local Ollama/Gemma inference. Draft only — human review before canonical use.",

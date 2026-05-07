@@ -1,7 +1,7 @@
-# Ghoti Dashboard Card — N+3.58-FIX
+# Ghoti Dashboard Card — N+3.61A
 
-Generated: 2026-05-06 21:30 UTC
-Branch: `feat/ghoti-agent-claude-n3-58-fix-obsidian-dashboard-whitespace` | HEAD: `8a4a04d` | Dirty: 3 dirty files
+Generated: 2026-05-07 07:24 UTC
+Branch: `feat/ghoti-agent-claude-n3-61-llm-council-clean-merge-readiness` | HEAD: `ffc9cc0` | Dirty: 13 dirty files
 
 ## Bridge Status
 - CC/Codex automatic: NO
@@ -20,10 +20,10 @@ Branch: `feat/ghoti-agent-claude-n3-58-fix-obsidian-dashboard-whitespace` | HEAD
 - Latest: (none)
 
 ## Agent Lanes
-- Active locks: 7
-- Status records: 13
-- Latest agent: claude_code_n3_58a
-- Latest state: implementation_complete_validation_passed
+- Active locks: 9
+- Status records: 16
+- Latest agent: claude_code_n3_61a
+- Latest state: implementation_started
 
 ## Obsidian Vault
 - Exists: YES
@@ -68,6 +68,15 @@ Branch: `feat/ghoti-agent-claude-n3-58-fix-obsidian-dashboard-whitespace` | HEAD
 - rust_readiness_probe.py: EXISTS
 - Rewrite to Rust now: NO
 - Java planned: NO
+
+## LLM Council (N+3.61A)
+- LLM Council: scaffold EXISTS
+- Config: EXISTS
+- Default mode: local_demo
+- External providers: DISABLED by default
+- Local demo available: YES
+- Runtime wiring: NO autonomous actions
+- Human review: REQUIRED
 
 ## Safety Flags
 - Read-only card: YES
