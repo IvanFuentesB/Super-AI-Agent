@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Ghoti Dashboard — stdlib-only local orchestrator card generator.
 
+N+3.63A: added external_repo_intake and content_money_workflow sections.
 N+3.61A: added llm_council section (script/config existence, mode, external flag, safety).
 N+3.58-FIX: wrapped _probe_obsidian in try/except; added _clean_markdown to
              strip trailing whitespace from card output.
@@ -29,7 +30,7 @@ OBSIDIAN_VAULT_DIR = REPO_ROOT / "14_context" / "obsidian_vault"
 COMPACT_MEMORY_DIR = REPO_ROOT / "14_context" / "compact_memory"
 RUFLO_DIR = REPO_ROOT / "21_repos" / "third_party" / "evals" / "ruflo"
 DASHBOARD_CARD_PATH = REPO_ROOT / "14_context" / "ghoti_dashboard_card.md"
-MILESTONE = "N+3.61A"
+MILESTONE = "N+3.63A"
 
 OBSIDIAN_VAULT_REQUIRED = [
     "00_Index.md",
@@ -251,6 +252,47 @@ def _collect_language_truth():
     }
 
 
+def _collect_external_repo_intake():
+    """Collect external repo intake scaffold status. No network calls."""
+    script_exists = (REPO_ROOT / "03_scripts" / "external_repo_intake.py").exists()
+    catalog_config_exists = (REPO_ROOT / "23_configs" / "external_repo_intake.example.json").exists()
+    catalog_doc_exists = (REPO_ROOT / "14_context" / "tooling" / "external_repo_intake_catalog_n3_63.md").exists()
+    risk_doc_exists = (REPO_ROOT / "14_context" / "tooling" / "external_repo_risk_report_n3_63.md").exists()
+    return {
+        "script_exists": script_exists,
+        "catalog_config_exists": catalog_config_exists,
+        "catalog_doc_exists": catalog_doc_exists,
+        "risk_doc_exists": risk_doc_exists,
+        "tracked_candidates_count": 5,
+        "openfang_candidates_tracked": ["openfang_python_gateway", "openfang_rust_agent_os"],
+        "moneyprinter_candidates_tracked": ["moneyprinter_shorts", "moneyprinter_v2"],
+        "clone_allowed_now": False,
+        "install_allowed_now": False,
+        "runtime_wiring": False,
+    }
+
+
+def _collect_content_money_workflow():
+    """Collect content money workflow scaffold status. No network calls."""
+    script_exists = (REPO_ROOT / "03_scripts" / "content_money_workflow.py").exists()
+    config_exists = (REPO_ROOT / "23_configs" / "content_money_workflow.example.json").exists()
+    output_dir = REPO_ROOT / "14_context" / "content_workflows"
+    output_dir_exists = output_dir.exists()
+    plans = list(output_dir.glob("plan_*.json")) if output_dir_exists else []
+    shot_lists = list(output_dir.glob("shot_list_*.json")) if output_dir_exists else []
+    return {
+        "script_exists": script_exists,
+        "config_exists": config_exists,
+        "planning_only": True,
+        "live_posting": False,
+        "human_review_required": True,
+        "output_dir_exists": output_dir_exists,
+        "saved_plans": len(plans),
+        "saved_shot_lists": len(shot_lists),
+        "publishing_enabled": False,
+    }
+
+
 def _collect_status():
     branch, _ = _run(["git", "branch", "--show-current"])
     head, _ = _run(["git", "rev-parse", "--short", "HEAD"])
@@ -326,6 +368,8 @@ def _collect_status():
         }
     language_truth = _collect_language_truth()
     llm_council = _collect_llm_council()
+    external_repo_intake = _collect_external_repo_intake()
+    content_money_workflow = _collect_content_money_workflow()
 
     latest_lock = locks[-1] if locks else None
     latest_status = statuses[-1] if statuses else None
@@ -396,6 +440,8 @@ def _collect_status():
         },
         "language_truth": language_truth,
         "llm_council": llm_council,
+        "external_repo_intake": external_repo_intake,
+        "content_money_workflow": content_money_workflow,
         "safety_flags": {
             "read_only_card": True,
             "no_live_actions": True,
@@ -499,6 +545,26 @@ def _render_card(status):
         f"- Runtime wiring: {'YES (check!)' if status['llm_council']['runtime_wiring'] else 'NO autonomous actions'}",
         f"- Human review: REQUIRED",
         f"",
+        f"## External Repo Intake (N+3.63A)",
+        f"- external_repo_intake.py: {'EXISTS' if status['external_repo_intake']['script_exists'] else 'MISSING'}",
+        f"- OpenFang candidates tracked: {'YES (' + ', '.join(status['external_repo_intake']['openfang_candidates_tracked']) + ')' if status['external_repo_intake']['openfang_candidates_tracked'] else 'NO'}",
+        f"- MoneyPrinter candidates tracked: {'YES (' + ', '.join(status['external_repo_intake']['moneyprinter_candidates_tracked']) + ')' if status['external_repo_intake']['moneyprinter_candidates_tracked'] else 'NO'}",
+        f"- Clone/install/runtime wiring: NO",
+        f"- Catalog config: {'EXISTS' if status['external_repo_intake']['catalog_config_exists'] else 'MISSING'}",
+        f"- Catalog doc: {'EXISTS' if status['external_repo_intake']['catalog_doc_exists'] else 'MISSING'}",
+        f"- Risk report: {'EXISTS' if status['external_repo_intake']['risk_doc_exists'] else 'MISSING'}",
+        f"",
+        f"## Content Money Workflow (N+3.63A)",
+        f"- content_money_workflow.py: {'EXISTS' if status['content_money_workflow']['script_exists'] else 'MISSING'}",
+        f"- Config: {'EXISTS' if status['content_money_workflow']['config_exists'] else 'MISSING'}",
+        f"- Planning only: YES",
+        f"- Live posting: NO",
+        f"- Human review gate: REQUIRED",
+        f"- Goal: one safe local artifact-to-manual-publish workflow",
+        f"- Output dir (14_context/content_workflows/): {'EXISTS' if status['content_money_workflow']['output_dir_exists'] else 'NOT YET CREATED'}",
+        f"- Saved plans: {status['content_money_workflow']['saved_plans']}",
+        f"- Saved shot lists: {status['content_money_workflow']['saved_shot_lists']}",
+        f"",
         f"## Safety Flags",
         f"- Read-only card: YES",
         f"- No live actions: YES",
@@ -542,6 +608,10 @@ def cmd_status(args):
     print(f"CC/Codex auto: NO | Ruflo runtime: NO | Human approval: REQUIRED")
     lc = status["llm_council"]
     print(f"LLMCouncil : {'EXISTS' if lc['script_exists'] else 'MISSING'} | mode: {lc['default_mode']} | external: {'ENABLED' if lc['external_enabled'] else 'DISABLED'} | wiring: {'YES' if lc['runtime_wiring'] else 'NO'}")
+    eri = status["external_repo_intake"]
+    print(f"ExtRepoIntake: {'EXISTS' if eri['script_exists'] else 'MISSING'} | candidates: {eri['tracked_candidates_count']} | clone/install/wiring: NO")
+    cmw = status["content_money_workflow"]
+    print(f"ContentWorkflow: {'EXISTS' if cmw['script_exists'] else 'MISSING'} | planning_only: YES | live_posting: NO | human_review: REQUIRED")
     print("=== End Status ===")
 
 

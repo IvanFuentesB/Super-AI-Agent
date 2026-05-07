@@ -1,7 +1,7 @@
-# Ghoti Dashboard Card — N+3.61A
+# Ghoti Dashboard Card — N+3.63A
 
-Generated: 2026-05-07 07:24 UTC
-Branch: `feat/ghoti-agent-claude-n3-61-llm-council-clean-merge-readiness` | HEAD: `ffc9cc0` | Dirty: 13 dirty files
+Generated: 2026-05-07 07:39 UTC
+Branch: `feat/ghoti-agent-claude-n3-63-openfang-moneyprinter-content-runway` | HEAD: `d807c5a` | Dirty: 17 dirty files
 
 ## Bridge Status
 - CC/Codex automatic: NO
@@ -20,9 +20,9 @@ Branch: `feat/ghoti-agent-claude-n3-61-llm-council-clean-merge-readiness` | HEAD
 - Latest: (none)
 
 ## Agent Lanes
-- Active locks: 9
-- Status records: 16
-- Latest agent: claude_code_n3_61a
+- Active locks: 10
+- Status records: 18
+- Latest agent: claude_code_n3_63a
 - Latest state: implementation_started
 
 ## Obsidian Vault
@@ -77,6 +77,26 @@ Branch: `feat/ghoti-agent-claude-n3-61-llm-council-clean-merge-readiness` | HEAD
 - Local demo available: YES
 - Runtime wiring: NO autonomous actions
 - Human review: REQUIRED
+
+## External Repo Intake (N+3.63A)
+- external_repo_intake.py: EXISTS
+- OpenFang candidates tracked: YES (openfang_python_gateway, openfang_rust_agent_os)
+- MoneyPrinter candidates tracked: YES (moneyprinter_shorts, moneyprinter_v2)
+- Clone/install/runtime wiring: NO
+- Catalog config: EXISTS
+- Catalog doc: EXISTS
+- Risk report: EXISTS
+
+## Content Money Workflow (N+3.63A)
+- content_money_workflow.py: EXISTS
+- Config: EXISTS
+- Planning only: YES
+- Live posting: NO
+- Human review gate: REQUIRED
+- Goal: one safe local artifact-to-manual-publish workflow
+- Output dir (14_context/content_workflows/): EXISTS
+- Saved plans: 1
+- Saved shot lists: 1
 
 ## Safety Flags
 - Read-only card: YES

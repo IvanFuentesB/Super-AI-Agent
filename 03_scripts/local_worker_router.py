@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Local Worker Router — routing scaffold for Python/Gemma/Claude/Codex/ChatGPT task dispatch.
 
+N+3.63A: added external_repo_intake_worker and content_money_workflow_worker routes.
 N+3.61A: added llm_council_worker route for Karpathy-style LLM council tasks.
 N+3.58A: added routes for repo language inventory, Rust readiness, and merge assistant tasks.
 N+3.56-FIX: bridge handoff tasks now route to cc_codex_bridge_worker (not generic codex_audit).
@@ -18,6 +19,21 @@ LOCAL_WORKERS_DIR = REPO_ROOT / "14_context" / "local_workers"
 ROUTING_CONFIG = REPO_ROOT / "23_configs" / "local_worker_routing.example.json"
 
 ROUTE_RULES = [
+    {
+        "keywords": ["openfang", "open fang", "moneyprinter", "devbysami",
+                     "external repo intake", "repo intake", "third party repo",
+                     "evaluate repo", "moneyprinterv2", "money printer repo"],
+        "route": "external_repo_intake_worker",
+        "reason": "External repo intake task — route to external_repo_intake.py. No clone/install/run. Intake and planning only.",
+    },
+    {
+        "keywords": ["money workflow", "youtube shorts", "faceless shorts", "content money",
+                     "make shorts", "content pipeline", "shot list", "viral shorts",
+                     "content experiment", "money printer workflow", "shorts pipeline",
+                     "content plan", "niche content"],
+        "route": "content_money_workflow_worker",
+        "reason": "Content money workflow task — route to content_money_workflow.py. Planning only. No upload, no live posting.",
+    },
     {
         "keywords": ["llm council", "model council", "ai council", "karpathy council",
                      "multi model debate", "chairman synthesis", "peer review models",
@@ -126,6 +142,8 @@ ROUTE_RULES = [
 ]
 
 ROUTE_DESCRIPTIONS = {
+    "external_repo_intake_worker": "External repo intake lane. Routes to external_repo_intake.py — catalog/intake only. No clone/install/run. Intake and planning only.",
+    "content_money_workflow_worker": "Content money workflow lane. Routes to content_money_workflow.py — planning artifacts only. No upload, no live posting, no account actions.",
     "llm_council_worker": "LLM Council lane. Routes to llm_council_runner.py — local-first 3-stage council. No external API by default. NO autonomous actions.",
     "cc_codex_bridge_worker": "CC/Codex bridge lane. Routes to cc_codex_bridge.py — local file handoff only. CC/Codex automatic = NO.",
     "python_automation_worker": "Safe local Python script. stdlib only, no external APIs.",
@@ -262,7 +280,7 @@ def main():
     parser = argparse.ArgumentParser(
         description=(
             "Local Worker Router — recommend where to route a task. "
-            "stdlib only, no live actions, no API calls. N+3.58A."
+            "stdlib only, no live actions, no API calls. N+3.63A."
         )
     )
     group = parser.add_mutually_exclusive_group(required=True)

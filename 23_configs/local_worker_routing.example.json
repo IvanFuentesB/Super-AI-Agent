@@ -1,9 +1,57 @@
 {
   "_meta": {
-    "version": "N+3.58A",
-    "description": "Local worker routing config example. N+3.58A: added repo_language_inventory_worker, rust_readiness_worker, merge_assistant_worker.",
+    "version": "N+3.63A",
+    "description": "Local worker routing config example. N+3.63A: added external_repo_intake_worker and content_money_workflow_worker.",
     "note": "Do not add real API keys or credentials to this file. This is a schema example only.",
-    "last_updated": "2026-05-06"
+    "last_updated": "2026-05-07"
+  },
+  "external_repo_intake_worker": {
+    "enabled": true,
+    "note": "External repo intake via external_repo_intake.py. No clone/install/run. Intake and planning only.",
+    "script": "03_scripts/external_repo_intake.py",
+    "catalog_doc": "14_context/tooling/external_repo_intake_catalog_n3_63.md",
+    "risk_report_doc": "14_context/tooling/external_repo_risk_report_n3_63.md",
+    "clone_now": false,
+    "install_now": false,
+    "runtime_wiring": false,
+    "task_classes": [
+      "external_repo_catalog",
+      "openfang_intake",
+      "moneyprinter_intake",
+      "repo_risk_assessment"
+    ],
+    "forbidden": [
+      "clone_repos",
+      "install_packages",
+      "run_external_code",
+      "network_calls",
+      "live_accounts"
+    ]
+  },
+  "content_money_workflow_worker": {
+    "enabled": true,
+    "note": "Content money workflow via content_money_workflow.py. Planning artifacts only. No upload, no live posting.",
+    "script": "03_scripts/content_money_workflow.py",
+    "output_dir": "14_context/content_workflows/",
+    "live_posting": false,
+    "publishing_enabled": false,
+    "human_review_required": true,
+    "task_classes": [
+      "content_plan",
+      "shot_list",
+      "workflow_check",
+      "niche_selection",
+      "content_experiment"
+    ],
+    "forbidden": [
+      "live_posting",
+      "upload",
+      "account_login",
+      "fake_engagement",
+      "copyrighted_media_without_rights",
+      "scraping_without_legality_review",
+      "spam_outreach"
+    ]
   },
   "cc_codex_bridge_worker": {
     "enabled": true,
