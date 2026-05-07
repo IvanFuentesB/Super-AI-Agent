@@ -6103,6 +6103,98 @@ async function handleApiRequest(request, response, requestUrl) {
     return;
   }
 
+  // GET /api/ghoti/local-orchestrator/status — read-only local stack card (N+3.50A)
+  if (request.method === "GET" && requestUrl.pathname === "/api/ghoti/local-orchestrator/status") {
+    const agentLanesDir = path.join(repoRoot, "14_context", "agent_lanes");
+    const activeLocksFile = path.join(agentLanesDir, "active_locks.jsonl");
+    const laneStatusFile = path.join(agentLanesDir, "lane_status.jsonl");
+    const promptBusOutbox = path.join(repoRoot, "14_context", "prompt_bus", "outbox");
+    const obsidianVaultDir = path.join(repoRoot, "14_context", "obsidian_vault");
+    const compactMemoryDir = path.join(repoRoot, "14_context", "compact_memory");
+    const rufloDir = path.join(repoRoot, "21_repos", "third_party", "evals", "ruflo");
+
+    function safeReadJsonl(filePath) {
+      const result = { records: [], errors: [] };
+      if (!fs.existsSync(filePath)) return result;
+      const text = (() => { try { return fs.readFileSync(filePath, "utf8"); } catch { return ""; } })();
+      text.split("\n").forEach((line, i) => {
+        const l = line.trim();
+        if (!l) return;
+        try { result.records.push(JSON.parse(l)); }
+        catch { result.errors.push("line " + (i + 1) + ": malformed"); }
+      });
+      return result;
+    }
+
+    function countDirFiles(dirPath, ext) {
+      if (!fs.existsSync(dirPath)) return 0;
+      try { return fs.readdirSync(dirPath).filter(f => !ext || f.endsWith(ext)).length; }
+      catch { return 0; }
+    }
+
+    const locks = safeReadJsonl(activeLocksFile);
+    const statuses = safeReadJsonl(laneStatusFile);
+    const latestLock = locks.records[locks.records.length - 1] || null;
+    const latestStatus = statuses.records[statuses.records.length - 1] || null;
+
+    const outboxFiles = (() => {
+      if (!fs.existsSync(promptBusOutbox)) return [];
+      try { return fs.readdirSync(promptBusOutbox).filter(f => f.endsWith(".md")); }
+      catch { return []; }
+    })();
+
+    let rufloExists = fs.existsSync(rufloDir);
+    let rufloNodeModules = rufloExists && fs.existsSync(path.join(rufloDir, "node_modules"));
+    let rufloPackageLock = rufloExists && fs.existsSync(path.join(rufloDir, "package-lock.json"));
+    let rufloPkgName = "unknown"; let rufloPkgVersion = "unknown"; let rufloLifecycle = [];
+    if (rufloExists) {
+      try {
+        const pkg = JSON.parse(fs.readFileSync(path.join(rufloDir, "package.json"), "utf8"));
+        rufloPkgName = pkg.name || "unknown";
+        rufloPkgVersion = pkg.version || "unknown";
+        const risky = new Set(["preinstall","postinstall","prepare","prepack","postpack","prepublish","prepublishOnly"]);
+        rufloLifecycle = Object.keys(pkg.scripts || {}).filter(k => risky.has(k));
+      } catch { /* ignore */ }
+    }
+
+    let ollamaFound = false; let gemmaFound = false;
+    try {
+      const oc = spawnSync("ollama", ["list"], { encoding: "utf8", timeout: 3000 });
+      if (oc.status === 0) { ollamaFound = true; gemmaFound = (oc.stdout || "").toLowerCase().includes("gemma"); }
+    } catch { /* ollama not found */ }
+
+    let branch = "unknown";
+    try {
+      const br = spawnSync("git", ["branch", "--show-current"], { encoding: "utf8", timeout: 2000, cwd: repoRoot });
+      if (br.status === 0) branch = (br.stdout || "").trim() || "unknown";
+    } catch { /* ignore */ }
+
+    sendJson(response, 200, {
+      ok: true,
+      generated_at: new Date().toISOString(),
+      branch,
+      prompt_bus: { outbox_count: outboxFiles.length, outbox_latest: outboxFiles.sort().slice(-1)[0] || null },
+      agent_lanes: {
+        active_locks_count: locks.records.length,
+        status_records_count: statuses.records.length,
+        parse_errors: locks.errors.length + statuses.errors.length,
+        latest_agent: latestLock ? latestLock.agent_id : null,
+        latest_task: latestLock ? latestLock.task_slug : null,
+        latest_state: latestStatus ? latestStatus.current_state : null,
+      },
+      obsidian_vault: { exists: fs.existsSync(obsidianVaultDir), file_count: countDirFiles(obsidianVaultDir, ".md") },
+      compact_memory: { exists: fs.existsSync(compactMemoryDir), file_count: countDirFiles(compactMemoryDir, ".md") },
+      ruflo: {
+        exists: rufloExists, node_modules: rufloNodeModules, package_lock: rufloPackageLock,
+        name: rufloPkgName, version: rufloPkgVersion,
+        lifecycle_scripts: rufloLifecycle, install_blocked: rufloLifecycle.length > 0,
+      },
+      ollama: { found: ollamaFound, gemma_found: gemmaFound },
+      safety_flags: { read_only: true, no_live_actions: true, no_external_calls: true, human_approval_required: true },
+    });
+    return;
+  }
+
   sendJson(response, 404, {
     ok: false,
     error: "Route not found.",

@@ -1,0 +1,23 @@
+{
+  "_comment": "CC/Codex Bridge config example. N+3.56-FIX. CC/Codex automatic = NO. Bridge type: local manual file handoff.",
+  "bridge_type": "local_manual_file_handoff",
+  "cc_codex_automatic": false,
+  "automatic_send": false,
+  "clipboard": false,
+  "api_calls": false,
+  "auto_send": false,
+  "human_copy_paste_required": true,
+  "init_mode": "use --init --dry-run then --init --apply to create bridge directories",
+  "outbox_dir": "14_context/bridge/outbox",
+  "inbox_dir": "14_context/bridge/inbox",
+  "archive_dir": "14_context/bridge/archive",
+  "status_dir": "14_context/bridge/status",
+  "targets": ["claude", "codex", "chatgpt"],
+  "safety": {
+    "no_auto_send": true,
+    "no_clipboard": true,
+    "no_api": true,
+    "human_paste_required": true,
+    "status_is_read_only": true
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "_comment": "Content Money Workflow config — N+3.63A. Planning only. All publishing and account actions disabled.",
+  "clone_now": false,
+  "install_now": false,
+  "runtime_wiring": false,
+  "external_api_calls": false,
+  "live_posting": false,
+  "account_actions": false,
+  "secret_storage": false,
+  "publishing_enabled": false,
+  "default_platforms": ["youtube_shorts", "tiktok", "instagram_reels"],
+  "approval_gates": [
+    "rights_check",
+    "brand_safety",
+    "platform_tos",
+    "final_human_review",
+    "publish_approval"
+  ],
+  "workflow_stages": [
+    "niche_selection",
+    "content_angle_research",
+    "script_outline",
+    "asset_sourcing_plan",
+    "rights_check",
+    "voice_subtitle_plan",
+    "edit_checklist",
+    "metadata_seo_checklist",
+    "human_review_gate",
+    "manual_publish_or_future_approved_publisher"
+  ],
+  "safety_notes": [
+    "No live posting. No upload. No account login. No fake engagement.",
+    "No copyrighted media assumed — rights_check gate is required.",
+    "No scraping without legality review.",
+    "No spam outreach.",
+    "Platform ToS review required before any upload consideration.",
+    "Human manually publishes or approves an automated publisher.",
+    "100% means local-supervised MVP, not autonomous money machine."
+  ],
+  "allowed_actions": [
+    "generate_plan_artifact",
+    "generate_shot_list",
+    "workflow_safety_check"
+  ],
+  "inspired_by": [
+    "MoneyPrinter V1 (FujiwaraChoki/MoneyPrinter)",
+    "OpenFang Clip hand concept (RightNow-AI/openfang)",
+    "Ghoti approval gates",
+    "LLM Council idea review"
+  ]
+}

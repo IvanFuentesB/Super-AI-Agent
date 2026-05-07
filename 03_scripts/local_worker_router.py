@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """Local Worker Router — routing scaffold for Python/Gemma/Claude/Codex/ChatGPT task dispatch.
 
+N+3.65: added supervised_content_mvp_worker, ghoti_readiness_worker, external_repo_implementation_map_worker.
+N+3.63A: added external_repo_intake_worker and content_money_workflow_worker routes.
+N+3.61A: added llm_council_worker route for Karpathy-style LLM council tasks.
+N+3.58A: added routes for repo language inventory, Rust readiness, and merge assistant tasks.
+N+3.56-FIX: bridge handoff tasks now route to cc_codex_bridge_worker (not generic codex_audit).
 stdlib only, repo-local, no external APIs, no live actions, no account actions.
 Ollama status check is read-only and disabled by default.
 """
@@ -15,6 +20,56 @@ LOCAL_WORKERS_DIR = REPO_ROOT / "14_context" / "local_workers"
 ROUTING_CONFIG = REPO_ROOT / "23_configs" / "local_worker_routing.example.json"
 
 ROUTE_RULES = [
+    {
+        "keywords": ["supervised content mvp", "supervised mvp", "100 percent mvp",
+                     "content mvp", "mvp runner", "supervised content runner",
+                     "run 100", "supervised content", "artifact packet"],
+        "route": "supervised_content_mvp_worker",
+        "reason": "Supervised content MVP task — route to supervised_content_mvp_runner.py. Full 12-file artifact packet. No live posting. Human approval required.",
+    },
+    {
+        "keywords": ["ghoti readiness", "readiness check", "readiness score",
+                     "status and readiness", "project status and readiness",
+                     "check readiness", "readiness report", "100 percent readiness",
+                     "readiness checker"],
+        "route": "ghoti_readiness_worker",
+        "reason": "Ghoti readiness check task — route to ghoti_readiness_check.py. Read-only repo state inspection and scoring.",
+    },
+    {
+        "keywords": ["implemented not pulled", "implementation map", "openfang implemented",
+                     "moneyprinter implemented", "ghoti native implementation",
+                     "external repo implementation", "impl map", "concept map"],
+        "route": "external_repo_implementation_map_worker",
+        "reason": "External repo implementation map task — route to external_repo_implementation_map.py. Proves concepts implemented as Ghoti-native, not just pulled/cataloged.",
+    },
+    {
+        "keywords": ["openfang", "open fang", "moneyprinter", "devbysami",
+                     "external repo intake", "repo intake", "third party repo",
+                     "evaluate repo", "moneyprinterv2", "money printer repo"],
+        "route": "external_repo_intake_worker",
+        "reason": "External repo intake task — route to external_repo_intake.py. No clone/install/run. Intake and planning only.",
+    },
+    {
+        "keywords": ["money workflow", "youtube shorts", "faceless shorts", "content money",
+                     "make shorts", "content pipeline", "shot list", "viral shorts",
+                     "content experiment", "money printer workflow", "shorts pipeline",
+                     "content plan", "niche content"],
+        "route": "content_money_workflow_worker",
+        "reason": "Content money workflow task — route to content_money_workflow.py. Planning only. No upload, no live posting.",
+    },
+    {
+        "keywords": ["llm council", "model council", "ai council", "karpathy council",
+                     "multi model debate", "chairman synthesis", "peer review models",
+                     "ask multiple llms", "compare model answers"],
+        "route": "llm_council_worker",
+        "reason": "LLM council task — route to llm_council_runner.py. Local-first, no external API by default.",
+    },
+    {
+        "keywords": ["bridge handoff", "cc codex bridge", "codex bridge", "create bridge",
+                     "handoff for claude code and codex", "bridge for claude", "write handoff"],
+        "route": "cc_codex_bridge_worker",
+        "reason": "Bridge handoff task — route to cc_codex_bridge.py, not generic Codex. Local file bridge only.",
+    },
     {
         "keywords": ["json", "jsonl", "validate", "parse", "csv", "report", "file generation",
                      "file parsing", "validation", "generate", "list files", "count"],
@@ -35,8 +90,27 @@ ROUTE_RULES = [
         "reason": "Implementation/reasoning task — requires Claude Code.",
     },
     {
+        "keywords": ["repo language", "github language", "github shows java", "why does github show",
+                     "java tracked", "no java", "language inventory", "tracked language",
+                     "language stats", "github stats"],
+        "route": "repo_language_inventory_worker",
+        "reason": "Repo language / GitHub language confusion — route to repo_language_inventory.py.",
+    },
+    {
+        "keywords": ["rust readiness", "rust core", "cargo", "rustup", "rustc",
+                     "introduce rust", "add rust", "rust for ghoti", "rust toolchain"],
+        "route": "rust_readiness_worker",
+        "reason": "Rust readiness / toolchain task — route to rust_readiness_probe.py.",
+    },
+    {
+        "keywords": ["merge branch", "merge assistant", "merge plan", "safe merge",
+                     "land branch", "merge audited", "merge n+3"],
+        "route": "merge_assistant_worker",
+        "reason": "Merge assistant task — route to ghoti_merge_assistant.py. Dry-run-first, no auto-merge.",
+    },
+    {
         "keywords": ["audit", "source check", "source-check", "verify", "spec", "review safety",
-                     "check policy", "confirm", "gate", "security", "codex"],
+                     "check policy", "confirm", "gate", "security", "codex audit"],
         "route": "codex_audit",
         "reason": "Audit/verification task — route to Codex.",
     },
@@ -57,6 +131,12 @@ ROUTE_RULES = [
                      "agent swarm", "multi-agent orchestrat", "swarm orchestrat"],
         "route": "ruflo_orchestrator_candidate",
         "reason": "Ruflo/swarm orchestration candidate -- isolated from Ghoti runtime until safety gate passes.",
+    },
+    {
+        "keywords": ["compress memory with local", "gemma compress", "gemma memory",
+                     "local gemma", "ollama compress"],
+        "route": "gemma_local_worker",
+        "reason": "Local Gemma compression task — route to gemma_compact_memory_worker.py.",
     },
     {
         "keywords": ["obsidian vault", "vault note", "daily note", "note link", "obsidian memory",
@@ -85,6 +165,13 @@ ROUTE_RULES = [
 ]
 
 ROUTE_DESCRIPTIONS = {
+    "supervised_content_mvp_worker": "Supervised Content MVP lane. Routes to supervised_content_mvp_runner.py — full 12-file artifact packet. No live posting, no upload, no external API. Human approval required.",
+    "ghoti_readiness_worker": "Ghoti Readiness Check lane. Routes to ghoti_readiness_check.py — read-only repo state inspection, category scoring, and supervised MVP slice score.",
+    "external_repo_implementation_map_worker": "External Repo Implementation Map lane. Routes to external_repo_implementation_map.py — proves OpenFang/MoneyPrinter implemented as Ghoti-native concepts, not cloned/installed/run.",
+    "external_repo_intake_worker": "External repo intake lane. Routes to external_repo_intake.py — catalog/intake only. No clone/install/run. Intake and planning only.",
+    "content_money_workflow_worker": "Content money workflow lane. Routes to content_money_workflow.py — planning artifacts only. No upload, no live posting, no account actions.",
+    "llm_council_worker": "LLM Council lane. Routes to llm_council_runner.py — local-first 3-stage council. No external API by default. NO autonomous actions.",
+    "cc_codex_bridge_worker": "CC/Codex bridge lane. Routes to cc_codex_bridge.py — local file handoff only. CC/Codex automatic = NO.",
     "python_automation_worker": "Safe local Python script. stdlib only, no external APIs.",
     "gemma_local_worker": "Local Ollama/Gemma inference. Draft only — human review before canonical use.",
     "claude_code_impl": "Claude Code implementation. Use for reasoning, code, commits.",
@@ -94,6 +181,9 @@ ROUTE_DESCRIPTIONS = {
     "ruflo_orchestrator_candidate": "Ruflo/claude-flow orchestration. Isolated from Ghoti until safety gate passes.",
     "obsidian_memory_worker": "Obsidian vault tasks. Read-only inspect or local note creation.",
     "prompt_bus_worker": "Prompt bus tasks. Write/list prompt files via prompt_bus.py.",
+    "repo_language_inventory_worker": "Repo language inventory. Routes to repo_language_inventory.py — explains GitHub language discrepancy, stdlib only.",
+    "rust_readiness_worker": "Rust readiness probe. Routes to rust_readiness_probe.py — no install, read-only toolchain detection.",
+    "merge_assistant_worker": "Merge assistant. Routes to ghoti_merge_assistant.py — generates merge commands only, no auto-merge.",
     "human_approval_required": "STOP. This task requires explicit human approval before any automation.",
 }
 
@@ -216,7 +306,7 @@ def main():
     parser = argparse.ArgumentParser(
         description=(
             "Local Worker Router — recommend where to route a task. "
-            "stdlib only, no live actions, no API calls."
+            "stdlib only, no live actions, no API calls. N+3.65."
         )
     )
     group = parser.add_mutually_exclusive_group(required=True)

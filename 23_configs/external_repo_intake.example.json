@@ -1,0 +1,26 @@
+{
+  "_comment": "External Repo Intake config — N+3.63A. All actions disabled by default.",
+  "clone_now": false,
+  "install_now": false,
+  "runtime_wiring": false,
+  "external_api_calls": false,
+  "live_posting": false,
+  "account_actions": false,
+  "secret_storage": false,
+  "allowed_actions": [
+    "read_catalog",
+    "write_catalog_doc",
+    "write_risk_report_doc",
+    "show_repo_record"
+  ],
+  "tracked_candidates": [
+    "openfang_python_gateway",
+    "openfang_rust_agent_os",
+    "moneyprinter_shorts",
+    "moneyprinter_v2",
+    "karpathy_llm_council"
+  ],
+  "openfang_ambiguity_note": "Two separate OpenFang projects exist. aidiss/openfang is the Python gateway. RightNow-AI/openfang is the Rust Agent OS. Do not conflate.",
+  "moneyprinter_note": "MoneyPrinter by DevBySami maps to FujiwaraChoki/MoneyPrinter. MoneyPrinterV2 is a separate higher-risk project.",
+  "safe_route": "intake -> audit -> adapter_design -> local_dry_run -> human_review -> optional_live_integration"
+}

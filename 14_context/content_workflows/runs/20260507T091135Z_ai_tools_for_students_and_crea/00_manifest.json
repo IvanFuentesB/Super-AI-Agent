@@ -1,0 +1,48 @@
+{
+  "schema": "ghoti_content_packet_v1",
+  "run_id": "20260507T091135Z_ai_tools_for_students_and_crea",
+  "generated_utc": "20260507T091135Z",
+  "milestone": "N+3.65",
+  "agent_id": "claude_code_n3_65_supervised_mvp_100",
+  "niche": "AI tools for students and creators",
+  "idea": "A faceless YouTube Shorts channel testing one AI workflow per short",
+  "audience": "students, creators, and solo builders",
+  "platform": "YouTube Shorts",
+  "goal": "Create a legal manual-publish content experiment packet",
+  "safety": {
+    "live_posting": false,
+    "upload": false,
+    "account_login": false,
+    "fake_engagement": false,
+    "external_api_calls": false,
+    "clone_install_run_external_repos": false,
+    "human_approval_required": true
+  },
+  "approval_gates": {
+    "rights_check": "pending_human_review",
+    "brand_safety": "pending_human_review",
+    "platform_tos": "pending_human_review",
+    "final_human_review": "pending_human_review",
+    "publish_approval": "pending_human_review"
+  },
+  "packet_files": [
+    "00_manifest.json",
+    "01_input_brief.md",
+    "02_llm_council_review.md",
+    "03_strategy_decision.md",
+    "04_short_script.md",
+    "05_scene_shot_list.md",
+    "06_asset_rights_tos_brand_safety.md",
+    "07_metadata_pack.md",
+    "08_human_approval_packet.md",
+    "09_manual_publish_checklist.md",
+    "10_obsidian_memory_snapshot.md",
+    "11_readiness_score.json",
+    "12_next_iteration_backlog.md"
+  ],
+  "llm_council_used": true,
+  "status": "pending_human_approval",
+  "published": false,
+  "uploaded": false,
+  "revenue_claimed": false
+}

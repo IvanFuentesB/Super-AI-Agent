@@ -1,0 +1,17 @@
+{
+  "_comment": "Ruflo source config example. N+3.56-FIX. Runtime wiring: NO. Requires manual bootstrap if source absent.",
+  "local_path": "21_repos/third_party/evals/ruflo",
+  "source_url": "UNKNOWN — manual confirmation required (check git remote get-url origin in ruflo dir)",
+  "expected_package_name": "claude-flow",
+  "runtime_wiring": false,
+  "no_mcp_launch": true,
+  "no_swarm_launch": true,
+  "install_command": "npm ci --ignore-scripts",
+  "bootstrap_note": "In a clean checkout, Ruflo source may be absent. Clone or copy it manually to 21_repos/third_party/evals/ruflo/ before running install gate.",
+  "safety": {
+    "no_global_npm_install": true,
+    "no_npx": true,
+    "no_lifecycle_scripts": true,
+    "no_runtime_launch": true
+  }
+}
