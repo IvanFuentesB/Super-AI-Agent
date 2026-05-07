@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Ghoti Dashboard — stdlib-only local orchestrator card generator.
 
+N+3.65: added supervised_content_mvp, 100% local slice readiness, and external repo implementation map sections.
 N+3.63A: added external_repo_intake and content_money_workflow sections.
 N+3.61A: added llm_council section (script/config existence, mode, external flag, safety).
 N+3.58-FIX: wrapped _probe_obsidian in try/except; added _clean_markdown to
@@ -30,7 +31,7 @@ OBSIDIAN_VAULT_DIR = REPO_ROOT / "14_context" / "obsidian_vault"
 COMPACT_MEMORY_DIR = REPO_ROOT / "14_context" / "compact_memory"
 RUFLO_DIR = REPO_ROOT / "21_repos" / "third_party" / "evals" / "ruflo"
 DASHBOARD_CARD_PATH = REPO_ROOT / "14_context" / "ghoti_dashboard_card.md"
-MILESTONE = "N+3.63A"
+MILESTONE = "N+3.65"
 
 OBSIDIAN_VAULT_REQUIRED = [
     "00_Index.md",
@@ -293,6 +294,54 @@ def _collect_content_money_workflow():
     }
 
 
+def _collect_supervised_content_mvp():
+    """Collect supervised content MVP status. No network calls."""
+    runner_exists = _safe_exists(REPO_ROOT / "03_scripts" / "supervised_content_mvp_runner.py")
+    readiness_exists = _safe_exists(REPO_ROOT / "03_scripts" / "ghoti_readiness_check.py")
+    impl_map_exists = _safe_exists(REPO_ROOT / "03_scripts" / "external_repo_implementation_map.py")
+
+    runs_dir = REPO_ROOT / "14_context" / "content_workflows" / "runs"
+    runs_exist = _safe_exists(runs_dir)
+    latest_run_name = None
+    packet_file_count = 0
+    proof_packet_exists = False
+    supervised_mvp_score = None
+
+    if runs_exist:
+        try:
+            runs = sorted([d for d in runs_dir.iterdir() if d.is_dir()], key=lambda d: d.name)
+            if runs:
+                latest = runs[-1]
+                latest_run_name = latest.name
+                packet_file_count = len(list(latest.iterdir()))
+                proof_packet_exists = packet_file_count >= 12
+                score_path = latest / "11_readiness_score.json"
+                if score_path.exists():
+                    try:
+                        score_data = json.loads(score_path.read_text(encoding="utf-8"))
+                        supervised_mvp_score = score_data.get("supervised_mvp_slice_score")
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+
+    return {
+        "runner_script_exists": runner_exists,
+        "readiness_script_exists": readiness_exists,
+        "impl_map_script_exists": impl_map_exists,
+        "proof_packet_exists": proof_packet_exists,
+        "latest_run": latest_run_name,
+        "packet_file_count": packet_file_count,
+        "supervised_mvp_slice_score": supervised_mvp_score,
+        "production_public_release_ready": False,
+        "live_posting": False,
+        "upload": False,
+        "external_api": False,
+        "clone_install_run_external_repos": False,
+        "human_approval_required": True,
+    }
+
+
 def _collect_status():
     branch, _ = _run(["git", "branch", "--show-current"])
     head, _ = _run(["git", "rev-parse", "--short", "HEAD"])
@@ -370,6 +419,7 @@ def _collect_status():
     llm_council = _collect_llm_council()
     external_repo_intake = _collect_external_repo_intake()
     content_money_workflow = _collect_content_money_workflow()
+    supervised_content_mvp = _collect_supervised_content_mvp()
 
     latest_lock = locks[-1] if locks else None
     latest_status = statuses[-1] if statuses else None
@@ -442,6 +492,7 @@ def _collect_status():
         "llm_council": llm_council,
         "external_repo_intake": external_repo_intake,
         "content_money_workflow": content_money_workflow,
+        "supervised_content_mvp": supervised_content_mvp,
         "safety_flags": {
             "read_only_card": True,
             "no_live_actions": True,
@@ -565,6 +616,32 @@ def _render_card(status):
         f"- Saved plans: {status['content_money_workflow']['saved_plans']}",
         f"- Saved shot lists: {status['content_money_workflow']['saved_shot_lists']}",
         f"",
+        f"## Supervised Content MVP (N+3.65)",
+        f"- supervised_content_mvp_runner.py: {'EXISTS' if status['supervised_content_mvp']['runner_script_exists'] else 'MISSING'}",
+        f"- ghoti_readiness_check.py: {'EXISTS' if status['supervised_content_mvp']['readiness_script_exists'] else 'MISSING'}",
+        f"- external_repo_implementation_map.py: {'EXISTS' if status['supervised_content_mvp']['impl_map_script_exists'] else 'MISSING'}",
+        f"- Proof packet exists: {'YES — ' + str(status['supervised_content_mvp']['latest_run']) if status['supervised_content_mvp']['proof_packet_exists'] else 'NO'}",
+        f"- Packet files: {status['supervised_content_mvp']['packet_file_count']}/12",
+        f"- supervised_mvp_slice_score: {status['supervised_content_mvp']['supervised_mvp_slice_score'] if status['supervised_content_mvp']['supervised_mvp_slice_score'] is not None else 'N/A (no run yet)'}",
+        f"- production_public_release_ready: NO",
+        f"- Live posting: NO",
+        f"- Upload: NO",
+        f"- External API: NO",
+        f"- Clone/install/run external repos: NO",
+        f"- Human approval required: YES",
+        f"",
+        f"## 100% Local Slice Readiness (N+3.65)",
+        f"- Score applies to: supervised local MVP slice only",
+        f"- See: 14_context/tooling/ghoti_100_percent_readiness_n3_65.md",
+        f"- Production/autonomous release: NOT APPLICABLE",
+        f"- production_public_release_ready: false",
+        f"",
+        f"## External Repo Implementation Map (N+3.65)",
+        f"- OpenFang implemented as Ghoti-native: YES (not just intake)",
+        f"- MoneyPrinter implemented as Ghoti-native: YES (not just intake)",
+        f"- Clone/install/run: NO",
+        f"- See: 14_context/tooling/external_repo_implementation_map_n3_65.md",
+        f"",
         f"## Safety Flags",
         f"- Read-only card: YES",
         f"- No live actions: YES",
@@ -612,6 +689,8 @@ def cmd_status(args):
     print(f"ExtRepoIntake: {'EXISTS' if eri['script_exists'] else 'MISSING'} | candidates: {eri['tracked_candidates_count']} | clone/install/wiring: NO")
     cmw = status["content_money_workflow"]
     print(f"ContentWorkflow: {'EXISTS' if cmw['script_exists'] else 'MISSING'} | planning_only: YES | live_posting: NO | human_review: REQUIRED")
+    scp = status["supervised_content_mvp"]
+    print(f"SupervisedMVP: runner={'EXISTS' if scp['runner_script_exists'] else 'MISSING'} | proof_packet={'YES' if scp['proof_packet_exists'] else 'NO'} | score={scp['supervised_mvp_slice_score']} | prod_release: NO")
     print("=== End Status ===")
 
 

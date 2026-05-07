@@ -1,0 +1,40 @@
+{
+  "_meta": {
+    "version": "N+3.65",
+    "description": "Ghoti Readiness Check config example. No secrets. No network.",
+    "note": "Do not add API keys or credentials. This is a schema example only.",
+    "last_updated": "2026-05-07"
+  },
+  "script": "03_scripts/ghoti_readiness_check.py",
+  "readiness_categories": [
+    "repo_integrity",
+    "safety_gates",
+    "local_memory",
+    "llm_council",
+    "external_repo_intake",
+    "content_workflow",
+    "supervised_mvp_artifact",
+    "dashboard_status",
+    "merge_readiness"
+  ],
+  "required_for_supervised_mvp_100": [
+    "supervised_mvp_artifact",
+    "safety_gates",
+    "content_workflow",
+    "local_memory"
+  ],
+  "score_labels": {
+    "supervised_mvp_slice_score": "100 if all required categories pass",
+    "production_autonomy_score": "not_applicable",
+    "production_public_release_ready": false
+  },
+  "report_output": "14_context/tooling/ghoti_100_percent_readiness_n3_65.md",
+  "no_network": true,
+  "no_writes_unless_apply": true,
+  "forbidden": [
+    "external_api",
+    "network_calls",
+    "write_outside_repo",
+    "store_secrets"
+  ]
+}

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Local Worker Router — routing scaffold for Python/Gemma/Claude/Codex/ChatGPT task dispatch.
 
+N+3.65: added supervised_content_mvp_worker, ghoti_readiness_worker, external_repo_implementation_map_worker.
 N+3.63A: added external_repo_intake_worker and content_money_workflow_worker routes.
 N+3.61A: added llm_council_worker route for Karpathy-style LLM council tasks.
 N+3.58A: added routes for repo language inventory, Rust readiness, and merge assistant tasks.
@@ -19,6 +20,28 @@ LOCAL_WORKERS_DIR = REPO_ROOT / "14_context" / "local_workers"
 ROUTING_CONFIG = REPO_ROOT / "23_configs" / "local_worker_routing.example.json"
 
 ROUTE_RULES = [
+    {
+        "keywords": ["supervised content mvp", "supervised mvp", "100 percent mvp",
+                     "content mvp", "mvp runner", "supervised content runner",
+                     "run 100", "supervised content", "artifact packet"],
+        "route": "supervised_content_mvp_worker",
+        "reason": "Supervised content MVP task — route to supervised_content_mvp_runner.py. Full 12-file artifact packet. No live posting. Human approval required.",
+    },
+    {
+        "keywords": ["ghoti readiness", "readiness check", "readiness score",
+                     "status and readiness", "project status and readiness",
+                     "check readiness", "readiness report", "100 percent readiness",
+                     "readiness checker"],
+        "route": "ghoti_readiness_worker",
+        "reason": "Ghoti readiness check task — route to ghoti_readiness_check.py. Read-only repo state inspection and scoring.",
+    },
+    {
+        "keywords": ["implemented not pulled", "implementation map", "openfang implemented",
+                     "moneyprinter implemented", "ghoti native implementation",
+                     "external repo implementation", "impl map", "concept map"],
+        "route": "external_repo_implementation_map_worker",
+        "reason": "External repo implementation map task — route to external_repo_implementation_map.py. Proves concepts implemented as Ghoti-native, not just pulled/cataloged.",
+    },
     {
         "keywords": ["openfang", "open fang", "moneyprinter", "devbysami",
                      "external repo intake", "repo intake", "third party repo",
@@ -142,6 +165,9 @@ ROUTE_RULES = [
 ]
 
 ROUTE_DESCRIPTIONS = {
+    "supervised_content_mvp_worker": "Supervised Content MVP lane. Routes to supervised_content_mvp_runner.py — full 12-file artifact packet. No live posting, no upload, no external API. Human approval required.",
+    "ghoti_readiness_worker": "Ghoti Readiness Check lane. Routes to ghoti_readiness_check.py — read-only repo state inspection, category scoring, and supervised MVP slice score.",
+    "external_repo_implementation_map_worker": "External Repo Implementation Map lane. Routes to external_repo_implementation_map.py — proves OpenFang/MoneyPrinter implemented as Ghoti-native concepts, not cloned/installed/run.",
     "external_repo_intake_worker": "External repo intake lane. Routes to external_repo_intake.py — catalog/intake only. No clone/install/run. Intake and planning only.",
     "content_money_workflow_worker": "Content money workflow lane. Routes to content_money_workflow.py — planning artifacts only. No upload, no live posting, no account actions.",
     "llm_council_worker": "LLM Council lane. Routes to llm_council_runner.py — local-first 3-stage council. No external API by default. NO autonomous actions.",
@@ -280,7 +306,7 @@ def main():
     parser = argparse.ArgumentParser(
         description=(
             "Local Worker Router — recommend where to route a task. "
-            "stdlib only, no live actions, no API calls. N+3.63A."
+            "stdlib only, no live actions, no API calls. N+3.65."
         )
     )
     group = parser.add_mutually_exclusive_group(required=True)

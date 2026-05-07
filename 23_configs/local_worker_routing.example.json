@@ -1,9 +1,79 @@
 {
   "_meta": {
-    "version": "N+3.63A",
-    "description": "Local worker routing config example. N+3.63A: added external_repo_intake_worker and content_money_workflow_worker.",
+    "version": "N+3.65",
+    "description": "Local worker routing config example. N+3.65: added supervised_content_mvp_worker, ghoti_readiness_worker, external_repo_implementation_map_worker.",
     "note": "Do not add real API keys or credentials to this file. This is a schema example only.",
     "last_updated": "2026-05-07"
+  },
+  "supervised_content_mvp_worker": {
+    "enabled": true,
+    "note": "Supervised Content MVP via supervised_content_mvp_runner.py. Full 12-file artifact packet. No live posting. Human approval required.",
+    "script": "03_scripts/supervised_content_mvp_runner.py",
+    "output_dir": "14_context/content_workflows/runs/",
+    "dry_run_by_default": true,
+    "live_posting": false,
+    "upload": false,
+    "external_api": false,
+    "clone_install_run_external_repos": false,
+    "human_approval_required": true,
+    "task_classes": [
+      "supervised_content_mvp",
+      "content_artifact_packet",
+      "youtube_shorts_script",
+      "content_experiment"
+    ],
+    "forbidden": [
+      "live_posting",
+      "upload",
+      "account_login",
+      "fake_engagement",
+      "external_api_calls",
+      "clone_install_run_external_repos",
+      "store_secrets"
+    ]
+  },
+  "ghoti_readiness_worker": {
+    "enabled": true,
+    "note": "Ghoti Readiness Check via ghoti_readiness_check.py. Read-only repo inspection. No network.",
+    "script": "03_scripts/ghoti_readiness_check.py",
+    "report_output": "14_context/tooling/ghoti_100_percent_readiness_n3_65.md",
+    "no_network": true,
+    "no_writes_unless_apply": true,
+    "task_classes": [
+      "readiness_check",
+      "repo_status",
+      "supervised_mvp_score",
+      "category_inspection"
+    ],
+    "forbidden": [
+      "external_api",
+      "network_calls",
+      "write_outside_repo"
+    ]
+  },
+  "external_repo_implementation_map_worker": {
+    "enabled": true,
+    "note": "External Repo Implementation Map via external_repo_implementation_map.py. Concept mapping only. No clone/install/run.",
+    "script": "03_scripts/external_repo_implementation_map.py",
+    "report_output": "14_context/tooling/external_repo_implementation_map_n3_65.md",
+    "clone_now": false,
+    "install_now": false,
+    "run_now": false,
+    "concept_map_only": true,
+    "task_classes": [
+      "openfang_concept_map",
+      "moneyprinter_concept_map",
+      "external_repo_implementation",
+      "ghoti_native_implementation_proof"
+    ],
+    "forbidden": [
+      "clone_repos",
+      "npm_install",
+      "pip_install",
+      "docker_run",
+      "external_api",
+      "run_external_code"
+    ]
   },
   "external_repo_intake_worker": {
     "enabled": true,

@@ -1,0 +1,46 @@
+{
+  "_meta": {
+    "version": "N+3.65",
+    "description": "External Repo Implementation Map config example. Concept mapping only. No clone/install/run.",
+    "note": "Do not add API keys or credentials. This is a schema example only.",
+    "last_updated": "2026-05-07"
+  },
+  "script": "03_scripts/external_repo_implementation_map.py",
+  "repos_mapped": [
+    {
+      "name": "OpenFang",
+      "source": "concept reference only — not cloned",
+      "concepts_mapped": 4,
+      "status": "implemented_as_ghoti_native"
+    },
+    {
+      "name": "MoneyPrinter_DevBySami",
+      "source": "concept reference only — not cloned",
+      "concepts_mapped": 4,
+      "status": "implemented_as_ghoti_native"
+    },
+    {
+      "name": "MoneyPrinterV2",
+      "source": "not evaluated — high risk",
+      "concepts_mapped": 0,
+      "status": "future_evaluation_only_requires_separate_review"
+    }
+  ],
+  "safety": {
+    "clone_now": false,
+    "install_now": false,
+    "run_now": false,
+    "concept_map_only": true,
+    "human_approval_required_before_any_install": true
+  },
+  "report_output": "14_context/tooling/external_repo_implementation_map_n3_65.md",
+  "no_network": true,
+  "forbidden": [
+    "clone_repos",
+    "npm_install",
+    "pip_install",
+    "docker_run",
+    "external_api",
+    "run_external_code"
+  ]
+}
