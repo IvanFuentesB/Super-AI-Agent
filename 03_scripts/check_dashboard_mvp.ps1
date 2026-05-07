@@ -1773,4 +1773,3 @@ if ($failed -eq 0) {
 
 Write-Host ('Summary: {0} dashboard check(s) failed.' -f $failed)
 exit 1
-

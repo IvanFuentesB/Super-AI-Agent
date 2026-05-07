@@ -380,4 +380,3 @@ def read_relay_loop_state_object() -> dict:
 
 def write_relay_loop_state_object(payload: dict) -> None:
     _write_json_object(RUNTIME_RELAY_LOOP_STATE_PATH, payload)
-

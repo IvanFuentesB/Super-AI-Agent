@@ -2199,4 +2199,3 @@ if ($failed -eq 0 -and $allFilesPresent -and $artifactsOk) {
 
 Write-Host ('Summary: {0} runtime MVP check(s) failed.' -f $failed)
 exit 1
-

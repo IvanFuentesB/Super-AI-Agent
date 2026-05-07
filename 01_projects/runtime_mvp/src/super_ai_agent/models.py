@@ -320,4 +320,3 @@ class RuntimeStatusSummary:
     rejected_tasks: int = 0
     failed_tasks: int = 0
     pending_approval_requests: int = 0
-

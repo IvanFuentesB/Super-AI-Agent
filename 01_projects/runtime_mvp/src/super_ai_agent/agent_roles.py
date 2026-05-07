@@ -143,4 +143,3 @@ def call_agent_capability(capability_name: str, arguments: dict | None = None) -
         "tool_name": tool_name,
         "result": call_mcp_tool(tool_name, effective_args),
     }
-
