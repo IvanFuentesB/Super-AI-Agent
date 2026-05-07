@@ -1,6 +1,6 @@
 # External Repo Risk Report — N+3.63A
 
-Generated: 2026-05-07T07:39:04Z
+Generated: 2026-05-07T07:52:39Z
 
 **Purpose:** Safety risk summary for each tracked external repo candidate.
 All items below are forbidden until explicitly audited and approved.

@@ -1,6 +1,6 @@
 # External Repo Intake Catalog — N+3.63A
 
-Generated: 2026-05-07T07:39:03Z
+Generated: 2026-05-07T07:52:38Z
 
 **Purpose:** Local catalog of external repo candidates for Ghoti supervised MVP.
 No clone, no install, no runtime wiring. Intake and planning only.
