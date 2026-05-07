@@ -1,0 +1,64 @@
+{
+  "_meta": {
+    "version": "N+3.65",
+    "description": "Supervised Content MVP config example. No secrets. All live/external/account flags false.",
+    "note": "Do not add API keys or credentials. This is a schema example only.",
+    "last_updated": "2026-05-07"
+  },
+  "runner": {
+    "script": "03_scripts/supervised_content_mvp_runner.py",
+    "default_niche": "AI tools for students and creators",
+    "default_platform": "YouTube Shorts",
+    "output_dir": "14_context/content_workflows/runs/",
+    "dry_run_by_default": true
+  },
+  "safety": {
+    "live_posting": false,
+    "upload": false,
+    "account_login": false,
+    "fake_engagement": false,
+    "external_api_calls": false,
+    "clone_install_run_external_repos": false,
+    "human_approval_required": true,
+    "no_secrets": true
+  },
+  "approval_gates": {
+    "rights_check": "pending_human_review",
+    "brand_safety": "pending_human_review",
+    "platform_tos": "pending_human_review",
+    "final_human_review": "pending_human_review",
+    "publish_approval": "pending_human_review"
+  },
+  "llm_council": {
+    "enabled": true,
+    "mode": "local_demo",
+    "external_enabled": false,
+    "openrouter_api_key": null,
+    "note": "local_demo mode only. No external API calls by default. OpenRouter key not stored."
+  },
+  "packet_files": [
+    "00_manifest.json",
+    "01_input_brief.md",
+    "02_llm_council_review.md",
+    "03_strategy_decision.md",
+    "04_short_script.md",
+    "05_scene_shot_list.md",
+    "06_asset_rights_tos_brand_safety.md",
+    "07_metadata_pack.md",
+    "08_human_approval_packet.md",
+    "09_manual_publish_checklist.md",
+    "10_obsidian_memory_snapshot.md",
+    "11_readiness_score.json",
+    "12_next_iteration_backlog.md"
+  ],
+  "forbidden": [
+    "live_posting",
+    "upload",
+    "account_login",
+    "fake_engagement",
+    "external_api_calls",
+    "clone_install_run_external_repos",
+    "store_secrets",
+    "automated_publishing"
+  ]
+}

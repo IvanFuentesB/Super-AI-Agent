@@ -19,14 +19,29 @@ EXECUTOR_ACTION_TYPES = (
     "focus_window",
     "open_allowed_app",
     "capture_desktop_screenshot",
+    "get_clipboard_text",
+    "set_clipboard_text",
+    "copy_selection",
+    "paste_clipboard",
+    "send_hotkey",
+    "type_text",
+    "wait_seconds",
+    "wait_for_window",
+    "move_mouse",
+    "left_click",
+    "double_click",
+    "right_click",
+    "scroll_mouse",
+    "run_operator_recipe",
 )
-EXECUTION_STATUSES = ("started", "succeeded", "failed")
+EXECUTION_STATUSES = ("started", "succeeded", "failed", "interrupted")
 TASK_STATUSES = (
     "queued",
     "running",
     "waiting",
     "pending_approval",
     "blocked_human_needed",
+    "interrupted",
     "ready_to_resume",
     "completed",
     "rejected",
@@ -66,6 +81,14 @@ class TaskExecutionRecord:
     finished_at: str = ""
     artifact_path: str = ""
     actor: str = "system"
+    attempt_count: int = 1
+    failure_reason: str = ""
+    interruption_reason: str = ""
+    resource_guard_reason: str = ""
+    used_model_inference: bool = False
+    model_provider: str = ""
+    model_name: str = ""
+    model_call_status: str = ""
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -82,6 +105,14 @@ class TaskExecutionRecord:
             finished_at=data.get("finished_at", ""),
             artifact_path=data.get("artifact_path", ""),
             actor=data.get("actor", "system"),
+            attempt_count=int(data.get("attempt_count", 1) or 1),
+            failure_reason=data.get("failure_reason", ""),
+            interruption_reason=data.get("interruption_reason", ""),
+            resource_guard_reason=data.get("resource_guard_reason", ""),
+            used_model_inference=bool(data.get("used_model_inference", False)),
+            model_provider=data.get("model_provider", ""),
+            model_name=data.get("model_name", ""),
+            model_call_status=data.get("model_call_status", ""),
         )
 
 
@@ -231,12 +262,18 @@ class SupervisorState:
     active_task_id: str
     pending_approval_count: int
     blocked_human_needed_count: int
+    interrupted_count: int
     waiting_count: int
     ready_to_resume_count: int
     queued_count: int
     running_count: int
     notification_mode: str
     updated_at: str
+    ghoti_state: str = "idle"
+    ghoti_reason: str = ""
+    operator_next_step: str = ""
+    resource_guard_event_count: int = 0
+    recent_resource_guard_events: list[str] = field(default_factory=list)
     last_event: str = ""
     notes: list[str] = field(default_factory=list)
 
@@ -252,12 +289,18 @@ class SupervisorState:
             active_task_id=data.get("active_task_id", ""),
             pending_approval_count=int(data.get("pending_approval_count", 0)),
             blocked_human_needed_count=int(data.get("blocked_human_needed_count", 0)),
+            interrupted_count=int(data.get("interrupted_count", 0)),
             waiting_count=int(data.get("waiting_count", 0)),
             ready_to_resume_count=int(data.get("ready_to_resume_count", 0)),
             queued_count=int(data.get("queued_count", 0)),
             running_count=int(data.get("running_count", 0)),
             notification_mode=data.get("notification_mode", "dashboard"),
             updated_at=data.get("updated_at", ""),
+            ghoti_state=data.get("ghoti_state", "idle"),
+            ghoti_reason=data.get("ghoti_reason", ""),
+            operator_next_step=data.get("operator_next_step", ""),
+            resource_guard_event_count=int(data.get("resource_guard_event_count", 0) or 0),
+            recent_resource_guard_events=list(data.get("recent_resource_guard_events", [])),
             last_event=data.get("last_event", ""),
             notes=list(data.get("notes", [])),
         )
@@ -271,8 +314,10 @@ class RuntimeStatusSummary:
     waiting_tasks: int = 0
     pending_approval_tasks: int = 0
     blocked_human_needed_tasks: int = 0
+    interrupted_tasks: int = 0
     ready_to_resume_tasks: int = 0
     completed_tasks: int = 0
     rejected_tasks: int = 0
     failed_tasks: int = 0
     pending_approval_requests: int = 0
+

@@ -1,0 +1,36 @@
+{
+  "schema": "ghoti_readiness_score_v1",
+  "run_id": "20260507T091135Z_ai_tools_for_students_and_crea",
+  "generated_utc": "20260507T091135Z",
+  "milestone": "N+3.65",
+  "supervised_mvp_slice_score": 100,
+  "production_autonomy_score": "not_applicable",
+  "production_public_release_ready": false,
+  "reason": "supervised local MVP only \u2014 no live posting, no upload, no external API",
+  "categories": {
+    "packet_complete": true,
+    "all_12_files_present": true,
+    "manifest_live_posting_false": true,
+    "manifest_external_api_calls_false": true,
+    "manifest_human_approval_required_true": true,
+    "all_5_gates_pending_human_review": true,
+    "manual_publish_checklist_exists": true,
+    "obsidian_snapshot_exists": true,
+    "no_file_claims_published_uploaded_revenue": true
+  },
+  "approval_gates": {
+    "rights_check": "pending_human_review",
+    "brand_safety": "pending_human_review",
+    "platform_tos": "pending_human_review",
+    "final_human_review": "pending_human_review",
+    "publish_approval": "pending_human_review"
+  },
+  "safety_assertions": {
+    "live_posting_enabled": false,
+    "upload_taken": false,
+    "account_login_by_ai": false,
+    "external_api_called": false,
+    "revenue_claimed": false,
+    "external_repo_cloned_installed_run": false
+  }
+}

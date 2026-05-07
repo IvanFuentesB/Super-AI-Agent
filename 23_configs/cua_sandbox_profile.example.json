@@ -1,0 +1,18 @@
+{
+  "status_label": "example_profile / sandbox_only / not_runtime_wired",
+  "enabled": false,
+  "mode": "sandbox_only",
+  "require_action_intent": true,
+  "require_human_approval_per_action": true,
+  "require_payload_hash_match": true,
+  "allow_screenshots": true,
+  "allow_click": false,
+  "allow_type": false,
+  "allow_shell": false,
+  "allow_file_upload": false,
+  "allow_live_accounts": false,
+  "retention_days": 3,
+  "allowed_windows": ["example.com test page", "local dashboard"],
+  "forbidden_targets": ["banking", "password manager", "2FA", "email inbox", "social posting", "trading", "payments"],
+  "audit_log": "05_logs/cua_action_audit.jsonl"
+}

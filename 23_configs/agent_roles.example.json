@@ -1,0 +1,68 @@
+{
+  "roles": [
+    {
+      "role_id": "supervisor",
+      "purpose": "Coordinate narrow local work, preserve approval gates, and keep the operator in control.",
+      "allowed_tools": ["queue", "supervisor", "dashboard", "cli", "compact_memory"],
+      "preferred_provider": "gemma_local",
+      "approval_sensitivity": "high",
+      "notes": "Default operator role. It should stay visible, local-first, and approval-aware."
+    },
+    {
+      "role_id": "backend_engineer",
+      "purpose": "Handle repo-local implementation, debugging, checks, and integration-safe code work.",
+      "allowed_tools": ["repo_executor", "git_read", "git_write_with_approval", "checkers", "compact_memory"],
+      "preferred_provider": "gemma_local",
+      "approval_sensitivity": "medium",
+      "notes": "Good default for runtime, queue, storage, and integration work."
+    },
+    {
+      "role_id": "frontend_design",
+      "purpose": "Shape operator-facing dashboard UX, visibility, and layout work without weakening safety.",
+      "allowed_tools": ["repo_executor", "dashboard", "artifact_preview", "compact_memory"],
+      "preferred_provider": "gemma_local",
+      "approval_sensitivity": "medium",
+      "notes": "Use for dashboard UX and front-end polish."
+    },
+    {
+      "role_id": "browser_operator",
+      "purpose": "Own later browser-agent workflows with Browser Use first and deterministic Playwright fallback where justified.",
+      "allowed_tools": ["browser_use", "playwright", "dashboard", "approvals", "compact_memory"],
+      "preferred_provider": "gemma_local",
+      "approval_sensitivity": "high",
+      "notes": "Browser Use is the primary browser-agent foundation. Playwright remains deterministic fallback/control."
+    },
+    {
+      "role_id": "outreach_operator",
+      "purpose": "Prepare business-offer and outreach drafts for human review without sending anything autonomously.",
+      "allowed_tools": ["workflow_catalog", "draft_generation", "compact_memory", "approvals"],
+      "preferred_provider": "gemma_local",
+      "approval_sensitivity": "high",
+      "notes": "Planning and draft generation only until explicit send and spend gates exist."
+    },
+    {
+      "role_id": "research_video_ingest",
+      "purpose": "Later ingest videos, transcripts, and research artifacts into compact notes and structured plans.",
+      "allowed_tools": ["transcript_ingest_planning", "compact_memory", "artifact_preview"],
+      "preferred_provider": "gemma_local",
+      "approval_sensitivity": "medium",
+      "notes": "Video understanding is not wired yet; this role is a scaffold for later transcript and summary work."
+    },
+    {
+      "role_id": "finance_risk_gate",
+      "purpose": "Review anything involving money, spend, pricing, negotiation, or capital risk before execution.",
+      "allowed_tools": ["approvals", "compact_memory", "workflow_catalog"],
+      "preferred_provider": "gemma_local",
+      "approval_sensitivity": "critical",
+      "notes": "No autonomous spending, investing, or negotiation. This role exists to make that explicit."
+    },
+    {
+      "role_id": "memory_summarizer",
+      "purpose": "Compress long context into durable markdown summaries, decisions, plans, and task extracts.",
+      "allowed_tools": ["compact_memory", "handoff_context", "repo_read"],
+      "preferred_provider": "gemma_local",
+      "approval_sensitivity": "low",
+      "notes": "Use for compact durable memory, not for acting on the machine."
+    }
+  ]
+}

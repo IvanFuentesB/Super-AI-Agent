@@ -38,19 +38,26 @@ function Resolve-PythonPath {
 function Invoke-ModuleCommand {
     param(
         [string]$PythonPath,
-        [string[]]$Arguments
+        [string[]]$Arguments,
+        [hashtable]$EnvOverrides = @{}
     )
 
     $argumentsJson = ConvertTo-Json -InputObject @($Arguments) -Compress
     $argumentsEncoded = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($argumentsJson))
+    $envOverridesJson = ConvertTo-Json -InputObject $EnvOverrides -Compress -Depth 5
+    $envOverridesEncoded = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($envOverridesJson))
     $runtimeSrcEscaped = $runtimeSrc.Replace('\', '\\').Replace("'", "\\'")
     $scriptPath = [System.IO.Path]::ChangeExtension([System.IO.Path]::GetTempFileName(), '.py')
     $code = @"
 import base64
 import json
+import os
 import sys
 sys.path.insert(0, r'$runtimeSrcEscaped')
 from super_ai_agent.cli import main
+env_overrides = json.loads(base64.b64decode('$envOverridesEncoded').decode('utf-8'))
+for key, value in env_overrides.items():
+    os.environ[str(key)] = str(value)
 argv = json.loads(base64.b64decode('$argumentsEncoded').decode('utf-8'))
 raise SystemExit(main(argv))
 "@
@@ -122,6 +129,8 @@ $expectedFiles = @(
     '01_projects/runtime_mvp/src/super_ai_agent/queue.py',
     '01_projects/runtime_mvp/src/super_ai_agent/notification_adapter.py',
     '01_projects/runtime_mvp/src/super_ai_agent/handoff.py',
+    '01_projects/runtime_mvp/src/super_ai_agent/brain.py',
+    '01_projects/runtime_mvp/src/super_ai_agent/relay_loop.py',
     '01_projects/runtime_mvp/src/super_ai_agent/personal_ops.py',
     '01_projects/runtime_mvp/src/super_ai_agent/providers.py',
     '01_projects/runtime_mvp/src/super_ai_agent/council.py',
@@ -132,6 +141,7 @@ $expectedFiles = @(
     '01_projects/runtime_mvp/src/super_ai_agent/cli.py',
     '01_projects/runtime_mvp/runtime_data/.gitkeep',
     '04_docs/runtime_mvp.md',
+    '04_docs/ghoti_control_center.md',
     '04_docs/showcase_plan.md',
     '04_docs/internship_showcase_strategy.md',
     '04_docs/claude_openclaw_fit.md',
@@ -162,8 +172,17 @@ $expectedFiles = @(
     '04_docs/licensing_strategy.md',
     '04_docs/truth_council_architecture.md',
     '04_docs/browser_app_control_architecture.md',
+    '08_research/repo_integration_map.md',
     '08_research/career_ops_extraction_map.md',
     '08_research/repo_intake_matrix.md',
+    '14_context/chat_handoff_latest.md',
+    '14_context/compact_memory/current_working_summary.md',
+    '14_context/compact_memory/current_loop_state.md',
+    '14_context/compact_memory/compact_build_context.md',
+    '14_context/compact_memory/last_successful_step.md',
+    '14_context/compact_memory/next_exact_step.md',
+    '14_context/compact_memory/blocker_state.md',
+    '14_context/compact_memory/operator_handoff_summary.md',
     '07_templates/inbox_triage_runbook.md',
     '07_templates/linkedin_update_pack.md',
     '07_templates/cv_update_pack.md',
@@ -183,6 +202,7 @@ $expectedFiles = @(
     '23_configs/tool_detection_policy.example.json',
     '23_configs/repo_manifest.example.json',
     '23_configs/provider_profiles.example.json',
+    '23_configs/brain_provider.example.json',
     '23_configs/council_policy.example.json',
     '23_configs/personal_workflow_catalog.example.json',
     '23_configs/owned_account_policy.example.json',
@@ -218,6 +238,85 @@ $initResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('init-da
 $initOk = $initResult.ExitCode -eq 0
 Write-Check -Name 'CLI init-data' -Passed $initOk -Detail (($initResult.Output | Out-String).Trim())
 if (-not $initOk) { $failed++ }
+
+$ghotiHelpResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('ghoti-help')
+$ghotiHelpOk = $ghotiHelpResult.ExitCode -eq 0 -and `
+    (($ghotiHelpResult.Output | Out-String) -match 'ghoti_help:\s+supervised local-first operator control overview') -and `
+    (($ghotiHelpResult.Output | Out-String) -match 'dashboard_url:\s+http://127\.0\.0\.1:3210') -and `
+    (($ghotiHelpResult.Output | Out-String) -match 'control_center_doc:\s+.*04_docs[\\/]+ghoti_control_center\.md') -and `
+    (($ghotiHelpResult.Output | Out-String) -match 'Ctrl\+8') -and `
+    (($ghotiHelpResult.Output | Out-String) -match 'no task deletion without explicit user approval') -and `
+    (($ghotiHelpResult.Output | Out-String) -match 'floating Ghoti overlay')
+Write-Check -Name 'CLI ghoti-help' -Passed $ghotiHelpOk -Detail (($ghotiHelpResult.Output | Out-String).Trim())
+if (-not $ghotiHelpOk) { $failed++ }
+
+$ghotiHotkeysResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('ghoti-hotkeys')
+$ghotiHotkeysOk = $ghotiHotkeysResult.ExitCode -eq 0 -and `
+    (($ghotiHotkeysResult.Output | Out-String) -match 'primary_hotkey:\s+Ctrl\+8') -and `
+    (($ghotiHotkeysResult.Output | Out-String) -match 'after_interrupt:\s+') -and `
+    (($ghotiHotkeysResult.Output | Out-String) -match 'handoff_safety:\s+') -and `
+    (($ghotiHotkeysResult.Output | Out-String) -match 'overlay_visibility:\s+')
+Write-Check -Name 'CLI ghoti-hotkeys' -Passed $ghotiHotkeysOk -Detail (($ghotiHotkeysResult.Output | Out-String).Trim())
+if (-not $ghotiHotkeysOk) { $failed++ }
+
+$ghotiStatusResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('ghoti-status')
+$ghotiStatusOk = $ghotiStatusResult.ExitCode -eq 0 -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'ghoti_status:\s+local operator control snapshot') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'dashboard_url:\s+http://127\.0\.0\.1:3210') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'control_center_doc:\s+.*04_docs[\\/]+ghoti_control_center\.md') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'ghoti_state:\s+\S+') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'active_brain_provider:\s+\S+') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'active_brain_model:\s+\S+') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'current_specialist_role:\s+\S+') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'relay_state:\s+\S+') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'relay_current_step:\s+\S+') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'relay_codex_mode_preset:\s+') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'current_specialist_role_provider:\s+\S+') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'browser_use_installed:\s+(yes|no)') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'playwright_ready:\s+(yes|no)') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'compact_memory_ready:\s+(yes|no)') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'current_task_used_model_inference:\s+(yes|no)') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'last_model_call_status:\s+\S+') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'watchdog_status:\s+\S+') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'watchdog_headline:\s+') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'overlay_target:\s+') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'desktop_current_action:\s+\S+') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'desktop_current_target:\s+') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'desktop_current_typing_enabled:\s+(yes|no)') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'desktop_visual_cue_status:\s+\S+') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'watchdog_alerts:') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'recent_actionable_tasks:') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'recent_failures:') -and `
+    (($ghotiStatusResult.Output | Out-String) -match 'what_to_do_next:')
+Write-Check -Name 'CLI ghoti-status' -Passed $ghotiStatusOk -Detail (($ghotiStatusResult.Output | Out-String).Trim())
+if (-not $ghotiStatusOk) { $failed++ }
+
+$ghotiRecentResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('ghoti-recent')
+$ghotiRecentOk = $ghotiRecentResult.ExitCode -eq 0 -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'ghoti_recent:\s+recent actionable work, failures, approvals, and artifacts') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'active_brain_provider:\s+\S+') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'active_brain_model:\s+\S+') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'current_specialist_role:\s+\S+') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'relay_state:\s+\S+') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'relay_current_step:\s+\S+') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'browser_use_installed:\s+(yes|no)') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'playwright_ready:\s+(yes|no)') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'compact_memory_ready:\s+(yes|no)') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'current_task_used_model_inference:\s+(yes|no)') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'last_model_call_status:\s+\S+') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'watchdog_status:\s+\S+') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'watchdog_headline:\s+') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'overlay_target:\s+') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'desktop_current_action:\s+\S+') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'desktop_current_typing_enabled:\s+(yes|no)') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'recent_actionable_tasks:') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'active_only_tasks:') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'recent_failures:') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'watchdog_alerts:') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'pending_approvals:') -and `
+    (($ghotiRecentResult.Output | Out-String) -match 'recent_artifacts:')
+Write-Check -Name 'CLI ghoti-recent' -Passed $ghotiRecentOk -Detail (($ghotiRecentResult.Output | Out-String).Trim())
+if (-not $ghotiRecentOk) { $failed++ }
 
 $envDiagnoseResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('env-diagnose')
 $envDiagnoseOk = $envDiagnoseResult.ExitCode -eq 0
@@ -259,6 +358,63 @@ $providersResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('li
 $providersOk = $providersResult.ExitCode -eq 0
 Write-Check -Name 'CLI list-providers' -Passed $providersOk -Detail (($providersResult.Output | Out-String).Trim())
 if (-not $providersOk) { $failed++ }
+
+$brainStatusResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('brain-status')
+$brainStatusOk = $brainStatusResult.ExitCode -eq 0 -and `
+    (($brainStatusResult.Output | Out-String) -match 'brain_status:\s+local brain/provider snapshot') -and `
+    (($brainStatusResult.Output | Out-String) -match 'active_brain_provider:\s+\S+') -and `
+    (($brainStatusResult.Output | Out-String) -match 'active_brain_model:\s+\S+') -and `
+    (($brainStatusResult.Output | Out-String) -match 'brain_inference_ready:\s+(yes|no)') -and `
+    (($brainStatusResult.Output | Out-String) -match 'current_task_used_model_inference:\s+(yes|no)') -and `
+    (($brainStatusResult.Output | Out-String) -match 'last_model_call_status:\s+\S+')
+Write-Check -Name 'CLI brain-status' -Passed $brainStatusOk -Detail (($brainStatusResult.Output | Out-String).Trim())
+if (-not $brainStatusOk) { $failed++ }
+
+$listAgentRolesResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('list-agent-roles')
+$listAgentRolesOk = $listAgentRolesResult.ExitCode -eq 0 -and `
+    (($listAgentRolesResult.Output | Out-String) -match 'agent_roles:\s+specialist role registry snapshot') -and `
+    (($listAgentRolesResult.Output | Out-String) -match 'current_specialist_role:\s+\S+') -and `
+    (($listAgentRolesResult.Output | Out-String) -match 'current_specialist_role_provider:\s+\S+') -and `
+    (($listAgentRolesResult.Output | Out-String) -match 'specialist_role_registry_count:\s+\d+') -and `
+    (($listAgentRolesResult.Output | Out-String) -match 'roles:')
+Write-Check -Name 'CLI list-agent-roles' -Passed $listAgentRolesOk -Detail (($listAgentRolesResult.Output | Out-String).Trim())
+if (-not $listAgentRolesOk) { $failed++ }
+
+$browserStatusResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('browser-status')
+$browserStatusOk = $browserStatusResult.ExitCode -eq 0 -and `
+    (($browserStatusResult.Output | Out-String) -match 'browser_status:\s+browser-agent capability snapshot') -and `
+    (($browserStatusResult.Output | Out-String) -match 'browser_use_installed:\s+(yes|no)') -and `
+    (($browserStatusResult.Output | Out-String) -match 'browser_use_ready:\s+(yes|no)') -and `
+    (($browserStatusResult.Output | Out-String) -match 'playwright_installed:\s+(yes|no)') -and `
+    (($browserStatusResult.Output | Out-String) -match 'playwright_ready:\s+(yes|no)') -and `
+    (($browserStatusResult.Output | Out-String) -match 'current_browser_role:\s+\S+') -and `
+    (($browserStatusResult.Output | Out-String) -match 'browser_notes:')
+Write-Check -Name 'CLI browser-status' -Passed $browserStatusOk -Detail (($browserStatusResult.Output | Out-String).Trim())
+if (-not $browserStatusOk) { $failed++ }
+
+$relayStatusResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('relay-status')
+$relayStatusOk = $relayStatusResult.ExitCode -eq 0 -and `
+    (($relayStatusResult.Output | Out-String) -match 'relay_status:\s+supervised chatgpt to codex relay snapshot') -and `
+    (($relayStatusResult.Output | Out-String) -match 'relay_state:\s+\S+') -and `
+    (($relayStatusResult.Output | Out-String) -match 'relay_current_step:\s+\S+') -and `
+    (($relayStatusResult.Output | Out-String) -match 'relay_source_target_alias:\s+\S+') -and `
+    (($relayStatusResult.Output | Out-String) -match 'relay_destination_target_alias:\s+\S+') -and `
+    (($relayStatusResult.Output | Out-String) -match 'relay_codex_mode_preset:\s+') -and `
+    (($relayStatusResult.Output | Out-String) -match 'relay_codex_reasoning_preset:\s+') -and `
+    (($relayStatusResult.Output | Out-String) -match 'relay_codex_execution_status:\s+\S+') -and `
+    (($relayStatusResult.Output | Out-String) -match 'runtime_relay_state_file:\s+')
+Write-Check -Name 'CLI relay-status' -Passed $relayStatusOk -Detail (($relayStatusResult.Output | Out-String).Trim())
+if (-not $relayStatusOk) { $failed++ }
+
+$memoryStatusResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('memory-status')
+$memoryStatusOk = $memoryStatusResult.ExitCode -eq 0 -and `
+    (($memoryStatusResult.Output | Out-String) -match 'memory_status:\s+compact markdown memory snapshot') -and `
+    (($memoryStatusResult.Output | Out-String) -match 'compact_memory_ready:\s+(yes|no)') -and `
+    (($memoryStatusResult.Output | Out-String) -match 'compact_memory_root:\s+') -and `
+    (($memoryStatusResult.Output | Out-String) -match 'compact_memory_file_count:\s+\d+') -and `
+    (($memoryStatusResult.Output | Out-String) -match 'compact_memory_notes:')
+Write-Check -Name 'CLI memory-status' -Passed $memoryStatusOk -Detail (($memoryStatusResult.Output | Out-String).Trim())
+if (-not $memoryStatusOk) { $failed++ }
 
 $councilResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('council-plan', '--goal-type', 'planning', '--privacy', 'balanced', '--speed', 'balanced', '--require-reviewer')
 $councilOk = $councilResult.ExitCode -eq 0
@@ -434,6 +590,12 @@ if ($taskIdOk) {
     $supervisorStatusOk = $supervisorStatusResult.ExitCode -eq 0 -and (($supervisorStatusResult.Output | Out-String) -match 'status:\s+\S+')
     Write-Check -Name 'CLI supervisor-status' -Passed $supervisorStatusOk -Detail (($supervisorStatusResult.Output | Out-String).Trim())
     if (-not $supervisorStatusOk) { $failed++ }
+
+    $ghotiFieldsOk = (($supervisorStatusResult.Output | Out-String) -match 'ghoti_state:\s+\S+') -and `
+        (($supervisorStatusResult.Output | Out-String) -match 'operator_next_step:\s+\S+') -and `
+        (($supervisorStatusResult.Output | Out-String) -match 'resource_guard_event_count:\s+\d+')
+    Write-Check -Name 'Supervisor status reports Ghoti state fields' -Passed $ghotiFieldsOk -Detail (($supervisorStatusResult.Output | Out-String).Trim())
+    if (-not $ghotiFieldsOk) { $failed++ }
 
     $approvalStatusListResult = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approval-status')
     $approvalStatusListOk = $approvalStatusListResult.ExitCode -eq 0 -and (($approvalStatusListResult.Output | Out-String) -match 'count:\s+\d+')
@@ -911,11 +1073,96 @@ if (-not [string]::IsNullOrWhiteSpace($desktopOpenApprovalId)) {
 
 if (-not [string]::IsNullOrWhiteSpace($desktopOpenTaskId)) {
     $desktopOpenExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $desktopOpenTaskId)
-    $desktopOpenExecuteOk = $desktopOpenExecute.ExitCode -eq 0 -and `
-        (($desktopOpenExecute.Output | Out-String) -match 'status:\s+completed') -and `
-        (($desktopOpenExecute.Output | Out-String) -match 'execution_status:\s+succeeded')
-    Write-Check -Name 'Desktop executor open_allowed_app execution succeeds' -Passed $desktopOpenExecuteOk -Detail (($desktopOpenExecute.Output | Out-String).Trim())
+    $desktopOpenExecuteText = ($desktopOpenExecute.Output | Out-String)
+    $desktopOpenExecuteOk = $desktopOpenExecute.ExitCode -eq 0 -and (
+        (
+            ($desktopOpenExecuteText -match 'status:\s+completed') -and
+            ($desktopOpenExecuteText -match 'execution_status:\s+succeeded')
+        ) -or (
+            ($desktopOpenExecuteText -match 'status:\s+blocked_human_needed') -and
+            ($desktopOpenExecuteText -match 'execution_status:\s+failed') -and
+            ($desktopOpenExecuteText -match 'manual operator focus|Resource guard blocked opening another terminal window')
+        )
+    )
+    Write-Check -Name 'Desktop executor open_allowed_app execution stays honest about focus reuse or manual focus blocking' -Passed $desktopOpenExecuteOk -Detail $desktopOpenExecuteText.Trim()
     if (-not $desktopOpenExecuteOk) { $failed++ }
+
+    $desktopOpenStatus = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $desktopOpenTaskId)
+    $desktopOpenStatusText = ($desktopOpenStatus.Output | Out-String)
+    $desktopOpenStatusOk = $desktopOpenStatus.ExitCode -eq 0 -and (
+        (
+            ($desktopOpenStatusText -match 'last_execution_status:\s+succeeded') -and
+            (
+                ($desktopOpenStatusText -match 'last_execution_summary:\s+Focused existing allowlisted app window') -or
+                ($desktopOpenStatusText -match 'last_execution_summary:\s+Opened allowlisted app:\s+terminal')
+            )
+        ) -or (
+            ($desktopOpenStatusText -match 'status:\s+blocked_human_needed') -and
+            ($desktopOpenStatusText -match 'last_execution_status:\s+failed') -and
+            ($desktopOpenStatusText -match 'manual operator focus|Resource guard blocked opening another terminal window')
+        )
+    )
+    Write-Check -Name 'Desktop executor open_allowed_app reports reuse-first success or clear manual-focus blocking' -Passed $desktopOpenStatusOk -Detail $desktopOpenStatusText.Trim()
+    if (-not $desktopOpenStatusOk) { $failed++ }
+}
+
+$desktopGuardQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'open_allowed_app',
+    '--target', 'terminal'
+)
+$desktopGuardQueueOk = $desktopGuardQueue.ExitCode -eq 0 -and `
+    (($desktopGuardQueue.Output | Out-String) -match 'status:\s+pending_approval') -and `
+    (($desktopGuardQueue.Output | Out-String) -match 'executor_action_type:\s+open_allowed_app')
+Write-Check -Name 'Desktop resource-guard task queues for terminal open' -Passed $desktopGuardQueueOk -Detail (($desktopGuardQueue.Output | Out-String).Trim())
+if (-not $desktopGuardQueueOk) { $failed++ }
+
+$desktopGuardTaskMatch = [regex]::Match(($desktopGuardQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$desktopGuardTaskId = if ($desktopGuardTaskMatch.Success) { $desktopGuardTaskMatch.Groups[1].Value } else { $null }
+$desktopGuardApprovalMatch = [regex]::Match(($desktopGuardQueue.Output | Out-String), 'approval_request_id:\s*(\S+)')
+$desktopGuardApprovalId = if ($desktopGuardApprovalMatch.Success) { $desktopGuardApprovalMatch.Groups[1].Value } else { $null }
+$desktopGuardIdsOk = (-not [string]::IsNullOrWhiteSpace($desktopGuardTaskId)) -and (-not [string]::IsNullOrWhiteSpace($desktopGuardApprovalId))
+Write-Check -Name 'Desktop resource-guard ids parsed' -Passed $desktopGuardIdsOk -Detail ($(if ($desktopGuardIdsOk) { "$desktopGuardTaskId | $desktopGuardApprovalId" } else { 'missing resource-guard task or approval id' }))
+if (-not $desktopGuardIdsOk) { $failed++ }
+
+if (-not [string]::IsNullOrWhiteSpace($desktopGuardApprovalId)) {
+    $desktopGuardApprove = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $desktopGuardApprovalId, '--note', 'runtime checker approved the guarded terminal open')
+    $desktopGuardApproveOk = $desktopGuardApprove.ExitCode -eq 0 -and `
+        (($desktopGuardApprove.Output | Out-String) -match 'task_status:\s+queued')
+    Write-Check -Name 'Desktop resource-guard approval persists' -Passed $desktopGuardApproveOk -Detail (($desktopGuardApprove.Output | Out-String).Trim())
+    if (-not $desktopGuardApproveOk) { $failed++ }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($desktopGuardTaskId)) {
+    $desktopGuardExecute = Invoke-ModuleCommand `
+        -PythonPath $pythonPath `
+        -Arguments @('execute-task', '--task-id', $desktopGuardTaskId) `
+        -EnvOverrides @{
+            SUPER_AGENT_DESKTOP_TEST_TERMINAL_WINDOW_COUNT = '3'
+            SUPER_AGENT_DESKTOP_TEST_TERMINAL_PROCESS_COUNT = '6'
+            SUPER_AGENT_DESKTOP_TEST_FORCE_RESOURCE_GUARD = '1'
+        }
+    $desktopGuardExecuteOk = $desktopGuardExecute.ExitCode -eq 0 -and `
+        (($desktopGuardExecute.Output | Out-String) -match 'status:\s+blocked_human_needed') -and `
+        (($desktopGuardExecute.Output | Out-String) -match 'execution_status:\s+failed') -and `
+        (($desktopGuardExecute.Output | Out-String) -match 'resource guard')
+    Write-Check -Name 'Desktop resource guard blocks duplicate terminal spawning in runtime executor' -Passed $desktopGuardExecuteOk -Detail (($desktopGuardExecute.Output | Out-String).Trim())
+    if (-not $desktopGuardExecuteOk) { $failed++ }
+
+    $desktopGuardStatus = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $desktopGuardTaskId)
+    $desktopGuardStatusOk = $desktopGuardStatus.ExitCode -eq 0 -and `
+        (($desktopGuardStatus.Output | Out-String) -match 'status:\s+blocked_human_needed') -and `
+        (($desktopGuardStatus.Output | Out-String) -match 'last_resource_guard_reason:\s+\S+') -and `
+        (($desktopGuardStatus.Output | Out-String) -match 'waiting_for:\s+resource_guard_review')
+    Write-Check -Name 'Runtime task status persists resource guard blocking detail' -Passed $desktopGuardStatusOk -Detail (($desktopGuardStatus.Output | Out-String).Trim())
+    if (-not $desktopGuardStatusOk) { $failed++ }
+
+    $guardSupervisorStatus = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('supervisor-status')
+    $guardSupervisorStatusOk = $guardSupervisorStatus.ExitCode -eq 0 -and `
+        (($guardSupervisorStatus.Output | Out-String) -match 'ghoti_state:\s+resource_guard_triggered') -and `
+        (($guardSupervisorStatus.Output | Out-String) -match 'resource_guard_event_count:\s+[1-9]')
+    Write-Check -Name 'Supervisor reflects resource guard state clearly' -Passed $guardSupervisorStatusOk -Detail (($guardSupervisorStatus.Output | Out-String).Trim())
+    if (-not $guardSupervisorStatusOk) { $failed++ }
 }
 
 Start-Sleep -Milliseconds 1200
@@ -949,10 +1196,18 @@ if (-not [string]::IsNullOrWhiteSpace($desktopFocusApprovalId)) {
 
 if (-not [string]::IsNullOrWhiteSpace($desktopFocusTaskId)) {
     $desktopFocusExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $desktopFocusTaskId)
-    $desktopFocusExecuteOk = $desktopFocusExecute.ExitCode -eq 0 -and `
-        (($desktopFocusExecute.Output | Out-String) -match 'status:\s+completed') -and `
-        (($desktopFocusExecute.Output | Out-String) -match 'execution_status:\s+succeeded')
-    Write-Check -Name 'Desktop executor focus_window execution succeeds' -Passed $desktopFocusExecuteOk -Detail (($desktopFocusExecute.Output | Out-String).Trim())
+    $desktopFocusExecuteText = ($desktopFocusExecute.Output | Out-String)
+    $desktopFocusExecuteOk = $desktopFocusExecute.ExitCode -eq 0 -and (
+        (
+            ($desktopFocusExecuteText -match 'status:\s+completed') -and
+            ($desktopFocusExecuteText -match 'execution_status:\s+succeeded')
+        ) -or (
+            ($desktopFocusExecuteText -match 'status:\s+blocked_human_needed') -and
+            ($desktopFocusExecuteText -match 'execution_status:\s+failed') -and
+            ($desktopFocusExecuteText -match 'manual operator focus|manual target resolution is required')
+        )
+    )
+    Write-Check -Name 'Desktop executor focus_window execution succeeds or blocks safely for manual focus' -Passed $desktopFocusExecuteOk -Detail $desktopFocusExecuteText.Trim()
     if (-not $desktopFocusExecuteOk) { $failed++ }
 }
 
@@ -987,20 +1242,898 @@ if (-not [string]::IsNullOrWhiteSpace($desktopScreenshotApprovalId)) {
 
 if (-not [string]::IsNullOrWhiteSpace($desktopScreenshotTaskId)) {
     $desktopScreenshotExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $desktopScreenshotTaskId)
-    $desktopScreenshotExecuteOk = $desktopScreenshotExecute.ExitCode -eq 0 -and `
-        (($desktopScreenshotExecute.Output | Out-String) -match 'status:\s+completed') -and `
-        (($desktopScreenshotExecute.Output | Out-String) -match 'execution_status:\s+succeeded') -and `
-        (Test-Path -LiteralPath $runtimeDesktopArtifactPath -PathType Leaf)
-    Write-Check -Name 'Desktop executor screenshot execution succeeds' -Passed $desktopScreenshotExecuteOk -Detail (($desktopScreenshotExecute.Output | Out-String).Trim())
+    $desktopScreenshotExecuteText = ($desktopScreenshotExecute.Output | Out-String)
+    $desktopScreenshotExecuteOk = $desktopScreenshotExecute.ExitCode -eq 0 -and (
+        (
+            ($desktopScreenshotExecuteText -match 'status:\s+completed') -and
+            ($desktopScreenshotExecuteText -match 'execution_status:\s+succeeded') -and
+            (Test-Path -LiteralPath $runtimeDesktopArtifactPath -PathType Leaf)
+        ) -or (
+            ($desktopScreenshotExecuteText -match 'status:\s+blocked_human_needed') -and
+            ($desktopScreenshotExecuteText -match 'execution_status:\s+failed') -and
+            ($desktopScreenshotExecuteText -match 'manual screenshot is required')
+        )
+    )
+    Write-Check -Name 'Desktop executor screenshot execution succeeds or blocks safely for manual capture' -Passed $desktopScreenshotExecuteOk -Detail $desktopScreenshotExecuteText.Trim()
     if (-not $desktopScreenshotExecuteOk) { $failed++ }
 
     $desktopScreenshotStatus = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $desktopScreenshotTaskId)
-    $desktopScreenshotStatusOk = $desktopScreenshotStatus.ExitCode -eq 0 -and `
-        (($desktopScreenshotStatus.Output | Out-String) -match "last_artifact_path:\s+$([regex]::Escape($runtimeDesktopArtifactPath))") -and `
-        (($desktopScreenshotStatus.Output | Out-String) -match 'last_execution_status:\s+succeeded')
-    Write-Check -Name 'Desktop executor screenshot result persists' -Passed $desktopScreenshotStatusOk -Detail (($desktopScreenshotStatus.Output | Out-String).Trim())
+    $desktopScreenshotStatusText = ($desktopScreenshotStatus.Output | Out-String)
+    $desktopScreenshotStatusOk = $desktopScreenshotStatus.ExitCode -eq 0 -and (
+        (
+            ($desktopScreenshotStatusText -match "last_artifact_path:\s+$([regex]::Escape($runtimeDesktopArtifactPath))") -and
+            ($desktopScreenshotStatusText -match 'last_execution_status:\s+succeeded')
+        ) -or (
+            ($desktopScreenshotStatusText -match 'status:\s+blocked_human_needed') -and
+            ($desktopScreenshotStatusText -match 'last_execution_status:\s+failed') -and
+            ($desktopScreenshotStatusText -match 'manual screenshot is required')
+        )
+    )
+    Write-Check -Name 'Desktop executor screenshot result persists or reports manual capture blocking clearly' -Passed $desktopScreenshotStatusOk -Detail $desktopScreenshotStatusText.Trim()
     if (-not $desktopScreenshotStatusOk) { $failed++ }
 }
+
+$desktopSetClipboardQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'set_clipboard_text',
+    '--content', 'runtime-desktop-clipboard-check'
+)
+$desktopSetClipboardQueueOk = $desktopSetClipboardQueue.ExitCode -eq 0 -and `
+    (($desktopSetClipboardQueue.Output | Out-String) -match 'status:\s+pending_approval') -and `
+    (($desktopSetClipboardQueue.Output | Out-String) -match 'executor_action_type:\s+set_clipboard_text')
+Write-Check -Name 'Desktop executor set_clipboard_text queues with approval' -Passed $desktopSetClipboardQueueOk -Detail (($desktopSetClipboardQueue.Output | Out-String).Trim())
+if (-not $desktopSetClipboardQueueOk) { $failed++ }
+
+$desktopSetClipboardTaskMatch = [regex]::Match(($desktopSetClipboardQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$desktopSetClipboardTaskId = if ($desktopSetClipboardTaskMatch.Success) { $desktopSetClipboardTaskMatch.Groups[1].Value } else { $null }
+$desktopSetClipboardApprovalMatch = [regex]::Match(($desktopSetClipboardQueue.Output | Out-String), 'approval_request_id:\s*(\S+)')
+$desktopSetClipboardApprovalId = if ($desktopSetClipboardApprovalMatch.Success) { $desktopSetClipboardApprovalMatch.Groups[1].Value } else { $null }
+$desktopSetClipboardIdsOk = (-not [string]::IsNullOrWhiteSpace($desktopSetClipboardTaskId)) -and (-not [string]::IsNullOrWhiteSpace($desktopSetClipboardApprovalId))
+Write-Check -Name 'Desktop executor set_clipboard_text ids parsed' -Passed $desktopSetClipboardIdsOk -Detail ($(if ($desktopSetClipboardIdsOk) { "$desktopSetClipboardTaskId | $desktopSetClipboardApprovalId" } else { 'missing set_clipboard_text task or approval id' }))
+if (-not $desktopSetClipboardIdsOk) { $failed++ }
+
+if (-not [string]::IsNullOrWhiteSpace($desktopSetClipboardApprovalId)) {
+    $desktopSetClipboardApprove = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $desktopSetClipboardApprovalId, '--note', 'runtime checker approved set_clipboard_text')
+    $desktopSetClipboardApproveOk = $desktopSetClipboardApprove.ExitCode -eq 0 -and `
+        (($desktopSetClipboardApprove.Output | Out-String) -match 'task_status:\s+queued')
+    Write-Check -Name 'Desktop executor set_clipboard_text approval persists' -Passed $desktopSetClipboardApproveOk -Detail (($desktopSetClipboardApprove.Output | Out-String).Trim())
+    if (-not $desktopSetClipboardApproveOk) { $failed++ }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($desktopSetClipboardTaskId)) {
+    $desktopSetClipboardExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $desktopSetClipboardTaskId)
+    $desktopSetClipboardExecuteOk = $desktopSetClipboardExecute.ExitCode -eq 0 -and `
+        (($desktopSetClipboardExecute.Output | Out-String) -match 'status:\s+completed') -and `
+        (($desktopSetClipboardExecute.Output | Out-String) -match 'execution_summary:\s+Updated clipboard text\.')
+    Write-Check -Name 'Desktop executor set_clipboard_text execution succeeds' -Passed $desktopSetClipboardExecuteOk -Detail (($desktopSetClipboardExecute.Output | Out-String).Trim())
+    if (-not $desktopSetClipboardExecuteOk) { $failed++ }
+}
+
+$desktopReadClipboardQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'get_clipboard_text'
+)
+$desktopReadClipboardQueueOk = $desktopReadClipboardQueue.ExitCode -eq 0 -and `
+    (($desktopReadClipboardQueue.Output | Out-String) -match 'status:\s+queued') -and `
+    (($desktopReadClipboardQueue.Output | Out-String) -match 'executor_action_type:\s+get_clipboard_text')
+Write-Check -Name 'Desktop executor get_clipboard_text queues without approval' -Passed $desktopReadClipboardQueueOk -Detail (($desktopReadClipboardQueue.Output | Out-String).Trim())
+if (-not $desktopReadClipboardQueueOk) { $failed++ }
+
+$desktopReadClipboardTaskMatch = [regex]::Match(($desktopReadClipboardQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$desktopReadClipboardTaskId = if ($desktopReadClipboardTaskMatch.Success) { $desktopReadClipboardTaskMatch.Groups[1].Value } else { $null }
+$desktopReadClipboardTaskOk = -not [string]::IsNullOrWhiteSpace($desktopReadClipboardTaskId)
+Write-Check -Name 'Desktop executor get_clipboard_text task id parsed' -Passed $desktopReadClipboardTaskOk -Detail ($(if ($desktopReadClipboardTaskOk) { $desktopReadClipboardTaskId } else { 'missing get_clipboard_text task id' }))
+if (-not $desktopReadClipboardTaskOk) { $failed++ }
+
+if ($desktopReadClipboardTaskOk) {
+    $desktopReadClipboardExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $desktopReadClipboardTaskId)
+    $desktopReadClipboardExecuteOk = $desktopReadClipboardExecute.ExitCode -eq 0 -and `
+        (($desktopReadClipboardExecute.Output | Out-String) -match 'status:\s+completed') -and `
+        (($desktopReadClipboardExecute.Output | Out-String) -match 'execution_summary:\s+Read clipboard text\.')
+    Write-Check -Name 'Desktop executor get_clipboard_text execution succeeds' -Passed $desktopReadClipboardExecuteOk -Detail (($desktopReadClipboardExecute.Output | Out-String).Trim())
+    if (-not $desktopReadClipboardExecuteOk) { $failed++ }
+
+    $desktopReadClipboardStatus = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $desktopReadClipboardTaskId)
+    $desktopReadClipboardStatusOk = $desktopReadClipboardStatus.ExitCode -eq 0 -and `
+        (($desktopReadClipboardStatus.Output | Out-String) -match 'last_execution_status:\s+succeeded') -and `
+        (($desktopReadClipboardStatus.Output | Out-String) -match 'last_execution_summary:\s+Read clipboard text\.')
+    Write-Check -Name 'Desktop executor clipboard read result persists' -Passed $desktopReadClipboardStatusOk -Detail (($desktopReadClipboardStatus.Output | Out-String).Trim())
+    if (-not $desktopReadClipboardStatusOk) { $failed++ }
+}
+
+$desktopPasteQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'paste_clipboard',
+    '--target', 'terminal'
+)
+$desktopPasteQueueOk = $desktopPasteQueue.ExitCode -eq 0 -and `
+    (($desktopPasteQueue.Output | Out-String) -match 'status:\s+pending_approval') -and `
+    (($desktopPasteQueue.Output | Out-String) -match 'executor_action_type:\s+paste_clipboard')
+Write-Check -Name 'Desktop executor paste_clipboard queues with approval' -Passed $desktopPasteQueueOk -Detail (($desktopPasteQueue.Output | Out-String).Trim())
+if (-not $desktopPasteQueueOk) { $failed++ }
+
+$desktopPasteTaskMatch = [regex]::Match(($desktopPasteQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$desktopPasteTaskId = if ($desktopPasteTaskMatch.Success) { $desktopPasteTaskMatch.Groups[1].Value } else { $null }
+$desktopPasteApprovalMatch = [regex]::Match(($desktopPasteQueue.Output | Out-String), 'approval_request_id:\s*(\S+)')
+$desktopPasteApprovalId = if ($desktopPasteApprovalMatch.Success) { $desktopPasteApprovalMatch.Groups[1].Value } else { $null }
+$desktopPasteIdsOk = (-not [string]::IsNullOrWhiteSpace($desktopPasteTaskId)) -and (-not [string]::IsNullOrWhiteSpace($desktopPasteApprovalId))
+Write-Check -Name 'Desktop executor paste_clipboard ids parsed' -Passed $desktopPasteIdsOk -Detail ($(if ($desktopPasteIdsOk) { "$desktopPasteTaskId | $desktopPasteApprovalId" } else { 'missing paste_clipboard task or approval id' }))
+if (-not $desktopPasteIdsOk) { $failed++ }
+
+if (-not [string]::IsNullOrWhiteSpace($desktopPasteApprovalId)) {
+    $desktopPasteApprove = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $desktopPasteApprovalId, '--note', 'runtime checker approved paste_clipboard')
+    $desktopPasteApproveOk = $desktopPasteApprove.ExitCode -eq 0 -and `
+        (($desktopPasteApprove.Output | Out-String) -match 'task_status:\s+queued')
+    Write-Check -Name 'Desktop executor paste_clipboard approval persists' -Passed $desktopPasteApproveOk -Detail (($desktopPasteApprove.Output | Out-String).Trim())
+    if (-not $desktopPasteApproveOk) { $failed++ }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($desktopPasteTaskId)) {
+    $desktopPasteExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $desktopPasteTaskId)
+    $desktopPasteExecuteText = ($desktopPasteExecute.Output | Out-String)
+    $desktopPasteExecuteOk = $desktopPasteExecute.ExitCode -eq 0 -and (
+        (
+            ($desktopPasteExecuteText -match 'status:\s+completed') -and
+            ($desktopPasteExecuteText -match 'execution_summary:\s+Pasted clipboard into allowlisted window')
+        ) -or (
+            ($desktopPasteExecuteText -match 'status:\s+blocked_human_needed') -and
+            ($desktopPasteExecuteText -match 'execution_status:\s+failed') -and
+            ($desktopPasteExecuteText -match 'manual operator focus|manual target resolution is required')
+        )
+    )
+    Write-Check -Name 'Desktop executor paste_clipboard execution succeeds or blocks safely for manual focus' -Passed $desktopPasteExecuteOk -Detail $desktopPasteExecuteText.Trim()
+    if (-not $desktopPasteExecuteOk) { $failed++ }
+}
+
+$desktopHotkeyQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'send_hotkey',
+    '--target', 'terminal|ctrl+v'
+)
+$desktopHotkeyQueueOk = $desktopHotkeyQueue.ExitCode -eq 0 -and `
+    (($desktopHotkeyQueue.Output | Out-String) -match 'status:\s+pending_approval') -and `
+    (($desktopHotkeyQueue.Output | Out-String) -match 'executor_action_type:\s+send_hotkey')
+Write-Check -Name 'Desktop executor send_hotkey queues with approval' -Passed $desktopHotkeyQueueOk -Detail (($desktopHotkeyQueue.Output | Out-String).Trim())
+if (-not $desktopHotkeyQueueOk) { $failed++ }
+
+$desktopHotkeyTaskMatch = [regex]::Match(($desktopHotkeyQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$desktopHotkeyTaskId = if ($desktopHotkeyTaskMatch.Success) { $desktopHotkeyTaskMatch.Groups[1].Value } else { $null }
+$desktopHotkeyApprovalMatch = [regex]::Match(($desktopHotkeyQueue.Output | Out-String), 'approval_request_id:\s*(\S+)')
+$desktopHotkeyApprovalId = if ($desktopHotkeyApprovalMatch.Success) { $desktopHotkeyApprovalMatch.Groups[1].Value } else { $null }
+$desktopHotkeyIdsOk = (-not [string]::IsNullOrWhiteSpace($desktopHotkeyTaskId)) -and (-not [string]::IsNullOrWhiteSpace($desktopHotkeyApprovalId))
+Write-Check -Name 'Desktop executor send_hotkey ids parsed' -Passed $desktopHotkeyIdsOk -Detail ($(if ($desktopHotkeyIdsOk) { "$desktopHotkeyTaskId | $desktopHotkeyApprovalId" } else { 'missing send_hotkey task or approval id' }))
+if (-not $desktopHotkeyIdsOk) { $failed++ }
+
+if (-not [string]::IsNullOrWhiteSpace($desktopHotkeyApprovalId)) {
+    $desktopHotkeyApprove = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $desktopHotkeyApprovalId, '--note', 'runtime checker approved send_hotkey')
+    $desktopHotkeyApproveOk = $desktopHotkeyApprove.ExitCode -eq 0 -and `
+        (($desktopHotkeyApprove.Output | Out-String) -match 'task_status:\s+queued')
+    Write-Check -Name 'Desktop executor send_hotkey approval persists' -Passed $desktopHotkeyApproveOk -Detail (($desktopHotkeyApprove.Output | Out-String).Trim())
+    if (-not $desktopHotkeyApproveOk) { $failed++ }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($desktopHotkeyTaskId)) {
+    $desktopHotkeyExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $desktopHotkeyTaskId)
+    $desktopHotkeyExecuteText = ($desktopHotkeyExecute.Output | Out-String)
+    $desktopHotkeyExecuteOk = $desktopHotkeyExecute.ExitCode -eq 0 -and (
+        (
+            ($desktopHotkeyExecuteText -match 'status:\s+completed') -and
+            ($desktopHotkeyExecuteText -match 'execution_summary:\s+Sent allowlisted hotkey ctrl\+v to terminal')
+        ) -or (
+            ($desktopHotkeyExecuteText -match 'status:\s+blocked_human_needed') -and
+            ($desktopHotkeyExecuteText -match 'execution_status:\s+failed') -and
+            ($desktopHotkeyExecuteText -match 'manual operator focus|manual target resolution is required')
+        )
+    )
+    Write-Check -Name 'Desktop executor send_hotkey execution succeeds or blocks safely for manual focus' -Passed $desktopHotkeyExecuteOk -Detail $desktopHotkeyExecuteText.Trim()
+    if (-not $desktopHotkeyExecuteOk) { $failed++ }
+}
+
+$clipboardGuardSetQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'set_clipboard_text',
+    '--content', 'Run Desktop Bridge Check'
+)
+$clipboardGuardSetQueueOk = $clipboardGuardSetQueue.ExitCode -eq 0 -and `
+    (($clipboardGuardSetQueue.Output | Out-String) -match 'status:\s+pending_approval')
+Write-Check -Name 'Clipboard guard seed queue succeeds' -Passed $clipboardGuardSetQueueOk -Detail (($clipboardGuardSetQueue.Output | Out-String).Trim())
+if (-not $clipboardGuardSetQueueOk) { $failed++ }
+
+$clipboardGuardSetTaskMatch = [regex]::Match(($clipboardGuardSetQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$clipboardGuardSetTaskId = if ($clipboardGuardSetTaskMatch.Success) { $clipboardGuardSetTaskMatch.Groups[1].Value } else { $null }
+$clipboardGuardSetApprovalMatch = [regex]::Match(($clipboardGuardSetQueue.Output | Out-String), 'approval_request_id:\s*(\S+)')
+$clipboardGuardSetApprovalId = if ($clipboardGuardSetApprovalMatch.Success) { $clipboardGuardSetApprovalMatch.Groups[1].Value } else { $null }
+
+if (-not [string]::IsNullOrWhiteSpace($clipboardGuardSetApprovalId)) {
+    $clipboardGuardSetApprove = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $clipboardGuardSetApprovalId, '--note', 'runtime checker seeded suspicious clipboard text')
+    $clipboardGuardSetApproveOk = $clipboardGuardSetApprove.ExitCode -eq 0
+    Write-Check -Name 'Clipboard guard seed approval persists' -Passed $clipboardGuardSetApproveOk -Detail (($clipboardGuardSetApprove.Output | Out-String).Trim())
+    if (-not $clipboardGuardSetApproveOk) { $failed++ }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($clipboardGuardSetTaskId)) {
+    $clipboardGuardSetExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $clipboardGuardSetTaskId)
+    $clipboardGuardSetExecuteOk = $clipboardGuardSetExecute.ExitCode -eq 0 -and `
+        (($clipboardGuardSetExecute.Output | Out-String) -match 'status:\s+completed')
+    Write-Check -Name 'Clipboard guard seed execution succeeds' -Passed $clipboardGuardSetExecuteOk -Detail (($clipboardGuardSetExecute.Output | Out-String).Trim())
+    if (-not $clipboardGuardSetExecuteOk) { $failed++ }
+}
+
+$clipboardGuardPasteQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'paste_clipboard',
+    '--target', 'terminal'
+)
+$clipboardGuardPasteQueueOk = $clipboardGuardPasteQueue.ExitCode -eq 0 -and `
+    (($clipboardGuardPasteQueue.Output | Out-String) -match 'status:\s+pending_approval')
+Write-Check -Name 'Clipboard guard paste task queues' -Passed $clipboardGuardPasteQueueOk -Detail (($clipboardGuardPasteQueue.Output | Out-String).Trim())
+if (-not $clipboardGuardPasteQueueOk) { $failed++ }
+
+$clipboardGuardPasteTaskMatch = [regex]::Match(($clipboardGuardPasteQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$clipboardGuardPasteTaskId = if ($clipboardGuardPasteTaskMatch.Success) { $clipboardGuardPasteTaskMatch.Groups[1].Value } else { $null }
+$clipboardGuardPasteApprovalMatch = [regex]::Match(($clipboardGuardPasteQueue.Output | Out-String), 'approval_request_id:\s*(\S+)')
+$clipboardGuardPasteApprovalId = if ($clipboardGuardPasteApprovalMatch.Success) { $clipboardGuardPasteApprovalMatch.Groups[1].Value } else { $null }
+
+if (-not [string]::IsNullOrWhiteSpace($clipboardGuardPasteApprovalId)) {
+    $clipboardGuardPasteApprove = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $clipboardGuardPasteApprovalId, '--note', 'runtime checker approved guarded paste test')
+    $clipboardGuardPasteApproveOk = $clipboardGuardPasteApprove.ExitCode -eq 0
+    Write-Check -Name 'Clipboard guard paste approval persists' -Passed $clipboardGuardPasteApproveOk -Detail (($clipboardGuardPasteApprove.Output | Out-String).Trim())
+    if (-not $clipboardGuardPasteApproveOk) { $failed++ }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($clipboardGuardPasteTaskId)) {
+    $clipboardGuardPasteExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $clipboardGuardPasteTaskId)
+    $clipboardGuardPasteExecuteOk = $clipboardGuardPasteExecute.ExitCode -eq 0 -and `
+        (($clipboardGuardPasteExecute.Output | Out-String) -match 'status:\s+blocked_human_needed') -and `
+        (($clipboardGuardPasteExecute.Output | Out-String) -match 'execution_status:\s+failed') -and `
+        (($clipboardGuardPasteExecute.Output | Out-String) -match '(Clipboard guard blocked|checker or recipe label|payload was blocked)')
+    Write-Check -Name 'Clipboard guard blocks suspicious paste into terminal' -Passed $clipboardGuardPasteExecuteOk -Detail (($clipboardGuardPasteExecute.Output | Out-String).Trim())
+    if (-not $clipboardGuardPasteExecuteOk) { $failed++ }
+}
+
+$desktopWaitForWindowQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'wait_for_window',
+    '--target', 'terminal|2'
+)
+$desktopWaitForWindowQueueOk = $desktopWaitForWindowQueue.ExitCode -eq 0 -and `
+    (($desktopWaitForWindowQueue.Output | Out-String) -match 'status:\s+queued') -and `
+    (($desktopWaitForWindowQueue.Output | Out-String) -match 'executor_action_type:\s+wait_for_window')
+Write-Check -Name 'Desktop executor wait_for_window queues without approval' -Passed $desktopWaitForWindowQueueOk -Detail (($desktopWaitForWindowQueue.Output | Out-String).Trim())
+if (-not $desktopWaitForWindowQueueOk) { $failed++ }
+
+$desktopWaitForWindowTaskMatch = [regex]::Match(($desktopWaitForWindowQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$desktopWaitForWindowTaskId = if ($desktopWaitForWindowTaskMatch.Success) { $desktopWaitForWindowTaskMatch.Groups[1].Value } else { $null }
+$desktopWaitForWindowTaskOk = -not [string]::IsNullOrWhiteSpace($desktopWaitForWindowTaskId)
+Write-Check -Name 'Desktop executor wait_for_window task id parsed' -Passed $desktopWaitForWindowTaskOk -Detail ($(if ($desktopWaitForWindowTaskOk) { $desktopWaitForWindowTaskId } else { 'missing wait_for_window task id' }))
+if (-not $desktopWaitForWindowTaskOk) { $failed++ }
+
+if ($desktopWaitForWindowTaskOk) {
+    $desktopWaitForWindowExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $desktopWaitForWindowTaskId)
+    $desktopWaitForWindowExecuteText = ($desktopWaitForWindowExecute.Output | Out-String)
+    $desktopWaitForWindowExecuteOk = $desktopWaitForWindowExecute.ExitCode -eq 0 -and (
+        (
+            $desktopWaitForWindowExecuteText -match 'status:\s+completed' -and
+            $desktopWaitForWindowExecuteText -match 'execution_summary:\s+Detected allowlisted window: terminal'
+        ) -or (
+            $desktopWaitForWindowExecuteText -match 'status:\s+failed' -and
+            $desktopWaitForWindowExecuteText -match 'Timed out waiting for allowlisted window: terminal'
+        )
+    )
+    Write-Check -Name 'Desktop executor wait_for_window execution succeeds' -Passed $desktopWaitForWindowExecuteOk -Detail $desktopWaitForWindowExecuteText.Trim()
+    if (-not $desktopWaitForWindowExecuteOk) { $failed++ }
+}
+
+$desktopMoveMouseQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'move_mouse',
+    '--target', 'terminal|center'
+)
+$desktopMoveMouseQueueOk = $desktopMoveMouseQueue.ExitCode -eq 0 -and `
+    (($desktopMoveMouseQueue.Output | Out-String) -match 'status:\s+pending_approval') -and `
+    (($desktopMoveMouseQueue.Output | Out-String) -match 'executor_action_type:\s+move_mouse')
+Write-Check -Name 'Desktop executor move_mouse queues with approval' -Passed $desktopMoveMouseQueueOk -Detail (($desktopMoveMouseQueue.Output | Out-String).Trim())
+if (-not $desktopMoveMouseQueueOk) { $failed++ }
+
+$desktopMoveMouseTaskMatch = [regex]::Match(($desktopMoveMouseQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$desktopMoveMouseTaskId = if ($desktopMoveMouseTaskMatch.Success) { $desktopMoveMouseTaskMatch.Groups[1].Value } else { $null }
+$desktopMoveMouseApprovalMatch = [regex]::Match(($desktopMoveMouseQueue.Output | Out-String), 'approval_request_id:\s*(\S+)')
+$desktopMoveMouseApprovalId = if ($desktopMoveMouseApprovalMatch.Success) { $desktopMoveMouseApprovalMatch.Groups[1].Value } else { $null }
+$desktopMoveMouseIdsOk = (-not [string]::IsNullOrWhiteSpace($desktopMoveMouseTaskId)) -and (-not [string]::IsNullOrWhiteSpace($desktopMoveMouseApprovalId))
+Write-Check -Name 'Desktop executor move_mouse ids parsed' -Passed $desktopMoveMouseIdsOk -Detail ($(if ($desktopMoveMouseIdsOk) { "$desktopMoveMouseTaskId | $desktopMoveMouseApprovalId" } else { 'missing move_mouse task or approval id' }))
+if (-not $desktopMoveMouseIdsOk) { $failed++ }
+
+if (-not [string]::IsNullOrWhiteSpace($desktopMoveMouseApprovalId)) {
+    $desktopMoveMouseApprove = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $desktopMoveMouseApprovalId, '--note', 'runtime checker approved move_mouse')
+    $desktopMoveMouseApproveOk = $desktopMoveMouseApprove.ExitCode -eq 0 -and `
+        (($desktopMoveMouseApprove.Output | Out-String) -match 'task_status:\s+queued')
+    Write-Check -Name 'Desktop executor move_mouse approval persists' -Passed $desktopMoveMouseApproveOk -Detail (($desktopMoveMouseApprove.Output | Out-String).Trim())
+    if (-not $desktopMoveMouseApproveOk) { $failed++ }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($desktopMoveMouseTaskId)) {
+    $desktopMoveMouseExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $desktopMoveMouseTaskId)
+    $desktopMoveMouseExecuteText = ($desktopMoveMouseExecute.Output | Out-String)
+    $desktopMoveMouseExecuteOk = $desktopMoveMouseExecute.ExitCode -eq 0 -and (
+        (
+            ($desktopMoveMouseExecuteText -match 'status:\s+completed') -and
+            ($desktopMoveMouseExecuteText -match 'execution_summary:\s+Moved mouse to')
+        ) -or (
+            ($desktopMoveMouseExecuteText -match 'status:\s+blocked_human_needed') -and
+            ($desktopMoveMouseExecuteText -match 'execution_status:\s+failed') -and
+            ($desktopMoveMouseExecuteText -match 'manual operator focus')
+        ) -or (
+            ($desktopMoveMouseExecuteText -match 'status:\s+failed') -and
+            ($desktopMoveMouseExecuteText -match 'Timed out waiting for allowlisted window: terminal')
+        )
+    )
+    Write-Check -Name 'Desktop executor move_mouse execution succeeds or blocks safely for manual focus' -Passed $desktopMoveMouseExecuteOk -Detail $desktopMoveMouseExecuteText.Trim()
+    if (-not $desktopMoveMouseExecuteOk) { $failed++ }
+}
+
+$desktopLeftClickQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'left_click',
+    '--target', 'terminal|center'
+)
+$desktopLeftClickQueueOk = $desktopLeftClickQueue.ExitCode -eq 0 -and `
+    (($desktopLeftClickQueue.Output | Out-String) -match 'status:\s+pending_approval') -and `
+    (($desktopLeftClickQueue.Output | Out-String) -match 'executor_action_type:\s+left_click')
+Write-Check -Name 'Desktop executor left_click queues with approval' -Passed $desktopLeftClickQueueOk -Detail (($desktopLeftClickQueue.Output | Out-String).Trim())
+if (-not $desktopLeftClickQueueOk) { $failed++ }
+
+$desktopLeftClickTaskMatch = [regex]::Match(($desktopLeftClickQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$desktopLeftClickTaskId = if ($desktopLeftClickTaskMatch.Success) { $desktopLeftClickTaskMatch.Groups[1].Value } else { $null }
+$desktopLeftClickApprovalMatch = [regex]::Match(($desktopLeftClickQueue.Output | Out-String), 'approval_request_id:\s*(\S+)')
+$desktopLeftClickApprovalId = if ($desktopLeftClickApprovalMatch.Success) { $desktopLeftClickApprovalMatch.Groups[1].Value } else { $null }
+$desktopLeftClickIdsOk = (-not [string]::IsNullOrWhiteSpace($desktopLeftClickTaskId)) -and (-not [string]::IsNullOrWhiteSpace($desktopLeftClickApprovalId))
+Write-Check -Name 'Desktop executor left_click ids parsed' -Passed $desktopLeftClickIdsOk -Detail ($(if ($desktopLeftClickIdsOk) { "$desktopLeftClickTaskId | $desktopLeftClickApprovalId" } else { 'missing left_click task or approval id' }))
+if (-not $desktopLeftClickIdsOk) { $failed++ }
+
+if (-not [string]::IsNullOrWhiteSpace($desktopLeftClickApprovalId)) {
+    $desktopLeftClickApprove = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $desktopLeftClickApprovalId, '--note', 'runtime checker approved left_click')
+    $desktopLeftClickApproveOk = $desktopLeftClickApprove.ExitCode -eq 0 -and `
+        (($desktopLeftClickApprove.Output | Out-String) -match 'task_status:\s+queued')
+    Write-Check -Name 'Desktop executor left_click approval persists' -Passed $desktopLeftClickApproveOk -Detail (($desktopLeftClickApprove.Output | Out-String).Trim())
+    if (-not $desktopLeftClickApproveOk) { $failed++ }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($desktopLeftClickTaskId)) {
+    $desktopLeftClickExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $desktopLeftClickTaskId)
+    $desktopLeftClickExecuteText = ($desktopLeftClickExecute.Output | Out-String)
+    $desktopLeftClickExecuteOk = $desktopLeftClickExecute.ExitCode -eq 0 -and (
+        (
+            ($desktopLeftClickExecuteText -match 'status:\s+completed') -and
+            ($desktopLeftClickExecuteText -match 'execution_summary:\s+Left click completed at')
+        ) -or (
+            ($desktopLeftClickExecuteText -match 'status:\s+blocked_human_needed') -and
+            ($desktopLeftClickExecuteText -match 'execution_status:\s+failed') -and
+            ($desktopLeftClickExecuteText -match 'manual operator focus')
+        ) -or (
+            ($desktopLeftClickExecuteText -match 'status:\s+failed') -and
+            ($desktopLeftClickExecuteText -match 'Timed out waiting for allowlisted window: terminal')
+        )
+    )
+    Write-Check -Name 'Desktop executor left_click execution succeeds or blocks safely for manual focus' -Passed $desktopLeftClickExecuteOk -Detail $desktopLeftClickExecuteText.Trim()
+    if (-not $desktopLeftClickExecuteOk) { $failed++ }
+}
+
+$desktopInterruptQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'wait_seconds',
+    '--target', '5'
+)
+$desktopInterruptQueueOk = $desktopInterruptQueue.ExitCode -eq 0 -and `
+    (($desktopInterruptQueue.Output | Out-String) -match 'status:\s+queued') -and `
+    (($desktopInterruptQueue.Output | Out-String) -match 'executor_action_type:\s+wait_seconds')
+Write-Check -Name 'Desktop executor wait_seconds queues without approval for failsafe test' -Passed $desktopInterruptQueueOk -Detail (($desktopInterruptQueue.Output | Out-String).Trim())
+if (-not $desktopInterruptQueueOk) { $failed++ }
+
+$desktopInterruptTaskMatch = [regex]::Match(($desktopInterruptQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$desktopInterruptTaskId = if ($desktopInterruptTaskMatch.Success) { $desktopInterruptTaskMatch.Groups[1].Value } else { $null }
+$desktopInterruptTaskOk = -not [string]::IsNullOrWhiteSpace($desktopInterruptTaskId)
+Write-Check -Name 'Desktop executor interrupt task id parsed' -Passed $desktopInterruptTaskOk -Detail ($(if ($desktopInterruptTaskOk) { $desktopInterruptTaskId } else { 'missing wait_seconds interrupt task id' }))
+if (-not $desktopInterruptTaskOk) { $failed++ }
+
+if ($desktopInterruptTaskOk) {
+    $desktopInterruptExecute = Invoke-ModuleCommand `
+        -PythonPath $pythonPath `
+        -Arguments @('execute-task', '--task-id', $desktopInterruptTaskId) `
+        -EnvOverrides @{ SUPER_AGENT_DESKTOP_TEST_INTERRUPT_AFTER_MS = '300' }
+    $desktopInterruptExecuteOk = $desktopInterruptExecute.ExitCode -eq 0 -and `
+        (($desktopInterruptExecute.Output | Out-String) -match 'status:\s+interrupted') -and `
+        (($desktopInterruptExecute.Output | Out-String) -match 'execution_status:\s+interrupted') -and `
+        (($desktopInterruptExecute.Output | Out-String) -match 'Ctrl\+8')
+    Write-Check -Name 'Desktop executor Ctrl+8 failsafe interruption persists' -Passed $desktopInterruptExecuteOk -Detail (($desktopInterruptExecute.Output | Out-String).Trim())
+    if (-not $desktopInterruptExecuteOk) { $failed++ }
+
+    $desktopInterruptStatus = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $desktopInterruptTaskId)
+    $desktopInterruptStatusOk = $desktopInterruptStatus.ExitCode -eq 0 -and `
+        (($desktopInterruptStatus.Output | Out-String) -match 'status:\s+interrupted') -and `
+        (($desktopInterruptStatus.Output | Out-String) -match 'last_execution_status:\s+interrupted') -and `
+        (($desktopInterruptStatus.Output | Out-String) -match 'waiting_for:\s+operator_review_after_interrupt')
+    Write-Check -Name 'Interrupted desktop task stays stopped for operator review' -Passed $desktopInterruptStatusOk -Detail (($desktopInterruptStatus.Output | Out-String).Trim())
+    if (-not $desktopInterruptStatusOk) { $failed++ }
+
+    $desktopInterruptReview = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('review-task', '--task-id', $desktopInterruptTaskId, '--note', 'runtime checker reviewed the interrupted desktop task')
+    $desktopInterruptReviewOk = $desktopInterruptReview.ExitCode -eq 0 -and `
+        (($desktopInterruptReview.Output | Out-String) -match 'status:\s+ready_to_resume')
+    Write-Check -Name 'Interrupted desktop task can be marked reviewed manually' -Passed $desktopInterruptReviewOk -Detail (($desktopInterruptReview.Output | Out-String).Trim())
+    if (-not $desktopInterruptReviewOk) { $failed++ }
+
+    $desktopInterruptRequeue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('requeue-task', '--task-id', $desktopInterruptTaskId, '--note', 'runtime checker re-queued the interrupted desktop task')
+    $desktopInterruptRequeueOk = $desktopInterruptRequeue.ExitCode -eq 0 -and `
+        (($desktopInterruptRequeue.Output | Out-String) -match 'status:\s+queued')
+    Write-Check -Name 'Interrupted desktop task only continues after explicit re-queue' -Passed $desktopInterruptRequeueOk -Detail (($desktopInterruptRequeue.Output | Out-String).Trim())
+    if (-not $desktopInterruptRequeueOk) { $failed++ }
+}
+
+$desktopRetryQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'focus_window',
+    '--target', 'terminal'
+)
+$desktopRetryQueueOk = $desktopRetryQueue.ExitCode -eq 0 -and `
+    (($desktopRetryQueue.Output | Out-String) -match 'status:\s+pending_approval') -and `
+    (($desktopRetryQueue.Output | Out-String) -match 'executor_action_type:\s+focus_window')
+Write-Check -Name 'Desktop retry-limit task queues' -Passed $desktopRetryQueueOk -Detail (($desktopRetryQueue.Output | Out-String).Trim())
+if (-not $desktopRetryQueueOk) { $failed++ }
+
+$desktopRetryTaskMatch = [regex]::Match(($desktopRetryQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$desktopRetryTaskId = if ($desktopRetryTaskMatch.Success) { $desktopRetryTaskMatch.Groups[1].Value } else { $null }
+$desktopRetryApprovalMatch = [regex]::Match(($desktopRetryQueue.Output | Out-String), 'approval_request_id:\s*(\S+)')
+$desktopRetryApprovalId = if ($desktopRetryApprovalMatch.Success) { $desktopRetryApprovalMatch.Groups[1].Value } else { $null }
+
+if (-not [string]::IsNullOrWhiteSpace($desktopRetryApprovalId)) {
+    $desktopRetryApprove = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $desktopRetryApprovalId, '--note', 'runtime checker approved retry-limit focus_window test')
+    $desktopRetryApproveOk = $desktopRetryApprove.ExitCode -eq 0
+    Write-Check -Name 'Desktop retry-limit approval persists' -Passed $desktopRetryApproveOk -Detail (($desktopRetryApprove.Output | Out-String).Trim())
+    if (-not $desktopRetryApproveOk) { $failed++ }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($desktopRetryTaskId)) {
+    $desktopRetryExecute = Invoke-ModuleCommand `
+        -PythonPath $pythonPath `
+        -Arguments @('execute-task', '--task-id', $desktopRetryTaskId) `
+        -EnvOverrides @{ SUPER_AGENT_DESKTOP_TEST_FAIL_ACTIONS = 'focus_window' }
+    $desktopRetryExecuteOk = $desktopRetryExecute.ExitCode -eq 0 -and `
+        (($desktopRetryExecute.Output | Out-String) -match 'status:\s+failed') -and `
+        (($desktopRetryExecute.Output | Out-String) -match 'execution_status:\s+failed')
+    Write-Check -Name 'Desktop retry-limit execution fails safely after repeated failure' -Passed $desktopRetryExecuteOk -Detail (($desktopRetryExecute.Output | Out-String).Trim())
+    if (-not $desktopRetryExecuteOk) { $failed++ }
+
+    $desktopRetryStatus = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $desktopRetryTaskId)
+    $desktopRetryStatusOk = $desktopRetryStatus.ExitCode -eq 0 -and `
+        (($desktopRetryStatus.Output | Out-String) -match 'status:\s+failed') -and `
+        (($desktopRetryStatus.Output | Out-String) -match 'last_attempt_count:\s+2') -and `
+        (($desktopRetryStatus.Output | Out-String) -match 'retry_limit:\s+2') -and `
+        (($desktopRetryStatus.Output | Out-String) -match 'last_failure_reason:\s+Failed after 2 attempt\(s\)\.')
+    Write-Check -Name 'Retry limit persists after two failed attempts' -Passed $desktopRetryStatusOk -Detail (($desktopRetryStatus.Output | Out-String).Trim())
+    if (-not $desktopRetryStatusOk) { $failed++ }
+}
+
+$recipeObserveQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'run_operator_recipe',
+    '--target', 'observe_desktop_state'
+)
+$recipeObserveQueueOk = $recipeObserveQueue.ExitCode -eq 0 -and `
+    (($recipeObserveQueue.Output | Out-String) -match 'status:\s+queued') -and `
+    (($recipeObserveQueue.Output | Out-String) -match 'approval_state:\s+not_required') -and `
+    (($recipeObserveQueue.Output | Out-String) -match 'executor_action_type:\s+run_operator_recipe') -and `
+    (($recipeObserveQueue.Output | Out-String) -match 'recipe_name:\s+observe_desktop_state')
+Write-Check -Name 'Operator recipe observe_desktop_state queues without approval' -Passed $recipeObserveQueueOk -Detail (($recipeObserveQueue.Output | Out-String).Trim())
+if (-not $recipeObserveQueueOk) { $failed++ }
+
+$recipeObserveTaskMatch = [regex]::Match(($recipeObserveQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$recipeObserveTaskId = if ($recipeObserveTaskMatch.Success) { $recipeObserveTaskMatch.Groups[1].Value } else { $null }
+$recipeObserveTaskOk = -not [string]::IsNullOrWhiteSpace($recipeObserveTaskId)
+Write-Check -Name 'Operator recipe observe_desktop_state task id parsed' -Passed $recipeObserveTaskOk -Detail ($(if ($recipeObserveTaskOk) { $recipeObserveTaskId } else { 'missing observe_desktop_state task id' }))
+if (-not $recipeObserveTaskOk) { $failed++ }
+
+if ($recipeObserveTaskOk) {
+    $recipeObserveExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $recipeObserveTaskId)
+    $recipeObserveExecuteOk = $recipeObserveExecute.ExitCode -eq 0 -and `
+        (($recipeObserveExecute.Output | Out-String) -match 'status:\s+completed') -and `
+        (($recipeObserveExecute.Output | Out-String) -match 'execution_status:\s+succeeded')
+    Write-Check -Name 'Operator recipe observe_desktop_state execution succeeds' -Passed $recipeObserveExecuteOk -Detail (($recipeObserveExecute.Output | Out-String).Trim())
+    if (-not $recipeObserveExecuteOk) { $failed++ }
+
+    $recipeObserveStatus = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $recipeObserveTaskId)
+    $recipeObserveStatusOk = $recipeObserveStatus.ExitCode -eq 0 -and `
+        (($recipeObserveStatus.Output | Out-String) -match 'recipe_name:\s+observe_desktop_state') -and `
+        (($recipeObserveStatus.Output | Out-String) -match 'recipe_status:\s+succeeded') -and `
+        (($recipeObserveStatus.Output | Out-String) -match 'recipe_run_count:\s+[1-9]') -and `
+        (($recipeObserveStatus.Output | Out-String) -match 'recipe_last_run_steps:\s*') -and `
+        (($recipeObserveStatus.Output | Out-String) -match 'action=list_windows')
+    Write-Check -Name 'Operator recipe observe_desktop_state result persists' -Passed $recipeObserveStatusOk -Detail (($recipeObserveStatus.Output | Out-String).Trim())
+    if (-not $recipeObserveStatusOk) { $failed++ }
+}
+
+$recipeFocusTerminalQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'run_operator_recipe',
+    '--target', 'focus_or_reuse_terminal'
+)
+$recipeFocusTerminalQueueOk = $recipeFocusTerminalQueue.ExitCode -eq 0 -and `
+    (($recipeFocusTerminalQueue.Output | Out-String) -match 'status:\s+pending_approval') -and `
+    (($recipeFocusTerminalQueue.Output | Out-String) -match 'approval_state:\s+pending') -and `
+    (($recipeFocusTerminalQueue.Output | Out-String) -match 'recipe_name:\s+focus_or_reuse_terminal')
+Write-Check -Name 'Operator recipe focus_or_reuse_terminal stays approval-aware' -Passed $recipeFocusTerminalQueueOk -Detail (($recipeFocusTerminalQueue.Output | Out-String).Trim())
+if (-not $recipeFocusTerminalQueueOk) { $failed++ }
+
+$handoffFixtureWindowsJson = @(
+    @{ Title = 'Codex - Task'; ProcessId = 1201; Active = $true },
+    @{ Title = 'ChatGPT - Browser'; ProcessId = 2202; Active = $false },
+    @{ Title = 'ChatGPT Notes'; ProcessId = 2203; Active = $false }
+) | ConvertTo-Json -Compress
+$handoffWrongActiveWindowsJson = @(
+    @{ Title = 'Windows PowerShell'; ProcessId = 3301; Active = $true },
+    @{ Title = 'ChatGPT - Browser'; ProcessId = 2202; Active = $false },
+    @{ Title = 'Codex - Task'; ProcessId = 1201; Active = $false }
+) | ConvertTo-Json -Compress
+
+$handoffSeedQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'set_clipboard_text',
+    '--content', 'ghoti safe handoff payload'
+)
+$handoffSeedQueueOk = $handoffSeedQueue.ExitCode -eq 0 -and `
+    (($handoffSeedQueue.Output | Out-String) -match 'status:\s+pending_approval')
+Write-Check -Name 'Handoff safe clipboard seed queues with approval' -Passed $handoffSeedQueueOk -Detail (($handoffSeedQueue.Output | Out-String).Trim())
+if (-not $handoffSeedQueueOk) { $failed++ }
+
+$handoffSeedTaskMatch = [regex]::Match(($handoffSeedQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$handoffSeedTaskId = if ($handoffSeedTaskMatch.Success) { $handoffSeedTaskMatch.Groups[1].Value } else { $null }
+$handoffSeedApprovalMatch = [regex]::Match(($handoffSeedQueue.Output | Out-String), 'approval_request_id:\s*(\S+)')
+$handoffSeedApprovalId = if ($handoffSeedApprovalMatch.Success) { $handoffSeedApprovalMatch.Groups[1].Value } else { $null }
+$handoffSeedIdsOk = (-not [string]::IsNullOrWhiteSpace($handoffSeedTaskId)) -and (-not [string]::IsNullOrWhiteSpace($handoffSeedApprovalId))
+Write-Check -Name 'Handoff safe clipboard seed ids parsed' -Passed $handoffSeedIdsOk -Detail ($(if ($handoffSeedIdsOk) { "$handoffSeedTaskId | $handoffSeedApprovalId" } else { 'missing safe clipboard seed ids' }))
+if (-not $handoffSeedIdsOk) { $failed++ }
+
+if (-not [string]::IsNullOrWhiteSpace($handoffSeedApprovalId)) {
+    $handoffSeedApprove = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $handoffSeedApprovalId, '--note', 'runtime checker approved safe handoff clipboard seed')
+    $handoffSeedApproveOk = $handoffSeedApprove.ExitCode -eq 0 -and `
+        (($handoffSeedApprove.Output | Out-String) -match 'task_status:\s+queued')
+    Write-Check -Name 'Handoff safe clipboard seed approval persists' -Passed $handoffSeedApproveOk -Detail (($handoffSeedApprove.Output | Out-String).Trim())
+    if (-not $handoffSeedApproveOk) { $failed++ }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($handoffSeedTaskId)) {
+    $handoffSeedExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $handoffSeedTaskId)
+    $handoffSeedExecuteOk = $handoffSeedExecute.ExitCode -eq 0 -and `
+        (($handoffSeedExecute.Output | Out-String) -match 'status:\s+completed')
+    Write-Check -Name 'Handoff safe clipboard seed execution succeeds' -Passed $handoffSeedExecuteOk -Detail (($handoffSeedExecute.Output | Out-String).Trim())
+    if (-not $handoffSeedExecuteOk) { $failed++ }
+}
+
+$handoffInvalidQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'run_operator_recipe',
+    '--target', 'codex_to_chatgpt_handoff_mvp',
+    '--content', '{"sourceWindow":"terminal","targetWindow":"terminal","usePreparedClipboard":true,"waitSeconds":1}'
+)
+$handoffInvalidQueueOk = $handoffInvalidQueue.ExitCode -ne 0 -and `
+    (($handoffInvalidQueue.Output | Out-String) -match 'must not use terminal or shell targets')
+Write-Check -Name 'Codex to ChatGPT handoff rejects terminal fallback targets' -Passed $handoffInvalidQueueOk -Detail (($handoffInvalidQueue.Output | Out-String).Trim())
+if (-not $handoffInvalidQueueOk) { $failed++ }
+
+$handoffRecipeQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'run_operator_recipe',
+    '--target', 'codex_to_chatgpt_handoff_mvp',
+    '--content', '{"sourceWindow":"codex","targetWindow":"chatgpt","usePreparedClipboard":true,"waitSeconds":1}'
+)
+$handoffRecipeQueueOk = $handoffRecipeQueue.ExitCode -eq 0 -and `
+    (($handoffRecipeQueue.Output | Out-String) -match 'status:\s+pending_approval') -and `
+    (($handoffRecipeQueue.Output | Out-String) -match 'recipe_name:\s+codex_to_chatgpt_handoff_mvp') -and `
+    (($handoffRecipeQueue.Output | Out-String) -match 'recipe_source_window:\s+codex') -and `
+    (($handoffRecipeQueue.Output | Out-String) -match 'recipe_target_window:\s+chatgpt') -and `
+    (($handoffRecipeQueue.Output | Out-String) -match 'handoff_send_behavior:\s+paste_only') -and `
+    (($handoffRecipeQueue.Output | Out-String) -match 'handoff_fallback_denied:\s+terminal_shell_fallback_blocked')
+Write-Check -Name 'Codex to ChatGPT handoff queues with strict safe targets' -Passed $handoffRecipeQueueOk -Detail (($handoffRecipeQueue.Output | Out-String).Trim())
+if (-not $handoffRecipeQueueOk) { $failed++ }
+
+$handoffRecipeTaskMatch = [regex]::Match(($handoffRecipeQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$handoffRecipeTaskId = if ($handoffRecipeTaskMatch.Success) { $handoffRecipeTaskMatch.Groups[1].Value } else { $null }
+$handoffRecipeApprovalMatch = [regex]::Match(($handoffRecipeQueue.Output | Out-String), 'approval_request_id:\s*(\S+)')
+$handoffRecipeApprovalId = if ($handoffRecipeApprovalMatch.Success) { $handoffRecipeApprovalMatch.Groups[1].Value } else { $null }
+$handoffRecipeIdsOk = (-not [string]::IsNullOrWhiteSpace($handoffRecipeTaskId)) -and (-not [string]::IsNullOrWhiteSpace($handoffRecipeApprovalId))
+Write-Check -Name 'Codex to ChatGPT handoff ids parsed' -Passed $handoffRecipeIdsOk -Detail ($(if ($handoffRecipeIdsOk) { "$handoffRecipeTaskId | $handoffRecipeApprovalId" } else { 'missing handoff recipe ids' }))
+if (-not $handoffRecipeIdsOk) { $failed++ }
+
+if ($handoffRecipeIdsOk) {
+    $handoffRecipeStatusBefore = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $handoffRecipeTaskId)
+    $handoffRecipeStatusBeforeOk = $handoffRecipeStatusBefore.ExitCode -eq 0 -and `
+        (($handoffRecipeStatusBefore.Output | Out-String) -match 'recipe_clipboard_mode:\s+prepared_clipboard') -and `
+        (($handoffRecipeStatusBefore.Output | Out-String) -match 'handoff_send_behavior:\s+paste_only') -and `
+        (($handoffRecipeStatusBefore.Output | Out-String) -match 'handoff_fallback_denied:\s+terminal_shell_fallback_blocked') -and `
+        (($handoffRecipeStatusBefore.Output | Out-String) -notmatch 'action=send_hotkey') -and `
+        (($handoffRecipeStatusBefore.Output | Out-String) -notmatch 'target=terminal')
+    Write-Check -Name 'Codex to ChatGPT handoff defaults to paste-only with no terminal step' -Passed $handoffRecipeStatusBeforeOk -Detail (($handoffRecipeStatusBefore.Output | Out-String).Trim())
+    if (-not $handoffRecipeStatusBeforeOk) { $failed++ }
+}
+
+$handoffCandidateQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'run_operator_recipe',
+    '--target', 'codex_to_chatgpt_handoff_mvp',
+    '--content', '{"sourceWindow":"codex","targetWindow":"chatgpt","sourceWindowCandidateId":"pid:1201","targetWindowCandidateId":"pid:2202","usePreparedClipboard":true,"waitSeconds":0}'
+)
+$handoffCandidateQueueOk = $handoffCandidateQueue.ExitCode -eq 0 -and `
+    (($handoffCandidateQueue.Output | Out-String) -match 'status:\s+pending_approval') -and `
+    (($handoffCandidateQueue.Output | Out-String) -match 'recipe_name:\s+codex_to_chatgpt_handoff_mvp')
+Write-Check -Name 'Codex to ChatGPT handoff manual-candidate queue persists' -Passed $handoffCandidateQueueOk -Detail (($handoffCandidateQueue.Output | Out-String).Trim())
+if (-not $handoffCandidateQueueOk) { $failed++ }
+
+$handoffCandidateTaskMatch = [regex]::Match(($handoffCandidateQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$handoffCandidateTaskId = if ($handoffCandidateTaskMatch.Success) { $handoffCandidateTaskMatch.Groups[1].Value } else { $null }
+$handoffCandidateApprovalMatch = [regex]::Match(($handoffCandidateQueue.Output | Out-String), 'approval_request_id:\s*(\S+)')
+$handoffCandidateApprovalId = if ($handoffCandidateApprovalMatch.Success) { $handoffCandidateApprovalMatch.Groups[1].Value } else { $null }
+if (-not [string]::IsNullOrWhiteSpace($handoffCandidateTaskId)) {
+    $handoffCandidateStatus = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $handoffCandidateTaskId)
+    $handoffCandidateStatusOk = $handoffCandidateStatus.ExitCode -eq 0 -and `
+        (($handoffCandidateStatus.Output | Out-String) -match 'recipe_source_window_candidate_id:\s+pid:1201') -and `
+        (($handoffCandidateStatus.Output | Out-String) -match 'recipe_target_window_candidate_id:\s+pid:2202') -and `
+        (($handoffCandidateStatus.Output | Out-String) -match 'handoff_source_selection_mode:\s+manual_candidate_selected') -and `
+        (($handoffCandidateStatus.Output | Out-String) -match 'handoff_target_selection_mode:\s+manual_candidate_selected')
+    Write-Check -Name 'Codex to ChatGPT handoff manual candidate selection is visible before execution' -Passed $handoffCandidateStatusOk -Detail (($handoffCandidateStatus.Output | Out-String).Trim())
+    if (-not $handoffCandidateStatusOk) { $failed++ }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($handoffCandidateApprovalId)) {
+    $handoffCandidateApprove = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $handoffCandidateApprovalId, '--note', 'runtime checker approved manual-candidate handoff target test')
+    $handoffCandidateApproveOk = $handoffCandidateApprove.ExitCode -eq 0 -and `
+        (($handoffCandidateApprove.Output | Out-String) -match 'task_status:\s+queued')
+    Write-Check -Name 'Codex to ChatGPT handoff manual-candidate approval persists' -Passed $handoffCandidateApproveOk -Detail (($handoffCandidateApprove.Output | Out-String).Trim())
+    if (-not $handoffCandidateApproveOk) { $failed++ }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($handoffCandidateTaskId)) {
+    $handoffCandidateExecute = Invoke-ModuleCommand `
+        -PythonPath $pythonPath `
+        -Arguments @('execute-task', '--task-id', $handoffCandidateTaskId) `
+        -EnvOverrides @{ SUPER_AGENT_DESKTOP_TEST_WINDOW_FIXTURES = $handoffWrongActiveWindowsJson }
+    $handoffCandidateExecuteText = ($handoffCandidateExecute.Output | Out-String)
+    $handoffCandidateExecuteOk = $handoffCandidateExecute.ExitCode -eq 0 -and `
+        ($handoffCandidateExecuteText -match 'status:\s+blocked_human_needed') -and `
+        ($handoffCandidateExecuteText -match 'execution_status:\s+failed') -and `
+        ($handoffCandidateExecuteText -match 'unexpected_active_window|blocked before input') -and `
+        ($handoffCandidateExecuteText -notmatch 'target=terminal')
+    Write-Check -Name 'Codex to ChatGPT handoff blocks before paste when terminal stays foreground' -Passed $handoffCandidateExecuteOk -Detail $handoffCandidateExecuteText.Trim()
+    if (-not $handoffCandidateExecuteOk) { $failed++ }
+
+    $handoffCandidateStatusAfter = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $handoffCandidateTaskId)
+    $handoffCandidateStatusAfterText = ($handoffCandidateStatusAfter.Output | Out-String)
+    $handoffCandidateStatusAfterOk = $handoffCandidateStatusAfter.ExitCode -eq 0 -and `
+        ($handoffCandidateStatusAfterText -match 'recipe_status:\s+blocked') -and `
+        ($handoffCandidateStatusAfterText -match 'handoff_target_resolution_status:\s+blocked_wrong_active_window') -and `
+        ($handoffCandidateStatusAfterText -match 'handoff_manual_target_resolution:\s+required') -and `
+        ($handoffCandidateStatusAfterText -match 'handoff_paste_allowed:\s+no') -and `
+        ($handoffCandidateStatusAfterText -match 'handoff_send_allowed:\s+no') -and `
+        ($handoffCandidateStatusAfterText -match 'handoff_fallback_denied:\s+yes') -and `
+        ($handoffCandidateStatusAfterText -match 'handoff_target_match:\s+expected chatgpt \| active terminal') -and `
+        ($handoffCandidateStatusAfterText -notmatch 'target=terminal')
+    Write-Check -Name 'Codex to ChatGPT handoff keeps wrong-window metadata after terminal block' -Passed $handoffCandidateStatusAfterOk -Detail $handoffCandidateStatusAfterText.Trim()
+    if (-not $handoffCandidateStatusAfterOk) { $failed++ }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($handoffRecipeApprovalId)) {
+    $handoffRecipeApprove = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $handoffRecipeApprovalId, '--note', 'runtime checker approved safe handoff recipe')
+    $handoffRecipeApproveOk = $handoffRecipeApprove.ExitCode -eq 0 -and `
+        (($handoffRecipeApprove.Output | Out-String) -match 'task_status:\s+queued')
+    Write-Check -Name 'Codex to ChatGPT handoff approval persists' -Passed $handoffRecipeApproveOk -Detail (($handoffRecipeApprove.Output | Out-String).Trim())
+    if (-not $handoffRecipeApproveOk) { $failed++ }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($handoffRecipeTaskId)) {
+    $handoffRecipeExecute = Invoke-ModuleCommand `
+        -PythonPath $pythonPath `
+        -Arguments @('execute-task', '--task-id', $handoffRecipeTaskId) `
+        -EnvOverrides @{ SUPER_AGENT_DESKTOP_TEST_WINDOW_FIXTURES = $handoffFixtureWindowsJson }
+    $handoffRecipeExecuteText = ($handoffRecipeExecute.Output | Out-String)
+    $handoffRecipeExecuteOk = $handoffRecipeExecute.ExitCode -eq 0 -and `
+        ($handoffRecipeExecuteText -match 'status:\s+blocked_human_needed') -and `
+        ($handoffRecipeExecuteText -match 'execution_status:\s+failed') -and `
+        ($handoffRecipeExecuteText -match 'manual target resolution is required|manual_target_resolution_required')
+    Write-Check -Name 'Codex to ChatGPT handoff blocks safely when real target matching is ambiguous' -Passed $handoffRecipeExecuteOk -Detail $handoffRecipeExecuteText.Trim()
+    if (-not $handoffRecipeExecuteOk) { $failed++ }
+
+    $handoffRecipeStatus = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $handoffRecipeTaskId)
+    $handoffRecipeStatusText = ($handoffRecipeStatus.Output | Out-String)
+    $handoffRecipeStatusOk = $handoffRecipeStatus.ExitCode -eq 0 -and `
+        ($handoffRecipeStatusText -match 'recipe_status:\s+blocked') -and `
+        ($handoffRecipeStatusText -match 'handoff_payload_classification:\s+valid_handoff_text') -and `
+        ($handoffRecipeStatusText -match 'handoff_paste_allowed:\s+no') -and `
+        ($handoffRecipeStatusText -match 'handoff_target_resolution_status:\s+manual_target_resolution_required') -and `
+        ($handoffRecipeStatusText -match 'handoff_manual_target_resolution:\s+required') -and `
+        ($handoffRecipeStatusText -match 'handoff_target_selection_mode:\s+manual_selection_required') -and `
+        ($handoffRecipeStatusText -match 'handoff_fallback_denied:\s+yes') -and `
+        ($handoffRecipeStatusText -notmatch 'target=terminal')
+    Write-Check -Name 'Codex to ChatGPT handoff keeps manual-resolution metadata and denies terminal fallback' -Passed $handoffRecipeStatusOk -Detail $handoffRecipeStatusText.Trim()
+    if (-not $handoffRecipeStatusOk) { $failed++ }
+}
+
+$explicitSendQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'run_operator_recipe',
+    '--target', 'codex_to_chatgpt_handoff_mvp',
+    '--content', '{"sourceWindow":"codex","targetWindow":"chatgpt","usePreparedClipboard":true,"allowSend":true,"waitSeconds":0}'
+)
+$explicitSendQueueOk = $explicitSendQueue.ExitCode -eq 0 -and `
+    (($explicitSendQueue.Output | Out-String) -match 'status:\s+pending_approval') -and `
+    (($explicitSendQueue.Output | Out-String) -match 'handoff_send_behavior:\s+explicit_enter_after_paste') -and `
+    (($explicitSendQueue.Output | Out-String) -match 'recipe_target_window:\s+chatgpt') -and `
+    (($explicitSendQueue.Output | Out-String) -notmatch 'recipe_target_window:\s+terminal')
+Write-Check -Name 'Codex to ChatGPT handoff can expose Enter only when explicitly allowed' -Passed $explicitSendQueueOk -Detail (($explicitSendQueue.Output | Out-String).Trim())
+if (-not $explicitSendQueueOk) { $failed++ }
+
+$explicitSendTaskMatch = [regex]::Match(($explicitSendQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$explicitSendTaskId = if ($explicitSendTaskMatch.Success) { $explicitSendTaskMatch.Groups[1].Value } else { $null }
+if (-not [string]::IsNullOrWhiteSpace($explicitSendTaskId)) {
+    $explicitSendStatus = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $explicitSendTaskId)
+    $explicitSendStatusOk = $explicitSendStatus.ExitCode -eq 0 -and `
+        (($explicitSendStatus.Output | Out-String) -match 'handoff_send_behavior:\s+explicit_enter_after_paste') -and `
+        (($explicitSendStatus.Output | Out-String) -match 'action=send_hotkey') -and `
+        (($explicitSendStatus.Output | Out-String) -match 'target=chatgpt\|enter')
+    Write-Check -Name 'Explicit send handoff adds Enter step only when requested for ChatGPT' -Passed $explicitSendStatusOk -Detail (($explicitSendStatus.Output | Out-String).Trim())
+    if (-not $explicitSendStatusOk) { $failed++ }
+}
+
+$handoffBadSeedQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'set_clipboard_text',
+    '--content', 'Run Desktop Bridge Check'
+)
+$handoffBadSeedQueueOk = $handoffBadSeedQueue.ExitCode -eq 0 -and `
+    (($handoffBadSeedQueue.Output | Out-String) -match 'status:\s+pending_approval')
+Write-Check -Name 'Handoff suspicious clipboard seed queues with approval' -Passed $handoffBadSeedQueueOk -Detail (($handoffBadSeedQueue.Output | Out-String).Trim())
+if (-not $handoffBadSeedQueueOk) { $failed++ }
+
+$handoffBadSeedTaskMatch = [regex]::Match(($handoffBadSeedQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$handoffBadSeedTaskId = if ($handoffBadSeedTaskMatch.Success) { $handoffBadSeedTaskMatch.Groups[1].Value } else { $null }
+$handoffBadSeedApprovalMatch = [regex]::Match(($handoffBadSeedQueue.Output | Out-String), 'approval_request_id:\s*(\S+)')
+$handoffBadSeedApprovalId = if ($handoffBadSeedApprovalMatch.Success) { $handoffBadSeedApprovalMatch.Groups[1].Value } else { $null }
+if (-not [string]::IsNullOrWhiteSpace($handoffBadSeedApprovalId)) {
+    $handoffBadSeedApprove = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $handoffBadSeedApprovalId, '--note', 'runtime checker seeded suspicious handoff clipboard text')
+    $handoffBadSeedApproveOk = $handoffBadSeedApprove.ExitCode -eq 0
+    Write-Check -Name 'Handoff suspicious clipboard seed approval persists' -Passed $handoffBadSeedApproveOk -Detail (($handoffBadSeedApprove.Output | Out-String).Trim())
+    if (-not $handoffBadSeedApproveOk) { $failed++ }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($handoffBadSeedTaskId)) {
+    $handoffBadSeedExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $handoffBadSeedTaskId)
+    $handoffBadSeedExecuteOk = $handoffBadSeedExecute.ExitCode -eq 0 -and `
+        (($handoffBadSeedExecute.Output | Out-String) -match 'status:\s+completed')
+    Write-Check -Name 'Handoff suspicious clipboard seed execution succeeds' -Passed $handoffBadSeedExecuteOk -Detail (($handoffBadSeedExecute.Output | Out-String).Trim())
+    if (-not $handoffBadSeedExecuteOk) { $failed++ }
+}
+
+$handoffBlockedQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'run_operator_recipe',
+    '--target', 'codex_to_chatgpt_handoff_mvp',
+    '--content', '{"sourceWindow":"codex","targetWindow":"chatgpt","usePreparedClipboard":true,"waitSeconds":0}'
+)
+$handoffBlockedQueueOk = $handoffBlockedQueue.ExitCode -eq 0 -and `
+    (($handoffBlockedQueue.Output | Out-String) -match 'status:\s+pending_approval') -and `
+    (($handoffBlockedQueue.Output | Out-String) -match 'recipe_source_window:\s+codex') -and `
+    (($handoffBlockedQueue.Output | Out-String) -match 'recipe_target_window:\s+chatgpt')
+Write-Check -Name 'Codex to ChatGPT handoff blocked-payload recipe queues' -Passed $handoffBlockedQueueOk -Detail (($handoffBlockedQueue.Output | Out-String).Trim())
+if (-not $handoffBlockedQueueOk) { $failed++ }
+
+$handoffBlockedTaskMatch = [regex]::Match(($handoffBlockedQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$handoffBlockedTaskId = if ($handoffBlockedTaskMatch.Success) { $handoffBlockedTaskMatch.Groups[1].Value } else { $null }
+$handoffBlockedApprovalMatch = [regex]::Match(($handoffBlockedQueue.Output | Out-String), 'approval_request_id:\s*(\S+)')
+$handoffBlockedApprovalId = if ($handoffBlockedApprovalMatch.Success) { $handoffBlockedApprovalMatch.Groups[1].Value } else { $null }
+if (-not [string]::IsNullOrWhiteSpace($handoffBlockedApprovalId)) {
+    $handoffBlockedApprove = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $handoffBlockedApprovalId, '--note', 'runtime checker approved blocked handoff payload test')
+    $handoffBlockedApproveOk = $handoffBlockedApprove.ExitCode -eq 0
+    Write-Check -Name 'Codex to ChatGPT handoff blocked-payload approval persists' -Passed $handoffBlockedApproveOk -Detail (($handoffBlockedApprove.Output | Out-String).Trim())
+    if (-not $handoffBlockedApproveOk) { $failed++ }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($handoffBlockedTaskId)) {
+    $handoffBlockedExecute = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $handoffBlockedTaskId)
+    $handoffBlockedExecuteOk = $handoffBlockedExecute.ExitCode -eq 0 -and `
+        (($handoffBlockedExecute.Output | Out-String) -match 'status:\s+blocked_human_needed') -and `
+        (($handoffBlockedExecute.Output | Out-String) -match 'execution_status:\s+failed') -and `
+        (($handoffBlockedExecute.Output | Out-String) -match '(Handoff payload blocked before paste|checker or recipe label|payload was blocked)') -and `
+        (($handoffBlockedExecute.Output | Out-String) -notmatch 'target=terminal')
+    Write-Check -Name 'Codex to ChatGPT handoff blocks junk payload before paste' -Passed $handoffBlockedExecuteOk -Detail (($handoffBlockedExecute.Output | Out-String).Trim())
+    if (-not $handoffBlockedExecuteOk) { $failed++ }
+
+    $handoffBlockedStatus = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $handoffBlockedTaskId)
+    $handoffBlockedStatusOk = $handoffBlockedStatus.ExitCode -eq 0 -and `
+        (($handoffBlockedStatus.Output | Out-String) -match 'recipe_status:\s+blocked') -and `
+        (($handoffBlockedStatus.Output | Out-String) -match 'handoff_payload_classification:\s+(junk_label_payload|repeated_ui_label_garbage)') -and `
+        (($handoffBlockedStatus.Output | Out-String) -match 'handoff_paste_allowed:\s+no') -and `
+        (($handoffBlockedStatus.Output | Out-String) -match 'handoff_blocked_payload_repeats:\s+1')
+    Write-Check -Name 'Codex to ChatGPT blocked payload classification persists' -Passed $handoffBlockedStatusOk -Detail (($handoffBlockedStatus.Output | Out-String).Trim())
+    if (-not $handoffBlockedStatusOk) { $failed++ }
+
+    $handoffBlockedNoRetryLoopOk = $handoffBlockedStatus.ExitCode -eq 0 -and `
+        (($handoffBlockedStatus.Output | Out-String) -match 'action=get_clipboard_text') -and `
+        (($handoffBlockedStatus.Output | Out-String) -match 'attempts=1 \| max_attempts=2')
+    Write-Check -Name 'Blocked junk handoff payload stops immediately instead of retrying the same paste path' -Passed $handoffBlockedNoRetryLoopOk -Detail (($handoffBlockedStatus.Output | Out-String).Trim())
+    if (-not $handoffBlockedNoRetryLoopOk) { $failed++ }
+
+    $handoffBlockedReview = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('review-task', '--task-id', $handoffBlockedTaskId, '--note', 'runtime checker reviewed repeated blocked payload')
+    $handoffBlockedReviewOk = $handoffBlockedReview.ExitCode -eq 0 -and `
+        (($handoffBlockedReview.Output | Out-String) -match 'status:\s+ready_to_resume')
+    Write-Check -Name 'Blocked handoff task can be reviewed for manual re-queue' -Passed $handoffBlockedReviewOk -Detail (($handoffBlockedReview.Output | Out-String).Trim())
+    if (-not $handoffBlockedReviewOk) { $failed++ }
+
+    $handoffBlockedRequeue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('requeue-task', '--task-id', $handoffBlockedTaskId, '--note', 'runtime checker re-queued repeated blocked payload')
+    $handoffBlockedRequeueOk = $handoffBlockedRequeue.ExitCode -eq 0 -and `
+        (($handoffBlockedRequeue.Output | Out-String) -match 'status:\s+queued')
+    Write-Check -Name 'Blocked handoff task re-queues only after explicit operator action' -Passed $handoffBlockedRequeueOk -Detail (($handoffBlockedRequeue.Output | Out-String).Trim())
+    if (-not $handoffBlockedRequeueOk) { $failed++ }
+
+    $handoffBlockedExecuteAgain = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('execute-task', '--task-id', $handoffBlockedTaskId)
+    $handoffBlockedExecuteAgainOk = $handoffBlockedExecuteAgain.ExitCode -eq 0 -and `
+        (($handoffBlockedExecuteAgain.Output | Out-String) -match 'status:\s+blocked_human_needed') -and `
+        (($handoffBlockedExecuteAgain.Output | Out-String) -match 'execution_status:\s+failed')
+    Write-Check -Name 'Repeated identical junk handoff payload blocks again without looping' -Passed $handoffBlockedExecuteAgainOk -Detail (($handoffBlockedExecuteAgain.Output | Out-String).Trim())
+    if (-not $handoffBlockedExecuteAgainOk) { $failed++ }
+
+    $handoffBlockedStatusAgain = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $handoffBlockedTaskId)
+    $handoffBlockedStatusAgainOk = $handoffBlockedStatusAgain.ExitCode -eq 0 -and `
+        (($handoffBlockedStatusAgain.Output | Out-String) -match 'handoff_blocked_payload_repeats:\s+2') -and `
+        (($handoffBlockedStatusAgain.Output | Out-String) -match 'Repeated identical blocked handoff payload detected again')
+    Write-Check -Name 'Repeated identical junk handoff payload is counted and reported clearly' -Passed $handoffBlockedStatusAgainOk -Detail (($handoffBlockedStatusAgain.Output | Out-String).Trim())
+    if (-not $handoffBlockedStatusAgainOk) { $failed++ }
+}
+
+$recipeInterruptQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'run_operator_recipe',
+    '--target', 'wait_and_resume_operator_step',
+    '--content', '{"waitSeconds":5}'
+)
+$recipeInterruptQueueOk = $recipeInterruptQueue.ExitCode -eq 0 -and `
+    (($recipeInterruptQueue.Output | Out-String) -match 'status:\s+queued') -and `
+    (($recipeInterruptQueue.Output | Out-String) -match 'approval_state:\s+not_required') -and `
+    (($recipeInterruptQueue.Output | Out-String) -match 'recipe_name:\s+wait_and_resume_operator_step')
+Write-Check -Name 'Operator recipe wait_and_resume_operator_step queues without approval' -Passed $recipeInterruptQueueOk -Detail (($recipeInterruptQueue.Output | Out-String).Trim())
+if (-not $recipeInterruptQueueOk) { $failed++ }
+
+$recipeInterruptTaskMatch = [regex]::Match(($recipeInterruptQueue.Output | Out-String), 'task_id:\s*(\S+)')
+$recipeInterruptTaskId = if ($recipeInterruptTaskMatch.Success) { $recipeInterruptTaskMatch.Groups[1].Value } else { $null }
+$recipeInterruptTaskOk = -not [string]::IsNullOrWhiteSpace($recipeInterruptTaskId)
+Write-Check -Name 'Operator recipe wait_and_resume_operator_step task id parsed' -Passed $recipeInterruptTaskOk -Detail ($(if ($recipeInterruptTaskOk) { $recipeInterruptTaskId } else { 'missing wait_and_resume_operator_step task id' }))
+if (-not $recipeInterruptTaskOk) { $failed++ }
+
+if ($recipeInterruptTaskOk) {
+    $recipeInterruptExecute = Invoke-ModuleCommand `
+        -PythonPath $pythonPath `
+        -Arguments @('execute-task', '--task-id', $recipeInterruptTaskId) `
+        -EnvOverrides @{ SUPER_AGENT_DESKTOP_TEST_INTERRUPT_AFTER_MS = '300' }
+    $recipeInterruptExecuteOk = $recipeInterruptExecute.ExitCode -eq 0 -and `
+        (($recipeInterruptExecute.Output | Out-String) -match 'status:\s+interrupted') -and `
+        (($recipeInterruptExecute.Output | Out-String) -match 'execution_status:\s+interrupted') -and `
+        (($recipeInterruptExecute.Output | Out-String) -match 'Ctrl\+8')
+    Write-Check -Name 'Operator recipe interruption persists through Ctrl+8 failsafe' -Passed $recipeInterruptExecuteOk -Detail (($recipeInterruptExecute.Output | Out-String).Trim())
+    if (-not $recipeInterruptExecuteOk) { $failed++ }
+
+    $recipeInterruptStatus = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('task-status', '--task-id', $recipeInterruptTaskId)
+    $recipeInterruptStatusOk = $recipeInterruptStatus.ExitCode -eq 0 -and `
+        (($recipeInterruptStatus.Output | Out-String) -match 'status:\s+interrupted') -and `
+        (($recipeInterruptStatus.Output | Out-String) -match 'recipe_status:\s+interrupted') -and `
+        (($recipeInterruptStatus.Output | Out-String) -match 'waiting_for:\s+operator_review_after_interrupt')
+    Write-Check -Name 'Interrupted operator recipe stays stopped for operator review' -Passed $recipeInterruptStatusOk -Detail (($recipeInterruptStatus.Output | Out-String).Trim())
+    if (-not $recipeInterruptStatusOk) { $failed++ }
+}
+
+$invalidRecipeQueue = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+    'queue-executor-action',
+    '--action-type', 'run_operator_recipe',
+    '--target', 'not_a_recipe'
+)
+$invalidRecipeQueueOk = $invalidRecipeQueue.ExitCode -ne 0 -and `
+    (($invalidRecipeQueue.Output | Out-String) -match 'Unsupported operator recipe')
+Write-Check -Name 'Unsupported operator recipe fails safely' -Passed $invalidRecipeQueueOk -Detail (($invalidRecipeQueue.Output | Out-String).Trim())
+if (-not $invalidRecipeQueueOk) { $failed++ }
 
 $desktopInvalidTarget = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
     'queue-executor-action',
@@ -1066,3 +2199,4 @@ if ($failed -eq 0 -and $allFilesPresent -and $artifactsOk) {
 
 Write-Host ('Summary: {0} runtime MVP check(s) failed.' -f $failed)
 exit 1
+

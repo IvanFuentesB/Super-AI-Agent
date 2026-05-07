@@ -1,5 +1,9 @@
 # Local dashboard MVP checker with safe local-only behavior.
 
+param(
+    [switch]$RuntimeLockSafe
+)
+
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
@@ -99,19 +103,26 @@ function Resolve-PythonPath {
 function Invoke-ModuleCommand {
     param(
         [string]$PythonPath,
-        [string[]]$Arguments
+        [string[]]$Arguments,
+        [hashtable]$EnvOverrides = @{}
     )
 
     $argumentsJson = ConvertTo-Json -InputObject @($Arguments) -Compress
     $argumentsEncoded = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($argumentsJson))
+    $envOverridesJson = ConvertTo-Json -InputObject $EnvOverrides -Compress -Depth 5
+    $envOverridesEncoded = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($envOverridesJson))
     $runtimeSrcEscaped = $runtimeSrc.Replace('\', '\\').Replace("'", "\\'")
     $scriptPath = [System.IO.Path]::ChangeExtension([System.IO.Path]::GetTempFileName(), '.py')
     $code = @"
 import base64
 import json
+import os
 import sys
 sys.path.insert(0, r'$runtimeSrcEscaped')
 from super_ai_agent.cli import main
+env_overrides = json.loads(base64.b64decode('$envOverridesEncoded').decode('utf-8'))
+for key, value in env_overrides.items():
+    os.environ[str(key)] = str(value)
 argv = json.loads(base64.b64decode('$argumentsEncoded').decode('utf-8'))
 raise SystemExit(main(argv))
 "@
@@ -184,9 +195,12 @@ $expectedFiles = @(
     '04_docs/browser_control_playground.md',
     '04_docs/artifact_ux_plan.md',
     '04_docs/desktop_bridge_foundation.md',
+    '04_docs/ghoti_control_center.md',
     '04_docs/supervisor_foundation.md',
     '04_docs/approval_inbox_plan.md',
     '04_docs/notification_adapter_plan.md',
+    '08_research/repo_integration_map.md',
+    '14_context/chat_handoff_latest.md',
     '01_projects/dashboard_mvp/README.md',
     '01_projects/dashboard_mvp/package.json',
     '01_projects/dashboard_mvp/server.js',
@@ -238,6 +252,11 @@ if (-not $packageCheckOk) {
 }
 
 $port = 3211
+$handoffFixtureWindowsJson = @(
+    @{ Title = 'Codex - Task'; ProcessId = 1201; Active = $true },
+    @{ Title = 'ChatGPT - Browser'; ProcessId = 2202; Active = $false },
+    @{ Title = 'ChatGPT Notes'; ProcessId = 2203; Active = $false }
+) | ConvertTo-Json -Compress
 $serverStdout = [System.IO.Path]::GetTempFileName()
 $serverStderr = [System.IO.Path]::GetTempFileName()
 $serverProcess = $null
@@ -246,7 +265,10 @@ try {
     Remove-GeneratedFile -Path $browserArtifactPath
 
     $previousPort = $env:PORT
+    $hadWindowFixturesEnv = Test-Path Env:SUPER_AGENT_DESKTOP_TEST_WINDOW_FIXTURES
+    $previousWindowFixturesEnv = if ($hadWindowFixturesEnv) { (Get-Item Env:SUPER_AGENT_DESKTOP_TEST_WINDOW_FIXTURES).Value } else { $null }
     $env:PORT = "$port"
+    $env:SUPER_AGENT_DESKTOP_TEST_WINDOW_FIXTURES = $handoffFixtureWindowsJson
     $serverProcess = Start-Process `
         -FilePath $nodePath `
         -ArgumentList @('server.js') `
@@ -259,6 +281,12 @@ try {
     }
     else {
         $env:PORT = $previousPort
+    }
+    if ($hadWindowFixturesEnv) {
+        $env:SUPER_AGENT_DESKTOP_TEST_WINDOW_FIXTURES = $previousWindowFixturesEnv
+    }
+    else {
+        Remove-Item Env:SUPER_AGENT_DESKTOP_TEST_WINDOW_FIXTURES -ErrorAction SilentlyContinue
     }
 
     $healthUri = "http://127.0.0.1:$port/api/health"
@@ -296,6 +324,13 @@ try {
     Write-Check -Name 'Supervisor status endpoint' -Passed $supervisorStatusOk -Detail ($(if ($supervisorStatusOk) { $supervisorStatus.summary.headline } else { 'supervisor status missing structured output' }))
     if (-not $supervisorStatusOk) { $failed++ }
 
+    $ghotiStatusOk = $supervisorStatus.ok -and `
+        $supervisorStatus.summary.ghotiState -and `
+        $null -ne $supervisorStatus.summary.resourceGuardEventCount -and `
+        $supervisorStatus.summary.operatorNextStep
+    Write-Check -Name 'Supervisor endpoint includes Ghoti state fields' -Passed $ghotiStatusOk -Detail ($(if ($ghotiStatusOk) { "$($supervisorStatus.summary.ghotiState) | $($supervisorStatus.summary.operatorNextStep)" } else { 'Ghoti state fields missing from supervisor status' }))
+    if (-not $ghotiStatusOk) { $failed++ }
+
     $pendingApprovals = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/approvals/pending" -Method Get -TimeoutSec 30
     $pendingApprovalsOk = $pendingApprovals.ok -and $pendingApprovals.localOnly -and $null -ne $pendingApprovals.summary.requests
     Write-Check -Name 'Pending approvals endpoint' -Passed $pendingApprovalsOk -Detail ($(if ($pendingApprovalsOk) { $pendingApprovals.summary.headline } else { 'pending approvals missing structured output' }))
@@ -305,6 +340,72 @@ try {
     $executorListOk = $executorList.ok -and $executorList.localOnly -and $null -ne $executorList.summary.tasks
     Write-Check -Name 'Executor task list endpoint' -Passed $executorListOk -Detail ($(if ($executorListOk) { $executorList.summary.headline } else { 'executor task list missing structured output' }))
     if (-not $executorListOk) { $failed++ }
+
+    $ghotiControlCenter = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/ghoti/control-center" -Method Get -TimeoutSec 30
+    $ghotiControlCenterOk = $ghotiControlCenter.ok -and `
+        $ghotiControlCenter.localOnly -and `
+        $ghotiControlCenter.summary.ghotiState -and `
+        $ghotiControlCenter.summary.emergencyStopHotkey -eq 'Ctrl+8' -and `
+        $ghotiControlCenter.summary.watchdog.status -and `
+        $ghotiControlCenter.summary.desktopActionTruth.currentAction -and `
+        $ghotiControlCenter.summary.desktopActionTruth.currentTarget -ne $null -and `
+        ($ghotiControlCenter.summary.desktopActionTruth.typingEnabled -in @('yes', 'no')) -and `
+        $ghotiControlCenter.summary.desktopActionTruth.cueStatus -and `
+        $ghotiControlCenter.summary.brain.activeProvider -and `
+        $ghotiControlCenter.summary.brain.activeModel -and `
+        $ghotiControlCenter.summary.brain.lastModelCallStatus -and `
+        ($ghotiControlCenter.summary.brain.currentTaskUsedModelInference -in @($true, $false)) -and `
+        $ghotiControlCenter.summary.specialistRole.currentRoleId -and `
+        $ghotiControlCenter.summary.specialistRole.currentRoleProvider -and `
+        $null -ne $ghotiControlCenter.summary.browser.browserUseInstalled -and `
+        $null -ne $ghotiControlCenter.summary.browser.playwrightReady -and `
+        $ghotiControlCenter.summary.memory.root -and `
+        $null -ne $ghotiControlCenter.summary.memory.ready -and `
+        $ghotiControlCenter.summary.relay.relayState -and `
+        $ghotiControlCenter.summary.relay.currentStep -and `
+        $ghotiControlCenter.summary.relay.sourceTargetAlias -and `
+        $ghotiControlCenter.summary.relay.destinationTargetAlias -and `
+        $ghotiControlCenter.summary.relay.codexModePreset -and `
+        $ghotiControlCenter.summary.relay.codexReasoningPreset -and `
+        $ghotiControlCenter.summary.relay.codexExecutionStatus -and `
+        $ghotiControlCenter.summary.overlayTarget.label -and `
+        $null -ne $ghotiControlCenter.summary.watchdog.alerts -and `
+        $ghotiControlCenter.summary.cliCommands.Count -ge 4 -and `
+        $ghotiControlCenter.summary.whatGhotiCanDoNow.Count -gt 0 -and `
+        $ghotiControlCenter.summary.whatOperatorShouldDoNext.Count -gt 0 -and `
+        $ghotiControlCenter.summary.hideCompletedByDefault -and `
+        ($ghotiControlCenter.summary.noDeletionPolicy -match 'No task deletion') -and `
+        $null -ne $ghotiControlCenter.summary.recentActionableTasks
+    Write-Check -Name 'Ghoti control-center endpoint' -Passed $ghotiControlCenterOk -Detail ($(if ($ghotiControlCenterOk) { $ghotiControlCenter.summary.headline } else { 'Ghoti control-center summary missing expected operator fields' }))
+    if (-not $ghotiControlCenterOk) { $failed++ }
+
+    if ($RuntimeLockSafe) {
+        Write-Check -Name 'Runtime-lock-safe dashboard mode' -Passed $true -Detail 'Skipped dashboard actions that mutate runtime state because this checker is running inside the repo executor lock.'
+    }
+    else {
+    $ghotiFilterSeedPayload = @{
+        actionType = 'get_clipboard_text'
+    } | ConvertTo-Json
+    $ghotiFilterSeedQueue = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/executor/queue" -Method Post -ContentType 'application/json' -Body $ghotiFilterSeedPayload -TimeoutSec 30
+    $ghotiFilterSeedQueueOk = $ghotiFilterSeedQueue.ok -and `
+        $ghotiFilterSeedQueue.localOnly -and `
+        $ghotiFilterSeedQueue.task.status -eq 'queued' -and `
+        $ghotiFilterSeedQueue.task.executorActionType -eq 'get_clipboard_text'
+    Write-Check -Name 'Seed Ghoti control-center desktop filter task' -Passed $ghotiFilterSeedQueueOk -Detail ($(if ($ghotiFilterSeedQueueOk) { $ghotiFilterSeedQueue.summary.headline } else { 'Ghoti desktop filter seed queue failed' }))
+    if (-not $ghotiFilterSeedQueueOk) { $failed++ }
+
+    $ghotiControlCenterDesktopFilter = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/ghoti/control-center?visibility=all&taskType=desktop&taskStatus=queued&activeOnly=true&limit=12" -Method Get -TimeoutSec 30
+    $ghotiFilteredTasks = @($ghotiControlCenterDesktopFilter.summary.recentActionableTasks)
+    $ghotiControlCenterDesktopFilterOk = $ghotiControlCenterDesktopFilter.ok -and `
+        $ghotiControlCenterDesktopFilter.localOnly -and `
+        $ghotiControlCenterDesktopFilter.summary.filters.visibility -eq 'all' -and `
+        $ghotiControlCenterDesktopFilter.summary.filters.taskType -eq 'desktop' -and `
+        $ghotiControlCenterDesktopFilter.summary.filters.taskStatus -eq 'queued' -and `
+        $ghotiControlCenterDesktopFilter.summary.filters.activeOnly -eq $true -and `
+        $ghotiFilteredTasks.Count -ge 1 -and `
+        (@($ghotiFilteredTasks | Where-Object { $_.taskType -ne 'desktop' -or $_.status -ne 'queued' }).Count -eq 0)
+    Write-Check -Name 'Ghoti control-center filters recent active desktop tasks honestly' -Passed $ghotiControlCenterDesktopFilterOk -Detail ($(if ($ghotiControlCenterDesktopFilterOk) { "$($ghotiFilteredTasks.Count) filtered desktop task(s) visible" } else { 'Ghoti control-center filter output did not match the requested desktop queued active-only view' }))
+    if (-not $ghotiControlCenterDesktopFilterOk) { $failed++ }
 
     $approvalQueueSeed = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('enqueue', '--title', 'dashboard checker approval task', '--description', 'Validate dashboard approval queue actions.', '--risk', 'ask')
     $approvalQueueSeedOk = $approvalQueueSeed.ExitCode -eq 0
@@ -628,6 +729,16 @@ try {
     Write-Check -Name 'Desktop bridge status endpoint' -Passed $desktopStatusOk -Detail ($(if ($desktopStatusOk) { $desktopStatus.summary.headline } else { 'desktop bridge status missing structured output' }))
     if (-not $desktopStatusOk) { $failed++ }
 
+    $desktopGuardSummaryOk = $desktopStatus.ok -and `
+        $null -ne $desktopStatus.summary.terminalWindowCount -and `
+        $null -ne $desktopStatus.summary.powerShellProcessCount -and `
+        $null -ne $desktopStatus.summary.nodeProcessCount -and `
+        $null -ne $desktopStatus.summary.pythonProcessCount -and `
+        $null -ne $desktopStatus.summary.resourceGuardOk -and `
+        $null -ne $desktopStatus.summary.clipboardGuardOk
+    Write-Check -Name 'Desktop bridge status includes resource guard fields' -Passed $desktopGuardSummaryOk -Detail ($(if ($desktopGuardSummaryOk) { "term=$($desktopStatus.summary.terminalWindowCount) | pwsh=$($desktopStatus.summary.powerShellProcessCount) | node=$($desktopStatus.summary.nodeProcessCount)" } else { 'desktop bridge resource guard fields missing' }))
+    if (-not $desktopGuardSummaryOk) { $failed++ }
+
     $desktopCheck = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/desktop-bridge/check" -Method Post -ContentType 'application/json' -Body '{}' -TimeoutSec 60
     $desktopCheckOk = $desktopCheck.ok -and $desktopCheck.localOnly -and $desktopCheck.summary.shellCommandCapability
     Write-Check -Name 'Desktop bridge check endpoint' -Passed $desktopCheckOk -Detail ($(if ($desktopCheckOk) { $desktopCheck.summary.headline } else { 'desktop bridge check failed' }))
@@ -725,11 +836,121 @@ try {
             action = 'execute'
         } | ConvertTo-Json
         $desktopOpenExecute = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $desktopOpenExecutePayload -TimeoutSec 30
-        $desktopOpenExecuteOk = $desktopOpenExecute.ok -and `
-            $desktopOpenExecute.task.status -eq 'completed' -and `
-            $desktopOpenExecute.task.lastExecutionStatus -eq 'succeeded'
+        $desktopOpenExecuteOk = $desktopOpenExecute.ok -and (`
+            ((`
+                $desktopOpenExecute.task.status -eq 'completed' -and `
+                $desktopOpenExecute.task.lastExecutionStatus -eq 'succeeded'`
+            ) -or (`
+                $desktopOpenExecute.task.status -eq 'blocked_human_needed' -and `
+                $desktopOpenExecute.task.lastExecutionStatus -eq 'failed' -and `
+                ($desktopOpenExecute.summary.headline -match 'manual operator focus' -or `
+                 $desktopOpenExecute.summary.headline -match 'Resource guard blocked')`
+            )))
         Write-Check -Name 'Desktop open_allowed_app execution endpoint' -Passed $desktopOpenExecuteOk -Detail ($(if ($desktopOpenExecuteOk) { $desktopOpenExecute.summary.headline } else { 'desktop open_allowed_app execute failed' }))
         if (-not $desktopOpenExecuteOk) { $failed++ }
+
+        $desktopOpenDetail = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/item?taskId=$desktopOpenTaskId" -Method Get -TimeoutSec 30
+        $desktopOpenDetailOk = $desktopOpenDetail.ok -and (`
+            ((`
+                $desktopOpenDetail.summary.lastExecutionStatus -eq 'succeeded' -and `
+                $desktopOpenDetail.summary.lastExecutionSummary -match 'Focused existing allowlisted app window'`
+            ) -or (`
+                $desktopOpenDetail.summary.status -eq 'blocked_human_needed' -and `
+                $desktopOpenDetail.summary.lastExecutionStatus -eq 'failed' -and `
+                ($desktopOpenDetail.summary.lastExecutionSummary -match 'manual operator focus' -or `
+                 $desktopOpenDetail.summary.lastExecutionSummary -match 'Resource guard blocked')`
+            )))
+        Write-Check -Name 'Desktop open_allowed_app result reflects focus-first reuse or clear manual focus blocking' -Passed $desktopOpenDetailOk -Detail ($(if ($desktopOpenDetailOk) { $desktopOpenDetail.summary.lastExecutionSummary } else { 'desktop open_allowed_app did not report focused existing window reuse or clear blocking' }))
+        if (-not $desktopOpenDetailOk) { $failed++ }
+    }
+
+    $guardSeed = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+        'queue-executor-action',
+        '--action-type', 'open_allowed_app',
+        '--target', 'terminal'
+    )
+    $guardSeedOk = $guardSeed.ExitCode -eq 0
+    Write-Check -Name 'Seed dashboard resource-guard task' -Passed $guardSeedOk -Detail (($guardSeed.Output | Out-String).Trim())
+    if (-not $guardSeedOk) { $failed++ }
+
+    $guardTaskMatch = [regex]::Match(($guardSeed.Output | Out-String), 'task_id:\s*(\S+)')
+    $guardTaskId = if ($guardTaskMatch.Success) { $guardTaskMatch.Groups[1].Value } else { $null }
+    $guardApprovalMatch = [regex]::Match(($guardSeed.Output | Out-String), 'approval_request_id:\s*(\S+)')
+    $guardApprovalId = if ($guardApprovalMatch.Success) { $guardApprovalMatch.Groups[1].Value } else { $null }
+
+    if (-not [string]::IsNullOrWhiteSpace($guardApprovalId)) {
+        $guardApprove = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $guardApprovalId, '--note', 'dashboard checker approved guarded terminal open')
+        $guardApproveOk = $guardApprove.ExitCode -eq 0
+        Write-Check -Name 'Seed resource-guard approval' -Passed $guardApproveOk -Detail (($guardApprove.Output | Out-String).Trim())
+        if (-not $guardApproveOk) { $failed++ }
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($guardTaskId)) {
+        $guardExecute = Invoke-ModuleCommand `
+            -PythonPath $pythonPath `
+            -Arguments @('execute-task', '--task-id', $guardTaskId) `
+            -EnvOverrides @{
+                SUPER_AGENT_DESKTOP_TEST_TERMINAL_WINDOW_COUNT = '3'
+                SUPER_AGENT_DESKTOP_TEST_TERMINAL_PROCESS_COUNT = '6'
+                SUPER_AGENT_DESKTOP_TEST_FORCE_RESOURCE_GUARD = '1'
+            }
+        $guardExecuteOk = $guardExecute.ExitCode -eq 0 -and (($guardExecute.Output | Out-String) -match 'status:\s+blocked_human_needed')
+        Write-Check -Name 'Seed resource-guard execution' -Passed $guardExecuteOk -Detail (($guardExecute.Output | Out-String).Trim())
+        if (-not $guardExecuteOk) { $failed++ }
+
+        $guardTaskDetail = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/item?taskId=$guardTaskId" -Method Get -TimeoutSec 30
+        $guardTaskDetailOk = $guardTaskDetail.ok -and `
+            $guardTaskDetail.summary.status -eq 'blocked_human_needed' -and `
+            $guardTaskDetail.summary.lastResourceGuardReason -match 'resource guard'
+        Write-Check -Name 'Task detail shows resource guard reason' -Passed $guardTaskDetailOk -Detail ($(if ($guardTaskDetailOk) { $guardTaskDetail.summary.lastResourceGuardReason } else { 'resource guard reason missing from dashboard task detail' }))
+        if (-not $guardTaskDetailOk) { $failed++ }
+
+        $guardSupervisor = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/supervisor/status" -Method Get -TimeoutSec 30
+        $guardSupervisorOk = $guardSupervisor.ok -and `
+            $guardSupervisor.summary.ghotiState -eq 'resource_guard_triggered' -and `
+            $guardSupervisor.summary.resourceGuardEventCount -ge 1
+        Write-Check -Name 'Supervisor view shows resource guard state' -Passed $guardSupervisorOk -Detail ($(if ($guardSupervisorOk) { $guardSupervisor.summary.ghotiReason } else { 'resource guard state missing from supervisor view' }))
+        if (-not $guardSupervisorOk) { $failed++ }
+    }
+
+    $retrySeed = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+        'queue-executor-action',
+        '--action-type', 'focus_window',
+        '--target', 'terminal'
+    )
+    $retrySeedOk = $retrySeed.ExitCode -eq 0
+    Write-Check -Name 'Seed dashboard retry-limit task' -Passed $retrySeedOk -Detail (($retrySeed.Output | Out-String).Trim())
+    if (-not $retrySeedOk) { $failed++ }
+
+    $retryTaskMatch = [regex]::Match(($retrySeed.Output | Out-String), 'task_id:\s*(\S+)')
+    $retryTaskId = if ($retryTaskMatch.Success) { $retryTaskMatch.Groups[1].Value } else { $null }
+    $retryApprovalMatch = [regex]::Match(($retrySeed.Output | Out-String), 'approval_request_id:\s*(\S+)')
+    $retryApprovalId = if ($retryApprovalMatch.Success) { $retryApprovalMatch.Groups[1].Value } else { $null }
+
+    if (-not [string]::IsNullOrWhiteSpace($retryApprovalId)) {
+        $retryApprove = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @('approve-approval', '--approval-id', $retryApprovalId, '--note', 'dashboard checker approved retry-limit test')
+        $retryApproveOk = $retryApprove.ExitCode -eq 0
+        Write-Check -Name 'Seed retry-limit approval' -Passed $retryApproveOk -Detail (($retryApprove.Output | Out-String).Trim())
+        if (-not $retryApproveOk) { $failed++ }
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($retryTaskId)) {
+        $retryExecute = Invoke-ModuleCommand `
+            -PythonPath $pythonPath `
+            -Arguments @('execute-task', '--task-id', $retryTaskId) `
+            -EnvOverrides @{ SUPER_AGENT_DESKTOP_TEST_FAIL_ACTIONS = 'focus_window' }
+        $retryExecuteOk = $retryExecute.ExitCode -eq 0 -and (($retryExecute.Output | Out-String) -match 'status:\s+failed')
+        Write-Check -Name 'Seed retry-limit execution' -Passed $retryExecuteOk -Detail (($retryExecute.Output | Out-String).Trim())
+        if (-not $retryExecuteOk) { $failed++ }
+
+        $retryTaskDetail = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/item?taskId=$retryTaskId" -Method Get -TimeoutSec 30
+        $retryTaskDetailOk = $retryTaskDetail.ok -and `
+            $retryTaskDetail.summary.status -eq 'failed' -and `
+            $retryTaskDetail.summary.lastAttemptCount -eq 2 -and `
+            $retryTaskDetail.summary.retryLimit -eq 2 -and `
+            $retryTaskDetail.summary.lastFailureReason -match 'Failed after 2 attempt'
+        Write-Check -Name 'Task detail shows retry limit and failure reason' -Passed $retryTaskDetailOk -Detail ($(if ($retryTaskDetailOk) { $retryTaskDetail.summary.lastFailureReason } else { 'retry-limit fields missing from dashboard task detail' }))
+        if (-not $retryTaskDetailOk) { $failed++ }
     }
 
     Start-Sleep -Milliseconds 1200
@@ -768,9 +989,16 @@ try {
             action = 'execute'
         } | ConvertTo-Json
         $desktopFocusExecute = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $desktopFocusExecutePayload -TimeoutSec 30
-        $desktopFocusExecuteOk = $desktopFocusExecute.ok -and `
-            $desktopFocusExecute.task.status -eq 'completed' -and `
-            $desktopFocusExecute.task.lastExecutionStatus -eq 'succeeded'
+        $desktopFocusExecuteOk = $desktopFocusExecute.ok -and (`
+            ((`
+                $desktopFocusExecute.task.status -eq 'completed' -and `
+                $desktopFocusExecute.task.lastExecutionStatus -eq 'succeeded'`
+            ) -or (`
+                $desktopFocusExecute.task.status -eq 'blocked_human_needed' -and `
+                $desktopFocusExecute.task.lastExecutionStatus -eq 'failed' -and `
+                ($desktopFocusExecute.summary.headline -match 'manual operator focus' -or `
+                 $desktopFocusExecute.summary.headline -match 'manual target resolution is required')`
+            )))
         Write-Check -Name 'Desktop focus_window execution endpoint' -Passed $desktopFocusExecuteOk -Detail ($(if ($desktopFocusExecuteOk) { $desktopFocusExecute.summary.headline } else { 'desktop focus_window execute failed' }))
         if (-not $desktopFocusExecuteOk) { $failed++ }
     }
@@ -810,19 +1038,715 @@ try {
             action = 'execute'
         } | ConvertTo-Json
         $desktopScreenshotExecute = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $desktopScreenshotExecutePayload -TimeoutSec 30
-        $desktopScreenshotExecuteOk = $desktopScreenshotExecute.ok -and `
-            $desktopScreenshotExecute.task.status -eq 'completed' -and `
-            $desktopScreenshotExecute.task.lastExecutionStatus -eq 'succeeded' -and `
-            (Test-Path -LiteralPath $desktopArtifactPath -PathType Leaf)
+        $desktopScreenshotExecuteOk = $desktopScreenshotExecute.ok -and (`
+            ((`
+                $desktopScreenshotExecute.task.status -eq 'completed' -and `
+                $desktopScreenshotExecute.task.lastExecutionStatus -eq 'succeeded' -and `
+                (Test-Path -LiteralPath $desktopArtifactPath -PathType Leaf)`
+            ) -or (`
+                $desktopScreenshotExecute.task.status -eq 'blocked_human_needed' -and `
+                $desktopScreenshotExecute.task.lastExecutionStatus -eq 'failed' -and `
+                $desktopScreenshotExecute.summary.headline -match 'manual screenshot is required'`
+            )))
         Write-Check -Name 'Desktop screenshot execution endpoint' -Passed $desktopScreenshotExecuteOk -Detail ($(if ($desktopScreenshotExecuteOk) { $desktopScreenshotExecute.summary.headline } else { 'desktop screenshot execute failed' }))
         if (-not $desktopScreenshotExecuteOk) { $failed++ }
 
         $desktopScreenshotDetail = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/item?taskId=$desktopScreenshotTaskId" -Method Get -TimeoutSec 30
-        $desktopScreenshotDetailOk = $desktopScreenshotDetail.ok -and `
-            $desktopScreenshotDetail.summary.lastExecutionStatus -eq 'succeeded' -and `
-            $desktopScreenshotDetail.summary.lastArtifactPath -eq $desktopArtifactPath
-        Write-Check -Name 'Desktop screenshot result persists in task detail' -Passed $desktopScreenshotDetailOk -Detail ($(if ($desktopScreenshotDetailOk) { $desktopScreenshotDetail.summary.lastArtifactPath } else { 'desktop screenshot result not persisted' }))
+        $desktopScreenshotDetailOk = $desktopScreenshotDetail.ok -and (`
+            ((`
+                $desktopScreenshotDetail.summary.lastExecutionStatus -eq 'succeeded' -and `
+                $desktopScreenshotDetail.summary.lastArtifactPath -eq $desktopArtifactPath`
+            ) -or (`
+                $desktopScreenshotDetail.summary.status -eq 'blocked_human_needed' -and `
+                $desktopScreenshotDetail.summary.lastExecutionStatus -eq 'failed' -and `
+                $desktopScreenshotDetail.summary.lastExecutionSummary -match 'manual screenshot is required'`
+            )))
+        Write-Check -Name 'Desktop screenshot result persists in task detail' -Passed $desktopScreenshotDetailOk -Detail ($(if ($desktopScreenshotDetailOk) { $desktopScreenshotDetail.summary.lastExecutionSummary } else { 'desktop screenshot result not persisted' }))
         if (-not $desktopScreenshotDetailOk) { $failed++ }
+    }
+
+    $desktopSetClipboardPayload = @{
+        actionType = 'set_clipboard_text'
+        content = 'dashboard-desktop-clipboard-check'
+    } | ConvertTo-Json
+    $desktopSetClipboardQueue = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/executor/queue" -Method Post -ContentType 'application/json' -Body $desktopSetClipboardPayload -TimeoutSec 30
+    $desktopSetClipboardQueueOk = $desktopSetClipboardQueue.ok -and `
+        $desktopSetClipboardQueue.localOnly -and `
+        $desktopSetClipboardQueue.task.status -eq 'pending_approval' -and `
+        $desktopSetClipboardQueue.task.executorActionType -eq 'set_clipboard_text'
+    Write-Check -Name 'Desktop set_clipboard_text queue endpoint' -Passed $desktopSetClipboardQueueOk -Detail ($(if ($desktopSetClipboardQueueOk) { $desktopSetClipboardQueue.summary.headline } else { 'desktop set_clipboard_text queue failed' }))
+    if (-not $desktopSetClipboardQueueOk) { $failed++ }
+
+    $desktopSetClipboardTaskId = $desktopSetClipboardQueue.summary.taskId
+    $desktopSetClipboardApprovalId = if ($null -ne $desktopSetClipboardQueue.task) { $desktopSetClipboardQueue.task.approvalRequestId } else { $null }
+    $desktopSetClipboardIdsOk = (-not [string]::IsNullOrWhiteSpace($desktopSetClipboardTaskId)) -and (-not [string]::IsNullOrWhiteSpace($desktopSetClipboardApprovalId)) -and ($desktopSetClipboardApprovalId -ne 'none')
+    Write-Check -Name 'Desktop set_clipboard_text ids returned' -Passed $desktopSetClipboardIdsOk -Detail ($(if ($desktopSetClipboardIdsOk) { "$desktopSetClipboardTaskId | $desktopSetClipboardApprovalId" } else { 'desktop set_clipboard_text ids missing' }))
+    if (-not $desktopSetClipboardIdsOk) { $failed++ }
+
+    if ($desktopSetClipboardIdsOk) {
+        $desktopSetClipboardApprovePayload = @{
+            approvalId = $desktopSetClipboardApprovalId
+            decision = 'approve'
+            note = 'dashboard checker approved set_clipboard_text'
+        } | ConvertTo-Json
+        $desktopSetClipboardApprove = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/approvals/decision" -Method Post -ContentType 'application/json' -Body $desktopSetClipboardApprovePayload -TimeoutSec 30
+        $desktopSetClipboardApproveOk = $desktopSetClipboardApprove.ok -and $desktopSetClipboardApprove.approval.status -eq 'approved'
+        Write-Check -Name 'Desktop set_clipboard_text approval endpoint' -Passed $desktopSetClipboardApproveOk -Detail ($(if ($desktopSetClipboardApproveOk) { $desktopSetClipboardApprove.summary.headline } else { 'desktop set_clipboard_text approval failed' }))
+        if (-not $desktopSetClipboardApproveOk) { $failed++ }
+
+        $desktopSetClipboardExecutePayload = @{
+            taskId = $desktopSetClipboardTaskId
+            action = 'execute'
+        } | ConvertTo-Json
+        $desktopSetClipboardExecute = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $desktopSetClipboardExecutePayload -TimeoutSec 30
+        $desktopSetClipboardExecuteOk = $desktopSetClipboardExecute.ok -and `
+            $desktopSetClipboardExecute.task.status -eq 'completed' -and `
+            $desktopSetClipboardExecute.task.lastExecutionStatus -eq 'succeeded'
+        Write-Check -Name 'Desktop set_clipboard_text execution endpoint' -Passed $desktopSetClipboardExecuteOk -Detail ($(if ($desktopSetClipboardExecuteOk) { $desktopSetClipboardExecute.summary.headline } else { 'desktop set_clipboard_text execute failed' }))
+        if (-not $desktopSetClipboardExecuteOk) { $failed++ }
+    }
+
+    $desktopReadClipboardPayload = @{
+        actionType = 'get_clipboard_text'
+    } | ConvertTo-Json
+    $desktopReadClipboardQueue = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/executor/queue" -Method Post -ContentType 'application/json' -Body $desktopReadClipboardPayload -TimeoutSec 30
+    $desktopReadClipboardQueueOk = $desktopReadClipboardQueue.ok -and `
+        $desktopReadClipboardQueue.localOnly -and `
+        $desktopReadClipboardQueue.task.status -eq 'queued' -and `
+        $desktopReadClipboardQueue.task.executorActionType -eq 'get_clipboard_text'
+    Write-Check -Name 'Desktop get_clipboard_text queue endpoint' -Passed $desktopReadClipboardQueueOk -Detail ($(if ($desktopReadClipboardQueueOk) { $desktopReadClipboardQueue.summary.headline } else { 'desktop get_clipboard_text queue failed' }))
+    if (-not $desktopReadClipboardQueueOk) { $failed++ }
+
+    $desktopReadClipboardTaskId = $desktopReadClipboardQueue.summary.taskId
+    $desktopReadClipboardTaskIdOk = -not [string]::IsNullOrWhiteSpace($desktopReadClipboardTaskId)
+    Write-Check -Name 'Desktop get_clipboard_text task id returned' -Passed $desktopReadClipboardTaskIdOk -Detail ($(if ($desktopReadClipboardTaskIdOk) { $desktopReadClipboardTaskId } else { 'desktop get_clipboard_text task id missing' }))
+    if (-not $desktopReadClipboardTaskIdOk) { $failed++ }
+
+    if ($desktopReadClipboardTaskIdOk) {
+        $desktopReadClipboardExecutePayload = @{
+            taskId = $desktopReadClipboardTaskId
+            action = 'execute'
+        } | ConvertTo-Json
+        $desktopReadClipboardExecute = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $desktopReadClipboardExecutePayload -TimeoutSec 30
+        $desktopReadClipboardExecuteOk = $desktopReadClipboardExecute.ok -and `
+            $desktopReadClipboardExecute.task.status -eq 'completed' -and `
+            $desktopReadClipboardExecute.task.lastExecutionStatus -eq 'succeeded'
+        Write-Check -Name 'Desktop get_clipboard_text execution endpoint' -Passed $desktopReadClipboardExecuteOk -Detail ($(if ($desktopReadClipboardExecuteOk) { $desktopReadClipboardExecute.summary.headline } else { 'desktop get_clipboard_text execute failed' }))
+        if (-not $desktopReadClipboardExecuteOk) { $failed++ }
+
+        $desktopReadClipboardDetail = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/item?taskId=$desktopReadClipboardTaskId" -Method Get -TimeoutSec 30
+        $desktopReadClipboardDetailOk = $desktopReadClipboardDetail.ok -and `
+            $desktopReadClipboardDetail.summary.lastExecutionSummary -match 'Read clipboard text'
+        Write-Check -Name 'Desktop get_clipboard_text result persists in task detail' -Passed $desktopReadClipboardDetailOk -Detail ($(if ($desktopReadClipboardDetailOk) { $desktopReadClipboardDetail.summary.lastExecutionSummary } else { 'desktop clipboard read result not persisted' }))
+        if (-not $desktopReadClipboardDetailOk) { $failed++ }
+    }
+
+    $desktopHotkeyPayload = @{
+        actionType = 'send_hotkey'
+        target = 'terminal|ctrl+v'
+    } | ConvertTo-Json
+    $desktopHotkeyQueue = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/executor/queue" -Method Post -ContentType 'application/json' -Body $desktopHotkeyPayload -TimeoutSec 30
+    $desktopHotkeyQueueOk = $desktopHotkeyQueue.ok -and `
+        $desktopHotkeyQueue.localOnly -and `
+        $desktopHotkeyQueue.task.status -eq 'pending_approval' -and `
+        $desktopHotkeyQueue.task.executorActionType -eq 'send_hotkey'
+    Write-Check -Name 'Desktop send_hotkey queue endpoint' -Passed $desktopHotkeyQueueOk -Detail ($(if ($desktopHotkeyQueueOk) { $desktopHotkeyQueue.summary.headline } else { 'desktop send_hotkey queue failed' }))
+    if (-not $desktopHotkeyQueueOk) { $failed++ }
+
+    $desktopHotkeyTaskId = $desktopHotkeyQueue.summary.taskId
+    $desktopHotkeyApprovalId = if ($null -ne $desktopHotkeyQueue.task) { $desktopHotkeyQueue.task.approvalRequestId } else { $null }
+    $desktopHotkeyIdsOk = (-not [string]::IsNullOrWhiteSpace($desktopHotkeyTaskId)) -and (-not [string]::IsNullOrWhiteSpace($desktopHotkeyApprovalId)) -and ($desktopHotkeyApprovalId -ne 'none')
+    Write-Check -Name 'Desktop send_hotkey ids returned' -Passed $desktopHotkeyIdsOk -Detail ($(if ($desktopHotkeyIdsOk) { "$desktopHotkeyTaskId | $desktopHotkeyApprovalId" } else { 'desktop send_hotkey ids missing' }))
+    if (-not $desktopHotkeyIdsOk) { $failed++ }
+
+    if ($desktopHotkeyIdsOk) {
+        $desktopHotkeyApprovePayload = @{
+            approvalId = $desktopHotkeyApprovalId
+            decision = 'approve'
+            note = 'dashboard checker approved send_hotkey'
+        } | ConvertTo-Json
+        $desktopHotkeyApprove = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/approvals/decision" -Method Post -ContentType 'application/json' -Body $desktopHotkeyApprovePayload -TimeoutSec 30
+        $desktopHotkeyApproveOk = $desktopHotkeyApprove.ok -and $desktopHotkeyApprove.approval.status -eq 'approved'
+        Write-Check -Name 'Desktop send_hotkey approval endpoint' -Passed $desktopHotkeyApproveOk -Detail ($(if ($desktopHotkeyApproveOk) { $desktopHotkeyApprove.summary.headline } else { 'desktop send_hotkey approval failed' }))
+        if (-not $desktopHotkeyApproveOk) { $failed++ }
+
+        $desktopHotkeyExecutePayload = @{
+            taskId = $desktopHotkeyTaskId
+            action = 'execute'
+        } | ConvertTo-Json
+        $desktopHotkeyExecute = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $desktopHotkeyExecutePayload -TimeoutSec 30
+        $desktopHotkeyExecuteOk = $desktopHotkeyExecute.ok -and (`
+            ((`
+                $desktopHotkeyExecute.task.status -eq 'completed' -and `
+                $desktopHotkeyExecute.task.lastExecutionStatus -eq 'succeeded'`
+            ) -or (`
+                ($desktopHotkeyExecute.task.status -eq 'blocked_human_needed' -or `
+                 $desktopHotkeyExecute.task.status -eq 'failed') -and `
+                $desktopHotkeyExecute.task.lastExecutionStatus -eq 'failed' -and `
+                ($desktopHotkeyExecute.summary.headline -match 'manual operator focus' -or `
+                 $desktopHotkeyExecute.summary.headline -match 'manual target resolution is required' -or `
+                 $desktopHotkeyExecute.summary.headline -match 'Failed after 2 attempt')`
+            )))
+        Write-Check -Name 'Desktop send_hotkey execution endpoint' -Passed $desktopHotkeyExecuteOk -Detail ($(if ($desktopHotkeyExecuteOk) { $desktopHotkeyExecute.summary.headline } else { 'desktop send_hotkey execute failed' }))
+        if (-not $desktopHotkeyExecuteOk) { $failed++ }
+    }
+
+    $desktopMoveMousePayload = @{
+        actionType = 'move_mouse'
+        target = 'terminal|center'
+    } | ConvertTo-Json
+    $desktopMoveMouseQueue = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/executor/queue" -Method Post -ContentType 'application/json' -Body $desktopMoveMousePayload -TimeoutSec 30
+    $desktopMoveMouseQueueOk = $desktopMoveMouseQueue.ok -and `
+        $desktopMoveMouseQueue.localOnly -and `
+        $desktopMoveMouseQueue.task.status -eq 'pending_approval' -and `
+        $desktopMoveMouseQueue.task.executorActionType -eq 'move_mouse'
+    Write-Check -Name 'Desktop move_mouse queue endpoint' -Passed $desktopMoveMouseQueueOk -Detail ($(if ($desktopMoveMouseQueueOk) { $desktopMoveMouseQueue.summary.headline } else { 'desktop move_mouse queue failed' }))
+    if (-not $desktopMoveMouseQueueOk) { $failed++ }
+
+    $desktopMoveMouseTaskId = $desktopMoveMouseQueue.summary.taskId
+    $desktopMoveMouseApprovalId = if ($null -ne $desktopMoveMouseQueue.task) { $desktopMoveMouseQueue.task.approvalRequestId } else { $null }
+    $desktopMoveMouseIdsOk = (-not [string]::IsNullOrWhiteSpace($desktopMoveMouseTaskId)) -and (-not [string]::IsNullOrWhiteSpace($desktopMoveMouseApprovalId)) -and ($desktopMoveMouseApprovalId -ne 'none')
+    Write-Check -Name 'Desktop move_mouse ids returned' -Passed $desktopMoveMouseIdsOk -Detail ($(if ($desktopMoveMouseIdsOk) { "$desktopMoveMouseTaskId | $desktopMoveMouseApprovalId" } else { 'desktop move_mouse ids missing' }))
+    if (-not $desktopMoveMouseIdsOk) { $failed++ }
+
+    if ($desktopMoveMouseIdsOk) {
+        $desktopMoveMouseApprovePayload = @{
+            approvalId = $desktopMoveMouseApprovalId
+            decision = 'approve'
+            note = 'dashboard checker approved move_mouse'
+        } | ConvertTo-Json
+        $desktopMoveMouseApprove = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/approvals/decision" -Method Post -ContentType 'application/json' -Body $desktopMoveMouseApprovePayload -TimeoutSec 30
+        $desktopMoveMouseApproveOk = $desktopMoveMouseApprove.ok -and $desktopMoveMouseApprove.approval.status -eq 'approved'
+        Write-Check -Name 'Desktop move_mouse approval endpoint' -Passed $desktopMoveMouseApproveOk -Detail ($(if ($desktopMoveMouseApproveOk) { $desktopMoveMouseApprove.summary.headline } else { 'desktop move_mouse approval failed' }))
+        if (-not $desktopMoveMouseApproveOk) { $failed++ }
+
+        $desktopMoveMouseExecutePayload = @{
+            taskId = $desktopMoveMouseTaskId
+            action = 'execute'
+        } | ConvertTo-Json
+        $desktopMoveMouseExecute = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $desktopMoveMouseExecutePayload -TimeoutSec 30
+        $desktopMoveMouseExecuteOk = $desktopMoveMouseExecute.ok -and `
+            ((`
+                $desktopMoveMouseExecute.task.status -eq 'completed' -and `
+                $desktopMoveMouseExecute.task.lastExecutionStatus -eq 'succeeded'`
+            ) -or (`
+                $desktopMoveMouseExecute.task.status -eq 'failed' -and `
+                $desktopMoveMouseExecute.task.lastExecutionStatus -eq 'failed' -and `
+                $desktopMoveMouseExecute.summary.headline -match 'Failed after 2 attempt|Windows did not place the mouse'`
+            ))
+        Write-Check -Name 'Desktop move_mouse execution endpoint' -Passed $desktopMoveMouseExecuteOk -Detail ($(if ($desktopMoveMouseExecuteOk) { $desktopMoveMouseExecute.summary.headline } else { 'desktop move_mouse execute failed without a clear safe result' }))
+        if (-not $desktopMoveMouseExecuteOk) { $failed++ }
+    }
+
+    $desktopLeftClickPayload = @{
+        actionType = 'left_click'
+        target = 'terminal|center'
+    } | ConvertTo-Json
+    $desktopLeftClickQueue = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/executor/queue" -Method Post -ContentType 'application/json' -Body $desktopLeftClickPayload -TimeoutSec 30
+    $desktopLeftClickQueueOk = $desktopLeftClickQueue.ok -and `
+        $desktopLeftClickQueue.localOnly -and `
+        $desktopLeftClickQueue.task.status -eq 'pending_approval' -and `
+        $desktopLeftClickQueue.task.executorActionType -eq 'left_click'
+    Write-Check -Name 'Desktop left_click queue endpoint' -Passed $desktopLeftClickQueueOk -Detail ($(if ($desktopLeftClickQueueOk) { $desktopLeftClickQueue.summary.headline } else { 'desktop left_click queue failed' }))
+    if (-not $desktopLeftClickQueueOk) { $failed++ }
+
+    $desktopLeftClickTaskId = $desktopLeftClickQueue.summary.taskId
+    $desktopLeftClickApprovalId = if ($null -ne $desktopLeftClickQueue.task) { $desktopLeftClickQueue.task.approvalRequestId } else { $null }
+    $desktopLeftClickIdsOk = (-not [string]::IsNullOrWhiteSpace($desktopLeftClickTaskId)) -and (-not [string]::IsNullOrWhiteSpace($desktopLeftClickApprovalId)) -and ($desktopLeftClickApprovalId -ne 'none')
+    Write-Check -Name 'Desktop left_click ids returned' -Passed $desktopLeftClickIdsOk -Detail ($(if ($desktopLeftClickIdsOk) { "$desktopLeftClickTaskId | $desktopLeftClickApprovalId" } else { 'desktop left_click ids missing' }))
+    if (-not $desktopLeftClickIdsOk) { $failed++ }
+
+    if ($desktopLeftClickIdsOk) {
+        $desktopLeftClickApprovePayload = @{
+            approvalId = $desktopLeftClickApprovalId
+            decision = 'approve'
+            note = 'dashboard checker approved left_click'
+        } | ConvertTo-Json
+        $desktopLeftClickApprove = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/approvals/decision" -Method Post -ContentType 'application/json' -Body $desktopLeftClickApprovePayload -TimeoutSec 30
+        $desktopLeftClickApproveOk = $desktopLeftClickApprove.ok -and $desktopLeftClickApprove.approval.status -eq 'approved'
+        Write-Check -Name 'Desktop left_click approval endpoint' -Passed $desktopLeftClickApproveOk -Detail ($(if ($desktopLeftClickApproveOk) { $desktopLeftClickApprove.summary.headline } else { 'desktop left_click approval failed' }))
+        if (-not $desktopLeftClickApproveOk) { $failed++ }
+
+        $desktopLeftClickExecutePayload = @{
+            taskId = $desktopLeftClickTaskId
+            action = 'execute'
+        } | ConvertTo-Json
+        $desktopLeftClickExecute = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $desktopLeftClickExecutePayload -TimeoutSec 30
+        $desktopLeftClickExecuteOk = $desktopLeftClickExecute.ok -and (`
+            ((`
+                $desktopLeftClickExecute.task.status -eq 'completed' -and `
+                $desktopLeftClickExecute.task.lastExecutionStatus -eq 'succeeded'`
+            ) -or (`
+                ($desktopLeftClickExecute.task.status -eq 'blocked_human_needed' -or `
+                 $desktopLeftClickExecute.task.status -eq 'failed') -and `
+                $desktopLeftClickExecute.task.lastExecutionStatus -eq 'failed' -and `
+                ($desktopLeftClickExecute.summary.headline -match 'manual operator focus' -or `
+                 $desktopLeftClickExecute.summary.headline -match 'Failed after 2 attempt')`
+            )))
+        Write-Check -Name 'Desktop left_click execution endpoint' -Passed $desktopLeftClickExecuteOk -Detail ($(if ($desktopLeftClickExecuteOk) { $desktopLeftClickExecute.summary.headline } else { 'desktop left_click execute failed' }))
+        if (-not $desktopLeftClickExecuteOk) { $failed++ }
+    }
+
+    $desktopInterruptSeed = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+        'queue-executor-action',
+        '--action-type', 'wait_seconds',
+        '--target', '5'
+    )
+    $desktopInterruptSeedOk = $desktopInterruptSeed.ExitCode -eq 0 -and `
+        (($desktopInterruptSeed.Output | Out-String) -match 'status:\s+queued') -and `
+        (($desktopInterruptSeed.Output | Out-String) -match 'executor_action_type:\s+wait_seconds')
+    Write-Check -Name 'Desktop interrupt seed task queued' -Passed $desktopInterruptSeedOk -Detail (($desktopInterruptSeed.Output | Out-String).Trim())
+    if (-not $desktopInterruptSeedOk) { $failed++ }
+
+    $desktopInterruptTaskMatch = [regex]::Match(($desktopInterruptSeed.Output | Out-String), 'task_id:\s*(\S+)')
+    $desktopInterruptTaskId = if ($desktopInterruptTaskMatch.Success) { $desktopInterruptTaskMatch.Groups[1].Value } else { $null }
+    $desktopInterruptTaskOk = -not [string]::IsNullOrWhiteSpace($desktopInterruptTaskId)
+    Write-Check -Name 'Desktop interrupt task id returned' -Passed $desktopInterruptTaskOk -Detail ($(if ($desktopInterruptTaskOk) { $desktopInterruptTaskId } else { 'desktop interrupt task id missing' }))
+    if (-not $desktopInterruptTaskOk) { $failed++ }
+
+    if ($desktopInterruptTaskOk) {
+        $desktopInterruptExecute = Invoke-ModuleCommand `
+            -PythonPath $pythonPath `
+            -Arguments @('execute-task', '--task-id', $desktopInterruptTaskId) `
+            -EnvOverrides @{ SUPER_AGENT_DESKTOP_TEST_INTERRUPT_AFTER_MS = '300' }
+        $desktopInterruptExecuteOk = $desktopInterruptExecute.ExitCode -eq 0 -and `
+            (($desktopInterruptExecute.Output | Out-String) -match 'status:\s+interrupted') -and `
+            (($desktopInterruptExecute.Output | Out-String) -match 'execution_status:\s+interrupted')
+        Write-Check -Name 'Desktop interrupt seed executes into interrupted state' -Passed $desktopInterruptExecuteOk -Detail (($desktopInterruptExecute.Output | Out-String).Trim())
+        if (-not $desktopInterruptExecuteOk) { $failed++ }
+
+        $supervisorAfterInterrupt = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/supervisor/status" -Method Get -TimeoutSec 30
+        $supervisorAfterInterruptOk = $supervisorAfterInterrupt.ok -and `
+            $supervisorAfterInterrupt.summary.interruptedTasks.taskId -contains $desktopInterruptTaskId
+        Write-Check -Name 'Interrupted desktop task is visible in supervisor status' -Passed $supervisorAfterInterruptOk -Detail ($(if ($supervisorAfterInterruptOk) { $desktopInterruptTaskId } else { 'interrupted desktop task missing from supervisor status' }))
+        if (-not $supervisorAfterInterruptOk) { $failed++ }
+
+        $desktopInterruptDetail = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/item?taskId=$desktopInterruptTaskId" -Method Get -TimeoutSec 30
+        $desktopInterruptDetailOk = $desktopInterruptDetail.ok -and `
+            $desktopInterruptDetail.summary.status -eq 'interrupted' -and `
+            $desktopInterruptDetail.summary.lastExecutionStatus -eq 'interrupted' -and `
+            $desktopInterruptDetail.summary.blockedReason -match 'Ctrl\+8'
+        Write-Check -Name 'Interrupted desktop task detail shows failsafe reason' -Passed $desktopInterruptDetailOk -Detail ($(if ($desktopInterruptDetailOk) { $desktopInterruptDetail.summary.blockedReason } else { 'interrupted desktop task detail missing failsafe reason' }))
+        if (-not $desktopInterruptDetailOk) { $failed++ }
+    }
+
+    $recipeQueuePayload = @{
+        actionType = 'run_operator_recipe'
+        target = 'observe_desktop_state'
+    } | ConvertTo-Json
+    $recipeQueue = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/executor/queue" -Method Post -ContentType 'application/json' -Body $recipeQueuePayload -TimeoutSec 30
+    $recipeQueueOk = $recipeQueue.ok -and `
+        $recipeQueue.localOnly -and `
+        $recipeQueue.task.status -eq 'queued' -and `
+        $recipeQueue.task.approvalState -eq 'not_required' -and `
+        $recipeQueue.task.executorActionType -eq 'run_operator_recipe' -and `
+        $recipeQueue.task.recipeName -eq 'observe_desktop_state'
+    Write-Check -Name 'Operator recipe queue endpoint' -Passed $recipeQueueOk -Detail ($(if ($recipeQueueOk) { $recipeQueue.summary.headline } else { 'operator recipe queue failed' }))
+    if (-not $recipeQueueOk) { $failed++ }
+
+    $recipeTaskId = $recipeQueue.summary.taskId
+    $recipeTaskIdOk = -not [string]::IsNullOrWhiteSpace($recipeTaskId)
+    Write-Check -Name 'Operator recipe task id returned' -Passed $recipeTaskIdOk -Detail ($(if ($recipeTaskIdOk) { $recipeTaskId } else { 'operator recipe task id missing' }))
+    if (-not $recipeTaskIdOk) { $failed++ }
+
+    if ($recipeTaskIdOk) {
+        $recipeDetail = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/item?taskId=$recipeTaskId" -Method Get -TimeoutSec 30
+        $recipeDetailOk = $recipeDetail.ok -and `
+            $recipeDetail.localOnly -and `
+            $recipeDetail.summary.recipeName -eq 'observe_desktop_state' -and `
+            $recipeDetail.summary.recipeSteps.Count -ge 2
+        Write-Check -Name 'Operator recipe detail endpoint' -Passed $recipeDetailOk -Detail ($(if ($recipeDetailOk) { $recipeDetail.summary.headline } else { 'operator recipe detail missing planned steps' }))
+        if (-not $recipeDetailOk) { $failed++ }
+
+        $recipeExecutePayload = @{
+            taskId = $recipeTaskId
+            action = 'execute'
+        } | ConvertTo-Json
+        $recipeExecute = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $recipeExecutePayload -TimeoutSec 30
+        $recipeExecuteOk = $recipeExecute.ok -and `
+            $recipeExecute.task.status -eq 'completed' -and `
+            $recipeExecute.task.lastExecutionStatus -eq 'succeeded'
+        Write-Check -Name 'Operator recipe execution endpoint' -Passed $recipeExecuteOk -Detail ($(if ($recipeExecuteOk) { $recipeExecute.summary.headline } else { 'operator recipe execute failed' }))
+        if (-not $recipeExecuteOk) { $failed++ }
+
+        $recipeDetailAfter = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/item?taskId=$recipeTaskId" -Method Get -TimeoutSec 30
+        $recipeDetailAfterOk = $recipeDetailAfter.ok -and `
+            $recipeDetailAfter.summary.recipeStatus -eq 'succeeded' -and `
+            $recipeDetailAfter.summary.recipeLastRunSteps.Count -ge 2 -and `
+            $recipeDetailAfter.summary.recipeRunHistory.Count -ge 1
+        Write-Check -Name 'Operator recipe result persists in dashboard detail' -Passed $recipeDetailAfterOk -Detail ($(if ($recipeDetailAfterOk) { $recipeDetailAfter.summary.recipeSummary } else { 'operator recipe result history not persisted in dashboard detail' }))
+        if (-not $recipeDetailAfterOk) { $failed++ }
+    }
+
+    $handoffSeedPayload = @{
+        actionType = 'set_clipboard_text'
+        content = 'ghoti dashboard handoff payload'
+    } | ConvertTo-Json -Compress
+    $handoffSeedQueue = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/executor/queue" -Method Post -ContentType 'application/json' -Body $handoffSeedPayload -TimeoutSec 30
+    $handoffSeedQueueOk = $handoffSeedQueue.ok -and `
+        $handoffSeedQueue.task.status -eq 'pending_approval' -and `
+        $handoffSeedQueue.task.executorActionType -eq 'set_clipboard_text'
+    Write-Check -Name 'Dashboard handoff safe clipboard seed queue endpoint' -Passed $handoffSeedQueueOk -Detail ($(if ($handoffSeedQueueOk) { $handoffSeedQueue.summary.headline } else { 'handoff safe clipboard seed queue failed' }))
+    if (-not $handoffSeedQueueOk) { $failed++ }
+
+    $handoffSeedTaskId = $handoffSeedQueue.summary.taskId
+    $handoffSeedApprovalId = $handoffSeedQueue.task.approvalRequestId
+    if (-not [string]::IsNullOrWhiteSpace($handoffSeedApprovalId)) {
+        $handoffSeedApprovePayload = @{
+            approvalId = $handoffSeedApprovalId
+            decision = 'approve'
+            note = 'dashboard checker approved safe handoff clipboard seed'
+        } | ConvertTo-Json -Compress
+        $handoffSeedApprove = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/approvals/decision" -Method Post -ContentType 'application/json' -Body $handoffSeedApprovePayload -TimeoutSec 30
+        $handoffSeedApproveOk = $handoffSeedApprove.ok -and $handoffSeedApprove.approval.status -eq 'approved'
+        Write-Check -Name 'Dashboard handoff safe clipboard seed approval endpoint' -Passed $handoffSeedApproveOk -Detail ($(if ($handoffSeedApproveOk) { $handoffSeedApprove.summary.headline } else { 'handoff safe clipboard seed approval failed' }))
+        if (-not $handoffSeedApproveOk) { $failed++ }
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($handoffSeedTaskId)) {
+        $handoffSeedExecutePayload = @{
+            taskId = $handoffSeedTaskId
+            action = 'execute'
+        } | ConvertTo-Json -Compress
+        $handoffSeedExecute = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $handoffSeedExecutePayload -TimeoutSec 30
+        $handoffSeedExecuteOk = $handoffSeedExecute.ok -and $handoffSeedExecute.task.status -eq 'completed'
+        Write-Check -Name 'Dashboard handoff safe clipboard seed execution endpoint' -Passed $handoffSeedExecuteOk -Detail ($(if ($handoffSeedExecuteOk) { $handoffSeedExecute.summary.headline } else { 'handoff safe clipboard seed execution failed' }))
+        if (-not $handoffSeedExecuteOk) { $failed++ }
+    }
+
+    $handoffUiHtmlPath = Join-Path $projectRoot 'public\index.html'
+    $handoffUiHtml = if (Test-Path $handoffUiHtmlPath) { Get-Content $handoffUiHtmlPath -Raw } else { '' }
+    $handoffUiTargetsOk = -not [string]::IsNullOrWhiteSpace($handoffUiHtml) -and `
+        $handoffUiHtml -match '(?s)<select id="handoff-source-window">.*?<option value="codex"' -and `
+        $handoffUiHtml -match '(?s)<select id="handoff-target-window">.*?<option value="chatgpt"' -and `
+        $handoffUiHtml -notmatch '(?s)<select id="handoff-source-window">.*?<option value="terminal"' -and `
+        $handoffUiHtml -notmatch '(?s)<select id="handoff-target-window">.*?<option value="terminal"'
+    Write-Check -Name 'Dashboard handoff UI does not expose terminal fallback targets' -Passed $handoffUiTargetsOk -Detail ($(if ($handoffUiTargetsOk) { 'handoff source and target controls only expose Codex and ChatGPT for this recipe' } else { 'handoff UI still exposes terminal fallback targets' }))
+    if (-not $handoffUiTargetsOk) { $failed++ }
+
+    $handoffTargetCandidates = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/desktop-bridge/handoff-targets" -Method Get -TimeoutSec 30
+    $handoffTargetCandidatesOk = $handoffTargetCandidates.ok -and `
+        $handoffTargetCandidates.summary.codexCandidates.Count -eq 1 -and `
+        $handoffTargetCandidates.summary.chatgptCandidates.Count -eq 2 -and `
+        ($handoffTargetCandidates.summary.codexCandidates.candidateId -contains 'pid:1201') -and `
+        ($handoffTargetCandidates.summary.chatgptCandidates.candidateId -contains 'pid:2202') -and `
+        ($handoffTargetCandidates.summary.chatgptCandidates.candidateId -contains 'pid:2203')
+    Write-Check -Name 'Dashboard handoff target candidate endpoint lists real-window matches' -Passed $handoffTargetCandidatesOk -Detail ($(if ($handoffTargetCandidatesOk) { 'codex and chatgpt candidates loaded from deterministic fixtures' } else { 'handoff target candidates missing or incomplete' }))
+    if (-not $handoffTargetCandidatesOk) { $failed++ }
+
+    $handoffCandidateUiOk = -not [string]::IsNullOrWhiteSpace($handoffUiHtml) -and `
+        $handoffUiHtml -match 'handoff-source-candidate' -and `
+        $handoffUiHtml -match 'handoff-target-candidate' -and `
+        $handoffUiHtml -match 'refresh-handoff-targets'
+    Write-Check -Name 'Dashboard handoff UI exposes manual target candidate controls' -Passed $handoffCandidateUiOk -Detail ($(if ($handoffCandidateUiOk) { 'manual handoff candidate controls found in dashboard HTML' } else { 'handoff candidate controls missing from dashboard HTML' }))
+    if (-not $handoffCandidateUiOk) { $failed++ }
+
+    $handoffManualCandidatePayload = @{
+        actionType = 'run_operator_recipe'
+        target = 'codex_to_chatgpt_handoff_mvp'
+        content = '{"sourceWindow":"codex","targetWindow":"chatgpt","sourceWindowCandidateId":"pid:1201","targetWindowCandidateId":"pid:2202","usePreparedClipboard":true,"waitSeconds":0}'
+    } | ConvertTo-Json -Compress
+    $handoffManualCandidateQueue = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/executor/queue" -Method Post -ContentType 'application/json' -Body $handoffManualCandidatePayload -TimeoutSec 30
+    $handoffManualCandidateQueueOk = $handoffManualCandidateQueue.ok -and `
+        $handoffManualCandidateQueue.task.status -eq 'pending_approval' -and `
+        $handoffManualCandidateQueue.task.recipeName -eq 'codex_to_chatgpt_handoff_mvp'
+    Write-Check -Name 'Dashboard handoff manual-candidate queue endpoint' -Passed $handoffManualCandidateQueueOk -Detail ($(if ($handoffManualCandidateQueueOk) { $handoffManualCandidateQueue.summary.headline } else { 'manual-candidate handoff queue failed' }))
+    if (-not $handoffManualCandidateQueueOk) { $failed++ }
+
+    $handoffManualCandidateTaskId = $handoffManualCandidateQueue.summary.taskId
+    if (-not [string]::IsNullOrWhiteSpace($handoffManualCandidateTaskId)) {
+        $handoffManualCandidateDetail = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/item?taskId=$handoffManualCandidateTaskId" -Method Get -TimeoutSec 30
+        $handoffManualCandidateDetailOk = $handoffManualCandidateDetail.ok -and `
+            $handoffManualCandidateDetail.summary.recipeSourceWindowCandidateId -eq 'pid:1201' -and `
+            $handoffManualCandidateDetail.summary.recipeTargetWindowCandidateId -eq 'pid:2202' -and `
+            $handoffManualCandidateDetail.summary.handoffSourceSelectionMode -eq 'manual_candidate_selected' -and `
+            $handoffManualCandidateDetail.summary.handoffTargetSelectionMode -eq 'manual_candidate_selected'
+        Write-Check -Name 'Dashboard handoff detail shows manual target selection metadata' -Passed $handoffManualCandidateDetailOk -Detail ($(if ($handoffManualCandidateDetailOk) { $handoffManualCandidateDetail.summary.recipeSummary } else { 'manual target selection detail missing from handoff task' }))
+        if (-not $handoffManualCandidateDetailOk) { $failed++ }
+    }
+
+    $handoffRecipePayload = @{
+        actionType = 'run_operator_recipe'
+        target = 'codex_to_chatgpt_handoff_mvp'
+        content = '{"sourceWindow":"codex","targetWindow":"chatgpt","usePreparedClipboard":true,"waitSeconds":1}'
+    } | ConvertTo-Json -Compress
+    $handoffRecipeQueue = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/executor/queue" -Method Post -ContentType 'application/json' -Body $handoffRecipePayload -TimeoutSec 30
+    $handoffRecipeQueueOk = $handoffRecipeQueue.ok -and `
+        $handoffRecipeQueue.task.status -eq 'pending_approval' -and `
+        $handoffRecipeQueue.task.recipeName -eq 'codex_to_chatgpt_handoff_mvp' -and `
+        $handoffRecipeQueue.task.recipeSourceWindow -eq 'codex' -and `
+        $handoffRecipeQueue.task.recipeTargetWindow -eq 'chatgpt' -and `
+        $handoffRecipeQueue.task.handoffSendBehavior -eq 'paste_only' -and `
+        $handoffRecipeQueue.task.handoffFallbackDenied -eq 'terminal_shell_fallback_blocked'
+    Write-Check -Name 'Dashboard Codex to ChatGPT handoff queue endpoint' -Passed $handoffRecipeQueueOk -Detail ($(if ($handoffRecipeQueueOk) { $handoffRecipeQueue.summary.headline } else { 'handoff recipe queue failed' }))
+    if (-not $handoffRecipeQueueOk) { $failed++ }
+
+    $handoffRecipeTaskId = $handoffRecipeQueue.summary.taskId
+    $handoffRecipeApprovalId = $handoffRecipeQueue.task.approvalRequestId
+    if (-not [string]::IsNullOrWhiteSpace($handoffRecipeTaskId)) {
+        $handoffRecipeDetailBefore = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/item?taskId=$handoffRecipeTaskId" -Method Get -TimeoutSec 30
+        $handoffRecipeDetailBeforeOk = $handoffRecipeDetailBefore.ok -and `
+            $handoffRecipeDetailBefore.summary.recipeClipboardMode -eq 'prepared_clipboard' -and `
+            $handoffRecipeDetailBefore.summary.recipeSourceWindow -eq 'codex' -and `
+            $handoffRecipeDetailBefore.summary.recipeTargetWindow -eq 'chatgpt' -and `
+            $handoffRecipeDetailBefore.summary.handoffSendBehavior -eq 'paste_only' -and `
+            $handoffRecipeDetailBefore.summary.handoffFallbackDenied -eq 'terminal_shell_fallback_blocked' -and `
+            (-not ($handoffRecipeDetailBefore.summary.recipeSteps.actionType -contains 'send_hotkey'))
+        Write-Check -Name 'Dashboard Codex to ChatGPT handoff defaults to paste-only with strict targets' -Passed $handoffRecipeDetailBeforeOk -Detail ($(if ($handoffRecipeDetailBeforeOk) { $handoffRecipeDetailBefore.summary.recipeSummary } else { 'handoff detail did not show strict paste-only default' }))
+        if (-not $handoffRecipeDetailBeforeOk) { $failed++ }
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($handoffRecipeApprovalId)) {
+        $handoffRecipeApprovePayload = @{
+            approvalId = $handoffRecipeApprovalId
+            decision = 'approve'
+            note = 'dashboard checker approved safe handoff recipe'
+        } | ConvertTo-Json -Compress
+        $handoffRecipeApprove = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/approvals/decision" -Method Post -ContentType 'application/json' -Body $handoffRecipeApprovePayload -TimeoutSec 30
+        $handoffRecipeApproveOk = $handoffRecipeApprove.ok -and $handoffRecipeApprove.approval.status -eq 'approved'
+        Write-Check -Name 'Dashboard Codex to ChatGPT handoff approval endpoint' -Passed $handoffRecipeApproveOk -Detail ($(if ($handoffRecipeApproveOk) { $handoffRecipeApprove.summary.headline } else { 'handoff approval failed' }))
+        if (-not $handoffRecipeApproveOk) { $failed++ }
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($handoffRecipeTaskId)) {
+        $handoffRecipeExecutePayload = @{
+            taskId = $handoffRecipeTaskId
+            action = 'execute'
+        } | ConvertTo-Json -Compress
+        $handoffRecipeExecute = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $handoffRecipeExecutePayload -TimeoutSec 30
+        $handoffRecipeExecuteOk = $handoffRecipeExecute.ok -and `
+            $handoffRecipeExecute.task.status -eq 'blocked_human_needed' -and `
+            $handoffRecipeExecute.task.lastExecutionStatus -eq 'failed'
+        Write-Check -Name 'Dashboard Codex to ChatGPT handoff blocks safely when real target matching is ambiguous' -Passed $handoffRecipeExecuteOk -Detail ($(if ($handoffRecipeExecuteOk) { $handoffRecipeExecute.summary.headline } else { 'handoff execution did not stop for manual target resolution' }))
+        if (-not $handoffRecipeExecuteOk) { $failed++ }
+
+        $handoffRecipeDetailAfter = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/item?taskId=$handoffRecipeTaskId" -Method Get -TimeoutSec 30
+        $handoffRecipeDetailAfterOk = $handoffRecipeDetailAfter.ok -and `
+            $handoffRecipeDetailAfter.summary.recipeStatus -eq 'blocked' -and `
+            $handoffRecipeDetailAfter.summary.handoffPayloadClassification -eq 'valid_handoff_text' -and `
+            $handoffRecipeDetailAfter.summary.handoffPasteAllowed -eq 'no' -and `
+            $handoffRecipeDetailAfter.summary.handoffTargetResolutionStatus -eq 'manual_target_resolution_required' -and `
+            $handoffRecipeDetailAfter.summary.handoffManualTargetResolution -eq 'required' -and `
+            $handoffRecipeDetailAfter.summary.handoffFallbackDenied -eq 'yes' -and `
+            $handoffRecipeDetailAfter.summary.handoffTargetSelectionMode -eq 'manual_selection_required'
+        Write-Check -Name 'Dashboard handoff detail keeps manual target resolution state and denies terminal fallback' -Passed $handoffRecipeDetailAfterOk -Detail ($(if ($handoffRecipeDetailAfterOk) { $handoffRecipeDetailAfter.summary.recipeSummary } else { 'handoff detail missing safe payload or manual target resolution state' }))
+        if (-not $handoffRecipeDetailAfterOk) { $failed++ }
+    }
+
+    $handoffBadSeedPayload = @{
+        actionType = 'set_clipboard_text'
+        content = 'Run Desktop Bridge Check'
+    } | ConvertTo-Json -Compress
+    $handoffBadSeedQueue = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/executor/queue" -Method Post -ContentType 'application/json' -Body $handoffBadSeedPayload -TimeoutSec 30
+    $handoffBadSeedQueueOk = $handoffBadSeedQueue.ok -and $handoffBadSeedQueue.task.status -eq 'pending_approval'
+    Write-Check -Name 'Dashboard handoff bad clipboard seed queue endpoint' -Passed $handoffBadSeedQueueOk -Detail ($(if ($handoffBadSeedQueueOk) { $handoffBadSeedQueue.summary.headline } else { 'handoff bad clipboard seed queue failed' }))
+    if (-not $handoffBadSeedQueueOk) { $failed++ }
+
+    $handoffBadSeedTaskId = $handoffBadSeedQueue.summary.taskId
+    $handoffBadSeedApprovalId = $handoffBadSeedQueue.task.approvalRequestId
+    if (-not [string]::IsNullOrWhiteSpace($handoffBadSeedApprovalId)) {
+        $handoffBadSeedApprovePayload = @{
+            approvalId = $handoffBadSeedApprovalId
+            decision = 'approve'
+            note = 'dashboard checker approved suspicious handoff clipboard seed'
+        } | ConvertTo-Json -Compress
+        $handoffBadSeedApprove = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/approvals/decision" -Method Post -ContentType 'application/json' -Body $handoffBadSeedApprovePayload -TimeoutSec 30
+        $handoffBadSeedApproveOk = $handoffBadSeedApprove.ok -and $handoffBadSeedApprove.approval.status -eq 'approved'
+        Write-Check -Name 'Dashboard handoff bad clipboard seed approval endpoint' -Passed $handoffBadSeedApproveOk -Detail ($(if ($handoffBadSeedApproveOk) { $handoffBadSeedApprove.summary.headline } else { 'handoff bad clipboard seed approval failed' }))
+        if (-not $handoffBadSeedApproveOk) { $failed++ }
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($handoffBadSeedTaskId)) {
+        $handoffBadSeedExecutePayload = @{
+            taskId = $handoffBadSeedTaskId
+            action = 'execute'
+        } | ConvertTo-Json -Compress
+        $handoffBadSeedExecute = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $handoffBadSeedExecutePayload -TimeoutSec 30
+        $handoffBadSeedExecuteOk = $handoffBadSeedExecute.ok -and $handoffBadSeedExecute.task.status -eq 'completed'
+        Write-Check -Name 'Dashboard handoff bad clipboard seed execution endpoint' -Passed $handoffBadSeedExecuteOk -Detail ($(if ($handoffBadSeedExecuteOk) { $handoffBadSeedExecute.summary.headline } else { 'handoff bad clipboard seed execution failed' }))
+        if (-not $handoffBadSeedExecuteOk) { $failed++ }
+    }
+
+    $handoffBlockedPayload = @{
+        actionType = 'run_operator_recipe'
+        target = 'codex_to_chatgpt_handoff_mvp'
+        content = '{"sourceWindow":"codex","targetWindow":"chatgpt","targetWindowCandidateId":"pid:2202","usePreparedClipboard":true,"waitSeconds":0}'
+    } | ConvertTo-Json -Compress
+    $handoffBlockedQueue = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/executor/queue" -Method Post -ContentType 'application/json' -Body $handoffBlockedPayload -TimeoutSec 30
+    $handoffBlockedQueueOk = $handoffBlockedQueue.ok -and `
+        $handoffBlockedQueue.task.status -eq 'pending_approval' -and `
+        $handoffBlockedQueue.task.recipeSourceWindow -eq 'codex' -and `
+        $handoffBlockedQueue.task.recipeTargetWindow -eq 'chatgpt'
+    Write-Check -Name 'Dashboard Codex to ChatGPT blocked-payload queue endpoint' -Passed $handoffBlockedQueueOk -Detail ($(if ($handoffBlockedQueueOk) { $handoffBlockedQueue.summary.headline } else { 'blocked handoff queue failed' }))
+    if (-not $handoffBlockedQueueOk) { $failed++ }
+
+    $handoffBlockedTaskId = $handoffBlockedQueue.summary.taskId
+    $handoffBlockedApprovalId = $handoffBlockedQueue.task.approvalRequestId
+    if (-not [string]::IsNullOrWhiteSpace($handoffBlockedApprovalId)) {
+        $handoffBlockedApprovePayload = @{
+            approvalId = $handoffBlockedApprovalId
+            decision = 'approve'
+            note = 'dashboard checker approved blocked handoff payload test'
+        } | ConvertTo-Json -Compress
+        $handoffBlockedApprove = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/approvals/decision" -Method Post -ContentType 'application/json' -Body $handoffBlockedApprovePayload -TimeoutSec 30
+        $handoffBlockedApproveOk = $handoffBlockedApprove.ok -and $handoffBlockedApprove.approval.status -eq 'approved'
+        Write-Check -Name 'Dashboard Codex to ChatGPT blocked-payload approval endpoint' -Passed $handoffBlockedApproveOk -Detail ($(if ($handoffBlockedApproveOk) { $handoffBlockedApprove.summary.headline } else { 'blocked handoff approval failed' }))
+        if (-not $handoffBlockedApproveOk) { $failed++ }
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($handoffBlockedTaskId)) {
+        $handoffBlockedExecutePayload = @{
+            taskId = $handoffBlockedTaskId
+            action = 'execute'
+        } | ConvertTo-Json -Compress
+        $handoffBlockedExecute = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $handoffBlockedExecutePayload -TimeoutSec 30
+        $handoffBlockedExecuteOk = $handoffBlockedExecute.ok -and `
+            $handoffBlockedExecute.task.status -eq 'blocked_human_needed' -and `
+            $handoffBlockedExecute.task.lastExecutionStatus -eq 'failed'
+        Write-Check -Name 'Dashboard Codex to ChatGPT blocks junk payload before paste' -Passed $handoffBlockedExecuteOk -Detail ($(if ($handoffBlockedExecuteOk) { $handoffBlockedExecute.summary.headline } else { 'blocked handoff execution failed' }))
+        if (-not $handoffBlockedExecuteOk) { $failed++ }
+
+        $handoffBlockedDetail = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/item?taskId=$handoffBlockedTaskId" -Method Get -TimeoutSec 30
+        $handoffBlockedDetailOk = $handoffBlockedDetail.ok -and `
+            $handoffBlockedDetail.summary.recipeStatus -eq 'blocked' -and `
+            ($handoffBlockedDetail.summary.handoffPayloadClassification -match 'junk_label_payload|repeated_ui_label_garbage') -and `
+            $handoffBlockedDetail.summary.handoffPasteAllowed -eq 'no' -and `
+            $handoffBlockedDetail.summary.handoffBlockedPayloadRepeats -eq 1
+        Write-Check -Name 'Dashboard blocked handoff detail keeps payload classification and paste denial' -Passed $handoffBlockedDetailOk -Detail ($(if ($handoffBlockedDetailOk) { $handoffBlockedDetail.summary.handoffPayloadReason } else { 'blocked handoff detail missing classification state' }))
+        if (-not $handoffBlockedDetailOk) { $failed++ }
+
+        $handoffBlockedReviewPayload = @{
+            taskId = $handoffBlockedTaskId
+            action = 'review'
+            note = 'dashboard checker reviewed repeated blocked handoff payload'
+        } | ConvertTo-Json -Compress
+        $handoffBlockedReview = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $handoffBlockedReviewPayload -TimeoutSec 30
+        $handoffBlockedReviewOk = $handoffBlockedReview.ok -and $handoffBlockedReview.task.status -eq 'ready_to_resume'
+        Write-Check -Name 'Dashboard blocked handoff task can be reviewed for manual re-queue' -Passed $handoffBlockedReviewOk -Detail ($(if ($handoffBlockedReviewOk) { $handoffBlockedReview.summary.headline } else { 'blocked handoff review failed' }))
+        if (-not $handoffBlockedReviewOk) { $failed++ }
+
+        $handoffBlockedRequeuePayload = @{
+            taskId = $handoffBlockedTaskId
+            action = 'requeue'
+            note = 'dashboard checker re-queued repeated blocked handoff payload'
+        } | ConvertTo-Json -Compress
+        $handoffBlockedRequeue = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $handoffBlockedRequeuePayload -TimeoutSec 30
+        $handoffBlockedRequeueOk = $handoffBlockedRequeue.ok -and $handoffBlockedRequeue.task.status -eq 'queued'
+        Write-Check -Name 'Dashboard blocked handoff task re-queues only after explicit operator action' -Passed $handoffBlockedRequeueOk -Detail ($(if ($handoffBlockedRequeueOk) { $handoffBlockedRequeue.summary.headline } else { 'blocked handoff requeue failed' }))
+        if (-not $handoffBlockedRequeueOk) { $failed++ }
+
+        $handoffBlockedExecuteAgainPayload = @{
+            taskId = $handoffBlockedTaskId
+            action = 'execute'
+        } | ConvertTo-Json -Compress
+        $handoffBlockedExecuteAgain = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/action" -Method Post -ContentType 'application/json' -Body $handoffBlockedExecuteAgainPayload -TimeoutSec 30
+        $handoffBlockedExecuteAgainOk = $handoffBlockedExecuteAgain.ok -and `
+            $handoffBlockedExecuteAgain.task.status -eq 'blocked_human_needed' -and `
+            $handoffBlockedExecuteAgain.task.lastExecutionStatus -eq 'failed'
+        Write-Check -Name 'Dashboard repeated identical junk handoff payload blocks again without looping' -Passed $handoffBlockedExecuteAgainOk -Detail ($(if ($handoffBlockedExecuteAgainOk) { $handoffBlockedExecuteAgain.summary.headline } else { 'repeated blocked handoff execution failed' }))
+        if (-not $handoffBlockedExecuteAgainOk) { $failed++ }
+
+        $handoffBlockedDetailAgain = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/item?taskId=$handoffBlockedTaskId" -Method Get -TimeoutSec 30
+        $handoffBlockedDetailAgainOk = $handoffBlockedDetailAgain.ok -and `
+            $handoffBlockedDetailAgain.summary.handoffBlockedPayloadRepeats -eq 2 -and `
+            $handoffBlockedDetailAgain.summary.handoffPayloadReason -match 'Repeated identical blocked handoff payload detected again'
+        Write-Check -Name 'Dashboard repeated identical junk handoff payload is counted and reported clearly' -Passed $handoffBlockedDetailAgainOk -Detail ($(if ($handoffBlockedDetailAgainOk) { $handoffBlockedDetailAgain.summary.handoffPayloadReason } else { 'repeated blocked handoff detail missing repeat count' }))
+        if (-not $handoffBlockedDetailAgainOk) { $failed++ }
+    }
+
+    $dashboardHtmlPath = Join-Path $projectRoot 'public\index.html'
+    $dashboardHtml = if (Test-Path $dashboardHtmlPath) { Get-Content $dashboardHtmlPath -Raw } else { '' }
+    $taskFilterUiOk = -not [string]::IsNullOrWhiteSpace($dashboardHtml) -and `
+        $dashboardHtml -match 'task-visibility-filter' -and `
+        $dashboardHtml -match 'task-recency-filter' -and `
+        $dashboardHtml -match 'ghoti-control-center' -and `
+        $dashboardHtml -match 'ghoti-target-marker' -and `
+        $dashboardHtml -match 'ghoti-overlay-watchdog-pill' -and `
+        $dashboardHtml -match 'ghoti-watchdog-state' -and `
+        $dashboardHtml -match 'ghoti-brain-provider' -and `
+        $dashboardHtml -match 'ghoti-brain-model' -and `
+        $dashboardHtml -match 'ghoti-brain-last-call' -and `
+        $dashboardHtml -match 'ghoti-role-current' -and `
+        $dashboardHtml -match 'ghoti-browser-use-installed' -and `
+        $dashboardHtml -match 'ghoti-relay-state' -and `
+        $dashboardHtml -match 'ghoti-relay-preset' -and `
+        $dashboardHtml -match 'ghoti-memory-ready' -and `
+        $dashboardHtml -match 'Brain / Provider Truth' -and `
+        $dashboardHtml -match 'Specialist-Agent Truth' -and `
+        $dashboardHtml -match 'Browser-Agent Truth' -and `
+        $dashboardHtml -match 'Relay-Loop Truth' -and `
+        $dashboardHtml -match 'Compact Memory Truth' -and `
+        $dashboardHtml -match 'Operator Watchdog' -and `
+        $dashboardHtml -match 'ghoti-task-visibility-filter' -and `
+        $dashboardHtml -match 'ghoti-show-active-tasks' -and `
+        $dashboardHtml -match 'ghoti-queue-focus-window' -and `
+        $dashboardHtml -match 'ghoti-run-runtime-checker' -and `
+        $dashboardHtml -match 'ghoti-cli-command-list' -and `
+        $dashboardHtml -match 'ghoti-control-hotkey' -and `
+        $dashboardHtml -match 'Ctrl\+8' -and `
+        $dashboardHtml -match 'queue-recipe-codex-handoff' -and `
+        $dashboardHtml -match 'This handoff never falls back to terminal or PowerShell'
+    Write-Check -Name 'Dashboard task filter controls are present for noise reduction' -Passed $taskFilterUiOk -Detail ($(if ($taskFilterUiOk) { 'task filter controls found in dashboard HTML' } else { 'task filter controls missing from dashboard HTML' }))
+    if (-not $taskFilterUiOk) { $failed++ }
+
+    $noDeleteUiOk = -not [string]::IsNullOrWhiteSpace($dashboardHtml) -and `
+        $dashboardHtml -match 'No task deletion without explicit approval' -and `
+        $dashboardHtml -notmatch 'delete-task' -and `
+        $dashboardHtml -notmatch '>\s*Delete Task\s*<'
+    Write-Check -Name 'Dashboard control center keeps no-delete policy explicit' -Passed $noDeleteUiOk -Detail ($(if ($noDeleteUiOk) { 'dashboard HTML shows the no-delete policy and exposes no delete-task control' } else { 'dashboard HTML is missing the no-delete policy or exposes a delete-task control' }))
+    if (-not $noDeleteUiOk) { $failed++ }
+
+    $approvalAwareRecipePayload = @{
+        actionType = 'run_operator_recipe'
+        target = 'focus_or_reuse_terminal'
+    } | ConvertTo-Json
+    $approvalAwareRecipeQueue = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/executor/queue" -Method Post -ContentType 'application/json' -Body $approvalAwareRecipePayload -TimeoutSec 30
+    $approvalAwareRecipeQueueOk = $approvalAwareRecipeQueue.ok -and `
+        $approvalAwareRecipeQueue.localOnly -and `
+        $approvalAwareRecipeQueue.task.status -eq 'pending_approval' -and `
+        $approvalAwareRecipeQueue.task.approvalState -eq 'pending' -and `
+        $approvalAwareRecipeQueue.task.recipeName -eq 'focus_or_reuse_terminal'
+    Write-Check -Name 'Approval-aware recipe queue endpoint' -Passed $approvalAwareRecipeQueueOk -Detail ($(if ($approvalAwareRecipeQueueOk) { $approvalAwareRecipeQueue.summary.headline } else { 'approval-aware recipe queue failed' }))
+    if (-not $approvalAwareRecipeQueueOk) { $failed++ }
+
+    $recipeInterruptSeed = Invoke-ModuleCommand -PythonPath $pythonPath -Arguments @(
+        'queue-executor-action',
+        '--action-type', 'run_operator_recipe',
+        '--target', 'wait_and_resume_operator_step',
+        '--content', '{"waitSeconds":5}'
+    )
+    $recipeInterruptSeedOk = $recipeInterruptSeed.ExitCode -eq 0 -and `
+        (($recipeInterruptSeed.Output | Out-String) -match 'status:\s+queued') -and `
+        (($recipeInterruptSeed.Output | Out-String) -match 'approval_state:\s+not_required') -and `
+        (($recipeInterruptSeed.Output | Out-String) -match 'recipe_name:\s+wait_and_resume_operator_step')
+    Write-Check -Name 'Operator recipe interrupt seed queued' -Passed $recipeInterruptSeedOk -Detail (($recipeInterruptSeed.Output | Out-String).Trim())
+    if (-not $recipeInterruptSeedOk) { $failed++ }
+
+    $recipeInterruptTaskMatch = [regex]::Match(($recipeInterruptSeed.Output | Out-String), 'task_id:\s*(\S+)')
+    $recipeInterruptTaskId = if ($recipeInterruptTaskMatch.Success) { $recipeInterruptTaskMatch.Groups[1].Value } else { $null }
+    $recipeInterruptTaskOk = -not [string]::IsNullOrWhiteSpace($recipeInterruptTaskId)
+    Write-Check -Name 'Operator recipe interrupt task id returned' -Passed $recipeInterruptTaskOk -Detail ($(if ($recipeInterruptTaskOk) { $recipeInterruptTaskId } else { 'operator recipe interrupt task id missing' }))
+    if (-not $recipeInterruptTaskOk) { $failed++ }
+
+    if ($recipeInterruptTaskOk) {
+        $recipeInterruptExecute = Invoke-ModuleCommand `
+            -PythonPath $pythonPath `
+            -Arguments @('execute-task', '--task-id', $recipeInterruptTaskId) `
+            -EnvOverrides @{ SUPER_AGENT_DESKTOP_TEST_INTERRUPT_AFTER_MS = '300' }
+        $recipeInterruptExecuteOk = $recipeInterruptExecute.ExitCode -eq 0 -and `
+            (($recipeInterruptExecute.Output | Out-String) -match 'status:\s+interrupted') -and `
+            (($recipeInterruptExecute.Output | Out-String) -match 'execution_status:\s+interrupted')
+        Write-Check -Name 'Operator recipe interrupt executes into interrupted state' -Passed $recipeInterruptExecuteOk -Detail (($recipeInterruptExecute.Output | Out-String).Trim())
+        if (-not $recipeInterruptExecuteOk) { $failed++ }
+
+        $recipeInterruptDetail = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/tasks/item?taskId=$recipeInterruptTaskId" -Method Get -TimeoutSec 30
+        $recipeInterruptDetailOk = $recipeInterruptDetail.ok -and `
+            $recipeInterruptDetail.summary.status -eq 'interrupted' -and `
+            $recipeInterruptDetail.summary.recipeStatus -eq 'interrupted' -and `
+            $recipeInterruptDetail.summary.blockedReason -match 'Ctrl\+8'
+        Write-Check -Name 'Operator recipe interrupt detail shows failsafe state' -Passed $recipeInterruptDetailOk -Detail ($(if ($recipeInterruptDetailOk) { $recipeInterruptDetail.summary.blockedReason } else { 'operator recipe interrupt detail missing failsafe state' }))
+        if (-not $recipeInterruptDetailOk) { $failed++ }
+    }
     }
 
     $recentActions = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/recent-actions" -Method Get -TimeoutSec 30
@@ -849,3 +1773,4 @@ if ($failed -eq 0) {
 
 Write-Host ('Summary: {0} dashboard check(s) failed.' -f $failed)
 exit 1
+

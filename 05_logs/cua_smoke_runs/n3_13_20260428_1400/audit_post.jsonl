@@ -1,0 +1,6 @@
+{"event":"pull_complete","milestone":"N+3.13","run_id":"n3_13_20260428_1400","ts":"2026-04-28T15:45:00Z","image":"trycua/cua-ubuntu@sha256:2bb539bd42f59f9e2a889faa4ebcb535a0c06397a3b98e45fd5cc8a96c22014a","size_gb":18.5,"result":"PASS"}
+{"event":"container_started","milestone":"N+3.13","run_id":"n3_13_20260428_1400","ts":"2026-04-28T15:46:15Z","container_id":"7d615149fa44","name":"ghoti-cua-smoke-n3-13","port":"127.0.0.1:6901->6901/tcp","status":"Up","result":"PASS"}
+{"event":"kasm_vnc_running","milestone":"N+3.13","run_id":"n3_13_20260428_1400","ts":"2026-04-28T15:46:32Z","evidence":"KasmVNC started, Xfce desktop booting, stream connected","result":"PASS"}
+{"event":"localhost_probe","milestone":"N+3.13","run_id":"n3_13_20260428_1400","ts":"2026-04-28T15:46:50Z","url":"http://127.0.0.1:6901","http_status":401,"interpretation":"KasmVNC auth prompt (expected)","no_login":true,"result":"PASS"}
+{"event":"container_stopped","milestone":"N+3.13","run_id":"n3_13_20260428_1400","ts":"2026-04-28T15:47:00Z","name":"ghoti-cua-smoke-n3-13","removed_by_rm":true,"result":"PASS"}
+{"event":"smoke_complete","milestone":"N+3.13","run_id":"n3_13_20260428_1400","ts":"2026-04-28T15:47:01Z","overall_result":"PASS","click_performed":false,"type_performed":false,"login_performed":false,"host_mounts_used":false,"privileged_used":false,"live_accounts_used":false}

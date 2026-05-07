@@ -1,0 +1,362 @@
+{
+  "_meta": {
+    "version": "N+3.65",
+    "description": "Local worker routing config example. N+3.65: added supervised_content_mvp_worker, ghoti_readiness_worker, external_repo_implementation_map_worker.",
+    "note": "Do not add real API keys or credentials to this file. This is a schema example only.",
+    "last_updated": "2026-05-07"
+  },
+  "supervised_content_mvp_worker": {
+    "enabled": true,
+    "note": "Supervised Content MVP via supervised_content_mvp_runner.py. Full 12-file artifact packet. No live posting. Human approval required.",
+    "script": "03_scripts/supervised_content_mvp_runner.py",
+    "output_dir": "14_context/content_workflows/runs/",
+    "dry_run_by_default": true,
+    "live_posting": false,
+    "upload": false,
+    "external_api": false,
+    "clone_install_run_external_repos": false,
+    "human_approval_required": true,
+    "task_classes": [
+      "supervised_content_mvp",
+      "content_artifact_packet",
+      "youtube_shorts_script",
+      "content_experiment"
+    ],
+    "forbidden": [
+      "live_posting",
+      "upload",
+      "account_login",
+      "fake_engagement",
+      "external_api_calls",
+      "clone_install_run_external_repos",
+      "store_secrets"
+    ]
+  },
+  "ghoti_readiness_worker": {
+    "enabled": true,
+    "note": "Ghoti Readiness Check via ghoti_readiness_check.py. Read-only repo inspection. No network.",
+    "script": "03_scripts/ghoti_readiness_check.py",
+    "report_output": "14_context/tooling/ghoti_100_percent_readiness_n3_65.md",
+    "no_network": true,
+    "no_writes_unless_apply": true,
+    "task_classes": [
+      "readiness_check",
+      "repo_status",
+      "supervised_mvp_score",
+      "category_inspection"
+    ],
+    "forbidden": [
+      "external_api",
+      "network_calls",
+      "write_outside_repo"
+    ]
+  },
+  "external_repo_implementation_map_worker": {
+    "enabled": true,
+    "note": "External Repo Implementation Map via external_repo_implementation_map.py. Concept mapping only. No clone/install/run.",
+    "script": "03_scripts/external_repo_implementation_map.py",
+    "report_output": "14_context/tooling/external_repo_implementation_map_n3_65.md",
+    "clone_now": false,
+    "install_now": false,
+    "run_now": false,
+    "concept_map_only": true,
+    "task_classes": [
+      "openfang_concept_map",
+      "moneyprinter_concept_map",
+      "external_repo_implementation",
+      "ghoti_native_implementation_proof"
+    ],
+    "forbidden": [
+      "clone_repos",
+      "npm_install",
+      "pip_install",
+      "docker_run",
+      "external_api",
+      "run_external_code"
+    ]
+  },
+  "external_repo_intake_worker": {
+    "enabled": true,
+    "note": "External repo intake via external_repo_intake.py. No clone/install/run. Intake and planning only.",
+    "script": "03_scripts/external_repo_intake.py",
+    "catalog_doc": "14_context/tooling/external_repo_intake_catalog_n3_63.md",
+    "risk_report_doc": "14_context/tooling/external_repo_risk_report_n3_63.md",
+    "clone_now": false,
+    "install_now": false,
+    "runtime_wiring": false,
+    "task_classes": [
+      "external_repo_catalog",
+      "openfang_intake",
+      "moneyprinter_intake",
+      "repo_risk_assessment"
+    ],
+    "forbidden": [
+      "clone_repos",
+      "install_packages",
+      "run_external_code",
+      "network_calls",
+      "live_accounts"
+    ]
+  },
+  "content_money_workflow_worker": {
+    "enabled": true,
+    "note": "Content money workflow via content_money_workflow.py. Planning artifacts only. No upload, no live posting.",
+    "script": "03_scripts/content_money_workflow.py",
+    "output_dir": "14_context/content_workflows/",
+    "live_posting": false,
+    "publishing_enabled": false,
+    "human_review_required": true,
+    "task_classes": [
+      "content_plan",
+      "shot_list",
+      "workflow_check",
+      "niche_selection",
+      "content_experiment"
+    ],
+    "forbidden": [
+      "live_posting",
+      "upload",
+      "account_login",
+      "fake_engagement",
+      "copyrighted_media_without_rights",
+      "scraping_without_legality_review",
+      "spam_outreach"
+    ]
+  },
+  "cc_codex_bridge_worker": {
+    "enabled": true,
+    "note": "Bridge handoff tasks route here. Uses cc_codex_bridge.py — local file only. CC/Codex automatic = NO.",
+    "script": "03_scripts/cc_codex_bridge.py",
+    "init_mode": "--init --dry-run then --apply to create dirs",
+    "task_classes": [
+      "bridge_handoff",
+      "write_claude_handoff",
+      "write_codex_handoff",
+      "write_chatgpt_handoff"
+    ],
+    "truth_labels": {
+      "cc_codex_automatic": false,
+      "bridge_type": "local_manual_file_handoff",
+      "clipboard": false,
+      "api_calls": false,
+      "auto_send": false,
+      "human_copy_paste_required": true
+    },
+    "forbidden": [
+      "automatic_send",
+      "clipboard_access",
+      "api_calls",
+      "live_accounts"
+    ]
+  },
+  "python_automation_worker": {
+    "enabled": true,
+    "task_classes": [
+      "validate_jsonl",
+      "parse_file",
+      "generate_report",
+      "generate_markdown",
+      "generate_csv",
+      "queue_processing",
+      "prompt_bus_status",
+      "study_tracker_template",
+      "course_certificate_backlog_template"
+    ],
+    "allowed_paths": [
+      "03_scripts/",
+      "05_logs/",
+      "14_context/",
+      "output/"
+    ],
+    "forbidden": [
+      "external_api",
+      "credentials",
+      "live_accounts",
+      "writes_outside_repo"
+    ]
+  },
+  "gemma_local_worker": {
+    "enabled": false,
+    "note": "Set enabled=true only when Ollama is running with Gemma3:4b. Output is always draft.",
+    "ollama_model": "gemma3:4b",
+    "ollama_base_url": "http://localhost:11434",
+    "task_classes": [
+      "compress_context",
+      "summarize_file",
+      "score_artifact",
+      "draft_content"
+    ],
+    "output_status": "draft",
+    "promotion_required": true,
+    "forbidden": [
+      "canonical_writes_without_human_review",
+      "external_api",
+      "live_accounts"
+    ]
+  },
+  "claude_code_impl": {
+    "note": "Claude Code sessions — use for implementation, commits, reasoning, tests.",
+    "prompt_path": "14_context/ghoti_current_prompt.md",
+    "task_classes": [
+      "implementation",
+      "tests",
+      "commits",
+      "file_editing",
+      "reasoning"
+    ]
+  },
+  "codex_audit": {
+    "note": "Codex sessions — use for audit, source-check, safety gate, spec writing. NOT for bridge handoff tasks.",
+    "prompt_template": "14_context/prompt_bus/templates/codex_prompt_template.md",
+    "outbox_path": "14_context/prompt_bus/outbox/",
+    "task_classes": [
+      "audit",
+      "source_check",
+      "safety_gate",
+      "spec_writing"
+    ]
+  },
+  "chatgpt_strategy": {
+    "note": "ChatGPT sessions — use for strategy, architecture, next-milestone planning.",
+    "prompt_template": "14_context/prompt_bus/templates/chatgpt_handoff_template.md",
+    "task_classes": [
+      "strategy",
+      "architecture",
+      "next_milestone_planning",
+      "prompt_design"
+    ]
+  },
+  "course_certificate_assistant": {
+    "enabled": true,
+    "note": "Study plan + cert tracking templates. --goal supported. Human does all coursework and assessments.",
+    "task_classes": [
+      "study_plan_template",
+      "certificate_tracker",
+      "course_backlog",
+      "learning_path_notes"
+    ],
+    "forbidden": [
+      "submit_assessments",
+      "impersonate_user",
+      "bypass_proctoring",
+      "fabricate_certificates",
+      "live_accounts"
+    ]
+  },
+  "ruflo_orchestrator_candidate": {
+    "enabled": false,
+    "note": "Ruflo/claude-flow swarm orchestration. NOT wired to Ghoti runtime. Enable only after safety gate review.",
+    "ruflo_path": "21_repos/third_party/evals/ruflo/",
+    "install_command": "npm ci --ignore-scripts",
+    "safety_gate_required": true,
+    "task_classes": [
+      "swarm_orchestration",
+      "multi_agent_coord",
+      "claude_codex_dual_mode"
+    ],
+    "forbidden": [
+      "ghoti_runtime_wiring",
+      "live_accounts",
+      "external_api_without_approval"
+    ]
+  },
+  "obsidian_memory_worker": {
+    "enabled": true,
+    "note": "Obsidian vault read/note tasks. Uses obsidian_probe.py for unified detection.",
+    "vault_path": "14_context/obsidian_vault/",
+    "helper_script": "03_scripts/open_obsidian_vault.ps1",
+    "probe_script": "03_scripts/obsidian_probe.py",
+    "task_classes": [
+      "vault_check",
+      "daily_note",
+      "note_creation",
+      "obsidian_link"
+    ],
+    "forbidden": [
+      "external_api",
+      "live_accounts"
+    ]
+  },
+  "prompt_bus_worker": {
+    "enabled": true,
+    "note": "Prompt bus file operations via prompt_bus.py. Write/list prompt outbox files.",
+    "script": "03_scripts/prompt_bus.py",
+    "outbox_path": "14_context/prompt_bus/outbox/",
+    "task_classes": [
+      "write_claude_prompt",
+      "write_codex_prompt",
+      "write_chatgpt_handoff",
+      "list_outbox",
+      "status_json"
+    ],
+    "forbidden": [
+      "live_api_calls",
+      "external_send"
+    ]
+  },
+  "repo_language_inventory_worker": {
+    "enabled": true,
+    "note": "Repo language inspection via repo_language_inventory.py. Explains GitHub language discrepancy. No network, stdlib only.",
+    "script": "03_scripts/repo_language_inventory.py",
+    "output_path": "14_context/tooling/repo_language_inventory_n3_58.md",
+    "task_classes": [
+      "repo_language_check",
+      "github_language_explanation",
+      "java_rust_tracking_check",
+      "language_summary"
+    ],
+    "forbidden": [
+      "external_api",
+      "network_calls",
+      "write_outside_repo"
+    ]
+  },
+  "rust_readiness_worker": {
+    "enabled": true,
+    "note": "Rust readiness probe via rust_readiness_probe.py. No install. Read-only toolchain detection.",
+    "script": "03_scripts/rust_readiness_probe.py",
+    "output_path": "14_context/tooling/rust_readiness_n3_58.md",
+    "task_classes": [
+      "rust_toolchain_check",
+      "rust_readiness_assessment",
+      "cargo_detection",
+      "rust_bootstrap_plan"
+    ],
+    "forbidden": [
+      "install_rust",
+      "global_package_install",
+      "external_api"
+    ]
+  },
+  "merge_assistant_worker": {
+    "enabled": true,
+    "note": "Merge assistant via ghoti_merge_assistant.py. Generates merge commands only. No auto-merge, no auto-push.",
+    "script": "03_scripts/ghoti_merge_assistant.py",
+    "output_path": "14_context/tooling/merge_assistant_n3_58.md",
+    "task_classes": [
+      "merge_plan",
+      "branch_merge_checklist",
+      "safe_merge_commands"
+    ],
+    "forbidden": [
+      "auto_merge",
+      "auto_push",
+      "force_push",
+      "skip_validation"
+    ]
+  },
+  "human_approval_required": {
+    "note": "Any live/account/public/money action. STOP and ask the human first.",
+    "triggers": [
+      "live_account_access",
+      "email_send",
+      "post_public",
+      "payment",
+      "job_application",
+      "scraping",
+      "giveaway_entry",
+      "credential_use",
+      "course_submission"
+    ]
+  }
+}

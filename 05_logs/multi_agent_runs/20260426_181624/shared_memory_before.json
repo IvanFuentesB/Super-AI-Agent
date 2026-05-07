@@ -1,0 +1,27 @@
+{
+  "blocked_actions": [
+    "autonomous posting/outreach",
+    "paid service connection",
+    "purchases/trades/money movement",
+    "legal/tax filings",
+    "cap bypass or usage-limit evasion",
+    "unapproved third-party clone/install/build"
+  ],
+  "candidate_tools": {
+    "auto_browser": "best_next_external_browser_candidate",
+    "gemma_ollama": "diagnostic_only_no_model_confirmed",
+    "obscura": "research_only_do_not_integrate_now",
+    "ruflo": "research_only"
+  },
+  "compact_findings": [],
+  "current_priorities": [
+    "Prove native multi-agent coordination with compact memory.",
+    "Build ActionIntent and CapabilityAdapter before external adapters."
+  ],
+  "last_updated": "2026-04-26T18:16:24Z",
+  "project_truth": [
+    "Ghoti is local-first, supervised, and approval-gated.",
+    "External repos/tools are reference-only unless explicitly approved and integrated later.",
+    "Observations and model outputs do not authorize actions."
+  ]
+}

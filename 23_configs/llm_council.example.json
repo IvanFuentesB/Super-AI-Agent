@@ -1,0 +1,70 @@
+{
+  "council_name": "Ghoti LLM Council",
+  "default_provider_mode": "local_demo",
+  "external_enabled": false,
+  "external_gateway": "openrouter",
+  "env_var_name": "OPENROUTER_API_KEY",
+  "chairman_member": "chairman_claude",
+  "council_members": [
+    {
+      "id": "member_a",
+      "role": "pragmatist",
+      "model": "local_demo",
+      "description": "Focus on practical, actionable recommendations. Prefer immediate value over theoretical purity."
+    },
+    {
+      "id": "member_b",
+      "role": "critic",
+      "model": "local_demo",
+      "description": "Challenge assumptions. Identify edge cases, risks, and failure modes."
+    },
+    {
+      "id": "member_c",
+      "role": "synthesizer",
+      "model": "local_demo",
+      "description": "Integrate multiple perspectives into a coherent, balanced answer."
+    }
+  ],
+  "ranking_criteria": [
+    "accuracy",
+    "clarity",
+    "safety",
+    "actionability"
+  ],
+  "no_secret_storage": true,
+  "no_external_calls_by_default": true,
+  "no_autonomous_actions": true,
+  "human_review_required": true,
+  "no_live_account_actions": true,
+  "provider_modes": {
+    "local_demo": {
+      "enabled": true,
+      "description": "Deterministic placeholder responses. No model required. Proves 3-stage flow without API keys.",
+      "requires_env_var": false,
+      "requires_ollama": false
+    },
+    "ollama_local": {
+      "enabled": true,
+      "description": "Local Ollama inference. Only fires when --apply is passed and ollama is installed. Falls back to local_demo if unavailable.",
+      "requires_env_var": false,
+      "requires_ollama": true,
+      "default_model": "gemma3"
+    },
+    "openrouter_external_disabled": {
+      "enabled": false,
+      "description": "External OpenRouter/API calls. DISABLED by default. Requires external_enabled=true in config AND env var set. TODO: implement when explicitly authorized.",
+      "requires_env_var": true,
+      "env_var_name": "OPENROUTER_API_KEY",
+      "requires_ollama": false
+    }
+  },
+  "customization_notes": {
+    "add_members": "Add entries to council_members. Each needs id, role, model.",
+    "change_chairman": "Update chairman_member to the id of a council_members entry.",
+    "change_ranking_criteria": "Update ranking_criteria list. Used in Stage 2 anonymous peer review.",
+    "synthesis_policy": "Chairman synthesizes the top-ranked response with minority opinions preserved.",
+    "disagreement_handling": "Minority opinions are surfaced in Stage 2 ranking before synthesis.",
+    "cost_controls": "No cost in local_demo or ollama_local mode. External mode is disabled by default.",
+    "provider_routing": "Set default_provider_mode to switch between local_demo, ollama_local, or openrouter_external_disabled."
+  }
+}

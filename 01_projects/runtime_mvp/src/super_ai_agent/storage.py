@@ -4,8 +4,10 @@ import base64
 import json
 import os
 import subprocess
+import time
 from datetime import datetime, timezone
 from pathlib import Path
+from contextlib import contextmanager
 
 from .models import ApprovalRecord, ApprovalRequest, SupervisorState, Task
 
@@ -16,6 +18,11 @@ TASKS_PATH = RUNTIME_DATA_DIR / "tasks.json"
 APPROVALS_PATH = RUNTIME_DATA_DIR / "approvals.json"
 APPROVAL_REQUESTS_PATH = RUNTIME_DATA_DIR / "approval_requests.json"
 SUPERVISOR_STATE_PATH = RUNTIME_DATA_DIR / "supervisor_state.json"
+RUNTIME_BRAIN_CONFIG_PATH = RUNTIME_DATA_DIR / "brain_config.json"
+RUNTIME_BRAIN_STATE_PATH = RUNTIME_DATA_DIR / "brain_state.json"
+RUNTIME_BROWSER_STATE_PATH = RUNTIME_DATA_DIR / "browser_state.json"
+RUNTIME_RELAY_LOOP_STATE_PATH = RUNTIME_DATA_DIR / "relay_loop_state.json"
+RUNTIME_LOCK_PATH = RUNTIME_DATA_DIR / ".runtime_data.lock"
 
 
 def get_project_root() -> Path:
@@ -45,7 +52,9 @@ def _default_supervisor_state() -> SupervisorState:
         active_task_id="",
         pending_approval_count=0,
         blocked_human_needed_count=0,
+        interrupted_count=0,
         waiting_count=0,
+        ready_to_resume_count=0,
         queued_count=0,
         running_count=0,
         notification_mode="dashboard",
@@ -82,26 +91,96 @@ def _ensure_directory(path: Path) -> None:
 
 def _write_text(path: Path, text: str) -> None:
     _ensure_directory(path.parent)
+    temp_path = path.with_name(
+        f"{path.name}.tmp-{os.getpid()}-{int(time.time() * 1000)}"
+    )
     try:
-        path.write_text(text, encoding="utf-8")
+        try:
+            temp_path.write_text(text, encoding="utf-8")
+        except OSError:
+            encoded = base64.b64encode(text.encode("utf-8")).decode("ascii")
+            escaped_path = _ps_literal(temp_path)
+            subprocess.run(
+                [
+                    "powershell.exe",
+                    "-NoProfile",
+                    "-Command",
+                    (
+                        "[System.IO.File]::WriteAllBytes("
+                        f"'{escaped_path}', "
+                        f"[Convert]::FromBase64String('{encoded}'))"
+                    ),
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+
+        last_error: OSError | None = None
+        for attempt in range(8):
+            try:
+                os.replace(temp_path, path)
+                return
+            except PermissionError as exc:
+                last_error = exc
+            except OSError as exc:
+                if getattr(exc, "winerror", None) not in {5, 32}:
+                    raise
+                last_error = exc
+            time.sleep(0.05 * (attempt + 1))
+
+        if last_error is not None:
+            raise last_error
+        raise OSError(f"Failed to replace runtime file: {path}")
+    finally:
+        try:
+            temp_path.unlink(missing_ok=True)
+        except OSError:
+            pass
+
+
+def _initialize_file_if_missing(path: Path, text: str) -> None:
+    if path.exists():
+        return
+    try:
+        _write_text(path, text)
     except OSError:
-        encoded = base64.b64encode(text.encode("utf-8")).decode("ascii")
-        escaped_path = _ps_literal(path)
-        subprocess.run(
-            [
-                "powershell.exe",
-                "-NoProfile",
-                "-Command",
-                (
-                    "[System.IO.File]::WriteAllBytes("
-                    f"'{escaped_path}', "
-                    f"[Convert]::FromBase64String('{encoded}'))"
-                ),
-            ],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
+        if not path.exists():
+            raise
+
+
+@contextmanager
+def runtime_data_lock(timeout_seconds: float = 30.0, poll_seconds: float = 0.05):
+    ensure_runtime_files()
+    deadline = time.monotonic() + timeout_seconds
+    lock_handle: int | None = None
+
+    while lock_handle is None:
+        try:
+            lock_handle = os.open(
+                RUNTIME_LOCK_PATH,
+                os.O_CREAT | os.O_EXCL | os.O_WRONLY,
+            )
+            os.write(
+                lock_handle,
+                f"pid={os.getpid()} created_at={_now()}".encode("utf-8"),
+            )
+        except FileExistsError:
+            if time.monotonic() >= deadline:
+                raise TimeoutError(
+                    f"Timed out waiting for runtime data lock: {RUNTIME_LOCK_PATH}"
+                ) from None
+            time.sleep(poll_seconds)
+
+    try:
+        yield
+    finally:
+        if lock_handle is not None:
+            os.close(lock_handle)
+        try:
+            RUNTIME_LOCK_PATH.unlink(missing_ok=True)
+        except OSError:
+            pass
 
 
 def get_runtime_data_dir() -> Path:
@@ -111,17 +190,97 @@ def get_runtime_data_dir() -> Path:
 
 def ensure_runtime_files() -> Path:
     runtime_dir = get_runtime_data_dir()
-    if not TASKS_PATH.exists():
-        _write_text(TASKS_PATH, "[]\n")
-    if not APPROVALS_PATH.exists():
-        _write_text(APPROVALS_PATH, "[]\n")
-    if not APPROVAL_REQUESTS_PATH.exists():
-        _write_text(APPROVAL_REQUESTS_PATH, "[]\n")
-    if not SUPERVISOR_STATE_PATH.exists():
-        _write_text(
-            SUPERVISOR_STATE_PATH,
-            json.dumps(_default_supervisor_state().to_dict(), indent=2) + "\n",
-        )
+    _initialize_file_if_missing(TASKS_PATH, "[]\n")
+    _initialize_file_if_missing(APPROVALS_PATH, "[]\n")
+    _initialize_file_if_missing(APPROVAL_REQUESTS_PATH, "[]\n")
+    _initialize_file_if_missing(
+        SUPERVISOR_STATE_PATH,
+        json.dumps(_default_supervisor_state().to_dict(), indent=2) + "\n",
+    )
+    _initialize_file_if_missing(
+        RUNTIME_BRAIN_CONFIG_PATH,
+        json.dumps({}, indent=2) + "\n",
+    )
+    _initialize_file_if_missing(
+        RUNTIME_BRAIN_STATE_PATH,
+        json.dumps(
+            {
+                "last_call_status": "never_called",
+                "last_called_at": "",
+                "last_provider": "",
+                "last_model": "",
+                "last_source": "",
+                "last_task_id": "",
+                "last_error": "",
+                "last_response_preview": "",
+                "last_inference_used": False,
+            },
+            indent=2,
+        ) + "\n",
+    )
+    _initialize_file_if_missing(
+        RUNTIME_BROWSER_STATE_PATH,
+        json.dumps(
+            {
+                "current_role": "none",
+                "current_action": "none",
+                "current_session_id": "",
+                "last_status": "not_used",
+                "notes": [],
+            },
+            indent=2,
+        ) + "\n",
+    )
+    _initialize_file_if_missing(
+        RUNTIME_RELAY_LOOP_STATE_PATH,
+        json.dumps(
+            {
+                "relay_state": "idle",
+                "current_step": "idle",
+                "source_target_alias": "chatgpt",
+                "source_target_candidate_id": "",
+                "source_target_title": "",
+                "destination_target_alias": "codex",
+                "destination_target_candidate_id": "",
+                "destination_target_title": "",
+                "codex_mode_preset": "Implementing new feature",
+                "codex_reasoning_preset": "Medium",
+                "preset_application_status": "stored_only",
+                "codex_execution_status": "unknown",
+                "next_usage_reset_at": "",
+                "resume_after_usage_reset": False,
+                "waiting_reason": "",
+                "blocked_reason": "",
+                "last_payload_preview": "",
+                "last_result_preview": "",
+                "last_completion_status": "not_started",
+                "last_transition_at": "",
+                "last_updated_at": "",
+                "last_used_task_id": "",
+                "last_known_dialog_status": "none",
+                "last_known_dialog_note": "",
+                "saved_targets": {
+                    "chatgpt": {
+                        "alias": "chatgpt",
+                        "candidate_id": "",
+                        "title": "",
+                        "binding_status": "not_bound",
+                        "last_checked_at": "",
+                        "last_error": "",
+                    },
+                    "codex": {
+                        "alias": "codex",
+                        "candidate_id": "",
+                        "title": "",
+                        "binding_status": "not_bound",
+                        "last_checked_at": "",
+                        "last_error": "",
+                    },
+                },
+            },
+            indent=2,
+        ) + "\n",
+    )
     return runtime_dir
 
 
@@ -189,3 +348,36 @@ def read_supervisor_state() -> SupervisorState:
 
 def write_supervisor_state(state: SupervisorState) -> None:
     _write_json_object(SUPERVISOR_STATE_PATH, state.to_dict())
+
+
+def read_brain_config_object() -> dict:
+    return _read_json_object(RUNTIME_BRAIN_CONFIG_PATH)
+
+
+def write_brain_config_object(payload: dict) -> None:
+    _write_json_object(RUNTIME_BRAIN_CONFIG_PATH, payload)
+
+
+def read_brain_state_object() -> dict:
+    return _read_json_object(RUNTIME_BRAIN_STATE_PATH)
+
+
+def write_brain_state_object(payload: dict) -> None:
+    _write_json_object(RUNTIME_BRAIN_STATE_PATH, payload)
+
+
+def read_browser_state_object() -> dict:
+    return _read_json_object(RUNTIME_BROWSER_STATE_PATH)
+
+
+def write_browser_state_object(payload: dict) -> None:
+    _write_json_object(RUNTIME_BROWSER_STATE_PATH, payload)
+
+
+def read_relay_loop_state_object() -> dict:
+    return _read_json_object(RUNTIME_RELAY_LOOP_STATE_PATH)
+
+
+def write_relay_loop_state_object(payload: dict) -> None:
+    _write_json_object(RUNTIME_RELAY_LOOP_STATE_PATH, payload)
+

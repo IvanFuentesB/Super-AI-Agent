@@ -1,0 +1,135 @@
+[
+  {
+    "intent_id": "intent-ca24826a05e5462cac629616d46510b5",
+    "created_at_utc": "2026-04-26T20:46:09Z",
+    "requested_by_agent": "memory-agent",
+    "adapter_id": "native-demo-adapter",
+    "action_type": "update_compact_memory",
+    "target": "14_context/multi_agent_shared_memory.json",
+    "payload": {
+      "update_scope": "current_priorities"
+    },
+    "payload_hash": "6581b22bc827b1d004d4cc1b4514fa935f2b07dc8d2f9e98a1ed9ed590a89258",
+    "risk_level": "low",
+    "status": "approval_required",
+    "requires_approval": true,
+    "approval_id": null,
+    "approval_status": "pending",
+    "consumed_at_utc": null,
+    "consumed_by_adapter_id": null,
+    "result_status": "not_executed",
+    "reason": "Refresh compact memory after N+3.1 ActionIntent milestone.",
+    "errors": [],
+    "audit_tags": [
+      "milestone:N+3.1",
+      "role:memory-agent"
+    ]
+  },
+  {
+    "intent_id": "intent-247bc3ab100e41c2b421ee32dd24eb7a",
+    "created_at_utc": "2026-04-26T20:46:09Z",
+    "requested_by_agent": "token-saver-agent",
+    "adapter_id": "native-demo-adapter",
+    "action_type": "write_local_artifact",
+    "target": "05_logs/token_saver_checkpoint.md",
+    "payload": {
+      "content_type": "checkpoint_summary"
+    },
+    "payload_hash": "ed7fcebcc29de9a234acdf542b886645ad808354777ad3b659ac66b0f6677605",
+    "risk_level": "low",
+    "status": "approval_required",
+    "requires_approval": true,
+    "approval_id": null,
+    "approval_status": "pending",
+    "consumed_at_utc": null,
+    "consumed_by_adapter_id": null,
+    "result_status": "not_executed",
+    "reason": "Write a token-saving checkpoint artifact for this milestone.",
+    "errors": [],
+    "audit_tags": [
+      "milestone:N+3.1",
+      "role:token-saver-agent"
+    ]
+  },
+  {
+    "intent_id": "intent-67d77b1856fb4760ad563b0244329e7f",
+    "created_at_utc": "2026-04-26T20:46:10Z",
+    "requested_by_agent": "browser-candidate-agent",
+    "adapter_id": "native-demo-adapter",
+    "action_type": "external_adapter_execution_without_approval",
+    "target": "autobrowser://start",
+    "payload": {
+      "adapter": "autobrowser"
+    },
+    "payload_hash": "a9b95b2a1b7b1ceaf6684a612d93b3ac9aadb1fc146c3c607e57652fc25fcf33",
+    "risk_level": "blocked",
+    "status": "blocked",
+    "requires_approval": true,
+    "approval_id": null,
+    "approval_status": "not_created",
+    "consumed_at_utc": null,
+    "consumed_by_adapter_id": null,
+    "result_status": "blocked",
+    "reason": "Attempting AutoBrowser \u2014 must be blocked by policy gate.",
+    "errors": [
+      "forbidden_action_type"
+    ],
+    "audit_tags": [
+      "milestone:N+3.1",
+      "role:browser-candidate-agent",
+      "should_block"
+    ]
+  },
+  {
+    "intent_id": "intent-6537c7474a0e4e1aab0cc78b04cfbe1f",
+    "created_at_utc": "2026-04-26T20:46:10Z",
+    "requested_by_agent": "ruflo-review-agent",
+    "adapter_id": "native-demo-adapter",
+    "action_type": "propose_next_step",
+    "target": "14_context/next_actions.md",
+    "payload": {
+      "proposal": "Evaluate AutoBrowser after ActionIntent gate is validated."
+    },
+    "payload_hash": "219fb821702f6b4f4e9a018b2e5077fcfb72371ea137de999b84d37bb6d743cd",
+    "risk_level": "low",
+    "status": "approval_required",
+    "requires_approval": true,
+    "approval_id": null,
+    "approval_status": "pending",
+    "consumed_at_utc": null,
+    "consumed_by_adapter_id": null,
+    "result_status": "not_executed",
+    "reason": "Propose safe next architecture step based on RUFLO audit.",
+    "errors": [],
+    "audit_tags": [
+      "milestone:N+3.1",
+      "role:ruflo-review-agent"
+    ]
+  },
+  {
+    "intent_id": "intent-4b6222ffb00f424ab975ee12160c1f9f",
+    "created_at_utc": "2026-04-26T20:46:10Z",
+    "requested_by_agent": "implementation-planner-agent",
+    "adapter_id": "native-demo-adapter",
+    "action_type": "summarize_local_file",
+    "target": "14_context/ghoti_external_repo_tool_intake.md",
+    "payload": {
+      "max_chars": 2000
+    },
+    "payload_hash": "e02bd7165b9ba539f8b1628f856b7bae79d91a43efca365606bf0268a0a81d2c",
+    "risk_level": "low",
+    "status": "approval_required",
+    "requires_approval": true,
+    "approval_id": null,
+    "approval_status": "pending",
+    "consumed_at_utc": null,
+    "consumed_by_adapter_id": null,
+    "result_status": "not_executed",
+    "reason": "Summarize external repo tool intake for planning context.",
+    "errors": [],
+    "audit_tags": [
+      "milestone:N+3.1",
+      "role:implementation-planner-agent"
+    ]
+  }
+]

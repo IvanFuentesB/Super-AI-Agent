@@ -54,7 +54,24 @@ Thumbs.db
 # Runtime MVP artifacts
 01_projects/runtime_mvp/runtime_data/*.json
 01_projects/runtime_mvp/runtime_data/*.md
+01_projects/runtime_mvp/runtime_data/*.tmp-*
+01_projects/runtime_mvp/runtime_data/*.tmp-lock
+01_projects/runtime_mvp/runtime_data/*.lock
+01_projects/runtime_mvp/runtime_data/.runtime_data.lock
 !01_projects/runtime_mvp/runtime_data/.gitkeep
+
+# Supervised operator runtime state
+14_context/compact_memory/approval_inbox.json
+14_context/compact_memory/latest_operator_state.json
+14_context/compact_memory/manual_execution_queue.json
+
+# Local assistant / prompt scratch
+.claude/settings.local.json
+14_context/ghoti_current_prompt.md
+
+# Local machine spillover
+Roaming/
+gemma4/
 
 # Generated reports
 11_exports/reports/*.md
@@ -70,3 +87,10 @@ Thumbs.db
 # Third-party intake clones
 21_repos/third_party/*
 !21_repos/third_party/.gitkeep
+
+# External repo research clones
+00_external_repos/
+
+# Ghoti Active Mode screenshots and runtime snapshots
+01_projects/dashboard_mvp/.tmp-screenshots/
+*.tmp-ghoti-*.png

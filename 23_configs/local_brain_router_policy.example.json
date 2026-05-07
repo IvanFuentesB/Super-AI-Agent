@@ -1,0 +1,72 @@
+{
+  "status_label": "example_policy",
+  "routing_mode": "preview_only",
+  "enabled": false,
+  "autonomous_execution_enabled": false,
+  "default_local_model": "gemma3:4b",
+  "local_provider": "ollama",
+  "local_task_classes": [
+    "summarize_local_markdown",
+    "classify_task_risk",
+    "draft_checklist",
+    "compress_context",
+    "suggest_worker_card",
+    "video_to_money"
+  ],
+  "compress_context_defaults": {
+    "max_input_chars": 12000,
+    "allowed_file_extensions": [".md", ".txt", ".json", ".py", ".js", ".ps1"],
+    "output_dir": "05_logs/local_brain_runs"
+  },
+  "video_to_money_defaults": {
+    "max_input_chars": 12000,
+    "allowed_file_extensions": [".md", ".txt"],
+    "output_dir": "05_logs/money_runs",
+    "artifact_only": true,
+    "no_external_api": true,
+    "no_auto_post": true,
+    "no_auto_sell": true,
+    "no_auto_email": true,
+    "approval_required_for_any_use": true
+  },
+  "safety_gates": {
+    "repo_root_only": true,
+    "no_external_api": true,
+    "no_model_output_execution": true,
+    "artifact_only_outputs": true,
+    "max_input_chars_default": 12000,
+    "allowed_file_extensions": [".md", ".txt", ".json", ".py", ".js", ".ps1"]
+  },
+  "model_routing_guidance": {
+    "Gemma_via_Ollama": "easy local text compression, checklist drafts, risk label classification, markdown summarization — zero API cost, local-only",
+    "Codex": "independent audits, source crosschecks, medium-complexity implementation review, standalone analysis docs",
+    "Claude_Code": "hard multi-file implementation, difficult debugging, runtime wiring, validation, repo commits and push coordination",
+    "ChatGPT": "high-level planning, prompt design, strategic roadmap decisions, source-backed reasoning, milestone framing"
+  },
+  "hard_task_classes_route_to": {
+    "Claude Code": "hard multi-file or high-risk implementation",
+    "Codex": "independent audit, docs, limited implementation",
+    "ChatGPT": "strategy, architecture, planning, prompt generation"
+  },
+  "never_use_local_brain_for": [
+    "secrets",
+    "live_accounts",
+    "payments",
+    "legal_filings",
+    "medical_decisions",
+    "autonomous_external_actions",
+    "unreviewed_code_execution",
+    "broad_delete_or_cleanup",
+    "provider_cap_bypass"
+  ],
+  "requires_human_approval_before": [
+    "external_action",
+    "docker_pull_or_run",
+    "browser_click_or_type",
+    "email_or_posting",
+    "live_account_login",
+    "money_or_legal_actions"
+  ],
+  "api_saving_policy": "Use Gemma/Ollama for easy local tasks to reduce paid API usage. Not cap bypass or quota evasion.",
+  "notes": "This is an example policy file. enabled=false means the router will not run tasks automatically. preview_only mode allows --preview smoke runs and compress_context runs without live routing."
+}

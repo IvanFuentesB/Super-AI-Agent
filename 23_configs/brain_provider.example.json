@@ -1,0 +1,7 @@
+{
+  "active_provider": "gemma_local",
+  "active_model": "gemma3:4b",
+  "ollama_base_url": "http://127.0.0.1:11434",
+  "request_timeout_seconds": 60,
+  "notes": "Gemma local is the default local-first brain target. Pull the configured model into Ollama before expecting live inference to succeed."
+}

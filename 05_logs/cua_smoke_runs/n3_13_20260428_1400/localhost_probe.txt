@@ -1,0 +1,15 @@
+## Localhost Probe — N+3.13 CUA Smoke
+
+Command: Invoke-WebRequest -Uri 'http://127.0.0.1:6901' -Method GET -TimeoutSec 10
+
+Result: HTTP 401 Unauthorized
+
+Interpretation:
+- KasmVNC web UI IS running on port 6901
+- Server responded (HTTP 401 = authentication required)
+- This is EXPECTED behavior: Kasm requires password login
+- We did NOT login (no credentials provided)
+- We did NOT click, type, or perform any action
+- Screenshot-only observe constraint maintained
+
+Verdict: PASS — web UI reachable on localhost; no auth attempted; no live accounts used.

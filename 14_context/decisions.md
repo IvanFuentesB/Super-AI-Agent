@@ -2,9 +2,33 @@
 
 - Canonical workspace root is C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - Anything outside the canonical workspace root is out-of-scope by default and must not execute normally without explicit human approval or a future allowlist expansion
+- Do not touch files or areas outside the canonical workspace root unless the user explicitly approves it
+- Do not affect the other Windows profile
+- No task should be deleted without the user's explicit approval; prefer archive, filter, and history visibility instead
+- If the same action or payload fails 2 times, stop retrying it and clearly report the problem
 - System direction is local-first where practical
 - Risky actions require approval
 - Durable memory stays compact and summarized
+- Operator stack and provider brain should stay separable so future model or provider swaps do not require rewriting the whole system
+- `gemma_local` should be treated as the default local-first brain target, but the provider layer must stay swappable so later ChatGPT, Claude, Gemini, council, or router paths do not require a rewrite of approvals, recipes, dashboard, or executor control
+- Brain/provider truth must stay explicit in operator-facing surfaces; Ghoti should say plainly when it is using only local rules versus real model inference
+- OpenClaw is a major strategic reference for future Ghoti channel, browser-assist, and control-surface evolution, but it must remain a reference and compatibility target rather than a hard dependency for now
+- Ghoti control-center work should improve visibility, guidance, and filtering without widening the executor boundary or weakening the existing safety model
+- Ghoti overlay and watchdog work should stay an operator-facing visibility layer only; it should surface blocked or stalled state clearly without turning into an autonomous daemon or silent recovery loop
+- Visible desktop action cues and target markers should stay operator-facing and local-only; they exist to show intent before action, not to widen autonomy
+- Specialist-agent registry work should stay inspectable and config-first for now; it is scaffolding for later routing, not proof of live multi-agent autonomy
+- Browser Use should be treated as the intended first-class browser-agent capability for future browser workflows, while Playwright remains the current deterministic fallback or control layer where useful
+- Browser capability truth must stay explicit in dashboard and CLI; Ghoti should say plainly when Browser Use is absent and when only Playwright playground control is available
+- Compact markdown memory should stay local-first and provider-swappable; use it to compress durable truth, not to replace the action or approval layers
+- Outreach or business workflow scaffolding must remain planning-only until human review, approval, and send or spend gates are explicit and testable
+- Any dialog auto-dismiss path must stay exact-process, exact-title, and exact-action allowlisted with visible logging; otherwise block safely
+- Desktop typing must stay narrow and supervised: explicit allowlisted target, one-line content, no broad freeform typing path, and no auto-submit unless a later recipe explicitly opts in
+- Codex-to-ChatGPT handoff must not fall back to terminal, PowerShell, or command-shell targets
+- Explicit terminal-targeted actions remain allowed for terminal recipes or actions that intentionally target a terminal; the no-terminal restriction applies to Codex-to-ChatGPT handoff destinations
+- If the intended handoff source or destination window cannot be resolved confidently, block safely instead of pasting anywhere
+- Codex-to-ChatGPT handoff must re-verify the active destination immediately before paste or send, and any foreground mismatch must block safely before input
+- Remembered Codex-to-ChatGPT handoff target preferences must stay local to the dashboard browser and may only restore exact visible candidate IDs
+- Junk, checker, recipe-label, or repeated concatenated payloads must never be pasted into terminal, chat, or app targets
 - Continue is the current local control layer
 - Codex is the current execution layer
 - Local Git repo is initialized

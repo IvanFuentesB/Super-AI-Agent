@@ -1,0 +1,69 @@
+{
+  "blocked_actions": [
+    "autonomous posting/outreach",
+    "paid service connection",
+    "purchases/trades/money movement",
+    "legal/tax filings",
+    "cap bypass or usage-limit evasion",
+    "unapproved third-party clone/install/build"
+  ],
+  "candidate_tools": {
+    "auto_browser": "best_next_external_browser_candidate_after_action_intent",
+    "gemma_ollama": "diagnostic_only_no_model_confirmed",
+    "obscura": "research_only_do_not_integrate_now",
+    "ruflo": "architecture_reference_research_only"
+  },
+  "compact_findings": [
+    {
+      "finding": "RUFLO is strategically relevant but too high-risk for runtime wiring without isolated audit.",
+      "source": "ruflo-review-agent"
+    },
+    {
+      "finding": "Auto Browser aligns best with supervised browser control; Obscura should not be first adapter.",
+      "source": "browser-candidate-agent"
+    },
+    {
+      "finding": "Compact shared memory should carry decisions and pointers, not full transcripts.",
+      "source": "memory-agent"
+    },
+    {
+      "finding": "The safest N+3.1 slice is action-intent plumbing, not Auto Browser execution.",
+      "source": "implementation-planner-agent"
+    },
+    {
+      "finding": "RUFLO is strategically relevant but too high-risk for runtime wiring without isolated audit.",
+      "source": "ruflo-review-agent"
+    },
+    {
+      "finding": "Auto Browser aligns best with supervised browser control; Obscura should not be first adapter.",
+      "source": "browser-candidate-agent"
+    },
+    {
+      "finding": "Compact shared memory should carry decisions and pointers, not full transcripts.",
+      "source": "memory-agent"
+    },
+    {
+      "finding": "Legal token savings are workflow compaction, not quota evasion.",
+      "source": "token-saver-agent"
+    },
+    {
+      "finding": "The safest N+3.1 slice is action-intent plumbing, not Auto Browser execution.",
+      "source": "implementation-planner-agent"
+    }
+  ],
+  "current_priorities": [
+    "Prove native multi-agent coordination with compact memory.",
+    "Build ActionIntent and CapabilityAdapter before external adapters.",
+    "Implement ActionIntent and CapabilityAdapter before external tool integration.",
+    "Use compact file-based memory instead of repeating giant context.",
+    "Keep each agent job narrow and artifact-backed."
+  ],
+  "last_updated": "2026-04-26T18:16:40Z",
+  "project_truth": [
+    "Ghoti is local-first, supervised, and approval-gated.",
+    "External repos/tools are reference-only unless explicitly approved and integrated later.",
+    "Observations and model outputs do not authorize actions.",
+    "Native multi-agent MVP is deterministic and repo-local.",
+    "Run artifacts are visible under 05_logs/multi_agent_runs."
+  ]
+}

@@ -1,0 +1,170 @@
+﻿[
+    {
+        "name":  "claw-code",
+        "url":  "https://github.com/ultraworkers/claw-code.git",
+        "path":  "C:\\Users\\ai_sandbox\\Documents\\AI_Managed_Only\\21_repos\\third_party\\claw-code",
+        "status":  "cloned",
+        "commit":  "00d0eb6",
+        "reason":  "Claude Code/coding-agent architecture reference"
+    },
+    {
+        "name":  "openclaw",
+        "url":  "https://github.com/openclaw/openclaw.git",
+        "path":  "C:\\Users\\ai_sandbox\\Documents\\AI_Managed_Only\\21_repos\\third_party\\openclaw",
+        "status":  "updated_existing",
+        "commit":  "e9befcff",
+        "reason":  "personal assistant, channels, remote-control reference"
+    },
+    {
+        "name":  "browser-use",
+        "url":  "https://github.com/browser-use/browser-use.git",
+        "path":  "C:\\Users\\ai_sandbox\\Documents\\AI_Managed_Only\\21_repos\\third_party\\browser-use",
+        "status":  "updated_existing",
+        "commit":  "55ca9cb",
+        "reason":  "AI browser-control reference"
+    },
+    {
+        "name":  "browser-harness",
+        "url":  "https://github.com/browser-use/browser-harness.git",
+        "path":  "C:\\Users\\ai_sandbox\\Documents\\AI_Managed_Only\\21_repos\\third_party\\browser-harness",
+        "status":  "cloned",
+        "commit":  "4ec6255",
+        "reason":  "thin CDP/browser harness reference"
+    },
+    {
+        "name":  "playwright",
+        "url":  "https://github.com/microsoft/playwright.git",
+        "path":  "C:\\Users\\ai_sandbox\\Documents\\AI_Managed_Only\\21_repos\\third_party\\playwright",
+        "status":  "cloned",
+        "commit":  "b86038b",
+        "reason":  "browser automation/testing reference"
+    },
+    {
+        "name":  "aider",
+        "url":  "https://github.com/Aider-AI/aider.git",
+        "path":  "C:\\Users\\ai_sandbox\\Documents\\AI_Managed_Only\\21_repos\\third_party\\aider",
+        "status":  "updated_existing",
+        "commit":  "bdb4d9f",
+        "reason":  "AI coding-assistant reference"
+    },
+    {
+        "name":  "awesome-claude-code",
+        "url":  "https://github.com/hesreallyhim/awesome-claude-code.git",
+        "path":  "C:\\Users\\ai_sandbox\\Documents\\AI_Managed_Only\\21_repos\\third_party\\awesome-claude-code",
+        "status":  "updated_existing",
+        "commit":  "829a545",
+        "reason":  "Claude Code ecosystem index"
+    },
+    {
+        "name":  "openarm",
+        "url":  "https://github.com/enactic/openarm.git",
+        "path":  "C:\\Users\\ai_sandbox\\Documents\\AI_Managed_Only\\21_repos\\third_party\\openarm",
+        "status":  "cloned",
+        "commit":  "9f5b0c6",
+        "reason":  "robot arm, teleoperation, physical AI reference"
+    },
+    {
+        "name":  "dora",
+        "url":  "https://github.com/dora-rs/dora.git",
+        "path":  "C:\\Users\\ai_sandbox\\Documents\\AI_Managed_Only\\21_repos\\third_party\\dora",
+        "status":  "cloned",
+        "commit":  "bf45b35",
+        "reason":  "Rust robotics/dataflow middleware reference"
+    },
+    {
+        "name":  "dora-hub",
+        "url":  "https://github.com/dora-rs/dora-hub.git",
+        "path":  "C:\\Users\\ai_sandbox\\Documents\\AI_Managed_Only\\21_repos\\third_party\\dora-hub",
+        "status":  "cloned",
+        "commit":  "0bfa9b3",
+        "reason":  "Dora robot nodes/examples reference"
+    },
+    {
+        "name":  "python-mss",
+        "url":  "https://github.com/BoboTiG/python-mss.git",
+        "path":  "C:\\Users\\ai_sandbox\\Documents\\AI_Managed_Only\\21_repos\\third_party\\python-mss",
+        "status":  "cloned",
+        "commit":  "65cfa6d",
+        "reason":  "continuous screen capture library reference"
+    },
+    {
+        "name":  "python-mss-examples",
+        "url":  "https://github.com/screenshotone/python-mss-examples.git",
+        "path":  "C:\\Users\\ai_sandbox\\Documents\\AI_Managed_Only\\21_repos\\third_party\\python-mss-examples",
+        "status":  "cloned",
+        "commit":  "9fd876c",
+        "reason":  "screen recording examples"
+    },
+    {
+        "name":  "vosk-api",
+        "url":  "https://github.com/alphacep/vosk-api.git",
+        "path":  "C:\\Users\\ai_sandbox\\Documents\\AI_Managed_Only\\21_repos\\third_party\\vosk-api",
+        "status":  "cloned",
+        "commit":  "9adbd76",
+        "reason":  "offline speech recognition reference"
+    },
+    {
+        "name":  "whisper",
+        "url":  "https://github.com/openai/whisper.git",
+        "path":  "C:\\Users\\ai_sandbox\\Documents\\AI_Managed_Only\\21_repos\\third_party\\whisper",
+        "status":  "cloned",
+        "commit":  "04f449b",
+        "reason":  "speech-to-text reference"
+    },
+    {
+        "name":  "python-sounddevice",
+        "url":  "https://github.com/spatialaudio/python-sounddevice.git",
+        "path":  "C:\\Users\\ai_sandbox\\Documents\\AI_Managed_Only\\21_repos\\third_party\\python-sounddevice",
+        "status":  "cloned",
+        "commit":  "715d988",
+        "reason":  "microphone/audio capture reference"
+    },
+    {
+        "name":  "unsloth",
+        "url":  "https://github.com/unslothai/unsloth.git",
+        "path":  "C:\\Users\\ai_sandbox\\Documents\\AI_Managed_Only\\21_repos\\third_party\\unsloth",
+        "status":  "cloned",
+        "commit":  "ac2daf8",
+        "reason":  "local model training/GRPO reference"
+    },
+    {
+        "name":  "Kronos",
+        "url":  "https://github.com/shiyu-coder/Kronos.git",
+        "path":  "C:\\Users\\ai_sandbox\\Documents\\AI_Managed_Only\\21_repos\\third_party\\Kronos",
+        "status":  "cloned",
+        "commit":  "67b630e",
+        "reason":  "financial market foundation model reference"
+    },
+    {
+        "name":  "Kronos-demo",
+        "url":  "https://github.com/shiyu-coder/Kronos-demo.git",
+        "path":  "C:\\Users\\ai_sandbox\\Documents\\AI_Managed_Only\\21_repos\\third_party\\Kronos-demo",
+        "status":  "cloned",
+        "commit":  "dd62473",
+        "reason":  "Kronos demo reference"
+    },
+    {
+        "name":  "MiroFish",
+        "url":  "https://github.com/666ghj/MiroFish.git",
+        "path":  "C:\\Users\\ai_sandbox\\Documents\\AI_Managed_Only\\21_repos\\third_party\\MiroFish",
+        "status":  "cloned",
+        "commit":  "fa0f651",
+        "reason":  "multi-agent prediction/simulation reference"
+    },
+    {
+        "name":  "mirofish-english",
+        "url":  "https://github.com/amadad/mirofish.git",
+        "path":  "C:\\Users\\ai_sandbox\\Documents\\AI_Managed_Only\\21_repos\\third_party\\mirofish-english",
+        "status":  "cloned",
+        "commit":  "3e98e77",
+        "reason":  "English CLI fork of MiroFish"
+    },
+    {
+        "name":  "claw-code-android",
+        "url":  "https://github.com/friuns2/claw-code-android.git",
+        "path":  "C:\\Users\\ai_sandbox\\Documents\\AI_Managed_Only\\21_repos\\third_party\\claw-code-android",
+        "status":  "cloned",
+        "commit":  "594ed1f",
+        "reason":  "phone/mobile coding-agent reference"
+    }
+]

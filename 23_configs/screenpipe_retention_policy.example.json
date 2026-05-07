@@ -1,0 +1,17 @@
+{
+  "status_label": "example_policy / local_only / not_runtime_wired",
+  "enabled": false,
+  "retention_days": 3,
+  "dry_run_default": true,
+  "allowed_roots": [
+    "C:/Users/ai_sandbox/Documents/AI_Managed_Only/output/screenpipe",
+    "C:/Users/ai_sandbox/Documents/AI_Managed_Only/05_logs/screenpipe"
+  ],
+  "never_delete_roots": [
+    "C:/Users/ai_sandbox/Documents/AI_Managed_Only/14_context",
+    "C:/Users/ai_sandbox/Documents/AI_Managed_Only/01_projects"
+  ],
+  "sensitive_capture_notes": [
+    "Do not capture passwords, 2FA, banking, private documents, or live accounts unless explicitly approved."
+  ]
+}
