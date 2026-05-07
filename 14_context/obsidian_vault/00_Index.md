@@ -24,7 +24,7 @@
 
 ## Token-Saving Rule
 
-> Reference a vault note + file path instead of re-pasting context.  
+> Reference a vault note + file path instead of re-pasting context.
 > Max 200–400 words per note. Backlink to source file.
 
 ---

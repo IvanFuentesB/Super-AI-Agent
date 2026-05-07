@@ -139,6 +139,6 @@ All output under: `05_logs/cua_smoke_runs/<run_id>/`
 
 ## Current Status
 
-Docker Desktop: INSTALLED (4.70.0) — daemon NOT yet running  
-WSL2: NOT installed yet — will be installed by Docker Desktop on first launch  
+Docker Desktop: INSTALLED (4.70.0) — daemon NOT yet running
+WSL2: NOT installed yet — will be installed by Docker Desktop on first launch
 CUA smoke: NOT executed — awaiting manual Docker Desktop launch + daemon verification + separate approval

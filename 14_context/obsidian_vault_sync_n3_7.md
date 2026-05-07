@@ -30,7 +30,7 @@
 ## CUA Truth (N+3.7)
 
 - Docker: NOT installed
-- WSL: NOT installed  
+- WSL: NOT installed
 - CUA container: NOT run
 - CUA install: NOT performed
 - PATH chosen: B (no Docker install)

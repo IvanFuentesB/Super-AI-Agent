@@ -23,12 +23,12 @@ Starting HEAD: c0bb078 (local); ff75f8e (origin)
 
 ## Summary
 
-Docker Desktop process was NOT running at start of N+3.10 (same as N+3.9 state).  
-N+3.10 launched Docker Desktop via `Start-Process`.  
-Docker Desktop process IS NOW RUNNING (4 processes).  
-**However, the engine/daemon STILL CANNOT START** — backend reports HTTP 503 on `_ping` for 2+ minutes.  
-Root cause: **WSL2 is not installed**. Docker Desktop VM cannot initialize without WSL2.  
-Docker Desktop GUI is now open on screen showing a Docker Hub sign-in/signup prompt.  
+Docker Desktop process was NOT running at start of N+3.10 (same as N+3.9 state).
+N+3.10 launched Docker Desktop via `Start-Process`.
+Docker Desktop process IS NOW RUNNING (4 processes).
+**However, the engine/daemon STILL CANNOT START** — backend reports HTTP 503 on `_ping` for 2+ minutes.
+Root cause: **WSL2 is not installed**. Docker Desktop VM cannot initialize without WSL2.
+Docker Desktop GUI is now open on screen showing a Docker Hub sign-in/signup prompt.
 **GUI interaction is required from the operator** before WSL2 install can proceed.
 
 ---
@@ -141,7 +141,7 @@ From `C:\Users\Navif\AppData\Local\Docker\log\host\com.docker.backend.exe.log`:
 [10:16:20Z] + [10:16:24Z] + [10:16:44Z] + [10:16:48Z] + [10:16:53Z] User triggered Docker Hub login flow
 ```
 
-The backend is actively attempting to start the VM but cannot because WSL2 is not installed.  
+The backend is actively attempting to start the VM but cannot because WSL2 is not installed.
 The Electron GUI is open showing Docker Hub login/signup options.
 
 ---
@@ -176,8 +176,8 @@ The Electron GUI is open showing Docker Hub login/signup options.
 
 **State D: Docker Desktop GUI running, engine start failed, WSL2 setup required, GUI interaction required.**
 
-This is a new state vs N+3.9 (where Docker Desktop was not running at all).  
-Docker Desktop IS now launched and the GUI is open.  
+This is a new state vs N+3.9 (where Docker Desktop was not running at all).
+Docker Desktop IS now launched and the GUI is open.
 The operator must now interact with the Docker Desktop window.
 
 ---

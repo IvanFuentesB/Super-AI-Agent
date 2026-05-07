@@ -1,6 +1,6 @@
 # Codex CLI Install Status — N+1.6
 
-**Date:** 2026-04-24  
+**Date:** 2026-04-24
 **Branch:** feat/ghoti-visible-operator-stack
 
 ## Install command used

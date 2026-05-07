@@ -26,10 +26,10 @@ Milestone: N+3.10
 
 **NO.**
 
-Docker Desktop IS now running as a process, which is a meaningful step forward from N+3.9.  
-However, the Docker engine (VM) still cannot start because WSL2 is not installed.  
-The backend log shows continuous HTTP 503 "engine not responding to _ping" for 2+ minutes after launch.  
-The daemon pipe (`npipe:////./pipe/docker_engine`) is still not accessible.  
+Docker Desktop IS now running as a process, which is a meaningful step forward from N+3.9.
+However, the Docker engine (VM) still cannot start because WSL2 is not installed.
+The backend log shows continuous HTTP 503 "engine not responding to _ping" for 2+ minutes after launch.
+The daemon pipe (`npipe:////./pipe/docker_engine`) is still not accessible.
 `docker info` still returns "Docker Desktop is unable to start" on the Server section.
 
 ---
@@ -98,5 +98,5 @@ All CUA smoke preconditions remain unmet:
 
 ## Operator Attention Required
 
-**The Docker Desktop window is currently open on your screen.**  
+**The Docker Desktop window is currently open on your screen.**
 You must interact with it to proceed. See `14_context/docker_desktop_post_launch_verification_n3_10.md` for exact steps.

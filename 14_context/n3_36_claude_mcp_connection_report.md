@@ -1,7 +1,7 @@
 # N+3.36 - Claude MCP Read-Only Bridge: Connection Report
 
-**Date:** 2026-05-01  
-**Branch:** feat/ghoti-visible-operator-stack  
+**Date:** 2026-05-01
+**Branch:** feat/ghoti-visible-operator-stack
 **Starting HEAD:** e25a24c
 
 ---
@@ -14,8 +14,8 @@ e25a24c is present at origin/feat/ghoti-visible-operator-stack - precondition pu
 
 ## MCP Server Inspected
 
-**File:** 01_projects/mcp_server/server.py  
-**Transport:** stdio JSON-RPC 2.0  
+**File:** 01_projects/mcp_server/server.py
+**Transport:** stdio JSON-RPC 2.0
 **Entrypoint:** python 01_projects/mcp_server/server.py
 
 ---

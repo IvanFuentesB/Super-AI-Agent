@@ -1,6 +1,6 @@
 # Claude Skills Status — N+1.6
 
-**Date:** 2026-04-24  
+**Date:** 2026-04-24
 **Branch:** feat/ghoti-visible-operator-stack
 
 ## Folder audit

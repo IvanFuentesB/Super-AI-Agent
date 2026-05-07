@@ -184,6 +184,6 @@ Stop immediately if any of the following occur:
 
 ## Current Status
 
-Docker Desktop: INSTALLED (4.70.0) — daemon NOT running  
-WSL2: NOT installed — will install on first Docker Desktop launch  
+Docker Desktop: INSTALLED (4.70.0) — daemon NOT running
+WSL2: NOT installed — will install on first Docker Desktop launch
 CUA smoke: NOT executed — blocked on all preconditions above

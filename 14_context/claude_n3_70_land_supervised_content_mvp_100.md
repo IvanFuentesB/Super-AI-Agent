@@ -1,7 +1,7 @@
 # Claude N+3.70 — Land N+3.65 Supervised Content MVP 100 Slice
 
-**Generated:** 2026-05-07T — Sonnet 4.6, high effort  
-**Branch used:** `merge/ghoti-agent-n3-70-land-supervised-content-mvp-100`  
+**Generated:** 2026-05-07T — Sonnet 4.6, high effort
+**Branch used:** `merge/ghoti-agent-n3-70-land-supervised-content-mvp-100`
 **Worktree:** `C:\Users\ai_sandbox\Documents\AI_Managed_Only_worktrees\claude_n3_70_land_supervised_content_mvp_100`
 
 ---

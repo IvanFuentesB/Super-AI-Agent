@@ -10,7 +10,7 @@ Re-verified at HEAD: 9850c46 (2026-04-27 re-run)
 
 ## Summary
 
-Docker Desktop is installed but the daemon is **not running**. WSL2 is **not installed**.  
+Docker Desktop is installed but the daemon is **not running**. WSL2 is **not installed**.
 CUA smoke is **blocked** until the operator manually launches Docker Desktop and daemon starts.
 
 ---

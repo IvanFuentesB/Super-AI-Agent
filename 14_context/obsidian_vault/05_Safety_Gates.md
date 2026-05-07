@@ -44,5 +44,5 @@ Every external or risky action must:
 
 ---
 
-> Full gate list: `01_projects/runtime_mvp/runtime_data/wait_resume_items.json`  
+> Full gate list: `01_projects/runtime_mvp/runtime_data/wait_resume_items.json`
 > ActionIntent contract: `01_projects/runtime_mvp/src/super_ai_agent/action_intent.py`
