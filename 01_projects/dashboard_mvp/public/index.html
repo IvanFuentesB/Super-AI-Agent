@@ -1258,7 +1258,7 @@ Invoke-RestMethod -Uri "$base/api/ghoti/control-center-state" -Method Get | Conv
         <p id="ghoti-control-next-step-copy"></p>
         <ul id="ghoti-next-step-list"></ul>
         <ul id="ghoti-cli-command-list"></ul>
-        <p id="ghoti-control-no-delete-note"></p>
+        <p id="ghoti-control-no-delete-note">No task deletion without explicit approval; archive, filter, and history visibility stay preferred.</p>
       </section>
 
       <!-- Legacy panel-tools -->
@@ -1356,6 +1356,7 @@ Invoke-RestMethod -Uri "$base/api/ghoti/control-center-state" -Method Get | Conv
         <p id="handoff-target-summary"></p>
         <p id="handoff-target-memory-note"></p>
         <button id="queue-recipe-codex-handoff" type="button">Queue Codex To ChatGPT Handoff</button>
+        <p class="safety-note">This handoff never falls back to terminal or PowerShell.</p>
         <div id="recipe-action-summary" class="result-panel" aria-live="polite"></div>
         <div id="recipe-task-list"></div>
         <form id="internship-form">

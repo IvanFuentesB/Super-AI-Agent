@@ -39,7 +39,9 @@ function Invoke-ModuleCommand {
     param(
         [string]$PythonPath,
         [string[]]$Arguments,
-        [hashtable]$EnvOverrides = @{}
+        [hashtable]$EnvOverrides = @{},
+        # N+4.1: timeout so automated checks never hang indefinitely on desktop actions
+        [int]$TimeoutSeconds = 90
     )
 
     $argumentsJson = ConvertTo-Json -InputObject @($Arguments) -Compress
@@ -65,6 +67,11 @@ raise SystemExit(main(argv))
     $stdoutPath = [System.IO.Path]::GetTempFileName()
     $stderrPath = [System.IO.Path]::GetTempFileName()
 
+    # N+4.1: default 90-second timeout; desktop execute-task uses 120-second timeout
+    # to allow the Python-level 30-second subprocess timeout to fire and report back
+    # before Invoke-ModuleCommand itself gives up.
+    $timeoutMs = if ($TimeoutSeconds -gt 0) { $TimeoutSeconds * 1000 } else { 90000 }
+
     try {
         Set-Content -LiteralPath $scriptPath -Value $code -Encoding UTF8
         $process = Start-Process `
@@ -72,11 +79,19 @@ raise SystemExit(main(argv))
             -ArgumentList $scriptPath `
             -NoNewWindow `
             -PassThru `
-            -Wait `
             -RedirectStandardOutput $stdoutPath `
             -RedirectStandardError $stderrPath
 
+        $finished = $process.WaitForExit($timeoutMs)
+        if (-not $finished) {
+            try { Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue } catch {}
+            $process.WaitForExit(3000) | Out-Null
+        }
+
         $outputParts = @()
+        if (-not $finished) {
+            $outputParts += "error: Invoke-ModuleCommand timed out after $($timeoutMs / 1000) seconds"
+        }
         if (Test-Path -LiteralPath $stdoutPath) {
             $stdoutText = Get-Content -Raw -LiteralPath $stdoutPath
             if (-not [string]::IsNullOrWhiteSpace($stdoutText)) {
@@ -95,7 +110,7 @@ raise SystemExit(main(argv))
     }
 
     return @{
-        ExitCode = $process.ExitCode
+        ExitCode = if ($finished) { $process.ExitCode } else { -1 }
         Output = ($outputParts -join [Environment]::NewLine)
     }
 }
