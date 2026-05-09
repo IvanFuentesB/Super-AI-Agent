@@ -152,6 +152,14 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
+def _configure_cli_streams() -> None:
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
+
+
 def _approval_target(scope: str, task_id: str) -> str:
     normalized_scope = (scope or "").strip()
     if normalized_scope and normalized_scope != "runtime task execution":
@@ -1145,6 +1153,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    _configure_cli_streams()
     parser = _build_parser()
     args = parser.parse_args(argv)
 

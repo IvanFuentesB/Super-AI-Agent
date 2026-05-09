@@ -170,9 +170,9 @@ class Task:
             workspace_scope=data.get("workspace_scope", "no_path_detected"),
             workspace_policy=data.get("workspace_policy", "allowed"),
             workspace_reason=data.get("workspace_reason", ""),
-            executor_action_type=data.get("executor_action_type", ""),
-            executor_target=data.get("executor_target", ""),
-            executor_payload=dict(data.get("executor_payload", {})),
+            executor_action_type=str(data.get("executor_action_type") or ""),
+            executor_target=str(data.get("executor_target") or ""),
+            executor_payload=dict(data.get("executor_payload") or {}),
             history=[
                 TaskEvent.from_dict(item)
                 for item in data.get("history", [])

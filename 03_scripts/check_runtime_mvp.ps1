@@ -39,7 +39,9 @@ function Invoke-ModuleCommand {
     param(
         [string]$PythonPath,
         [string[]]$Arguments,
-        [hashtable]$EnvOverrides = @{}
+        [hashtable]$EnvOverrides = @{},
+        # N+4.1: timeout so automated checks never hang indefinitely on desktop actions
+        [int]$TimeoutSeconds = 90
     )
 
     $argumentsJson = ConvertTo-Json -InputObject @($Arguments) -Compress
@@ -62,41 +64,63 @@ argv = json.loads(base64.b64decode('$argumentsEncoded').decode('utf-8'))
 raise SystemExit(main(argv))
 "@
 
-    $stdoutPath = [System.IO.Path]::GetTempFileName()
-    $stderrPath = [System.IO.Path]::GetTempFileName()
+    # N+4.1D: Use System.Diagnostics.Process with async stdout/stderr reads to avoid
+    # buffer deadlock and reliably capture exit code inside the try block.
+    # Start-Process -PassThru has an unreliable ExitCode when read outside the try block.
+    $timeoutMs = if ($TimeoutSeconds -gt 0) { $TimeoutSeconds * 1000 } else { 90000 }
+    $capturedExitCode = -1
+    $timedOut = $false
+    $outputParts = @()
 
     try {
         Set-Content -LiteralPath $scriptPath -Value $code -Encoding UTF8
-        $process = Start-Process `
-            -FilePath $PythonPath `
-            -ArgumentList $scriptPath `
-            -NoNewWindow `
-            -PassThru `
-            -Wait `
-            -RedirectStandardOutput $stdoutPath `
-            -RedirectStandardError $stderrPath
 
-        $outputParts = @()
-        if (Test-Path -LiteralPath $stdoutPath) {
-            $stdoutText = Get-Content -Raw -LiteralPath $stdoutPath
-            if (-not [string]::IsNullOrWhiteSpace($stdoutText)) {
-                $outputParts += $stdoutText.TrimEnd()
-            }
+        $psi = New-Object System.Diagnostics.ProcessStartInfo
+        $psi.FileName = $PythonPath
+        $psi.Arguments = '"' + $scriptPath + '"'
+        $psi.UseShellExecute = $false
+        $psi.RedirectStandardOutput = $true
+        $psi.RedirectStandardError = $true
+        $psi.CreateNoWindow = $true
+
+        $proc = New-Object System.Diagnostics.Process
+        $proc.StartInfo = $psi
+        [void]$proc.Start()
+
+        # Start async reads before waiting — prevents stdout/stderr buffer deadlock
+        $stdoutTask = $proc.StandardOutput.ReadToEndAsync()
+        $stderrTask = $proc.StandardError.ReadToEndAsync()
+
+        $timedOut = -not $proc.WaitForExit($timeoutMs)
+
+        if ($timedOut) {
+            try { $proc.Kill() } catch {}
+            $proc.WaitForExit(3000) | Out-Null
+            $capturedExitCode = -1
+        } else {
+            # Parameterless WaitForExit() flushes async stream buffers before we read them
+            $proc.WaitForExit()
+            $capturedExitCode = $proc.ExitCode
         }
-        if (Test-Path -LiteralPath $stderrPath) {
-            $stderrText = Get-Content -Raw -LiteralPath $stderrPath
-            if (-not [string]::IsNullOrWhiteSpace($stderrText)) {
-                $outputParts += $stderrText.TrimEnd()
-            }
-        }
+
+        [void]$stdoutTask.Wait(5000)
+        [void]$stderrTask.Wait(5000)
+        $stdoutText = if ($stdoutTask.IsCompleted) { $stdoutTask.Result.TrimEnd() } else { '' }
+        $stderrText = if ($stderrTask.IsCompleted) { $stderrTask.Result.TrimEnd() } else { '' }
+
+        if ($timedOut) { $outputParts += "error: Invoke-ModuleCommand timed out after $TimeoutSeconds seconds" }
+        if (-not [string]::IsNullOrWhiteSpace($stdoutText)) { $outputParts += $stdoutText }
+        if (-not [string]::IsNullOrWhiteSpace($stderrText)) { $outputParts += $stderrText }
+
+        $proc.Dispose()
     }
     finally {
-        Remove-Item -LiteralPath $scriptPath, $stdoutPath, $stderrPath -Force -ErrorAction SilentlyContinue
+        Remove-Item -LiteralPath $scriptPath -Force -ErrorAction SilentlyContinue
     }
 
     return @{
-        ExitCode = $process.ExitCode
-        Output = ($outputParts -join [Environment]::NewLine)
+        ExitCode = $capturedExitCode
+        Output   = ($outputParts -join [Environment]::NewLine)
     }
 }
 
