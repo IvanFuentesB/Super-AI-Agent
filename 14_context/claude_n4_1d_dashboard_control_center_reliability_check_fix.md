@@ -169,3 +169,46 @@ All checks run from the worktree: `C:\Users\ai_sandbox\Documents\AI_Managed_Only
 - No approval gate weakening
 - No live account/posting/financial actions
 - External repo intake section clearly marked planning-only, no runtime wiring
+
+---
+
+## Remote Push Verification (N+4.1E Pre-Check — 2026-05-09)
+
+Codex N+4.1D audit reported target remote branch missing. This section records the verification outcome.
+
+### git fetch origin --prune
+
+Executed from worktree. No pruned refs, no errors.
+
+### git ls-remote (exact ref)
+
+```
+git ls-remote origin refs/heads/feat/ghoti-agent-claude-n4-1d-dashboard-control-center-reliability-check-fix
+```
+
+**Output:**
+```
+fbc9812be8bc52685df9395cfa2adc4502304956	refs/heads/feat/ghoti-agent-claude-n4-1d-dashboard-control-center-reliability-check-fix
+```
+
+Remote branch is present at the expected commit. The N+4.1D implementation commit (`fbc9812`) is correctly visible on origin.
+
+### Root cause of Codex audit false-negative
+
+The local branch tracking was set to `origin/main` (inherited from the worktree base) rather than `origin/feat/ghoti-agent-claude-n4-1d-dashboard-control-center-reliability-check-fix`. This was corrected:
+
+```
+git branch --set-upstream-to=origin/feat/ghoti-agent-claude-n4-1d-dashboard-control-center-reliability-check-fix
+```
+
+`git branch -vv` now shows:
+```
+* feat/ghoti-agent-claude-n4-1d-dashboard-control-center-reliability-check-fix  fbc9812 [origin/feat/ghoti-agent-claude-n4-1d-dashboard-control-center-reliability-check-fix] fix(ghoti): stabilize N+4.1 dashboard reliability checks
+```
+
+### Verdict
+
+**REMOTE_BRANCH_ALREADY_CORRECT**
+
+The branch existed on origin at `fbc9812` throughout. No re-push was required.
+Exact next action: run Codex N+4.1E remote-ref-verified audit.
