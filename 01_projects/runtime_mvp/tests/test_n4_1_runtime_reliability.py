@@ -6,6 +6,7 @@ from pathlib import Path
 from super_ai_agent import queue
 from super_ai_agent.models import SupervisorState, Task
 from super_ai_agent import storage
+from super_ai_agent.cli import _classify_executor_task
 
 
 class N41RuntimeReliabilityTests(unittest.TestCase):
@@ -62,6 +63,62 @@ class N41RuntimeReliabilityTests(unittest.TestCase):
         self.assertEqual(task.executor_action_type, "")
         self.assertEqual(task.executor_target, "")
         self.assertIsInstance(task.executor_payload, dict)
+
+    def test_executor_action_type_none_does_not_crash_classify(self):
+        """N+4.1F: _classify_executor_task(None) must not raise AttributeError.
+
+        Root cause: _build_ghoti_watchdog calls _classify_executor_task(focus_task)
+        where focus_task can be None when the task queue is empty on first clean run.
+        The old code used task.executor_action_type directly; the fix uses getattr.
+        """
+        # None task (empty queue on fresh install / first clean run)
+        result = _classify_executor_task(None)
+        self.assertEqual(result, "repo")  # falls through to default "repo" branch
+
+        # Task with executor_action_type explicitly set to None
+        minimal = {
+            "task_id": "t2", "title": "T2", "description": "", "risk_level": "low",
+            "status": "queued", "requires_approval": False, "approval_state": "not_required",
+            "created_at": "2024-01-01T00:00:00Z", "updated_at": "2024-01-01T00:00:00Z",
+            "executor_action_type": None,
+            "executor_target": None,
+            "executor_payload": None,
+        }
+        task = Task.from_dict(minimal)
+        result2 = _classify_executor_task(task)
+        self.assertEqual(result2, "repo")
+
+        # Task with valid executor_action_type still classifies correctly
+        minimal_desktop = dict(minimal)
+        minimal_desktop.update({"task_id": "t3", "executor_action_type": "wait_seconds"})
+        task_desktop = Task.from_dict(minimal_desktop)
+        result3 = _classify_executor_task(task_desktop)
+        self.assertEqual(result3, "desktop")
+
+    def test_list_executor_tasks_skips_none_entries(self):
+        """N+4.1D/N+4.1F: list_executor_tasks() must never crash on None entries."""
+        original_list_tasks = queue.list_tasks
+
+        def patched_list_tasks():
+            # Simulate storage returning None entries mixed with real tasks
+            minimal = {
+                "task_id": "t4", "title": "T4", "description": "", "risk_level": "low",
+                "status": "queued", "requires_approval": False, "approval_state": "not_required",
+                "created_at": "2024-01-01T00:00:00Z", "updated_at": "2024-01-01T00:00:00Z",
+                "executor_action_type": "read_file",
+                "executor_target": "somefile.txt",
+                "executor_payload": {},
+            }
+            return [None, Task.from_dict(minimal), None]
+
+        queue.list_tasks = patched_list_tasks
+        try:
+            result = queue.list_executor_tasks()
+            # Only the real task with executor_action_type should be returned
+            self.assertEqual(len(result), 1)
+            self.assertEqual(result[0].executor_action_type, "read_file")
+        finally:
+            queue.list_tasks = original_list_tasks
 
     def test_runtime_data_lock_recovers_dead_owner_lock(self):
         original_lock_path = storage.RUNTIME_LOCK_PATH
