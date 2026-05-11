@@ -1531,6 +1531,25 @@ async function runRuntimeCli(cliArgs) {
 
 async function runBrowserDemo(visible, checkOnly) {
   const scriptPath = path.join(browserProjectRoot, "scripts", "smoke_click_demo.js");
+  const playwrightPath = path.join(browserProjectRoot, "node_modules", "playwright");
+  if (!fs.existsSync(playwrightPath)) {
+    return {
+      ok: false,
+      degraded: true,
+      exitCode: 0,
+      stdout: [
+        "mode: dependency_missing",
+        "missing_dependency: playwright",
+        "screenshot_path: none",
+        `headless: ${visible ? "no" : "yes"}`,
+        "slow_mo: 0",
+        "keep_open_ms: 0",
+      ].join("\n"),
+      stderr: "Playwright is not installed in the local browser playground; browser demo was not run.",
+      command: `${process.execPath} ${scriptPath}`,
+      timedOut: false,
+    };
+  }
   const args = [scriptPath];
   if (visible) {
     args.push("--visible");
@@ -2421,6 +2440,40 @@ function parseSupervisorStatus(stdout) {
   };
 }
 
+function buildDegradedSupervisorStatus(raw) {
+  const message = String(raw.stderr || raw.stdout || "Runtime supervisor status is unavailable.").trim()
+    || "Runtime supervisor status is unavailable.";
+  return {
+    supervisorId: "local-supervisor",
+    mode: "local_only",
+    status: "degraded",
+    activeTaskId: "none",
+    queuedCount: 0,
+    runningCount: 0,
+    waitingCount: 0,
+    readyToResumeCount: 0,
+    pendingApprovalCount: 0,
+    blockedHumanNeededCount: 0,
+    interruptedCount: 0,
+    ghotiState: "degraded",
+    ghotiReason: message,
+    operatorNextStep: "Inspect the local runtime state and run the supervisor-status CLI check.",
+    resourceGuardEventCount: 0,
+    notificationMode: "dashboard",
+    notificationTitle: "Supervisor status degraded",
+    lastEvent: message,
+    updatedAt: new Date().toISOString(),
+    allowedWorkspaceRoot: repoRoot,
+    resourceGuardEvents: [],
+    pendingApprovals: [],
+    humanNeededTasks: [],
+    interruptedTasks: [],
+    waitingTasks: [],
+    readyToResumeTasks: [],
+    headline: `Supervisor status degraded: ${message}`,
+  };
+}
+
 function extractOutputPath(label, stdout) {
   const regex = new RegExp(`${label}:\\s*(.+)$`, "m");
   const match = stdout.match(regex);
@@ -3187,9 +3240,12 @@ function filterGhotiTasks(tasks, filters = {}) {
 
 async function buildSupervisorResponse() {
   const raw = await runRuntimeCli(["supervisor-status"]);
+  const summary = raw.ok ? parseSupervisorStatus(raw.stdout) : buildDegradedSupervisorStatus(raw);
   return {
     ok: raw.ok,
-    summary: parseSupervisorStatus(raw.stdout),
+    status: raw.ok ? "ok" : "degraded",
+    degraded: !raw.ok,
+    summary,
     raw,
     localOnly: true,
   };
@@ -3715,7 +3771,7 @@ async function handleApiRequest(request, response, requestUrl) {
       status: payload.ok ? "success" : "error",
       summary: payload.summary.headline,
     });
-    sendJson(response, payload.ok ? 200 : 500, payload);
+    sendJson(response, 200, payload);
     return;
   }
 
@@ -4288,13 +4344,17 @@ async function handleApiRequest(request, response, requestUrl) {
     const browserResult = parseBrowserResult(raw.stdout);
     const responsePayload = {
       ok: raw.ok,
+      degraded: Boolean(raw.degraded),
       summary: {
         action: "browser_smoke",
         headline: raw.ok
           ? "Headless browser smoke demo completed."
+          : raw.degraded
+            ? "Headless browser smoke demo unavailable until Playwright is installed."
           : "Headless browser smoke demo failed.",
         mode: browserResult.mode,
         screenshotPath: browserResult.screenshotPath,
+        missingDependency: browserResult.mode === "dependency_missing" ? "playwright" : "none",
       },
       raw,
       artifacts: listRecentArtifacts(),
@@ -4303,11 +4363,11 @@ async function handleApiRequest(request, response, requestUrl) {
     pushAction({
       actionType: "browser",
       label: "Ran browser smoke demo",
-      status: raw.ok ? "success" : "error",
+      status: raw.ok ? "success" : (raw.degraded ? "warning" : "error"),
       summary: responsePayload.summary.headline,
       outputPath: browserResult.screenshotPath,
     });
-    sendJson(response, raw.ok ? 200 : 500, responsePayload);
+    sendJson(response, raw.ok || raw.degraded ? 200 : 500, responsePayload);
     return;
   }
 
@@ -4317,17 +4377,21 @@ async function handleApiRequest(request, response, requestUrl) {
     const browserResult = parseBrowserResult(raw.stdout);
     const responsePayload = {
       ok: raw.ok,
+      degraded: Boolean(raw.degraded),
       summary: {
         action: "browser_visible",
         headline: raw.ok
           ? (payload.checkOnly
               ? "Visible browser demo path checked."
               : "Visible browser demo completed.")
+          : raw.degraded
+            ? "Visible browser demo unavailable until Playwright is installed."
           : "Visible browser demo failed.",
         mode: browserResult.mode,
         screenshotPath: browserResult.screenshotPath,
         headless: browserResult.headless,
         checkOnly: Boolean(payload.checkOnly),
+        missingDependency: browserResult.mode === "dependency_missing" ? "playwright" : "none",
       },
       raw,
       artifacts: listRecentArtifacts(),
@@ -4338,11 +4402,11 @@ async function handleApiRequest(request, response, requestUrl) {
       label: payload.checkOnly
         ? "Checked visible browser demo path"
         : "Ran visible browser demo",
-      status: raw.ok ? "success" : "error",
+      status: raw.ok ? "success" : (raw.degraded ? "warning" : "error"),
       summary: responsePayload.summary.headline,
       outputPath: browserResult.screenshotPath,
     });
-    sendJson(response, raw.ok ? 200 : 500, responsePayload);
+    sendJson(response, raw.ok || raw.degraded ? 200 : 500, responsePayload);
     return;
   }
 
@@ -6261,7 +6325,28 @@ if (process.argv.includes("--check")) {
 }
 
 const server = http.createServer((request, response) => {
-  handleRequest(request, response);
+  handleRequest(request, response).catch((error) => {
+    try {
+      pushAction({
+        actionType: "error",
+        label: "Dashboard request failed",
+        status: "error",
+        summary: error.message,
+      });
+      if (!response.headersSent && !response.destroyed) {
+        sendJson(response, 500, {
+          ok: false,
+          error: error.message,
+        });
+      } else if (!response.destroyed) {
+        response.destroy(error);
+      }
+    } catch {
+      if (!response.destroyed) {
+        response.destroy();
+      }
+    }
+  });
 });
 
 server.listen(dashboardPort, "127.0.0.1", () => {

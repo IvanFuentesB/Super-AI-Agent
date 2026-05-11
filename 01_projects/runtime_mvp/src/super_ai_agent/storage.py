@@ -23,6 +23,7 @@ RUNTIME_BRAIN_STATE_PATH = RUNTIME_DATA_DIR / "brain_state.json"
 RUNTIME_BROWSER_STATE_PATH = RUNTIME_DATA_DIR / "browser_state.json"
 RUNTIME_RELAY_LOOP_STATE_PATH = RUNTIME_DATA_DIR / "relay_loop_state.json"
 RUNTIME_LOCK_PATH = RUNTIME_DATA_DIR / ".runtime_data.lock"
+STALE_RUNTIME_LOCK_SECONDS = 120.0
 
 
 def get_project_root() -> Path:
@@ -42,6 +43,69 @@ def get_allowed_workspace_root() -> Path:
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _parse_runtime_lock_metadata(text: str) -> dict[str, str]:
+    metadata: dict[str, str] = {}
+    for part in text.split():
+        if "=" not in part:
+            continue
+        key, value = part.split("=", 1)
+        metadata[key.strip()] = value.strip()
+    return metadata
+
+
+def _runtime_lock_pid_is_running(pid_text: str) -> bool:
+    try:
+        pid = int(pid_text)
+    except (TypeError, ValueError):
+        return False
+    if pid <= 0:
+        return False
+    try:
+        os.kill(pid, 0)
+    except OSError:
+        return False
+    return True
+
+
+def _runtime_lock_age_seconds(path: Path, metadata: dict[str, str]) -> float:
+    created_at = metadata.get("created_at", "")
+    if created_at:
+        try:
+            created = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+            return max(0.0, (datetime.now(timezone.utc) - created).total_seconds())
+        except ValueError:
+            pass
+    try:
+        return max(0.0, time.time() - path.stat().st_mtime)
+    except OSError:
+        return 0.0
+
+
+def _try_clear_stale_runtime_lock() -> bool:
+    try:
+        text = RUNTIME_LOCK_PATH.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return True
+    except OSError:
+        return False
+
+    metadata = _parse_runtime_lock_metadata(text)
+    pid_text = metadata.get("pid", "")
+    has_dead_owner = bool(pid_text) and not _runtime_lock_pid_is_running(pid_text)
+    has_no_owner_and_is_old = (
+        not pid_text
+        and _runtime_lock_age_seconds(RUNTIME_LOCK_PATH, metadata) >= STALE_RUNTIME_LOCK_SECONDS
+    )
+    if not has_dead_owner and not has_no_owner_and_is_old:
+        return False
+
+    try:
+        RUNTIME_LOCK_PATH.unlink(missing_ok=True)
+    except OSError:
+        return False
+    return True
 
 
 def _default_supervisor_state() -> SupervisorState:
@@ -166,6 +230,8 @@ def runtime_data_lock(timeout_seconds: float = 30.0, poll_seconds: float = 0.05)
                 f"pid={os.getpid()} created_at={_now()}".encode("utf-8"),
             )
         except FileExistsError:
+            if _try_clear_stale_runtime_lock():
+                continue
             if time.monotonic() >= deadline:
                 raise TimeoutError(
                     f"Timed out waiting for runtime data lock: {RUNTIME_LOCK_PATH}"

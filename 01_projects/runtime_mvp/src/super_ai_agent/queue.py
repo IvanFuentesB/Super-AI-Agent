@@ -73,6 +73,7 @@ QUEUEABLE_TASK_STATUSES = {"queued", "running", "waiting", "blocked_human_needed
 WINDOWS_ABSOLUTE_PATH_PATTERN = re.compile(r"(?i)\b[A-Z]:\\[^\s\"'<>|?*]+")
 DEFAULT_OPERATOR_RECIPE_WAIT_SECONDS = 2
 DEFAULT_DESKTOP_MAX_ATTEMPTS = 2
+DEFAULT_DESKTOP_BRIDGE_ACTION_TIMEOUT_SECONDS = 30
 RESOURCE_GUARD_WAITING_FOR = "resource_guard_review"
 VALID_HANDOFF_PAYLOAD_CLASSIFICATIONS = {"valid_handoff_text"}
 
@@ -1430,7 +1431,7 @@ def enqueue_executor_task(
 
 
 def list_executor_tasks() -> list[Task]:
-    return [task for task in list_tasks() if task.executor_action_type]
+    return [task for task in list_tasks() if task is not None and task.executor_action_type]
 
 
 def _run_repo_command(args: list[str]) -> str:
@@ -1584,13 +1585,26 @@ def _invoke_desktop_bridge_action(
     if action_type in {"set_clipboard_text", "type_text"}:
         command.extend(["-TextContent", text_content])
 
-    result = subprocess.run(
-        command,
-        cwd=get_allowed_workspace_root(),
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    try:
+        result = subprocess.run(
+            command,
+            cwd=get_allowed_workspace_root(),
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=DEFAULT_DESKTOP_BRIDGE_ACTION_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(
+            _shorten_output(
+                (
+                    "Desktop bridge action timed out after "
+                    f"{DEFAULT_DESKTOP_BRIDGE_ACTION_TIMEOUT_SECONDS} seconds: {action_type}. "
+                    "The action was stopped so the supervisor/checker does not hang."
+                ),
+                limit=320,
+            )
+        ) from exc
     output = "\n".join(
         part.strip()
         for part in ((result.stdout or "").strip(), (result.stderr or "").strip())
