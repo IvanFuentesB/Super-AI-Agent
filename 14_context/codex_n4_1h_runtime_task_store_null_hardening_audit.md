@@ -2,177 +2,256 @@
 
 ## Executive Verdict
 
-Final verdict: **BLOCKED_REMOTE_REF_MISSING**
+Final verdict: **CONDITIONAL PASS**
 
-Codex performed the required remote-ref polling before any implementation audit. The target implementation branch never appeared on `origin` after the initial check plus 12 fetch-and-poll attempts over roughly 12 minutes. Because the branch is absent, Codex did **not** audit stale refs, did **not** run a merge rehearsal, and did **not** claim the N+4.1G malformed task-store blocker is fixed.
+The target branch was missing through the required initial check plus 12 polling attempts, so Codex first committed a `BLOCKED_REMOTE_REF_MISSING` diagnostic. Immediately after that diagnostic push, the target branch appeared remotely. Codex did not stop on stale missing-branch evidence; it fetched the new ref, verified remote/local hash agreement, ran a no-commit merge rehearsal, and audited the real target commit.
 
-Target implementation branch:
+The core N+4.1G blocker is fixed: `tasks.json=[null]`, non-dict task-store entries, and malformed partial task dicts no longer crash `ghoti-status` or `ghoti-recent`. `check_runtime_mvp.ps1` and `check_dashboard_mvp.ps1` both pass.
 
-`origin/feat/ghoti-agent-claude-n4-1h-runtime-task-store-null-hardening`
+The audit is not a clean pass because two non-safety but real audit gaps remain:
 
-Target remote ref:
+1. Invalid task-store entries are silently skipped rather than surfaced as degraded/skipped/quarantined status. This avoids crashes and does not fake bad entries as valid tasks, but it does not fully meet the prompt's "report degraded/skipped/quarantined or truthful handling" language.
+2. Several exact dashboard label strings requested by the audit prompt remain absent verbatim, even though the safety/intake content is semantically present.
 
-`refs/heads/feat/ghoti-agent-claude-n4-1h-runtime-task-store-null-hardening`
+## Branches And Commits
 
-Audit branch:
+| Field | Value |
+| --- | --- |
+| Audit branch | `audit/ghoti-agent-codex-n4-1h-runtime-task-store-null-hardening` |
+| Target branch | `origin/feat/ghoti-agent-claude-n4-1h-runtime-task-store-null-hardening` |
+| Target remote ref | `refs/heads/feat/ghoti-agent-claude-n4-1h-runtime-task-store-null-hardening` |
+| `ls-remote` target hash | `35316c1841fb13ed9c199adda8726ea8b7e480ef` |
+| Local fetched target hash | `35316c1841fb13ed9c199adda8726ea8b7e480ef` |
+| Target commit audited | `35316c1841fb13ed9c199adda8726ea8b7e480ef` |
+| Base main commit | `cdedf6087ed9bb69b33981436840dbd1c2598b03` |
+| Expected Claude report | `14_context/claude_n4_1h_runtime_task_store_null_hardening.md` present |
 
-`audit/ghoti-agent-codex-n4-1h-runtime-task-store-null-hardening`
+Target log excerpt:
 
-Base main commit for diagnostic audit:
-
-`cdedf6087ed9bb69b33981436840dbd1c2598b03`
+```text
+35316c1 fix(ghoti): harden runtime task store against null entries (N+4.1H)
+f7c667f merge(ghoti): bring N+4.1F into N+4.1H null-hardening branch
+5ec799f fix(ghoti): harden runtime task state for N+4.1 checks
+73ecf45 docs(ghoti): add remote push verification section to N+4.1D report
+fbc9812 fix(ghoti): stabilize N+4.1 dashboard reliability checks
+cdedf60 docs(ghoti): add N+3.72B final main merge gate report
+```
 
 ## Polling Attempts
 
-| Attempt | Command | Target Ref Result | Nearby Branch Result |
-| --- | --- | --- | --- |
-| Initial | `git ls-remote origin refs/heads/feat/ghoti-agent-claude-n4-1h-runtime-task-store-null-hardening` | empty | Nearby listing showed prior N+4.1 audit/feature/report branches only |
-| 1 | `git fetch origin --prune`, wait, `git ls-remote ...` | empty | No N+4.1H/null-hardening branch |
-| 2 | `git fetch origin --prune`, wait, `git ls-remote ...` | empty | No N+4.1H/null-hardening branch |
-| 3 | `git fetch origin --prune`, wait, `git ls-remote ...` | empty | No N+4.1H/null-hardening branch |
-| 4 | `git fetch origin --prune`, wait, `git ls-remote ...` | empty | No N+4.1H/null-hardening branch |
-| 5 | `git fetch origin --prune`, wait, `git ls-remote ...` | empty | No N+4.1H/null-hardening branch |
-| 6 | `git fetch origin --prune`, wait, `git ls-remote ...` | empty | No N+4.1H/null-hardening branch |
-| 7 | `git fetch origin --prune`, wait, `git ls-remote ...` | empty | No N+4.1H/null-hardening branch |
-| 8 | `git fetch origin --prune`, wait, `git ls-remote ...` | empty | No N+4.1H/null-hardening branch |
-| 9 | `git fetch origin --prune`, wait, `git ls-remote ...` | empty | No N+4.1H/null-hardening branch |
-| 10 | `git fetch origin --prune`, wait, `git ls-remote ...` | empty | No N+4.1H/null-hardening branch |
-| 11 | `git fetch origin --prune`, wait, `git ls-remote ...` | empty | No N+4.1H/null-hardening branch |
-| 12 | `git fetch origin --prune`, wait, `git ls-remote ...` | empty | No N+4.1H/null-hardening branch |
+| Attempt | Target Ref Result | Nearby Branch Result |
+| --- | --- | --- |
+| Initial | empty | Prior N+4.1 audit/feature/report branches only |
+| 1 | empty | No N+4.1H/null-hardening branch |
+| 2 | empty | No N+4.1H/null-hardening branch |
+| 3 | empty | No N+4.1H/null-hardening branch |
+| 4 | empty | No N+4.1H/null-hardening branch |
+| 5 | empty | No N+4.1H/null-hardening branch |
+| 6 | empty | No N+4.1H/null-hardening branch |
+| 7 | empty | No N+4.1H/null-hardening branch |
+| 8 | empty | No N+4.1H/null-hardening branch |
+| 9 | empty | No N+4.1H/null-hardening branch |
+| 10 | empty | No N+4.1H/null-hardening branch |
+| 11 | empty | No N+4.1H/null-hardening branch |
+| 12 | empty | No N+4.1H/null-hardening branch |
+| Post-diagnostic recheck | `35316c1841fb13ed9c199adda8726ea8b7e480ef` | Target branch appeared |
 
-Nearby branch searches used:
+Polling commands used:
 
 ```text
+git ls-remote origin refs/heads/feat/ghoti-agent-claude-n4-1h-runtime-task-store-null-hardening
+git fetch origin --prune
 git ls-remote --heads origin | findstr /i "n4-1h n4-1 runtime-task-store null-hardening"
 ```
 
-Nearby branches visible during polling included:
-
-```text
-refs/heads/audit/ghoti-agent-codex-n4-1-dashboard-control-center-reliability
-refs/heads/audit/ghoti-agent-codex-n4-1b-dashboard-control-center-reliability-real-audit
-refs/heads/audit/ghoti-agent-codex-n4-1c-dashboard-control-center-reliability-real-audit
-refs/heads/audit/ghoti-agent-codex-n4-1d-dashboard-control-center-reliability-check-fix
-refs/heads/audit/ghoti-agent-codex-n4-1d-dashboard-control-center-reliability-check-fix-real-audit
-refs/heads/audit/ghoti-agent-codex-n4-1e-dashboard-control-center-reliability-remote-ref-verified
-refs/heads/audit/ghoti-agent-codex-n4-1f-dashboard-runtime-checker-final-fix
-refs/heads/audit/ghoti-agent-codex-n4-1g-dashboard-runtime-checker-final-fix-real-audit
-refs/heads/feat/ghoti-agent-claude-n4-1-dashboard-control-center-reliability
-refs/heads/feat/ghoti-agent-claude-n4-1d-dashboard-control-center-reliability-check-fix
-refs/heads/feat/ghoti-agent-claude-n4-1f-dashboard-runtime-checker-final-fix
-refs/heads/report/ghoti-agent-n4-1-main-merge-blocked
-refs/heads/report/ghoti-agent-n4-1f-main-merge-blocked
-```
-
-No `feat/ghoti-agent-claude-n4-1h-runtime-task-store-null-hardening` ref appeared.
-
-## Ref Verification
+## Merge Rehearsal
 
 | Check | Result | Evidence |
 | --- | --- | --- |
-| Target remote ref real | FAIL | `git ls-remote` returned no hash for the N+4.1H target ref |
-| Local fetched target hash | N/A | Ref cannot be fetched because remote ref is absent |
-| Stale refs avoided | PASS | Codex did not use a local branch, old N+4.1F branch, or previous blocked audit as substitute |
-| Base main exists | PASS | `origin/main` resolved to `cdedf6087ed9bb69b33981436840dbd1c2598b03` |
-| Primary worktree untouched | PASS | Only read-only `git status` and remote checks were run in primary repo |
+| Isolated worktree | PASS | `C:\w\n4_1h_audit` |
+| Primary worktree untouched | PASS | Primary was read-only inspected only |
+| No-commit merge | PASS | `git merge --no-commit --no-ff origin/feat/ghoti-agent-claude-n4-1h-runtime-task-store-null-hardening` |
+| Conflicts | PASS | No conflicts |
+| Merge aborted before audit commit | PASS | Implementation changes were not committed on audit branch |
 
-## Merge And Validation Status
+Changed files observed in merge rehearsal:
 
-| Required Audit Area | Result | Notes |
+- `01_projects/dashboard_mvp/public/index.html`
+- `01_projects/dashboard_mvp/server.js`
+- `01_projects/desktop_playground/desktop_bridge_actions.ps1`
+- `01_projects/runtime_mvp/src/super_ai_agent/cli.py`
+- `01_projects/runtime_mvp/src/super_ai_agent/models.py`
+- `01_projects/runtime_mvp/src/super_ai_agent/queue.py`
+- `01_projects/runtime_mvp/src/super_ai_agent/storage.py`
+- `01_projects/runtime_mvp/tests/test_n4_1_runtime_reliability.py`
+- `03_scripts/check_dashboard_mvp.ps1`
+- `03_scripts/check_runtime_mvp.ps1`
+- `14_context/claude_n4_1_dashboard_control_center_reliability.md`
+- `14_context/claude_n4_1d_dashboard_control_center_reliability_check_fix.md`
+- `14_context/claude_n4_1f_dashboard_runtime_checker_final_fix.md`
+- `14_context/claude_n4_1h_runtime_task_store_null_hardening.md`
+
+No `05_logs/tmp_n4_1_*.txt`, runtime data/log artifacts, `.env`, secrets, node_modules, output folders, or generated logs were staged by the target merge.
+
+## N+4.1G Blocker Resolution
+
+| N+4.1G Finding | N+4.1H Result | Evidence |
 | --- | --- | --- |
-| No-commit merge rehearsal | NOT RUN | Target branch missing |
-| Changed-file inspection | NOT RUN | Target branch missing |
-| Python AST/compile | NOT RUN | Target branch missing |
-| `python -m pytest ...test_n4_1_runtime_reliability.py` | NOT RUN | Target branch missing |
-| `ghoti_readiness_check.py --status` | NOT RUN | Target branch missing |
-| `supervised_content_mvp_runner.py --validate-latest` | NOT RUN | Target branch missing |
-| `check_runtime_mvp.ps1` | NOT RUN | Target branch missing |
-| `check_dashboard_mvp.ps1` | NOT RUN | Target branch missing |
-| Node syntax checks | NOT RUN | Target branch missing |
-| `tasks.json=[null]` fixture | NOT RUN | Target branch missing; cannot verify fix |
-| malformed task-store fixture | NOT RUN | Target branch missing; cannot verify fix |
-| Task.from_dict non-mapping behavior | NOT RUN | Target branch missing; cannot verify fix |
+| `tasks.json=[null]` crashed `ghoti-status` | FIXED | Fixture exits 0 |
+| `tasks.json=[null]` crashed `ghoti-recent` | FIXED | Fixture exits 0 |
+| Non-dict task-store entries | FIXED | `null`, number, string, and array entries exit 0 |
+| Malformed partial task dict | FIXED | `{"task_id":"legacy-partial"}` exits 0 |
+| Invalid entries not faked as valid tasks | PASS | CLI reports idle/normal task summary rather than rendering invalid task rows |
+| Invalid entries surfaced as skipped/degraded | CONDITIONAL GAP | Entries are silently dropped; no skipped count/degraded warning is surfaced |
 
-This is intentional: running these validations against `origin/main`, N+4.1F, or a previous branch would be stale-ref auditing.
+## Specific Fixture Verification
 
-## N+4.1G Blocker Resolution Table
+Backup-and-restore fixtures were run inside the isolated audit worktree against `01_projects/runtime_mvp/runtime_data/tasks.json`.
 
-| N+4.1G Finding | N+4.1H Audit Result |
-| --- | --- |
-| `tasks.json=[null]` crashed `ghoti-status` | Unknown, target branch missing |
-| `tasks.json=[null]` crashed `ghoti-recent` | Unknown, target branch missing |
-| Need storage/model boundary hardening for null/non-dict/malformed tasks | Unknown, target branch missing |
-| Need runtime checker to remain green after hardening | Unknown, target branch missing |
-| Need dashboard checker to remain green after hardening | Unknown, target branch missing |
+| Fixture | `ghoti-status` | `ghoti-recent` | Evidence |
+| --- | --- | --- | --- |
+| `[null]` | PASS, exit 0 | PASS, exit 0 | `CASE=null_only STATUS_EXIT=0 RECENT_EXIT=0` |
+| `[null, 123, "legacy-string", ["bad-array"]]` | PASS, exit 0 | PASS, exit 0 | `CASE=non_dict_mixed STATUS_EXIT=0 RECENT_EXIT=0` |
+| `[{"task_id":"legacy-partial"}]` | PASS, exit 0 | PASS, exit 0 | `CASE=malformed_partial_dict STATUS_EXIT=0 RECENT_EXIT=0` |
+| Restored original task store | PASS, exit 0 | PASS, exit 0 | `RESTORED_STATUS_EXIT=0`, `RESTORED_RECENT_EXIT=0` |
 
-## Dashboard / External Intake / Safety Status
+Direct `Task.from_dict(None)` still raises:
 
-| Area | Result | Notes |
+```text
+TypeError: 'NoneType' object is not subscriptable
+```
+
+This is acceptable only if `Task.from_dict()` remains an internal raw parser and all file-loading boundaries keep the new storage guard. For a clean contract, prefer a typed `ValueError` or explicit parser documentation/test.
+
+## Implementation Quality
+
+Source inspection confirms:
+
+- `storage.py::read_tasks()` now skips non-dict entries and catches `KeyError`, `TypeError`, and `ValueError` from `Task.from_dict()`.
+- `storage.py::read_approvals()` and `read_approval_requests()` received the same guard for consistency.
+- `queue.py::list_executor_tasks()` still skips `None` tasks.
+- `cli.py::_classify_executor_task()` still handles `task=None` via `getattr`, preserving the N+4.1F fix.
+- The new test suite includes null-entry, mixed valid/null, and malformed-dict regression tests.
+
+The main weakness is observability: bad entries disappear silently rather than incrementing an invalid/skipped task count or adding a degraded note.
+
+## Validation Table
+
+| Validation | Result | Evidence |
 | --- | --- | --- |
-| Dashboard truth labels | NOT AUDITED | Target branch missing |
-| External tools planning-only status | NOT AUDITED | Target branch missing |
-| UI-TARS / The Agency / agent-skills-eval / arcads-claude-code | NOT AUDITED | Target branch missing |
-| Weavy / Manychat live API wiring | NOT AUDITED | Target branch missing |
-| OpenFang / MoneyPrinter runtime wiring | NOT AUDITED | Target branch missing |
-| AirLLM / Mermaid / Claude Cowork / Speckit / Sigmap / Anvac / AEX | NOT AUDITED | Target branch missing |
-| Claude + MetaTrader / internship scraper/application assistant | NOT AUDITED | Target branch missing |
-| Automations/plugins/skills future-reminder | NOT AUDITED | Target branch missing |
-| Secrets/API keys | NOT AUDITED | Target branch missing |
-| Approval gates | NOT AUDITED | Target branch missing |
+| `git diff --check` | PASS | No whitespace errors |
+| `git diff --cached --check` | PASS | No staged whitespace errors |
+| `git show --check --stat origin/...n4-1h...` | PASS | Target commit check/stat succeeded |
+| Python AST/compile for changed Python files | PASS | `models.py`, `storage.py`, `queue.py`, `cli.py`, test file parsed |
+| `python -m pytest ...test_n4_1_runtime_reliability.py` | ENV GAP | `pytest` unavailable: `No module named pytest` |
+| `python -m unittest 01_projects.runtime_mvp.tests.test_n4_1_runtime_reliability` | PASS | 10 tests ran, 10 passed |
+| `python 03_scripts/ghoti_readiness_check.py --status` | PASS | 9/9 categories PASS; supervised MVP score 100 |
+| `python 03_scripts/supervised_content_mvp_runner.py --validate-latest` | PASS | 13/13 files; all gates pending human review |
+| `03_scripts/check_runtime_mvp.ps1` | PASS | Exit 0, about 144.7s, runtime MVP checks passed |
+| `03_scripts/check_dashboard_mvp.ps1` | PASS | Exit 0, about 177.1s, dashboard MVP checks passed |
+| `node --check 01_projects/dashboard_mvp/server.js` | PASS | Syntax OK |
+| `node --check 01_projects/dashboard_mvp/public/app.js` | PASS | Syntax OK |
 
-No unsafe behavior was observed from the missing branch because no implementation ref was available to inspect.
+## Runtime Checker Table
 
-## .NET Popup / Weird Terminal Command Result
+| Runtime Check | Result | Evidence |
+| --- | --- | --- |
+| `ghoti-status` normal restored state | PASS | Exit 0 |
+| `ghoti-recent` normal restored state | PASS | Exit 0 |
+| `ghoti-status` with null-only task store | PASS | Exit 0 |
+| `ghoti-recent` with null-only task store | PASS | Exit 0 |
+| Empty/focus-task watchdog path | PASS | N+4.1F `getattr` fix preserved |
+| Runtime checker | PASS | `Summary: runtime MVP checks passed.` |
+| Weird terminal command symptom | NOT OBSERVED | No `runtime-desktop-clipboard-checkruntime-desktop-clipboard-check` process/output observed |
+| Blocking .NET GUI popup | NOT OBSERVED | No popup observed during runtime/dashboard checks |
 
-The target branch was missing, so automated runtime/dashboard validations were not run. Therefore:
+## Dashboard Checker Table
 
-- No `.NET Graphics` popup was observed during this diagnostic audit.
-- The weird terminal command symptom `runtime-desktop-clipboard-checkruntime-desktop-clipboard-check` was not observed during this diagnostic audit.
-- No conclusion can be made about whether N+4.1H fixes or regresses that path.
+| Dashboard Check | Result | Evidence |
+| --- | --- | --- |
+| Dashboard checker | PASS | `Summary: dashboard MVP checks passed.` |
+| Dashboard server start | PASS | `http://127.0.0.1:3211/api/health` |
+| Supervisor endpoint | PASS | `Supervisor status endpoint: 3 approval request(s) need review.` |
+| Browser dependency missing | PASS | Browser smoke reports Playwright missing as unavailable/degraded, not 500 |
+| Exact `ghoti-control-center` string | PASS | Present |
+| Exact truth labels | PARTIAL | Present: Local Brain, Brain / Provider, Specialist-Agent, Browser-Agent, Relay-Loop, Compact Memory, Operator Watchdog, External Repo / Skill Intake. Missing exact: Runtime, Supervisor, Approval, Dashboard, Content MVP |
+| External intake exact compact phrases | PARTIAL | Semantics present, but exact strings `OpenFang/MoneyPrinter`, `no clone/install/run`, `no runtime wiring`, `human approval required` were not all present verbatim |
 
-## N+3 Regression Status
+## External Repo / Skill Safety
 
-N+3 regression checks were not run because the target implementation branch was missing. The previous N+4.1G audit reported N+3 proof packet validation as passing, but this N+4.1H audit does not reuse that as evidence for a missing implementation branch.
+| Tool / Direction | Result | Notes |
+| --- | --- | --- |
+| UI-TARS | PASS | Planning/intake mention only; no clone/install/run |
+| The Agency | PASS | Planning/intake mention only; no clone/install/run |
+| agent-skills-eval | PASS | Planning/intake mention only; no clone/install/run |
+| arcads-claude-code | PASS | Planning/intake mention only; no account/content action |
+| Weavy | PASS | Planning/intake mention only; no live API wiring |
+| Manychat | PASS | Planning/intake mention only; no live API wiring |
+| OpenFang / MoneyPrinter | PASS | Planning/intake mention only; no runtime wiring |
+| AirLLM | PASS | Claude report mentions intake/planning only |
+| Mermaid | PASS | Claude report mentions intake/planning only |
+| Claude Cowork | PASS | Claude report mentions intake/planning only |
+| Speckit | PASS | Claude report mentions intake/planning only |
+| Sigmap | PASS | Claude report mentions intake/planning only |
+| Anvac | PASS | Claude report mentions intake/planning only |
+| Agent Exchange / AEX | PASS | Claude report mentions intake/planning only |
+| Claude + MetaTrader | PASS | Claude report mentions intake/planning only |
+| Internship scraper/application assistant | PASS | No live scraping/application behavior added |
+| Automations/plugins/skills future reminder | PASS | No runtime wiring or live action; future intake only |
+
+## Safety Table
+
+| Safety Check | Result | Evidence |
+| --- | --- | --- |
+| No real secrets/API keys committed | PASS | No secret-bearing staged files or active secret reads found |
+| No live posting/upload/account action | PASS | No active live action path found |
+| No autonomous money/public action | PASS | No autonomous money movement, trading, or public release action found |
+| No external repo clone/install/run | PASS | No active clone/install/run behavior detected |
+| No Ruflo/OpenFang/MoneyPrinter runtime wiring | PASS | Mentions remain planning/intake only |
+| Approval gates intact | PASS | Dashboard/runtime checks still approval-gated |
+| No generated logs/temp artifacts committed | PASS | No `05_logs/tmp_n4_1_*.txt`, runtime data, or logs staged |
+
+## N+3 Regression Table
+
+| N+3 Check | Result | Evidence |
+| --- | --- | --- |
+| Proof packet exists | PASS | Latest run validated |
+| Full proof packet files | PASS | 13/13 files present |
+| `supervised_mvp_slice_score` | PASS | 100 |
+| `production_public_release_ready` | PASS | False |
+| `live_posting_enabled` / live posting | PASS | False |
+| External API calls in proof packet | PASS | False |
+| Human approval required | PASS | True |
+| Approval gates | PASS | All 5 gates `pending_human_review` |
 
 ## Direct Answers
 
 | Question | Answer |
 | --- | --- |
-| Is target remote ref real/fetched? | No. `ls-remote` remained empty after polling |
-| Is N+4.1G blocker fixed? | Unknown. No implementation branch was available to audit |
-| Does `tasks.json=[null]` survive `ghoti-status`? | Not verified; target missing |
-| Does `tasks.json=[null]` survive `ghoti-recent`? | Not verified; target missing |
-| Does `check_runtime_mvp.ps1` pass? | Not verified; target missing |
-| Does `check_dashboard_mvp.ps1` pass? | Not verified; target missing |
-| Do automated checks avoid blocking GUI popups? | Not verified; target missing |
-| Were terminal weird-command symptoms observed? | Not observed during this diagnostic audit |
-| Are external tools planning-only? | Not verified; target missing |
-| Are automations/plugins/skills only future-reminder? | Not verified; target missing |
-| Did approval gates remain intact? | Not verified; target missing |
-| Is N+3 supervised MVP still valid? | Not verified in this audit because target missing |
-| Is merge to main recommended? | No. There is no target branch to merge |
+| Is target remote ref real/fetched? | Yes. It appeared after polling and resolves to `35316c1841fb13ed9c199adda8726ea8b7e480ef` |
+| Is N+4.1G blocker fixed? | Yes for the crashing `tasks.json=[null]` status/recent bug |
+| Does `tasks.json=[null]` survive `ghoti-status`? | Yes, exit 0 |
+| Does `tasks.json=[null]` survive `ghoti-recent`? | Yes, exit 0 |
+| Does `check_runtime_mvp.ps1` pass? | Yes, exit 0 |
+| Does `check_dashboard_mvp.ps1` pass? | Yes, exit 0 |
+| Do automated checks avoid blocking GUI popups? | Yes in this audit; none observed |
+| Were terminal weird-command symptoms observed? | No |
+| Are external tools planning-only? | Yes; no runtime wiring detected |
+| Are automations/plugins/skills only future-reminder? | Yes; no live automation/plugin action was added |
+| Did approval gates remain intact? | Yes |
+| Is N+3 supervised MVP still valid? | Yes |
+| Is merge to main recommended? | Conditional. Runtime hardening is safe, but clean-pass polish should surface invalid task counts/degraded status and align exact dashboard labels if those remain hard requirements |
 
-## Required Next Action
+## Conditions For Clean Pass
 
-Claude should verify and push the exact target branch:
+Recommended small follow-up branch:
 
-```powershell
-git fetch origin --prune
-git checkout -B feat/ghoti-agent-claude-n4-1h-runtime-task-store-null-hardening origin/main
-# apply the runtime task-store null/malformed-entry hardening
-git status --short
-git push -u origin feat/ghoti-agent-claude-n4-1h-runtime-task-store-null-hardening
-git ls-remote origin refs/heads/feat/ghoti-agent-claude-n4-1h-runtime-task-store-null-hardening
-```
+`feat/ghoti-agent-claude-n4-1i-runtime-task-store-truth-polish`
 
-After the branch is visible remotely, run a new Codex N+4.1H real audit that verifies:
+Required fixes for clean pass:
 
-- `tasks.json=[null]` does not crash `ghoti-status`
-- `tasks.json=[null]` does not crash `ghoti-recent`
-- non-dict and malformed partial task entries are skipped/quarantined/degraded truthfully
-- `check_runtime_mvp.ps1` exits 0
-- `check_dashboard_mvp.ps1` exits 0
-- N+3 proof packet still validates
-- no external tools or live account actions are wired
+1. Add truthful observability for skipped invalid task-store entries, such as `invalid_task_entry_count`, `skipped_task_entry_count`, or a degraded status note visible to `ghoti-status` / dashboard status paths.
+2. Either make `Task.from_dict(None)` raise a typed `ValueError` with a clear message, or document/test that it is an internal raw parser and storage is the only accepted boundary for untrusted task-store data.
+3. If exact UI labels are still a hard requirement, add verbatim dashboard strings: `Runtime Truth`, `Supervisor Truth`, `Approval Truth`, `Dashboard Truth`, `Content MVP Truth`, plus exact compact intake wording like `OpenFang/MoneyPrinter`, `no clone/install/run`, `no runtime wiring`, `no live account actions`, and `human approval required`.
 
-Final verdict: **BLOCKED_REMOTE_REF_MISSING**
+Final verdict: **CONDITIONAL PASS**.
