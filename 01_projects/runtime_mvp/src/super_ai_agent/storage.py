@@ -381,11 +381,19 @@ def _write_json_object(path: Path, payload: dict) -> None:
 # N+4.1I: module-level diagnostics for the most recent read_tasks() call.
 # Tracks how many entries were skipped so callers can surface degraded state
 # truthfully in ghoti-status / ghoti-recent rather than silently hiding bad data.
+# N+4.1J: prefer read_tasks_with_diagnostics() over the module-global for callers
+# that need a guarantee the diagnostic reflects their specific read and cannot be
+# overwritten by subsequent read_tasks() calls (e.g. _backfill_pending_approval_requests
+# normalises tasks.json, resetting the counter before the CLI prints it).
 _last_task_store_skipped: int = 0
 
 
 def get_task_store_diagnostics() -> dict:
     """Return observability data from the last read_tasks() call.
+
+    NOTE: Use read_tasks_with_diagnostics() instead when you need the diagnostic
+    to be atomically tied to a specific read — the module-global can be reset
+    by any subsequent read_tasks() call before you inspect it.
 
     Returns:
         dict with keys:
@@ -398,11 +406,22 @@ def get_task_store_diagnostics() -> dict:
     }
 
 
-def read_tasks() -> list[Task]:
-    # N+4.1H: skip null/non-dict entries so tasks.json=[null] (or any partially
-    # corrupted list) does not crash ghoti-status / ghoti-recent with
-    # "TypeError: 'NoneType' object is not subscriptable".
-    # N+4.1I: track skipped count for truthful degraded-status reporting.
+def read_tasks_with_diagnostics() -> tuple[list[Task], dict]:
+    """Read tasks and return ``(tasks, diagnostics)`` as an atomic pair.
+
+    Unlike ``get_task_store_diagnostics()``, the diagnostics dict returned here
+    is guaranteed to reflect THIS call's read.  It cannot be silently reset by a
+    subsequent ``read_tasks()`` call (e.g. the one inside
+    ``_backfill_pending_approval_requests``).
+
+    Use this in CLI status commands to capture the true degraded state of the
+    task-store BEFORE any normalising writes overwrite it.
+
+    Returns:
+        (tasks, diagnostics) where diagnostics has keys:
+          skipped_entries (int): count of entries that were null/non-dict/malformed
+          status (str): "ok" if 0 skipped, "degraded" otherwise
+    """
     global _last_task_store_skipped
     _last_task_store_skipped = 0
     tasks: list[Task] = []
@@ -415,6 +434,20 @@ def read_tasks() -> list[Task]:
         except (KeyError, TypeError, ValueError):
             _last_task_store_skipped += 1
             continue
+    diagnostics: dict = {
+        "skipped_entries": _last_task_store_skipped,
+        "status": "degraded" if _last_task_store_skipped > 0 else "ok",
+    }
+    return tasks, diagnostics
+
+
+def read_tasks() -> list[Task]:
+    # N+4.1H: skip null/non-dict entries so tasks.json=[null] (or any partially
+    # corrupted list) does not crash ghoti-status / ghoti-recent with
+    # "TypeError: 'NoneType' object is not subscriptable".
+    # N+4.1I: track skipped count for truthful degraded-status reporting.
+    # N+4.1J: read_tasks_with_diagnostics() preferred when diagnostics stability matters.
+    tasks, _ = read_tasks_with_diagnostics()
     return tasks
 
 

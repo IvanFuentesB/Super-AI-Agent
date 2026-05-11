@@ -149,6 +149,13 @@ class Task:
 
     @classmethod
     def from_dict(cls, data: dict) -> "Task":
+        # N+4.1J: guard against non-dict input so callers receive a controlled
+        # TypeError with a helpful message rather than an opaque
+        # "NoneType object is not subscriptable" crash.
+        if not isinstance(data, dict):
+            raise TypeError(
+                f"Task.from_dict expected a mapping, got {type(data).__name__!r}"
+            )
         return cls(
             task_id=data["task_id"],
             title=data["title"],

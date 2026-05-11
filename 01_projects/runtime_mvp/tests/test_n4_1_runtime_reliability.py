@@ -254,6 +254,131 @@ class N41RuntimeReliabilityTests(unittest.TestCase):
             finally:
                 storage.RUNTIME_LOCK_PATH = original_lock_path
 
+    # -------------------------------------------------------------------------
+    # N+4.1J tests: diagnostics stability + Task.from_dict controlled error
+    # -------------------------------------------------------------------------
+
+    def test_task_from_dict_none_raises_controlled_type_error(self):
+        """N+4.1J: Task.from_dict(None) must raise a controlled TypeError, not
+        the raw 'NoneType object is not subscriptable' crash."""
+        with self.assertRaises(TypeError) as ctx:
+            Task.from_dict(None)
+        # Message must be informative, not the raw NoneType subscript error
+        self.assertIn("Task.from_dict expected a mapping", str(ctx.exception))
+
+    def test_task_from_dict_non_dict_raises_controlled_type_error(self):
+        """N+4.1J: Task.from_dict('bad') must raise a controlled TypeError."""
+        with self.assertRaises(TypeError) as ctx:
+            Task.from_dict("bad-entry")
+        self.assertIn("Task.from_dict expected a mapping", str(ctx.exception))
+
+    def test_read_tasks_with_diagnostics_mixed_store_is_degraded(self):
+        """N+4.1J: read_tasks_with_diagnostics() returns degraded/skipped>0 for
+        a store containing a valid task, null, a string, and a malformed dict.
+
+        This is the N+4.1I blocker: the mixed store was reporting ok/0 because
+        _backfill_pending_approval_requests() wrote the file after the first
+        read, stripping invalid entries so subsequent reads saw 0 skipped.
+        read_tasks_with_diagnostics() is atomic — the diag reflects THIS read."""
+        minimal = {
+            "task_id": "t9", "title": "T9", "description": "", "risk_level": "low",
+            "status": "queued", "requires_approval": False,
+            "approval_state": "not_required",
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z",
+        }
+        payload = json.dumps([minimal, None, "bad-entry", {"random_key": "value"}])
+        with tempfile.TemporaryDirectory() as tmp:
+            tasks_path = Path(tmp) / "tasks.json"
+            tasks_path.write_text(payload, encoding="utf-8")
+            original_tasks_path = storage.TASKS_PATH
+            storage.TASKS_PATH = tasks_path
+            try:
+                tasks, diag = storage.read_tasks_with_diagnostics()
+                self.assertEqual(len(tasks), 1)
+                self.assertEqual(tasks[0].task_id, "t9")
+                self.assertEqual(diag["skipped_entries"], 3)
+                self.assertEqual(diag["status"], "degraded")
+            finally:
+                storage.TASKS_PATH = original_tasks_path
+
+    def test_read_tasks_with_diagnostics_valid_only_is_ok(self):
+        """N+4.1J: read_tasks_with_diagnostics() returns ok/0 for a clean store."""
+        minimal = json.dumps([{
+            "task_id": "t10", "title": "T10", "description": "", "risk_level": "low",
+            "status": "queued", "requires_approval": False,
+            "approval_state": "not_required",
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z",
+        }])
+        with tempfile.TemporaryDirectory() as tmp:
+            tasks_path = Path(tmp) / "tasks.json"
+            tasks_path.write_text(minimal, encoding="utf-8")
+            original_tasks_path = storage.TASKS_PATH
+            storage.TASKS_PATH = tasks_path
+            try:
+                tasks, diag = storage.read_tasks_with_diagnostics()
+                self.assertEqual(len(tasks), 1)
+                self.assertEqual(diag["skipped_entries"], 0)
+                self.assertEqual(diag["status"], "ok")
+            finally:
+                storage.TASKS_PATH = original_tasks_path
+
+    def test_read_tasks_with_diagnostics_pure_invalid_is_degraded(self):
+        """N+4.1J: read_tasks_with_diagnostics() returns degraded for [null, 'bad']."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tasks_path = Path(tmp) / "tasks.json"
+            tasks_path.write_text(json.dumps([None, "bad"]), encoding="utf-8")
+            original_tasks_path = storage.TASKS_PATH
+            storage.TASKS_PATH = tasks_path
+            try:
+                tasks, diag = storage.read_tasks_with_diagnostics()
+                self.assertEqual(tasks, [])
+                self.assertEqual(diag["skipped_entries"], 2)
+                self.assertEqual(diag["status"], "degraded")
+            finally:
+                storage.TASKS_PATH = original_tasks_path
+
+    def test_diagnostics_stable_after_subsequent_clean_read(self):
+        """N+4.1J: diag returned by read_tasks_with_diagnostics() is a snapshot
+        and does not change when a subsequent read_tasks() call resets the counter.
+
+        This is the core stability guarantee: even if another code path calls
+        read_tasks() on a now-clean file (post-backfill write), the captured
+        diag dict still reflects the original mixed-store read."""
+        minimal = {
+            "task_id": "t11", "title": "T11", "description": "", "risk_level": "low",
+            "status": "queued", "requires_approval": False,
+            "approval_state": "not_required",
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z",
+        }
+        payload = json.dumps([minimal, None])  # 1 valid + 1 null
+        with tempfile.TemporaryDirectory() as tmp:
+            tasks_path = Path(tmp) / "tasks.json"
+            tasks_path.write_text(payload, encoding="utf-8")
+            original_tasks_path = storage.TASKS_PATH
+            storage.TASKS_PATH = tasks_path
+            try:
+                # First read: mixed store — captures degraded/1
+                _tasks, diag = storage.read_tasks_with_diagnostics()
+                self.assertEqual(diag["skipped_entries"], 1)
+                self.assertEqual(diag["status"], "degraded")
+
+                # Simulate post-backfill: overwrite file with only valid task
+                tasks_path.write_text(json.dumps([minimal]), encoding="utf-8")
+
+                # Second read (clean file) resets module-global to 0
+                storage.read_tasks()
+                self.assertEqual(storage._last_task_store_skipped, 0)
+
+                # But the captured diag is still correct — it's a snapshot
+                self.assertEqual(diag["skipped_entries"], 1,
+                    "captured diag must not be mutated by subsequent clean reads")
+                self.assertEqual(diag["status"], "degraded")
+            finally:
+                storage.TASKS_PATH = original_tasks_path
+
 
 if __name__ == '__main__':
     unittest.main()

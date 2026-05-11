@@ -130,6 +130,7 @@ from .storage import (
     get_project_root,
     get_task_store_diagnostics,
     read_tasks,
+    read_tasks_with_diagnostics,
     runtime_data_lock,
 )
 from .truth_council import build_truth_council_result
@@ -1295,12 +1296,17 @@ def main(argv: list[str] | None = None) -> int:
 
         if args.command == "ghoti-status":
             ensure_runtime_files()
+            # N+4.1J: capture task-store diagnostics BEFORE get_supervisor_state().
+            # refresh_supervisor_state() calls _backfill_pending_approval_requests()
+            # which writes tasks.json after reading it, stripping invalid entries.
+            # Any read_tasks() call after that write sees 0 skipped entries and
+            # reports ok/0 even for a mixed valid+invalid store — masking the truth.
+            # read_tasks_with_diagnostics() returns an atomic (tasks, diag) pair
+            # that cannot be reset by subsequent reads.
+            _, _task_store_diag = read_tasks_with_diagnostics()
             state = get_supervisor_state()
             summary = get_status_summary()
             tasks = list_executor_tasks()
-            # N+4.1I: read task-store diagnostics immediately after list_executor_tasks()
-            # so the skipped count reflects this exact read call.
-            _task_store_diag = get_task_store_diagnostics()
             actionable_tasks = [
                 task for task in tasks if str(task.status or "").lower() in GHOTI_ACTIONABLE_STATUSES
             ]
@@ -1389,9 +1395,12 @@ def main(argv: list[str] | None = None) -> int:
 
         if args.command == "ghoti-recent":
             ensure_runtime_files()
+            # N+4.1J: capture task-store diagnostics BEFORE any normalising calls.
+            # Same root cause as ghoti-status: list_executor_tasks() and subsequent
+            # calls may trigger _backfill_pending_approval_requests() writes that
+            # normalise tasks.json, resetting the skip counter to 0.
+            _, _task_store_diag = read_tasks_with_diagnostics()
             tasks = list_executor_tasks()
-            # N+4.1I: read task-store diagnostics immediately after list_executor_tasks()
-            _task_store_diag = get_task_store_diagnostics()
             actionable_tasks = [
                 task for task in tasks if str(task.status or "").lower() in GHOTI_ACTIONABLE_STATUSES
             ]
