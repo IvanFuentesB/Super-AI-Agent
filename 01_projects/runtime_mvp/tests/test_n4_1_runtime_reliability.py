@@ -1,7 +1,9 @@
+import json
 import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from super_ai_agent import queue
 from super_ai_agent.models import SupervisorState, Task
@@ -119,6 +121,63 @@ class N41RuntimeReliabilityTests(unittest.TestCase):
             self.assertEqual(result[0].executor_action_type, "read_file")
         finally:
             queue.list_tasks = original_list_tasks
+
+    def test_read_tasks_skips_null_entries(self):
+        """N+4.1H: read_tasks() must not crash when tasks.json contains null entries.
+
+        Root cause: tasks.json=[null] → _read_json_list returns [None] →
+        Task.from_dict(None) → None["task_id"] → TypeError: 'NoneType' object
+        is not subscriptable.  The fix adds isinstance(item, dict) guard.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            tasks_path = Path(tmp) / "tasks.json"
+            tasks_path.write_text("[null]", encoding="utf-8")
+            original_tasks_path = storage.TASKS_PATH
+            storage.TASKS_PATH = tasks_path
+            try:
+                result = storage.read_tasks()
+                self.assertEqual(result, [])  # null entry silently dropped
+            finally:
+                storage.TASKS_PATH = original_tasks_path
+
+    def test_read_tasks_skips_null_mixed_with_valid(self):
+        """N+4.1H: read_tasks() skips nulls but keeps valid dict entries."""
+        minimal = {
+            "task_id": "t5", "title": "T5", "description": "", "risk_level": "low",
+            "status": "queued", "requires_approval": False, "approval_state": "not_required",
+            "created_at": "2024-01-01T00:00:00Z", "updated_at": "2024-01-01T00:00:00Z",
+        }
+        payload = json.dumps([None, minimal, None])
+        with tempfile.TemporaryDirectory() as tmp:
+            tasks_path = Path(tmp) / "tasks.json"
+            tasks_path.write_text(payload, encoding="utf-8")
+            original_tasks_path = storage.TASKS_PATH
+            storage.TASKS_PATH = tasks_path
+            try:
+                result = storage.read_tasks()
+                self.assertEqual(len(result), 1)
+                self.assertEqual(result[0].task_id, "t5")
+            finally:
+                storage.TASKS_PATH = original_tasks_path
+
+    def test_read_tasks_skips_malformed_dict_entries(self):
+        """N+4.1H: read_tasks() skips dicts missing required keys without crashing."""
+        payload = json.dumps([{"not_a_task": True}, {"task_id": "t6", "title": "T6",
+            "description": "", "risk_level": "low", "status": "queued",
+            "requires_approval": False, "approval_state": "not_required",
+            "created_at": "2024-01-01T00:00:00Z", "updated_at": "2024-01-01T00:00:00Z"}])
+        with tempfile.TemporaryDirectory() as tmp:
+            tasks_path = Path(tmp) / "tasks.json"
+            tasks_path.write_text(payload, encoding="utf-8")
+            original_tasks_path = storage.TASKS_PATH
+            storage.TASKS_PATH = tasks_path
+            try:
+                result = storage.read_tasks()
+                # Malformed dict silently dropped, valid dict kept
+                self.assertEqual(len(result), 1)
+                self.assertEqual(result[0].task_id, "t6")
+            finally:
+                storage.TASKS_PATH = original_tasks_path
 
     def test_runtime_data_lock_recovers_dead_owner_lock(self):
         original_lock_path = storage.RUNTIME_LOCK_PATH

@@ -379,7 +379,18 @@ def _write_json_object(path: Path, payload: dict) -> None:
 
 
 def read_tasks() -> list[Task]:
-    return [Task.from_dict(item) for item in _read_json_list(TASKS_PATH)]
+    # N+4.1H: skip null/non-dict entries so tasks.json=[null] (or any partially
+    # corrupted list) does not crash ghoti-status / ghoti-recent with
+    # "TypeError: 'NoneType' object is not subscriptable".
+    tasks: list[Task] = []
+    for item in _read_json_list(TASKS_PATH):
+        if not isinstance(item, dict):
+            continue
+        try:
+            tasks.append(Task.from_dict(item))
+        except (KeyError, TypeError, ValueError):
+            continue
+    return tasks
 
 
 def write_tasks(tasks: list[Task]) -> None:
@@ -387,7 +398,16 @@ def write_tasks(tasks: list[Task]) -> None:
 
 
 def read_approvals() -> list[ApprovalRecord]:
-    return [ApprovalRecord.from_dict(item) for item in _read_json_list(APPROVALS_PATH)]
+    # N+4.1H: same null/non-dict guard as read_tasks for consistency.
+    records: list[ApprovalRecord] = []
+    for item in _read_json_list(APPROVALS_PATH):
+        if not isinstance(item, dict):
+            continue
+        try:
+            records.append(ApprovalRecord.from_dict(item))
+        except (KeyError, TypeError, ValueError):
+            continue
+    return records
 
 
 def write_approvals(records: list[ApprovalRecord]) -> None:
@@ -395,10 +415,16 @@ def write_approvals(records: list[ApprovalRecord]) -> None:
 
 
 def read_approval_requests() -> list[ApprovalRequest]:
-    return [
-        ApprovalRequest.from_dict(item)
-        for item in _read_json_list(APPROVAL_REQUESTS_PATH)
-    ]
+    # N+4.1H: same null/non-dict guard as read_tasks for consistency.
+    requests: list[ApprovalRequest] = []
+    for item in _read_json_list(APPROVAL_REQUESTS_PATH):
+        if not isinstance(item, dict):
+            continue
+        try:
+            requests.append(ApprovalRequest.from_dict(item))
+        except (KeyError, TypeError, ValueError):
+            continue
+    return requests
 
 
 def write_approval_requests(requests: list[ApprovalRequest]) -> None:
