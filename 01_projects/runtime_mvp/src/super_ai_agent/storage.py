@@ -378,17 +378,42 @@ def _write_json_object(path: Path, payload: dict) -> None:
     _write_text(path, json.dumps(payload, indent=2) + "\n")
 
 
+# N+4.1I: module-level diagnostics for the most recent read_tasks() call.
+# Tracks how many entries were skipped so callers can surface degraded state
+# truthfully in ghoti-status / ghoti-recent rather than silently hiding bad data.
+_last_task_store_skipped: int = 0
+
+
+def get_task_store_diagnostics() -> dict:
+    """Return observability data from the last read_tasks() call.
+
+    Returns:
+        dict with keys:
+          skipped_entries (int): number of null/non-dict/malformed entries dropped
+          status (str): "ok" if 0 skipped, "degraded" otherwise
+    """
+    return {
+        "skipped_entries": _last_task_store_skipped,
+        "status": "degraded" if _last_task_store_skipped > 0 else "ok",
+    }
+
+
 def read_tasks() -> list[Task]:
     # N+4.1H: skip null/non-dict entries so tasks.json=[null] (or any partially
     # corrupted list) does not crash ghoti-status / ghoti-recent with
     # "TypeError: 'NoneType' object is not subscriptable".
+    # N+4.1I: track skipped count for truthful degraded-status reporting.
+    global _last_task_store_skipped
+    _last_task_store_skipped = 0
     tasks: list[Task] = []
     for item in _read_json_list(TASKS_PATH):
         if not isinstance(item, dict):
+            _last_task_store_skipped += 1
             continue
         try:
             tasks.append(Task.from_dict(item))
         except (KeyError, TypeError, ValueError):
+            _last_task_store_skipped += 1
             continue
     return tasks
 

@@ -128,6 +128,7 @@ from .storage import (
     get_allowed_workspace_root,
     get_runtime_data_dir,
     get_project_root,
+    get_task_store_diagnostics,
     read_tasks,
     runtime_data_lock,
 )
@@ -1297,6 +1298,9 @@ def main(argv: list[str] | None = None) -> int:
             state = get_supervisor_state()
             summary = get_status_summary()
             tasks = list_executor_tasks()
+            # N+4.1I: read task-store diagnostics immediately after list_executor_tasks()
+            # so the skipped count reflects this exact read call.
+            _task_store_diag = get_task_store_diagnostics()
             actionable_tasks = [
                 task for task in tasks if str(task.status or "").lower() in GHOTI_ACTIONABLE_STATUSES
             ]
@@ -1336,6 +1340,9 @@ def main(argv: list[str] | None = None) -> int:
             print(f"interrupted_tasks: {state.interrupted_count}")
             print(f"recent_actionable_count: {len(actionable_tasks)}")
             print(f"recent_failure_count: {len(failure_tasks)}")
+            # N+4.1I: surface task-store health so invalid entries are not silently hidden
+            print(f"task_store_status: {_task_store_diag['status']}")
+            print(f"task_store_skipped_entries: {_task_store_diag['skipped_entries']}")
             print(f"recent_artifact_count: {len(_iter_recent_artifacts(limit=6))}")
             print(f"watchdog_status: {watchdog['status']}")
             print(f"watchdog_headline: {watchdog['headline']}")
@@ -1383,6 +1390,8 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "ghoti-recent":
             ensure_runtime_files()
             tasks = list_executor_tasks()
+            # N+4.1I: read task-store diagnostics immediately after list_executor_tasks()
+            _task_store_diag = get_task_store_diagnostics()
             actionable_tasks = [
                 task for task in tasks if str(task.status or "").lower() in GHOTI_ACTIONABLE_STATUSES
             ]
@@ -1397,6 +1406,9 @@ def main(argv: list[str] | None = None) -> int:
             active_task = get_task(state.active_task_id) if state.active_task_id else None
             watchdog = _build_ghoti_watchdog(state, tasks, active_task)
             print("ghoti_recent: recent actionable work, failures, approvals, and artifacts")
+            # N+4.1I: surface task-store health so invalid entries are not silently hidden
+            print(f"task_store_status: {_task_store_diag['status']}")
+            print(f"task_store_skipped_entries: {_task_store_diag['skipped_entries']}")
             print(f"watchdog_status: {watchdog['status']}")
             print(f"watchdog_headline: {watchdog['headline']}")
             print(f"overlay_target: {watchdog['overlay_target']}")

@@ -1678,6 +1678,15 @@ try {
         $dashboardHtml -match 'Relay-Loop Truth' -and `
         $dashboardHtml -match 'Compact Memory Truth' -and `
         $dashboardHtml -match 'Operator Watchdog' -and `
+        $dashboardHtml -match 'Runtime Truth' -and `
+        $dashboardHtml -match 'Supervisor Truth' -and `
+        $dashboardHtml -match 'Approval Truth' -and `
+        $dashboardHtml -match 'Dashboard Truth' -and `
+        $dashboardHtml -match 'Content MVP Truth' -and `
+        $dashboardHtml -match 'External Repo / Skill Intake Truth' -and `
+        $dashboardHtml -match 'no clone/install/run' -and `
+        $dashboardHtml -match 'no runtime wiring' -and `
+        $dashboardHtml -match 'human approval required' -and `
         $dashboardHtml -match 'ghoti-task-visibility-filter' -and `
         $dashboardHtml -match 'ghoti-show-active-tasks' -and `
         $dashboardHtml -match 'ghoti-queue-focus-window' -and `

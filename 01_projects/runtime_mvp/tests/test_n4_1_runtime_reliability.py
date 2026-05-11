@@ -179,6 +179,66 @@ class N41RuntimeReliabilityTests(unittest.TestCase):
             finally:
                 storage.TASKS_PATH = original_tasks_path
 
+    def test_task_store_diagnostics_degraded_for_null_entries(self):
+        """N+4.1I: get_task_store_diagnostics() returns degraded/skipped count after [null]."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tasks_path = Path(tmp) / "tasks.json"
+            tasks_path.write_text("[null]", encoding="utf-8")
+            original_tasks_path = storage.TASKS_PATH
+            storage.TASKS_PATH = tasks_path
+            try:
+                result = storage.read_tasks()
+                self.assertEqual(result, [])
+                diag = storage.get_task_store_diagnostics()
+                self.assertEqual(diag["skipped_entries"], 1)
+                self.assertEqual(diag["status"], "degraded")
+            finally:
+                storage.TASKS_PATH = original_tasks_path
+
+    def test_task_store_diagnostics_ok_for_valid_entries(self):
+        """N+4.1I: get_task_store_diagnostics() returns ok/0 for a valid task list."""
+        minimal = json.dumps([{
+            "task_id": "t7", "title": "T7", "description": "", "risk_level": "low",
+            "status": "queued", "requires_approval": False, "approval_state": "not_required",
+            "created_at": "2024-01-01T00:00:00Z", "updated_at": "2024-01-01T00:00:00Z",
+        }])
+        with tempfile.TemporaryDirectory() as tmp:
+            tasks_path = Path(tmp) / "tasks.json"
+            tasks_path.write_text(minimal, encoding="utf-8")
+            original_tasks_path = storage.TASKS_PATH
+            storage.TASKS_PATH = tasks_path
+            try:
+                result = storage.read_tasks()
+                self.assertEqual(len(result), 1)
+                diag = storage.get_task_store_diagnostics()
+                self.assertEqual(diag["skipped_entries"], 0)
+                self.assertEqual(diag["status"], "ok")
+            finally:
+                storage.TASKS_PATH = original_tasks_path
+
+    def test_task_store_diagnostics_counts_mixed_null_and_valid(self):
+        """N+4.1I: mixed null+valid entries — diagnostics show correct skipped count."""
+        minimal = {
+            "task_id": "t8", "title": "T8", "description": "", "risk_level": "low",
+            "status": "queued", "requires_approval": False, "approval_state": "not_required",
+            "created_at": "2024-01-01T00:00:00Z", "updated_at": "2024-01-01T00:00:00Z",
+        }
+        payload = json.dumps([None, None, minimal, None])
+        with tempfile.TemporaryDirectory() as tmp:
+            tasks_path = Path(tmp) / "tasks.json"
+            tasks_path.write_text(payload, encoding="utf-8")
+            original_tasks_path = storage.TASKS_PATH
+            storage.TASKS_PATH = tasks_path
+            try:
+                result = storage.read_tasks()
+                self.assertEqual(len(result), 1)
+                self.assertEqual(result[0].task_id, "t8")
+                diag = storage.get_task_store_diagnostics()
+                self.assertEqual(diag["skipped_entries"], 3)  # 3 nulls skipped
+                self.assertEqual(diag["status"], "degraded")
+            finally:
+                storage.TASKS_PATH = original_tasks_path
+
     def test_runtime_data_lock_recovers_dead_owner_lock(self):
         original_lock_path = storage.RUNTIME_LOCK_PATH
         with tempfile.TemporaryDirectory() as tmp:
