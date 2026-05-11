@@ -152,6 +152,14 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
+def _configure_cli_streams() -> None:
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
+
+
 def _approval_target(scope: str, task_id: str) -> str:
     normalized_scope = (scope or "").strip()
     if normalized_scope and normalized_scope != "runtime task execution":
@@ -392,9 +400,13 @@ def _control_center_doc_path() -> Path:
 
 
 def _classify_executor_task(task) -> str:
-    action_type = str(task.executor_action_type or "").strip().lower()
+    # N+4.1F: use getattr so this is safe when task is None (empty queue on first
+    # clean run) or when task is a legacy/partial object without executor_action_type.
+    action_type = str(getattr(task, "executor_action_type", "") or "").strip().lower()
     if action_type == "run_operator_recipe":
-        recipe_name = str(task.executor_payload.get("recipe_name", "")).strip().lower()
+        recipe_name = str(
+            (getattr(task, "executor_payload", {}) or {}).get("recipe_name", "")
+        ).strip().lower()
         if recipe_name == "codex_to_chatgpt_handoff_mvp":
             return "handoff"
         return "recipe"
@@ -1145,6 +1157,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    _configure_cli_streams()
     parser = _build_parser()
     args = parser.parse_args(argv)
 

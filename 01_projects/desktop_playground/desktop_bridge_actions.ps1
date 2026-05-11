@@ -308,13 +308,19 @@ function Show-DesktopActionCue {
             $markerPanel.BackColor = [System.Drawing.Color]::Transparent
             $markerPanel.add_Paint({
                 param($sender, $args)
-                $pen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(235, 215, 63, 23), 3)
-                $args.Graphics.DrawEllipse($pen, 4, 4, 36, 36)
-                $args.Graphics.DrawLine($pen, 22, 0, 22, 12)
-                $args.Graphics.DrawLine($pen, 22, 34, 22, 46)
-                $args.Graphics.DrawLine($pen, 0, 22, 12, 22)
-                $args.Graphics.DrawLine($pen, 34, 22, 46, 22)
-                $pen.Dispose()
+                # N+4.1: wrap Graphics access so a non-interactive session does not
+                # trigger a blocking .NET exception dialog ("Graphics property not found").
+                try {
+                    $pen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(235, 215, 63, 23), 3)
+                    $args.Graphics.DrawEllipse($pen, 4, 4, 36, 36)
+                    $args.Graphics.DrawLine($pen, 22, 0, 22, 12)
+                    $args.Graphics.DrawLine($pen, 22, 34, 22, 46)
+                    $args.Graphics.DrawLine($pen, 0, 22, 12, 22)
+                    $args.Graphics.DrawLine($pen, 34, 22, 46, 22)
+                    $pen.Dispose()
+                } catch {
+                    # Graphics context unavailable (non-interactive session); skip visual cue.
+                }
             })
             [void]$markerForm.Controls.Add($markerPanel)
             $forms += $markerForm
