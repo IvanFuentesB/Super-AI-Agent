@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -601,6 +601,31 @@
               <li>Agent Exchange / AEX — intake/planning only</li>
             </ul>
             <p class="safety-note">No live account actions. No autonomous posting. No autonomous money movement. No clone/install/run of external repos. No runtime wiring without human approval. Human approval required before any wiring.</p>
+          </div>
+          <div class="card" style="margin-bottom:var(--gap,1rem);">
+            <h3 class="card-title">Local Memory Truth</h3>
+            <p class="section-sub">Local-first memory compression &mdash; reads only repo-local approved files, never outside repo root. Rejects secrets/credential paths. Writes auditable snapshots to compact_memory and obsidian_vault. No external API calls. No secrets stored.</p>
+            <p class="safety-note">local_only: true &mdash; external_api_used: false &mdash; approval_required_for_external_actions: true</p>
+          </div>
+          <div class="card" style="margin-bottom:var(--gap,1rem);">
+            <h3 class="card-title">Gemma / Ollama Truth</h3>
+            <p class="section-sub">Local Ollama/Gemma availability probe &mdash; reports ollama_available, gemma_model_found, model_name, and fallback_mode truthfully. Falls back to local_demo mode if Ollama or Gemma is unavailable. Never calls external APIs. Never crashes on missing Ollama.</p>
+            <p class="safety-note">fallback_mode: local_demo when Ollama/Gemma unavailable &mdash; no fake availability claims &mdash; local_only: true</p>
+          </div>
+          <div class="card" style="margin-bottom:var(--gap,1rem);">
+            <h3 class="card-title">Repo / Skill / Plugin Intake Truth</h3>
+            <p class="section-sub">Controlled metadata catalog for 22 external tool/repo/skill candidates. All entries: intake/planning only. No runtime wiring. No clone/install/run. Human approval required before any external action.</p>
+            <ul class="section-sub" style="margin:0.5rem 0 0.5rem 1.25rem;">
+              <li>External Runtime Wiring: disabled</li>
+              <li>Clone/Install/Run: disabled</li>
+              <li>Human Approval Required</li>
+              <li>Automations / Plugins / Skills: future-reminder (after N+4.2 audit)</li>
+              <li>YouTube Title/Thumbnail Iteration: future workflow, no autonomous posting</li>
+              <li>Internship Scraper: future workflow, human approval required</li>
+              <li>Trading / MetaTrader: paper/simulation only</li>
+              <li>Ethical Hacking: legal/CTF/lab/authorized-only</li>
+            </ul>
+            <p class="safety-note">No live account actions. No autonomous posting. No money movement. No clone/install/run. Human approval required before any wiring or live action.</p>
           </div>
         </section>
 
