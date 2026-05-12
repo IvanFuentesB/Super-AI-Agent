@@ -1,4 +1,4 @@
-# Local dashboard MVP checker with safe local-only behavior.
+﻿# Local dashboard MVP checker with safe local-only behavior.
 
 param(
     [switch]$RuntimeLockSafe
@@ -1687,6 +1687,17 @@ try {
         $dashboardHtml -match 'no clone/install/run' -and `
         $dashboardHtml -match 'no runtime wiring' -and `
         $dashboardHtml -match 'human approval required' -and `
+        $dashboardHtml -match 'Local Memory Truth' -and `
+        $dashboardHtml -match 'Gemma / Ollama Truth' -and `
+        $dashboardHtml -match 'Repo / Skill / Plugin Intake Truth' -and `
+        $dashboardHtml -match 'External Runtime Wiring: disabled' -and `
+        $dashboardHtml -match 'Clone/Install/Run: disabled' -and `
+        $dashboardHtml -match 'Human Approval Required' -and `
+        $dashboardHtml -match 'Automations / Plugins / Skills: future-reminder' -and `
+        $dashboardHtml -match 'YouTube Title/Thumbnail Iteration: future workflow' -and `
+        $dashboardHtml -match 'Internship Scraper: future workflow' -and `
+        $dashboardHtml -match 'Trading / MetaTrader: paper/simulation only' -and `
+        $dashboardHtml -match 'Ethical Hacking: legal/CTF/lab/authorized-only' -and `
         $dashboardHtml -match 'ghoti-task-visibility-filter' -and `
         $dashboardHtml -match 'ghoti-show-active-tasks' -and `
         $dashboardHtml -match 'ghoti-queue-focus-window' -and `
