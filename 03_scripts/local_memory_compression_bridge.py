@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """Local Memory Compression Bridge — N+4.2A.
 
 Provides a local-first memory compression workflow:
@@ -446,6 +446,8 @@ def main() -> int:
             write=args.write_snapshot,
             json_out=args.json_out,
         )
+    if args.json_out:
+        return cmd_status(json_out=True)
     parser.print_help()
     return 0
 

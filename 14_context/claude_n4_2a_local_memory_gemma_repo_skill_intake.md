@@ -39,7 +39,7 @@
 
 ## Local Memory Bridge Summary
 
-**Script:** `03_scripts/local_memory_compression_bridge.py`  
+**Script:** `03_scripts/local_memory_compression_bridge.py`
 **Pattern:** stdlib-only, no requests/urllib/http, no network calls.
 
 ### CLI Modes
@@ -101,7 +101,7 @@ Demo run created:
 
 ## Repo / Skill / Plugin Intake Registry Summary
 
-**Script:** `03_scripts/repo_skill_plugin_intake.py`  
+**Script:** `03_scripts/repo_skill_plugin_intake.py`
 **Config:** `23_configs/repo_skill_plugin_intake.example.json`
 
 ### Registry Stats

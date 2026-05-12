@@ -1,10 +1,10 @@
 # N+4.2A Repo / Skill / Plugin Intake Registry
 
-**Milestone:** N+4.2A  
-**Script:** `03_scripts/repo_skill_plugin_intake.py`  
-**Config:** `23_configs/repo_skill_plugin_intake.example.json`  
-**Date:** 2026-05-12  
-**Status:** IMPLEMENTED  
+**Milestone:** N+4.2A
+**Script:** `03_scripts/repo_skill_plugin_intake.py`
+**Config:** `23_configs/repo_skill_plugin_intake.example.json`
+**Date:** 2026-05-12
+**Status:** IMPLEMENTED
 
 ---
 

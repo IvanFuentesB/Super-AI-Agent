@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """N+4.2A tests: local_memory_compression_bridge and repo_skill_plugin_intake.
 
 Tests cover:
@@ -14,11 +14,14 @@ Tests cover:
 - --status JSON includes required truth fields
 """
 import importlib.util
+import io
 import json
 import pathlib
+import subprocess
 import sys
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 
 # ---------------------------------------------------------------------------
 # Helpers to import scripts from 03_scripts/
@@ -40,6 +43,11 @@ class N42ALocalMemoryTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.bridge = _import_script("local_memory_compression_bridge")
+
+    def test_bridge_file_has_no_bom(self):
+        """N+4.2B: bridge source must not start with UTF-8 BOM."""
+        raw = (SCRIPTS_DIR / "local_memory_compression_bridge.py").read_bytes()
+        self.assertFalse(raw.startswith(b"\xef\xbb\xbf"))
 
     # ------------------------------------------------------------------
     # Security / path validation
@@ -178,8 +186,6 @@ class N42ALocalMemoryTests(unittest.TestCase):
 
     def test_status_json_includes_truth_fields(self):
         """N+4.2A: --status --json must include required truth fields."""
-        import io
-        from contextlib import redirect_stdout
         f = io.StringIO()
         with redirect_stdout(f):
             rc = self.bridge.cmd_status(json_out=True)
@@ -195,6 +201,85 @@ class N42ALocalMemoryTests(unittest.TestCase):
         self.assertTrue(data["local_only"])
         self.assertFalse(data["external_api_used"])
         self.assertTrue(data["approval_required_for_external_actions"])
+
+    def test_bare_json_emits_valid_status_json(self):
+        """N+4.2B: bare --json behaves like --status --json."""
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "local_memory_compression_bridge.py"), "--json"],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        data = json.loads(proc.stdout)
+        self.assertEqual(data["bridge"], "local_memory_compression_bridge")
+        self.assertTrue(data["local_only"])
+        self.assertFalse(data["external_api_used"])
+        self.assertTrue(data["approval_required_for_external_actions"])
+
+    def test_status_json_cli_emits_valid_json(self):
+        """N+4.2B: --status --json emits parseable JSON without prose."""
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "local_memory_compression_bridge.py"), "--status", "--json"],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        data = json.loads(proc.stdout)
+        self.assertTrue(data["local_only"])
+        self.assertFalse(data["external_api_used"])
+
+    def test_compress_demo_write_snapshot_json_uses_approved_paths(self):
+        """N+4.2B: --compress-demo --write-snapshot --json writes only approved repo paths."""
+        proc = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPTS_DIR / "local_memory_compression_bridge.py"),
+                "--compress-demo",
+                "--write-snapshot",
+                "--json",
+            ],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        data = json.loads(proc.stdout)
+        self.assertTrue(data["written"])
+        self.assertTrue(data["local_only"])
+        self.assertFalse(data["external_api_used"])
+        compact = pathlib.PurePosixPath(data["compact_path"].replace("\\", "/"))
+        obsidian = pathlib.PurePosixPath(data["obsidian_path"].replace("\\", "/"))
+        self.assertEqual(compact.parts[:2], ("14_context", "compact_memory"))
+        self.assertEqual(obsidian.parts[:2], ("14_context", "obsidian_vault"))
+
+    def test_missing_gemma_fallback_truth_does_not_crash(self):
+        """N+4.2B: no Gemma model remains a truthful local_demo fallback."""
+        import unittest.mock as mock
+
+        def fake_run(cmd, capture_output=True, timeout=None, input=None):
+            class Result:
+                def __init__(self, stdout: bytes, stderr: bytes = b"", returncode: int = 0):
+                    self.stdout = stdout
+                    self.stderr = stderr
+                    self.returncode = returncode
+
+            if cmd[:2] == ["ollama", "--version"]:
+                return Result(b"ollama version is 0.23.2")
+            if cmd[:2] == ["ollama", "list"]:
+                return Result(b"NAME ID SIZE MODIFIED\nllama3:latest abc 1GB today\n")
+            return Result(b"", b"unexpected command", 1)
+
+        with mock.patch("subprocess.run", side_effect=fake_run):
+            data = self.bridge._probe_ollama()
+        self.assertTrue(data["ollama_available"])
+        self.assertFalse(data["gemma_model_found"])
+        self.assertEqual(data["fallback_mode"], "local_demo")
+        self.assertIn("no gemma model", data["probe_error"].lower())
 
 
 class N42ARepoSkillPluginIntakeTests(unittest.TestCase):
