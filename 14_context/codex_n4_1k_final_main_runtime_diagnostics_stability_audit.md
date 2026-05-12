@@ -1,13 +1,13 @@
 # Codex N+4.1K Final Main Runtime Diagnostics Stability Audit
 
-**Audit branch:** `audit/ghoti-agent-codex-n4-1k-final-main-runtime-diagnostics-stability`  
-**Branch audited:** `origin/main`  
-**Remote main hash from `ls-remote`:** `cad316eca0ba42a38297d04ce3ca0fe318e96e9a`  
-**Local `origin/main` after fetch:** `cad316eca0ba42a38297d04ce3ca0fe318e96e9a`  
-**Main commit audited:** `cad316eca0ba42a38297d04ce3ca0fe318e96e9a`  
-**Implementation commit expected/included:** `523ae766320c9631b80f3d3b07122df08451a85b` / yes  
-**Merge commit expected/included:** `f110a20fa9d8baad639fcac36d410f0fc1088d2b` / yes  
-**Merge report commit expected/included:** `cad316eca0ba42a38297d04ce3ca0fe318e96e9a` / yes  
+**Audit branch:** `audit/ghoti-agent-codex-n4-1k-final-main-runtime-diagnostics-stability`
+**Branch audited:** `origin/main`
+**Remote main hash from `ls-remote`:** `cad316eca0ba42a38297d04ce3ca0fe318e96e9a`
+**Local `origin/main` after fetch:** `cad316eca0ba42a38297d04ce3ca0fe318e96e9a`
+**Main commit audited:** `cad316eca0ba42a38297d04ce3ca0fe318e96e9a`
+**Implementation commit expected/included:** `523ae766320c9631b80f3d3b07122df08451a85b` / yes
+**Merge commit expected/included:** `f110a20fa9d8baad639fcac36d410f0fc1088d2b` / yes
+**Merge report commit expected/included:** `cad316eca0ba42a38297d04ce3ca0fe318e96e9a` / yes
 **Prior Codex audit verified:** `8eba4392a22622e1b7b62286808639bfc994a614`, CLEAN PASS
 
 ## Remote Truth
