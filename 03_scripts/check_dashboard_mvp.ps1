@@ -715,13 +715,14 @@ try {
     }
 
     $browserSmoke = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/browser/smoke" -Method Post -ContentType 'application/json' -Body '{}' -TimeoutSec 90
-    $browserSmokeOk = $browserSmoke.ok -and (Test-Path -LiteralPath $browserArtifactPath -PathType Leaf)
-    Write-Check -Name 'Browser smoke endpoint' -Passed $browserSmokeOk -Detail ($(if ($browserSmokeOk) { $browserSmoke.summary.headline } else { 'browser smoke artifact missing' }))
+    $browserSmokeDegradedOk = $browserSmoke.degraded -and $browserSmoke.summary.missingDependency -eq 'playwright'
+    $browserSmokeOk = ($browserSmoke.ok -and (Test-Path -LiteralPath $browserArtifactPath -PathType Leaf)) -or $browserSmokeDegradedOk
+    Write-Check -Name 'Browser smoke endpoint' -Passed $browserSmokeOk -Detail ($(if ($browserSmokeOk) { $browserSmoke.summary.headline } else { 'browser smoke artifact missing or dependency state was not reported truthfully' }))
     if (-not $browserSmokeOk) { $failed++ }
 
     $visibleCheck = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/browser/visible" -Method Post -ContentType 'application/json' -Body (@{ checkOnly = $true } | ConvertTo-Json) -TimeoutSec 30
-    $visibleCheckOk = $visibleCheck.ok
-    Write-Check -Name 'Visible demo endpoint' -Passed $visibleCheckOk -Detail ($(if ($visibleCheckOk) { 'visible endpoint responded in check-only mode' } else { 'visible endpoint failed' }))
+    $visibleCheckOk = $visibleCheck.ok -or ($visibleCheck.degraded -and $visibleCheck.summary.missingDependency -eq 'playwright')
+    Write-Check -Name 'Visible demo endpoint' -Passed $visibleCheckOk -Detail ($(if ($visibleCheckOk) { $visibleCheck.summary.headline } else { 'visible endpoint failed or dependency state was not reported truthfully' }))
     if (-not $visibleCheckOk) { $failed++ }
 
     $desktopStatus = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/desktop-bridge/status" -Method Get -TimeoutSec 30
@@ -1677,6 +1678,15 @@ try {
         $dashboardHtml -match 'Relay-Loop Truth' -and `
         $dashboardHtml -match 'Compact Memory Truth' -and `
         $dashboardHtml -match 'Operator Watchdog' -and `
+        $dashboardHtml -match 'Runtime Truth' -and `
+        $dashboardHtml -match 'Supervisor Truth' -and `
+        $dashboardHtml -match 'Approval Truth' -and `
+        $dashboardHtml -match 'Dashboard Truth' -and `
+        $dashboardHtml -match 'Content MVP Truth' -and `
+        $dashboardHtml -match 'External Repo / Skill Intake Truth' -and `
+        $dashboardHtml -match 'no clone/install/run' -and `
+        $dashboardHtml -match 'no runtime wiring' -and `
+        $dashboardHtml -match 'human approval required' -and `
         $dashboardHtml -match 'ghoti-task-visibility-filter' -and `
         $dashboardHtml -match 'ghoti-show-active-tasks' -and `
         $dashboardHtml -match 'ghoti-queue-focus-window' -and `

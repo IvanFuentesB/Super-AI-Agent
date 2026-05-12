@@ -23,6 +23,7 @@ RUNTIME_BRAIN_STATE_PATH = RUNTIME_DATA_DIR / "brain_state.json"
 RUNTIME_BROWSER_STATE_PATH = RUNTIME_DATA_DIR / "browser_state.json"
 RUNTIME_RELAY_LOOP_STATE_PATH = RUNTIME_DATA_DIR / "relay_loop_state.json"
 RUNTIME_LOCK_PATH = RUNTIME_DATA_DIR / ".runtime_data.lock"
+STALE_RUNTIME_LOCK_SECONDS = 120.0
 
 
 def get_project_root() -> Path:
@@ -42,6 +43,69 @@ def get_allowed_workspace_root() -> Path:
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _parse_runtime_lock_metadata(text: str) -> dict[str, str]:
+    metadata: dict[str, str] = {}
+    for part in text.split():
+        if "=" not in part:
+            continue
+        key, value = part.split("=", 1)
+        metadata[key.strip()] = value.strip()
+    return metadata
+
+
+def _runtime_lock_pid_is_running(pid_text: str) -> bool:
+    try:
+        pid = int(pid_text)
+    except (TypeError, ValueError):
+        return False
+    if pid <= 0:
+        return False
+    try:
+        os.kill(pid, 0)
+    except OSError:
+        return False
+    return True
+
+
+def _runtime_lock_age_seconds(path: Path, metadata: dict[str, str]) -> float:
+    created_at = metadata.get("created_at", "")
+    if created_at:
+        try:
+            created = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+            return max(0.0, (datetime.now(timezone.utc) - created).total_seconds())
+        except ValueError:
+            pass
+    try:
+        return max(0.0, time.time() - path.stat().st_mtime)
+    except OSError:
+        return 0.0
+
+
+def _try_clear_stale_runtime_lock() -> bool:
+    try:
+        text = RUNTIME_LOCK_PATH.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return True
+    except OSError:
+        return False
+
+    metadata = _parse_runtime_lock_metadata(text)
+    pid_text = metadata.get("pid", "")
+    has_dead_owner = bool(pid_text) and not _runtime_lock_pid_is_running(pid_text)
+    has_no_owner_and_is_old = (
+        not pid_text
+        and _runtime_lock_age_seconds(RUNTIME_LOCK_PATH, metadata) >= STALE_RUNTIME_LOCK_SECONDS
+    )
+    if not has_dead_owner and not has_no_owner_and_is_old:
+        return False
+
+    try:
+        RUNTIME_LOCK_PATH.unlink(missing_ok=True)
+    except OSError:
+        return False
+    return True
 
 
 def _default_supervisor_state() -> SupervisorState:
@@ -166,6 +230,8 @@ def runtime_data_lock(timeout_seconds: float = 30.0, poll_seconds: float = 0.05)
                 f"pid={os.getpid()} created_at={_now()}".encode("utf-8"),
             )
         except FileExistsError:
+            if _try_clear_stale_runtime_lock():
+                continue
             if time.monotonic() >= deadline:
                 raise TimeoutError(
                     f"Timed out waiting for runtime data lock: {RUNTIME_LOCK_PATH}"
@@ -312,8 +378,77 @@ def _write_json_object(path: Path, payload: dict) -> None:
     _write_text(path, json.dumps(payload, indent=2) + "\n")
 
 
+# N+4.1I: module-level diagnostics for the most recent read_tasks() call.
+# Tracks how many entries were skipped so callers can surface degraded state
+# truthfully in ghoti-status / ghoti-recent rather than silently hiding bad data.
+# N+4.1J: prefer read_tasks_with_diagnostics() over the module-global for callers
+# that need a guarantee the diagnostic reflects their specific read and cannot be
+# overwritten by subsequent read_tasks() calls (e.g. _backfill_pending_approval_requests
+# normalises tasks.json, resetting the counter before the CLI prints it).
+_last_task_store_skipped: int = 0
+
+
+def get_task_store_diagnostics() -> dict:
+    """Return observability data from the last read_tasks() call.
+
+    NOTE: Use read_tasks_with_diagnostics() instead when you need the diagnostic
+    to be atomically tied to a specific read — the module-global can be reset
+    by any subsequent read_tasks() call before you inspect it.
+
+    Returns:
+        dict with keys:
+          skipped_entries (int): number of null/non-dict/malformed entries dropped
+          status (str): "ok" if 0 skipped, "degraded" otherwise
+    """
+    return {
+        "skipped_entries": _last_task_store_skipped,
+        "status": "degraded" if _last_task_store_skipped > 0 else "ok",
+    }
+
+
+def read_tasks_with_diagnostics() -> tuple[list[Task], dict]:
+    """Read tasks and return ``(tasks, diagnostics)`` as an atomic pair.
+
+    Unlike ``get_task_store_diagnostics()``, the diagnostics dict returned here
+    is guaranteed to reflect THIS call's read.  It cannot be silently reset by a
+    subsequent ``read_tasks()`` call (e.g. the one inside
+    ``_backfill_pending_approval_requests``).
+
+    Use this in CLI status commands to capture the true degraded state of the
+    task-store BEFORE any normalising writes overwrite it.
+
+    Returns:
+        (tasks, diagnostics) where diagnostics has keys:
+          skipped_entries (int): count of entries that were null/non-dict/malformed
+          status (str): "ok" if 0 skipped, "degraded" otherwise
+    """
+    global _last_task_store_skipped
+    _last_task_store_skipped = 0
+    tasks: list[Task] = []
+    for item in _read_json_list(TASKS_PATH):
+        if not isinstance(item, dict):
+            _last_task_store_skipped += 1
+            continue
+        try:
+            tasks.append(Task.from_dict(item))
+        except (KeyError, TypeError, ValueError):
+            _last_task_store_skipped += 1
+            continue
+    diagnostics: dict = {
+        "skipped_entries": _last_task_store_skipped,
+        "status": "degraded" if _last_task_store_skipped > 0 else "ok",
+    }
+    return tasks, diagnostics
+
+
 def read_tasks() -> list[Task]:
-    return [Task.from_dict(item) for item in _read_json_list(TASKS_PATH)]
+    # N+4.1H: skip null/non-dict entries so tasks.json=[null] (or any partially
+    # corrupted list) does not crash ghoti-status / ghoti-recent with
+    # "TypeError: 'NoneType' object is not subscriptable".
+    # N+4.1I: track skipped count for truthful degraded-status reporting.
+    # N+4.1J: read_tasks_with_diagnostics() preferred when diagnostics stability matters.
+    tasks, _ = read_tasks_with_diagnostics()
+    return tasks
 
 
 def write_tasks(tasks: list[Task]) -> None:
@@ -321,7 +456,16 @@ def write_tasks(tasks: list[Task]) -> None:
 
 
 def read_approvals() -> list[ApprovalRecord]:
-    return [ApprovalRecord.from_dict(item) for item in _read_json_list(APPROVALS_PATH)]
+    # N+4.1H: same null/non-dict guard as read_tasks for consistency.
+    records: list[ApprovalRecord] = []
+    for item in _read_json_list(APPROVALS_PATH):
+        if not isinstance(item, dict):
+            continue
+        try:
+            records.append(ApprovalRecord.from_dict(item))
+        except (KeyError, TypeError, ValueError):
+            continue
+    return records
 
 
 def write_approvals(records: list[ApprovalRecord]) -> None:
@@ -329,10 +473,16 @@ def write_approvals(records: list[ApprovalRecord]) -> None:
 
 
 def read_approval_requests() -> list[ApprovalRequest]:
-    return [
-        ApprovalRequest.from_dict(item)
-        for item in _read_json_list(APPROVAL_REQUESTS_PATH)
-    ]
+    # N+4.1H: same null/non-dict guard as read_tasks for consistency.
+    requests: list[ApprovalRequest] = []
+    for item in _read_json_list(APPROVAL_REQUESTS_PATH):
+        if not isinstance(item, dict):
+            continue
+        try:
+            requests.append(ApprovalRequest.from_dict(item))
+        except (KeyError, TypeError, ValueError):
+            continue
+    return requests
 
 
 def write_approval_requests(requests: list[ApprovalRequest]) -> None:

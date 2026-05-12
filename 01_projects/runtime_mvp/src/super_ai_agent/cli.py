@@ -128,7 +128,9 @@ from .storage import (
     get_allowed_workspace_root,
     get_runtime_data_dir,
     get_project_root,
+    get_task_store_diagnostics,
     read_tasks,
+    read_tasks_with_diagnostics,
     runtime_data_lock,
 )
 from .truth_council import build_truth_council_result
@@ -150,6 +152,14 @@ def _get_current_branch() -> str | None:
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _configure_cli_streams() -> None:
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
 
 
 def _approval_target(scope: str, task_id: str) -> str:
@@ -392,9 +402,13 @@ def _control_center_doc_path() -> Path:
 
 
 def _classify_executor_task(task) -> str:
-    action_type = str(task.executor_action_type or "").strip().lower()
+    # N+4.1F: use getattr so this is safe when task is None (empty queue on first
+    # clean run) or when task is a legacy/partial object without executor_action_type.
+    action_type = str(getattr(task, "executor_action_type", "") or "").strip().lower()
     if action_type == "run_operator_recipe":
-        recipe_name = str(task.executor_payload.get("recipe_name", "")).strip().lower()
+        recipe_name = str(
+            (getattr(task, "executor_payload", {}) or {}).get("recipe_name", "")
+        ).strip().lower()
         if recipe_name == "codex_to_chatgpt_handoff_mvp":
             return "handoff"
         return "recipe"
@@ -1145,6 +1159,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    _configure_cli_streams()
     parser = _build_parser()
     args = parser.parse_args(argv)
 
@@ -1281,6 +1296,14 @@ def main(argv: list[str] | None = None) -> int:
 
         if args.command == "ghoti-status":
             ensure_runtime_files()
+            # N+4.1J: capture task-store diagnostics BEFORE get_supervisor_state().
+            # refresh_supervisor_state() calls _backfill_pending_approval_requests()
+            # which writes tasks.json after reading it, stripping invalid entries.
+            # Any read_tasks() call after that write sees 0 skipped entries and
+            # reports ok/0 even for a mixed valid+invalid store — masking the truth.
+            # read_tasks_with_diagnostics() returns an atomic (tasks, diag) pair
+            # that cannot be reset by subsequent reads.
+            _, _task_store_diag = read_tasks_with_diagnostics()
             state = get_supervisor_state()
             summary = get_status_summary()
             tasks = list_executor_tasks()
@@ -1323,6 +1346,9 @@ def main(argv: list[str] | None = None) -> int:
             print(f"interrupted_tasks: {state.interrupted_count}")
             print(f"recent_actionable_count: {len(actionable_tasks)}")
             print(f"recent_failure_count: {len(failure_tasks)}")
+            # N+4.1I: surface task-store health so invalid entries are not silently hidden
+            print(f"task_store_status: {_task_store_diag['status']}")
+            print(f"task_store_skipped_entries: {_task_store_diag['skipped_entries']}")
             print(f"recent_artifact_count: {len(_iter_recent_artifacts(limit=6))}")
             print(f"watchdog_status: {watchdog['status']}")
             print(f"watchdog_headline: {watchdog['headline']}")
@@ -1369,6 +1395,11 @@ def main(argv: list[str] | None = None) -> int:
 
         if args.command == "ghoti-recent":
             ensure_runtime_files()
+            # N+4.1J: capture task-store diagnostics BEFORE any normalising calls.
+            # Same root cause as ghoti-status: list_executor_tasks() and subsequent
+            # calls may trigger _backfill_pending_approval_requests() writes that
+            # normalise tasks.json, resetting the skip counter to 0.
+            _, _task_store_diag = read_tasks_with_diagnostics()
             tasks = list_executor_tasks()
             actionable_tasks = [
                 task for task in tasks if str(task.status or "").lower() in GHOTI_ACTIONABLE_STATUSES
@@ -1384,6 +1415,9 @@ def main(argv: list[str] | None = None) -> int:
             active_task = get_task(state.active_task_id) if state.active_task_id else None
             watchdog = _build_ghoti_watchdog(state, tasks, active_task)
             print("ghoti_recent: recent actionable work, failures, approvals, and artifacts")
+            # N+4.1I: surface task-store health so invalid entries are not silently hidden
+            print(f"task_store_status: {_task_store_diag['status']}")
+            print(f"task_store_skipped_entries: {_task_store_diag['skipped_entries']}")
             print(f"watchdog_status: {watchdog['status']}")
             print(f"watchdog_headline: {watchdog['headline']}")
             print(f"overlay_target: {watchdog['overlay_target']}")

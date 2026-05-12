@@ -534,6 +534,77 @@
         </section>
 
         <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- 2b. GHOTI CONTROL CENTER TRUTH                                     -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <section class="content-section" id="ghoti-control-center">
+          <div class="section-hdr">
+            <h2>Ghoti Control Center</h2>
+            <p class="section-sub">Live subsystem truth signals. Labels are permanently visible; values update when each module reports.</p>
+          </div>
+          <div class="card" style="margin-bottom:var(--gap,1rem);">
+            <h3 class="card-title">Brain / Provider Truth</h3>
+            <p class="section-sub">Active inference provider, model, and call status as reported by the runtime brain module.</p>
+          </div>
+          <div class="card" style="margin-bottom:var(--gap,1rem);">
+            <h3 class="card-title">Specialist-Agent Truth</h3>
+            <p class="section-sub">Current specialist role selected by the operator loop for the active task context.</p>
+          </div>
+          <div class="card" style="margin-bottom:var(--gap,1rem);">
+            <h3 class="card-title">Browser-Agent Truth</h3>
+            <p class="section-sub">Browser-use and Playwright installation and active session state.</p>
+          </div>
+          <div class="card" style="margin-bottom:var(--gap,1rem);">
+            <h3 class="card-title">Relay-Loop Truth</h3>
+            <p class="section-sub">Codex/ChatGPT handoff relay state, current step, and preset selection.</p>
+          </div>
+          <div class="card" style="margin-bottom:var(--gap,1rem);">
+            <h3 class="card-title">Compact Memory Truth</h3>
+            <p class="section-sub">Working summary and operator handoff readiness state.</p>
+          </div>
+          <div class="card" style="margin-bottom:var(--gap,1rem);">
+            <h3 class="card-title">Operator Watchdog</h3>
+            <p class="section-sub">Stall detection, wrong-window block count, and overlay target focus state.</p>
+          </div>
+          <div class="card" style="margin-bottom:var(--gap,1rem);">
+            <h3 class="card-title">Runtime Truth</h3>
+            <p class="section-sub">Task-store health, skipped/invalid entry count, and runtime execution pipeline state. Surfaces degraded status when task-store entries are invalid or malformed.</p>
+          </div>
+          <div class="card" style="margin-bottom:var(--gap,1rem);">
+            <h3 class="card-title">Supervisor Truth</h3>
+            <p class="section-sub">Supervisor state, active task, queued/blocked/waiting counts, and ghoti operator loop health.</p>
+          </div>
+          <div class="card" style="margin-bottom:var(--gap,1rem);">
+            <h3 class="card-title">Approval Truth</h3>
+            <p class="section-sub">Pending approval requests, approval gate status, and operator review queue. No approval gate weakening.</p>
+          </div>
+          <div class="card" style="margin-bottom:var(--gap,1rem);">
+            <h3 class="card-title">Dashboard Truth</h3>
+            <p class="section-sub">Dashboard server health, endpoint availability, and operator console connectivity state.</p>
+          </div>
+          <div class="card" style="margin-bottom:var(--gap,1rem);">
+            <h3 class="card-title">Content MVP Truth</h3>
+            <p class="section-sub">Supervised content MVP slice readiness, proof packet validation state, and human-review gate status. Score 100 for supervised local slice only — not production/public release.</p>
+          </div>
+          <div class="card" style="margin-bottom:var(--gap,1rem);">
+            <h3 class="card-title">External Repo / Skill Intake Truth</h3>
+            <p class="section-sub">Intake and planning only — no clone/install/run, no runtime wiring, human approval required before any external wiring or live action.</p>
+            <ul class="section-sub" style="margin:0.5rem 0 0.5rem 1.25rem;">
+              <li>UI-TARS — intake/planning only, N+4.2/N+4.4 milestone</li>
+              <li>The Agency — intake/planning only, N+4.2/N+4.4 milestone</li>
+              <li>agent-skills-eval — intake/planning only</li>
+              <li>arcads-claude-code skill — intake/planning only</li>
+              <li>Weavy — intake/planning only</li>
+              <li>Manychat — intake/planning only</li>
+              <li>OpenFang/MoneyPrinter — intake/planning only</li>
+              <li>AirLLM — intake/planning only</li>
+              <li>Vouch — intake/planning only</li>
+              <li>Agent Exchange / AEX — intake/planning only</li>
+            </ul>
+            <p class="safety-note">No live account actions. No autonomous posting. No autonomous money movement. No clone/install/run of external repos. No runtime wiring without human approval. Human approval required before any wiring.</p>
+          </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
         <!-- 3. ACTIVE MODE                                                      -->
         <!-- ═══════════════════════════════════════════════════════════════════ -->
         <section class="content-section" id="section-active">
@@ -1258,7 +1329,7 @@ Invoke-RestMethod -Uri "$base/api/ghoti/control-center-state" -Method Get | Conv
         <p id="ghoti-control-next-step-copy"></p>
         <ul id="ghoti-next-step-list"></ul>
         <ul id="ghoti-cli-command-list"></ul>
-        <p id="ghoti-control-no-delete-note"></p>
+        <p id="ghoti-control-no-delete-note">No task deletion without explicit approval; archive, filter, and history visibility stay preferred.</p>
       </section>
 
       <!-- Legacy panel-tools -->
@@ -1356,6 +1427,7 @@ Invoke-RestMethod -Uri "$base/api/ghoti/control-center-state" -Method Get | Conv
         <p id="handoff-target-summary"></p>
         <p id="handoff-target-memory-note"></p>
         <button id="queue-recipe-codex-handoff" type="button">Queue Codex To ChatGPT Handoff</button>
+        <p class="safety-note">This handoff never falls back to terminal or PowerShell.</p>
         <div id="recipe-action-summary" class="result-panel" aria-live="polite"></div>
         <div id="recipe-task-list"></div>
         <form id="internship-form">

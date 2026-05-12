@@ -149,6 +149,13 @@ class Task:
 
     @classmethod
     def from_dict(cls, data: dict) -> "Task":
+        # N+4.1J: guard against non-dict input so callers receive a controlled
+        # TypeError with a helpful message rather than an opaque
+        # "NoneType object is not subscriptable" crash.
+        if not isinstance(data, dict):
+            raise TypeError(
+                f"Task.from_dict expected a mapping, got {type(data).__name__!r}"
+            )
         return cls(
             task_id=data["task_id"],
             title=data["title"],
@@ -170,9 +177,9 @@ class Task:
             workspace_scope=data.get("workspace_scope", "no_path_detected"),
             workspace_policy=data.get("workspace_policy", "allowed"),
             workspace_reason=data.get("workspace_reason", ""),
-            executor_action_type=data.get("executor_action_type", ""),
-            executor_target=data.get("executor_target", ""),
-            executor_payload=dict(data.get("executor_payload", {})),
+            executor_action_type=str(data.get("executor_action_type") or ""),
+            executor_target=str(data.get("executor_target") or ""),
+            executor_payload=dict(data.get("executor_payload") or {}),
             history=[
                 TaskEvent.from_dict(item)
                 for item in data.get("history", [])
