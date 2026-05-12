@@ -1702,6 +1702,12 @@ try {
             $dashboardHtml -match 'agent_count: 8' -and `
             $dashboardHtml -match 'title/thumbnail iteration: future workflow' -and `
             $dashboardHtml -match 'video render: optional / local only' -and `
+            $dashboardHtml -match 'Desktop Operator Truth' -and `
+            $dashboardHtml -match 'default_mode: dry_run' -and `
+            $dashboardHtml -match 'arbitrary_click_or_type_enabled: false' -and `
+            $dashboardHtml -match 'shell_exec_from_model_output_enabled: false' -and `
+            $dashboardHtml -match 'approval_gate: required_with_token' -and `
+            $dashboardHtml -match 'treated_as_unlimited=false' -and `
         $dashboardHtml -match 'ghoti-task-visibility-filter' -and `
         $dashboardHtml -match 'ghoti-show-active-tasks' -and `
         $dashboardHtml -match 'ghoti-queue-focus-window' -and `
