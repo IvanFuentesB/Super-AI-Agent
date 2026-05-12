@@ -1,0 +1,171 @@
+{
+  "_comment": "N+4.2A repo/skill/plugin intake registry example config. All entries have clone_install_run_enabled=false and current_runtime_wiring=false. Human approval required before any change.",
+  "registry_version": "n4_2a",
+  "milestone": "N+4.2A",
+  "external_wiring_enabled": false,
+  "clone_install_run_enabled": false,
+  "live_account_action_enabled": false,
+  "human_approval_required": true,
+  "approval_required_for_external_actions": true,
+  "tools": [
+    {
+      "name": "UI-TARS",
+      "status": "intake_only",
+      "current_runtime_wiring": false,
+      "clone_install_run_enabled": false,
+      "live_account_action_enabled": false
+    },
+    {
+      "name": "The Agency",
+      "status": "intake_only",
+      "current_runtime_wiring": false,
+      "clone_install_run_enabled": false,
+      "live_account_action_enabled": false
+    },
+    {
+      "name": "agent-skills-eval",
+      "status": "intake_only",
+      "current_runtime_wiring": false,
+      "clone_install_run_enabled": false,
+      "live_account_action_enabled": false
+    },
+    {
+      "name": "arcads-claude-code",
+      "status": "intake_only",
+      "current_runtime_wiring": false,
+      "clone_install_run_enabled": false,
+      "live_account_action_enabled": false
+    },
+    {
+      "name": "Weavy",
+      "status": "intake_only",
+      "current_runtime_wiring": false,
+      "clone_install_run_enabled": false,
+      "live_account_action_enabled": false
+    },
+    {
+      "name": "Manychat",
+      "status": "intake_only",
+      "current_runtime_wiring": false,
+      "clone_install_run_enabled": false,
+      "live_account_action_enabled": false
+    },
+    {
+      "name": "OpenFang/MoneyPrinter",
+      "status": "intake_only",
+      "current_runtime_wiring": false,
+      "clone_install_run_enabled": false,
+      "live_account_action_enabled": false
+    },
+    {
+      "name": "AirLLM",
+      "status": "intake_only",
+      "current_runtime_wiring": false,
+      "clone_install_run_enabled": false,
+      "live_account_action_enabled": false
+    },
+    {
+      "name": "Mermaid",
+      "status": "research_only",
+      "current_runtime_wiring": false,
+      "clone_install_run_enabled": false,
+      "live_account_action_enabled": false
+    },
+    {
+      "name": "Claude Cowork",
+      "status": "intake_only",
+      "current_runtime_wiring": false,
+      "clone_install_run_enabled": false,
+      "live_account_action_enabled": false
+    },
+    {
+      "name": "Speckit",
+      "status": "intake_only",
+      "current_runtime_wiring": false,
+      "clone_install_run_enabled": false,
+      "live_account_action_enabled": false
+    },
+    {
+      "name": "Sigmap",
+      "status": "intake_only",
+      "current_runtime_wiring": false,
+      "clone_install_run_enabled": false,
+      "live_account_action_enabled": false
+    },
+    {
+      "name": "Anvac",
+      "status": "intake_only",
+      "current_runtime_wiring": false,
+      "clone_install_run_enabled": false,
+      "live_account_action_enabled": false
+    },
+    {
+      "name": "Agent Exchange / AEX",
+      "status": "intake_only",
+      "current_runtime_wiring": false,
+      "clone_install_run_enabled": false,
+      "live_account_action_enabled": false
+    },
+    {
+      "name": "Vouch",
+      "status": "intake_only",
+      "current_runtime_wiring": false,
+      "clone_install_run_enabled": false,
+      "live_account_action_enabled": false
+    },
+    {
+      "name": "Claude + MetaTrader",
+      "status": "blocked_until_approval",
+      "notes": "paper/simulation only. No real money. No live trading.",
+      "current_runtime_wiring": false,
+      "clone_install_run_enabled": false,
+      "live_account_action_enabled": false
+    },
+    {
+      "name": "Claude skills docs / Anthropic skills guide",
+      "status": "research_only",
+      "current_runtime_wiring": false,
+      "clone_install_run_enabled": false,
+      "live_account_action_enabled": false
+    },
+    {
+      "name": "Codex automations / Codex skills",
+      "status": "research_only",
+      "current_runtime_wiring": false,
+      "clone_install_run_enabled": false,
+      "live_account_action_enabled": false
+    },
+    {
+      "name": "YouTube thumbnail/title iteration",
+      "status": "intake_only",
+      "notes": "future workflow, no autonomous posting",
+      "current_runtime_wiring": false,
+      "clone_install_run_enabled": false,
+      "live_account_action_enabled": false
+    },
+    {
+      "name": "Internship scraper / application assistant",
+      "status": "blocked_until_approval",
+      "notes": "future workflow, human approval required for every submission",
+      "current_runtime_wiring": false,
+      "clone_install_run_enabled": false,
+      "live_account_action_enabled": false
+    },
+    {
+      "name": "Ethical hacking with Linux + Claude",
+      "status": "blocked_until_approval",
+      "notes": "legal/CTF/lab/authorized-only",
+      "current_runtime_wiring": false,
+      "clone_install_run_enabled": false,
+      "live_account_action_enabled": false
+    },
+    {
+      "name": "Dolphin / local model school research",
+      "status": "blocked_until_approval",
+      "notes": "legitimate school research only",
+      "current_runtime_wiring": false,
+      "clone_install_run_enabled": false,
+      "live_account_action_enabled": false
+    }
+  ]
+}
