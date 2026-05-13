@@ -1,4 +1,4 @@
-﻿# Local dashboard MVP checker with safe local-only behavior.
+# Local dashboard MVP checker with safe local-only behavior.
 
 param(
     [switch]$RuntimeLockSafe
@@ -1698,6 +1698,32 @@ try {
         $dashboardHtml -match 'Internship Scraper: future workflow' -and `
         $dashboardHtml -match 'Trading / MetaTrader: paper/simulation only' -and `
         $dashboardHtml -match 'Ethical Hacking: legal/CTF/lab/authorized-only' -and `
+            $dashboardHtml -match 'Supervised Content Studio Truth' -and `
+            $dashboardHtml -match 'agent_count: 8' -and `
+            $dashboardHtml -match 'title/thumbnail iteration: future workflow' -and `
+            $dashboardHtml -match 'video render: optional / local only' -and `
+            $dashboardHtml -match 'Desktop Operator Truth' -and `
+            $dashboardHtml -match 'default_mode: dry_run' -and `
+            $dashboardHtml -match 'arbitrary_click_or_type_enabled: false' -and `
+            $dashboardHtml -match 'shell_exec_from_model_output_enabled: false' -and `
+            $dashboardHtml -match 'approval_gate: required_with_token' -and `
+            $dashboardHtml -match 'treated_as_unlimited=false' -and `
+            $dashboardHtml -match 'Desktop Operator Action Center' -and `
+            $dashboardHtml -match 'doa-create-handoff' -and `
+            $dashboardHtml -match 'doa-dry-run' -and `
+            $dashboardHtml -match 'doa-approve' -and `
+            $dashboardHtml -match 'doa-execute' -and `
+            $dashboardHtml -match 'doa-open-preview' -and `
+            $dashboardHtml -match 'arbitrary click/type: <strong>disabled' -and `
+            $dashboardHtml -match 'shell execution from model output: <strong>disabled' -and `
+            $dashboardHtml -match 'Desktop Operator Recipe Runner' -and `
+            $dashboardHtml -match 'dorr-recipe-select' -and `
+            $dashboardHtml -match 'Run Content Studio Recipe' -and `
+            $dashboardHtml -match 'Memory Compress Demo Recipe' -and `
+            $dashboardHtml -match 'Gemini Handoff Export Recipe' -and `
+            $dashboardHtml -match 'Dashboard Open Preview Recipe' -and `
+            $dashboardHtml -match 'Gemini live prompt: <strong>disabled' -and `
+            $dashboardHtml -match 'Gemini handoff export only' -and `
         $dashboardHtml -match 'ghoti-task-visibility-filter' -and `
         $dashboardHtml -match 'ghoti-show-active-tasks' -and `
         $dashboardHtml -match 'ghoti-queue-focus-window' -and `

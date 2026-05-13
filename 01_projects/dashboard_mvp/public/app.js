@@ -6403,3 +6403,178 @@ async function refreshLocalOrchestrator() {
 }
 
 refreshLocalOrchestrator();
+
+// ---------------------------------------------------------------------
+// N+4.4B Desktop Operator Action Center (client-side handlers)
+// ---------------------------------------------------------------------
+(function attachDesktopOperatorActionCenter() {
+  function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) {
+      el.textContent = value || "none";
+    }
+  }
+  function applyLatest(latest) {
+    if (!latest) return;
+    setText("doa-latest-handoff", latest.handoff_path);
+    setText("doa-latest-dry-run", latest.dry_run_plan_path);
+    setText("doa-latest-approval", latest.approval_record_path);
+    setText("doa-latest-execution", latest.execution_result_path);
+    setText("doa-latest-preview", latest.preview_path);
+  }
+  function applyStatus(status) {
+    if (!status) return;
+    setText("doa-default-mode", status.default_mode || "unknown");
+    if (status.model_adapters) {
+      const gemini = status.model_adapters.gemini_cli;
+      if (gemini) {
+        const txt = gemini.available
+          ? ("detected (status-only, quota=" + gemini.quota + ", treated_as_unlimited=" + gemini.treated_as_unlimited + ")")
+          : ("missing (quota=" + gemini.quota + ", treated_as_unlimited=" + gemini.treated_as_unlimited + ", live_prompt_executed=" + gemini.live_prompt_executed + ")");
+        setText("doa-gemini", txt);
+      }
+      const ldemo = status.model_adapters.local_demo;
+      if (ldemo) {
+        setText("doa-local-fallback", ldemo.available ? "available (local_demo)" : "unavailable");
+      }
+    }
+  }
+  async function callDoa(endpoint, method, body) {
+    const opts = { method: method, headers: { "Content-Type": "application/json" } };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(endpoint, opts);
+    return await res.json();
+  }
+  async function refreshDoaStatus() {
+    try {
+      const data = await callDoa("/api/desktop-operator/status", "GET");
+      applyStatus(data && data.status);
+      applyLatest(data && data.latest);
+    } catch (err) {
+      // silent fallback
+    }
+  }
+  function bind(id, fn) {
+    const el = document.getElementById(id);
+    if (el) { el.addEventListener("click", fn); }
+  }
+  bind("doa-create-handoff", async () => {
+    // Default goal/workflow; no live account, no posting
+    const body = {
+      goal: "Create a local video-style content package about AI tools for students",
+      workflow: "content_studio_demo",
+    };
+    const data = await callDoa("/api/desktop-operator/create-handoff", "POST", body);
+    applyLatest(data && data.latest);
+  });
+  bind("doa-dry-run", async () => {
+    const data = await callDoa("/api/desktop-operator/dry-run", "POST", {});
+    applyLatest(data && data.latest);
+  });
+  bind("doa-approve", async () => {
+    // We do NOT capture or display the approval token client-side. The server
+    // generates a local random token and stores only its SHA-256 hash.
+    const data = await callDoa("/api/desktop-operator/approve", "POST", {});
+    applyLatest(data && data.latest);
+  });
+  bind("doa-execute", async () => {
+    const data = await callDoa("/api/desktop-operator/execute-approved", "POST", {});
+    applyLatest(data && data.latest);
+  });
+  bind("doa-open-preview", async () => {
+    const latestRes = await callDoa("/api/desktop-operator/latest", "GET");
+    const previewPath = latestRes && latestRes.latest && latestRes.latest.preview_path;
+    if (!previewPath) {
+      // No preview yet; do not navigate anywhere.
+      return;
+    }
+    // Validate locally before requesting preview metadata. We do NOT open
+    // arbitrary URLs and do NOT click/type. Just request the safe preview
+    // metadata endpoint; the user can choose to follow the link manually.
+    const enc = encodeURIComponent(previewPath);
+    const meta = await callDoa("/api/desktop-operator/preview?path=" + enc, "GET");
+    if (meta && meta.ok && meta.previewPath) {
+      setText("doa-latest-preview", meta.previewPath);
+    }
+  });
+  // Initial render
+  if (document.getElementById("desktop-operator-action-center")) {
+    refreshDoaStatus();
+  }
+})();
+
+// ---------------------------------------------------------------------
+// N+4.4C Desktop Operator Recipe Runner (client-side handlers)
+// ---------------------------------------------------------------------
+(function attachDesktopOperatorRecipeRunner() {
+  function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) {
+      el.textContent = value || "none";
+    }
+  }
+  function applyRecipeLatest(latest) {
+    if (!latest) return;
+    setText("dorr-latest-recipe", latest.recipe_id);
+    setText("dorr-latest-handoff", latest.handoff_path);
+    setText("dorr-latest-dry-run", latest.dry_run_plan_path);
+    setText("dorr-latest-approval", latest.approval_record_path);
+    setText("dorr-latest-execution", latest.execution_result_path);
+    setText("dorr-latest-preview", latest.preview_path);
+    setText("dorr-latest-gemini-handoff", latest.handoff_export_path);
+  }
+  async function callDorr(endpoint, method, body) {
+    const opts = { method: method, headers: { "Content-Type": "application/json" } };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(endpoint, opts);
+    return await res.json();
+  }
+  async function refreshDorrLatest() {
+    try {
+      const data = await callDorr("/api/desktop-operator/latest-recipe", "GET");
+      applyRecipeLatest(data && data.latest);
+    } catch (err) { /* silent */ }
+  }
+  function selectedRecipeId() {
+    const el = document.getElementById("dorr-recipe-select");
+    return el ? el.value : null;
+  }
+  function bind(id, fn) {
+    const el = document.getElementById(id);
+    if (el) { el.addEventListener("click", fn); }
+  }
+  bind("dorr-create-handoff", async () => {
+    const recipeId = selectedRecipeId();
+    if (!recipeId) return;
+    const data = await callDorr("/api/desktop-operator/create-recipe-handoff", "POST", { recipe_id: recipeId });
+    applyRecipeLatest(data && data.latest);
+  });
+  bind("dorr-dry-run", async () => {
+    const data = await callDorr("/api/desktop-operator/run-recipe-dry-run", "POST", {});
+    applyRecipeLatest(data && data.latest);
+  });
+  bind("dorr-approve", async () => {
+    // The client does NOT collect or store the approval token; the server
+    // generates a local random token and stores only its SHA-256 hash.
+    const data = await callDorr("/api/desktop-operator/approve-recipe", "POST", {});
+    applyRecipeLatest(data && data.latest);
+  });
+  bind("dorr-execute", async () => {
+    const data = await callDorr("/api/desktop-operator/execute-approved-recipe", "POST", {});
+    applyRecipeLatest(data && data.latest);
+  });
+  bind("dorr-open-preview", async () => {
+    const latestRes = await callDorr("/api/desktop-operator/latest-recipe", "GET");
+    const previewPath = latestRes && latestRes.latest && latestRes.latest.preview_path;
+    if (!previewPath) return;
+    const enc = encodeURIComponent(previewPath);
+    const meta = await callDorr("/api/desktop-operator/preview?path=" + enc, "GET");
+    if (meta && meta.ok && meta.previewPath) {
+      setText("dorr-latest-preview", meta.previewPath);
+    }
+  });
+  // Initial render
+  if (document.getElementById("desktop-operator-recipe-runner")) {
+    refreshDorrLatest();
+  }
+})();
