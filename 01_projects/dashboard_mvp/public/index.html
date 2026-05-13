@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -627,6 +627,20 @@
             </ul>
             <p class="safety-note">No live account actions. No autonomous posting. No money movement. No clone/install/run. Human approval required before any wiring or live action.</p>
           </div>
+      <div class="card">
+        <h3 class="card-title">Supervised Content Studio Truth</h3>
+        <ul class="card-list">
+          <li>local_only: true</li>
+          <li>external_api_used: false</li>
+          <li>publish_enabled: false</li>
+          <li>approval_required: true</li>
+          <li>agent_count: 8</li>
+          <li>title/thumbnail iteration: future workflow, no autonomous posting</li>
+          <li>video render: optional / local only</li>
+          <li>external tools: planning-only (UI-TARS, The Agency, Weavy, Manychat, Vouch, AEX, AirLLM, OpenFang/MoneyPrinter)</li>
+          <li>latest run path: 14_context/content_studio/runs/&lt;timestamp_slug&gt;/</li>
+        </ul>
+      </div>
         </section>
 
         <!-- ═══════════════════════════════════════════════════════════════════ -->
@@ -637,11 +651,63 @@
             <h2>Active Mode</h2>
             <p class="section-sub">Explicit operator-controlled activation. No hidden recording. Screen capture only when you trigger it.</p>
           </div>
+      <div class="card">
+        <h3 class="card-title">Desktop Operator Truth</h3>
+        <ul class="card-list">
+          <li>default_mode: dry_run</li>
+          <li>local_only: true</li>
+          <li>live_account_actions_enabled: false</li>
+          <li>external_api_actions_enabled: false</li>
+          <li>money_actions_enabled: false</li>
+          <li>publish_actions_enabled: false</li>
+          <li>arbitrary_click_or_type_enabled: false</li>
+          <li>shell_exec_from_model_output_enabled: false</li>
+          <li>approval_gate: required_with_token</li>
+          <li>Gemini CLI: status-only, quota=unknown_free_tier_limited, treated_as_unlimited=false</li>
+          <li>local fallback: available (local_demo)</li>
+          <li>external repos/tools: planning-only</li>
+          <li>content studio workflow: local preview only</li>
+          <li>safe handoff payload: enabled</li>
+          <li>last handoff path: 14_context/desktop_operator/runs/&lt;timestamp_slug&gt;/</li>
+        </ul>
+      </div>
           <section class="card" id="ghoti-active-mode-panel">
             <div class="ghoti-active-status-row">
               <span id="ghoti-active-pill" class="state-pill ghoti-active-pill-off">OFF — idle</span>
               <span id="ghoti-active-last-event" class="ghoti-active-meta"></span>
             </div>
+      <div class="card" id="desktop-operator-action-center">
+        <h3 class="card-title">Desktop Operator Action Center</h3>
+        <ul class="card-list">
+          <li>Default mode: <strong>dry_run</strong></li>
+          <li>safe handoff payload: <strong>enabled</strong></li>
+          <li>approval required: <strong>true</strong></li>
+          <li>arbitrary click/type: <strong>disabled</strong></li>
+          <li>shell execution from model output: <strong>disabled</strong></li>
+          <li>live account actions: <strong>disabled</strong></li>
+          <li>publish actions: <strong>disabled</strong></li>
+          <li>money actions: <strong>disabled</strong></li>
+          <li>content studio workflow: <strong>local preview only</strong></li>
+        </ul>
+        <div class="card-actions">
+          <button id="doa-create-handoff" type="button">1. Create Safe Handoff</button>
+          <button id="doa-dry-run" type="button">2. Dry-Run Handoff</button>
+          <button id="doa-approve" type="button">3. Generate Approval Record</button>
+          <button id="doa-execute" type="button">4. Execute Approved Local Action</button>
+          <button id="doa-open-preview" type="button">5. Open Latest Preview</button>
+        </div>
+        <div id="doa-status" class="card-status" data-testid="doa-status">
+          <p>desktop-operator status: <span id="doa-default-mode">unknown</span></p>
+          <p>Gemini CLI: <span id="doa-gemini">status-only / quota=unknown_free_tier_limited</span></p>
+          <p>local fallback: <span id="doa-local-fallback">available (local_demo)</span></p>
+          <p>latest handoff: <code id="doa-latest-handoff">none</code></p>
+          <p>latest dry-run plan: <code id="doa-latest-dry-run">none</code></p>
+          <p>latest approval record: <code id="doa-latest-approval">none</code></p>
+          <p>latest execution result: <code id="doa-latest-execution">none</code></p>
+          <p>latest preview: <code id="doa-latest-preview">none</code></p>
+        </div>
+        <p class="card-note"><em>Local only. No live posting. No external APIs. No arbitrary click/type. Gemini CLI is status-only (treated_as_unlimited=false).</em></p>
+      </div>
             <div class="ghoti-active-controls">
               <button id="ghoti-active-start-btn" class="action-btn action-btn-primary" type="button">Start Ghoti</button>
               <button id="ghoti-active-stop-btn" class="action-btn action-btn-danger" type="button">Stop Ghoti</button>

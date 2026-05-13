@@ -1,0 +1,19 @@
+{
+  "studio": "supervised_content_studio_demo",
+  "milestone": "N+4.3A",
+  "topic": "AI tools for students and creators",
+  "ok": true,
+  "run_dir": "14_context\\content_studio\\runs\\20260512T172447Z_ai_tools_for_students_and_creato",
+  "preview_path": "14_context/content_studio/runs/20260512T172447Z_ai_tools_for_students_and_creato/10_preview.html",
+  "agent_count": 8,
+  "title_variant_count": 100,
+  "thumbnail_variant_count": 100,
+  "local_only": true,
+  "external_api_used": false,
+  "publish_enabled": false,
+  "approval_required": true,
+  "memory_bridge_available": true,
+  "memory_fallback_mode": "local_demo",
+  "safety_verdict": "PASS_LOCAL_ONLY",
+  "video_render": "skipped"
+}
