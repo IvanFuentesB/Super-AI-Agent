@@ -676,6 +676,38 @@
               <span id="ghoti-active-pill" class="state-pill ghoti-active-pill-off">OFF — idle</span>
               <span id="ghoti-active-last-event" class="ghoti-active-meta"></span>
             </div>
+      <div class="card" id="desktop-operator-action-center">
+        <h3 class="card-title">Desktop Operator Action Center</h3>
+        <ul class="card-list">
+          <li>Default mode: <strong>dry_run</strong></li>
+          <li>safe handoff payload: <strong>enabled</strong></li>
+          <li>approval required: <strong>true</strong></li>
+          <li>arbitrary click/type: <strong>disabled</strong></li>
+          <li>shell execution from model output: <strong>disabled</strong></li>
+          <li>live account actions: <strong>disabled</strong></li>
+          <li>publish actions: <strong>disabled</strong></li>
+          <li>money actions: <strong>disabled</strong></li>
+          <li>content studio workflow: <strong>local preview only</strong></li>
+        </ul>
+        <div class="card-actions">
+          <button id="doa-create-handoff" type="button">1. Create Safe Handoff</button>
+          <button id="doa-dry-run" type="button">2. Dry-Run Handoff</button>
+          <button id="doa-approve" type="button">3. Generate Approval Record</button>
+          <button id="doa-execute" type="button">4. Execute Approved Local Action</button>
+          <button id="doa-open-preview" type="button">5. Open Latest Preview</button>
+        </div>
+        <div id="doa-status" class="card-status" data-testid="doa-status">
+          <p>desktop-operator status: <span id="doa-default-mode">unknown</span></p>
+          <p>Gemini CLI: <span id="doa-gemini">status-only / quota=unknown_free_tier_limited</span></p>
+          <p>local fallback: <span id="doa-local-fallback">available (local_demo)</span></p>
+          <p>latest handoff: <code id="doa-latest-handoff">none</code></p>
+          <p>latest dry-run plan: <code id="doa-latest-dry-run">none</code></p>
+          <p>latest approval record: <code id="doa-latest-approval">none</code></p>
+          <p>latest execution result: <code id="doa-latest-execution">none</code></p>
+          <p>latest preview: <code id="doa-latest-preview">none</code></p>
+        </div>
+        <p class="card-note"><em>Local only. No live posting. No external APIs. No arbitrary click/type. Gemini CLI is status-only (treated_as_unlimited=false).</em></p>
+      </div>
             <div class="ghoti-active-controls">
               <button id="ghoti-active-start-btn" class="action-btn action-btn-primary" type="button">Start Ghoti</button>
               <button id="ghoti-active-stop-btn" class="action-btn action-btn-danger" type="button">Stop Ghoti</button>

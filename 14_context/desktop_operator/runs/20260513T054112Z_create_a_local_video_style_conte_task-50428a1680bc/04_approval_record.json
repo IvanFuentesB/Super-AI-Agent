@@ -1,0 +1,13 @@
+{
+  "task_id": "task-50428a1680bc",
+  "approved_at": "20260513T054113Z",
+  "approval_token_hash": "2ad22438d2b31cba925563152429f48741c31b6061b0ad988aadfedd3569e4f2",
+  "approver": "human_local",
+  "approval_grants": [
+    "execute_approved_local_safe_action"
+  ],
+  "live_account_actions_enabled": false,
+  "external_api_actions_enabled": false,
+  "money_actions_enabled": false,
+  "publish_actions_enabled": false
+}

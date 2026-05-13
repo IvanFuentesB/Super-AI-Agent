@@ -1,0 +1,14 @@
+{
+  "ok": true,
+  "task_id": "task-50428a1680bc",
+  "content_studio_link": "available",
+  "content_studio_status_exit": 0,
+  "actions_executed": [
+    "content_studio_status_probe_only"
+  ],
+  "arbitrary_click_or_type_executed": false,
+  "shell_exec_from_model_output_executed": false,
+  "live_account_actions_executed": false,
+  "posting_executed": false,
+  "external_repo_clone_install_run_executed": false
+}

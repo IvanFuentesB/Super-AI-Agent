@@ -1708,6 +1708,14 @@ try {
             $dashboardHtml -match 'shell_exec_from_model_output_enabled: false' -and `
             $dashboardHtml -match 'approval_gate: required_with_token' -and `
             $dashboardHtml -match 'treated_as_unlimited=false' -and `
+            $dashboardHtml -match 'Desktop Operator Action Center' -and `
+            $dashboardHtml -match 'doa-create-handoff' -and `
+            $dashboardHtml -match 'doa-dry-run' -and `
+            $dashboardHtml -match 'doa-approve' -and `
+            $dashboardHtml -match 'doa-execute' -and `
+            $dashboardHtml -match 'doa-open-preview' -and `
+            $dashboardHtml -match 'arbitrary click/type: <strong>disabled' -and `
+            $dashboardHtml -match 'shell execution from model output: <strong>disabled' -and `
         $dashboardHtml -match 'ghoti-task-visibility-filter' -and `
         $dashboardHtml -match 'ghoti-show-active-tasks' -and `
         $dashboardHtml -match 'ghoti-queue-focus-window' -and `

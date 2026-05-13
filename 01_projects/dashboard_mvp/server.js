@@ -6259,6 +6259,264 @@ async function handleApiRequest(request, response, requestUrl) {
     return;
   }
 
+  // ---------------------------------------------------------------------
+  // N+4.4B Desktop Operator Action Center endpoints
+  // ---------------------------------------------------------------------
+  const desktopOperatorScript = path.join(repoRoot, "03_scripts", "desktop_operator_control_plane.py");
+  const desktopOperatorLatestFile = path.join(runtimeProjectRoot, "runtime_data", "desktop_operator_latest.json");
+  const desktopOperatorAllowedWorkflows = new Set(["content_studio_demo", "memory_bridge", "dashboard_open"]);
+  const desktopOperatorAllowedAdapters = new Set(["dry_run", "local_preview_open", "screenshot_probe"]);
+
+  function loadDesktopOperatorLatest() {
+    try {
+      if (!fs.existsSync(desktopOperatorLatestFile)) {
+        return { handoff_path: null, dry_run_plan_path: null, approval_record_path: null, execution_result_path: null, preview_path: null };
+      }
+      return JSON.parse(fs.readFileSync(desktopOperatorLatestFile, "utf8"));
+    } catch (err) {
+      return { handoff_path: null, dry_run_plan_path: null, approval_record_path: null, execution_result_path: null, preview_path: null, parse_error: String(err) };
+    }
+  }
+
+  function saveDesktopOperatorLatest(state) {
+    try {
+      const dir = path.dirname(desktopOperatorLatestFile);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      fs.writeFileSync(desktopOperatorLatestFile, JSON.stringify(state, null, 2), "utf8");
+      return true;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  function isRepoLocalPath(candidate) {
+    if (typeof candidate !== "string" || candidate.length === 0) {
+      return false;
+    }
+    if (candidate.indexOf("..") !== -1) {
+      return false;
+    }
+    const lower = candidate.toLowerCase();
+    const secrets = [".env", "secret", "credential", "token", "key", "password", "apikey", "api_key", "private", "passwd", "auth"];
+    for (const pat of secrets) {
+      if (lower.indexOf(pat) !== -1) {
+        return false;
+      }
+    }
+    const absolute = path.isAbsolute(candidate) ? candidate : path.join(repoRoot, candidate);
+    const normalized = path.normalize(absolute);
+    return normalized.startsWith(repoRoot);
+  }
+
+  async function runDesktopOperatorCli(scriptArgs) {
+    const python = resolvePython();
+    if (!python) {
+      return { ok: false, exitCode: 1, stdout: "", stderr: "Python runtime not found.", command: "python desktop_operator_control_plane.py", timedOut: false };
+    }
+    const fullArgs = [...python.baseArgs, desktopOperatorScript, ...scriptArgs];
+    return await runCommand(python.command, fullArgs, { cwd: repoRoot, env: buildRuntimeEnv(), timeoutMs: 60000 });
+  }
+
+  function parseDesktopOperatorJson(raw) {
+    if (!raw || !raw.stdout) {
+      return null;
+    }
+    try {
+      return JSON.parse(raw.stdout);
+    } catch (err) {
+      return null;
+    }
+  }
+  if (request.method === "GET" && requestUrl.pathname === "/api/desktop-operator/status") {
+    const raw = await runDesktopOperatorCli(["--status", "--json"]);
+    const status = parseDesktopOperatorJson(raw) || { ok: false, degraded: true, error: "status JSON parse failed" };
+    const latest = loadDesktopOperatorLatest();
+    sendJson(response, 200, {
+      ok: raw.ok && !!status,
+      localOnly: true,
+      status,
+      latest,
+      raw: { exitCode: raw.exitCode, timedOut: raw.timedOut },
+    });
+    return;
+  }
+
+  if (request.method === "GET" && requestUrl.pathname === "/api/desktop-operator/latest") {
+    const latest = loadDesktopOperatorLatest();
+    sendJson(response, 200, { ok: true, localOnly: true, latest });
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/api/desktop-operator/create-handoff") {
+    const payload = await readJsonBody(request);
+    const goal = typeof payload.goal === "string" && payload.goal.trim().length > 0
+      ? payload.goal.trim()
+      : "Create a local video-style content package about AI tools for students";
+    const workflow = typeof payload.workflow === "string" ? payload.workflow : "content_studio_demo";
+    if (!desktopOperatorAllowedWorkflows.has(workflow)) {
+      sendJson(response, 400, { ok: false, error: "REJECTED: workflow not in allowlist", workflow });
+      return;
+    }
+    const raw = await runDesktopOperatorCli(["--create-handoff", "--goal", goal, "--workflow", workflow, "--json"]);
+    const result = parseDesktopOperatorJson(raw);
+    if (!result || !result.ok) {
+      sendJson(response, raw.ok ? 200 : 500, { ok: false, error: "create-handoff failed", raw });
+      return;
+    }
+    const latest = loadDesktopOperatorLatest();
+    latest.handoff_path = result.handoff_path || null;
+    latest.run_dir = result.run_dir || null;
+    latest.dry_run_plan_path = null;
+    latest.approval_record_path = null;
+    latest.execution_result_path = null;
+    latest.preview_path = null;
+    latest.task_id = result.task_id || null;
+    latest.created_at = new Date().toISOString();
+    saveDesktopOperatorLatest(latest);
+    sendJson(response, 200, {
+      ok: true,
+      localOnly: true,
+      summary: { headline: "Safe handoff created (dry-run by default).", taskId: latest.task_id, handoffPath: latest.handoff_path },
+      result,
+      latest,
+    });
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/api/desktop-operator/dry-run") {
+    const latest = loadDesktopOperatorLatest();
+    if (!latest.handoff_path) {
+      sendJson(response, 400, { ok: false, error: "No handoff_path on record. Run create-handoff first." });
+      return;
+    }
+    if (!isRepoLocalPath(latest.handoff_path)) {
+      sendJson(response, 400, { ok: false, error: "REJECTED: handoff_path not repo-local" });
+      return;
+    }
+    const handoffAbs = path.isAbsolute(latest.handoff_path) ? latest.handoff_path : path.join(repoRoot, latest.handoff_path);
+    const raw = await runDesktopOperatorCli(["--dry-run", handoffAbs, "--json"]);
+    const result = parseDesktopOperatorJson(raw);
+    if (!result) {
+      sendJson(response, 500, { ok: false, error: "dry-run JSON parse failed", raw });
+      return;
+    }
+    latest.dry_run_plan_path = result.plan_path || null;
+    latest.actions_executed = result.actions_executed || 0;
+    saveDesktopOperatorLatest(latest);
+    sendJson(response, 200, {
+      ok: true,
+      localOnly: true,
+      summary: { headline: "Dry run complete. No actions executed.", planPath: latest.dry_run_plan_path, actionsExecuted: latest.actions_executed },
+      result,
+      latest,
+    });
+    return;
+  }
+  if (request.method === "POST" && requestUrl.pathname === "/api/desktop-operator/approve") {
+    const payload = await readJsonBody(request);
+    const latest = loadDesktopOperatorLatest();
+    if (!latest.handoff_path) {
+      sendJson(response, 400, { ok: false, error: "No handoff_path on record. Run create-handoff first." });
+      return;
+    }
+    if (!isRepoLocalPath(latest.handoff_path)) {
+      sendJson(response, 400, { ok: false, error: "REJECTED: handoff_path not repo-local" });
+      return;
+    }
+    let approvalToken = typeof payload.approvalToken === "string" ? payload.approvalToken.trim() : "";
+    if (approvalToken.length < 4) {
+      // Server-generated local token (sha-friendly random, never returned to client)
+      approvalToken = "dash-" + Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10);
+    }
+    const handoffAbs = path.isAbsolute(latest.handoff_path) ? latest.handoff_path : path.join(repoRoot, latest.handoff_path);
+    const raw = await runDesktopOperatorCli(["--approve", handoffAbs, "--approval-token", approvalToken, "--json"]);
+    const result = parseDesktopOperatorJson(raw);
+    if (!result || !result.ok) {
+      sendJson(response, raw.ok ? 200 : 500, { ok: false, error: "approve failed", raw });
+      return;
+    }
+    latest.approval_record_path = result.approval_record_path || null;
+    latest.approved = result.approved === true;
+    saveDesktopOperatorLatest(latest);
+    sendJson(response, 200, {
+      ok: true,
+      localOnly: true,
+      // Note: raw token is NEVER returned. Only the record path (which holds a SHA-256 hash) is exposed.
+      summary: { headline: "Approval record created (token never returned).", approvalRecordPath: latest.approval_record_path },
+      latest,
+    });
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/api/desktop-operator/execute-approved") {
+    const latest = loadDesktopOperatorLatest();
+    if (!latest.handoff_path) {
+      sendJson(response, 400, { ok: false, error: "No handoff_path on record." });
+      return;
+    }
+    if (!latest.approval_record_path) {
+      sendJson(response, 400, { ok: false, error: "No approval record. Run approve first." });
+      return;
+    }
+    if (!isRepoLocalPath(latest.handoff_path)) {
+      sendJson(response, 400, { ok: false, error: "REJECTED: handoff_path not repo-local" });
+      return;
+    }
+    const handoffAbs = path.isAbsolute(latest.handoff_path) ? latest.handoff_path : path.join(repoRoot, latest.handoff_path);
+    const raw = await runDesktopOperatorCli(["--execute-approved", handoffAbs, "--json"]);
+    const result = parseDesktopOperatorJson(raw);
+    if (!result) {
+      sendJson(response, 500, { ok: false, error: "execute-approved JSON parse failed", raw });
+      return;
+    }
+    // Derive execution_result_path from run_dir
+    if (latest.run_dir) {
+      latest.execution_result_path = path.posix.join(latest.run_dir.replace(/\\/g, "/"), "05_execution_result.json");
+    }
+    // The script may have produced a preview (content_studio link). We don't auto-open browser.
+    latest.actions_executed = Array.isArray(result.actions_executed) ? result.actions_executed.length : 0;
+    saveDesktopOperatorLatest(latest);
+    sendJson(response, 200, {
+      ok: result.ok === true,
+      localOnly: true,
+      summary: { headline: "Executed approved safe local action only. No live posting.", actionsExecuted: latest.actions_executed, executionResultPath: latest.execution_result_path },
+      result,
+      latest,
+    });
+    return;
+  }
+
+  if (request.method === "GET" && requestUrl.pathname === "/api/desktop-operator/preview") {
+    const candidate = requestUrl.searchParams.get("path");
+    if (!candidate) {
+      sendJson(response, 400, { ok: false, error: "path query parameter required" });
+      return;
+    }
+    if (!isRepoLocalPath(candidate)) {
+      sendJson(response, 400, { ok: false, error: "REJECTED: path not repo-local" });
+      return;
+    }
+    const lowered = candidate.toLowerCase();
+    if (!lowered.endsWith(".html") && !lowered.endsWith(".htm")) {
+      sendJson(response, 400, { ok: false, error: "REJECTED: only .html or .htm previews allowed" });
+      return;
+    }
+    const absolute = path.isAbsolute(candidate) ? candidate : path.join(repoRoot, candidate);
+    const normalized = path.normalize(absolute);
+    if (!normalized.startsWith(repoRoot)) {
+      sendJson(response, 400, { ok: false, error: "REJECTED: path resolved outside repo" });
+      return;
+    }
+    if (!fs.existsSync(normalized)) {
+      sendJson(response, 404, { ok: false, error: "preview not found" });
+      return;
+    }
+    sendJson(response, 200, { ok: true, localOnly: true, previewPath: path.relative(repoRoot, normalized).replace(/\\/g, "/"), bytes: fs.statSync(normalized).size });
+    return;
+  }
+
   sendJson(response, 404, {
     ok: false,
     error: "Route not found.",
