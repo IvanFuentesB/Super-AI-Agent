@@ -708,6 +708,45 @@
         </div>
         <p class="card-note"><em>Local only. No live posting. No external APIs. No arbitrary click/type. Gemini CLI is status-only (treated_as_unlimited=false).</em></p>
       </div>
+      <div class="card" id="desktop-operator-recipe-runner">
+        <h3 class="card-title">Desktop Operator Recipe Runner</h3>
+        <ul class="card-list">
+          <li>Recipe list: <strong>4 allowlisted local recipes</strong></li>
+          <li>Default mode: <strong>dry_run</strong></li>
+          <li>Approval required: <strong>true</strong></li>
+          <li>Local-only execution: <strong>true</strong></li>
+          <li>Gemini live prompt: <strong>disabled</strong></li>
+          <li>Gemini handoff export only: <strong>true</strong></li>
+          <li>arbitrary click/type: <strong>disabled</strong></li>
+          <li>shell execution: <strong>disabled</strong></li>
+          <li>live account actions: <strong>disabled</strong></li>
+          <li>publish/money actions: <strong>disabled</strong></li>
+        </ul>
+        <div class="card-actions">
+          <label for="dorr-recipe-select">Select recipe:</label>
+          <select id="dorr-recipe-select" data-testid="dorr-recipe-select">
+            <option value="content_studio_generate_preview">Run Content Studio Recipe</option>
+            <option value="memory_compress_demo">Memory Compress Demo Recipe</option>
+            <option value="gemini_handoff_export">Gemini Handoff Export Recipe</option>
+            <option value="dashboard_open_preview">Dashboard Open Preview Recipe</option>
+          </select>
+          <button id="dorr-create-handoff" type="button">2. Create Recipe Handoff</button>
+          <button id="dorr-dry-run" type="button">3. Dry Run Recipe</button>
+          <button id="dorr-approve" type="button">4. Approve Recipe</button>
+          <button id="dorr-execute" type="button">5. Execute Approved Recipe</button>
+          <button id="dorr-open-preview" type="button">6. Open/View Latest Preview</button>
+        </div>
+        <div id="dorr-status" class="card-status" data-testid="dorr-status">
+          <p>latest recipe id: <code id="dorr-latest-recipe">none</code></p>
+          <p>latest recipe handoff: <code id="dorr-latest-handoff">none</code></p>
+          <p>latest recipe dry-run: <code id="dorr-latest-dry-run">none</code></p>
+          <p>latest recipe approval: <code id="dorr-latest-approval">none</code></p>
+          <p>latest recipe execution: <code id="dorr-latest-execution">none</code></p>
+          <p>latest recipe preview: <code id="dorr-latest-preview">none</code></p>
+          <p>latest Gemini handoff export: <code id="dorr-latest-gemini-handoff">none</code></p>
+        </div>
+        <p class="card-note"><em>Recipes are an allowlisted local workflow set. Gemini live prompt is disabled; Gemini handoff export writes a local MD file only and never calls Gemini. Quota=unknown_free_tier_limited.</em></p>
+      </div>
             <div class="ghoti-active-controls">
               <button id="ghoti-active-start-btn" class="action-btn action-btn-primary" type="button">Start Ghoti</button>
               <button id="ghoti-active-stop-btn" class="action-btn action-btn-danger" type="button">Stop Ghoti</button>

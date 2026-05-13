@@ -6502,3 +6502,79 @@ refreshLocalOrchestrator();
     refreshDoaStatus();
   }
 })();
+
+// ---------------------------------------------------------------------
+// N+4.4C Desktop Operator Recipe Runner (client-side handlers)
+// ---------------------------------------------------------------------
+(function attachDesktopOperatorRecipeRunner() {
+  function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) {
+      el.textContent = value || "none";
+    }
+  }
+  function applyRecipeLatest(latest) {
+    if (!latest) return;
+    setText("dorr-latest-recipe", latest.recipe_id);
+    setText("dorr-latest-handoff", latest.handoff_path);
+    setText("dorr-latest-dry-run", latest.dry_run_plan_path);
+    setText("dorr-latest-approval", latest.approval_record_path);
+    setText("dorr-latest-execution", latest.execution_result_path);
+    setText("dorr-latest-preview", latest.preview_path);
+    setText("dorr-latest-gemini-handoff", latest.handoff_export_path);
+  }
+  async function callDorr(endpoint, method, body) {
+    const opts = { method: method, headers: { "Content-Type": "application/json" } };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(endpoint, opts);
+    return await res.json();
+  }
+  async function refreshDorrLatest() {
+    try {
+      const data = await callDorr("/api/desktop-operator/latest-recipe", "GET");
+      applyRecipeLatest(data && data.latest);
+    } catch (err) { /* silent */ }
+  }
+  function selectedRecipeId() {
+    const el = document.getElementById("dorr-recipe-select");
+    return el ? el.value : null;
+  }
+  function bind(id, fn) {
+    const el = document.getElementById(id);
+    if (el) { el.addEventListener("click", fn); }
+  }
+  bind("dorr-create-handoff", async () => {
+    const recipeId = selectedRecipeId();
+    if (!recipeId) return;
+    const data = await callDorr("/api/desktop-operator/create-recipe-handoff", "POST", { recipe_id: recipeId });
+    applyRecipeLatest(data && data.latest);
+  });
+  bind("dorr-dry-run", async () => {
+    const data = await callDorr("/api/desktop-operator/run-recipe-dry-run", "POST", {});
+    applyRecipeLatest(data && data.latest);
+  });
+  bind("dorr-approve", async () => {
+    // The client does NOT collect or store the approval token; the server
+    // generates a local random token and stores only its SHA-256 hash.
+    const data = await callDorr("/api/desktop-operator/approve-recipe", "POST", {});
+    applyRecipeLatest(data && data.latest);
+  });
+  bind("dorr-execute", async () => {
+    const data = await callDorr("/api/desktop-operator/execute-approved-recipe", "POST", {});
+    applyRecipeLatest(data && data.latest);
+  });
+  bind("dorr-open-preview", async () => {
+    const latestRes = await callDorr("/api/desktop-operator/latest-recipe", "GET");
+    const previewPath = latestRes && latestRes.latest && latestRes.latest.preview_path;
+    if (!previewPath) return;
+    const enc = encodeURIComponent(previewPath);
+    const meta = await callDorr("/api/desktop-operator/preview?path=" + enc, "GET");
+    if (meta && meta.ok && meta.previewPath) {
+      setText("dorr-latest-preview", meta.previewPath);
+    }
+  });
+  // Initial render
+  if (document.getElementById("desktop-operator-recipe-runner")) {
+    refreshDorrLatest();
+  }
+})();

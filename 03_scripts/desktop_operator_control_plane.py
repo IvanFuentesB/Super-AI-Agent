@@ -771,6 +771,256 @@ def cmd_execute_approved(handoff_path: str, json_out: bool) -> int:
         print(f"EXECUTED safely. actions_executed={actions_executed}")
     return 0 if exec_summary["ok"] else 1
 
+
+# ---------------------------------------------------------------------------
+# N+4.4C Recipe registry and execution
+# ---------------------------------------------------------------------------
+
+RECIPES_DIR = REPO_ROOT / "14_context" / "desktop_operator" / "recipes"
+HANDOFFS_DIR = REPO_ROOT / "14_context" / "desktop_operator" / "handoffs"
+
+RECIPES = {
+    "content_studio_generate_preview": {
+        "id": "content_studio_generate_preview",
+        "label": "Run Content Studio Recipe",
+        "description": "Run supervised_content_studio_demo.py --run-demo locally; capture preview path.",
+        "target_workflow": "content_studio_demo",
+        "operator_adapter": "local_preview_open",
+        "risk_level": "low",
+        "produces_preview": True,
+        "calls_gemini": False,
+        "writes_under": ["14_context/content_studio/runs/"],
+    },
+    "memory_compress_demo": {
+        "id": "memory_compress_demo",
+        "label": "Memory Compress Demo Recipe",
+        "description": "Run local_memory_compression_bridge.py --compress-demo --write-snapshot.",
+        "target_workflow": "memory_bridge",
+        "operator_adapter": "dry_run",
+        "risk_level": "low",
+        "produces_preview": False,
+        "calls_gemini": False,
+        "writes_under": ["14_context/compact_memory/", "14_context/obsidian_vault/"],
+    },
+    "dashboard_open_preview": {
+        "id": "dashboard_open_preview",
+        "label": "Dashboard Open Preview Recipe",
+        "description": "Return repo-local HTML preview path metadata only; never spawn a browser.",
+        "target_workflow": "dashboard_open",
+        "operator_adapter": "local_preview_open",
+        "risk_level": "low",
+        "produces_preview": True,
+        "calls_gemini": False,
+        "writes_under": [],
+    },
+    "gemini_handoff_export": {
+        "id": "gemini_handoff_export",
+        "label": "Gemini Handoff Export Recipe",
+        "description": "Write a local prompt markdown file for future manual Gemini CLI use. Never calls Gemini live.",
+        "target_workflow": "memory_bridge",
+        "operator_adapter": "dry_run",
+        "risk_level": "low",
+        "produces_preview": False,
+        "calls_gemini": False,
+        "handoff_export_only": True,
+        "writes_under": ["14_context/desktop_operator/handoffs/"],
+    },
+}
+
+
+def _recipe_list_payload() -> Dict[str, Any]:
+    return {
+        "ok": True,
+        "control_plane": PLANE_NAME,
+        "milestone": MILESTONE,
+        "recipe_count": len(RECIPES),
+        "default_mode": "dry_run",
+        "approval_gate": "required_with_token",
+        "live_account_actions_enabled": False,
+        "external_api_actions_enabled": False,
+        "money_actions_enabled": False,
+        "publish_actions_enabled": False,
+        "gemini_live_prompt_executed": False,
+        "gemini_treated_as_unlimited": False,
+        "recipes": [
+            {
+                "id": rid,
+                "label": meta["label"],
+                "description": meta["description"],
+                "target_workflow": meta["target_workflow"],
+                "operator_adapter": meta["operator_adapter"],
+                "risk_level": meta["risk_level"],
+                "produces_preview": meta["produces_preview"],
+                "calls_gemini": meta["calls_gemini"],
+                "writes_under": meta["writes_under"],
+            }
+            for rid, meta in RECIPES.items()
+        ],
+    }
+
+
+def cmd_recipe_list(json_out: bool) -> int:
+    data = _recipe_list_payload()
+    if json_out:
+        print(json.dumps(data, indent=2))
+        return 0
+    print(f"{PLANE_NAME} recipes ({data['recipe_count']})")
+    for r in data["recipes"]:
+        print(f"  - {r['id']}: {r['label']} [workflow={r['target_workflow']}, gemini={r['calls_gemini']}]")
+    return 0
+
+def _execute_recipe_content_studio(run_dir: pathlib.Path) -> Dict[str, Any]:
+    studio = REPO_ROOT / "03_scripts" / "supervised_content_studio_demo.py"
+    if not studio.exists():
+        return {"ok": False, "actions_executed": [], "error": "supervised_content_studio_demo.py not present"}
+    try:
+        py = sys.executable or "python"
+        proc = subprocess.run(
+            [py, str(studio), "--run-demo", "--json"],
+            capture_output=True,
+            timeout=90,
+        )
+        if proc.returncode != 0:
+            return {"ok": False, "actions_executed": ["content_studio_run_demo_failed"], "exit_code": proc.returncode}
+        data = json.loads(proc.stdout.decode("utf-8", "ignore"))
+        return {
+            "ok": True,
+            "actions_executed": ["content_studio_run_demo_local_only"],
+            "preview_path": data.get("preview_path"),
+            "run_dir": data.get("run_dir"),
+            "title_variant_count": data.get("title_variant_count"),
+            "thumbnail_variant_count": data.get("thumbnail_variant_count"),
+            "live_account_actions_executed": False,
+            "posting_executed": False,
+        }
+    except Exception as e:
+        return {"ok": False, "actions_executed": ["content_studio_run_demo_exception"], "error": str(e)}
+
+
+def _execute_recipe_memory_compress(run_dir: pathlib.Path) -> Dict[str, Any]:
+    bridge = REPO_ROOT / "03_scripts" / "local_memory_compression_bridge.py"
+    if not bridge.exists():
+        return {"ok": False, "actions_executed": [], "error": "local_memory_compression_bridge.py not present"}
+    try:
+        py = sys.executable or "python"
+        proc = subprocess.run(
+            [py, str(bridge), "--compress-demo", "--write-snapshot", "--json"],
+            capture_output=True,
+            timeout=30,
+        )
+        if proc.returncode != 0:
+            return {"ok": False, "actions_executed": ["memory_compress_failed"], "exit_code": proc.returncode}
+        data = json.loads(proc.stdout.decode("utf-8", "ignore"))
+        return {
+            "ok": True,
+            "actions_executed": ["memory_compress_demo_local_only"],
+            "compact_path": data.get("compact_path"),
+            "obsidian_path": data.get("obsidian_path"),
+            "local_only": data.get("local_only", True),
+            "external_api_used": data.get("external_api_used", False),
+        }
+    except Exception as e:
+        return {"ok": False, "actions_executed": ["memory_compress_exception"], "error": str(e)}
+
+
+def _execute_recipe_dashboard_open_preview(run_dir: pathlib.Path) -> Dict[str, Any]:
+    # Record the last known preview path from the latest content studio run, if any.
+    runs_dir = REPO_ROOT / "14_context" / "content_studio" / "runs"
+    if runs_dir.exists():
+        candidates = sorted([d for d in runs_dir.iterdir() if d.is_dir()])
+        if candidates:
+            preview = candidates[-1] / "10_preview.html"
+            if preview.exists():
+                try:
+                    rel = str(preview.resolve().relative_to(REPO_ROOT)).replace("\\", "/")
+                except ValueError:
+                    rel = str(preview)
+                return {
+                    "ok": True,
+                    "actions_executed": ["recorded_repo_local_preview_path_no_spawn"],
+                    "preview_path": rel,
+                    "browser_launched": False,
+                }
+    return {
+        "ok": True,
+        "actions_executed": ["recorded_repo_local_preview_path_no_spawn"],
+        "preview_path": None,
+        "browser_launched": False,
+        "note": "No content_studio preview yet. Run content_studio_generate_preview first.",
+    }
+
+
+def _execute_recipe_gemini_handoff_export(run_dir: pathlib.Path) -> Dict[str, Any]:
+    # Write a local prompt MD file. NEVER calls Gemini.
+    HANDOFFS_DIR.mkdir(parents=True, exist_ok=True)
+    ts = _utc_timestamp()
+    out_dir = HANDOFFS_DIR / f"{ts}_gemini_handoff_export"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    lines = [
+        f"# Gemini handoff export -- {MILESTONE}",
+        "",
+        "**handoff_export_only:** true",
+        "**gemini_live_prompt_executed:** false",
+        "**gemini_treated_as_unlimited:** false",
+        "**quota:** unknown_free_tier_limited (Gemini CLI is quota-limited / free-tier, not unlimited)",
+        "",
+        "## Local prompt template",
+        "",
+        "Goal: Create a local video-style content package about AI tools for students.",
+        "Workflow: content_studio_demo",
+        "Mode: dry_run (default); human approval required before any live action.",
+        "",
+        "## Manual operator note",
+        "",
+        "- Paste this prompt into Gemini CLI manually if desired.",
+        "- Ghoti will NOT pipe this prompt into Gemini automatically in this milestone.",
+        "- Live posting, account actions, publish/money actions remain disabled.",
+        "- Arbitrary click/type and shell execution from model output remain disabled.",
+        "",
+    ]
+    md_path = out_dir / "gemini_prompt.md"
+    md_path.write_text("\n".join(lines), encoding="utf-8")
+    try:
+        rel = str(md_path.resolve().relative_to(REPO_ROOT)).replace("\\", "/")
+    except ValueError:
+        rel = str(md_path)
+    return {
+        "ok": True,
+        "actions_executed": ["wrote_local_gemini_prompt_markdown_no_live_call"],
+        "handoff_export_path": rel,
+        "gemini_live_prompt_executed": False,
+        "gemini_treated_as_unlimited": False,
+        "handoff_export_only": True,
+        "quota_warning": "Gemini CLI is quota-limited / free-tier, not unlimited.",
+    }
+
+
+_RECIPE_EXECUTORS = {
+    "content_studio_generate_preview": _execute_recipe_content_studio,
+    "memory_compress_demo": _execute_recipe_memory_compress,
+    "dashboard_open_preview": _execute_recipe_dashboard_open_preview,
+    "gemini_handoff_export": _execute_recipe_gemini_handoff_export,
+}
+
+def cmd_recipe_execute(recipe_id: str, json_out: bool) -> int:
+    if recipe_id not in RECIPES:
+        msg = {"ok": False, "error": f"REJECTED: unknown recipe '{recipe_id}'", "allowed": sorted(RECIPES.keys())}
+        print(json.dumps(msg, indent=2) if json_out else msg["error"])
+        return 1
+    RECIPES_DIR.mkdir(parents=True, exist_ok=True)
+    ts = _utc_timestamp()
+    run_dir = RECIPES_DIR / f"{ts}_recipe_{recipe_id}"
+    run_dir.mkdir(parents=True, exist_ok=True)
+    executor = _RECIPE_EXECUTORS[recipe_id]
+    result = executor(run_dir)
+    result["recipe_id"] = recipe_id
+    result["recipe_run_dir"] = str(run_dir.resolve().relative_to(REPO_ROOT)).replace("\\", "/")
+    if json_out:
+        print(json.dumps(result, indent=2))
+    else:
+        print(f"Recipe executed: {recipe_id}; ok={result.get('ok')}; actions={result.get('actions_executed')}")
+    return 0 if result.get("ok") else 1
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Desktop Operator Control Plane MVP (N+4.4A) -- local-only, dry-run by default.")
     parser.add_argument("--status", action="store_true")
@@ -785,6 +1035,9 @@ def main() -> int:
     parser.add_argument("--approve", metavar="PATH", default=None)
     parser.add_argument("--approval-token", default=None)
     parser.add_argument("--execute-approved", metavar="PATH", default=None)
+    parser.add_argument("--recipe-list", action="store_true")
+    parser.add_argument("--recipe-execute", action="store_true")
+    parser.add_argument("--recipe-id", default=None)
     args = parser.parse_args()
 
     if args.create_handoff:
@@ -802,6 +1055,14 @@ def main() -> int:
         return cmd_approve(args.approve, args.approval_token, args.json_out)
     if args.execute_approved:
         return cmd_execute_approved(args.execute_approved, args.json_out)
+    if args.recipe_list:
+        return cmd_recipe_list(args.json_out)
+    if args.recipe_execute:
+        if not args.recipe_id:
+            msg = {"ok": False, "error": "REJECTED: --recipe-id required for --recipe-execute"}
+            print(json.dumps(msg, indent=2) if args.json_out else msg["error"])
+            return 1
+        return cmd_recipe_execute(args.recipe_id, args.json_out)
     if args.status:
         return cmd_status(args.json_out)
     if args.json_out:

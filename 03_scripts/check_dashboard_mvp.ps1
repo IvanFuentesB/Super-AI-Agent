@@ -1716,6 +1716,14 @@ try {
             $dashboardHtml -match 'doa-open-preview' -and `
             $dashboardHtml -match 'arbitrary click/type: <strong>disabled' -and `
             $dashboardHtml -match 'shell execution from model output: <strong>disabled' -and `
+            $dashboardHtml -match 'Desktop Operator Recipe Runner' -and `
+            $dashboardHtml -match 'dorr-recipe-select' -and `
+            $dashboardHtml -match 'Run Content Studio Recipe' -and `
+            $dashboardHtml -match 'Memory Compress Demo Recipe' -and `
+            $dashboardHtml -match 'Gemini Handoff Export Recipe' -and `
+            $dashboardHtml -match 'Dashboard Open Preview Recipe' -and `
+            $dashboardHtml -match 'Gemini live prompt: <strong>disabled' -and `
+            $dashboardHtml -match 'Gemini handoff export only' -and `
         $dashboardHtml -match 'ghoti-task-visibility-filter' -and `
         $dashboardHtml -match 'ghoti-show-active-tasks' -and `
         $dashboardHtml -match 'ghoti-queue-focus-window' -and `

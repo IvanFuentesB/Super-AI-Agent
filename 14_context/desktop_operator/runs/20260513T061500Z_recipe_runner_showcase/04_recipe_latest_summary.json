@@ -1,0 +1,14 @@
+{
+  "execution_result_path": "14_context/desktop_operator/runs/20260513T061500Z_recipe_runner_showcase/03_recipe_execution_result.json",
+  "approval_record_path": "14_context/desktop_operator/runs/20260513T061500Z_recipe_runner_showcase/02_recipe_approval_record.json",
+  "local_only": true,
+  "gemini_treated_as_unlimited": false,
+  "gemini_live_prompt_executed": false,
+  "actions_executed": 1,
+  "dry_run_plan_path": "14_context/desktop_operator/runs/20260513T061500Z_recipe_runner_showcase/01_recipe_dry_run.json",
+  "handoff_export_path": "14_context/desktop_operator/handoffs/20260513T061141Z_gemini_handoff_export/gemini_prompt.md",
+  "last_action": "execute_approved_recipe",
+  "external_api_used": false,
+  "handoff_path": "14_context/desktop_operator/runs/20260513T061500Z_recipe_runner_showcase/00_recipe_handoff.json",
+  "recipe_id": "gemini_handoff_export"
+}

@@ -6517,6 +6517,226 @@ async function handleApiRequest(request, response, requestUrl) {
     return;
   }
 
+  // ---------------------------------------------------------------------
+  // N+4.4C Desktop Operator Recipe Runner endpoints
+  // ---------------------------------------------------------------------
+  const desktopOperatorRecipeLatestFile = path.join(runtimeProjectRoot, "runtime_data", "desktop_operator_recipe_latest.json");
+  const desktopOperatorAllowedRecipes = new Set([
+    "content_studio_generate_preview",
+    "memory_compress_demo",
+    "dashboard_open_preview",
+    "gemini_handoff_export",
+  ]);
+
+  function loadDesktopOperatorRecipeLatest() {
+    try {
+      if (!fs.existsSync(desktopOperatorRecipeLatestFile)) {
+        return {
+          recipe_id: null,
+          handoff_path: null,
+          dry_run_plan_path: null,
+          approval_record_path: null,
+          execution_result_path: null,
+          preview_path: null,
+          handoff_export_path: null,
+          last_action: null,
+        };
+      }
+      return JSON.parse(fs.readFileSync(desktopOperatorRecipeLatestFile, "utf8"));
+    } catch (err) {
+      return { recipe_id: null, parse_error: String(err) };
+    }
+  }
+
+  function saveDesktopOperatorRecipeLatest(state) {
+    try {
+      const dir = path.dirname(desktopOperatorRecipeLatestFile);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      fs.writeFileSync(desktopOperatorRecipeLatestFile, JSON.stringify(state, null, 2), "utf8");
+      return true;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  function recipeIdToWorkflow(recipeId) {
+    if (recipeId === "content_studio_generate_preview") return "content_studio_demo";
+    if (recipeId === "memory_compress_demo") return "memory_bridge";
+    if (recipeId === "dashboard_open_preview") return "dashboard_open";
+    if (recipeId === "gemini_handoff_export") return "memory_bridge";
+    return null;
+  }
+
+  if (request.method === "GET" && requestUrl.pathname === "/api/desktop-operator/recipes") {
+    const raw = await runDesktopOperatorCli(["--recipe-list", "--json"]);
+    const data = parseDesktopOperatorJson(raw);
+    if (!data) {
+      sendJson(response, 200, { ok: false, degraded: true, error: "recipe-list JSON parse failed" });
+      return;
+    }
+    sendJson(response, 200, { ok: true, localOnly: true, ...data });
+    return;
+  }
+
+  if (request.method === "GET" && requestUrl.pathname === "/api/desktop-operator/latest-recipe") {
+    const latest = loadDesktopOperatorRecipeLatest();
+    sendJson(response, 200, { ok: true, localOnly: true, latest });
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/api/desktop-operator/create-recipe-handoff") {
+    const payload = await readJsonBody(request);
+    const recipeId = typeof payload.recipe_id === "string" ? payload.recipe_id : null;
+    if (!recipeId || !desktopOperatorAllowedRecipes.has(recipeId)) {
+      sendJson(response, 400, { ok: false, error: "REJECTED: recipe_id not in allowlist", recipeId });
+      return;
+    }
+    const workflow = recipeIdToWorkflow(recipeId);
+    const goal = typeof payload.goal === "string" && payload.goal.trim().length > 0
+      ? payload.goal.trim()
+      : `Run recipe ${recipeId} locally with approval gate intact.`;
+    const raw = await runDesktopOperatorCli(["--create-handoff", "--goal", goal, "--workflow", workflow, "--json"]);
+    const result = parseDesktopOperatorJson(raw);
+    if (!result || !result.ok) {
+      sendJson(response, raw.ok ? 200 : 500, { ok: false, error: "create-recipe-handoff failed", raw });
+      return;
+    }
+    const latest = loadDesktopOperatorRecipeLatest();
+    latest.recipe_id = recipeId;
+    latest.handoff_path = result.handoff_path || null;
+    latest.run_dir = result.run_dir || null;
+    latest.dry_run_plan_path = null;
+    latest.approval_record_path = null;
+    latest.execution_result_path = null;
+    latest.preview_path = null;
+    latest.handoff_export_path = null;
+    latest.task_id = result.task_id || null;
+    latest.created_at = new Date().toISOString();
+    latest.last_action = "create_recipe_handoff";
+    saveDesktopOperatorRecipeLatest(latest);
+    sendJson(response, 200, {
+      ok: true,
+      localOnly: true,
+      summary: { headline: `Recipe handoff created (${recipeId}). Dry-run by default.`, recipeId, handoffPath: latest.handoff_path },
+      result,
+      latest,
+    });
+    return;
+  }
+  if (request.method === "POST" && requestUrl.pathname === "/api/desktop-operator/run-recipe-dry-run") {
+    const latest = loadDesktopOperatorRecipeLatest();
+    if (!latest.recipe_id || !latest.handoff_path) {
+      sendJson(response, 400, { ok: false, error: "No recipe handoff on record. Run create-recipe-handoff first." });
+      return;
+    }
+    if (!isRepoLocalPath(latest.handoff_path)) {
+      sendJson(response, 400, { ok: false, error: "REJECTED: handoff_path not repo-local" });
+      return;
+    }
+    const handoffAbs = path.isAbsolute(latest.handoff_path) ? latest.handoff_path : path.join(repoRoot, latest.handoff_path);
+    const raw = await runDesktopOperatorCli(["--dry-run", handoffAbs, "--json"]);
+    const result = parseDesktopOperatorJson(raw);
+    if (!result) {
+      sendJson(response, 500, { ok: false, error: "recipe dry-run JSON parse failed", raw });
+      return;
+    }
+    latest.dry_run_plan_path = result.plan_path || null;
+    latest.actions_executed = result.actions_executed || 0;
+    latest.last_action = "run_recipe_dry_run";
+    saveDesktopOperatorRecipeLatest(latest);
+    sendJson(response, 200, {
+      ok: true,
+      localOnly: true,
+      summary: { headline: `Recipe dry run complete (${latest.recipe_id}). No actions executed.`, recipeId: latest.recipe_id, planPath: latest.dry_run_plan_path },
+      result,
+      latest,
+    });
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/api/desktop-operator/approve-recipe") {
+    const payload = await readJsonBody(request);
+    const latest = loadDesktopOperatorRecipeLatest();
+    if (!latest.recipe_id || !latest.handoff_path) {
+      sendJson(response, 400, { ok: false, error: "No recipe handoff on record." });
+      return;
+    }
+    if (!isRepoLocalPath(latest.handoff_path)) {
+      sendJson(response, 400, { ok: false, error: "REJECTED: handoff_path not repo-local" });
+      return;
+    }
+    let approvalToken = typeof payload.approvalToken === "string" ? payload.approvalToken.trim() : "";
+    if (approvalToken.length < 4) {
+      // Server-generated local token; never returned to client.
+      approvalToken = "recipe-" + Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10);
+    }
+    const handoffAbs = path.isAbsolute(latest.handoff_path) ? latest.handoff_path : path.join(repoRoot, latest.handoff_path);
+    const raw = await runDesktopOperatorCli(["--approve", handoffAbs, "--approval-token", approvalToken, "--json"]);
+    const result = parseDesktopOperatorJson(raw);
+    if (!result || !result.ok) {
+      sendJson(response, raw.ok ? 200 : 500, { ok: false, error: "approve-recipe failed", raw });
+      return;
+    }
+    latest.approval_record_path = result.approval_record_path || null;
+    latest.approved = result.approved === true;
+    latest.last_action = "approve_recipe";
+    saveDesktopOperatorRecipeLatest(latest);
+    sendJson(response, 200, {
+      ok: true,
+      localOnly: true,
+      // Raw token is NEVER returned.
+      summary: { headline: `Recipe approval record created (${latest.recipe_id}). Token never returned.`, recipeId: latest.recipe_id, approvalRecordPath: latest.approval_record_path },
+      latest,
+    });
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/api/desktop-operator/execute-approved-recipe") {
+    const latest = loadDesktopOperatorRecipeLatest();
+    if (!latest.recipe_id || !latest.handoff_path) {
+      sendJson(response, 400, { ok: false, error: "No recipe handoff on record." });
+      return;
+    }
+    if (!latest.approval_record_path) {
+      sendJson(response, 400, { ok: false, error: "No approval record. Run approve-recipe first." });
+      return;
+    }
+    if (!desktopOperatorAllowedRecipes.has(latest.recipe_id)) {
+      sendJson(response, 400, { ok: false, error: "REJECTED: recipe_id not in allowlist" });
+      return;
+    }
+    // Execute the recipe via the Python CLI's --recipe-execute mode.
+    const raw = await runDesktopOperatorCli(["--recipe-execute", "--recipe-id", latest.recipe_id, "--json"]);
+    const result = parseDesktopOperatorJson(raw);
+    if (!result) {
+      sendJson(response, 500, { ok: false, error: "execute-approved-recipe JSON parse failed", raw });
+      return;
+    }
+    latest.execution_result_path = result.recipe_run_dir || null;
+    latest.preview_path = result.preview_path || latest.preview_path || null;
+    latest.handoff_export_path = result.handoff_export_path || null;
+    latest.actions_executed = Array.isArray(result.actions_executed) ? result.actions_executed.length : 0;
+    latest.last_action = "execute_approved_recipe";
+    saveDesktopOperatorRecipeLatest(latest);
+    sendJson(response, 200, {
+      ok: result.ok === true,
+      localOnly: true,
+      summary: {
+        headline: `Recipe executed locally (${latest.recipe_id}). No live posting, no Gemini live call.`,
+        recipeId: latest.recipe_id,
+        actionsExecuted: latest.actions_executed,
+        executionResultPath: latest.execution_result_path,
+        previewPath: latest.preview_path,
+        handoffExportPath: latest.handoff_export_path,
+      },
+      result,
+      latest,
+    });
+    return;
+  }
+
   sendJson(response, 404, {
     ok: false,
     error: "Route not found.",
