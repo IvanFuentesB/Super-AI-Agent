@@ -6291,6 +6291,39 @@ async function handleApiRequest(request, response, requestUrl) {
     }
   }
 
+  // N+4.4D: real directory containment using path.relative().
+  // Rejects sibling-prefix attacks like "<repoRoot>_evil/fake.html" which
+  // the prior naive prefix-string check accepted as inside-repo.
+  function isPathInsideRepo(candidate) {
+    if (typeof candidate !== "string" || candidate.length === 0) {
+      return false;
+    }
+    const resolvedRoot = path.resolve(repoRoot);
+    const absolute = path.isAbsolute(candidate) ? candidate : path.join(resolvedRoot, candidate);
+    let resolvedCandidate;
+    try {
+      resolvedCandidate = path.resolve(absolute);
+    } catch (err) {
+      return false;
+    }
+    const relative = path.relative(resolvedRoot, resolvedCandidate);
+    // relative === "" -> candidate IS the repo root itself; reject.
+    // relative starts with ".." -> candidate is outside repo (covers
+    // sibling-prefix paths like "<repoRoot>_evil/...").
+    // path.isAbsolute(relative) on Windows is true when target is on a
+    // different drive -> reject.
+    if (relative === "") {
+      return false;
+    }
+    if (relative.startsWith("..")) {
+      return false;
+    }
+    if (path.isAbsolute(relative)) {
+      return false;
+    }
+    return true;
+  }
+
   function isRepoLocalPath(candidate) {
     if (typeof candidate !== "string" || candidate.length === 0) {
       return false;
@@ -6305,9 +6338,9 @@ async function handleApiRequest(request, response, requestUrl) {
         return false;
       }
     }
-    const absolute = path.isAbsolute(candidate) ? candidate : path.join(repoRoot, candidate);
-    const normalized = path.normalize(absolute);
-    return normalized.startsWith(repoRoot);
+    // N+4.4D: replaced vulnerable naive prefix check with real directory
+    // containment via isPathInsideRepo().
+    return isPathInsideRepo(candidate);
   }
 
   async function runDesktopOperatorCli(scriptArgs) {
@@ -6503,17 +6536,20 @@ async function handleApiRequest(request, response, requestUrl) {
       sendJson(response, 400, { ok: false, error: "REJECTED: only .html or .htm previews allowed" });
       return;
     }
-    const absolute = path.isAbsolute(candidate) ? candidate : path.join(repoRoot, candidate);
-    const normalized = path.normalize(absolute);
-    if (!normalized.startsWith(repoRoot)) {
+    // N+4.4D: enforce real directory containment via isPathInsideRepo().
+    // The previous naive prefix-string check accepted sibling-prefix paths
+    // like "<repoRoot>_evil/fake.html".
+    if (!isPathInsideRepo(candidate)) {
       sendJson(response, 400, { ok: false, error: "REJECTED: path resolved outside repo" });
       return;
     }
-    if (!fs.existsSync(normalized)) {
+    const absolute = path.isAbsolute(candidate) ? candidate : path.join(repoRoot, candidate);
+    const resolvedAbsolute = path.resolve(absolute);
+    if (!fs.existsSync(resolvedAbsolute)) {
       sendJson(response, 404, { ok: false, error: "preview not found" });
       return;
     }
-    sendJson(response, 200, { ok: true, localOnly: true, previewPath: path.relative(repoRoot, normalized).replace(/\\/g, "/"), bytes: fs.statSync(normalized).size });
+    sendJson(response, 200, { ok: true, localOnly: true, previewPath: path.relative(path.resolve(repoRoot), resolvedAbsolute).replace(/\\/g, "/"), bytes: fs.statSync(resolvedAbsolute).size });
     return;
   }
 
