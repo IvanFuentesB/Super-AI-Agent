@@ -1,0 +1,40 @@
+{
+  "studio": "supervised_content_studio_demo",
+  "milestone": "N+4.3A",
+  "topic": "AI tools for students and creators",
+  "created_at": "20260512T172447Z",
+  "run_dir": "14_context\\content_studio\\runs\\20260512T172447Z_ai_tools_for_students_and_creato",
+  "agents": [
+    "strategy_agent",
+    "research_meta_agent",
+    "script_agent",
+    "shotlist_agent",
+    "title_thumbnail_agent",
+    "safety_compliance_agent",
+    "approval_agent",
+    "memory_agent"
+  ],
+  "agent_count": 8,
+  "artifacts": [
+    "00_manifest.json",
+    "01_agent_trace.md",
+    "02_strategy.md",
+    "03_script.md",
+    "04_shotlist.md",
+    "05_titles_100.json",
+    "06_thumbnail_variants_100.json",
+    "07_safety_review.md",
+    "08_human_approval_packet.md",
+    "09_memory_snapshot.md",
+    "10_preview.html",
+    "11_status.json"
+  ],
+  "local_only": true,
+  "external_api_used": false,
+  "publish_enabled": false,
+  "external_repo_clone_install_run": false,
+  "live_account_actions_enabled": false,
+  "approval_required_for_external_actions": true,
+  "title_variant_count": 100,
+  "thumbnail_variant_count": 100
+}

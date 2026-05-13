@@ -1,0 +1,20 @@
+# Safety Review
+
+- live_account_actions_enabled: false
+- external_api_actions_enabled: false
+- money_actions_enabled: false
+- publish_actions_enabled: false
+- arbitrary_click_disabled: true
+- arbitrary_type_disabled: true
+- shell_exec_from_model_output_disabled: true
+- ui_tars_runtime_wired: false
+- the_agency_runtime_wired: false
+- weavy_runtime_wired: false
+- manychat_runtime_wired: false
+- vouch_runtime_wired: false
+- aex_runtime_wired: false
+- airllm_runtime_wired: false
+- openfang_moneyprinter_runtime_wired: false
+- external_repo_clone_install_run_enabled: false
+- approval_gate: required_with_token
+- default_mode: dry_run
