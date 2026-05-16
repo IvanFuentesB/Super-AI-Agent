@@ -11,32 +11,32 @@ The target implementation branch `refs/heads/feat/ghoti-agent-claude-n4-5a-paral
 | Item | Result |
 | --- | --- |
 | Audit branch | `audit/ghoti-agent-codex-n4-5a-parallel-agent-relay-command-center-real-audit-2` |
-| Audit worktree | `C:\w\n4_5a_parallel_agent_relay_real_audit_2` |
+| Audit worktree | `C:\Users\ai_sandbox\Documents\AI_Managed_Only\.claude\worktrees\n4_5a_parallel_agent_relay_real_audit_2` |
 | Base branch | `origin/main` |
 | Base commit | `70b1525dc473ba0cbd9a8562a00c5e417d0b416f` |
 | Target remote ref | `refs/heads/feat/ghoti-agent-claude-n4-5a-parallel-agent-relay-command-center` |
 | Target branch status | Missing after 60 polling attempts |
 | Final `ls-remote` check | Empty for target ref |
-| Nearby branch discovery | Only previous Codex blocked audit branch found |
+| Nearby branch discovery | Only previous Codex blocked audit branches found |
 
 ## Polling Attempts
 
-Codex polled the target remote ref 60 times over approximately 49 minutes, with `git fetch origin --prune` after each missing check. Nearby branch discovery ran every fifth attempt for `n4-5a`, `relay`, and `parallel-agent`.
+Codex polled the target remote ref 60 times on 2026-05-16 over approximately 49 minutes, with `git fetch origin --prune` after each missing check. Nearby branch discovery ran every fifth attempt for `n4-5a`, `relay`, and `parallel-agent`.
 
 | Attempts | Time range | Result | Nearby branch result |
 | --- | --- | --- | --- |
-| 1-5 | `2026-05-15T15:08:06+02:00` to `2026-05-15T15:11:59+02:00` | Missing | Only `audit/ghoti-agent-codex-n4-5a-parallel-agent-relay-command-center-real-audit` |
-| 6-10 | `2026-05-15T15:12:15+02:00` to `2026-05-15T15:16:12+02:00` | Missing | Only prior Codex audit branch |
-| 11-15 | `2026-05-15T15:16:34+02:00` to `2026-05-15T15:20:26+02:00` | Missing | Only prior Codex audit branch |
-| 16-20 | `2026-05-15T15:20:40+02:00` to `2026-05-15T15:24:30+02:00` | Missing | Only prior Codex audit branch |
-| 21-25 | `2026-05-15T15:24:44+02:00` to `2026-05-15T15:28:34+02:00` | Missing | Only prior Codex audit branch |
-| 26-30 | `2026-05-15T15:28:49+02:00` to `2026-05-15T15:32:39+02:00` | Missing | Only prior Codex audit branch |
-| 31-35 | `2026-05-15T15:32:53+02:00` to `2026-05-15T15:36:43+02:00` | Missing | Only prior Codex audit branch |
-| 36-40 | `2026-05-15T15:36:58+02:00` to `2026-05-15T15:40:48+02:00` | Missing | Only prior Codex audit branch |
-| 41-45 | `2026-05-15T15:41:06+02:00` to `2026-05-15T15:44:57+02:00` | Missing | Only prior Codex audit branch |
-| 46-50 | `2026-05-15T15:45:12+02:00` to `2026-05-15T15:49:03+02:00` | Missing | Only prior Codex audit branch |
-| 51-55 | `2026-05-15T15:49:17+02:00` to `2026-05-15T15:53:08+02:00` | Missing | Only prior Codex audit branch |
-| 56-60 | `2026-05-15T15:53:23+02:00` to `2026-05-15T15:57:14+02:00` | Missing | Only prior Codex audit branch |
+| 1-5 | `2026-05-16T15:06:36+02:00` to `2026-05-16T15:10:25+02:00` | Missing | Only prior Codex audit branches |
+| 6-10 | `2026-05-16T15:10:45+02:00` to `2026-05-16T15:14:35+02:00` | Missing | Only prior Codex audit branches |
+| 11-15 | `2026-05-16T15:14:52+02:00` to `2026-05-16T15:18:41+02:00` | Missing | Only prior Codex audit branches |
+| 16-20 | `2026-05-16T15:18:55+02:00` to `2026-05-16T15:22:44+02:00` | Missing | Only prior Codex audit branches |
+| 21-25 | `2026-05-16T15:23:00+02:00` to `2026-05-16T15:26:50+02:00` | Missing | Only prior Codex audit branches |
+| 26-30 | `2026-05-16T15:27:02+02:00` to `2026-05-16T15:30:51+02:00` | Missing | Only prior Codex audit branches |
+| 31-35 | `2026-05-16T15:31:06+02:00` to `2026-05-16T15:34:55+02:00` | Missing | Only prior Codex audit branches |
+| 36-40 | `2026-05-16T15:35:13+02:00` to `2026-05-16T15:39:02+02:00` | Missing | Only prior Codex audit branches |
+| 41-45 | `2026-05-16T15:39:17+02:00` to `2026-05-16T15:43:06+02:00` | Missing | Only prior Codex audit branches |
+| 46-50 | `2026-05-16T15:43:19+02:00` to `2026-05-16T15:47:07+02:00` | Missing | Only prior Codex audit branches |
+| 51-55 | `2026-05-16T15:47:24+02:00` to `2026-05-16T15:51:14+02:00` | Missing | Only prior Codex audit branches |
+| 56-60 | `2026-05-16T15:51:28+02:00` to `2026-05-16T15:55:17+02:00` | Missing | Only prior Codex audit branches |
 
 Final sanity check after attempt 60 still returned no target branch. `origin/main` remained at `70b1525dc473ba0cbd9a8562a00c5e417d0b416f`.
 
@@ -68,7 +68,7 @@ Final sanity check after attempt 60 still returned no target branch. `origin/mai
 
 ## Safety Notes
 
-No external repositories were cloned, installed, or run. No live account/API/posting/money/trading action was enabled. No main push was performed. The dirty primary worktree was not modified; this report was created in the isolated audit worktree.
+No external repositories were cloned, installed, or run. No live account/API/posting/money/trading action was enabled. No main push was performed. The dirty primary worktree was not modified; this report was updated in the repo-contained isolated audit worktree under `.claude\worktrees`.
 
 ## Final Verdict
 
