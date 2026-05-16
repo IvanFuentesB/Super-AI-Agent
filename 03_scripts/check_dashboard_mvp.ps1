@@ -1796,6 +1796,12 @@ try {
     }
     }
 
+    # ── Parallel Agent Relay (N+4.5A) ──────────────────────────────────────────
+    $relayStatus = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/agent-relay/status" -Method Get -TimeoutSec 30
+    $relayOk = $relayStatus.ok -and $relayStatus.relay_mode -eq 'copy_paste_only' -and (-not $relayStatus.autonomous_launch)
+    Write-Check -Name 'Parallel Agent Relay status endpoint' -Passed $relayOk -Detail ($(if ($relayOk) { "relay_mode=$($relayStatus.relay_mode)" } else { 'relay status missing or incorrect' }))
+    if (-not $relayOk) { $failed++ }
+
     $recentActions = Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/recent-actions" -Method Get -TimeoutSec 30
     $recentActionsOk = $recentActions.ok -and $recentActions.localOnly -and $recentActions.actions.Count -gt 0
     Write-Check -Name 'Recent actions endpoint' -Passed $recentActionsOk -Detail ($(if ($recentActionsOk) { 'recent actions log returned entries' } else { 'recent actions log missing entries' }))

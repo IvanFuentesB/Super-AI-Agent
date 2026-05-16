@@ -6578,3 +6578,41 @@ refreshLocalOrchestrator();
     refreshDorrLatest();
   }
 })();
+
+// ─── Parallel Agent Relay Truth (N+4.5A) ─────────────────────────────────────
+(function () {
+  const RELAY_API = "/api/agent-relay/status";
+
+  function relayCard(data) {
+    if (!data || !data.ok) {
+      return `<p class="empty-state">Parallel Agent Relay status unavailable.</p>`;
+    }
+    return `
+      <h3 class="card-title">Parallel Agent Relay Truth</h3>
+      <ul class="status-list">
+        <li><strong>Mode:</strong> ${data.relay_mode || "copy_paste_only"}</li>
+        <li><strong>Autonomous launch:</strong> ${data.autonomous_launch ? "YES ⚠️" : "NO — human approval required"}</li>
+        <li><strong>Claude lane:</strong> /ultraplan + /goal — max planning, Sonnet high execution</li>
+        <li><strong>Codex lane:</strong> extra high effort, poll remote refs (ls-remote), no /goal</li>
+        <li><strong>Pairs generated:</strong> ${data.pair_count ?? 0}</li>
+        <li><strong>Future-compatible:</strong> AEX, Claude Cowork, The Agency, agent-skills-eval</li>
+        <li><strong>Relay version:</strong> ${data.relay_version || "—"}</li>
+      </ul>`;
+  }
+
+  async function refreshRelayStatus() {
+    const card = document.getElementById("agent-relay-card");
+    if (!card) return;
+    try {
+      const res = await fetch(RELAY_API);
+      const data = await res.json();
+      card.innerHTML = relayCard(data);
+    } catch (_) {
+      card.innerHTML = `<p class="empty-state">Could not load relay status.</p>`;
+    }
+  }
+
+  if (document.getElementById("section-agent-relay")) {
+    refreshRelayStatus();
+  }
+})();

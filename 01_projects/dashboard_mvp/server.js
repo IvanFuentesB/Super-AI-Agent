@@ -6773,6 +6773,167 @@ async function handleApiRequest(request, response, requestUrl) {
     return;
   }
 
+  // ─── Parallel Agent Relay (N+4.5A) ──────────────────────────────────────────
+
+  function resolveRelayPromptPath(rawPath) {
+    const pairsRoot = path.join(repoRoot, "14_context", "agent_relay", "pairs");
+    const ctxRoot = path.join(repoRoot, "14_context");
+    const candidate = path.resolve(repoRoot, String(rawPath).replace(/\//g, path.sep));
+    if (!isPathInside(pairsRoot, candidate) && !isPathInside(ctxRoot, candidate)) {
+      return null;
+    }
+    return candidate;
+  }
+
+  // GET /api/agent-relay/status
+  if (method === "GET" && pathname === "/api/agent-relay/status") {
+    const pairsDir = path.join(repoRoot, "14_context", "agent_relay", "pairs");
+    let pairCount = 0;
+    try {
+      const entries = fs.readdirSync(pairsDir, { withFileTypes: true });
+      pairCount = entries.filter((e) => e.isDirectory()).length;
+    } catch (_) {}
+    sendJson(response, 200, {
+      ok: true,
+      relay_version: "1.0.0",
+      relay_mode: "copy_paste_only",
+      autonomous_launch: false,
+      human_approval_required: true,
+      pair_count: pairCount,
+      pairs_dir: path.relative(repoRoot, pairsDir).replace(/\\/g, "/"),
+    });
+    return;
+  }
+
+  // POST /api/agent-relay/create-pair
+  if (method === "POST" && pathname === "/api/agent-relay/create-pair") {
+    let body = {};
+    try {
+      body = await readJsonBody(request);
+    } catch (err) {
+      sendJson(response, 400, { ok: false, error: String(err.message) });
+      return;
+    }
+    const milestone = body.milestone;
+    const title = body.title;
+    const implBranch = body.implementation_branch;
+    const auditBranch = body.audit_branch;
+    const codexEffort = body.codex_effort || "extra-high";
+    const outputDir = body.output_dir;
+    if (!milestone || !title || !implBranch || !auditBranch) {
+      sendJson(response, 400, {
+        ok: false,
+        error: "Missing required fields: milestone, title, implementation_branch, audit_branch",
+      });
+      return;
+    }
+    const relayScript = path.join(repoRoot, "03_scripts", "parallel_agent_relay.py");
+    const py = resolvePython();
+    if (!py) {
+      sendJson(response, 500, { ok: false, error: "Python interpreter not found" });
+      return;
+    }
+    const argv = [
+      ...py.baseArgs,
+      relayScript,
+      "--create-pair",
+      "--milestone", milestone,
+      "--title", title,
+      "--implementation-branch", implBranch,
+      "--audit-branch", auditBranch,
+      "--codex-effort", codexEffort,
+      "--write-packets",
+      "--json",
+    ];
+    if (outputDir) {
+      const resolvedOut = path.resolve(repoRoot, String(outputDir).replace(/\//g, path.sep));
+      if (!isPathInside(repoRoot, resolvedOut)) {
+        sendJson(response, 400, { ok: false, error: "output_dir is outside repo root" });
+        return;
+      }
+      argv.push("--output-dir", path.relative(repoRoot, resolvedOut).replace(/\\/g, "/"));
+    }
+    const createResult = await runCommand(py.command, argv, { cwd: repoRoot, timeoutMs: 30000 });
+    if (!createResult.ok) {
+      sendJson(response, 500, { ok: false, error: createResult.stderr || `exit ${createResult.exitCode}` });
+      return;
+    }
+    try {
+      const pairData = JSON.parse(createResult.stdout);
+      sendJson(response, 200, pairData);
+    } catch (_) {
+      sendJson(response, 500, { ok: false, error: "Failed to parse relay output" });
+    }
+    return;
+  }
+
+  // GET /api/agent-relay/latest
+  if (method === "GET" && pathname === "/api/agent-relay/latest") {
+    const pairsDir = path.join(repoRoot, "14_context", "agent_relay", "pairs");
+    let latestManifest = null;
+    let latestPairId = null;
+    try {
+      const dirs = fs
+        .readdirSync(pairsDir, { withFileTypes: true })
+        .filter((e) => e.isDirectory())
+        .sort((a, b) => b.name.localeCompare(a.name));
+      if (dirs.length > 0) {
+        latestPairId = dirs[0].name;
+        const manifestPath = path.join(pairsDir, latestPairId, "00_manifest.json");
+        latestManifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+      }
+    } catch (_) {}
+    sendJson(response, 200, { ok: true, pair_id: latestPairId, manifest: latestManifest });
+    return;
+  }
+
+  // GET /api/agent-relay/pair?id=<pair_id>
+  if (method === "GET" && pathname === "/api/agent-relay/pair") {
+    const pairId = requestUrl.searchParams.get("id");
+    if (!pairId || String(pairId).includes("..") || String(pairId).includes("/")) {
+      sendJson(response, 400, { ok: false, error: "Invalid or missing ?id= parameter" });
+      return;
+    }
+    const pairsDir = path.join(repoRoot, "14_context", "agent_relay", "pairs");
+    const pairDir = path.resolve(pairsDir, pairId);
+    if (!isPathInside(pairsDir, pairDir)) {
+      sendJson(response, 400, { ok: false, error: "Invalid pair id" });
+      return;
+    }
+    try {
+      const manifest = JSON.parse(fs.readFileSync(path.join(pairDir, "00_manifest.json"), "utf8"));
+      sendJson(response, 200, { ok: true, pair_id: pairId, manifest });
+    } catch (_) {
+      sendJson(response, 404, { ok: false, error: "Pair not found" });
+    }
+    return;
+  }
+
+  // GET /api/agent-relay/prompt?path=<relative_path>
+  if (method === "GET" && pathname === "/api/agent-relay/prompt") {
+    const rawPath = requestUrl.searchParams.get("path");
+    if (!rawPath) {
+      sendJson(response, 400, { ok: false, error: "Missing ?path= parameter" });
+      return;
+    }
+    const resolvedPromptPath = resolveRelayPromptPath(rawPath);
+    if (!resolvedPromptPath) {
+      sendJson(response, 403, { ok: false, error: "Path is outside allowed relay directories" });
+      return;
+    }
+    try {
+      const content = fs.readFileSync(resolvedPromptPath, "utf8");
+      sendJson(response, 200, {
+        ok: true,
+        path: path.relative(repoRoot, resolvedPromptPath).replace(/\\/g, "/"),
+        content,
+      });
+    } catch (_) {
+      sendJson(response, 404, { ok: false, error: "Prompt file not found" });
+    }
+    return;
+  }
+
   sendJson(response, 404, {
     ok: false,
     error: "Route not found.",
