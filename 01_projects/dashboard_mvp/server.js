@@ -6786,7 +6786,7 @@ async function handleApiRequest(request, response, requestUrl) {
   }
 
   // GET /api/agent-relay/status
-  if (method === "GET" && pathname === "/api/agent-relay/status") {
+  if (request.method === "GET" && requestUrl.pathname === "/api/agent-relay/status") {
     const pairsDir = path.join(repoRoot, "14_context", "agent_relay", "pairs");
     let pairCount = 0;
     try {
@@ -6806,7 +6806,7 @@ async function handleApiRequest(request, response, requestUrl) {
   }
 
   // POST /api/agent-relay/create-pair
-  if (method === "POST" && pathname === "/api/agent-relay/create-pair") {
+  if (request.method === "POST" && requestUrl.pathname === "/api/agent-relay/create-pair") {
     let body = {};
     try {
       body = await readJsonBody(request);
@@ -6868,7 +6868,7 @@ async function handleApiRequest(request, response, requestUrl) {
   }
 
   // GET /api/agent-relay/latest
-  if (method === "GET" && pathname === "/api/agent-relay/latest") {
+  if (request.method === "GET" && requestUrl.pathname === "/api/agent-relay/latest") {
     const pairsDir = path.join(repoRoot, "14_context", "agent_relay", "pairs");
     let latestManifest = null;
     let latestPairId = null;
@@ -6888,7 +6888,7 @@ async function handleApiRequest(request, response, requestUrl) {
   }
 
   // GET /api/agent-relay/pair?id=<pair_id>
-  if (method === "GET" && pathname === "/api/agent-relay/pair") {
+  if (request.method === "GET" && requestUrl.pathname === "/api/agent-relay/pair") {
     const pairId = requestUrl.searchParams.get("id");
     if (!pairId || String(pairId).includes("..") || String(pairId).includes("/")) {
       sendJson(response, 400, { ok: false, error: "Invalid or missing ?id= parameter" });
@@ -6910,7 +6910,7 @@ async function handleApiRequest(request, response, requestUrl) {
   }
 
   // GET /api/agent-relay/prompt?path=<relative_path>
-  if (method === "GET" && pathname === "/api/agent-relay/prompt") {
+  if (request.method === "GET" && requestUrl.pathname === "/api/agent-relay/prompt") {
     const rawPath = requestUrl.searchParams.get("path");
     if (!rawPath) {
       sendJson(response, 400, { ok: false, error: "Missing ?path= parameter" });
