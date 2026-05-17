@@ -1,0 +1,565 @@
+#!/usr/bin/env python3
+"""Ghoti Product Launcher (N+4.7A) — one-command local product launcher + smoke.
+
+Makes Ghoti easy to open and test like a real local product:
+  - start the dashboard (node server.js, fixed argv, no shell)
+  - print the exact dashboard URL
+  - optionally open the browser (localhost only, only when asked)
+  - run a product smoke test against the 4 /api/product-control/* endpoints
+  - generate a local demo prompt-pair smoke if requested
+  - stop only the server process this launcher started (by recorded PID)
+
+Local-only. stdlib only. No external API. No live account/posting/money actions.
+"""
+import argparse
+import json
+import os
+import socket
+import subprocess
+import sys
+import time
+import urllib.error
+import urllib.request
+import webbrowser
+from datetime import datetime, timezone
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).parent.parent.resolve()
+DASHBOARD_DIR = REPO_ROOT / "01_projects" / "dashboard_mvp"
+SERVER_JS = DASHBOARD_DIR / "server.js"
+STATE_FILE = DASHBOARD_DIR / "runtime_data" / "ghoti_product_launcher_state.json"
+
+LAUNCHER_VERSION = "1.0.0"
+MILESTONE = "N+4.7A"
+DEFAULT_PORT = 3210
+DEFAULT_TIMEOUT_SECONDS = 25
+
+# The product smoke test exercises exactly these 4 product-control endpoints.
+SMOKE_ENDPOINTS = [
+    ("GET", "/api/product-control/status"),
+    ("POST", "/api/product-control/create-relay-pair"),
+    ("POST", "/api/product-control/run-content-studio-demo"),
+    ("GET", "/api/product-control/latest"),
+]
+
+WHAT_GHOTI_CAN_DO = [
+    "Local Content Studio — supervised dry-run content packets (no live posting)",
+    "Desktop Operator Action Center — dry-run, approve, execute (approval-gated)",
+    "Desktop Recipe Runner — allowlisted local recipes",
+    "Parallel Agent Relay — copy-paste Claude + Codex prompt pairs (no auto-launch)",
+    "Local Memory / Gemma fallback — local compression, no external API",
+    "External Tool Intake — planning-only catalog review",
+]
+
+
+def _now() -> str:
+    return datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+
+
+def _is_repo_local(target) -> bool:
+    """True only if the resolved path is the repo root or inside it."""
+    try:
+        resolved = Path(str(target)).resolve()
+        repo = REPO_ROOT.resolve()
+        return resolved == repo or repo in resolved.parents
+    except Exception:
+        return False
+
+
+def _dashboard_url(port: int) -> str:
+    return "http://127.0.0.1:%d" % int(port)
+
+
+def _repo_rel(target) -> str:
+    try:
+        return str(Path(target).resolve().relative_to(REPO_ROOT.resolve())).replace(os.sep, "/")
+    except Exception:
+        return str(target)
+
+
+def _port_responds(port: int) -> bool:
+    """True if a TCP connection to 127.0.0.1:port succeeds."""
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(0.5)
+    try:
+        return sock.connect_ex(("127.0.0.1", int(port))) == 0
+    except Exception:
+        return False
+    finally:
+        sock.close()
+
+
+def _free_port() -> int:
+    """Ask the OS for a free local port."""
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        sock.bind(("127.0.0.1", 0))
+        return sock.getsockname()[1]
+    finally:
+        sock.close()
+
+
+def _read_state() -> dict:
+    try:
+        if STATE_FILE.exists():
+            return json.loads(STATE_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        pass
+    return {}
+
+
+def _write_state(state: dict) -> None:
+    if not _is_repo_local(STATE_FILE):
+        raise ValueError("launcher state path is outside the repo root")
+    STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+    STATE_FILE.write_text(json.dumps(state, indent=2), encoding="utf-8")
+
+
+def _pid_alive(pid) -> bool:
+    """Best-effort liveness check for a PID. Never terminates the process."""
+    if not pid:
+        return False
+    try:
+        pid = int(pid)
+    except (TypeError, ValueError):
+        return False
+    try:
+        if os.name == "nt":
+            # tasklist is read-only; os.kill(pid, 0) on Windows would TERMINATE.
+            result = subprocess.run(
+                ["tasklist", "/FI", "PID eq %d" % pid, "/NH"],
+                capture_output=True, text=True, timeout=15, shell=False,
+            )
+            return ("%d" % pid) in (result.stdout or "")
+        os.kill(pid, 0)
+        return True
+    except Exception:
+        return False
+
+
+def _kill_pid(pid) -> bool:
+    """Terminate exactly the given PID (and its child tree). Returns True on
+    a successful terminate call. Only ever called with the recorded PID."""
+    try:
+        pid = int(pid)
+    except (TypeError, ValueError):
+        return False
+    try:
+        if os.name == "nt":
+            result = subprocess.run(
+                ["taskkill", "/PID", "%d" % pid, "/F", "/T"],
+                capture_output=True, text=True, timeout=20, shell=False,
+            )
+            return result.returncode == 0
+        import signal
+        os.kill(pid, signal.SIGTERM)
+        return True
+    except Exception:
+        return False
+
+
+def _http(method: str, url: str, timeout: int, body: dict = None):
+    """Local HTTP request. Returns (status_code, body_text). Local only."""
+    data = None
+    headers = {}
+    if body is not None:
+        data = json.dumps(body).encode("utf-8")
+        headers["Content-Type"] = "application/json"
+    req = urllib.request.Request(url, data=data, headers=headers, method=method)
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return resp.status, resp.read().decode("utf-8", "ignore")
+    except urllib.error.HTTPError as exc:
+        return exc.code, (exc.read().decode("utf-8", "ignore") if exc.fp else "")
+    except Exception as exc:  # connection refused, timeout, etc.
+        return 0, "request failed: %s" % exc
+
+
+def _wait_for_ready(port: int, timeout: int) -> bool:
+    deadline = time.time() + max(1, int(timeout))
+    url = _dashboard_url(port) + "/api/health"
+    while time.time() < deadline:
+        status, _ = _http("GET", url, timeout=3)
+        if status == 200:
+            return True
+        time.sleep(0.5)
+    return False
+
+
+def _start_node_dashboard(port: int):
+    """Start `node server.js` with fixed argv and no shell. Returns the Popen."""
+    env = dict(os.environ)
+    env["PORT"] = str(int(port))
+    # Fixed argv. shell=False (explicit). cwd is the repo-local dashboard dir.
+    return subprocess.Popen(
+        ["node", "server.js"],
+        cwd=str(DASHBOARD_DIR),
+        env=env,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        shell=False,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Commands
+# ---------------------------------------------------------------------------
+
+def cmd_status() -> dict:
+    state = _read_state()
+    pid = state.get("pid")
+    port = state.get("port") or DEFAULT_PORT
+    running = bool(pid) and _pid_alive(pid) and _port_responds(port)
+    return {
+        "ok": True,
+        "launcher": "ghoti_product_launcher",
+        "launcher_version": LAUNCHER_VERSION,
+        "milestone": MILESTONE,
+        "dashboard_url": _dashboard_url(port),
+        "default_port": DEFAULT_PORT,
+        "state_file": _repo_rel(STATE_FILE),
+        "state_file_repo_local": _is_repo_local(STATE_FILE),
+        "recorded": {
+            "pid": pid,
+            "port": state.get("port"),
+            "dashboard_url": state.get("dashboard_url"),
+            "started_at": state.get("started_at"),
+        },
+        "dashboard_running": running,
+        "localhost_only": True,
+        "external_api": False,
+        "live_account_actions": False,
+        "live_posting": False,
+        "opens_browser_by_default": False,
+        "smoke_endpoints": ["%s %s" % (m, p) for m, p in SMOKE_ENDPOINTS],
+        "what_ghoti_can_do": WHAT_GHOTI_CAN_DO,
+        "generated_at": _now(),
+    }
+
+
+def cmd_start_dashboard(port: int, open_browser: bool, timeout: int) -> dict:
+    url = _dashboard_url(port)
+    state = _read_state()
+    recorded_pid = state.get("pid")
+
+    # If our recorded dashboard is already up on this port, do not double-start.
+    if (
+        recorded_pid
+        and _pid_alive(recorded_pid)
+        and state.get("port") == port
+        and _port_responds(port)
+    ):
+        return {
+            "ok": True,
+            "action": "start-dashboard",
+            "already_running": True,
+            "pid": recorded_pid,
+            "port": port,
+            "dashboard_url": url,
+            "ready": True,
+            "opened_browser": False,
+            "note": "dashboard already running (recorded PID)",
+            "state_file": _repo_rel(STATE_FILE),
+            "generated_at": _now(),
+        }
+
+    # Truthfully detect a port already in use by something else.
+    if _port_responds(port):
+        return {
+            "ok": False,
+            "action": "start-dashboard",
+            "already_running": False,
+            "port": port,
+            "dashboard_url": url,
+            "port_in_use": True,
+            "error": "port %d is already in use by another process" % port,
+            "generated_at": _now(),
+        }
+
+    if not SERVER_JS.exists():
+        return {
+            "ok": False,
+            "action": "start-dashboard",
+            "error": "dashboard server.js not found",
+            "generated_at": _now(),
+        }
+
+    proc = _start_node_dashboard(port)
+    ready = _wait_for_ready(port, timeout)
+    if not ready:
+        # Failed to come up — terminate the process we just started.
+        _kill_pid(proc.pid)
+        return {
+            "ok": False,
+            "action": "start-dashboard",
+            "pid": proc.pid,
+            "port": port,
+            "dashboard_url": url,
+            "ready": False,
+            "error": "dashboard did not become ready within %d seconds" % timeout,
+            "generated_at": _now(),
+        }
+
+    _write_state({
+        "pid": proc.pid,
+        "port": port,
+        "dashboard_url": url,
+        "started_at": _now(),
+        "launcher_version": LAUNCHER_VERSION,
+    })
+
+    opened = False
+    if open_browser:
+        # Localhost only, and only because --open-dashboard was passed.
+        if url.startswith("http://127.0.0.1:"):
+            try:
+                webbrowser.open(url)
+                opened = True
+            except Exception:
+                opened = False
+
+    return {
+        "ok": True,
+        "action": "start-dashboard",
+        "already_running": False,
+        "pid": proc.pid,
+        "port": port,
+        "dashboard_url": url,
+        "ready": True,
+        "opened_browser": opened,
+        "state_file": _repo_rel(STATE_FILE),
+        "generated_at": _now(),
+    }
+
+
+def cmd_stop_dashboard() -> dict:
+    state = _read_state()
+    pid = state.get("pid")
+    if not pid:
+        return {
+            "ok": True,
+            "action": "stop-dashboard",
+            "stopped": False,
+            "pid": None,
+            "note": "no launcher-recorded dashboard PID to stop",
+            "generated_at": _now(),
+        }
+    if not _pid_alive(pid):
+        # Stale record — clear it. Never touch any other process.
+        _write_state({})
+        return {
+            "ok": True,
+            "action": "stop-dashboard",
+            "stopped": False,
+            "pid": pid,
+            "note": "recorded PID is not running; cleared stale launcher state",
+            "generated_at": _now(),
+        }
+    killed = _kill_pid(pid)
+    _write_state({})
+    return {
+        "ok": bool(killed),
+        "action": "stop-dashboard",
+        "stopped": bool(killed),
+        "pid": pid,
+        "note": "terminated recorded PID only" if killed else "failed to terminate recorded PID",
+        "generated_at": _now(),
+    }
+
+
+def cmd_smoke(port: int, run_demo: bool, timeout: int) -> dict:
+    """Run the product smoke test against the 4 product-control endpoints.
+
+    If a launcher-recorded dashboard is already running, smoke that one and
+    leave it running. Otherwise start a temporary dashboard on a free port,
+    smoke it, and stop only that temporary process.
+    """
+    state = _read_state()
+    recorded_pid = state.get("pid")
+    recorded_port = state.get("port")
+    used_existing = False
+    started_temp = False
+    temp_proc = None
+    smoke_port = port
+
+    if (
+        recorded_pid
+        and _pid_alive(recorded_pid)
+        and recorded_port
+        and _port_responds(recorded_port)
+    ):
+        used_existing = True
+        smoke_port = recorded_port
+    else:
+        # Start a temporary dashboard on a guaranteed-free port.
+        smoke_port = port if not _port_responds(port) else _free_port()
+        if not SERVER_JS.exists():
+            return {
+                "ok": False,
+                "action": "smoke",
+                "error": "dashboard server.js not found",
+                "generated_at": _now(),
+            }
+        temp_proc = _start_node_dashboard(smoke_port)
+        started_temp = True
+        if not _wait_for_ready(smoke_port, timeout):
+            _kill_pid(temp_proc.pid)
+            return {
+                "ok": False,
+                "action": "smoke",
+                "started_temp_dashboard": True,
+                "error": "temporary dashboard did not become ready",
+                "generated_at": _now(),
+            }
+
+    base = _dashboard_url(smoke_port)
+    endpoints = []
+    demo = None
+    try:
+        for method, path in SMOKE_ENDPOINTS:
+            body = {} if method == "POST" else None
+            status, text = _http(method, base + path, timeout=timeout, body=body)
+            ref_error = ("method is not defined" in text) or ("pathname is not defined" in text)
+            parsed_ok = None
+            try:
+                parsed_ok = bool(json.loads(text).get("ok"))
+            except Exception:
+                parsed_ok = None
+            passed = (status == 200) and (not ref_error)
+            endpoints.append({
+                "method": method,
+                "path": path,
+                "http_status": status,
+                "ok": parsed_ok,
+                "ref_error": ref_error,
+                "passed": passed,
+            })
+            if run_demo and path == "/api/product-control/create-relay-pair":
+                try:
+                    payload = json.loads(text)
+                    demo = demo or {}
+                    demo["relay_pair_dir"] = payload.get("pair_dir")
+                    demo["relay_pair_ok"] = bool(payload.get("ok"))
+                except Exception:
+                    pass
+            if run_demo and path == "/api/product-control/run-content-studio-demo":
+                try:
+                    payload = json.loads(text)
+                    demo = demo or {}
+                    demo["content_studio_ok"] = bool(payload.get("ok"))
+                    demo["content_studio_mode"] = payload.get("mode")
+                except Exception:
+                    pass
+    finally:
+        if started_temp and temp_proc is not None:
+            _kill_pid(temp_proc.pid)
+
+    all_passed = all(e["passed"] for e in endpoints) and len(endpoints) == len(SMOKE_ENDPOINTS)
+    no_500 = all(e["http_status"] != 500 for e in endpoints)
+    no_ref_error = all(not e["ref_error"] for e in endpoints)
+    return {
+        "ok": bool(all_passed),
+        "action": "smoke",
+        "dashboard_url": base,
+        "used_existing_dashboard": used_existing,
+        "started_temp_dashboard": started_temp,
+        "smoke_endpoints": ["%s %s" % (m, p) for m, p in SMOKE_ENDPOINTS],
+        "endpoints": endpoints,
+        "all_passed": bool(all_passed),
+        "no_500": bool(no_500),
+        "no_ref_error": bool(no_ref_error),
+        "demo_smoke_requested": bool(run_demo),
+        "demo": demo,
+        "external_api": False,
+        "generated_at": _now(),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Human-readable rendering
+# ---------------------------------------------------------------------------
+
+def _print_human(result: dict) -> None:
+    action = result.get("action", "status")
+    if action == "status":
+        print("Ghoti Product Launcher %s (%s)" % (result["launcher_version"], result["milestone"]))
+        print("  dashboard_url: %s" % result["dashboard_url"])
+        print("  dashboard_running: %s" % result["dashboard_running"])
+        print("  localhost_only: %s | external_api: %s | live_account_actions: %s"
+              % (result["localhost_only"], result["external_api"], result["live_account_actions"]))
+        print("  smoke endpoints:")
+        for ep in result["smoke_endpoints"]:
+            print("    - %s" % ep)
+        print("  what Ghoti can do now:")
+        for item in result["what_ghoti_can_do"]:
+            print("    - %s" % item)
+        print("  one-command launch: python 03_scripts/ghoti_product_launcher.py --start-dashboard")
+    elif action == "start-dashboard":
+        if result.get("ok"):
+            print("Dashboard URL: %s" % result["dashboard_url"])
+            print("  pid: %s | port: %s | ready: %s | already_running: %s"
+                  % (result.get("pid"), result.get("port"), result.get("ready"),
+                     result.get("already_running")))
+            print("  opened_browser: %s" % result.get("opened_browser"))
+        else:
+            print("Start failed: %s" % result.get("error"))
+    elif action == "stop-dashboard":
+        print("Stop dashboard: stopped=%s pid=%s — %s"
+              % (result.get("stopped"), result.get("pid"), result.get("note")))
+    elif action == "smoke":
+        print("Product smoke test: %s" % ("PASS" if result.get("ok") else "FAIL"))
+        for ep in result.get("endpoints", []):
+            print("  %s %s -> HTTP %s passed=%s"
+                  % (ep["method"], ep["path"], ep["http_status"], ep["passed"]))
+        if result.get("demo"):
+            print("  demo: %s" % json.dumps(result["demo"]))
+
+
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
+
+def main(argv=None) -> int:
+    parser = argparse.ArgumentParser(
+        description="Ghoti Product Launcher (N+4.7A) — one-command local launcher + smoke.",
+    )
+    parser.add_argument("--status", action="store_true", help="show launcher + dashboard status")
+    parser.add_argument("--json", action="store_true", help="emit JSON output")
+    parser.add_argument("--start-dashboard", action="store_true", help="start the local dashboard")
+    parser.add_argument("--stop-dashboard", action="store_true", help="stop the launcher-recorded dashboard")
+    parser.add_argument("--smoke", action="store_true", help="run the product smoke test")
+    parser.add_argument("--open-dashboard", action="store_true",
+                        help="open the localhost dashboard in a browser (only when explicitly passed)")
+    parser.add_argument("--run-demo-smoke", action="store_true",
+                        help="include a local demo prompt-pair smoke in the smoke result")
+    parser.add_argument("--port", type=int, default=DEFAULT_PORT, help="dashboard port (default 3210)")
+    parser.add_argument("--timeout-seconds", type=int, default=DEFAULT_TIMEOUT_SECONDS,
+                        help="readiness / request timeout in seconds")
+    args = parser.parse_args(argv)
+
+    port = int(args.port) if args.port else DEFAULT_PORT
+    timeout = int(args.timeout_seconds) if args.timeout_seconds else DEFAULT_TIMEOUT_SECONDS
+
+    try:
+        if args.start_dashboard:
+            result = cmd_start_dashboard(port, args.open_dashboard, timeout)
+        elif args.stop_dashboard:
+            result = cmd_stop_dashboard()
+        elif args.smoke:
+            result = cmd_smoke(port, args.run_demo_smoke, timeout)
+        else:
+            # --status, bare --json, or no mode -> status.
+            result = cmd_status()
+    except Exception as exc:  # never crash with a traceback in --json mode
+        result = {"ok": False, "error": "launcher error: %s" % exc, "generated_at": _now()}
+
+    if args.json:
+        print(json.dumps(result, indent=2))
+    else:
+        _print_human(result)
+
+    return 0 if result.get("ok") else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
