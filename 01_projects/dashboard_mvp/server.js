@@ -7141,6 +7141,98 @@ async function handleApiRequest(request, response, requestUrl) {
     return;
   }
 
+  // ─── External Tool Sandbox (N+4.8A) ─────────────────────────────────────────
+  // Surface for the safe clone + static-scan manager. No install, no external
+  // code execution, no desktop control, no live APIs. Subprocess via fixed argv
+  // (shell:false); the sync/scan endpoints pass NO user-supplied repo slug —
+  // only the manager's fixed approved catalog is ever cloned.
+
+  function readExternalToolSandboxStatus() {
+    const statusFile = path.join(
+      repoRoot, "14_context", "external_tools", "external_tool_sandbox_status.json",
+    );
+    try {
+      if (fs.existsSync(statusFile)) {
+        return JSON.parse(fs.readFileSync(statusFile, "utf8"));
+      }
+    } catch (_) {}
+    return {
+      mode: "sandbox_static_inspection_only",
+      installs_performed: false,
+      external_code_executed: false,
+      runtime_wiring: "none",
+      desktop_control_enabled: false,
+      live_api_enabled: false,
+      human_approval_required: true,
+      repos: [],
+      adapters: [],
+      note: "external tool sandbox not yet synced",
+    };
+  }
+
+  // GET /api/external-tool-sandbox/status
+  if (request.method === "GET" && requestUrl.pathname === "/api/external-tool-sandbox/status") {
+    sendJson(response, 200, Object.assign({ ok: true }, readExternalToolSandboxStatus()));
+    return;
+  }
+
+  // GET /api/external-tool-sandbox/latest
+  if (request.method === "GET" && requestUrl.pathname === "/api/external-tool-sandbox/latest") {
+    sendJson(response, 200, { ok: true, latest: readExternalToolSandboxStatus() });
+    return;
+  }
+
+  // POST /api/external-tool-sandbox/sync-approved
+  if (request.method === "POST" && requestUrl.pathname === "/api/external-tool-sandbox/sync-approved") {
+    const managerScript = path.join(repoRoot, "03_scripts", "external_tool_sandbox_manager.py");
+    const py = resolvePython();
+    if (!py) {
+      sendJson(response, 200, { ok: false, available: false, error: "Python interpreter not found" });
+      return;
+    }
+    // Fixed argv. No user-supplied repo slug — only the approved catalog.
+    const syncArgv = [...py.baseArgs, managerScript, "--sync-approved", "--json"];
+    const syncResult = await runCommand(py.command, syncArgv, { cwd: repoRoot, timeoutMs: 600000 });
+    if (!syncResult.ok) {
+      sendJson(response, 200, {
+        ok: false, available: false,
+        error: syncResult.stderr || `exit ${syncResult.exitCode}`,
+      });
+      return;
+    }
+    try {
+      sendJson(response, 200, JSON.parse(syncResult.stdout));
+    } catch (_) {
+      sendJson(response, 200, { ok: false, available: false, error: "Failed to parse sandbox output" });
+    }
+    return;
+  }
+
+  // POST /api/external-tool-sandbox/scan
+  if (request.method === "POST" && requestUrl.pathname === "/api/external-tool-sandbox/scan") {
+    const managerScript = path.join(repoRoot, "03_scripts", "external_tool_sandbox_manager.py");
+    const py = resolvePython();
+    if (!py) {
+      sendJson(response, 200, { ok: false, available: false, error: "Python interpreter not found" });
+      return;
+    }
+    const scanArgv = [...py.baseArgs, managerScript, "--scan", "--json"];
+    const scanResult = await runCommand(py.command, scanArgv, { cwd: repoRoot, timeoutMs: 120000 });
+    if (!scanResult.ok) {
+      sendJson(response, 200, {
+        ok: false, available: false,
+        error: scanResult.stderr || `exit ${scanResult.exitCode}`,
+      });
+      return;
+    }
+    try {
+      sendJson(response, 200, JSON.parse(scanResult.stdout));
+    } catch (_) {
+      sendJson(response, 200, { ok: false, available: false, error: "Failed to parse sandbox output" });
+    }
+    return;
+  }
+
   sendJson(response, 404, {
     ok: false,
     error: "Route not found.",

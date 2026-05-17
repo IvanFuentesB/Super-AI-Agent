@@ -516,6 +516,31 @@
               <li><span class="chip chip--ok">No Live Account Actions</span> no logins, posting, money, or trading actions.</li>
             </ul>
           </div>
+
+          <div class="card" id="external-tool-sandbox-truth">
+            <h3 class="card-title">External Tool Sandbox Truth</h3>
+            <p class="card-note">N+4.8A: the External Tool Sandbox clones approved public repos into <code>21_repos/third_party/sandboxed/</code> for Static Scan Only. CLI: <code>03_scripts/external_tool_sandbox_manager.py</code>.</p>
+            <ul class="card-list">
+              <li><strong>UI-TARS Desktop</strong> — desktop GUI agent; sandbox static scan only</li>
+              <li><strong>UI-TARS Model</strong> — vision-language GUI model; sandbox static scan only</li>
+              <li><strong>TheAgency</strong> — multi-agent orchestration; sandbox static scan only</li>
+              <li><strong>agent-skills-eval</strong> — agent skill benchmark; sandbox static scan only</li>
+              <li><strong>Vouch Protocol</strong> — agent identity / vouching; sandbox static scan only</li>
+            </ul>
+            <div class="card-status" id="external-tool-sandbox-card-status">
+              <p><strong>Clone Status:</strong> <span id="external-tool-sandbox-clone-status">loading…</span></p>
+            </div>
+            <ul class="card-list">
+              <li><span class="chip chip--ok">Static Scan Only</span> approved repos are cloned and read — never installed or run.</li>
+              <li><span class="chip chip--ok">No Install Yet</span> no npm / pnpm / pip install is performed.</li>
+              <li><span class="chip chip--ok">No Runtime Wiring</span> external tools are not wired into Ghoti — adapter stubs only.</li>
+              <li><span class="chip chip--ok">No Desktop Control Yet</span> UI-TARS is not given control of the computer.</li>
+              <li><span class="chip chip--ok">No Live APIs</span> no Gemini / OpenAI / Anthropic API calls.</li>
+              <li><span class="chip chip--ok">Human Approval Required</span> real runtime wiring requires explicit operator approval.</li>
+              <li><strong>Adapter Stubs Generated:</strong> 5 safe local stubs under <code>02_automation/external_tool_adapters/</code></li>
+              <li><strong>Approval Packet Required:</strong> per-tool review packet under <code>14_context/external_tools/approval_packets/</code></li>
+            </ul>
+          </div>
         </section>
 
         <!-- ═══════════════════════════════════════════════════════════════════ -->
