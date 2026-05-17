@@ -1,0 +1,350 @@
+{
+  "manager": "external_tool_sandbox_manager",
+  "manager_version": "1.0.0",
+  "milestone": "N+4.8A",
+  "mode": "sandbox_static_inspection_only",
+  "sandbox_dir": "21_repos/third_party/sandboxed",
+  "sandbox_dir_repo_local": true,
+  "installs_performed": false,
+  "external_code_executed": false,
+  "runtime_wiring": "none",
+  "desktop_control_enabled": false,
+  "live_api_enabled": false,
+  "live_account_actions": false,
+  "human_approval_required": true,
+  "approved_catalog_count": 5,
+  "repos": [
+    {
+      "slug": "bytedance/UI-TARS-desktop",
+      "key": "ui_tars_desktop",
+      "name": "UI-TARS Desktop",
+      "purpose": "Desktop GUI agent \u2014 screenshot capture and click/type control of the local computer.",
+      "clone_status": "cloned",
+      "clone_error": null,
+      "commit": "7986f5aea500c4535c0e55dc5c5d0cda73767c45",
+      "clone_path": "21_repos/third_party/sandboxed/ui_tars_desktop",
+      "scan": {
+        "scanned": true,
+        "ecosystems": [
+          "node/javascript-typescript"
+        ],
+        "install_requirements": [
+          "npm",
+          "pnpm"
+        ],
+        "install_performed": false,
+        "api_key_required": true,
+        "api_key_evidence": [
+          "api_key",
+          "apikey",
+          "api-key",
+          "openai",
+          "anthropic",
+          "access_token",
+          "bearer",
+          "huggingface"
+        ],
+        "desktop_control_risk": true,
+        "live_account_risk": true,
+        "license": "Apache License",
+        "readme_present": true,
+        "top_level_entries": [
+          ".changeset",
+          ".commitlintrc.cjs",
+          ".editorconfig",
+          ".env.example",
+          ".eslintignore",
+          ".eslintrc.cjs",
+          ".ghoti_clone_complete",
+          ".git",
+          ".github",
+          ".gitignore",
+          ".husky",
+          ".lintstagedrc.mjs",
+          ".node-version",
+          ".npmrc",
+          ".prettierignore",
+          ".prettierrc.mjs",
+          ".secretlintignore",
+          ".secretlintrc.json",
+          ".vscode",
+          "CODE_OF_CONDUCT.md",
+          "CONTRIBUTING.md",
+          "LICENSE",
+          "README.md",
+          "README.zh-CN.md",
+          "SECURITY.md",
+          "apps",
+          "codecov.yml",
+          "docs",
+          "examples",
+          "images",
+          "infra",
+          "multimodal",
+          "package.json",
+          "packages",
+          "patches",
+          "pnpm-lock.yaml",
+          "pnpm-workspace.yaml",
+          "rfcs",
+          "scripts",
+          "tsconfig.json",
+          "turbo.json",
+          "vitest.config.mts",
+          "vitest.workspace.mts"
+        ]
+      }
+    },
+    {
+      "slug": "bytedance/UI-TARS",
+      "key": "ui_tars_model",
+      "name": "UI-TARS Model",
+      "purpose": "UI-TARS vision-language GUI agent model and inference assets.",
+      "clone_status": "cloned",
+      "clone_error": null,
+      "commit": "582f3a7ea5d285ee8ed9e2e84048d1ab01453c49",
+      "clone_path": "21_repos/third_party/sandboxed/ui_tars_model",
+      "scan": {
+        "scanned": true,
+        "ecosystems": [],
+        "install_requirements": [],
+        "install_performed": false,
+        "api_key_required": true,
+        "api_key_evidence": [
+          "api_key",
+          "openai",
+          "gemini",
+          "huggingface"
+        ],
+        "desktop_control_risk": true,
+        "live_account_risk": false,
+        "license": "Apache License",
+        "readme_present": true,
+        "top_level_entries": [
+          ".ghoti_clone_complete",
+          ".git",
+          ".github",
+          "LICENSE",
+          "README.md",
+          "README_coordinates.md",
+          "README_deploy.md",
+          "README_v1.md",
+          "UI_TARS_paper.pdf",
+          "UI_TARS_paper_preview.pdf",
+          "codes",
+          "data",
+          "figures"
+        ]
+      }
+    },
+    {
+      "slug": "the-agency-ai/the-agency",
+      "key": "the_agency",
+      "name": "TheAgency",
+      "purpose": "Multi-agent orchestration framework.",
+      "clone_status": "cloned",
+      "clone_error": null,
+      "commit": "dd2430bfe62c2e27c4e678b6879faffd1c2b372a",
+      "clone_path": "21_repos/third_party/sandboxed/the_agency",
+      "scan": {
+        "scanned": true,
+        "ecosystems": [
+          "node/javascript-typescript"
+        ],
+        "install_requirements": [
+          "npm"
+        ],
+        "install_performed": false,
+        "api_key_required": false,
+        "api_key_evidence": [],
+        "desktop_control_risk": false,
+        "live_account_risk": false,
+        "license": "MIT License",
+        "readme_present": true,
+        "top_level_entries": [
+          ".agency",
+          ".agency-setup-complete",
+          ".claude",
+          ".ghoti_clone_complete",
+          ".git",
+          ".github",
+          ".gitignore",
+          "CHANGELOG.md",
+          "CLAUDE.md",
+          "CODE_OF_CONDUCT.md",
+          "CONTRIBUTING.md",
+          "LICENSE",
+          "README.md",
+          "agency",
+          "package.json",
+          "src",
+          "usr"
+        ]
+      }
+    },
+    {
+      "slug": "darkrishabh/agent-skills-eval",
+      "key": "agent_skills_eval",
+      "name": "agent-skills-eval",
+      "purpose": "Agent skill benchmarking and evaluation harness.",
+      "clone_status": "cloned",
+      "clone_error": null,
+      "commit": "b60eebe3c6edaa917a284e13b9b0e9fa00f1c957",
+      "clone_path": "21_repos/third_party/sandboxed/agent_skills_eval",
+      "scan": {
+        "scanned": true,
+        "ecosystems": [
+          "node/javascript-typescript"
+        ],
+        "install_requirements": [
+          "npm"
+        ],
+        "install_performed": false,
+        "api_key_required": true,
+        "api_key_evidence": [
+          "api_key",
+          "apikey",
+          "api-key",
+          "openai",
+          "anthropic"
+        ],
+        "desktop_control_risk": false,
+        "live_account_risk": true,
+        "license": "MIT License",
+        "readme_present": true,
+        "top_level_entries": [
+          ".editorconfig",
+          ".ghoti_clone_complete",
+          ".git",
+          ".github",
+          ".gitignore",
+          "CHANGELOG.md",
+          "CODE_OF_CONDUCT.md",
+          "CONTRIBUTING.md",
+          "LICENSE",
+          "README.md",
+          "SECURITY.md",
+          "docs",
+          "examples",
+          "package-lock.json",
+          "package.json",
+          "src",
+          "test",
+          "tsconfig.json"
+        ]
+      }
+    },
+    {
+      "slug": "vouch-protocol/vouch",
+      "key": "vouch",
+      "name": "Vouch Protocol",
+      "purpose": "Agent identity / attestation / vouching protocol.",
+      "clone_status": "cloned",
+      "clone_error": null,
+      "commit": "1b37c3ef661bd1c4ed87c5349e51be7ce5038bcc",
+      "clone_path": "21_repos/third_party/sandboxed/vouch",
+      "scan": {
+        "scanned": true,
+        "ecosystems": [
+          "python"
+        ],
+        "install_requirements": [
+          "pip"
+        ],
+        "install_performed": false,
+        "api_key_required": true,
+        "api_key_evidence": [
+          "anthropic"
+        ],
+        "desktop_control_risk": false,
+        "live_account_risk": true,
+        "license": "Apache License 2.0",
+        "readme_present": true,
+        "top_level_entries": [
+          ".agent",
+          ".ghoti_clone_complete",
+          ".git",
+          ".github",
+          ".gitignore",
+          "CHANGELOG.md",
+          "CODE_OF_CONDUCT.md",
+          "CONTRIBUTING.md",
+          "GOVERNANCE.md",
+          "LICENSE",
+          "MAINTAINERS.md",
+          "MANIFEST.in",
+          "Makefile",
+          "README.md",
+          "RELEASES.md",
+          "ROADMAP.md",
+          "SECURITY.md",
+          "TRADEMARK.md",
+          "agents-and-skills",
+          "browser-extension",
+          "claude-skill",
+          "cloudflare-worker",
+          "codecov.yml",
+          "demo",
+          "docs",
+          "examples",
+          "funding.json",
+          "gemini-gem",
+          "github-app",
+          "github-app-worker",
+          "go-sidecar",
+          "licenses",
+          "manage.py",
+          "mobile",
+          "openai-gpt",
+          "packages",
+          "papers",
+          "pyproject.toml",
+          "requirements.txt",
+          "scribe_alias.sh",
+          "scripts",
+          "test-vectors",
+          "tests",
+          "vouch",
+          "vouch.json",
+          "website",
+          "website-agent"
+        ]
+      }
+    }
+  ],
+  "adapters": [
+    {
+      "tool": "UI-TARS Desktop",
+      "adapter": "ui_tars_desktop_adapter.py",
+      "path": "02_automation/external_tool_adapters/ui_tars_desktop_adapter.py",
+      "exists": true
+    },
+    {
+      "tool": "UI-TARS Model",
+      "adapter": "ui_tars_model_adapter.py",
+      "path": "02_automation/external_tool_adapters/ui_tars_model_adapter.py",
+      "exists": true
+    },
+    {
+      "tool": "TheAgency",
+      "adapter": "the_agency_adapter.py",
+      "path": "02_automation/external_tool_adapters/the_agency_adapter.py",
+      "exists": true
+    },
+    {
+      "tool": "agent-skills-eval",
+      "adapter": "agent_skills_eval_adapter.py",
+      "path": "02_automation/external_tool_adapters/agent_skills_eval_adapter.py",
+      "exists": true
+    },
+    {
+      "tool": "Vouch Protocol",
+      "adapter": "vouch_adapter.py",
+      "path": "02_automation/external_tool_adapters/vouch_adapter.py",
+      "exists": true
+    }
+  ],
+  "last_sync_at": "20260517T193027Z",
+  "last_scan_at": "20260517T193027Z",
+  "generated_at": "20260517T193027Z"
+}
