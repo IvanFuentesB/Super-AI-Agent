@@ -6934,6 +6934,213 @@ async function handleApiRequest(request, response, requestUrl) {
     return;
   }
 
+  // ─── Ghoti Product Control Center (N+4.6A) ──────────────────────────────────
+  // Usability/product layer. Local-only. No external API, no live account
+  // actions, no autonomous launch. Subprocess endpoints use fixed argv +
+  // shell:false + timeouts. Path output reuses the N+4.4D isPathInsideRepo
+  // containment helper.
+
+  // GET /api/product-control/status
+  if (request.method === "GET" && requestUrl.pathname === "/api/product-control/status") {
+    sendJson(response, 200, {
+      ok: true,
+      product: "Ghoti Local Supervised Operator",
+      local_only: true,
+      live_posting: false,
+      live_account_actions: false,
+      external_api: false,
+      external_tools: "planning_only",
+      approval_gates: "required",
+      autonomous_launch: false,
+      relay_mode: "copy_paste_only",
+      capabilities: [
+        {
+          key: "local_content_studio",
+          label: "Local Content Studio",
+          available: true,
+          how_to_run: "Run Local Content Studio button -> POST /api/product-control/run-content-studio-demo (safe dry-run, no live posting)",
+        },
+        {
+          key: "desktop_operator_action_center",
+          label: "Desktop Operator Action Center",
+          available: true,
+          how_to_run: "Desktop Operator section: safe dry-run -> human approval -> execute",
+        },
+        {
+          key: "desktop_recipe_runner",
+          label: "Desktop Recipe Runner",
+          available: true,
+          how_to_run: "Recipe Runner section: pick recipe -> dry-run -> approve -> execute",
+        },
+        {
+          key: "parallel_agent_relay",
+          label: "Parallel Agent Relay",
+          available: true,
+          how_to_run: "Generate Claude + Codex Prompt Pair button -> copy-paste each prompt manually",
+        },
+        {
+          key: "local_memory_gemma_fallback",
+          label: "Local Memory / Gemma Fallback",
+          available: true,
+          how_to_run: "local_memory_compression_bridge.py --json (local only, no external API)",
+        },
+        {
+          key: "external_tool_intake",
+          label: "External Tool Intake",
+          available: true,
+          mode: "planning_only",
+          how_to_run: "Catalog / intake review only — nothing is cloned, installed, or run",
+        },
+      ],
+    });
+    return;
+  }
+
+  // POST /api/product-control/run-content-studio-demo
+  if (request.method === "POST" && requestUrl.pathname === "/api/product-control/run-content-studio-demo") {
+    const studioScript = path.join(repoRoot, "03_scripts", "supervised_content_mvp_runner.py");
+    const py = resolvePython();
+    if (!py) {
+      sendJson(response, 200, { ok: false, available: false, error: "Python interpreter not found" });
+      return;
+    }
+    if (!fs.existsSync(studioScript)) {
+      sendJson(response, 200, { ok: false, available: false, error: "Content studio runner not found" });
+      return;
+    }
+    // Fixed argv. Safe dry-run only — never --apply, no live posting.
+    const argv = [...py.baseArgs, studioScript, "--run", "--dry-run"];
+    let studioResult;
+    try {
+      studioResult = await runCommand(py.command, argv, { cwd: repoRoot, timeoutMs: 60000 });
+    } catch (err) {
+      sendJson(response, 200, { ok: false, available: false, mode: "dry_run", error: String(err && err.message) });
+      return;
+    }
+    if (!studioResult.ok) {
+      sendJson(response, 200, {
+        ok: false,
+        available: false,
+        mode: "dry_run",
+        live_posting: false,
+        external_api: false,
+        error: studioResult.stderr || `exit ${studioResult.exitCode}`,
+        output: studioResult.stdout,
+      });
+      return;
+    }
+    sendJson(response, 200, {
+      ok: true,
+      available: true,
+      mode: "dry_run",
+      live_posting: false,
+      external_api: false,
+      output: studioResult.stdout,
+    });
+    return;
+  }
+
+  // POST /api/product-control/create-relay-pair
+  if (request.method === "POST" && requestUrl.pathname === "/api/product-control/create-relay-pair") {
+    let body = {};
+    try {
+      body = await readJsonBody(request);
+    } catch (_) {
+      body = {};
+    }
+    const str = (v, fallback) =>
+      (typeof v === "string" && v.trim().length > 0 ? v.trim() : fallback);
+    const milestone = str(body.milestone, "Ghoti Product Control Center Demo");
+    const title = str(body.title, "Product Control Center Relay Pair");
+    const implBranch = str(body.implementation_branch, "feat/ghoti-demo-implementation");
+    const auditBranch = str(body.audit_branch, "audit/ghoti-demo-audit");
+    const allowedEfforts = ["extra-high", "high", "medium"];
+    let codexEffort = str(body.codex_effort, "extra-high");
+    if (!allowedEfforts.includes(codexEffort)) {
+      codexEffort = "extra-high";
+    }
+    const relayScript = path.join(repoRoot, "03_scripts", "parallel_agent_relay.py");
+    const py = resolvePython();
+    if (!py) {
+      sendJson(response, 200, { ok: false, available: false, error: "Python interpreter not found" });
+      return;
+    }
+    const argv = [
+      ...py.baseArgs,
+      relayScript,
+      "--create-pair",
+      "--milestone", milestone,
+      "--title", title,
+      "--implementation-branch", implBranch,
+      "--audit-branch", auditBranch,
+      "--codex-effort", codexEffort,
+      "--write-packets",
+      "--json",
+    ];
+    let relayResult;
+    try {
+      relayResult = await runCommand(py.command, argv, { cwd: repoRoot, timeoutMs: 30000 });
+    } catch (err) {
+      sendJson(response, 200, { ok: false, available: false, error: String(err && err.message) });
+      return;
+    }
+    if (!relayResult.ok) {
+      sendJson(response, 200, { ok: false, available: false, error: relayResult.stderr || `exit ${relayResult.exitCode}` });
+      return;
+    }
+    try {
+      sendJson(response, 200, JSON.parse(relayResult.stdout));
+    } catch (_) {
+      sendJson(response, 200, { ok: false, available: false, error: "Failed to parse relay output" });
+    }
+    return;
+  }
+
+  // GET /api/product-control/latest
+  if (request.method === "GET" && requestUrl.pathname === "/api/product-control/latest") {
+    const safeRepoRel = (absOrRel) => {
+      // N+4.4D containment: return a repo-relative POSIX path only if contained.
+      if (typeof absOrRel !== "string" || absOrRel.length === 0) return null;
+      if (!isPathInsideRepo(absOrRel)) return null;
+      const abs = path.isAbsolute(absOrRel) ? absOrRel : path.join(repoRoot, absOrRel);
+      return path.relative(repoRoot, path.resolve(abs)).replace(/\\/g, "/");
+    };
+    const newestSubdir = (dirAbs) => {
+      try {
+        return fs.readdirSync(dirAbs, { withFileTypes: true })
+          .filter((e) => e.isDirectory())
+          .map((e) => e.name)
+          .sort((a, b) => b.localeCompare(a))[0] || null;
+      } catch (_) {
+        return null;
+      }
+    };
+    const csDir = path.join(repoRoot, "14_context", "content_workflows", "runs");
+    const csId = newestSubdir(csDir);
+    const csRel = csId ? safeRepoRel(path.join(csDir, csId)) : null;
+    const pairsDir = path.join(repoRoot, "14_context", "agent_relay", "pairs");
+    const pairId = newestSubdir(pairsDir);
+    const pairRel = pairId ? safeRepoRel(path.join(pairsDir, pairId)) : null;
+    const doLatest = loadDesktopOperatorLatest();
+    const doHandoffRel = doLatest && doLatest.handoff_path ? safeRepoRel(doLatest.handoff_path) : null;
+    const doExecRel = doLatest && doLatest.execution_result_path ? safeRepoRel(doLatest.execution_result_path) : null;
+    const previewRel = doLatest && doLatest.preview_path ? safeRepoRel(doLatest.preview_path) : null;
+    sendJson(response, 200, {
+      ok: true,
+      local_only: true,
+      latest: {
+        content_studio_run: csRel ? { id: csId, path: csRel } : null,
+        relay_pair: pairRel ? { id: pairId, path: pairRel } : null,
+        desktop_operator_run:
+          doHandoffRel || doExecRel
+            ? { handoff_path: doHandoffRel, execution_result_path: doExecRel }
+            : null,
+        preview_path: previewRel,
+      },
+    });
+    return;
+  }
+
   sendJson(response, 404, {
     ok: false,
     error: "Route not found.",
