@@ -382,6 +382,7 @@
         </div>
         <ul class="sidebar-nav" role="list">
           <li><a href="#section-overview" class="sidebar-link">Overview</a></li>
+          <li><a href="#section-product-control" class="sidebar-link">Product Control Center</a></li>
           <li><a href="#section-health" class="sidebar-link">System Health</a></li>
           <li><a href="#section-active" class="sidebar-link">Active Mode</a></li>
           <li>
@@ -433,6 +434,66 @@
             <h3 class="card-title">Next Actions</h3>
             <ul class="next-actions-list" id="next-actions-list">
               <li class="next-action-item">Loading health data…</li>
+            </ul>
+          </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- 1B. GHOTI PRODUCT CONTROL CENTER (N+4.6A)                           -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <section class="content-section" id="section-product-control">
+          <div class="section-hdr">
+            <h2>Ghoti Product Control Center</h2>
+            <p class="section-sub">N+4.6A: one place to see what Ghoti can do now and run safe local demos. Local Only. Approval-gated. No live account actions.</p>
+          </div>
+
+          <div class="card" id="product-control-capabilities-card">
+            <h3 class="card-title">What Ghoti Can Do Now</h3>
+            <p class="card-note">Live capability summary from <code>/api/product-control/status</code>.</p>
+            <ul class="card-list" id="product-control-capabilities">
+              <li class="empty-state">Loading product status…</li>
+            </ul>
+          </div>
+
+          <div class="card" id="product-control-actions-card">
+            <h3 class="card-title">Run &amp; Generate</h3>
+            <p class="card-note">All actions below are local and safe. Local Content Studio runs in dry-run only — No Live Posting, no external API. Generating a prompt pair never launches Claude or Codex; you copy-paste each prompt manually.</p>
+            <div class="card-actions">
+              <button id="product-refresh-btn" type="button">Refresh Product Status</button>
+              <button id="product-run-content-studio-btn" type="button">Run Local Content Studio</button>
+              <button id="product-create-relay-pair-btn" type="button">Generate Claude + Codex Prompt Pair</button>
+              <button id="product-open-preview-btn" type="button">Open Latest Preview</button>
+            </div>
+            <ul class="card-list" style="margin-top:0.75rem;">
+              <li><strong>Desktop Operator Safe Dry Run:</strong> use the Desktop Operator Action Center — dry-run, then human approval, then execute.</li>
+              <li><strong>Recipe Runner:</strong> use the Desktop Operator Recipe Runner — pick a recipe, dry-run, approve, execute.</li>
+              <li><strong>Local Memory Compression:</strong> Gemma local fallback via <code>local_memory_compression_bridge.py</code> — Local Only, no external API.</li>
+            </ul>
+            <div id="product-action-result" class="card-status">
+              <p class="empty-state">No product action run yet.</p>
+            </div>
+          </div>
+
+          <div class="card" id="product-control-latest-card">
+            <h3 class="card-title">Latest Outputs</h3>
+            <div class="card-status">
+              <p>Latest Content Studio Run: <code id="product-latest-content-studio">none</code></p>
+              <p>Latest Agent Relay Pair: <code id="product-latest-relay-pair">none</code></p>
+              <p>Latest Desktop Operator Run: <code id="product-latest-desktop-operator">none</code></p>
+              <p>Latest generated preview: <code id="product-latest-preview">none</code></p>
+            </div>
+            <p class="card-note">All paths are repo-local and path-contained (N+4.4D containment helper). Open Latest Preview never auto-opens an external browser; it surfaces the local preview path only.</p>
+          </div>
+
+          <div class="card" id="product-control-safety-card">
+            <h3 class="card-title">Safety &amp; Scope</h3>
+            <ul class="card-list">
+              <li><span class="chip chip--ok">Approval Gates Required</span> every risky or outbound action is approval-gated and human-confirmed.</li>
+              <li><span class="chip chip--ok">Local Only</span> all work stays on this machine, inside the repo root.</li>
+              <li><span class="chip chip--ok">No Live Posting</span> Local Content Studio is dry-run; nothing is uploaded or published.</li>
+              <li><span class="chip chip--ok">No Live Account Actions</span> no logins, no API keys, no money or trading actions.</li>
+              <li><span class="chip chip--ok">External Tools Planning Only</span> external tool intake is catalog/review only — nothing is cloned, installed, or run.</li>
+              <li><strong>Parallel Agent Relay:</strong> copy-paste only — no autonomous Claude/Codex launch.</li>
             </ul>
           </div>
         </section>
