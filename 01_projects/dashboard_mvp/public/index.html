@@ -496,6 +496,26 @@
               <li><strong>Parallel Agent Relay:</strong> copy-paste only — no autonomous Claude/Codex launch.</li>
             </ul>
           </div>
+
+          <div class="card" id="ghoti-local-launcher-truth">
+            <h3 class="card-title">Ghoti Local Launcher Truth</h3>
+            <p class="card-note">N+4.7A: a One-Command Launcher to open and smoke-test Ghoti like a real local product. CLI: <code>03_scripts/ghoti_product_launcher.py</code>.</p>
+            <ul class="card-list">
+              <li><strong>One-Command Launcher:</strong> <code>python 03_scripts/ghoti_product_launcher.py --start-dashboard</code></li>
+              <li><strong>Dashboard URL:</strong> <code>http://127.0.0.1:3210</code> — printed exactly when the dashboard starts</li>
+              <li><strong>Start Dashboard:</strong> <code>--start-dashboard</code> — runs node server.js with fixed argv; records the PID</li>
+              <li><strong>Stop Dashboard:</strong> <code>--stop-dashboard</code> — stops only the launcher-recorded PID</li>
+              <li><strong>Product Smoke Test:</strong> <code>--smoke</code> — checks the four <code>/api/product-control/*</code> endpoints</li>
+              <li><strong>Open Dashboard Optional:</strong> <code>--open-dashboard</code> — opens the browser only when explicitly passed</li>
+              <li><strong>Run Demo Smoke:</strong> <code>--run-demo-smoke</code> — includes a local demo prompt-pair smoke</li>
+              <li><strong>Safe PID Tracking:</strong> launcher state stored in <code>runtime_data/ghoti_product_launcher_state.json</code></li>
+            </ul>
+            <ul class="card-list">
+              <li><span class="chip chip--ok">Localhost Only</span> the launcher and dashboard bind to 127.0.0.1.</li>
+              <li><span class="chip chip--ok">No External API</span> the smoke test uses only local product-control endpoints.</li>
+              <li><span class="chip chip--ok">No Live Account Actions</span> no logins, posting, money, or trading actions.</li>
+            </ul>
+          </div>
         </section>
 
         <!-- ═══════════════════════════════════════════════════════════════════ -->
