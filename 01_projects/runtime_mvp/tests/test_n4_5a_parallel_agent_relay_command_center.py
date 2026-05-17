@@ -24,15 +24,34 @@ Covers:
 
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
+import urllib.error
+import urllib.parse
+import urllib.request
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).parent.parent.parent.parent.resolve()
 SCRIPT = REPO_ROOT / "03_scripts" / "parallel_agent_relay.py"
+SERVER_JS = REPO_ROOT / "01_projects" / "dashboard_mvp" / "server.js"
 PYTHON = sys.executable
+
+
+def _relay_section(server_text: str) -> str:
+    """Return the Parallel Agent Relay endpoint block of server.js."""
+    start = server_text.find("Parallel Agent Relay (N+4.5A)")
+    if start == -1:
+        start = server_text.find("agent-relay/status")
+    if start == -1:
+        return ""
+    end = server_text.find("Route not found.", start)
+    if end == -1:
+        end = start + 8000
+    return server_text[start:end]
 
 
 def run_relay(*args) -> subprocess.CompletedProcess:
@@ -473,6 +492,277 @@ class TestDashboardAndServer(unittest.TestCase):
         if fn_start != -1:
             fn_body = self.serverjs[fn_start:fn_start + 600]
             self.assertIn("isPathInside", fn_body)
+
+
+# ===========================================================================
+# N+4.5C — relay runtime route regression guard (static)
+# ===========================================================================
+
+class TestRelayRouteGuards(unittest.TestCase):
+    """N+4.5C regression guard for the relay endpoint route bug.
+
+    The original N+4.5A relay endpoints used bare `method` / `pathname` in
+    their `if (...)` route guards. Those identifiers are undefined in the
+    handleApiRequest scope (every other handler uses `request.method` and
+    `requestUrl.pathname`), so each relay endpoint threw
+    `ReferenceError: method is not defined` at runtime and returned
+    {"ok":false,"error":"method is not defined"}. node --check (syntax only)
+    and endpoint-string-presence checks did not catch it. These tests fail
+    if that bug class is reintroduced.
+    """
+
+    RELAY_ENDPOINTS = [
+        "/api/agent-relay/status",
+        "/api/agent-relay/create-pair",
+        "/api/agent-relay/latest",
+        "/api/agent-relay/pair",
+        "/api/agent-relay/prompt",
+    ]
+
+    @classmethod
+    def setUpClass(cls):
+        cls.serverjs = SERVER_JS.read_text(encoding="utf-8", errors="replace")
+        cls.relay_section = _relay_section(cls.serverjs)
+
+    def _handle_api_body(self) -> str:
+        idx = self.serverjs.find("function handleApiRequest(")
+        self.assertGreater(idx, 0, "handleApiRequest not found in server.js")
+        return self.serverjs[idx:]
+
+    def test_relay_section_found(self):
+        self.assertTrue(self.relay_section, "relay endpoint section not found in server.js")
+
+    def test_each_relay_guard_uses_request_method(self):
+        for ep in self.RELAY_ENDPOINTS:
+            with self.subTest(endpoint=ep):
+                idx = self.relay_section.find('"%s"' % ep)
+                self.assertGreater(idx, 0, "endpoint %s not found in relay section" % ep)
+                line_start = self.relay_section.rfind("\n", 0, idx) + 1
+                guard = self.relay_section[line_start:idx]
+                self.assertIn(
+                    "request.method", guard,
+                    "%s route guard must use request.method, got: %s" % (ep, guard.strip()),
+                )
+
+    def test_each_relay_guard_uses_requesturl_pathname(self):
+        for ep in self.RELAY_ENDPOINTS:
+            with self.subTest(endpoint=ep):
+                idx = self.relay_section.find('"%s"' % ep)
+                self.assertGreater(idx, 0, "endpoint %s not found in relay section" % ep)
+                line_start = self.relay_section.rfind("\n", 0, idx) + 1
+                guard = self.relay_section[line_start:idx]
+                self.assertIn(
+                    "requestUrl.pathname", guard,
+                    "%s route guard must use requestUrl.pathname" % ep,
+                )
+
+    def test_no_bare_method_reference_in_relay_section(self):
+        # Bare `method` is only acceptable if a local const is defined.
+        has_const = re.search(r"\bconst\s+method\s*=", self._handle_api_body())
+        if not has_const:
+            self.assertNotIn("if (method ", self.relay_section)
+            self.assertNotIn("(method ===", self.relay_section)
+            self.assertNotIn("&& method ", self.relay_section)
+
+    def test_no_bare_pathname_reference_in_relay_section(self):
+        has_const = re.search(r"\bconst\s+pathname\s*=", self._handle_api_body())
+        if not has_const:
+            self.assertNotIn("if (pathname ", self.relay_section)
+            self.assertNotIn("(pathname ===", self.relay_section)
+            self.assertNotIn("&& pathname ", self.relay_section)
+
+    def test_relay_section_has_no_shell_true(self):
+        self.assertNotIn("shell: true", self.relay_section)
+        self.assertNotIn("shell:true", self.relay_section)
+
+    def test_relay_create_pair_spawns_python_only(self):
+        # create-pair must run the python relay script via resolvePython();
+        # it must never spawn a hardcoded or agent (claude/codex) command.
+        self.assertIn("runCommand(py.command", self.relay_section)
+        self.assertNotIn('runCommand("', self.relay_section)
+        self.assertNotIn("runCommand('", self.relay_section)
+
+    def test_relay_status_endpoint_is_copy_paste_only(self):
+        self.assertIn('relay_mode: "copy_paste_only"', self.relay_section)
+        self.assertIn("autonomous_launch: false", self.relay_section)
+
+    def test_resolve_relay_prompt_path_uses_is_path_inside(self):
+        # Prompt endpoint path containment must still use the N+4.4D-style
+        # isPathInside helper.
+        fn_start = self.serverjs.find("function resolveRelayPromptPath")
+        self.assertGreater(fn_start, 0, "resolveRelayPromptPath not found")
+        fn_body = self.serverjs[fn_start:fn_start + 600]
+        self.assertIn("isPathInside", fn_body)
+
+
+# ===========================================================================
+# N+4.5C — relay live endpoint validation (spawns the real Node server)
+# ===========================================================================
+
+class TestRelayLiveEndpoints(unittest.TestCase):
+    """N+4.5C: live HTTP validation of every relay endpoint.
+
+    Spawns the real dashboard Node server and exercises each relay endpoint.
+    These tests catch the runtime route bug that source string checks and
+    node --check missed: bare `method`/`pathname` produced
+    {"ok":false,"error":"method is not defined"} at runtime.
+    """
+
+    PORT = 3265
+    SEED_PROMPT = (
+        "14_context/agent_relay/pairs/20260516T142651Z_n_4_5a_seed/"
+        "01_claude_code_prompt.md"
+    )
+
+    @classmethod
+    def setUpClass(cls):
+        cls.ready = False
+        cls.proc = None
+        dashboard_dir = REPO_ROOT / "01_projects" / "dashboard_mvp"
+        env = dict(os.environ)
+        env["PORT"] = str(cls.PORT)
+        try:
+            cls.proc = subprocess.Popen(
+                ["node", "server.js"],
+                cwd=str(dashboard_dir),
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                env=env,
+            )
+        except (OSError, FileNotFoundError):
+            cls.proc = None
+            return
+        deadline = time.time() + 20
+        while time.time() < deadline:
+            if cls.proc.poll() is not None:
+                break  # server process exited during startup
+            try:
+                with urllib.request.urlopen(
+                    "http://127.0.0.1:%d/api/health" % cls.PORT, timeout=2
+                ) as r:
+                    if r.status == 200:
+                        cls.ready = True
+                        break
+            except Exception:
+                time.sleep(0.5)
+
+    @classmethod
+    def tearDownClass(cls):
+        if cls.proc is not None:
+            try:
+                cls.proc.terminate()
+                cls.proc.wait(timeout=5)
+            except Exception:
+                try:
+                    cls.proc.kill()
+                except Exception:
+                    pass
+
+    def setUp(self):
+        if not self.ready:
+            self.skipTest("dashboard Node server not ready (node missing or startup failed)")
+
+    def _get(self, path_and_query: str):
+        url = "http://127.0.0.1:%d%s" % (self.PORT, path_and_query)
+        try:
+            with urllib.request.urlopen(url, timeout=15) as r:
+                return r.status, r.read().decode("utf-8", "ignore")
+        except urllib.error.HTTPError as e:
+            body = e.read().decode("utf-8", "ignore") if e.fp else ""
+            return e.code, body
+
+    def _post(self, path: str, payload: dict):
+        url = "http://127.0.0.1:%d%s" % (self.PORT, path)
+        data = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(
+            url, data=data, headers={"Content-Type": "application/json"}, method="POST"
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=60) as r:
+                return r.status, r.read().decode("utf-8", "ignore")
+        except urllib.error.HTTPError as e:
+            body = e.read().decode("utf-8", "ignore") if e.fp else ""
+            return e.code, body
+
+    def _assert_no_runtime_ref_error(self, body: str):
+        self.assertNotIn("method is not defined", body)
+        self.assertNotIn("pathname is not defined", body)
+
+    def test_status_endpoint_live(self):
+        status, body = self._get("/api/agent-relay/status")
+        self.assertEqual(status, 200, body)
+        self._assert_no_runtime_ref_error(body)
+        data = json.loads(body)
+        self.assertTrue(data.get("ok"), body)
+        self.assertEqual(data.get("relay_mode"), "copy_paste_only")
+        self.assertFalse(data.get("autonomous_launch"))
+
+    def test_latest_endpoint_live(self):
+        status, body = self._get("/api/agent-relay/latest")
+        self.assertEqual(status, 200, body)
+        self._assert_no_runtime_ref_error(body)
+        data = json.loads(body)
+        self.assertTrue(data.get("ok"), body)
+
+    def test_create_pair_endpoint_live(self):
+        tmp = tempfile.mkdtemp(dir=str(REPO_ROOT / "14_context"))
+        try:
+            rel = str(Path(tmp).relative_to(REPO_ROOT)).replace("\\", "/")
+            status, body = self._post("/api/agent-relay/create-pair", {
+                "milestone": "N+4.5C Live Test",
+                "title": "Relay Live Endpoint Test",
+                "implementation_branch": "feat/test-impl",
+                "audit_branch": "audit/test-audit",
+                "codex_effort": "extra-high",
+                "output_dir": rel,
+            })
+            self.assertEqual(status, 200, body)
+            self._assert_no_runtime_ref_error(body)
+            data = json.loads(body)
+            self.assertTrue(data.get("ok"), body)
+            self.assertIn("manifest", data)
+            lanes = data["manifest"]["lanes"]
+            self.assertIn("claude", lanes)
+            self.assertIn("codex", lanes)
+        finally:
+            import shutil
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_pair_endpoint_live(self):
+        _, latest_body = self._get("/api/agent-relay/latest")
+        latest = json.loads(latest_body)
+        pair_id = latest.get("pair_id")
+        if not pair_id:
+            self.skipTest("no relay pair available to query")
+        status, body = self._get(
+            "/api/agent-relay/pair?id=%s" % urllib.parse.quote(pair_id)
+        )
+        self.assertEqual(status, 200, body)
+        self._assert_no_runtime_ref_error(body)
+        data = json.loads(body)
+        self.assertTrue(data.get("ok"), body)
+        self.assertIn("manifest", data)
+
+    def test_prompt_endpoint_live(self):
+        enc = urllib.parse.quote(self.SEED_PROMPT, safe="")
+        status, body = self._get("/api/agent-relay/prompt?path=%s" % enc)
+        self.assertEqual(status, 200, body)
+        self._assert_no_runtime_ref_error(body)
+        data = json.loads(body)
+        self.assertTrue(data.get("ok"), body)
+        self.assertIn("/ultraplan", data.get("content", ""))
+
+    def test_prompt_endpoint_rejects_traversal(self):
+        enc = urllib.parse.quote("../../../../Windows/System32/drivers/etc/hosts", safe="")
+        status, body = self._get("/api/agent-relay/prompt?path=%s" % enc)
+        self.assertEqual(status, 403, body)
+        self._assert_no_runtime_ref_error(body)
+
+    def test_no_relay_endpoint_returns_method_not_defined(self):
+        for ep in ("/api/agent-relay/status", "/api/agent-relay/latest"):
+            with self.subTest(endpoint=ep):
+                _, body = self._get(ep)
+                self._assert_no_runtime_ref_error(body)
 
 
 if __name__ == "__main__":
