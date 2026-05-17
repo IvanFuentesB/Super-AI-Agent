@@ -6616,3 +6616,133 @@ refreshLocalOrchestrator();
     refreshRelayStatus();
   }
 })();
+
+// ---------------------------------------------------------------------
+// N+4.6A Ghoti Product Control Center (client-side handlers)
+// ---------------------------------------------------------------------
+(function attachProductControlCenter() {
+  function esc(value) {
+    return escapeHtml(String(value == null ? "" : value));
+  }
+  function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value || "none";
+  }
+  function setActionResult(text) {
+    const el = document.getElementById("product-action-result");
+    if (!el) return;
+    el.innerHTML = "";
+    const p = document.createElement("p");
+    p.textContent = text;
+    el.appendChild(p);
+  }
+  async function callProduct(endpoint, method, body) {
+    const opts = { method: method, headers: { "Content-Type": "application/json" } };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(endpoint, opts);
+    return await res.json();
+  }
+  function renderCapabilities(data) {
+    const list = document.getElementById("product-control-capabilities");
+    if (!list) return;
+    if (!data || !data.ok || !Array.isArray(data.capabilities)) {
+      list.innerHTML = '<li class="empty-state">Product status unavailable.</li>';
+      return;
+    }
+    const rows = data.capabilities.map(function (c) {
+      const state = c.available ? "available" : "unavailable";
+      const mode = c.mode ? " (" + esc(c.mode) + ")" : "";
+      return "<li><strong>" + esc(c.label) + ":</strong> " + state + mode +
+        " — " + esc(c.how_to_run) + "</li>";
+    });
+    rows.push("<li><strong>Mode:</strong> local_only=" + esc(data.local_only) +
+      ", live_posting=" + esc(data.live_posting) +
+      ", live_account_actions=" + esc(data.live_account_actions) +
+      ", external_tools=" + esc(data.external_tools) +
+      ", approval_gates=" + esc(data.approval_gates) + "</li>");
+    list.innerHTML = rows.join("");
+  }
+  function renderLatest(data) {
+    const latest = data && data.latest ? data.latest : {};
+    setText("product-latest-content-studio",
+      latest.content_studio_run ? latest.content_studio_run.path : "none");
+    setText("product-latest-relay-pair",
+      latest.relay_pair ? latest.relay_pair.path : "none");
+    setText("product-latest-desktop-operator",
+      latest.desktop_operator_run
+        ? (latest.desktop_operator_run.execution_result_path ||
+           latest.desktop_operator_run.handoff_path || "none")
+        : "none");
+    setText("product-latest-preview", latest.preview_path || "none");
+  }
+  async function refreshProductStatus() {
+    try {
+      renderCapabilities(await callProduct("/api/product-control/status", "GET"));
+    } catch (err) {
+      const list = document.getElementById("product-control-capabilities");
+      if (list) list.innerHTML = '<li class="empty-state">Could not load product status.</li>';
+    }
+    try {
+      renderLatest(await callProduct("/api/product-control/latest", "GET"));
+    } catch (err) { /* silent — latest is best-effort */ }
+  }
+  function bind(id, fn) {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("click", fn);
+  }
+  bind("product-refresh-btn", async function () {
+    setActionResult("Refreshing product status…");
+    await refreshProductStatus();
+    setActionResult("Product status refreshed.");
+  });
+  bind("product-run-content-studio-btn", async function () {
+    setActionResult("Running Local Content Studio (dry-run only — no live posting, no external API)…");
+    try {
+      const data = await callProduct("/api/product-control/run-content-studio-demo", "POST", {});
+      if (data && data.ok) {
+        setActionResult("Local Content Studio dry-run complete (mode=" + (data.mode || "dry_run") +
+          "). No live posting, no external API.");
+      } else {
+        setActionResult("Local Content Studio reported unavailable: " +
+          ((data && data.error) || "unknown") + " (truthful report, no crash).");
+      }
+      await refreshProductStatus();
+    } catch (err) {
+      setActionResult("Local Content Studio could not run: " + (err && err.message));
+    }
+  });
+  bind("product-create-relay-pair-btn", async function () {
+    setActionResult("Generating Claude + Codex prompt pair (copy-paste only — no agent launch)…");
+    try {
+      const data = await callProduct("/api/product-control/create-relay-pair", "POST", {});
+      if (data && data.ok) {
+        setActionResult("Prompt pair generated at " + (data.pair_dir || "(see latest)") +
+          ". Copy-paste each prompt manually — nothing was launched automatically.");
+      } else {
+        setActionResult("Relay pair generation reported unavailable: " +
+          ((data && data.error) || "unknown"));
+      }
+      await refreshProductStatus();
+    } catch (err) {
+      setActionResult("Relay pair could not be generated: " + (err && err.message));
+    }
+  });
+  bind("product-open-preview-btn", async function () {
+    try {
+      const data = await callProduct("/api/product-control/latest", "GET");
+      const preview = data && data.latest ? data.latest.preview_path : null;
+      if (preview) {
+        setActionResult("Latest preview is a local repo file: " + preview +
+          ". No external browser was opened automatically.");
+      } else {
+        setActionResult("No local preview available yet. Run a content studio or desktop operator workflow first.");
+      }
+      renderLatest(data);
+    } catch (err) {
+      setActionResult("Could not read latest preview: " + (err && err.message));
+    }
+  });
+  if (document.getElementById("section-product-control")) {
+    refreshProductStatus();
+  }
+})();
