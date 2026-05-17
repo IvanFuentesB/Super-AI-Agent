@@ -6746,3 +6746,41 @@ refreshLocalOrchestrator();
     refreshProductStatus();
   }
 })();
+
+// ---------------------------------------------------------------------
+// N+4.8A External Tool Sandbox Truth (client-side handler, read-only)
+// ---------------------------------------------------------------------
+(function attachExternalToolSandbox() {
+  function renderCloneStatus(data) {
+    const el = document.getElementById("external-tool-sandbox-clone-status");
+    if (!el) return;
+    if (!data || !data.ok) {
+      el.textContent = "External Tool Sandbox status unavailable.";
+      return;
+    }
+    const repos = Array.isArray(data.repos) ? data.repos : [];
+    if (repos.length === 0) {
+      el.textContent = "no repos synced yet — static scan only, no install, no runtime wiring";
+      return;
+    }
+    const cloned = repos.filter(function (r) { return r.clone_status === "cloned"; }).length;
+    const parts = repos.map(function (r) {
+      return (r.name || r.slug || "?") + ": " + (r.clone_status || "unknown");
+    });
+    el.textContent = cloned + "/" + repos.length + " cloned — " + parts.join("; ") +
+      " (static scan only — no install, no runtime wiring, no desktop control, no live APIs)";
+  }
+  async function refreshExternalToolSandbox() {
+    const el = document.getElementById("external-tool-sandbox-clone-status");
+    if (!el) return;
+    try {
+      const res = await fetch("/api/external-tool-sandbox/status");
+      renderCloneStatus(await res.json());
+    } catch (err) {
+      el.textContent = "Could not load External Tool Sandbox status.";
+    }
+  }
+  if (document.getElementById("external-tool-sandbox-truth")) {
+    refreshExternalToolSandbox();
+  }
+})();
