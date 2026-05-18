@@ -446,12 +446,32 @@ def cmd_generate_adapters() -> dict:
     written = []
     for entry in APPROVED_CATALOG:
         path = ADAPTERS_DIR / entry["adapter"]
+        # A promoted adapter (N+4.9A+) is an execution-capable Ghoti adapter,
+        # not a stub — never regenerate it back into a stub.
+        promoted = False
+        if path.exists():
+            try:
+                promoted = "ADAPTER_PROMOTED = True" in path.read_text(encoding="utf-8", errors="ignore")
+            except Exception:
+                promoted = False
+        if promoted:
+            written.append({
+                "tool": entry["name"],
+                "adapter": entry["adapter"],
+                "path": _repo_rel(path),
+                "exists": True,
+                "promoted": True,
+                "regenerated": False,
+            })
+            continue
         path.write_text(_adapter_source(entry), encoding="utf-8")
         written.append({
             "tool": entry["name"],
             "adapter": entry["adapter"],
             "path": _repo_rel(path),
             "exists": path.exists(),
+            "promoted": False,
+            "regenerated": True,
         })
     # A small package marker so the adapters import cleanly as a group.
     init_path = ADAPTERS_DIR / "__init__.py"

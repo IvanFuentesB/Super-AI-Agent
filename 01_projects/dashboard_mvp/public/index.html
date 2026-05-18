@@ -541,6 +541,35 @@
               <li><strong>Approval Packet Required:</strong> per-tool review packet under <code>14_context/external_tools/approval_packets/</code></li>
             </ul>
           </div>
+
+          <div class="card" id="approved-adapter-execution-truth">
+            <h3 class="card-title">Approved Adapter Execution Truth</h3>
+            <p class="card-note">N+4.9A: the first approved adapter can run a real LOCAL demo. CLI: <code>03_scripts/approved_adapter_runner.py</code>.</p>
+            <ul class="card-list">
+              <li><strong>Approved Adapter Execution:</strong> one safe adapter executes a local demo workflow and produces real artifacts.</li>
+              <li><strong>agent-skills-eval Adapter:</strong> evaluates a demo skill against the Ghoti skill-quality checklist — no external repo code.</li>
+            </ul>
+            <div class="card-actions">
+              <button id="adapter-exec-refresh-btn" type="button">Refresh Adapter Status</button>
+              <button id="adapter-exec-list-btn" type="button">List Adapters</button>
+              <button id="adapter-exec-create-approval-btn" type="button">Create Approval</button>
+              <button id="adapter-exec-run-demo-btn" type="button">Run Safe Adapter Demo</button>
+            </div>
+            <div class="card-status" id="adapter-exec-status">
+              <p><strong>Latest Adapter Run:</strong> <span id="adapter-exec-latest">none</span></p>
+            </div>
+            <ul class="card-list">
+              <li><span class="chip chip--ok">Run Safe Adapter Demo</span> the dashboard button runs a Dry Run only.</li>
+              <li><span class="chip chip--ok">Dry Run Available</span> dry-run needs no approval token.</li>
+              <li><span class="chip chip--ok">Approval Token Required</span> non-dry-run execution requires a human approval token.</li>
+              <li><span class="chip chip--ok">Local Artifacts Only</span> outputs are repo-local files under <code>14_context/adapter_execution/runs/</code>.</li>
+              <li><span class="chip chip--ok">No External Repo Code Execution</span> only Ghoti-owned adapter code runs.</li>
+              <li><span class="chip chip--ok">No Installs</span> no npm / pnpm / pip install.</li>
+              <li><span class="chip chip--ok">No Desktop Control</span> no click / type / screenshot control.</li>
+              <li><span class="chip chip--ok">No Live APIs</span> no Gemini / OpenAI / Anthropic calls.</li>
+              <li><span class="chip chip--ok">Human Approval Required</span> real runtime wiring stays human-gated.</li>
+            </ul>
+          </div>
         </section>
 
         <!-- ═══════════════════════════════════════════════════════════════════ -->
