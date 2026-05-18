@@ -7233,6 +7233,80 @@ async function handleApiRequest(request, response, requestUrl) {
     return;
   }
 
+  // ─── Approved Adapter Execution (N+4.9A) ────────────────────────────────────
+  // Surface for the approved adapter runner. Local-only. No external repo code
+  // execution, no installs, no desktop control, no live APIs. Subprocess via
+  // fixed argv (shell:false); the adapter is always the fixed approved key and
+  // the dashboard run-demo path is always --dry-run (never non-dry-run).
+
+  function runAdapterRunner(extraArgs, timeoutMs) {
+    return new Promise((resolve) => {
+      const runnerScript = path.join(repoRoot, "03_scripts", "approved_adapter_runner.py");
+      const py = resolvePython();
+      if (!py) {
+        resolve({ ok: false, available: false, error: "Python interpreter not found" });
+        return;
+      }
+      const argv = [...py.baseArgs, runnerScript, ...extraArgs];
+      runCommand(py.command, argv, { cwd: repoRoot, timeoutMs: timeoutMs || 60000 })
+        .then((res) => {
+          if (!res.ok) {
+            resolve({ ok: false, available: false, error: res.stderr || `exit ${res.exitCode}` });
+            return;
+          }
+          try {
+            resolve(JSON.parse(res.stdout));
+          } catch (_) {
+            resolve({ ok: false, available: false, error: "Failed to parse runner output" });
+          }
+        });
+    });
+  }
+
+  // GET /api/adapter-execution/status
+  if (request.method === "GET" && requestUrl.pathname === "/api/adapter-execution/status") {
+    sendJson(response, 200, await runAdapterRunner(["--status", "--json"], 30000));
+    return;
+  }
+
+  // GET /api/adapter-execution/adapters
+  if (request.method === "GET" && requestUrl.pathname === "/api/adapter-execution/adapters") {
+    sendJson(response, 200, await runAdapterRunner(["--list-adapters", "--json"], 30000));
+    return;
+  }
+
+  // POST /api/adapter-execution/create-approval
+  if (request.method === "POST" && requestUrl.pathname === "/api/adapter-execution/create-approval") {
+    // Fixed approved adapter only — no user-supplied adapter name.
+    sendJson(response, 200, await runAdapterRunner(
+      ["--create-approval", "--adapter", "agent_skills_eval", "--json"], 30000));
+    return;
+  }
+
+  // POST /api/adapter-execution/run-demo
+  if (request.method === "POST" && requestUrl.pathname === "/api/adapter-execution/run-demo") {
+    // The dashboard only ever triggers a DRY-RUN demo — never a non-dry-run
+    // execution, and never with an approval token.
+    sendJson(response, 200, await runAdapterRunner(
+      ["--execute-approved", "--adapter", "agent_skills_eval", "--dry-run", "--json"], 120000));
+    return;
+  }
+
+  // GET /api/adapter-execution/latest
+  if (request.method === "GET" && requestUrl.pathname === "/api/adapter-execution/latest") {
+    const latestFile = path.join(
+      repoRoot, "14_context", "adapter_execution", "latest_adapter_run.json",
+    );
+    let latest = null;
+    try {
+      if (fs.existsSync(latestFile)) {
+        latest = JSON.parse(fs.readFileSync(latestFile, "utf8"));
+      }
+    } catch (_) {}
+    sendJson(response, 200, { ok: true, latest });
+    return;
+  }
+
   sendJson(response, 404, {
     ok: false,
     error: "Route not found.",

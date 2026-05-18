@@ -6784,3 +6784,107 @@ refreshLocalOrchestrator();
     refreshExternalToolSandbox();
   }
 })();
+
+// ---------------------------------------------------------------------
+// N+4.9A Approved Adapter Execution Truth (client-side handlers)
+// ---------------------------------------------------------------------
+(function attachApprovedAdapterExecution() {
+  function setLatest(text) {
+    const el = document.getElementById("adapter-exec-latest");
+    if (el) el.textContent = text || "none";
+  }
+  function setResult(text) {
+    const host = document.getElementById("adapter-exec-status");
+    if (!host) return;
+    let res = document.getElementById("adapter-exec-result");
+    if (!res) {
+      res = document.createElement("p");
+      res.id = "adapter-exec-result";
+      host.appendChild(res);
+    }
+    res.textContent = text;
+  }
+  async function call(endpoint, method) {
+    const res = await fetch(endpoint, {
+      method: method, headers: { "Content-Type": "application/json" },
+    });
+    return await res.json();
+  }
+  async function refreshLatest() {
+    try {
+      const data = await call("/api/adapter-execution/latest", "GET");
+      const latest = data && data.latest;
+      if (latest) {
+        setLatest(latest.run_id + " — score " + latest.evaluation_score +
+          "/100 (" + latest.evaluation_grade + "), " +
+          (latest.artifacts ? latest.artifacts.length : 0) + " local artifacts");
+      } else {
+        setLatest("none yet — run the safe adapter demo");
+      }
+    } catch (err) {
+      setLatest("unavailable");
+    }
+  }
+  function bind(id, fn) {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("click", fn);
+  }
+  bind("adapter-exec-refresh-btn", async function () {
+    setResult("Refreshing adapter status…");
+    try {
+      const data = await call("/api/adapter-execution/status", "GET");
+      setResult("Adapter runner: " + (data && data.ok ? "ok" : "unavailable") +
+        " — default adapter " + ((data && data.default_adapter) || "?") +
+        ", external_code_executed=" + String(data && data.external_code_executed));
+    } catch (err) {
+      setResult("Could not load adapter status.");
+    }
+    await refreshLatest();
+  });
+  bind("adapter-exec-list-btn", async function () {
+    setResult("Listing adapters…");
+    try {
+      const data = await call("/api/adapter-execution/adapters", "GET");
+      const names = ((data && data.adapters) || []).map(function (a) {
+        return a.key + (a.execution_approved ? " (approved)" : " (not approved)");
+      });
+      setResult("Adapters: " + names.join("; "));
+    } catch (err) {
+      setResult("Could not list adapters.");
+    }
+  });
+  bind("adapter-exec-create-approval-btn", async function () {
+    setResult("Creating approval…");
+    try {
+      const data = await call("/api/adapter-execution/create-approval", "POST");
+      if (data && data.ok) {
+        // The one-time token is never rendered to the page or returned by GET.
+        setResult("Approval created: " + data.approval_id +
+          ". A one-time approval token was issued — use it from the CLI for a non-dry-run.");
+      } else {
+        setResult("Approval creation unavailable: " + ((data && data.error) || "unknown"));
+      }
+    } catch (err) {
+      setResult("Could not create approval.");
+    }
+  });
+  bind("adapter-exec-run-demo-btn", async function () {
+    setResult("Running safe adapter demo (dry run — no approval token, no external code)…");
+    try {
+      const data = await call("/api/adapter-execution/run-demo", "POST");
+      if (data && data.ok) {
+        setResult("Dry-run demo complete: " + data.run_id + " — score " +
+          data.evaluation_score + "/100 (" + data.evaluation_grade + "); " +
+          ((data.artifacts || []).length) + " local artifacts written.");
+      } else {
+        setResult("Demo run unavailable: " + ((data && data.error) || "unknown"));
+      }
+      await refreshLatest();
+    } catch (err) {
+      setResult("Could not run adapter demo.");
+    }
+  });
+  if (document.getElementById("approved-adapter-execution-truth")) {
+    refreshLatest();
+  }
+})();
