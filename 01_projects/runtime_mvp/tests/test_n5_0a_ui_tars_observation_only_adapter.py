@@ -178,6 +178,18 @@ class TestDryRunArtifacts(unittest.TestCase):
                      "ui_tars_runtime_started", "desktop_control_enabled", "live_api_used"):
             self.assertFalse(manifest.get(flag), "%s must be false" % flag)
 
+    def test_manifest_includes_contract_fields(self):
+        # N+5.0B manifest contract: local_only / click_enabled / type_enabled
+        # must be present in 00_observation_manifest.json (not just in
+        # 03_observation.json).
+        manifest = json.loads((self.run_dir / "00_observation_manifest.json").read_text(encoding="utf-8"))
+        self.assertIn("local_only", manifest)
+        self.assertIn("click_enabled", manifest)
+        self.assertIn("type_enabled", manifest)
+        self.assertTrue(manifest.get("local_only") is True, "manifest local_only must be true")
+        self.assertTrue(manifest.get("click_enabled") is False, "manifest click_enabled must be false")
+        self.assertTrue(manifest.get("type_enabled") is False, "manifest type_enabled must be false")
+
     def test_observation_json_unsafe_flags_false(self):
         obs = json.loads((self.run_dir / "03_observation.json").read_text(encoding="utf-8"))
         self.assertEqual(obs.get("adapter_name"), "ui_tars_observation_only")
@@ -435,6 +447,21 @@ class TestLiveEndpoints(unittest.TestCase):
         self.assertEqual(data.get("mode"), "dry_run")
         self.assertFalse(data.get("screenshot_captured"))
 
+    def test_dry_run_endpoint_manifest_has_contract_fields(self):
+        # The endpoint-generated observation manifest must satisfy the N+5.0B
+        # contract: local_only / click_enabled / type_enabled present.
+        status, body = self._post("/api/ui-tars-observation/dry-run")
+        self.assertEqual(status, 200, body)
+        data = json.loads(body)
+        run_dir = data.get("run_dir")
+        self.assertTrue(run_dir)
+        manifest_path = REPO_ROOT / run_dir / "00_observation_manifest.json"
+        self.assertTrue(manifest_path.exists(), "endpoint did not write a manifest")
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertIs(manifest.get("local_only"), True)
+        self.assertIs(manifest.get("click_enabled"), False)
+        self.assertIs(manifest.get("type_enabled"), False)
+
     def test_create_approval_endpoint_live(self):
         status, body = self._post("/api/ui-tars-observation/create-approval")
         self.assertEqual(status, 200, body)
@@ -455,6 +482,45 @@ class TestLiveEndpoints(unittest.TestCase):
         status, body = self._get("/api/ui-tars-observation/status")
         self.assertEqual(status, 200, body)
         self.assertNotIn("approval_token", body)
+
+
+# ===========================================================================
+# N+5.0B manifest contract — every observation run manifest must be complete
+# ===========================================================================
+
+class TestAllRunManifestsContract(unittest.TestCase):
+    """Every observation run manifest on disk must satisfy the full N+5.0B
+    manifest contract. Guards against the N+5.0A blocker recurring."""
+
+    CONTRACT_TRUE = ["local_only"]
+    CONTRACT_FALSE = [
+        "click_enabled", "type_enabled", "external_repo_code_executed",
+        "installs_performed", "ui_tars_runtime_started", "desktop_control_enabled",
+        "live_api_used",
+    ]
+
+    @classmethod
+    def setUpClass(cls):
+        # Ensure at least one fresh run exists.
+        run_cli("--observe", "--dry-run", "--json")
+        runs_dir = REPO_ROOT / "14_context" / "ui_tars_observation" / "runs"
+        cls.manifests = sorted(runs_dir.glob("*/00_observation_manifest.json"))
+
+    def test_at_least_one_manifest_present(self):
+        self.assertTrue(self.manifests, "no observation run manifests found")
+
+    def test_every_manifest_satisfies_contract(self):
+        for mpath in self.manifests:
+            with self.subTest(manifest=mpath.parent.name):
+                manifest = json.loads(mpath.read_text(encoding="utf-8"))
+                for field in self.CONTRACT_TRUE:
+                    self.assertIs(manifest.get(field), True,
+                                  "%s: %s must be true" % (mpath.parent.name, field))
+                for field in self.CONTRACT_FALSE:
+                    self.assertIn(field, manifest,
+                                  "%s: missing contract field %s" % (mpath.parent.name, field))
+                    self.assertIs(manifest.get(field), False,
+                                  "%s: %s must be false" % (mpath.parent.name, field))
 
 
 if __name__ == "__main__":

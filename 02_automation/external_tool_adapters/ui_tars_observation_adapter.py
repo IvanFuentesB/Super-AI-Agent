@@ -234,17 +234,21 @@ def create_observation_packet(output_dir, dry_run=True, capture_screen=False,
         "generated_at": ts,
     }
 
-    # 00 manifest
+    # 00 manifest — full observation manifest contract (N+5.0B):
+    # local_only / click_enabled / type_enabled are required contract fields.
     _write(output_dir / "00_observation_manifest.json", json.dumps({
         "adapter": ADAPTER_KEY,
         "mode": mode,
         "dry_run": bool(dry_run),
+        "local_only": True,
         "capture_requested": bool(capture_screen),
         "screenshot_captured": capture["screenshot_captured"],
         "external_repo_code_executed": False,
         "installs_performed": False,
         "ui_tars_runtime_started": False,
         "desktop_control_enabled": False,
+        "click_enabled": False,
+        "type_enabled": False,
         "live_api_used": False,
         "generated_at": ts,
     }, indent=2))

@@ -1,12 +1,12 @@
 # UI-TARS Observation Report
 
 Mode: dry_run
-Generated: 20260518T102053Z
+Generated: 20260518T104524Z
 
 ## What this run did
 
 - Produced a local observation packet (Ghoti-owned artifacts).
-- Read static UI-TARS sandbox metadata: sandbox present = True.
+- Read static UI-TARS sandbox metadata: sandbox present = False.
 - Screenshot captured: False.
 - Screenshot: included.
 
