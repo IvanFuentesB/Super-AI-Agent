@@ -1,0 +1,19 @@
+{
+  "created_utc": "2026-05-19T14:03:52.126969+00:00",
+  "repo_root": "C:\\Users\\ai_sandbox\\Documents\\AI_Managed_Only\\.claude\\worktrees\\codex_n5_1a_public_github_readiness",
+  "artifacts": [
+    "00_manifest.json",
+    "01_public_repo_security_report.md",
+    "02_public_repo_security_report.json",
+    "03_gitignore_review.md",
+    "04_env_review.md",
+    "05_secret_pattern_scan.md",
+    "06_human_imported_stuff_review.md",
+    "07_license_review.md",
+    "08_public_release_checklist.md",
+    "09_human_next_steps.md"
+  ],
+  "total_checks": 136,
+  "safe_to_make_public": true,
+  "human_review_required": true
+}

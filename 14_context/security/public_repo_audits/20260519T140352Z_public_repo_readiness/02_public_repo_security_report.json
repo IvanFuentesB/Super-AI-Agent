@@ -1,0 +1,4080 @@
+{
+  "ok": true,
+  "audit": "public_repo_security_audit",
+  "repo_root": "C:\\Users\\ai_sandbox\\Documents\\AI_Managed_Only\\.claude\\worktrees\\codex_n5_1a_public_github_readiness",
+  "total_checks": 136,
+  "passed_checks": 110,
+  "failed_checks": 0,
+  "warning_checks": 26,
+  "blocking_findings": [],
+  "warning_findings": [
+    {
+      "category": "browser profile/session scan",
+      "severity": "warning",
+      "path": "04_docs/plans/assistant-stack-options.md",
+      "line": 96,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "browser profile/session scan",
+      "severity": "warning",
+      "path": "04_docs/plans/github-plan.md",
+      "line": 80,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "browser profile/session scan",
+      "severity": "warning",
+      "path": "14_context/00_main_memory/local-vs-sync-boundaries.md",
+      "line": 8,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "browser profile/session scan",
+      "severity": "warning",
+      "path": "14_context/codex_cua_sandbox_profile_review_n3_5.md",
+      "line": 76,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "browser profile/session scan",
+      "severity": "warning",
+      "path": "14_context/codex_n3_14_paperclip_source_audit.md",
+      "line": 162,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "browser profile/session scan",
+      "severity": "warning",
+      "path": "14_context/codex_openfang_screenpipe_audit_n3_3.md",
+      "line": 45,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "browser profile/session scan",
+      "severity": "warning",
+      "path": "14_context/codex_openfang_screenpipe_audit_n3_3.md",
+      "line": 84,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "browser profile/session scan",
+      "severity": "warning",
+      "path": "14_context/codex_openfang_screenpipe_audit_n3_3.md",
+      "line": 93,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "browser profile/session scan",
+      "severity": "warning",
+      "path": "14_context/computer_use_candidate_ranking_n3_2_codex.md",
+      "line": 39,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "browser profile/session scan",
+      "severity": "warning",
+      "path": "14_context/computer_use_candidate_ranking_n3_2_codex.md",
+      "line": 86,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "browser profile/session scan",
+      "severity": "warning",
+      "path": "14_context/cua_image_digest_gate_n3_11.md",
+      "line": 94,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "browser profile/session scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 14,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "browser profile/session scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 15,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "browser profile/session scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 16,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "browser profile/session scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 17,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "browser profile/session scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 18,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "browser profile/session scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 19,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "browser profile/session scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 20,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "browser profile/session scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 21,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "browser profile/session scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 22,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "DB dump scan",
+      "severity": "warning",
+      "path": "03_scripts/public_repo_security_audit.py",
+      "line": 32,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "SQLite runtime DB scan",
+      "severity": "warning",
+      "path": ".gitignore",
+      "line": 13,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "SQLite runtime DB scan",
+      "severity": "warning",
+      "path": ".gitignore",
+      "line": 14,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "SQLite runtime DB scan",
+      "severity": "warning",
+      "path": ".gitignore",
+      "line": 58,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "SQLite runtime DB scan",
+      "severity": "warning",
+      "path": "01_projects/runtime_mvp/tests/test_n5_1a_public_github_readiness_image_backed_presentation.py",
+      "line": 138,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "SQLite runtime DB scan",
+      "severity": "warning",
+      "path": "01_projects/runtime_mvp/tests/test_n5_1a_public_github_readiness_image_backed_presentation.py",
+      "line": 139,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "SQLite runtime DB scan",
+      "severity": "warning",
+      "path": "03_scripts/public_repo_security_audit.py",
+      "line": 32,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "SQLite runtime DB scan",
+      "severity": "warning",
+      "path": "14_context/loc_count_crosscheck_n3_2_codex.md",
+      "line": 77,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "markdown secret scan",
+      "severity": "warning",
+      "path": "01_projects/runtime_mvp/tests/test_n4_4b_desktop_operator_dashboard_action_center.py",
+      "line": 123,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "markdown secret scan",
+      "severity": "warning",
+      "path": "01_projects/runtime_mvp/tests/test_n4_4b_desktop_operator_dashboard_action_center.py",
+      "line": 124,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "markdown secret scan",
+      "severity": "warning",
+      "path": "01_projects/runtime_mvp/tests/test_n4_4c_desktop_operator_recipe_runner_preview_polish.py",
+      "line": 150,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "markdown secret scan",
+      "severity": "warning",
+      "path": "03_scripts/desktop_operator_control_plane.py",
+      "line": 629,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "markdown secret scan",
+      "severity": "warning",
+      "path": "14_context/autobrowser_isolated_clone_audit.md",
+      "line": 87,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "docs credential scan",
+      "severity": "warning",
+      "path": ".claude/settings.json",
+      "line": 25,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "docs credential scan",
+      "severity": "warning",
+      "path": ".gitignore",
+      "line": 1,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "docs credential scan",
+      "severity": "warning",
+      "path": ".gitignore",
+      "line": 5,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "docs credential scan",
+      "severity": "warning",
+      "path": ".gitignore",
+      "line": 6,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "docs credential scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/index.html",
+      "line": 494,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "docs credential scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/index.html",
+      "line": 742,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "docs credential scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/server.js",
+      "line": 235,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "docs credential scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/server.js",
+      "line": 6335,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "docs credential scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/server.js",
+      "line": 6336,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "docs credential scan",
+      "severity": "warning",
+      "path": "01_projects/runtime_mvp/src/super_ai_agent/action_audit.py",
+      "line": 5,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "docs credential scan",
+      "severity": "warning",
+      "path": "01_projects/runtime_mvp/src/super_ai_agent/action_intent.py",
+      "line": 38,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "docs credential scan",
+      "severity": "warning",
+      "path": "01_projects/runtime_mvp/src/super_ai_agent/action_intent.py",
+      "line": 62,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "docs credential scan",
+      "severity": "warning",
+      "path": "01_projects/runtime_mvp/src/super_ai_agent/multi_agent_mvp.py",
+      "line": 26,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "docs credential scan",
+      "severity": "warning",
+      "path": "01_projects/runtime_mvp/src/super_ai_agent/multi_agent_mvp.py",
+      "line": 232,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "docs credential scan",
+      "severity": "warning",
+      "path": "01_projects/runtime_mvp/src/super_ai_agent/publishability.py",
+      "line": 14,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "docs credential scan",
+      "severity": "warning",
+      "path": "01_projects/runtime_mvp/src/super_ai_agent/publishability.py",
+      "line": 105,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "docs credential scan",
+      "severity": "warning",
+      "path": "01_projects/runtime_mvp/src/super_ai_agent/publishability.py",
+      "line": 115,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "docs credential scan",
+      "severity": "warning",
+      "path": "01_projects/runtime_mvp/src/super_ai_agent/publishability.py",
+      "line": 119,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "docs credential scan",
+      "severity": "warning",
+      "path": "01_projects/runtime_mvp/src/super_ai_agent/publishability.py",
+      "line": 184,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "docs credential scan",
+      "severity": "warning",
+      "path": "01_projects/runtime_mvp/src/super_ai_agent/wait_resume_supervisor.py",
+      "line": 377,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "Docker secrets scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 153,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "Docker secrets scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 2234,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "Docker secrets scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 67,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "Docker secrets scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 68,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "Docker secrets scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 153,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "Docker secrets scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 436,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "Docker secrets scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 444,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "Docker secrets scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 2682,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "Docker secrets scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 67,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "Docker secrets scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 68,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "Docker secrets scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 69,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "Docker secrets scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 70,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "Docker secrets scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 71,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "Docker secrets scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 72,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "Docker secrets scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 73,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "Docker secrets scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 74,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "Docker secrets scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 153,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "Docker secrets scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 436,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "Docker secrets scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 444,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "Docker secrets scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 452,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "GitHub Actions secrets scan",
+      "severity": "warning",
+      "path": "03_scripts/approved_adapter_runner.py",
+      "line": 207,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "GitHub Actions secrets scan",
+      "severity": "warning",
+      "path": "03_scripts/approved_adapter_runner.py",
+      "line": 209,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "command history scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 155,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "command history scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 2250,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "command history scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 71,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "command history scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 72,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "command history scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 155,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "command history scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 468,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "command history scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 476,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "command history scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 2698,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "command history scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 77,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "command history scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 78,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "command history scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 79,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "command history scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 80,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "command history scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 81,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "command history scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 82,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "command history scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 83,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "command history scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 84,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "command history scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 155,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "command history scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 516,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "command history scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 524,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "command history scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 532,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "clipboard dump scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 157,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "clipboard dump scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 2266,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "clipboard dump scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 73,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "clipboard dump scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 74,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "clipboard dump scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 157,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "clipboard dump scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 484,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "clipboard dump scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 492,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "clipboard dump scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 2714,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "clipboard dump scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 85,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "clipboard dump scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 86,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "clipboard dump scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 87,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "clipboard dump scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 88,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "clipboard dump scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 89,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "clipboard dump scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 90,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "clipboard dump scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 91,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "clipboard dump scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 92,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "clipboard dump scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 157,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "clipboard dump scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 580,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "clipboard dump scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 588,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "clipboard dump scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 596,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "transcript dump scan",
+      "severity": "warning",
+      "path": "14_context/codex_n3_7_obsidian_token_vault_sync_plan.md",
+      "line": 35,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "transcript dump scan",
+      "severity": "warning",
+      "path": "14_context/codex_obsidian_token_saving_audit_n3_3.md",
+      "line": 39,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "transcript dump scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 60,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "transcript dump scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 61,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "transcript dump scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 62,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "transcript dump scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 158,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "transcript dump scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 380,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "transcript dump scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 388,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "transcript dump scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 396,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "transcript dump scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 2274,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "transcript dump scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 75,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "transcript dump scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 76,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "transcript dump scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 77,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "transcript dump scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 78,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "transcript dump scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 79,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "transcript dump scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 80,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "transcript dump scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 81,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "transcript dump scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 82,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "transcript dump scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 83,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "transcript dump scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 84,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "copyrighted video/media scan",
+      "severity": "warning",
+      "path": "03_scripts/public_repo_security_audit.py",
+      "line": 341,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "copyrighted video/media scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 63,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "copyrighted video/media scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 124,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "copyrighted video/media scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 159,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "copyrighted video/media scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 404,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "copyrighted video/media scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 2002,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "copyrighted video/media scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 2282,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "copyrighted video/media scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 86,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "copyrighted video/media scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 87,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "copyrighted video/media scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 88,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "copyrighted video/media scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 89,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "copyrighted video/media scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 90,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "copyrighted video/media scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 91,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "copyrighted video/media scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 92,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "copyrighted video/media scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 124,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "copyrighted video/media scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 159,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "copyrighted video/media scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 588,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "copyrighted video/media scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 596,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "copyrighted video/media scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 604,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "copyrighted video/media scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 612,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "raw YouTube download scan",
+      "severity": "warning",
+      "path": "14_context/ghoti_finish_line_log.md",
+      "line": 1,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "raw YouTube download scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 64,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "raw YouTube download scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 160,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "raw YouTube download scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 412,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "raw YouTube download scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 2290,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "raw YouTube download scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 93,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "raw YouTube download scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 160,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "raw YouTube download scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 644,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "raw YouTube download scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 652,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "raw YouTube download scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 660,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "raw YouTube download scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 668,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "raw YouTube download scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 676,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "raw YouTube download scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 2738,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "raw YouTube download scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 160,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "raw YouTube download scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 964,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "raw YouTube download scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 972,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "raw YouTube download scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 980,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "raw YouTube download scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 988,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "raw YouTube download scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 996,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "raw YouTube download scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135234Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 1004,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "video downloader wrapper scan",
+      "severity": "warning",
+      "path": "01_projects/runtime_mvp/tests/test_n5_1a_public_github_readiness_image_backed_presentation.py",
+      "line": 224,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "video downloader wrapper scan",
+      "severity": "warning",
+      "path": "01_projects/runtime_mvp/tests/test_n5_1a_public_github_readiness_image_backed_presentation.py",
+      "line": 225,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "video downloader wrapper scan",
+      "severity": "warning",
+      "path": "14_context/youtube_follower_mvp_plan.md",
+      "line": 18,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "video downloader wrapper scan",
+      "severity": "warning",
+      "path": "14_context/youtube_follower_mvp_plan.md",
+      "line": 54,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "video downloader wrapper scan",
+      "severity": "warning",
+      "path": "14_context/youtube_follower_mvp_plan.md",
+      "line": 67,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "live API URL warning",
+      "severity": "warning",
+      "path": "14_context/codex_n3_37_tool_intake_addendum.md",
+      "line": 36,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "unsafe JS child process option scan",
+      "severity": "warning",
+      "path": "14_context/claude_n4_4b_desktop_operator_dashboard_action_center.md",
+      "line": 116,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "unsafe JS child process option scan",
+      "severity": "warning",
+      "path": "14_context/claude_n4_4c_desktop_operator_recipe_runner_preview_polish.md",
+      "line": 133,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "unsafe JS child process option scan",
+      "severity": "warning",
+      "path": "14_context/claude_n4_4d_main_merge_preview_path_containment.md",
+      "line": 61,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "unsafe JS child process option scan",
+      "severity": "warning",
+      "path": "14_context/claude_n4_4d_main_merge_preview_path_containment.md",
+      "line": 96,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "unsafe JS child process option scan",
+      "severity": "warning",
+      "path": "14_context/claude_n4_4d_preview_path_containment_fix.md",
+      "line": 107,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "unsafe JS child process option scan",
+      "severity": "warning",
+      "path": "14_context/claude_n4_4d_preview_path_containment_fix.md",
+      "line": 147,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "unsafe JS child process option scan",
+      "severity": "warning",
+      "path": "14_context/claude_n4_5a_main_merge_parallel_agent_relay_command_center.md",
+      "line": 107,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "unsafe JS child process option scan",
+      "severity": "warning",
+      "path": "14_context/claude_n4_5a_main_merge_parallel_agent_relay_command_center.md",
+      "line": 152,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "unsafe JS child process option scan",
+      "severity": "warning",
+      "path": "14_context/claude_n4_5a_parallel_agent_relay_command_center.md",
+      "line": 79,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "unsafe JS child process option scan",
+      "severity": "warning",
+      "path": "14_context/claude_n4_5a_parallel_agent_relay_command_center.md",
+      "line": 147,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "unsafe JS child process option scan",
+      "severity": "warning",
+      "path": "14_context/claude_n4_5c_main_merge_relay_route_test_hardening.md",
+      "line": 125,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "unsafe JS child process option scan",
+      "severity": "warning",
+      "path": "14_context/claude_n4_5c_parallel_agent_relay_runtime_route_fix.md",
+      "line": 82,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "unsafe JS child process option scan",
+      "severity": "warning",
+      "path": "14_context/claude_n4_5c_parallel_agent_relay_runtime_route_fix.md",
+      "line": 154,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "unsafe JS child process option scan",
+      "severity": "warning",
+      "path": "14_context/claude_n4_6a_main_merge_productized_dashboard_control_center.md",
+      "line": 73,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "unsafe JS child process option scan",
+      "severity": "warning",
+      "path": "14_context/claude_n4_6a_main_merge_productized_dashboard_control_center.md",
+      "line": 130,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "unsafe JS child process option scan",
+      "severity": "warning",
+      "path": "14_context/claude_n4_6a_productized_dashboard_control_center_usability.md",
+      "line": 65,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "unsafe JS child process option scan",
+      "severity": "warning",
+      "path": "14_context/claude_n4_6a_productized_dashboard_control_center_usability.md",
+      "line": 80,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "unsafe JS child process option scan",
+      "severity": "warning",
+      "path": "14_context/claude_n4_6a_productized_dashboard_control_center_usability.md",
+      "line": 119,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "unsafe JS child process option scan",
+      "severity": "warning",
+      "path": "14_context/claude_n4_7b_main_merge_product_launcher.md",
+      "line": 127,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "unsafe JS child process option scan",
+      "severity": "warning",
+      "path": "14_context/claude_n4_8a_external_tool_sandbox_adapter_discovery.md",
+      "line": 150,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "child_process usage review",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/server.js",
+      "line": 4,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "child_process usage review",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/server.js",
+      "line": 883,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "child_process usage review",
+      "severity": "warning",
+      "path": "01_projects/runtime_mvp/tests/test_n4_4c_desktop_operator_recipe_runner_preview_polish.py",
+      "line": 87,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "child_process usage review",
+      "severity": "warning",
+      "path": "01_projects/runtime_mvp/tests/test_n4_6a_productized_dashboard_control_center_usability.py",
+      "line": 155,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "child_process usage review",
+      "severity": "warning",
+      "path": "14_context/claude_n4_4b_desktop_operator_dashboard_action_center.md",
+      "line": 73,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "child_process usage review",
+      "severity": "warning",
+      "path": "14_context/claude_n4_6a_main_merge_productized_dashboard_control_center.md",
+      "line": 73,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "child_process usage review",
+      "severity": "warning",
+      "path": "14_context/claude_n4_6a_productized_dashboard_control_center_usability.md",
+      "line": 65,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "child_process usage review",
+      "severity": "warning",
+      "path": "14_context/claude_n4_6a_productized_dashboard_control_center_usability.md",
+      "line": 120,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "child_process usage review",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 91,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "child_process usage review",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 92,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "child_process usage review",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 93,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "child_process usage review",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 165,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "child_process usage review",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 628,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "child_process usage review",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 636,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "child_process usage review",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 644,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "child_process usage review",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 652,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "child_process usage review",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 660,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "child_process usage review",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 668,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "child_process usage review",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 676,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "child_process usage review",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 684,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "subprocess shell option scan",
+      "severity": "warning",
+      "path": "14_context/claude_n4_5a_main_merge_parallel_agent_relay_command_center.md",
+      "line": 107,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "subprocess shell option scan",
+      "severity": "warning",
+      "path": "14_context/claude_n4_5a_parallel_agent_relay_command_center.md",
+      "line": 34,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "subprocess shell option scan",
+      "severity": "warning",
+      "path": "14_context/claude_n4_5a_parallel_agent_relay_command_center.md",
+      "line": 144,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "subprocess shell option scan",
+      "severity": "warning",
+      "path": "14_context/claude_n4_7a_one_command_product_launcher_demo_smoke.md",
+      "line": 123,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "subprocess shell option scan",
+      "severity": "warning",
+      "path": "14_context/claude_n4_7b_main_merge_product_launcher.md",
+      "line": 127,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "subprocess shell option scan",
+      "severity": "warning",
+      "path": "14_context/claude_n4_8a_external_tool_sandbox_adapter_discovery.md",
+      "line": 150,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "subprocess shell option scan",
+      "severity": "warning",
+      "path": "14_context/claude_n4_9a_first_approved_adapter_execution_demo.md",
+      "line": 160,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "eval scan",
+      "severity": "warning",
+      "path": "02_automation/external_tool_adapters/agent_skills_eval_adapter.py",
+      "line": 4,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "eval scan",
+      "severity": "warning",
+      "path": "14_context/adapter_execution/runs/20260518T085322Z_agent_skills_eval/03_safety_review.md",
+      "line": 3,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "eval scan",
+      "severity": "warning",
+      "path": "14_context/adapter_execution/runs/20260519T135350Z_agent_skills_eval/03_safety_review.md",
+      "line": 3,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "eval scan",
+      "severity": "warning",
+      "path": "14_context/adapter_execution/runs/20260519T135351Z_agent_skills_eval/03_safety_review.md",
+      "line": 3,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "eval scan",
+      "severity": "warning",
+      "path": "14_context/external_tools/approval_packets/external_tool_approval_packet_20260517T192949Z.md",
+      "line": 77,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "eval scan",
+      "severity": "warning",
+      "path": "14_context/external_tools/approval_packets/external_tool_approval_packet_20260519T135353Z.md",
+      "line": 77,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "rm recursive force scan",
+      "severity": "warning",
+      "path": ".claude/settings.json",
+      "line": 10,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "rm recursive force scan",
+      "severity": "warning",
+      "path": "14_context/ruflo_read_only_evaluation.md",
+      "line": 159,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "deletion command scan",
+      "severity": "warning",
+      "path": "01_projects/desktop_playground/check_desktop_playground.ps1",
+      "line": 67,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "deletion command scan",
+      "severity": "warning",
+      "path": "01_projects/desktop_playground/check_desktop_playground.ps1",
+      "line": 82,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "deletion command scan",
+      "severity": "warning",
+      "path": "03_scripts/check_browser_playground.ps1",
+      "line": 58,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "deletion command scan",
+      "severity": "warning",
+      "path": "03_scripts/check_browser_playground.ps1",
+      "line": 89,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "deletion command scan",
+      "severity": "warning",
+      "path": "03_scripts/check_browser_playground.ps1",
+      "line": 92,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "deletion command scan",
+      "severity": "warning",
+      "path": "03_scripts/check_dashboard_mvp.ps1",
+      "line": 62,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "deletion command scan",
+      "severity": "warning",
+      "path": "03_scripts/check_dashboard_mvp.ps1",
+      "line": 164,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "deletion command scan",
+      "severity": "warning",
+      "path": "03_scripts/check_dashboard_mvp.ps1",
+      "line": 178,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "deletion command scan",
+      "severity": "warning",
+      "path": "03_scripts/check_dashboard_mvp.ps1",
+      "line": 181,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "deletion command scan",
+      "severity": "warning",
+      "path": "03_scripts/check_dashboard_mvp.ps1",
+      "line": 280,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "deletion command scan",
+      "severity": "warning",
+      "path": "03_scripts/check_dashboard_mvp.ps1",
+      "line": 289,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "deletion command scan",
+      "severity": "warning",
+      "path": "03_scripts/check_dashboard_mvp.ps1",
+      "line": 1818,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "deletion command scan",
+      "severity": "warning",
+      "path": "03_scripts/check_runtime_mvp.ps1",
+      "line": 118,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "deletion command scan",
+      "severity": "warning",
+      "path": "03_scripts/check_runtime_mvp.ps1",
+      "line": 133,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "deletion command scan",
+      "severity": "warning",
+      "path": "03_scripts/screenpipe_retention_cleanup.ps1",
+      "line": 96,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "deletion command scan",
+      "severity": "warning",
+      "path": "14_context/codex_n3_11_docker_wsl_ready_crosscheck.md",
+      "line": 56,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "external repo runtime wiring scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/app.js",
+      "line": 6763,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "external repo runtime wiring scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/app.js",
+      "line": 6771,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "external repo runtime wiring scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/app.js",
+      "line": 6789,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "external repo runtime wiring scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/index.html",
+      "line": 536,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "external repo runtime wiring scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/index.html",
+      "line": 539,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "external repo runtime wiring scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/index.html",
+      "line": 546,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "external repo runtime wiring scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/index.html",
+      "line": 549,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "external repo runtime wiring scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/index.html",
+      "line": 570,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "external repo runtime wiring scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/index.html",
+      "line": 725,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "external repo runtime wiring scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/index.html",
+      "line": 738,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "external repo runtime wiring scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/index.html",
+      "line": 752,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "external repo runtime wiring scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/index.html",
+      "line": 754,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "external repo runtime wiring scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/server.js",
+      "line": 5594,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "external repo runtime wiring scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/server.js",
+      "line": 7236,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "external repo runtime wiring scan",
+      "severity": "warning",
+      "path": "01_projects/runtime_mvp/src/super_ai_agent/action_intent.py",
+      "line": 272,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "external repo runtime wiring scan",
+      "severity": "warning",
+      "path": "01_projects/runtime_mvp/src/super_ai_agent/cli.py",
+      "line": 1884,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "external repo runtime wiring scan",
+      "severity": "warning",
+      "path": "01_projects/runtime_mvp/src/super_ai_agent/multi_agent_mvp.py",
+      "line": 246,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "external repo runtime wiring scan",
+      "severity": "warning",
+      "path": "01_projects/runtime_mvp/src/super_ai_agent/multi_agent_mvp.py",
+      "line": 332,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "external repo runtime wiring scan",
+      "severity": "warning",
+      "path": "01_projects/runtime_mvp/src/super_ai_agent/multi_agent_mvp.py",
+      "line": 337,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "external repo runtime wiring scan",
+      "severity": "warning",
+      "path": "01_projects/runtime_mvp/src/super_ai_agent/multi_agent_mvp.py",
+      "line": 481,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "UI-TARS click/type/control claim scan",
+      "severity": "warning",
+      "path": "03_scripts/external_tool_sandbox_manager.py",
+      "line": 14,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "UI-TARS click/type/control claim scan",
+      "severity": "warning",
+      "path": "14_context/claude_n4_8a_external_tool_sandbox_adapter_discovery.md",
+      "line": 144,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "UI-TARS click/type/control claim scan",
+      "severity": "warning",
+      "path": "14_context/claude_n4_9a_first_approved_adapter_execution_demo.md",
+      "line": 50,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "UI-TARS click/type/control claim scan",
+      "severity": "warning",
+      "path": "14_context/claude_n4_9b_main_merge_first_approved_adapter_execution_demo.md",
+      "line": 135,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "UI-TARS click/type/control claim scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 173,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "UI-TARS click/type/control claim scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 1076,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "UI-TARS click/type/control claim scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 1084,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "UI-TARS click/type/control claim scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 1092,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "UI-TARS click/type/control claim scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 1100,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "UI-TARS click/type/control claim scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 1108,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "UI-TARS click/type/control claim scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 1116,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "UI-TARS click/type/control claim scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 1124,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "UI-TARS click/type/control claim scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 1132,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "UI-TARS click/type/control claim scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 1140,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "UI-TARS click/type/control claim scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T134917Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 2394,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "UI-TARS click/type/control claim scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/01_public_repo_security_report.md",
+      "line": 173,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "UI-TARS click/type/control claim scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 1436,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "UI-TARS click/type/control claim scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 1444,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "UI-TARS click/type/control claim scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 1452,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "UI-TARS click/type/control claim scan",
+      "severity": "warning",
+      "path": "14_context/security/public_repo_audits/20260519T135124Z_public_repo_readiness/02_public_repo_security_report.json",
+      "line": 1460,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "live account action claim scan",
+      "severity": "warning",
+      "path": ".claude/commands/goal.md",
+      "line": 10,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "live account action claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/app.js",
+      "line": 6462,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "live account action claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/index.html",
+      "line": 447,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "live account action claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/index.html",
+      "line": 494,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "live account action claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/index.html",
+      "line": 516,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "live account action claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/index.html",
+      "line": 738,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "live account action claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/index.html",
+      "line": 763,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "live account action claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/index.html",
+      "line": 822,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "live account action claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/index.html",
+      "line": 857,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "live account action claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/server.js",
+      "line": 6938,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "live account action claim scan",
+      "severity": "warning",
+      "path": "01_projects/runtime_mvp/src/super_ai_agent/action_intent.py",
+      "line": 272,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "live account action claim scan",
+      "severity": "warning",
+      "path": "01_projects/runtime_mvp/src/super_ai_agent/wait_resume_supervisor.py",
+      "line": 281,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "live account action claim scan",
+      "severity": "warning",
+      "path": "01_projects/runtime_mvp/src/super_ai_agent/wait_resume_supervisor.py",
+      "line": 335,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "live account action claim scan",
+      "severity": "warning",
+      "path": "01_projects/runtime_mvp/src/super_ai_agent/wait_resume_supervisor.py",
+      "line": 344,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "live account action claim scan",
+      "severity": "warning",
+      "path": "01_projects/runtime_mvp/src/super_ai_agent/wait_resume_supervisor.py",
+      "line": 380,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "live account action claim scan",
+      "severity": "warning",
+      "path": "01_projects/runtime_mvp/src/super_ai_agent/wait_resume_supervisor.py",
+      "line": 416,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "live account action claim scan",
+      "severity": "warning",
+      "path": "01_projects/runtime_mvp/src/super_ai_agent/wait_resume_supervisor.py",
+      "line": 751,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "live account action claim scan",
+      "severity": "warning",
+      "path": "01_projects/runtime_mvp/tests/test_n4_4b_desktop_operator_dashboard_action_center.py",
+      "line": 48,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "live account action claim scan",
+      "severity": "warning",
+      "path": "01_projects/runtime_mvp/tests/test_n4_4c_desktop_operator_recipe_runner_preview_polish.py",
+      "line": 117,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "live account action claim scan",
+      "severity": "warning",
+      "path": "01_projects/runtime_mvp/tests/test_n4_6a_productized_dashboard_control_center_usability.py",
+      "line": 51,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "money/trading claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/app.js",
+      "line": 6156,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "money/trading claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/app.js",
+      "line": 6162,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "money/trading claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/app.js",
+      "line": 6164,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "money/trading claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/app.js",
+      "line": 6210,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "money/trading claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/app.js",
+      "line": 6216,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "money/trading claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/app.js",
+      "line": 6229,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "money/trading claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/app.js",
+      "line": 6232,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "money/trading claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/app.js",
+      "line": 6235,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "money/trading claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/app.js",
+      "line": 6245,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "money/trading claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/app.js",
+      "line": 6250,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "money/trading claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/app.js",
+      "line": 6295,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "money/trading claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/app.js",
+      "line": 6305,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "money/trading claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/app.js",
+      "line": 6311,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "money/trading claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/index.html",
+      "line": 397,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "money/trading claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/index.html",
+      "line": 494,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "money/trading claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/index.html",
+      "line": 516,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "money/trading claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/index.html",
+      "line": 733,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "money/trading claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/index.html",
+      "line": 738,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "money/trading claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/index.html",
+      "line": 760,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "money/trading claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/index.html",
+      "line": 763,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "posting/upload claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/app.js",
+      "line": 6462,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "posting/upload claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/app.js",
+      "line": 6659,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "posting/upload claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/app.js",
+      "line": 6699,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "posting/upload claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/app.js",
+      "line": 6704,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "posting/upload claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/index.html",
+      "line": 460,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "posting/upload claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/index.html",
+      "line": 493,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "posting/upload claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/index.html",
+      "line": 516,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "posting/upload claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/index.html",
+      "line": 738,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "posting/upload claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/index.html",
+      "line": 758,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "posting/upload claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/index.html",
+      "line": 763,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "posting/upload claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/index.html",
+      "line": 773,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "posting/upload claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/index.html",
+      "line": 844,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "posting/upload claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/server.js",
+      "line": 6076,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "posting/upload claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/server.js",
+      "line": 6517,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "posting/upload claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/server.js",
+      "line": 6763,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "posting/upload claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/server.js",
+      "line": 6949,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "posting/upload claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/server.js",
+      "line": 6961,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "posting/upload claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/server.js",
+      "line": 7011,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "posting/upload claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/server.js",
+      "line": 7025,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "posting/upload claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/server.js",
+      "line": 7036,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "autonomous Claude/Codex launch claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/index.html",
+      "line": 496,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "autonomous Claude/Codex launch claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/index.html",
+      "line": 1243,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "autonomous Claude/Codex launch claim scan",
+      "severity": "warning",
+      "path": "03_scripts/parallel_agent_relay.py",
+      "line": 6,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "autonomous Claude/Codex launch claim scan",
+      "severity": "warning",
+      "path": "03_scripts/parallel_agent_relay.py",
+      "line": 120,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "autonomous Claude/Codex launch claim scan",
+      "severity": "warning",
+      "path": "03_scripts/parallel_agent_relay.py",
+      "line": 250,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "autonomous Claude/Codex launch claim scan",
+      "severity": "warning",
+      "path": "03_scripts/parallel_agent_relay.py",
+      "line": 275,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "autonomous Claude/Codex launch claim scan",
+      "severity": "warning",
+      "path": "03_scripts/parallel_agent_relay.py",
+      "line": 289,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "autonomous Claude/Codex launch claim scan",
+      "severity": "warning",
+      "path": "13_prompts/codex_skills/ghoti-codex-claude-handoff/SKILL.md",
+      "line": 134,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "autonomous Claude/Codex launch claim scan",
+      "severity": "warning",
+      "path": "13_prompts/codex_skills/ghoti-codex-claude-handoff/SKILL.md",
+      "line": 288,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "autonomous Claude/Codex launch claim scan",
+      "severity": "warning",
+      "path": "13_prompts/codex_skills/ghoti-codex-claude-handoff/SKILL.md",
+      "line": 302,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "autonomous Claude/Codex launch claim scan",
+      "severity": "warning",
+      "path": "14_context/agent_relay/pairs/20260516T142651Z_n_4_5a_seed/01_claude_code_prompt.md",
+      "line": 48,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "autonomous Claude/Codex launch claim scan",
+      "severity": "warning",
+      "path": "14_context/agent_relay/pairs/20260516T142651Z_n_4_5a_seed/02_codex_audit_prompt.md",
+      "line": 104,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "autonomous Claude/Codex launch claim scan",
+      "severity": "warning",
+      "path": "14_context/agent_relay/pairs/20260516T142651Z_n_4_5a_seed/02_codex_audit_prompt.md",
+      "line": 129,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "autonomous Claude/Codex launch claim scan",
+      "severity": "warning",
+      "path": "14_context/agent_relay/pairs/20260516T142651Z_n_4_5a_seed/02_codex_audit_prompt.md",
+      "line": 143,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "autonomous Claude/Codex launch claim scan",
+      "severity": "warning",
+      "path": "14_context/agent_relay/pairs/20260519T135420Z_ghoti_product_control_center_demo/01_claude_code_prompt.md",
+      "line": 48,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "autonomous Claude/Codex launch claim scan",
+      "severity": "warning",
+      "path": "14_context/agent_relay/pairs/20260519T135420Z_ghoti_product_control_center_demo/02_codex_audit_prompt.md",
+      "line": 103,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "autonomous Claude/Codex launch claim scan",
+      "severity": "warning",
+      "path": "14_context/agent_relay/pairs/20260519T135420Z_ghoti_product_control_center_demo/02_codex_audit_prompt.md",
+      "line": 128,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "autonomous Claude/Codex launch claim scan",
+      "severity": "warning",
+      "path": "14_context/agent_relay/pairs/20260519T135420Z_ghoti_product_control_center_demo/02_codex_audit_prompt.md",
+      "line": 142,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "autonomous Claude/Codex launch claim scan",
+      "severity": "warning",
+      "path": "14_context/claude_n4_5a_main_merge_parallel_agent_relay_command_center.md",
+      "line": 110,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    },
+    {
+      "category": "autonomous Claude/Codex launch claim scan",
+      "severity": "warning",
+      "path": "14_context/claude_n4_5a_parallel_agent_relay_command_center.md",
+      "line": 150,
+      "redacted_match": "[REDACTED]",
+      "note": ""
+    }
+  ],
+  "safe_to_make_public": true,
+  "human_review_required": true,
+  "checks": [
+    {
+      "id": 1,
+      "category": "env",
+      "name": ".env.example exists",
+      "status": "PASS",
+      "severity": "info",
+      "details": "required placeholder file"
+    },
+    {
+      "id": 2,
+      "category": "env",
+      "name": ".env.example has placeholders only",
+      "status": "PASS",
+      "severity": "info",
+      "details": "placeholders only"
+    },
+    {
+      "id": 3,
+      "category": "env",
+      "name": ".env not tracked",
+      "status": "PASS",
+      "severity": "info",
+      "details": "not in git ls-files"
+    },
+    {
+      "id": 4,
+      "category": "env",
+      "name": ".env.local not tracked",
+      "status": "PASS",
+      "severity": "info",
+      "details": "not in git ls-files"
+    },
+    {
+      "id": 5,
+      "category": "env",
+      "name": ".env.production not tracked",
+      "status": "PASS",
+      "severity": "info",
+      "details": "not in git ls-files"
+    },
+    {
+      "id": 6,
+      "category": "gitignore",
+      "name": ".gitignore exists",
+      "status": "PASS",
+      "severity": "info",
+      "details": "root ignore file"
+    },
+    {
+      "id": 7,
+      "category": "gitignore",
+      "name": ".env files ignored",
+      "status": "PASS",
+      "severity": "info",
+      "details": "pattern .env"
+    },
+    {
+      "id": 8,
+      "category": "gitignore",
+      "name": ".gitignore covers env files",
+      "status": "PASS",
+      "severity": "info",
+      "details": "pattern .env.*"
+    },
+    {
+      "id": 9,
+      "category": "gitignore",
+      "name": ".gitignore covers logs",
+      "status": "PASS",
+      "severity": "info",
+      "details": "pattern logs/"
+    },
+    {
+      "id": 10,
+      "category": "gitignore",
+      "name": ".gitignore covers temp files",
+      "status": "PASS",
+      "severity": "info",
+      "details": "pattern *.tmp"
+    },
+    {
+      "id": 11,
+      "category": "gitignore",
+      "name": ".gitignore covers cache folders",
+      "status": "PASS",
+      "severity": "info",
+      "details": "pattern .cache/"
+    },
+    {
+      "id": 12,
+      "category": "gitignore",
+      "name": ".gitignore covers node_modules",
+      "status": "PASS",
+      "severity": "info",
+      "details": "pattern node_modules/"
+    },
+    {
+      "id": 13,
+      "category": "gitignore",
+      "name": ".gitignore covers Python venvs",
+      "status": "PASS",
+      "severity": "info",
+      "details": "pattern .venv/"
+    },
+    {
+      "id": 14,
+      "category": "gitignore",
+      "name": ".gitignore covers runtime_data",
+      "status": "PASS",
+      "severity": "info",
+      "details": "pattern runtime_data/"
+    },
+    {
+      "id": 15,
+      "category": "gitignore",
+      "name": ".gitignore covers output",
+      "status": "PASS",
+      "severity": "info",
+      "details": "pattern output/"
+    },
+    {
+      "id": 16,
+      "category": "gitignore",
+      "name": ".gitignore covers third_party sandbox",
+      "status": "PASS",
+      "severity": "info",
+      "details": "pattern 21_repos/third_party/*"
+    },
+    {
+      "id": 17,
+      "category": "gitignore",
+      "name": ".gitignore covers human imported stuff",
+      "status": "PASS",
+      "severity": "info",
+      "details": "pattern *human*import*stuff*/"
+    },
+    {
+      "id": 18,
+      "category": "gitignore",
+      "name": ".gitignore covers archive files",
+      "status": "PASS",
+      "severity": "info",
+      "details": "pattern *.zip"
+    },
+    {
+      "id": 19,
+      "category": "gitignore",
+      "name": ".gitignore covers model weights",
+      "status": "PASS",
+      "severity": "info",
+      "details": "pattern *.gguf"
+    },
+    {
+      "id": 20,
+      "category": "gitignore",
+      "name": ".gitignore covers screenshots/raw imports",
+      "status": "PASS",
+      "severity": "info",
+      "details": "pattern Human Placed Stuff/"
+    },
+    {
+      "id": 21,
+      "category": "human_imports",
+      "name": "human imported raw files not tracked",
+      "status": "PASS",
+      "severity": "blocker",
+      "details": "raw user intake excluded from git"
+    },
+    {
+      "id": 22,
+      "category": "env",
+      "name": "no hidden .env committed",
+      "status": "PASS",
+      "severity": "blocker",
+      "details": "tracked env files excluded"
+    },
+    {
+      "id": 23,
+      "category": "files",
+      "name": "large files scan",
+      "status": "PASS",
+      "severity": "warning",
+      "details": "0 tracked file(s) over 5 MB"
+    },
+    {
+      "id": 24,
+      "category": "files",
+      "name": "binary files scan",
+      "status": "PASS",
+      "severity": "warning",
+      "details": "0 tracked binary file(s)"
+    },
+    {
+      "id": 25,
+      "category": "files",
+      "name": "archive scan",
+      "status": "PASS",
+      "severity": "warning",
+      "details": "0 tracked archive file(s)"
+    },
+    {
+      "id": 26,
+      "category": "files",
+      "name": "model weights scan",
+      "status": "PASS",
+      "severity": "warning",
+      "details": "0 tracked model file(s)"
+    },
+    {
+      "id": 27,
+      "category": "files",
+      "name": "copyrighted video/media tracked file scan",
+      "status": "PASS",
+      "severity": "warning",
+      "details": "0 tracked video file(s)"
+    },
+    {
+      "id": 28,
+      "category": "files",
+      "name": "runtime DB/dump tracked file scan",
+      "status": "PASS",
+      "severity": "warning",
+      "details": "0 tracked DB/dump file(s)"
+    },
+    {
+      "id": 29,
+      "category": "files",
+      "name": "key/certificate tracked file scan",
+      "status": "PASS",
+      "severity": "blocker",
+      "details": "0 tracked key/cert file(s)"
+    },
+    {
+      "id": 1,
+      "category": "secrets",
+      "name": "OpenAI key pattern scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no tracked-file matches"
+    },
+    {
+      "id": 2,
+      "category": "secrets",
+      "name": "Anthropic key pattern scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no tracked-file matches"
+    },
+    {
+      "id": 3,
+      "category": "secrets",
+      "name": "Gemini/Google key pattern scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no tracked-file matches"
+    },
+    {
+      "id": 4,
+      "category": "secrets",
+      "name": "GitHub token pattern scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no tracked-file matches"
+    },
+    {
+      "id": 5,
+      "category": "secrets",
+      "name": "AWS key pattern scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no tracked-file matches"
+    },
+    {
+      "id": 6,
+      "category": "secrets",
+      "name": "Azure key pattern scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no tracked-file matches"
+    },
+    {
+      "id": 7,
+      "category": "secrets",
+      "name": "Supabase key pattern scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no tracked-file matches"
+    },
+    {
+      "id": 8,
+      "category": "secrets",
+      "name": "Firebase key pattern scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no tracked-file matches"
+    },
+    {
+      "id": 9,
+      "category": "secrets",
+      "name": "Stripe key pattern scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no tracked-file matches"
+    },
+    {
+      "id": 10,
+      "category": "secrets",
+      "name": "Discord token pattern scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no tracked-file matches"
+    },
+    {
+      "id": 11,
+      "category": "secrets",
+      "name": "Telegram token pattern scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no tracked-file matches"
+    },
+    {
+      "id": 12,
+      "category": "secrets",
+      "name": "OAuth secret scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no tracked-file matches"
+    },
+    {
+      "id": 13,
+      "category": "secrets",
+      "name": "private key scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no tracked-file matches"
+    },
+    {
+      "id": 14,
+      "category": "secrets",
+      "name": "SSH key scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no tracked-file matches"
+    },
+    {
+      "id": 15,
+      "category": "secrets",
+      "name": "PEM scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no tracked-file matches"
+    },
+    {
+      "id": 16,
+      "category": "secrets",
+      "name": "certificate scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no tracked-file matches"
+    },
+    {
+      "id": 17,
+      "category": "privacy",
+      "name": "cookie/session scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no tracked-file matches"
+    },
+    {
+      "id": 18,
+      "category": "privacy",
+      "name": "browser profile/session scan",
+      "status": "WARN",
+      "severity": "warning",
+      "details": "20 redacted warning finding(s)"
+    },
+    {
+      "id": 19,
+      "category": "privacy",
+      "name": "DB dump scan",
+      "status": "WARN",
+      "severity": "warning",
+      "details": "1 redacted warning finding(s)"
+    },
+    {
+      "id": 20,
+      "category": "privacy",
+      "name": "SQLite runtime DB scan",
+      "status": "WARN",
+      "severity": "warning",
+      "details": "7 redacted warning finding(s)"
+    },
+    {
+      "id": 21,
+      "category": "secrets",
+      "name": "JSON token scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no tracked-file matches"
+    },
+    {
+      "id": 22,
+      "category": "secrets",
+      "name": "YAML secret scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no tracked-file matches"
+    },
+    {
+      "id": 23,
+      "category": "secrets",
+      "name": "markdown secret scan",
+      "status": "WARN",
+      "severity": "warning",
+      "details": "5 redacted warning finding(s)"
+    },
+    {
+      "id": 24,
+      "category": "secrets",
+      "name": "docs credential scan",
+      "status": "WARN",
+      "severity": "warning",
+      "details": "20 redacted warning finding(s)"
+    },
+    {
+      "id": 25,
+      "category": "secrets",
+      "name": ".npmrc token scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no tracked-file matches"
+    },
+    {
+      "id": 26,
+      "category": "secrets",
+      "name": "pip config scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no tracked-file matches"
+    },
+    {
+      "id": 27,
+      "category": "secrets",
+      "name": "Docker secrets scan",
+      "status": "WARN",
+      "severity": "warning",
+      "details": "20 redacted warning finding(s)"
+    },
+    {
+      "id": 28,
+      "category": "secrets",
+      "name": "GitHub Actions secrets scan",
+      "status": "WARN",
+      "severity": "warning",
+      "details": "2 redacted warning finding(s)"
+    },
+    {
+      "id": 29,
+      "category": "privacy",
+      "name": "command history scan",
+      "status": "WARN",
+      "severity": "warning",
+      "details": "20 redacted warning finding(s)"
+    },
+    {
+      "id": 30,
+      "category": "privacy",
+      "name": "PowerShell history warning",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no tracked-file matches"
+    },
+    {
+      "id": 31,
+      "category": "privacy",
+      "name": "clipboard dump scan",
+      "status": "WARN",
+      "severity": "warning",
+      "details": "20 redacted warning finding(s)"
+    },
+    {
+      "id": 32,
+      "category": "privacy",
+      "name": "transcript dump scan",
+      "status": "WARN",
+      "severity": "warning",
+      "details": "20 redacted warning finding(s)"
+    },
+    {
+      "id": 33,
+      "category": "media",
+      "name": "copyrighted video/media scan",
+      "status": "WARN",
+      "severity": "warning",
+      "details": "20 redacted warning finding(s)"
+    },
+    {
+      "id": 34,
+      "category": "media",
+      "name": "raw YouTube download scan",
+      "status": "WARN",
+      "severity": "warning",
+      "details": "20 redacted warning finding(s)"
+    },
+    {
+      "id": 35,
+      "category": "media",
+      "name": "video downloader wrapper scan",
+      "status": "WARN",
+      "severity": "warning",
+      "details": "5 redacted warning finding(s)"
+    },
+    {
+      "id": 36,
+      "category": "runtime",
+      "name": "live API URL warning",
+      "status": "WARN",
+      "severity": "warning",
+      "details": "1 redacted warning finding(s)"
+    },
+    {
+      "id": 37,
+      "category": "runtime",
+      "name": "unsafe JS child process option scan",
+      "status": "WARN",
+      "severity": "warning",
+      "details": "20 redacted warning finding(s)"
+    },
+    {
+      "id": 38,
+      "category": "runtime",
+      "name": "execSync scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no tracked-file matches"
+    },
+    {
+      "id": 39,
+      "category": "runtime",
+      "name": "child_process usage review",
+      "status": "WARN",
+      "severity": "warning",
+      "details": "20 redacted warning finding(s)"
+    },
+    {
+      "id": 40,
+      "category": "runtime",
+      "name": "subprocess shell option scan",
+      "status": "WARN",
+      "severity": "warning",
+      "details": "7 redacted warning finding(s)"
+    },
+    {
+      "id": 41,
+      "category": "runtime",
+      "name": "os.system scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no tracked-file matches"
+    },
+    {
+      "id": 42,
+      "category": "runtime",
+      "name": "eval scan",
+      "status": "WARN",
+      "severity": "warning",
+      "details": "6 redacted warning finding(s)"
+    },
+    {
+      "id": 43,
+      "category": "runtime",
+      "name": "broad taskkill scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no tracked-file matches"
+    },
+    {
+      "id": 44,
+      "category": "runtime",
+      "name": "rm recursive force scan",
+      "status": "WARN",
+      "severity": "warning",
+      "details": "2 redacted warning finding(s)"
+    },
+    {
+      "id": 45,
+      "category": "runtime",
+      "name": "deletion command scan",
+      "status": "WARN",
+      "severity": "warning",
+      "details": "16 redacted warning finding(s)"
+    },
+    {
+      "id": 46,
+      "category": "runtime",
+      "name": "external repo runtime wiring scan",
+      "status": "WARN",
+      "severity": "warning",
+      "details": "20 redacted warning finding(s)"
+    },
+    {
+      "id": 47,
+      "category": "runtime",
+      "name": "UI-TARS click/type/control claim scan",
+      "status": "WARN",
+      "severity": "warning",
+      "details": "20 redacted warning finding(s)"
+    },
+    {
+      "id": 48,
+      "category": "runtime",
+      "name": "live account action claim scan",
+      "status": "WARN",
+      "severity": "warning",
+      "details": "20 redacted warning finding(s)"
+    },
+    {
+      "id": 49,
+      "category": "runtime",
+      "name": "money/trading claim scan",
+      "status": "WARN",
+      "severity": "warning",
+      "details": "20 redacted warning finding(s)"
+    },
+    {
+      "id": 50,
+      "category": "runtime",
+      "name": "posting/upload claim scan",
+      "status": "WARN",
+      "severity": "warning",
+      "details": "20 redacted warning finding(s)"
+    },
+    {
+      "id": 51,
+      "category": "runtime",
+      "name": "autonomous Claude/Codex launch claim scan",
+      "status": "WARN",
+      "severity": "warning",
+      "details": "20 redacted warning finding(s)"
+    },
+    {
+      "id": 1,
+      "category": "docs",
+      "name": "README.md exists",
+      "status": "PASS",
+      "severity": "info",
+      "details": "required public-release file"
+    },
+    {
+      "id": 2,
+      "category": "docs",
+      "name": "LICENSE exists",
+      "status": "PASS",
+      "severity": "info",
+      "details": "required public-release file"
+    },
+    {
+      "id": 3,
+      "category": "docs",
+      "name": ".env.example exists",
+      "status": "PASS",
+      "severity": "info",
+      "details": "required public-release file"
+    },
+    {
+      "id": 4,
+      "category": "docs",
+      "name": ".gitignore exists",
+      "status": "PASS",
+      "severity": "info",
+      "details": "required public-release file"
+    },
+    {
+      "id": 5,
+      "category": "docs",
+      "name": "SECURITY.md exists",
+      "status": "PASS",
+      "severity": "info",
+      "details": "required public-release file"
+    },
+    {
+      "id": 6,
+      "category": "docs",
+      "name": "CONTRIBUTING.md exists",
+      "status": "PASS",
+      "severity": "info",
+      "details": "required public-release file"
+    },
+    {
+      "id": 7,
+      "category": "docs",
+      "name": "docs/PUBLIC_RELEASE_SECURITY_CHECKLIST.md exists",
+      "status": "PASS",
+      "severity": "info",
+      "details": "required public-release file"
+    },
+    {
+      "id": 8,
+      "category": "docs",
+      "name": "docs/HUMAN_IMPORTED_STUFF_POLICY.md exists",
+      "status": "PASS",
+      "severity": "info",
+      "details": "required public-release file"
+    },
+    {
+      "id": 9,
+      "category": "docs",
+      "name": "docs/DIAGRAM_UPDATE_RULE.md exists",
+      "status": "PASS",
+      "severity": "info",
+      "details": "required public-release file"
+    },
+    {
+      "id": 10,
+      "category": "docs",
+      "name": "docs/FUTURE_MILESTONE_DOCS_CHECKLIST.md exists",
+      "status": "PASS",
+      "severity": "info",
+      "details": "required public-release file"
+    },
+    {
+      "id": 11,
+      "category": "docs",
+      "name": "docs/GITHUB_PRESENTATION_CHECKLIST.md exists",
+      "status": "PASS",
+      "severity": "info",
+      "details": "required public-release file"
+    },
+    {
+      "id": 12,
+      "category": "docs",
+      "name": "docs/assets/github/README.md exists",
+      "status": "PASS",
+      "severity": "info",
+      "details": "required public-release file"
+    },
+    {
+      "id": 13,
+      "category": "readme",
+      "name": "README truthfulness scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "states local-first and license posture"
+    },
+    {
+      "id": 14,
+      "category": "readme",
+      "name": "README says not open source",
+      "status": "PASS",
+      "severity": "info",
+      "details": "explicit proprietary notice"
+    },
+    {
+      "id": 15,
+      "category": "license",
+      "name": "LICENSE exists",
+      "status": "PASS",
+      "severity": "info",
+      "details": "root license file"
+    },
+    {
+      "id": 16,
+      "category": "license",
+      "name": "LICENSE is not permissive open source",
+      "status": "PASS",
+      "severity": "info",
+      "details": "proprietary posture"
+    },
+    {
+      "id": 17,
+      "category": "security",
+      "name": "SECURITY.md exists",
+      "status": "PASS",
+      "severity": "info",
+      "details": "security policy present"
+    },
+    {
+      "id": 18,
+      "category": "contributing",
+      "name": "CONTRIBUTING.md exists",
+      "status": "PASS",
+      "severity": "info",
+      "details": "contribution guardrails present"
+    },
+    {
+      "id": 19,
+      "category": "docs",
+      "name": "docs folder exists",
+      "status": "PASS",
+      "severity": "info",
+      "details": "public docs folder"
+    },
+    {
+      "id": 20,
+      "category": "docs",
+      "name": "public release checklist exists",
+      "status": "PASS",
+      "severity": "info",
+      "details": "release checklist"
+    },
+    {
+      "id": 21,
+      "category": "docs",
+      "name": "human imported stuff policy exists",
+      "status": "PASS",
+      "severity": "info",
+      "details": "raw import policy"
+    },
+    {
+      "id": 22,
+      "category": "docs",
+      "name": "diagram update rule exists",
+      "status": "PASS",
+      "severity": "info",
+      "details": "diagram maintenance"
+    },
+    {
+      "id": 23,
+      "category": "docs",
+      "name": "future milestone docs checklist exists",
+      "status": "PASS",
+      "severity": "info",
+      "details": "future docs policy"
+    },
+    {
+      "id": 24,
+      "category": "docs",
+      "name": "GitHub presentation checklist exists",
+      "status": "PASS",
+      "severity": "info",
+      "details": "presentation checklist"
+    },
+    {
+      "id": 25,
+      "category": "readme",
+      "name": "GitHub presentation checklist present",
+      "status": "PASS",
+      "severity": "info",
+      "details": "README links checklist"
+    },
+    {
+      "id": 26,
+      "category": "readme",
+      "name": "quickstart present",
+      "status": "PASS",
+      "severity": "info",
+      "details": "launcher quickstart"
+    },
+    {
+      "id": 27,
+      "category": "readme",
+      "name": "dashboard command present",
+      "status": "PASS",
+      "severity": "info",
+      "details": "local dashboard URL"
+    },
+    {
+      "id": 28,
+      "category": "readme",
+      "name": "safety section present",
+      "status": "PASS",
+      "severity": "info",
+      "details": "safety section"
+    },
+    {
+      "id": 29,
+      "category": "readme",
+      "name": "limitations section present",
+      "status": "PASS",
+      "severity": "info",
+      "details": "limitations section"
+    },
+    {
+      "id": 30,
+      "category": "readme",
+      "name": "roadmap present",
+      "status": "PASS",
+      "severity": "info",
+      "details": "roadmap section"
+    },
+    {
+      "id": 31,
+      "category": "readme",
+      "name": "approval gate docs present",
+      "status": "PASS",
+      "severity": "info",
+      "details": "approval docs"
+    },
+    {
+      "id": 32,
+      "category": "readme",
+      "name": "audit log docs present",
+      "status": "PASS",
+      "severity": "info",
+      "details": "audit docs"
+    },
+    {
+      "id": 33,
+      "category": "readme",
+      "name": "public repo description suggestion present",
+      "status": "PASS",
+      "severity": "info",
+      "details": "GitHub profile suggestion"
+    },
+    {
+      "id": 34,
+      "category": "readme",
+      "name": "GitHub topics suggestion present",
+      "status": "PASS",
+      "severity": "info",
+      "details": "topics suggestion"
+    },
+    {
+      "id": 35,
+      "category": "docs",
+      "name": "issue template suggestion",
+      "status": "PASS",
+      "severity": "info",
+      "details": "issue template recommendation"
+    },
+    {
+      "id": 36,
+      "category": "docs",
+      "name": "PR template suggestion",
+      "status": "PASS",
+      "severity": "info",
+      "details": "PR template recommendation"
+    },
+    {
+      "id": 37,
+      "category": "docs",
+      "name": "dependency lockfile review",
+      "status": "PASS",
+      "severity": "info",
+      "details": "lockfile review"
+    },
+    {
+      "id": 38,
+      "category": "docs",
+      "name": "package scripts review",
+      "status": "PASS",
+      "severity": "info",
+      "details": "package script review"
+    },
+    {
+      "id": 39,
+      "category": "docs",
+      "name": "Python requirements review",
+      "status": "PASS",
+      "severity": "info",
+      "details": "requirements review"
+    },
+    {
+      "id": 40,
+      "category": "docs",
+      "name": "generated artifact policy",
+      "status": "PASS",
+      "severity": "info",
+      "details": "artifact policy"
+    },
+    {
+      "id": 41,
+      "category": "docs",
+      "name": "sandbox clone policy",
+      "status": "PASS",
+      "severity": "info",
+      "details": "clone policy"
+    },
+    {
+      "id": 42,
+      "category": "docs",
+      "name": "adapter execution policy",
+      "status": "PASS",
+      "severity": "info",
+      "details": "adapter policy"
+    },
+    {
+      "id": 43,
+      "category": "privacy",
+      "name": "raw user private data scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "raw import privacy rule"
+    },
+    {
+      "id": 44,
+      "category": "privacy",
+      "name": "school/private docs accidental commit scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "school docs excluded"
+    },
+    {
+      "id": 45,
+      "category": "privacy",
+      "name": "CV/private docs accidental commit scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "CV docs excluded"
+    },
+    {
+      "id": 46,
+      "category": "privacy",
+      "name": "account screenshots accidental commit scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "account screenshots excluded"
+    },
+    {
+      "id": 47,
+      "category": "assets",
+      "name": "curated docs/assets images only",
+      "status": "PASS",
+      "severity": "info",
+      "details": "curated assets documented"
+    },
+    {
+      "id": 48,
+      "category": "assets",
+      "name": "README image links valid",
+      "status": "PASS",
+      "severity": "info",
+      "details": "all markdown image links resolve"
+    },
+    {
+      "id": 49,
+      "category": "assets",
+      "name": "no API keys in copied images filenames/metadata names",
+      "status": "PASS",
+      "severity": "info",
+      "details": "safe asset names"
+    },
+    {
+      "id": 50,
+      "category": "reports",
+      "name": "no secrets printed in security reports",
+      "status": "PASS",
+      "severity": "info",
+      "details": "findings include redacted category/path/line only"
+    },
+    {
+      "id": 51,
+      "category": "readiness",
+      "name": "readiness stays 100 if script validators exist",
+      "status": "PASS",
+      "severity": "info",
+      "details": "readiness checker present"
+    },
+    {
+      "id": 52,
+      "category": "docs",
+      "name": "docs/PUBLIC_RELEASE_SECURITY_CHECKLIST.md tracked or staged",
+      "status": "PASS",
+      "severity": "info",
+      "details": "public doc visible"
+    },
+    {
+      "id": 53,
+      "category": "docs",
+      "name": "docs/HUMAN_IMPORTED_STUFF_POLICY.md tracked or staged",
+      "status": "PASS",
+      "severity": "info",
+      "details": "public doc visible"
+    },
+    {
+      "id": 54,
+      "category": "docs",
+      "name": "docs/DIAGRAM_UPDATE_RULE.md tracked or staged",
+      "status": "PASS",
+      "severity": "info",
+      "details": "public doc visible"
+    },
+    {
+      "id": 55,
+      "category": "docs",
+      "name": "docs/FUTURE_MILESTONE_DOCS_CHECKLIST.md tracked or staged",
+      "status": "PASS",
+      "severity": "info",
+      "details": "public doc visible"
+    },
+    {
+      "id": 56,
+      "category": "docs",
+      "name": "docs/GITHUB_PRESENTATION_CHECKLIST.md tracked or staged",
+      "status": "PASS",
+      "severity": "info",
+      "details": "public doc visible"
+    }
+  ]
+}
