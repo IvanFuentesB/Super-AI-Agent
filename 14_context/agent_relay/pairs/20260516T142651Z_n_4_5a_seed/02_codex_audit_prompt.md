@@ -113,7 +113,7 @@ GET /api/agent-relay/pair?id=<pair_id>
 GET /api/agent-relay/prompt?path=<repo-local-md-path>
 
 Verify:
-- no shell:true
+- no JS shell true option
 - fixed argv
 - repo-local md/json only
 - no arbitrary file read
