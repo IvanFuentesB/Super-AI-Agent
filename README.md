@@ -1,6 +1,6 @@
 # Super-AI-Agent
 
-Execution-first AI operating framework for legitimate business workflows, documentation, GitHub and project operations, internship and job-search ops, owned-account workflows, and later browser or app control plus multi-model orchestration.
+A supervised, approval-aware AI operating framework. Built around small checked runtimes, file-backed task state, durable context, and explicit non-features — not a general autonomous agent.
 
 > Ghoti is a supervised operator framework, not a full autonomous executor. The repo is intentionally built around approval-aware actions, reviewable outputs, explicit safety limits, and local-first workflows before broader automation claims.
 
@@ -66,11 +66,11 @@ Execution-first AI operating framework for legitimate business workflows, docume
 
 <br/>
 
-## Reference Intake Role
+## Reference intake
 
 `21_repos/third_party` is an intake lane for external repos used as comparison and extraction material only. Those repos help evaluate patterns from tools like career-ops, official Claude Code, OpenClaw, Playwright, Windows-Use, Windows-MCP, Open Interpreter, Open Computer Use, Browser Use, Stagehand, OpenHands, and related ecosystems without merging vendor code into this core repo.
 
-## Internship And Showcase Relevance
+## What this currently shows
 
 This repo already demonstrates a few concrete recruiter-friendly angles:
 
@@ -80,7 +80,7 @@ This repo already demonstrates a few concrete recruiter-friendly angles:
 - durable context and checker-driven runtime discipline
 - a visible local browser demo and operator-console control surface
 
-## What You Can Do Right Now
+## What you can do right now
 
 - open the local operator console and inspect capability plus GitHub status
 - run the browser smoke demo or visible browser demo from the console
@@ -89,7 +89,7 @@ This repo already demonstrates a few concrete recruiter-friendly angles:
 - queue and run a small set of approval-aware desktop bridge actions from the console
 - inspect persisted desktop action results before moving toward broader app control
 
-## Repo Structure
+## Repo structure
 
 - `13_prompts`: reusable prompts, including handoff prompts
 - `14_context`: durable project state, decisions, open questions, and handoff files
@@ -98,13 +98,13 @@ This repo already demonstrates a few concrete recruiter-friendly angles:
 - `21_repos`: reference intake and later external evaluations
 - `23_configs`: local configuration files and setup state
 
-## Working Method
+## Working method
 
 - Use summarized context files instead of relying on long chats
 - Keep changes small and reversible
 - Require approval for risky actions
 
-## Next Milestones
+## Next milestones
 
 - Test the browser playground manually
 - Test the local dashboard manually
