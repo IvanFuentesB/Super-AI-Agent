@@ -6,6 +6,20 @@ Execution-first AI operating framework for legitimate business workflows, docume
 
 This repo is the core workspace for building a controllable AI system that produces reviewable outputs, keeps risky actions explicit, and grows from a small checked runtime instead of a vague pile of prompts and notes.
 
+## Portfolio framing
+
+Ghoti is a supervised operator framework, not a full autonomous executor. The repo is intentionally structured around approval-aware actions, reviewable outputs, explicit safety limits, and local-first workflows before any broader automation claims.
+
+## Architecture and safety boundaries
+
+### Supervised operator architecture
+
+![Ghoti supervised operator architecture](https://raw.githubusercontent.com/IvanFuentesB/delete/main/assets/case-studies/diagrams/svg/ghoti_01_supervised_operator_architecture.svg)
+
+### Safety boundary
+
+![Ghoti safety boundary](https://raw.githubusercontent.com/IvanFuentesB/delete/main/assets/case-studies/diagrams/svg/ghoti_02_safety_boundary.svg)
+
 ## Live Capabilities
 
 - approval-aware runtime with file-backed task state
