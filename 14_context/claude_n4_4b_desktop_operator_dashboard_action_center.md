@@ -113,7 +113,7 @@ Implementation details verified:
 
 | Check | Result |
 | --- | --- |
-| `shell: true` in desktop-operator block | **absent** (test: `test_server_uses_runcommand_not_shell_true`) |
+| JS shell true option in desktop-operator block | **absent** (test: `test_server_uses_runcommand_not_shell_true`) |
 | Workflow allowlist enforced | yes — server rejects with HTTP 400 |
 | Repo-local path validation in preview | rejects `..`, non-`.html`, paths outside repo |
 | `isRepoLocalPath` helper rejects secrets | tested with `.env`, `secret`, `credential`, `token`, `key`, `password` |

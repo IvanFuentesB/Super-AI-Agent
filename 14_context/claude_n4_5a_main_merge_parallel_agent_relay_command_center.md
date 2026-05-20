@@ -104,7 +104,7 @@ The smoke pair is a validation artifact only — it is NOT committed to main.
 
 | Safety property | Status |
 |-----------------|--------|
-| No `shell=True` / `shell: true` | confirmed — relay script and relay server section both clean |
+| No Python/JS shell execution option | confirmed — relay script and relay server section both clean |
 | No `subprocess.*` launching Claude/Codex in relay script | confirmed |
 | No `os.system` | confirmed |
 | No autonomous Claude/Codex launch | confirmed — relay_mode=copy_paste_only, autonomous_launch=false |
