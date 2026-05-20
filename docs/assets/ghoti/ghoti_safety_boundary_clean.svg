@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="800" viewBox="0 0 1400 800">
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="8" refX="11" refY="4" orient="auto"><path d="M0,0 L12,4 L0,8 Z" fill="#2563eb"/></marker>
+    <linearGradient id="blueGrad" x1="0" x2="1"><stop offset="0" stop-color="#e0f2fe"/><stop offset="1" stop-color="#eef2ff"/></linearGradient>
+    <linearGradient id="darkGrad" x1="0" x2="1"><stop offset="0" stop-color="#06192b"/><stop offset="1" stop-color="#0a2d45"/></linearGradient>
+    <filter id="soft"><feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0f172a" flood-opacity="0.10"/></filter>
+    <style>
+      .title { font: 700 40px Inter, Segoe UI, Arial, sans-serif; fill:#0f172a; }
+      .subtitle { font: 400 19px Inter, Segoe UI, Arial, sans-serif; fill:#475569; }
+      .boxTitle { font: 700 22px Inter, Segoe UI, Arial, sans-serif; fill:#0f172a; }
+      .boxText { font: 400 16px Inter, Segoe UI, Arial, sans-serif; fill:#334155; }
+      .small { font: 600 13px ui-monospace, SFMono-Regular, Consolas, monospace; fill:#1d4ed8; }
+      .arrow { stroke:#2563eb; stroke-width:4; fill:none; marker-end:url(#arrow); }
+      .dash { stroke:#64748b; stroke-width:3; stroke-dasharray:10 8; fill:none; marker-end:url(#arrow); }
+    </style>
+  </defs>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <text x="60" y="72" class="title">Ghoti Safety Boundary</text>
+  <text x="60" y="106" class="subtitle">What the system may do vs. what remains blocked</text>
+<rect x="80" y="180" width="530" height="470" rx="22" fill="#ecfdf5" stroke="#10b981" stroke-width="2.5" filter="url(#soft)"/>
+<text x="104" y="222" class="boxTitle">Allowed with approval</text>
+<text x="104" y="252" class="boxText">repo inspection and draft changes</text>
+<text x="104" y="277" class="boxText">local file-backed tasks</text>
+<text x="104" y="302" class="boxText">readable logs and artifacts</text>
+<text x="104" y="327" class="boxText">dashboard previews</text>
+<text x="104" y="352" class="boxText">allowlisted desktop snapshots</text>
+<rect x="790" y="180" width="530" height="470" rx="22" fill="#fff1f2" stroke="#fb7185" stroke-width="2.5" filter="url(#soft)"/>
+<text x="814" y="222" class="boxTitle">Explicitly not claimed</text>
+<text x="814" y="252" class="boxText">no full autonomous executor</text>
+<text x="814" y="277" class="boxText">no arbitrary click/type/clipboard</text>
+<text x="814" y="302" class="boxText">no autonomous money movement</text>
+<text x="814" y="327" class="boxText">mail/Notion planning-only</text>
+<text x="814" y="352" class="boxText">multi-model routing still scaffolded</text>
+<line x1="700" y1="170" x2="700" y2="670" stroke="#94a3b8" stroke-width="3" stroke-dasharray="10 10"/>
+<text x="640" y="420" style="font:800 28px Inter, Arial; fill:#475569;">BOUNDARY</text>
+</svg>

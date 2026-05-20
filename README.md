@@ -2,9 +2,13 @@
 
 A supervised, approval-aware AI operating framework. Built around small checked runtimes, file-backed task state, durable context, and explicit non-features — not a general autonomous agent.
 
-> Ghoti is a supervised operator framework, not a full autonomous executor. The repo is intentionally built around approval-aware actions, reviewable outputs, explicit safety limits, and local-first workflows before broader automation claims.
+<p align="center">
+  <img src="docs/assets/ghoti/ghoti_super_ai_agent_hero_clean.png" alt="Ghoti Super AI Agent hero image" width="100%" />
+</p>
 
-## System snapshot
+Ghoti is a supervised operator framework, not a full autonomous executor. The repo is intentionally built around approval-aware actions, reviewable outputs, explicit safety limits, and local-first workflows before broader automation claims.
+
+## Built today vs not claimed
 
 | Built today | Explicitly not claimed |
 | --- | --- |
@@ -14,38 +18,19 @@ A supervised, approval-aware AI operating framework. Built around small checked 
 | Local dashboard, browser playground, and safe desktop bridge foundation | Mail and Notion automation beyond planning scaffolds |
 | Explicit task states, approval inbox, and operator-console workflow | Mature multi-model routing beyond planning and policy scaffolding |
 
-## Visual overview
+## Operator architecture
 
-<table>
-  <tr>
-    <td width="50%" valign="top">
-      <img src="https://raw.githubusercontent.com/IvanFuentesB/delete/main/assets/case-studies/diagrams/svg/ghoti_01_supervised_operator_architecture.svg" alt="Ghoti supervised operator architecture" width="100%" /><br/>
-      <strong>Supervised operator architecture</strong><br/>
-      Human approval, task state, proof packets, and local tooling stay in the loop.
-    </td>
-    <td width="50%" valign="top">
-      <img src="https://raw.githubusercontent.com/IvanFuentesB/delete/main/assets/case-studies/diagrams/svg/ghoti_02_safety_boundary.svg" alt="Ghoti safety boundary" width="100%" /><br/>
-      <strong>Safety boundary</strong><br/>
-      The README keeps implemented capabilities separated from blocked or planning-only areas.
-    </td>
-  </tr>
-</table>
+<p align="center">
+  <img src="docs/assets/ghoti/ghoti_operator_architecture_clean.svg" alt="Ghoti operator architecture clean diagram" width="100%" />
+</p>
 
-## What the repo can already do
+## Safety boundary
 
-- approval-aware runtime with file-backed task state
-- durable context and handoff snapshots from `14_context`
-- GitHub read-only inspection plus approval-gated draft and write-action commands
-- environment and capability detection for `python`, `git`, and `gh`
-- repeatable runtime checker
-- internship, CV, LinkedIn, outreach, showcase, and portfolio scaffold generation
-- local deterministic browser playground with headless and visible Playwright demos
-- polished local operator-console dashboard for capability checks, clearer GitHub updates, scaffold generation, browser demo triggers, and artifact preview/open/reveal actions
-- always-on supervisor foundation with explicit task states for waiting, pending approval, and human-needed work
-- local approval inbox foundation for risky or uncertain actions
-- safe local desktop bridge actions for allowlisted window listing, active-window detection, focusing allowed windows, opening allowed local apps, and repo-local desktop screenshots
+<p align="center">
+  <img src="docs/assets/ghoti/ghoti_safety_boundary_clean.svg" alt="Ghoti safety boundary clean diagram" width="100%" />
+</p>
 
-## What remains intentionally bounded
+## Explicit non-features
 
 - mail and Notion adapters are planning-only
 - notifications are local-dashboard-only summaries for now
@@ -55,39 +40,29 @@ A supervised, approval-aware AI operating framework. Built around small checked 
 - multi-model routing remains planning and policy scaffolding
 - remote GitHub smoke tests are explicit and available, but the default checker remains non-mutating
 
+## What you can do now
+
+- inspect the local operator console and capability status
+- run browser playground checks and deterministic demos
+- generate internship, showcase, and portfolio markdown outputs
+- preview, open, and reveal recent artifacts from one local control surface
+- queue and review a narrow set of approval-aware desktop bridge actions
+- inspect persisted action results before moving toward broader app control
+
+<details>
+<summary><strong>Developer and repo details</strong> — structure, intake role, workflow, and near-term milestones</summary>
+
+<br/>
+
+## Reference intake role
+
+`21_repos/third_party` is an intake lane for external repos used as comparison and extraction material only. Those repos help evaluate patterns from tools like career-ops, official Claude Code, OpenClaw, Playwright, Windows-Use, Windows-MCP, Open Interpreter, Open Computer Use, Browser Use, Stagehand, OpenHands, and related ecosystems without merging vendor code into this core repo.
+
 ## Why this is portfolio-relevant
 
 - It demonstrates explicit approval boundaries instead of hand-wavy autonomy claims.
 - It shows how runtime state, artifacts, and proof packets can stay reviewable.
 - It frames automation as a supervised engineering system, not a vague prompt collection.
-
-<details>
-<summary><strong>Repo context and deeper notes</strong> — intake role, structure, workflow, and near-term milestones</summary>
-
-<br/>
-
-## Reference intake
-
-`21_repos/third_party` is an intake lane for external repos used as comparison and extraction material only. Those repos help evaluate patterns from tools like career-ops, official Claude Code, OpenClaw, Playwright, Windows-Use, Windows-MCP, Open Interpreter, Open Computer Use, Browser Use, Stagehand, OpenHands, and related ecosystems without merging vendor code into this core repo.
-
-## What this currently shows
-
-This repo already demonstrates a few concrete recruiter-friendly angles:
-
-- GitHub workflow control with explicit approvals
-- internship application pack generation
-- structured personal-ops and career-ops scaffolding
-- durable context and checker-driven runtime discipline
-- a visible local browser demo and operator-console control surface
-
-## What you can do right now
-
-- open the local operator console and inspect capability plus GitHub status
-- run the browser smoke demo or visible browser demo from the console
-- generate internship, showcase, and portfolio markdown outputs
-- preview, open, and reveal recent artifacts from one local control surface
-- queue and run a small set of approval-aware desktop bridge actions from the console
-- inspect persisted desktop action results before moving toward broader app control
 
 ## Repo structure
 
