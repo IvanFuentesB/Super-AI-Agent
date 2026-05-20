@@ -6888,3 +6888,96 @@ refreshLocalOrchestrator();
     refreshLatest();
   }
 })();
+
+// ---------------------------------------------------------------------
+// N+5.0A UI-TARS Observation Truth (client-side handlers, observation-only)
+// ---------------------------------------------------------------------
+(function attachUiTarsObservation() {
+  function setLatest(text) {
+    const el = document.getElementById("ui-tars-obs-latest");
+    if (el) el.textContent = text || "none";
+  }
+  function setResult(text) {
+    const host = document.getElementById("ui-tars-obs-status");
+    if (!host) return;
+    let res = document.getElementById("ui-tars-obs-result");
+    if (!res) {
+      res = document.createElement("p");
+      res.id = "ui-tars-obs-result";
+      host.appendChild(res);
+    }
+    res.textContent = text;
+  }
+  async function call(endpoint, method) {
+    const res = await fetch(endpoint, {
+      method: method, headers: { "Content-Type": "application/json" },
+    });
+    return await res.json();
+  }
+  async function refreshLatest() {
+    try {
+      const data = await call("/api/ui-tars-observation/latest", "GET");
+      const latest = data && data.latest;
+      if (latest) {
+        setLatest(latest.run_id + " — " + latest.mode + ", screenshot_captured=" +
+          String(latest.screenshot_captured) + ", " +
+          (latest.artifacts ? latest.artifacts.length : 0) + " local artifacts");
+      } else {
+        setLatest("none yet — run a dry-run observation");
+      }
+    } catch (err) {
+      setLatest("unavailable");
+    }
+  }
+  function bind(id, fn) {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("click", fn);
+  }
+  bind("ui-tars-obs-refresh-btn", async function () {
+    setResult("Refreshing observation status…");
+    try {
+      const data = await call("/api/ui-tars-observation/status", "GET");
+      setResult("Observation adapter: " + (data && data.ok ? "ok" : "unavailable") +
+        " — mode " + ((data && data.mode) || "?") +
+        ", ui_tars_runtime_started=" + String(data && data.ui_tars_runtime_started) +
+        ", desktop_control_enabled=" + String(data && data.desktop_control_enabled));
+    } catch (err) {
+      setResult("Could not load observation status.");
+    }
+    await refreshLatest();
+  });
+  bind("ui-tars-obs-create-approval-btn", async function () {
+    setResult("Creating approval…");
+    try {
+      const data = await call("/api/ui-tars-observation/create-approval", "POST");
+      if (data && data.ok) {
+        // The one-time token is never rendered to the page or returned by GET.
+        setResult("Approval created: " + data.approval_id +
+          ". A one-time token was issued — use it from the CLI for an approved screen capture.");
+      } else {
+        setResult("Approval creation unavailable: " + ((data && data.error) || "unknown"));
+      }
+    } catch (err) {
+      setResult("Could not create approval.");
+    }
+  });
+  bind("ui-tars-obs-dry-run-btn", async function () {
+    setResult("Running dry-run observation (no screenshot, no desktop control, no UI-TARS)…");
+    try {
+      const data = await call("/api/ui-tars-observation/dry-run", "POST");
+      if (data && data.ok) {
+        setResult("Dry-run observation complete: " + data.run_id + " — " +
+          ((data.artifacts || []).length) + " local artifacts; screenshot_captured=" +
+          String(data.screenshot_captured) + ".");
+      } else {
+        setResult("Observation run unavailable: " + ((data && data.error) || "unknown"));
+      }
+      await refreshLatest();
+    } catch (err) {
+      setResult("Could not run observation.");
+    }
+  });
+  if (document.getElementById("ui-tars-observation-truth")) {
+    refreshLatest();
+  }
+})();

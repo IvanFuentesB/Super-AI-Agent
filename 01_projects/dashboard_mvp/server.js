@@ -7307,6 +7307,93 @@ async function handleApiRequest(request, response, requestUrl) {
     return;
   }
 
+  // ─── UI-TARS Observation Only (N+5.0A) ──────────────────────────────────────
+  // Surface for the UI-TARS observation-only adapter CLI. Observation only:
+  // no UI-TARS runtime, no external repo code, no desktop control, no
+  // click/type/hotkeys, no live API. Subprocess via fixed argv (shell:false);
+  // the dashboard dry-run path never captures the screen; capture-approved
+  // requires an approval token in the POST body.
+
+  function runUiTarsObservation(extraArgs, timeoutMs) {
+    return new Promise((resolve) => {
+      const obsScript = path.join(repoRoot, "03_scripts", "ui_tars_observation_adapter.py");
+      const py = resolvePython();
+      if (!py) {
+        resolve({ ok: false, available: false, error: "Python interpreter not found" });
+        return;
+      }
+      const argv = [...py.baseArgs, obsScript, ...extraArgs];
+      runCommand(py.command, argv, { cwd: repoRoot, timeoutMs: timeoutMs || 60000 })
+        .then((res) => {
+          if (!res.ok) {
+            resolve({ ok: false, available: false, error: res.stderr || `exit ${res.exitCode}` });
+            return;
+          }
+          try {
+            resolve(JSON.parse(res.stdout));
+          } catch (_) {
+            resolve({ ok: false, available: false, error: "Failed to parse observation output" });
+          }
+        });
+    });
+  }
+
+  // GET /api/ui-tars-observation/status
+  if (request.method === "GET" && requestUrl.pathname === "/api/ui-tars-observation/status") {
+    sendJson(response, 200, await runUiTarsObservation(["--status", "--json"], 30000));
+    return;
+  }
+
+  // GET /api/ui-tars-observation/latest
+  if (request.method === "GET" && requestUrl.pathname === "/api/ui-tars-observation/latest") {
+    const latestFile = path.join(
+      repoRoot, "14_context", "ui_tars_observation", "latest.json");
+    let latest = null;
+    try {
+      if (fs.existsSync(latestFile)) {
+        latest = JSON.parse(fs.readFileSync(latestFile, "utf8"));
+      }
+    } catch (_) {}
+    // latest.json carries run metadata only — never a raw approval token.
+    sendJson(response, 200, { ok: true, latest });
+    return;
+  }
+
+  // POST /api/ui-tars-observation/create-approval
+  if (request.method === "POST" && requestUrl.pathname === "/api/ui-tars-observation/create-approval") {
+    sendJson(response, 200, await runUiTarsObservation(["--create-approval", "--json"], 30000));
+    return;
+  }
+
+  // POST /api/ui-tars-observation/dry-run
+  if (request.method === "POST" && requestUrl.pathname === "/api/ui-tars-observation/dry-run") {
+    // The dashboard only ever triggers a dry-run observation — never a capture.
+    sendJson(response, 200, await runUiTarsObservation(
+      ["--observe", "--dry-run", "--json"], 90000));
+    return;
+  }
+
+  // POST /api/ui-tars-observation/capture-approved
+  if (request.method === "POST" && requestUrl.pathname === "/api/ui-tars-observation/capture-approved") {
+    let body = {};
+    try {
+      body = await readJsonBody(request);
+    } catch (_) {
+      body = {};
+    }
+    const token = typeof body.approval_token === "string" ? body.approval_token.trim() : "";
+    if (!token) {
+      sendJson(response, 200, {
+        ok: false,
+        error: "approval token required for capture-approved (pass approval_token in the body)",
+      });
+      return;
+    }
+    sendJson(response, 200, await runUiTarsObservation(
+      ["--observe", "--capture-screen", "--approval-token", token, "--json"], 90000));
+    return;
+  }
+
   sendJson(response, 404, {
     ok: false,
     error: "Route not found.",

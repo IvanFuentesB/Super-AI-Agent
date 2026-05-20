@@ -570,6 +570,36 @@
               <li><span class="chip chip--ok">Human Approval Required</span> real runtime wiring stays human-gated.</li>
             </ul>
           </div>
+
+          <div class="card" id="ui-tars-observation-truth">
+            <h3 class="card-title">UI-TARS Observation Truth</h3>
+            <p class="card-note">N+5.0A: the first UI-TARS-related adapter — <strong>UI-TARS Observation Only</strong>. CLI: <code>03_scripts/ui_tars_observation_adapter.py</code>.</p>
+            <ul class="card-list">
+              <li><strong>UI-TARS Observation Only:</strong> produces a local Observation Packet — it does not run UI-TARS and does not control the desktop.</li>
+              <li><strong>Observation Packet:</strong> local artifacts describing the observation context, written under <code>14_context/ui_tars_observation/runs/</code>.</li>
+            </ul>
+            <div class="card-actions">
+              <button id="ui-tars-obs-refresh-btn" type="button">Refresh Observation Status</button>
+              <button id="ui-tars-obs-create-approval-btn" type="button">Create Approval</button>
+              <button id="ui-tars-obs-dry-run-btn" type="button">Dry Run Observation</button>
+            </div>
+            <div class="card-status" id="ui-tars-obs-status">
+              <p><strong>Latest Observation Run:</strong> <span id="ui-tars-obs-latest">none</span></p>
+            </div>
+            <ul class="card-list">
+              <li><span class="chip chip--ok">Dry Run Observation</span> the dashboard button runs a dry run only — no screenshot.</li>
+              <li><span class="chip chip--ok">Screenshot Capture Requires Approval</span> a read-only screen capture needs an explicit approval token.</li>
+              <li><span class="chip chip--ok">No Click</span> the adapter never clicks anything.</li>
+              <li><span class="chip chip--ok">No Type</span> the adapter never types anything.</li>
+              <li><span class="chip chip--ok">No Hotkeys</span> the adapter never sends keyboard hotkeys.</li>
+              <li><span class="chip chip--ok">No Desktop Control Yet</span> observation only — no desktop control.</li>
+              <li><span class="chip chip--ok">No UI-TARS Runtime Yet</span> UI-TARS is never started or imported.</li>
+              <li><span class="chip chip--ok">No External Repo Code Execution</span> only Ghoti-owned adapter code runs.</li>
+              <li><span class="chip chip--ok">No Installs</span> no npm / pnpm / pip install.</li>
+              <li><span class="chip chip--ok">Local Artifacts Only</span> outputs are repo-local files.</li>
+              <li><span class="chip chip--ok">Human Approval Required</span> capture and any non-dry-run observation are human-gated.</li>
+            </ul>
+          </div>
         </section>
 
         <!-- ═══════════════════════════════════════════════════════════════════ -->
