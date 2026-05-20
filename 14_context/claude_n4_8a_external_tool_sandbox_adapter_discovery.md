@@ -147,7 +147,7 @@ approval packet, dashboard labels, server endpoints, safety).
 | Adapter stubs import external repo packages | NO — stdlib `json` only |
 | `--allow-install` flag | exists but never installs — only enters a plan |
 | Arbitrary repo slug accepted | NO — approved catalog only; unknown rejected |
-| `shell=True` / `shell:true` | NONE — fixed argv, `shell=False` |
+| Python/JS shell execution option | NONE — fixed argv, shell disabled |
 | Cloned repos committed to Ghoti | NO — `21_repos/third_party/*` is gitignored |
 | Secrets / API keys | NONE |
 | Human approval required for wiring | YES — adapters + approval packet enforce it |

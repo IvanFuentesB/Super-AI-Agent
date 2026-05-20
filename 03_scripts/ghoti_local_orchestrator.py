@@ -115,7 +115,7 @@ def _gen_claude_prompt_n350():
 
 def _gen_codex_prompt_n350():
     ts = _utc_now()
-    parts = ["# Codex Audit - N+3.50B - Orchestrator Purity","Generated: " + ts,"For: Codex audit. DO NOT implement. Audit only.","","Files: ghoti_local_orchestrator.py, prompt_bus.py, local_worker_router.py, JSONL","","Checklist:","- --status: no writes, no external calls","- --plan-next: stdout only","- --write-next-prompts --apply: writes only to 14_context/","- read-only check commands (obsidian/ruflo/gemma-check)","- No shell=True subprocess calls","- --write-chatgpt applies to outbox only","- course_cert route forbids impersonation","- ruflo route is research/intake only","- JSONL valid, no path escapes","","Output: 14_context/codex_n3_50b_orchestrator_purity_audit.md","Format: PASS/FAIL per item, APPROVED or NEEDS_FIX verdict."]
+    parts = ["# Codex Audit - N+3.50B - Orchestrator Purity","Generated: " + ts,"For: Codex audit. DO NOT implement. Audit only.","","Files: ghoti_local_orchestrator.py, prompt_bus.py, local_worker_router.py, JSONL","","Checklist:","- --status: no writes, no external calls","- --plan-next: stdout only","- --write-next-prompts --apply: writes only to 14_context/","- read-only check commands (obsidian/ruflo/gemma-check)","- No Python subprocess shell option","- --write-chatgpt applies to outbox only","- course_cert route forbids impersonation","- ruflo route is research/intake only","- JSONL valid, no path escapes","","Output: 14_context/codex_n3_50b_orchestrator_purity_audit.md","Format: PASS/FAIL per item, APPROVED or NEEDS_FIX verdict."]
     return chr(10).join(parts) + chr(10)
 
 def cmd_write_next_prompts(args):

@@ -8,6 +8,10 @@
 *.pem
 *.p12
 *.pfx
+*.crt
+*.cer
+*.sqlite
+*.db
 
 # Python
 __pycache__/
@@ -28,11 +32,13 @@ coverage/
 
 # Logs and temp artifacts
 *.log
+logs/
 tmp/
 temp/
 .cache/
 05_logs/runtime/
 05_logs/tmp/
+05_logs/tmp_*
 
 # Model and binary artifacts
 *.gguf
@@ -50,6 +56,28 @@ browser-data/
 # OS noise
 .DS_Store
 Thumbs.db
+
+# Public-release raw/generated artifacts
+runtime_data/
+output/
+*.tmp
+*.bak
+*.zip
+*.7z
+*.rar
+*.mp4
+*.mov
+*.webm
+human imported stuff/
+Human Imported Stuff/
+human_imported_stuff/
+Human_Imported_Stuff/
+Human Placed Stuff/
+*human*import*stuff*/
+*human*placed*stuff*/
+14_context/hermes_agent/runs/*
+14_context/model_council_tool_intake/runs/*
+14_context/security/public_repo_audits/*
 
 # Runtime MVP artifacts
 01_projects/runtime_mvp/runtime_data/*.json
