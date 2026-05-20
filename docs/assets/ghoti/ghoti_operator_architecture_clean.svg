@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="800" viewBox="0 0 1400 800">
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="8" refX="11" refY="4" orient="auto"><path d="M0,0 L12,4 L0,8 Z" fill="#2563eb"/></marker>
+    <linearGradient id="blueGrad" x1="0" x2="1"><stop offset="0" stop-color="#e0f2fe"/><stop offset="1" stop-color="#eef2ff"/></linearGradient>
+    <linearGradient id="darkGrad" x1="0" x2="1"><stop offset="0" stop-color="#06192b"/><stop offset="1" stop-color="#0a2d45"/></linearGradient>
+    <filter id="soft"><feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0f172a" flood-opacity="0.10"/></filter>
+    <style>
+      .title { font: 700 40px Inter, Segoe UI, Arial, sans-serif; fill:#0f172a; }
+      .subtitle { font: 400 19px Inter, Segoe UI, Arial, sans-serif; fill:#475569; }
+      .boxTitle { font: 700 22px Inter, Segoe UI, Arial, sans-serif; fill:#0f172a; }
+      .boxText { font: 400 16px Inter, Segoe UI, Arial, sans-serif; fill:#334155; }
+      .small { font: 600 13px ui-monospace, SFMono-Regular, Consolas, monospace; fill:#1d4ed8; }
+      .arrow { stroke:#2563eb; stroke-width:4; fill:none; marker-end:url(#arrow); }
+      .dash { stroke:#64748b; stroke-width:3; stroke-dasharray:10 8; fill:none; marker-end:url(#arrow); }
+    </style>
+  </defs>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <text x="60" y="72" class="title">Ghoti Supervised Operator Architecture</text>
+  <text x="60" y="106" class="subtitle">Readable engineering diagram for README use</text>
+<rect x="70" y="220" width="230" height="135" rx="22" fill="#f8fafc" stroke="#38bdf8" stroke-width="2.5" filter="url(#soft)"/>
+<text x="94" y="262" class="boxTitle">User / operator</text>
+<text x="94" y="292" class="boxText">approves risky actions</text>
+<text x="94" y="317" class="boxText">reviews outputs</text>
+<rect x="390" y="220" width="250" height="135" rx="22" fill="#f0f9ff" stroke="#38bdf8" stroke-width="2.5" filter="url(#soft)"/>
+<text x="414" y="262" class="boxTitle">Approval inbox</text>
+<text x="414" y="292" class="boxText">pending approval</text>
+<text x="414" y="317" class="boxText">human-needed states</text>
+<rect x="730" y="220" width="250" height="135" rx="22" fill="#f8fafc" stroke="#38bdf8" stroke-width="2.5" filter="url(#soft)"/>
+<text x="754" y="262" class="boxTitle">Runtime core</text>
+<text x="754" y="292" class="boxText">file-backed tasks</text>
+<text x="754" y="317" class="boxText">checked adapters</text>
+<rect x="1070" y="120" width="240" height="115" rx="22" fill="#f8fafc" stroke="#60a5fa" stroke-width="2.5" filter="url(#soft)"/>
+<text x="1094" y="162" class="boxTitle">GitHub adapter</text>
+<text x="1094" y="192" class="boxText">read-only inspection</text>
+<text x="1094" y="217" class="boxText">approved writes</text>
+<rect x="1070" y="300" width="240" height="115" rx="22" fill="#f8fafc" stroke="#60a5fa" stroke-width="2.5" filter="url(#soft)"/>
+<text x="1094" y="342" class="boxTitle">Desktop bridge</text>
+<text x="1094" y="372" class="boxText">allowlisted windows</text>
+<text x="1094" y="397" class="boxText">local screenshots</text>
+<rect x="390" y="500" width="250" height="120" rx="22" fill="#fff7ed" stroke="#fb923c" stroke-width="2.5" filter="url(#soft)"/>
+<text x="414" y="542" class="boxTitle">Local memory</text>
+<text x="414" y="572" class="boxText">14_context snapshots</text>
+<text x="414" y="597" class="boxText">compact handoff</text>
+<rect x="730" y="500" width="250" height="120" rx="22" fill="#fff7ed" stroke="#fb923c" stroke-width="2.5" filter="url(#soft)"/>
+<text x="754" y="542" class="boxTitle">Audit log</text>
+<text x="754" y="572" class="boxText">artifacts</text>
+<text x="754" y="597" class="boxText">validation reports</text>
+<path d="M300,288 C345,288 345,288 390,288" class="arrow"/>
+<path d="M640,288 C685,288 685,288 730,288" class="arrow"/>
+<path d="M980,255 C1025,255 1025,180 1070,180" class="arrow"/>
+<path d="M980,310 C1025,310 1025,360 1070,360" class="arrow"/>
+<path d="M515,500 C515,500 515,355 515,355" class="dash"/>
+<path d="M855,355 C855,355 855,500 855,500" class="dash"/>
+</svg>
