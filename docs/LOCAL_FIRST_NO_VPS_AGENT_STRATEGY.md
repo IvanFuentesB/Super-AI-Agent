@@ -10,6 +10,23 @@ Windows `ai_sandbox` profile as the local operator machine.
 - No Hostinger or VPS assumption.
 - Telegram requires manual user setup later.
 - Always-on cloud/VPS can be a future optional lane, not the default path.
+- Ubuntu WSL is the preferred local Linux path when Hermes needs a Linux shell.
+- Use `wsl -d Ubuntu` or `wsl.exe -d Ubuntu` for distro-specific checks.
+- If Ubuntu opens but Hermes is not found, Hermes was not installed inside that
+  Ubuntu distro yet.
+
+Manual Ubuntu recovery path after reviewing the installer:
+
+```bash
+curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash -s -- --skip-setup
+source ~/.bashrc
+command -v hermes
+hermes --help
+```
+
+PowerShell `curl` can mean `Invoke-WebRequest`; use `curl.exe` for downloads.
+Bash from PowerShell can route to WSL, so prefer explicit `wsl -d Ubuntu`
+commands when validating Hermes inside Ubuntu.
 
 ## NetworkChuck-Style Preference Note
 

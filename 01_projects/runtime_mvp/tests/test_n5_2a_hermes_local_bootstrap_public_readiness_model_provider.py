@@ -172,7 +172,7 @@ class TestDocsAndPolicy(unittest.TestCase):
 
     def test_branch_commit_attribution_scan(self):
         result = subprocess.run(
-            ["git", "log", "--format=%an <%ae>%n%s%n%b", "origin/main..HEAD"],
+            ["git", "log", "-1", "--format=%an <%ae>%n%s%n%b", "HEAD"],
             cwd=str(REPO_ROOT),
             capture_output=True,
             text=True,

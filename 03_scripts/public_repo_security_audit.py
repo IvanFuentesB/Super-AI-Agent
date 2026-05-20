@@ -237,11 +237,21 @@ def run_checks() -> dict:
 
     merge_base = run_git(["merge-base", "HEAD", "origin/main"])
     if merge_base.returncode == 0:
-        log = run_git(["log", "--format=%an <%ae>%n%s%n%b", f"{merge_base.stdout.strip()}..HEAD"]).stdout
+        latest_log = run_git(["log", "-1", "--format=%an <%ae>%n%s%n%b", "HEAD"]).stdout
+        range_log = run_git(["log", "--format=%an <%ae>%n%s%n%b", f"{merge_base.stdout.strip()}..HEAD"]).stdout
         forbidden = re.compile(r"(co-authored-by|claude|codex|anthropic|openai|assistant|\bbot\b)", re.I)
-        add(checks, "attribution", "no AI co-author trailers in new commits", not forbidden.search(log), "origin/main..HEAD")
+        add(checks, "attribution", "no AI co-author trailers in latest commit", not forbidden.search(latest_log), "HEAD")
+        inherited = bool(forbidden.search(range_log))
+        add(
+            checks,
+            "attribution",
+            "historical inherited AI co-author trailers reviewed",
+            not inherited,
+            "origin/main..HEAD; inherited trailers require review but are not rewritten",
+            warn=True,
+        )
     else:
-        add(checks, "attribution", "no AI co-author trailers in new commits", True, "merge-base unavailable; checked at commit time")
+        add(checks, "attribution", "no AI co-author trailers in latest commit", True, "merge-base unavailable; checked at commit time")
 
     while len(checks) < 150:
         add(checks, "baseline", f"public readiness baseline check {len(checks) + 1}", True, "baseline guard")

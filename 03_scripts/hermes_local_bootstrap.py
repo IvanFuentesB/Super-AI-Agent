@@ -100,8 +100,41 @@ def safe_version(cmd: list[str], timeout: int = 6) -> str:
     return text[0][:160] if text else f"exit={result.returncode}"
 
 
+def run_probe(cmd: list[str], timeout: int = 8) -> subprocess.CompletedProcess[str] | None:
+    try:
+        return subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+    except Exception:
+        return None
+
+
+def wsl_ubuntu_info() -> dict:
+    info = {
+        "wsl_ubuntu_available": False,
+        "wsl_ubuntu_hermes_command_found": False,
+        "wsl_ubuntu_hermes_path": "not found",
+        "wsl_ubuntu_hermes_version": "not found",
+    }
+    if not command_found("wsl"):
+        return info
+    ubuntu = run_probe(["wsl", "-d", "Ubuntu", "--", "bash", "-lc", "true"])
+    info["wsl_ubuntu_available"] = bool(ubuntu and ubuntu.returncode == 0)
+    if not info["wsl_ubuntu_available"]:
+        return info
+    hermes_path = run_probe(["wsl", "-d", "Ubuntu", "--", "bash", "-lc", "command -v hermes"])
+    if hermes_path and hermes_path.returncode == 0 and hermes_path.stdout.strip():
+        info["wsl_ubuntu_hermes_command_found"] = True
+        info["wsl_ubuntu_hermes_path"] = hermes_path.stdout.strip().splitlines()[0][:160]
+        version = run_probe(["wsl", "-d", "Ubuntu", "--", "bash", "-lc", "hermes --version || true"])
+        if version and (version.stdout or version.stderr):
+            info["wsl_ubuntu_hermes_version"] = (version.stdout or version.stderr).strip().splitlines()[0][:160]
+    return info
+
+
 def prereqs() -> dict:
     git_bash = git_bash_paths()
+    wsl_ubuntu = wsl_ubuntu_info()
+    local_hermes_found = command_found("hermes")
+    hermes_found = local_hermes_found or wsl_ubuntu["wsl_ubuntu_hermes_command_found"]
     data = {
         "platform": platform.platform(),
         "python": sys.version.split()[0],
@@ -118,9 +151,16 @@ def prereqs() -> dict:
         "node_found": command_found("node"),
         "docker_found_optional": command_found("docker"),
         "ollama_found": command_found("ollama"),
-        "hermes_command_found": command_found("hermes"),
-        "hermes_help": safe_version(["hermes", "--help"]) if command_found("hermes") else "not found",
-        "hermes_version": safe_version(["hermes", "--version"]) if command_found("hermes") else "not found",
+        "hermes_command_found": hermes_found,
+        "local_windows_hermes_command_found": local_hermes_found,
+        "wsl_ubuntu_available": wsl_ubuntu["wsl_ubuntu_available"],
+        "wsl_ubuntu_hermes_command_found": wsl_ubuntu["wsl_ubuntu_hermes_command_found"],
+        "wsl_ubuntu_hermes_path": wsl_ubuntu["wsl_ubuntu_hermes_path"],
+        "hermes_help": safe_version(["hermes", "--help"]) if local_hermes_found else (
+            f"found in Ubuntu WSL: {wsl_ubuntu['wsl_ubuntu_hermes_path']}"
+            if wsl_ubuntu["wsl_ubuntu_hermes_command_found"] else "not found"
+        ),
+        "hermes_version": safe_version(["hermes", "--version"]) if local_hermes_found else wsl_ubuntu["wsl_ubuntu_hermes_version"],
     }
     data["can_download_installer"] = data["curl_exe_found"] or True
     data["local_shell_available"] = data["bash_found"] or bool(git_bash) or data["wsl_found"]
@@ -230,12 +270,26 @@ def windows_commands() -> str:
         "PowerShell safe download:",
         f"  curl.exe -L {INSTALLER_URL} -o install.sh",
         "",
+        "PowerShell curl alias note:",
+        "  Use curl.exe, not curl, because curl can resolve to Invoke-WebRequest in PowerShell.",
+        "",
         "If bash is missing, install or open Git Bash, then inspect before running:",
         "  bash --version",
         "  head -n 40 install.sh",
         "",
         "If WSL is already installed and approved for local use:",
         "  wsl bash -lc 'bash --version'",
+        "  wsl -d Ubuntu -- bash -lc 'bash --version'",
+        "  wsl.exe -d Ubuntu -- bash -lc 'bash --version'",
+        "",
+        "If Ubuntu opens but Hermes is not found, the installer was not completed inside Ubuntu.",
+        "Run these manually inside Ubuntu only after human review:",
+        f"  curl -fsSL {INSTALLER_URL} | bash -s -- --skip-setup",
+        "  source ~/.bashrc",
+        "  command -v hermes",
+        "  hermes --help",
+        "",
+        "Bash from PowerShell can route to WSL on some Windows setups; prefer explicit wsl -d Ubuntu when troubleshooting distro-specific installs.",
         "",
         "Do not paste Telegram tokens into git. Put secrets only in a local .env file.",
         "No paid VPS is required for this local-first plan.",
@@ -257,6 +311,7 @@ def install_local() -> dict:
         "next_steps": [
             "Review installer hash and first lines.",
             "Open a non-admin Git Bash or WSL shell only if the user approves.",
+            "For Ubuntu WSL troubleshooting, use wsl -d Ubuntu or wsl.exe -d Ubuntu and rerun command -v hermes.",
             "Provide provider and Telegram secrets manually in a local .env file later.",
         ],
     }
@@ -283,8 +338,12 @@ def write_report_files(out_dir: Path, manifest: dict, installer: Path | None = N
         f"- curl.exe found: {p['curl_exe_found']}\n"
         f"- bash found: {p['bash_found']}\n"
         f"- WSL found: {p['wsl_found']}\n"
+        f"- Ubuntu WSL available: {p['wsl_ubuntu_available']}\n"
+        f"- Ubuntu WSL Hermes command found: {p['wsl_ubuntu_hermes_command_found']}\n"
+        f"- Ubuntu WSL Hermes path: {p['wsl_ubuntu_hermes_path']}\n"
         f"- Git Bash paths: {', '.join(p['git_bash_paths']) or 'none detected'}\n"
         f"- Hermes command found: {p['hermes_command_found']}\n"
+        f"- Hermes version: {p['hermes_version']}\n"
         f"- Install safe now: {p['install_safe_now']} ({p['install_safe_reason']})\n",
         encoding="utf-8",
     )
@@ -315,9 +374,10 @@ def write_report_files(out_dir: Path, manifest: dict, installer: Path | None = N
         "# Human Next Steps\n\n"
         "1. Review installer hash and first lines.\n"
         "2. Decide whether to run installer manually in a non-admin local shell.\n"
-        "3. Create Telegram bot token/chat ID manually if desired.\n"
-        "4. Store secrets only in local `.env`.\n"
-        "5. Rerun status checks after setup.\n",
+        "3. If WSL Ubuntu opens but Hermes is missing, run `wsl -d Ubuntu` or `wsl.exe -d Ubuntu` and complete the installer inside Ubuntu after review.\n"
+        "4. Create Telegram bot token/chat ID manually if desired.\n"
+        "5. Store secrets only in local `.env`.\n"
+        "6. Rerun status checks after setup.\n",
         encoding="utf-8",
     )
     (out_dir / "09_preview.html").write_text(

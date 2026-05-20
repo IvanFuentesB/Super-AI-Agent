@@ -41,6 +41,14 @@ Hermes Agent is now a priority, but Ghoti stays local-first and safe.
 - Actual installer execution is guarded because this milestone does not install packages or run external installer code automatically.
 - Windows PowerShell users should use `curl.exe`, not the `curl` alias.
 - The target machine is the Windows `ai_sandbox` profile.
+- If using Ubuntu WSL, check the exact distro with `wsl -d Ubuntu` or
+  `wsl.exe -d Ubuntu`.
+- If Ubuntu opens but Hermes is not found, the installer was not completed
+  inside Ubuntu yet; after reviewing the installer, run:
+  `curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash -s -- --skip-setup`,
+  then `source ~/.bashrc`, `command -v hermes`, and `hermes --help`.
+- Bash from PowerShell can route to WSL on some machines, so explicit
+  `wsl -d Ubuntu` is preferred for troubleshooting.
 - No paid VPS currently.
 - Telegram setup is later/manual; no Telegram token or chat ID is committed.
 - Hermes Codex provider support is pending / not verified until local Hermes commands or official docs confirm it.

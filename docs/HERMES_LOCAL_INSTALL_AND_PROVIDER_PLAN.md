@@ -18,6 +18,29 @@
 - Git Bash or WSL may be used only as local shells for the installer after
   human review.
 
+## WSL Ubuntu Troubleshooting
+
+Prefer explicit Ubuntu commands when checking a WSL install from PowerShell:
+
+```powershell
+wsl -d Ubuntu -- bash -lc "command -v hermes && hermes --help | head -80"
+wsl.exe -d Ubuntu -- bash -lc "hermes --version || true"
+```
+
+If Ubuntu opens but Hermes is not found, the installer was not completed inside
+Ubuntu. After human review of the installer, run the local Ubuntu install path:
+
+```bash
+curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash -s -- --skip-setup
+source ~/.bashrc
+command -v hermes
+hermes --help
+```
+
+PowerShell's `curl` alias issue is solved by using `curl.exe`. Bash launched
+from PowerShell can route to WSL on some machines, so use `wsl -d Ubuntu` or
+`wsl.exe -d Ubuntu` when troubleshooting the exact distro.
+
 ## Provider Truth
 
 Codex is the preferred provider if Hermes supports it. Codex provider support
