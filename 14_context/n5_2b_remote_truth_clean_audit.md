@@ -59,8 +59,10 @@ were introduced by this audit.
   until proven.
 - `python 03_scripts/public_repo_security_audit.py --write-report --json`: pass.
   Result: 150 total checks, 0 failed checks, 0 blocking findings,
-  `safe_to_make_public=true`, human review required. Report directory:
-  `14_context/security/public_repo_audits/20260522T114550Z_public_repo_security`.
+  `safe_to_make_public=true`, human review required. The timestamped generated
+  report directory stayed local/ignored; it is summarized here instead of being
+  committed, because generated report JSON contains scanner label text that can
+  self-match future public-security scans.
 
 ## Hermes WSL Truth
 
@@ -89,7 +91,8 @@ language. These are warnings for human review, not merge blockers.
 ## Merge Gate Notes
 
 - New commits should remain human-authored and must not add co-author trailers.
-- Stage only this audit report and the generated public security report bundle.
+- Stage only this audit report. Keep generated public security report bundles
+  ignored unless a future scanner explicitly excludes its own report output.
 - Do not stage transient run output from launcher, adapter, UI-TARS, content,
   relay, Obsidian, or sandbox smoke probes.
 - Main merge is approved only after this audit report branch is pushed and the
