@@ -138,6 +138,13 @@ CONTROL_CENTER_LANES = [
     },
 ]
 
+DAILY_OPERATOR_COMMANDS = [
+    "python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard",
+    "python 03_scripts/ghoti_product_launcher.py --status --json",
+    "python 03_scripts/ghoti_product_launcher.py --smoke --json",
+    "python 03_scripts/ghoti_product_launcher.py --stop-dashboard",
+]
+
 
 def _now() -> str:
     return datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
@@ -319,6 +326,14 @@ def cmd_status() -> dict:
         "live_posting": False,
         "opens_browser_by_default": False,
         "smoke_endpoints": ["%s %s" % (m, p) for m, p in SMOKE_ENDPOINTS],
+        "daily_operator_commands": DAILY_OPERATOR_COMMANDS,
+        "daily_operator_sequence": [
+            "Launch dashboard",
+            "Check status truth",
+            "Run smoke/demo",
+            "Review report",
+            "Stop dashboard",
+        ],
         "what_ghoti_can_do": WHAT_GHOTI_CAN_DO,
         "product_finish_milestone": "N+5.3A",
         "control_center_lanes": CONTROL_CENTER_LANES,
@@ -579,10 +594,13 @@ def _print_human(result: dict) -> None:
         print("  smoke endpoints:")
         for ep in result["smoke_endpoints"]:
             print("    - %s" % ep)
+        print("  daily operator commands:")
+        for command in result["daily_operator_commands"]:
+            print("    - %s" % command)
         print("  what Ghoti can do now:")
         for item in result["what_ghoti_can_do"]:
             print("    - %s" % item)
-        print("  one-command launch: python 03_scripts/ghoti_product_launcher.py --start-dashboard")
+        print("  sequence: Launch dashboard -> Check status truth -> Run smoke/demo -> Review report -> Stop dashboard")
     elif action == "start-dashboard":
         if result.get("ok"):
             print("Dashboard URL: %s" % result["dashboard_url"])
@@ -611,6 +629,15 @@ def _print_human(result: dict) -> None:
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(
         description="Ghoti Product Launcher (N+4.7A) — one-command local launcher + smoke.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=(
+            "Daily operator sequence:\n"
+            "  1. python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard\n"
+            "  2. python 03_scripts/ghoti_product_launcher.py --status --json\n"
+            "  3. python 03_scripts/ghoti_product_launcher.py --smoke --json\n"
+            "  4. review reports under 14_context/\n"
+            "  5. python 03_scripts/ghoti_product_launcher.py --stop-dashboard\n"
+        ),
     )
     parser.add_argument("--status", action="store_true", help="show launcher + dashboard status")
     parser.add_argument("--json", action="store_true", help="emit JSON output")
