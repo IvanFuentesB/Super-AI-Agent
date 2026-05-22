@@ -6940,6 +6940,52 @@ async function handleApiRequest(request, response, requestUrl) {
   // shell:false + timeouts. Path output reuses the N+4.4D isPathInsideRepo
   // containment helper.
 
+  async function runContextPackBuilder(argvTail, timeoutMs) {
+    const contextPackScript = path.join(repoRoot, "03_scripts", "ghoti_context_pack_builder.py");
+    const py = resolvePython();
+    if (!py) {
+      return { ok: false, local_only: true, available: false, error: "Python interpreter not found" };
+    }
+    if (!fs.existsSync(contextPackScript)) {
+      return { ok: false, local_only: true, available: false, error: "Context pack builder not found" };
+    }
+    const argv = [...py.baseArgs, contextPackScript, ...argvTail, "--json"];
+    let raw;
+    try {
+      raw = await runCommand(py.command, argv, { cwd: repoRoot, timeoutMs: timeoutMs || 30000 });
+    } catch (err) {
+      return { ok: false, local_only: true, available: false, error: String(err && err.message) };
+    }
+    if (!raw.ok) {
+      return {
+        ok: false,
+        local_only: true,
+        available: false,
+        error: raw.stderr || `exit ${raw.exitCode}`,
+        output: raw.stdout,
+      };
+    }
+    try {
+      return JSON.parse(raw.stdout);
+    } catch (_) {
+      return { ok: false, local_only: true, available: false, error: "Failed to parse context pack output" };
+    }
+  }
+
+  // GET /api/local-memory-context-pack/status
+  if (request.method === "GET" && requestUrl.pathname === "/api/local-memory-context-pack/status") {
+    sendJson(response, 200, await runContextPackBuilder(["--status"], 30000));
+    return;
+  }
+
+  // POST /api/local-memory-context-pack/build
+  if (request.method === "POST" && requestUrl.pathname === "/api/local-memory-context-pack/build") {
+    // Fixed argv. Repo-local file generation only. No external API, provider setup,
+    // account action, or browser/computer-use action is triggered.
+    sendJson(response, 200, await runContextPackBuilder(["--write"], 30000));
+    return;
+  }
+
   // GET /api/product-control/status
   if (request.method === "GET" && requestUrl.pathname === "/api/product-control/status") {
     sendJson(response, 200, {
@@ -6983,6 +7029,13 @@ async function handleApiRequest(request, response, requestUrl) {
           label: "Local Memory / Gemma Fallback",
           available: true,
           how_to_run: "local_memory_compression_bridge.py --json (local only, no external API)",
+        },
+        {
+          key: "local_memory_context_pack",
+          label: "Local Memory / Context Pack",
+          available: true,
+          mode: "repo_local_copy_paste",
+          how_to_run: "Run ghoti_context_pack_builder.py --write --json or POST /api/local-memory-context-pack/build to refresh compact handoff files.",
         },
         {
           key: "external_tool_intake",

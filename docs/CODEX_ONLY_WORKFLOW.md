@@ -1,11 +1,12 @@
 # Codex-Only Workflow
 
-Current baseline: N+5.3B clean/product-ready.
+Current baseline: N+5.4B clean/daily-operator-usability on main.
 
 ```text
-origin/main = 6628e6f6fc91921225182a66ebf927982bd5464d
+origin/main = e309921ea27b7f93ce608dede4d0f8ff518937c9
 launcher = python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard
 dashboard = http://127.0.0.1:3210
+context_pack = python 03_scripts/ghoti_context_pack_builder.py --write --json
 ```
 
 This milestone is handled by Codex only. Work must stay inside repo-contained
@@ -66,4 +67,10 @@ Check the daily dashboard:
 
 ```text
 Start Ghoti with python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard, verify Daily Operator and Status Truth labels on http://127.0.0.1:3210, then stop only the recorded launcher PID.
+```
+
+Refresh the compact context pack:
+
+```text
+Run python 03_scripts/ghoti_context_pack_builder.py --write --json, inspect 14_context/compact_memory/generated/ghoti_status_short.md and ghoti_codex_next_prompt.md, and confirm no secrets or live-provider claims were generated.
 ```

@@ -6748,6 +6748,71 @@ refreshLocalOrchestrator();
 })();
 
 // ---------------------------------------------------------------------
+// N+5.5A Local Memory / Context Pack (client-side handlers)
+// ---------------------------------------------------------------------
+(function attachLocalMemoryContextPack() {
+  function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value || "none";
+  }
+  function setResult(text) {
+    const el = document.getElementById("context-pack-action-result");
+    if (!el) return;
+    el.innerHTML = "";
+    const p = document.createElement("p");
+    p.textContent = text;
+    el.appendChild(p);
+  }
+  async function callContextPack(endpoint, method) {
+    const res = await fetch(endpoint, { method: method || "GET", headers: { "Content-Type": "application/json" } });
+    return await res.json();
+  }
+  function renderStatus(data) {
+    if (!data || !data.ok) {
+      setText("context-pack-generated-at", "unavailable");
+      setText("context-pack-status-short", (data && data.error) || "Context pack status unavailable.");
+      return;
+    }
+    setText("context-pack-generated-at", data.generated_at || "not generated yet");
+    setText("context-pack-main-hash", data.main_hash || "origin/main pending");
+    setText("context-pack-status-short", data.status_short || "No generated context pack yet.");
+    setText("context-pack-latest-path", data.latest_context_pack_path || (data.paths && data.paths["ghoti_current_context_pack.md"]));
+    setText("context-pack-prompt-path", data.copy_paste_prompt_path || (data.paths && data.paths["ghoti_codex_next_prompt.md"]));
+  }
+  async function refreshContextPackStatus() {
+    try {
+      renderStatus(await callContextPack("/api/local-memory-context-pack/status", "GET"));
+    } catch (err) {
+      setText("context-pack-status-short", "Could not load context pack status.");
+    }
+  }
+  function bind(id, fn) {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("click", fn);
+  }
+  bind("context-pack-refresh-btn", async function () {
+    setResult("Refreshing context pack status...");
+    await refreshContextPackStatus();
+    setResult("Context pack status refreshed.");
+  });
+  bind("context-pack-build-btn", async function () {
+    setResult("Generating repo-local context pack files...");
+    try {
+      const data = await callContextPack("/api/local-memory-context-pack/build", "POST");
+      renderStatus(data);
+      setResult(data && data.ok
+        ? "Context pack generated. Copy-paste prompt path is shown above."
+        : "Context pack generation reported unavailable: " + ((data && data.error) || "unknown"));
+    } catch (err) {
+      setResult("Context pack generation failed: " + (err && err.message));
+    }
+  });
+  if (document.getElementById("ghoti-context-pack-card")) {
+    refreshContextPackStatus();
+  }
+})();
+
+// ---------------------------------------------------------------------
 // N+4.8A External Tool Sandbox Truth (client-side handler, read-only)
 // ---------------------------------------------------------------------
 (function attachExternalToolSandbox() {
