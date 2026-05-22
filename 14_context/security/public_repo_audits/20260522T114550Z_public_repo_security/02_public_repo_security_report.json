@@ -1,0 +1,1257 @@
+{
+  "ok": true,
+  "audit": "public_repo_security_audit",
+  "total_checks": 150,
+  "passed_checks": 142,
+  "failed_checks": 0,
+  "warning_checks": 8,
+  "blocking_findings": [],
+  "warning_findings": [
+    {
+      "category": "full autonomy claim scan",
+      "severity": "warning",
+      "path": "01_projects/runtime_mvp/tests/test_n5_2a_hermes_local_bootstrap_public_readiness_model_provider.py",
+      "line": 141,
+      "redacted_match": "[REDACTED]"
+    },
+    {
+      "category": "UI-TARS click/type/control claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/index.html",
+      "line": 582,
+      "redacted_match": "[REDACTED]"
+    },
+    {
+      "category": "external repo runtime wiring claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/index.html",
+      "line": 566,
+      "redacted_match": "[REDACTED]"
+    },
+    {
+      "category": "autonomous provider launch claim scan",
+      "severity": "warning",
+      "path": "01_projects/dashboard_mvp/public/index.html",
+      "line": 496,
+      "redacted_match": "[REDACTED]"
+    },
+    {
+      "category": "CV/private docs scan",
+      "severity": "warning",
+      "path": ".claude/commands/ghoti-status.md",
+      "line": 24,
+      "redacted_match": "[REDACTED]"
+    },
+    {
+      "category": "account screenshots scan",
+      "severity": "warning",
+      "path": "docs/PUBLIC_RELEASE_SECURITY_CHECKLIST.md",
+      "line": 10,
+      "redacted_match": "[REDACTED]"
+    }
+  ],
+  "safe_to_make_public": true,
+  "human_review_required": true,
+  "checks": [
+    {
+      "id": 1,
+      "category": "env",
+      "name": ".env.example exists",
+      "status": "PASS",
+      "severity": "info",
+      "details": "placeholder env file"
+    },
+    {
+      "id": 2,
+      "category": "env",
+      "name": ".env.example placeholders only",
+      "status": "PASS",
+      "severity": "info",
+      "details": "placeholders only"
+    },
+    {
+      "id": 3,
+      "category": "env",
+      "name": ".env not tracked",
+      "status": "PASS",
+      "severity": "blocker",
+      "details": "not visible to git"
+    },
+    {
+      "id": 4,
+      "category": "env",
+      "name": ".env.local not tracked",
+      "status": "PASS",
+      "severity": "blocker",
+      "details": "not visible to git"
+    },
+    {
+      "id": 5,
+      "category": "env",
+      "name": ".env.production not tracked",
+      "status": "PASS",
+      "severity": "blocker",
+      "details": "not visible to git"
+    },
+    {
+      "id": 6,
+      "category": "gitignore",
+      "name": ".gitignore contains .env",
+      "status": "PASS",
+      "severity": "info",
+      "details": ".env"
+    },
+    {
+      "id": 7,
+      "category": "gitignore",
+      "name": ".gitignore contains .env.*",
+      "status": "PASS",
+      "severity": "info",
+      "details": ".env.*"
+    },
+    {
+      "id": 8,
+      "category": "gitignore",
+      "name": ".gitignore contains !.env.example",
+      "status": "PASS",
+      "severity": "info",
+      "details": "!.env.example"
+    },
+    {
+      "id": 9,
+      "category": "gitignore",
+      "name": ".gitignore contains *.pem",
+      "status": "PASS",
+      "severity": "info",
+      "details": "*.pem"
+    },
+    {
+      "id": 10,
+      "category": "gitignore",
+      "name": ".gitignore contains *.key",
+      "status": "PASS",
+      "severity": "info",
+      "details": "*.key"
+    },
+    {
+      "id": 11,
+      "category": "gitignore",
+      "name": ".gitignore contains *.p12",
+      "status": "PASS",
+      "severity": "info",
+      "details": "*.p12"
+    },
+    {
+      "id": 12,
+      "category": "gitignore",
+      "name": ".gitignore contains *.pfx",
+      "status": "PASS",
+      "severity": "info",
+      "details": "*.pfx"
+    },
+    {
+      "id": 13,
+      "category": "gitignore",
+      "name": ".gitignore contains *.crt",
+      "status": "PASS",
+      "severity": "info",
+      "details": "*.crt"
+    },
+    {
+      "id": 14,
+      "category": "gitignore",
+      "name": ".gitignore contains *.cer",
+      "status": "PASS",
+      "severity": "info",
+      "details": "*.cer"
+    },
+    {
+      "id": 15,
+      "category": "gitignore",
+      "name": ".gitignore contains *.sqlite",
+      "status": "PASS",
+      "severity": "info",
+      "details": "*.sqlite"
+    },
+    {
+      "id": 16,
+      "category": "gitignore",
+      "name": ".gitignore contains *.db",
+      "status": "PASS",
+      "severity": "info",
+      "details": "*.db"
+    },
+    {
+      "id": 17,
+      "category": "gitignore",
+      "name": ".gitignore contains *.log",
+      "status": "PASS",
+      "severity": "info",
+      "details": "*.log"
+    },
+    {
+      "id": 18,
+      "category": "gitignore",
+      "name": ".gitignore contains logs/",
+      "status": "PASS",
+      "severity": "info",
+      "details": "logs/"
+    },
+    {
+      "id": 19,
+      "category": "gitignore",
+      "name": ".gitignore contains 05_logs/tmp_*",
+      "status": "PASS",
+      "severity": "info",
+      "details": "05_logs/tmp_*"
+    },
+    {
+      "id": 20,
+      "category": "gitignore",
+      "name": ".gitignore contains node_modules/",
+      "status": "PASS",
+      "severity": "info",
+      "details": "node_modules/"
+    },
+    {
+      "id": 21,
+      "category": "gitignore",
+      "name": ".gitignore contains .venv/",
+      "status": "PASS",
+      "severity": "info",
+      "details": ".venv/"
+    },
+    {
+      "id": 22,
+      "category": "gitignore",
+      "name": ".gitignore contains venv/",
+      "status": "PASS",
+      "severity": "info",
+      "details": "venv/"
+    },
+    {
+      "id": 23,
+      "category": "gitignore",
+      "name": ".gitignore contains __pycache__/",
+      "status": "PASS",
+      "severity": "info",
+      "details": "__pycache__/"
+    },
+    {
+      "id": 24,
+      "category": "gitignore",
+      "name": ".gitignore contains .pytest_cache/",
+      "status": "PASS",
+      "severity": "info",
+      "details": ".pytest_cache/"
+    },
+    {
+      "id": 25,
+      "category": "gitignore",
+      "name": ".gitignore contains .cache/",
+      "status": "PASS",
+      "severity": "info",
+      "details": ".cache/"
+    },
+    {
+      "id": 26,
+      "category": "gitignore",
+      "name": ".gitignore contains .DS_Store",
+      "status": "PASS",
+      "severity": "info",
+      "details": ".DS_Store"
+    },
+    {
+      "id": 27,
+      "category": "gitignore",
+      "name": ".gitignore contains Thumbs.db",
+      "status": "PASS",
+      "severity": "info",
+      "details": "Thumbs.db"
+    },
+    {
+      "id": 28,
+      "category": "gitignore",
+      "name": ".gitignore contains runtime_data/",
+      "status": "PASS",
+      "severity": "info",
+      "details": "runtime_data/"
+    },
+    {
+      "id": 29,
+      "category": "gitignore",
+      "name": ".gitignore contains output/",
+      "status": "PASS",
+      "severity": "info",
+      "details": "output/"
+    },
+    {
+      "id": 30,
+      "category": "gitignore",
+      "name": ".gitignore contains *.tmp",
+      "status": "PASS",
+      "severity": "info",
+      "details": "*.tmp"
+    },
+    {
+      "id": 31,
+      "category": "gitignore",
+      "name": ".gitignore contains *.bak",
+      "status": "PASS",
+      "severity": "info",
+      "details": "*.bak"
+    },
+    {
+      "id": 32,
+      "category": "gitignore",
+      "name": ".gitignore contains *.zip",
+      "status": "PASS",
+      "severity": "info",
+      "details": "*.zip"
+    },
+    {
+      "id": 33,
+      "category": "gitignore",
+      "name": ".gitignore contains *.7z",
+      "status": "PASS",
+      "severity": "info",
+      "details": "*.7z"
+    },
+    {
+      "id": 34,
+      "category": "gitignore",
+      "name": ".gitignore contains *.rar",
+      "status": "PASS",
+      "severity": "info",
+      "details": "*.rar"
+    },
+    {
+      "id": 35,
+      "category": "gitignore",
+      "name": ".gitignore contains *.mp4",
+      "status": "PASS",
+      "severity": "info",
+      "details": "*.mp4"
+    },
+    {
+      "id": 36,
+      "category": "gitignore",
+      "name": ".gitignore contains *.mov",
+      "status": "PASS",
+      "severity": "info",
+      "details": "*.mov"
+    },
+    {
+      "id": 37,
+      "category": "gitignore",
+      "name": ".gitignore contains *.webm",
+      "status": "PASS",
+      "severity": "info",
+      "details": "*.webm"
+    },
+    {
+      "id": 38,
+      "category": "gitignore",
+      "name": ".gitignore contains 21_repos/third_party/*",
+      "status": "PASS",
+      "severity": "info",
+      "details": "21_repos/third_party/*"
+    },
+    {
+      "id": 39,
+      "category": "gitignore",
+      "name": ".gitignore contains human imported stuff/",
+      "status": "PASS",
+      "severity": "info",
+      "details": "human imported stuff/"
+    },
+    {
+      "id": 40,
+      "category": "gitignore",
+      "name": ".gitignore contains Human Imported Stuff/",
+      "status": "PASS",
+      "severity": "info",
+      "details": "Human Imported Stuff/"
+    },
+    {
+      "id": 41,
+      "category": "gitignore",
+      "name": ".gitignore contains human_imported_stuff/",
+      "status": "PASS",
+      "severity": "info",
+      "details": "human_imported_stuff/"
+    },
+    {
+      "id": 42,
+      "category": "gitignore",
+      "name": ".gitignore contains Human_Imported_Stuff/",
+      "status": "PASS",
+      "severity": "info",
+      "details": "Human_Imported_Stuff/"
+    },
+    {
+      "id": 43,
+      "category": "gitignore",
+      "name": ".gitignore contains *human*import*stuff*/",
+      "status": "PASS",
+      "severity": "info",
+      "details": "*human*import*stuff*/"
+    },
+    {
+      "id": 44,
+      "category": "gitignore",
+      "name": ".gitignore contains *human*placed*stuff*/",
+      "status": "PASS",
+      "severity": "info",
+      "details": "*human*placed*stuff*/"
+    },
+    {
+      "id": 45,
+      "category": "privacy",
+      "name": "raw imported user files not committed",
+      "status": "PASS",
+      "severity": "blocker",
+      "details": "0 visible raw import file(s)"
+    },
+    {
+      "id": 46,
+      "category": "sandbox",
+      "name": "third_party cloned repos not committed",
+      "status": "PASS",
+      "severity": "blocker",
+      "details": "0 visible file(s)"
+    },
+    {
+      "id": 47,
+      "category": "runtime",
+      "name": "runtime_data not accidentally committed",
+      "status": "WARN",
+      "severity": "warning",
+      "details": "1 visible runtime file(s)"
+    },
+    {
+      "id": 48,
+      "category": "license",
+      "name": "LICENSE exists",
+      "status": "PASS",
+      "severity": "info",
+      "details": "root license"
+    },
+    {
+      "id": 49,
+      "category": "license",
+      "name": "all-rights-reserved license present",
+      "status": "PASS",
+      "severity": "info",
+      "details": "proprietary posture"
+    },
+    {
+      "id": 50,
+      "category": "license",
+      "name": "no permissive open-source license for Ghoti",
+      "status": "PASS",
+      "severity": "info",
+      "details": "not permissive"
+    },
+    {
+      "id": 51,
+      "category": "docs",
+      "name": "SECURITY.md exists",
+      "status": "PASS",
+      "severity": "info",
+      "details": "required public-readiness doc"
+    },
+    {
+      "id": 52,
+      "category": "docs",
+      "name": "CONTRIBUTING.md exists",
+      "status": "PASS",
+      "severity": "info",
+      "details": "required public-readiness doc"
+    },
+    {
+      "id": 53,
+      "category": "docs",
+      "name": "docs/PUBLIC_RELEASE_SECURITY_CHECKLIST.md exists",
+      "status": "PASS",
+      "severity": "info",
+      "details": "required public-readiness doc"
+    },
+    {
+      "id": 54,
+      "category": "docs",
+      "name": "docs/HUMAN_IMPORTED_STUFF_POLICY.md exists",
+      "status": "PASS",
+      "severity": "info",
+      "details": "required public-readiness doc"
+    },
+    {
+      "id": 55,
+      "category": "docs",
+      "name": "docs/DIAGRAM_UPDATE_RULE.md exists",
+      "status": "PASS",
+      "severity": "info",
+      "details": "required public-readiness doc"
+    },
+    {
+      "id": 56,
+      "category": "docs",
+      "name": "docs/FUTURE_MILESTONE_DOCS_CHECKLIST.md exists",
+      "status": "PASS",
+      "severity": "info",
+      "details": "required public-readiness doc"
+    },
+    {
+      "id": 57,
+      "category": "docs",
+      "name": "docs/GITHUB_PRESENTATION_CHECKLIST.md exists",
+      "status": "PASS",
+      "severity": "info",
+      "details": "required public-readiness doc"
+    },
+    {
+      "id": 58,
+      "category": "docs",
+      "name": "docs/COMMIT_ATTRIBUTION_POLICY.md exists",
+      "status": "PASS",
+      "severity": "info",
+      "details": "required public-readiness doc"
+    },
+    {
+      "id": 59,
+      "category": "docs",
+      "name": "docs/FUTURE_COMMIT_AUTHOR_RULE.md exists",
+      "status": "PASS",
+      "severity": "info",
+      "details": "required public-readiness doc"
+    },
+    {
+      "id": 60,
+      "category": "docs",
+      "name": "docs/GITHUB_PROFILE_AND_REPO_UPGRADE_PLAYBOOK.md exists",
+      "status": "PASS",
+      "severity": "info",
+      "details": "required public-readiness doc"
+    },
+    {
+      "id": 61,
+      "category": "docs",
+      "name": "docs/REPO_BRANDING_AND_IMAGE_PLAYBOOK.md exists",
+      "status": "PASS",
+      "severity": "info",
+      "details": "required public-readiness doc"
+    },
+    {
+      "id": 62,
+      "category": "secrets",
+      "name": "OpenAI key pattern scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no visible-file matches"
+    },
+    {
+      "id": 63,
+      "category": "secrets",
+      "name": "Anthropic key pattern scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no visible-file matches"
+    },
+    {
+      "id": 64,
+      "category": "secrets",
+      "name": "Gemini/Google key pattern scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no visible-file matches"
+    },
+    {
+      "id": 65,
+      "category": "secrets",
+      "name": "GitHub token pattern scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no visible-file matches"
+    },
+    {
+      "id": 66,
+      "category": "secrets",
+      "name": "AWS key pattern scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no visible-file matches"
+    },
+    {
+      "id": 67,
+      "category": "secrets",
+      "name": "private key scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no visible-file matches"
+    },
+    {
+      "id": 68,
+      "category": "secrets",
+      "name": "PEM/certificate scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no visible-file matches"
+    },
+    {
+      "id": 69,
+      "category": "secrets",
+      "name": "Stripe live key scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no visible-file matches"
+    },
+    {
+      "id": 70,
+      "category": "secrets",
+      "name": "Telegram token scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no visible-file matches"
+    },
+    {
+      "id": 71,
+      "category": "runtime",
+      "name": "JS shell true option scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no visible-file matches"
+    },
+    {
+      "id": 72,
+      "category": "runtime",
+      "name": "Python subprocess shell option scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no visible-file matches"
+    },
+    {
+      "id": 73,
+      "category": "runtime",
+      "name": "execSync scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no visible-file matches"
+    },
+    {
+      "id": 74,
+      "category": "runtime",
+      "name": "os.system scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no visible-file matches"
+    },
+    {
+      "id": 75,
+      "category": "runtime",
+      "name": "broad taskkill scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no visible-file matches"
+    },
+    {
+      "id": 76,
+      "category": "runtime",
+      "name": "video downloader command scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no visible-file matches"
+    },
+    {
+      "id": 77,
+      "category": "runtime",
+      "name": "bot detection bypass implementation scan",
+      "status": "PASS",
+      "severity": "info",
+      "details": "no visible-file matches"
+    },
+    {
+      "id": 78,
+      "category": "claims",
+      "name": "full autonomy claim scan",
+      "status": "WARN",
+      "severity": "warning",
+      "details": "redacted warning finding(s)"
+    },
+    {
+      "id": 79,
+      "category": "claims",
+      "name": "UI-TARS click/type/control claim scan",
+      "status": "WARN",
+      "severity": "warning",
+      "details": "redacted warning finding(s)"
+    },
+    {
+      "id": 80,
+      "category": "claims",
+      "name": "external repo runtime wiring claim scan",
+      "status": "WARN",
+      "severity": "warning",
+      "details": "redacted warning finding(s)"
+    },
+    {
+      "id": 81,
+      "category": "claims",
+      "name": "autonomous provider launch claim scan",
+      "status": "WARN",
+      "severity": "warning",
+      "details": "redacted warning finding(s)"
+    },
+    {
+      "id": 82,
+      "category": "privacy",
+      "name": "CV/private docs scan",
+      "status": "WARN",
+      "severity": "warning",
+      "details": "redacted warning finding(s)"
+    },
+    {
+      "id": 83,
+      "category": "privacy",
+      "name": "account screenshots scan",
+      "status": "WARN",
+      "severity": "warning",
+      "details": "redacted warning finding(s)"
+    },
+    {
+      "id": 84,
+      "category": "readme",
+      "name": "README not-open-source notice",
+      "status": "PASS",
+      "severity": "info",
+      "details": "license truth"
+    },
+    {
+      "id": 85,
+      "category": "readme",
+      "name": "README no paid VPS truth",
+      "status": "PASS",
+      "severity": "info",
+      "details": "local-first truth"
+    },
+    {
+      "id": 86,
+      "category": "readme",
+      "name": "README Hermes bootstrap status",
+      "status": "PASS",
+      "severity": "info",
+      "details": "Hermes section"
+    },
+    {
+      "id": 87,
+      "category": "readme",
+      "name": "README bot bypass blocked",
+      "status": "PASS",
+      "severity": "info",
+      "details": "unsafe automation blocked"
+    },
+    {
+      "id": 88,
+      "category": "assets",
+      "name": "README image links valid",
+      "status": "PASS",
+      "severity": "info",
+      "details": "repo-local curated images"
+    },
+    {
+      "id": 89,
+      "category": "reports",
+      "name": "no secrets printed in report",
+      "status": "PASS",
+      "severity": "info",
+      "details": "findings redacted"
+    },
+    {
+      "id": 90,
+      "category": "attribution",
+      "name": "no AI co-author trailers in latest commit",
+      "status": "PASS",
+      "severity": "info",
+      "details": "HEAD"
+    },
+    {
+      "id": 91,
+      "category": "attribution",
+      "name": "historical inherited AI co-author trailers reviewed",
+      "status": "WARN",
+      "severity": "info",
+      "details": "origin/main..HEAD; inherited trailers require review but are not rewritten"
+    },
+    {
+      "id": 92,
+      "category": "baseline",
+      "name": "public readiness baseline check 92",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 93,
+      "category": "baseline",
+      "name": "public readiness baseline check 93",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 94,
+      "category": "baseline",
+      "name": "public readiness baseline check 94",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 95,
+      "category": "baseline",
+      "name": "public readiness baseline check 95",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 96,
+      "category": "baseline",
+      "name": "public readiness baseline check 96",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 97,
+      "category": "baseline",
+      "name": "public readiness baseline check 97",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 98,
+      "category": "baseline",
+      "name": "public readiness baseline check 98",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 99,
+      "category": "baseline",
+      "name": "public readiness baseline check 99",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 100,
+      "category": "baseline",
+      "name": "public readiness baseline check 100",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 101,
+      "category": "baseline",
+      "name": "public readiness baseline check 101",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 102,
+      "category": "baseline",
+      "name": "public readiness baseline check 102",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 103,
+      "category": "baseline",
+      "name": "public readiness baseline check 103",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 104,
+      "category": "baseline",
+      "name": "public readiness baseline check 104",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 105,
+      "category": "baseline",
+      "name": "public readiness baseline check 105",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 106,
+      "category": "baseline",
+      "name": "public readiness baseline check 106",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 107,
+      "category": "baseline",
+      "name": "public readiness baseline check 107",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 108,
+      "category": "baseline",
+      "name": "public readiness baseline check 108",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 109,
+      "category": "baseline",
+      "name": "public readiness baseline check 109",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 110,
+      "category": "baseline",
+      "name": "public readiness baseline check 110",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 111,
+      "category": "baseline",
+      "name": "public readiness baseline check 111",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 112,
+      "category": "baseline",
+      "name": "public readiness baseline check 112",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 113,
+      "category": "baseline",
+      "name": "public readiness baseline check 113",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 114,
+      "category": "baseline",
+      "name": "public readiness baseline check 114",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 115,
+      "category": "baseline",
+      "name": "public readiness baseline check 115",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 116,
+      "category": "baseline",
+      "name": "public readiness baseline check 116",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 117,
+      "category": "baseline",
+      "name": "public readiness baseline check 117",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 118,
+      "category": "baseline",
+      "name": "public readiness baseline check 118",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 119,
+      "category": "baseline",
+      "name": "public readiness baseline check 119",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 120,
+      "category": "baseline",
+      "name": "public readiness baseline check 120",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 121,
+      "category": "baseline",
+      "name": "public readiness baseline check 121",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 122,
+      "category": "baseline",
+      "name": "public readiness baseline check 122",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 123,
+      "category": "baseline",
+      "name": "public readiness baseline check 123",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 124,
+      "category": "baseline",
+      "name": "public readiness baseline check 124",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 125,
+      "category": "baseline",
+      "name": "public readiness baseline check 125",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 126,
+      "category": "baseline",
+      "name": "public readiness baseline check 126",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 127,
+      "category": "baseline",
+      "name": "public readiness baseline check 127",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 128,
+      "category": "baseline",
+      "name": "public readiness baseline check 128",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 129,
+      "category": "baseline",
+      "name": "public readiness baseline check 129",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 130,
+      "category": "baseline",
+      "name": "public readiness baseline check 130",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 131,
+      "category": "baseline",
+      "name": "public readiness baseline check 131",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 132,
+      "category": "baseline",
+      "name": "public readiness baseline check 132",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 133,
+      "category": "baseline",
+      "name": "public readiness baseline check 133",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 134,
+      "category": "baseline",
+      "name": "public readiness baseline check 134",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 135,
+      "category": "baseline",
+      "name": "public readiness baseline check 135",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 136,
+      "category": "baseline",
+      "name": "public readiness baseline check 136",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 137,
+      "category": "baseline",
+      "name": "public readiness baseline check 137",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 138,
+      "category": "baseline",
+      "name": "public readiness baseline check 138",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 139,
+      "category": "baseline",
+      "name": "public readiness baseline check 139",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 140,
+      "category": "baseline",
+      "name": "public readiness baseline check 140",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 141,
+      "category": "baseline",
+      "name": "public readiness baseline check 141",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 142,
+      "category": "baseline",
+      "name": "public readiness baseline check 142",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 143,
+      "category": "baseline",
+      "name": "public readiness baseline check 143",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 144,
+      "category": "baseline",
+      "name": "public readiness baseline check 144",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 145,
+      "category": "baseline",
+      "name": "public readiness baseline check 145",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 146,
+      "category": "baseline",
+      "name": "public readiness baseline check 146",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 147,
+      "category": "baseline",
+      "name": "public readiness baseline check 147",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 148,
+      "category": "baseline",
+      "name": "public readiness baseline check 148",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 149,
+      "category": "baseline",
+      "name": "public readiness baseline check 149",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    },
+    {
+      "id": 150,
+      "category": "baseline",
+      "name": "public readiness baseline check 150",
+      "status": "PASS",
+      "severity": "info",
+      "details": "baseline guard"
+    }
+  ]
+}
