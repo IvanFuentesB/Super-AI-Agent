@@ -153,6 +153,7 @@
                   <li><strong>Status check:</strong> <code>python 03_scripts/ghoti_product_launcher.py --status --json</code></li>
                   <li><strong>Smoke test:</strong> <code>python 03_scripts/ghoti_product_launcher.py --smoke --json</code></li>
                   <li><strong>Stop safely:</strong> <code>python 03_scripts/ghoti_product_launcher.py --stop-dashboard</code> stops only the recorded launcher PID.</li>
+                  <li><strong>Context pack:</strong> <code>python 03_scripts/ghoti_product_launcher.py --context-pack --json</code></li>
                   <li><strong>Latest reports:</strong> see <code>14_context/</code>, especially N+5 audit and merge reports.</li>
                 </ul>
               </section>
@@ -164,7 +165,7 @@
                   </div>
                 </div>
                 <ul class="card-list">
-                  <li><strong>Main baseline:</strong> N+5.3B clean/product-ready; origin/main = 6628e6f6fc91921225182a66ebf927982bd5464d.</li>
+                  <li><strong>Main baseline:</strong> N+5.4B clean/daily-operator-usability on main; origin/main = e309921ea27b7f93ce608dede4d0f8ff518937c9.</li>
                   <li><strong>Hermes WSL:</strong> installed at <code>/home/ai_sandbox/.local/bin/hermes</code>; Hermes Agent v0.14.0.</li>
                   <li><strong>Hermes browser/Playwright:</strong> browser/Playwright: degraded/not claimed unless separately verified.</li>
                   <li><strong>Hermes Codex provider:</strong> Codex provider in Hermes: pending/not proven.</li>
@@ -178,6 +179,30 @@
                   <li><strong>Public audit:</strong> Public audit: 0 blockers / 7 warnings human review. Readiness score: 100.</li>
                 </ul>
               </section>
+              <section class="console-card console-card-span-2" id="ghoti-context-pack-card">
+                <div class="console-card-header">
+                  <div>
+                    <h2>Local Memory / Context Pack</h2>
+                    <p>Compact repo-local handoff files for Codex, ChatGPT, Claude, and Obsidian. No live providers or tokens.</p>
+                  </div>
+                </div>
+                <ul class="card-list">
+                  <li><strong>Generate:</strong> <code>python 03_scripts/ghoti_context_pack_builder.py --write --json</code></li>
+                  <li><strong>Launcher shortcut:</strong> <code>python 03_scripts/ghoti_product_launcher.py --context-pack --json</code></li>
+                  <li><strong>Latest pack:</strong> <code id="context-pack-latest-path">14_context/compact_memory/generated/ghoti_current_context_pack.md</code></li>
+                  <li><strong>Copy-paste prompt:</strong> <code id="context-pack-prompt-path">14_context/compact_memory/generated/ghoti_codex_next_prompt.md</code></li>
+                  <li><strong>Generated at:</strong> <code id="context-pack-generated-at">loading...</code></li>
+                  <li><strong>Main hash:</strong> <code id="context-pack-main-hash">loading...</code></li>
+                  <li><strong>Status:</strong> <span id="context-pack-status-short">Loading context pack status...</span></li>
+                </ul>
+                <div class="card-actions">
+                  <button id="context-pack-refresh-btn" type="button">Refresh Context Pack Status</button>
+                  <button id="context-pack-build-btn" type="button">Generate Context Pack</button>
+                </div>
+                <div id="context-pack-action-result" class="card-status">
+                  <p class="empty-state">No context pack action run yet.</p>
+                </div>
+              </section>
               <section class="console-card" id="ghoti-works-now-card">
                 <div class="console-card-header">
                   <div>
@@ -190,7 +215,7 @@
                   <li>Local supervised content demo: 8 agents / 100 titles / 100 thumbnails / local preview / no posting.</li>
                   <li>Public/security audit gates and model council scan run local-only.</li>
                   <li>UI-TARS observation dry-run; adapter dry-run/status; external sandbox static inspection.</li>
-                  <li>Local memory status/fallback and Reports under 14_context.</li>
+                  <li>Local memory status/fallback, generated context packs, and Reports under 14_context.</li>
                 </ul>
               </section>
               <section class="console-card" id="ghoti-remains-card">
@@ -238,7 +263,7 @@
                   <li><strong>Find latest report:</strong> <code>List the newest relevant reports under 14_context and explain what each one proves.</code></li>
                   <li><strong>Create next milestone:</strong> <code>Create a feature branch under .claude/worktrees for the next safe local-first Ghoti milestone.</code></li>
                   <li><strong>Check dashboard truth:</strong> <code>Start the local dashboard, verify Daily Operator and Status Truth labels, then stop only the recorded PID.</code></li>
-                  <li><strong>Build N+5.5A:</strong> <code>Build N+5.5A local memory/context pack milestone with Obsidian compact memory and token-saving status, no live providers/tokens.</code></li>
+                  <li><strong>Build N+5.6A:</strong> <code>Build N+5.6A local model / Gemma setup truth and easy worker lane, no live providers/tokens.</code></li>
                 </ul>
               </section>
               <section class="console-card console-card-span-2" id="overview-product-control-center">
@@ -252,6 +277,7 @@
                   <li><strong>Hermes WSL Truth:</strong> Ubuntu WSL safe probes verify Hermes at <code>/home/ai_sandbox/.local/bin/hermes</code>, v0.14.0. Provider support pending; Telegram manual later; no VPS.</li>
                   <li><strong>Gemma / Ollama Lane:</strong> local worker lane with truthful fallback when models are missing.</li>
                   <li><strong>Obsidian Compact Memory:</strong> repo-local compact markdown memory and vault plan.</li>
+                  <li><strong>Local Memory / Context Pack:</strong> repo-local copy-paste status packs for Codex, ChatGPT, Claude, and Obsidian.</li>
                   <li><strong>Ruflo / Local Brain Bridge:</strong> status and read-only bridge truth; no runtime wiring.</li>
                   <li><strong>Graphify / Token Plan:</strong> future graph/token-efficiency plan; not installed or wired.</li>
                   <li><strong>UI-TARS Observation Only:</strong> dry-run observation packets; runtime is not started and pointer/keyboard actions are disabled.</li>
@@ -608,6 +634,7 @@
               <li><strong>Desktop Operator Safe Dry Run:</strong> use the Desktop Operator Action Center — dry-run, then human approval, then execute.</li>
               <li><strong>Recipe Runner:</strong> use the Desktop Operator Recipe Runner — pick a recipe, dry-run, approve, execute.</li>
               <li><strong>Local Memory Compression:</strong> Gemma local fallback via <code>local_memory_compression_bridge.py</code> — Local Only, no external API.</li>
+              <li><strong>Context Pack Builder:</strong> <code>ghoti_context_pack_builder.py --write --json</code> — compact local handoff files, no live providers.</li>
             </ul>
             <div id="product-action-result" class="card-status">
               <p class="empty-state">No product action run yet.</p>

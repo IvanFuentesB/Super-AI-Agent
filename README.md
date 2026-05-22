@@ -12,13 +12,13 @@ Ghoti is a local-first, approval-gated AI operating workspace for supervised dem
 
 ## Quickstart
 
-Current clean local MVP baseline: **N+5.3B / CLEAN PASS / PRODUCT READY LOCAL
-MVP**.
+Current clean local MVP baseline: **N+5.4B / CLEAN PASS / DAILY OPERATOR
+USABILITY ON MAIN**.
 
 ```text
-origin/main = 6628e6f6fc91921225182a66ebf927982bd5464d
+origin/main = e309921ea27b7f93ce608dede4d0f8ff518937c9
 N+4: 329 OK
-N+5: 66 OK
+N+5: 74 OK
 Public audit: 150 checks / 0 blockers / 7 warnings
 Readiness score: 100
 ```
@@ -36,8 +36,10 @@ http://127.0.0.1:3210
 Daily guide:
 
 - [Daily Operator Guide](docs/DAILY_OPERATOR_GUIDE.md)
+- [Local Memory Context Pack Guide](docs/LOCAL_MEMORY_CONTEXT_PACK_GUIDE.md)
 - Status: `python 03_scripts/ghoti_product_launcher.py --status --json`
 - Smoke: `python 03_scripts/ghoti_product_launcher.py --smoke --json`
+- Context pack: `python 03_scripts/ghoti_context_pack_builder.py --write --json`
 - Stop: `python 03_scripts/ghoti_product_launcher.py --stop-dashboard`
 
 ## What Ghoti Can Do Now
@@ -45,6 +47,8 @@ Daily guide:
 - Run local dashboard/product demos.
 - Show Start Here / Daily Operator, Status Truth, What Works Now, What Remains,
   Safety Locks, and Ask Codex Next on the dashboard.
+- Generate compact local memory context packs for ChatGPT, Codex, Claude, and
+  Obsidian under `14_context/compact_memory/generated/`.
 - Generate supervised content studio artifacts and preview packages.
 - Validate the local content demo: 8 agents, 100 titles, 100 thumbnails, local
   preview, approval packet, no posting.
@@ -99,9 +103,30 @@ Ghoti keeps provider planning explicit:
 
 No ChatGPT, Claude, Codex, Hermes, Gemma, or browser tool is launched automatically by Ghoti.
 
+## Local Memory And Context Packs
+
+Ghoti can generate a small current context pack so Ivan can move between
+ChatGPT, Codex, Claude, and Obsidian without replaying the whole repo history.
+
+```powershell
+python 03_scripts/ghoti_context_pack_builder.py --write --json
+python 03_scripts/ghoti_product_launcher.py --context-pack --json
+```
+
+Generated files:
+
+- `14_context/compact_memory/generated/ghoti_current_context_pack.md`
+- `14_context/compact_memory/generated/ghoti_current_context_pack.json`
+- `14_context/compact_memory/generated/ghoti_codex_next_prompt.md`
+- `14_context/compact_memory/generated/ghoti_chatgpt_migration_summary.md`
+- `14_context/compact_memory/generated/ghoti_status_short.md`
+
+The builder is repo-local, excludes secrets, does not read `.env` contents, and
+does not call live providers.
+
 Current Ollama/Gemma truth:
 
-- Ollama is available in the verified N+5.3B baseline: `ollama version is 0.24.0`.
+- Ollama is available in the verified N+5.4B baseline: `ollama version is 0.24.0`.
 - No Gemma model is currently installed, so `local_demo` fallback is active.
 - Local model reachability never means local models drive operator actions.
 

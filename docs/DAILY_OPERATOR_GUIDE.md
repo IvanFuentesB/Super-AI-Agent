@@ -8,8 +8,8 @@ safe content demos, research plans, and future computer-use tooling from one
 truthful dashboard. It is not autonomous, it does not post, and it does not run
 live providers or account actions without explicit human approval.
 
-Current baseline: N+5.3B clean/product-ready at
-`6628e6f6fc91921225182a66ebf927982bd5464d`.
+Current baseline: N+5.4B clean/daily-operator-usability on main at
+`e309921ea27b7f93ce608dede4d0f8ff518937c9`.
 
 ## Launch
 
@@ -26,7 +26,7 @@ http://127.0.0.1:3210
 ## What to check first
 
 1. Open the dashboard and read Start Here / Daily Operator.
-2. Confirm Status Truth still says N+5.3B clean/product-ready.
+2. Confirm Status Truth still says N+5.4B clean/daily-operator-usability.
 3. Confirm Hermes, Ollama/Gemma, Obsidian memory, UI-TARS, adapters, external
    sandbox, public audit, and readiness status are truthful.
 4. Run a smoke check before relying on the dashboard.
@@ -37,6 +37,8 @@ http://127.0.0.1:3210
 ```powershell
 python 03_scripts/ghoti_product_launcher.py --status --json
 python 03_scripts/ghoti_product_launcher.py --smoke --json
+python 03_scripts/ghoti_product_launcher.py --context-pack --json
+python 03_scripts/ghoti_context_pack_builder.py --write --json
 python 03_scripts/supervised_content_mvp_runner.py --validate-latest
 python 03_scripts/public_repo_security_audit.py --run --json
 python 03_scripts/model_council_tool_intake.py --scan --json
@@ -52,10 +54,37 @@ Most milestone reports live under `14_context/`. Useful starting points:
 
 - `14_context/codex_n5_3a_main_merge_product_finish_local_mvp.md`
 - `14_context/codex_n5_3a_product_finish_remote_clean_audit.md`
+- `14_context/codex_n5_4a_first_real_operator_usability_pass.md`
+- `14_context/codex_n5_4b_main_merge_daily_operator_usability.md`
 - audit branch report: `14_context/codex_n5_3b_final_main_full_product_finish.md`
 
-If the N+5.3B final report is not present on `origin/main`, inspect the pushed
-audit branch `audit/ghoti-agent-codex-n5-3b-final-main-full-product-finish`.
+If the N+5.4B final-main audit report is not present on `origin/main`, inspect
+the pushed audit branch
+`audit/ghoti-agent-codex-n5-4b-final-main-daily-operator-usability`.
+
+## Local memory context pack
+
+Use the context pack when you want a small, current handoff for ChatGPT, Codex,
+Claude, or Obsidian:
+
+```powershell
+python 03_scripts/ghoti_context_pack_builder.py --write --json
+```
+
+Generated files live under:
+
+```text
+14_context/compact_memory/generated/
+```
+
+Start with:
+
+- `ghoti_status_short.md` for a one-paragraph status.
+- `ghoti_current_context_pack.md` for a compact full handoff.
+- `ghoti_codex_next_prompt.md` for the next safe Codex prompt.
+- `ghoti_chatgpt_migration_summary.md` for ChatGPT migration.
+
+See [Local Memory Context Pack Guide](LOCAL_MEMORY_CONTEXT_PACK_GUIDE.md).
 
 ## local_demo fallback
 
@@ -169,8 +198,19 @@ Run:
 python 03_scripts/public_repo_security_audit.py --run --json
 ```
 
-The N+5.3B baseline has 0 blockers and 7 warnings. Warnings still require human
+The N+5.4B baseline has 0 blockers and 7 warnings. Warnings still require human
 review before any public release claim.
+
+### context pack stale or missing
+
+Run:
+
+```powershell
+python 03_scripts/ghoti_context_pack_builder.py --write --json
+```
+
+Then refresh the dashboard Local Memory / Context Pack card. The builder is
+repo-local and does not call live providers.
 
 ### generated residue
 
