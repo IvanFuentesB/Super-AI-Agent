@@ -593,6 +593,7 @@ def _run_pipeline(topic: str, run_dir: pathlib.Path) -> Dict[str, Any]:
         "ok": True,
         "run_dir": run_dir_rel,
         "preview_path": f"{run_dir_rel}/10_preview.html".replace("\\", "/"),
+        "local_preview_path": f"{run_dir_rel}/10_preview.html".replace("\\", "/"),
         "agent_count": len(AGENT_NAMES),
         "title_variant_count": title_thumb["title_count"],
         "thumbnail_variant_count": title_thumb["thumbnail_count"],

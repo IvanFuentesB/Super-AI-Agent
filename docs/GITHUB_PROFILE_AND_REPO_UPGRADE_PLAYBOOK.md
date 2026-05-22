@@ -34,3 +34,7 @@ Code implementation/audit workflow.
 
 Ghoti is the flagship repo, but this playbook should be reused for NXP, SDA,
 Doodle, school/engineering repos, and future polished projects.
+
+For Ghoti, public polish stays local-first and approval-gated: screenshots,
+diagrams, README text, releases, and issues must not imply live account actions,
+provider setup, or independent operation.

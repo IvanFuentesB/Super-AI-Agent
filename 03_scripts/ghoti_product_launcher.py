@@ -48,7 +48,94 @@ WHAT_GHOTI_CAN_DO = [
     "Desktop Recipe Runner — allowlisted local recipes",
     "Parallel Agent Relay — copy-paste Claude + Codex prompt pairs (no auto-launch)",
     "Local Memory / Gemma fallback — local compression, no external API",
+    "Hermes WSL truth — Ubuntu WSL safe probes, no setup/provider/token action",
+    "Obsidian Compact Memory — repo-local vault and compressed memory plan",
+    "Ruflo / Local Brain Bridge — status/readiness only, no runtime wiring",
+    "Graphify / Token Plan — roadmap lane for knowledge graph compression",
+    "UI-TARS Observation Only — dry-run observation packet, no desktop control",
+    "Adapter Dry-Runs — approved local dry-runs with no live API",
+    "Public Readiness and Model Council — local audits and provider-safe planning",
     "External Tool Intake — planning-only catalog review",
+]
+
+CONTROL_CENTER_LANES = [
+    {
+        "key": "hermes_wsl_truth",
+        "label": "Hermes WSL Truth",
+        "status": "verified_local_wsl",
+        "truth": "Ubuntu WSL safe probes found /home/ai_sandbox/.local/bin/hermes, Hermes Agent v0.14.0.",
+        "safe_next_step": "Run hermes_local_bootstrap.py --status --json; do not run setup/provider config or token flows.",
+    },
+    {
+        "key": "gemma_ollama_lane",
+        "label": "Gemma / Ollama Lane",
+        "status": "local_probe_or_demo_fallback",
+        "truth": "Ollama/Gemma are optional local workers for summaries and diagnostics; unavailable models fall back truthfully.",
+        "safe_next_step": "Use local_memory_compression_bridge.py --json for a local-only memory summary probe.",
+    },
+    {
+        "key": "obsidian_compact_memory",
+        "label": "Obsidian Compact Memory",
+        "status": "repo_local_plan",
+        "truth": "Compact memory stays in repo-local files and Obsidian-compatible markdown.",
+        "safe_next_step": "Follow docs/OBSIDIAN_COMPACT_MEMORY_PLAN.md before changing vault shape.",
+    },
+    {
+        "key": "ruflo_local_brain_bridge",
+        "label": "Ruflo / Local Brain Bridge",
+        "status": "status_only",
+        "truth": "Ruflo/source bridge is a read-only/status lane unless a later audited milestone approves wiring.",
+        "safe_next_step": "Use ruflo_install_gate.py --source-status for read-only source truth.",
+    },
+    {
+        "key": "graphify_token_plan",
+        "label": "Graphify / Token Plan",
+        "status": "roadmap",
+        "truth": "Graphify is a future knowledge graph/token-efficiency candidate; it is not installed or wired.",
+        "safe_next_step": "Use TOKEN_EFFICIENT_COMPUTER_USE_ROADMAP.md for planning only.",
+    },
+    {
+        "key": "ui_tars_observation_only",
+        "label": "UI-TARS Observation Only",
+        "status": "dry_run_available",
+        "truth": "Observation packets are local; UI-TARS runtime is not started and no desktop control is enabled.",
+        "safe_next_step": "Run ui_tars_observation_adapter.py --observe --dry-run --json.",
+    },
+    {
+        "key": "adapter_dry_runs",
+        "label": "Adapter Dry-Runs",
+        "status": "dry_run_available",
+        "truth": "Approved adapter runner can create local demo artifacts without external code, installs, or live APIs.",
+        "safe_next_step": "Run approved_adapter_runner.py --execute-approved --adapter agent_skills_eval --dry-run --json.",
+    },
+    {
+        "key": "external_sandbox",
+        "label": "External Sandbox",
+        "status": "static_scan_only",
+        "truth": "External tools remain static-scan/intake only unless separately approved.",
+        "safe_next_step": "Run external_tool_sandbox_manager.py --status --json.",
+    },
+    {
+        "key": "public_readiness",
+        "label": "Public Readiness",
+        "status": "audit_gate",
+        "truth": "Public release remains human-reviewed after local security audit warnings are inspected.",
+        "safe_next_step": "Run public_repo_security_audit.py --run --json.",
+    },
+    {
+        "key": "model_council",
+        "label": "Model Council",
+        "status": "planning_only",
+        "truth": "Provider/tool registry is local-only; runtime wiring and unsafe browser bypass are blocked.",
+        "safe_next_step": "Run model_council_tool_intake.py --scan --json.",
+    },
+    {
+        "key": "safety_gates",
+        "label": "Safety Gates",
+        "status": "enforced",
+        "truth": "No live posting, money/trading/legal action, provider token setup, or hidden autonomy is enabled.",
+        "safe_next_step": "Keep all real-world effects behind explicit human approval.",
+    },
 ]
 
 
@@ -233,6 +320,8 @@ def cmd_status() -> dict:
         "opens_browser_by_default": False,
         "smoke_endpoints": ["%s %s" % (m, p) for m, p in SMOKE_ENDPOINTS],
         "what_ghoti_can_do": WHAT_GHOTI_CAN_DO,
+        "product_finish_milestone": "N+5.3A",
+        "control_center_lanes": CONTROL_CENTER_LANES,
         "generated_at": _now(),
     }
 
