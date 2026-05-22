@@ -12,6 +12,17 @@ Ghoti is a local-first, approval-gated AI operating workspace for supervised dem
 
 ## Quickstart
 
+Current clean local MVP baseline: **N+5.3B / CLEAN PASS / PRODUCT READY LOCAL
+MVP**.
+
+```text
+origin/main = 6628e6f6fc91921225182a66ebf927982bd5464d
+N+4: 329 OK
+N+5: 66 OK
+Public audit: 150 checks / 0 blockers / 7 warnings
+Readiness score: 100
+```
+
 ```powershell
 python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard
 ```
@@ -22,23 +33,39 @@ Dashboard URL:
 http://127.0.0.1:3210
 ```
 
+Daily guide:
+
+- [Daily Operator Guide](docs/DAILY_OPERATOR_GUIDE.md)
+- Status: `python 03_scripts/ghoti_product_launcher.py --status --json`
+- Smoke: `python 03_scripts/ghoti_product_launcher.py --smoke --json`
+- Stop: `python 03_scripts/ghoti_product_launcher.py --stop-dashboard`
+
 ## What Ghoti Can Do Now
 
 - Run local dashboard/product demos.
+- Show Start Here / Daily Operator, Status Truth, What Works Now, What Remains,
+  Safety Locks, and Ask Codex Next on the dashboard.
 - Generate supervised content studio artifacts and preview packages.
+- Validate the local content demo: 8 agents, 100 titles, 100 thumbnails, local
+  preview, approval packet, no posting.
 - Coordinate Claude Code implementation lanes and Codex audit lanes when both are available.
 - Run approved adapter demos that create local artifacts only.
 - Track external tool sandboxes without executing external repo code by default.
 - Prepare Hermes local bootstrap reports without paid VPS requirements.
 - Maintain public repo readiness, security checks, portfolio docs, and curated images.
+- Surface latest reports under `14_context/`.
 
 ## Hermes Local Bootstrap
 
-Hermes Agent is now a priority, but Ghoti stays local-first and safe.
+Hermes Agent is installed in Ubuntu WSL for the current local MVP, but Ghoti
+stays local-first and safe.
 
 - Official installer URL is documented in [docs/HERMES_LOCAL_INSTALL_AND_PROVIDER_PLAN.md](docs/HERMES_LOCAL_INSTALL_AND_PROVIDER_PLAN.md).
 - `03_scripts/hermes_local_bootstrap.py` can check prerequisites, download the installer for inspection, hash it, and write reports.
 - Actual installer execution is guarded because this milestone does not install packages or run external installer code automatically.
+- Current verified WSL path: `/home/ai_sandbox/.local/bin/hermes`.
+- Current verified version: `Hermes Agent v0.14.0`.
+- Browser/Playwright is degraded/not claimed unless a later local Hermes check verifies it.
 - Windows PowerShell users should use `curl.exe`, not the `curl` alias.
 - The target machine is the Windows `ai_sandbox` profile.
 - If using Ubuntu WSL, check the exact distro with `wsl -d Ubuntu` or
@@ -72,6 +99,12 @@ Ghoti keeps provider planning explicit:
 
 No ChatGPT, Claude, Codex, Hermes, Gemma, or browser tool is launched automatically by Ghoti.
 
+Current Ollama/Gemma truth:
+
+- Ollama is available in the verified N+5.3B baseline: `ollama version is 0.24.0`.
+- No Gemma model is currently installed, so `local_demo` fallback is active.
+- Local model reachability never means local models drive operator actions.
+
 ## Public Repo And Portfolio Lane
 
 Public polish is a side lane, not the whole project. See:
@@ -99,13 +132,15 @@ Curated assets are copied from `Human Placed Stuff/` into `docs/assets/github/` 
 ## Safety Model
 
 - UI-TARS remains observation-only; no click/type/control is enabled.
-- Hermes is not claimed as installed unless a local command verifies it.
+- Hermes WSL install is claimed only from local command evidence.
 - Hermes Codex provider support is not claimed until verified.
 - Telegram is not connected.
 - No running VPS is part of this setup.
 - No live account automation, posting, trading, money movement, legal action, or public action is enabled.
 - External repo runtime wiring is not enabled by default.
 - Bot-detection bypass, captcha bypass, fake engagement, spam, account abuse, unauthorized scraping, credential theft, and unauthorized desktop control are blocked.
+- Codex work must use repo-contained `.claude/worktrees/`; no primary worktree mutation except read-only inspection.
+- no live providers/tokens setup is part of the daily workflow.
 
 ## Public Security Audit
 
@@ -208,10 +243,11 @@ flowchart TD
 
 ## Current Limitations
 
-- Hermes local install is not claimed complete unless verified by local command output.
+- Hermes browser/Playwright is not claimed working.
 - Hermes provider support for Codex is pending / not verified.
 - Telegram setup requires manual token/chat setup from the user.
 - Graphify is not installed or working in this repo yet.
 - agent-browser and Browser Harness are not runtime-wired.
+- Gemma model availability is pending; Ollama exists but local_demo fallback is active when Gemma is missing.
 - Gemma/Ollama does not control the system.
 - This repo is public-facing but not open source.
