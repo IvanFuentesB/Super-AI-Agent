@@ -78,6 +78,18 @@ Human Placed Stuff/
 14_context/hermes_agent/runs/*
 14_context/model_council_tool_intake/runs/*
 14_context/security/public_repo_audits/*
+14_context/content_studio/runs/*
+14_context/agent_relay/pairs/*
+14_context/adapter_execution/latest_adapter_run.json
+14_context/adapter_execution/approvals/*.json
+14_context/adapter_execution/runs/*
+14_context/ui_tars_observation/latest.json
+14_context/ui_tars_observation/approvals/*.json
+14_context/ui_tars_observation/runs/*
+14_context/compact_memory/n4_2a_snapshot_*.md
+14_context/obsidian_vault/N4_2A_Memory_Bridge_*.md
+14_context/desktop_operator/handoffs/*
+14_context/external_tools/approval_packets/external_tool_approval_packet_*.md
 
 # Runtime MVP artifacts
 01_projects/runtime_mvp/runtime_data/*.json
@@ -95,6 +107,7 @@ Human Placed Stuff/
 
 # Local assistant / prompt scratch
 .claude/settings.local.json
+.claude/worktrees/
 14_context/ghoti_current_prompt.md
 
 # Local machine spillover

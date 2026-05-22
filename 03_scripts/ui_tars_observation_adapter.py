@@ -233,7 +233,9 @@ def cmd_observe(dry_run_flag, capture_screen, approval_token, output_dir) -> dic
         "external_repo_code_executed": False,
         "installs_performed": False,
         "desktop_control_enabled": False,
+        "desktop_control": False,
         "live_api_used": False,
+        "live_api": False,
         "artifacts": artifacts,
         "generated_at": ts,
     }
