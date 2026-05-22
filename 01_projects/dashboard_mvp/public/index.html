@@ -140,6 +140,107 @@
                 </div>
                 <div id="overview-dashboard-slot" class="slot-root"></div>
               </section>
+              <section class="console-card console-card-span-2" id="ghoti-daily-operator-card">
+                <div class="console-card-header">
+                  <div>
+                    <h2>Start Here / Daily Operator</h2>
+                    <p>Launch dashboard -> Check status truth -> Run smoke/demo -> Review report -> Stop dashboard.</p>
+                  </div>
+                </div>
+                <ul class="card-list">
+                  <li><strong>Launcher command:</strong> <code>python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard</code></li>
+                  <li><strong>Dashboard URL:</strong> <code>http://127.0.0.1:3210</code></li>
+                  <li><strong>Status check:</strong> <code>python 03_scripts/ghoti_product_launcher.py --status --json</code></li>
+                  <li><strong>Smoke test:</strong> <code>python 03_scripts/ghoti_product_launcher.py --smoke --json</code></li>
+                  <li><strong>Stop safely:</strong> <code>python 03_scripts/ghoti_product_launcher.py --stop-dashboard</code> stops only the recorded launcher PID.</li>
+                  <li><strong>Latest reports:</strong> see <code>14_context/</code>, especially N+5 audit and merge reports.</li>
+                </ul>
+              </section>
+              <section class="console-card console-card-span-2" id="ghoti-status-truth-card">
+                <div class="console-card-header">
+                  <div>
+                    <h2>Status Truth</h2>
+                    <p>Main baseline and local dependency truth. These are status labels, not hidden automation.</p>
+                  </div>
+                </div>
+                <ul class="card-list">
+                  <li><strong>Main baseline:</strong> N+5.3B clean/product-ready; origin/main = 6628e6f6fc91921225182a66ebf927982bd5464d.</li>
+                  <li><strong>Hermes WSL:</strong> installed at <code>/home/ai_sandbox/.local/bin/hermes</code>; Hermes Agent v0.14.0.</li>
+                  <li><strong>Hermes browser/Playwright:</strong> browser/Playwright: degraded/not claimed unless separately verified.</li>
+                  <li><strong>Hermes Codex provider:</strong> Codex provider in Hermes: pending/not proven.</li>
+                  <li><strong>Telegram:</strong> Telegram: manual later/no token. <strong>VPS:</strong> No VPS.</li>
+                  <li><strong>Local models:</strong> Ollama available v0.24.0; Gemma model missing/local_demo fallback active.</li>
+                  <li><strong>Memory:</strong> Obsidian/local memory present; compact markdown stays repo-local.</li>
+                  <li><strong>Ruflo:</strong> source-missing/status-only unless a later audited milestone changes it.</li>
+                  <li><strong>Graphify:</strong> roadmap/token-plan only; not installed or wired.</li>
+                  <li><strong>UI-TARS:</strong> observation-only; no click/type/control.</li>
+                  <li><strong>Adapters and sandbox:</strong> approval-gated/local-only adapter runner; external sandbox static inspection only.</li>
+                  <li><strong>Public audit:</strong> Public audit: 0 blockers / 7 warnings human review. Readiness score: 100.</li>
+                </ul>
+              </section>
+              <section class="console-card" id="ghoti-works-now-card">
+                <div class="console-card-header">
+                  <div>
+                    <h2>What Works Now</h2>
+                    <p>Truthful current capabilities.</p>
+                  </div>
+                </div>
+                <ul class="card-list">
+                  <li>Launcher starts dashboard and Product Control Center is visible.</li>
+                  <li>Local supervised content demo: 8 agents / 100 titles / 100 thumbnails / local preview / no posting.</li>
+                  <li>Public/security audit gates and model council scan run local-only.</li>
+                  <li>UI-TARS observation dry-run; adapter dry-run/status; external sandbox static inspection.</li>
+                  <li>Local memory status/fallback and Reports under 14_context.</li>
+                </ul>
+              </section>
+              <section class="console-card" id="ghoti-remains-card">
+                <div class="console-card-header">
+                  <div>
+                    <h2>What Remains</h2>
+                    <p>Manual, pending, or future-gated work.</p>
+                  </div>
+                </div>
+                <ul class="card-list">
+                  <li>Hermes provider setup and Telegram connection remain manual later.</li>
+                  <li>Real Gemma model availability is pending; local_demo fallback is active.</li>
+                  <li>Ruflo runtime/source availability and Graphify runtime integration remain pending.</li>
+                  <li>Browser/Playwright verification remains pending.</li>
+                  <li>Future audited computer-use click/type requires a separate safety milestone.</li>
+                  <li>Production public release still requires human review.</li>
+                </ul>
+              </section>
+              <section class="console-card" id="ghoti-safety-locks-card">
+                <div class="console-card-header">
+                  <div>
+                    <h2>Safety Locks</h2>
+                    <p>These stay blocked unless a later audited milestone explicitly changes them.</p>
+                  </div>
+                </div>
+                <ul class="card-list">
+                  <li>No bot/captcha/cloak bypass.</li>
+                  <li>No fake engagement, spam, credential/session scraping, or unauthorized scraping.</li>
+                  <li>No autonomous posting.</li>
+                  <li>No autonomous money/trading/legal actions.</li>
+                  <li>No live providers without human approval.</li>
+                  <li>No external repo runtime wiring without approval.</li>
+                </ul>
+              </section>
+              <section class="console-card" id="ghoti-ask-codex-next-card">
+                <div class="console-card-header">
+                  <div>
+                    <h2>Ask Codex Next</h2>
+                    <p>Safe prompt snippets for the next supervised move.</p>
+                  </div>
+                </div>
+                <ul class="card-list">
+                  <li><strong>Audit current main:</strong> <code>Audit current origin/main from a clean .claude/worktrees audit worktree and report blockers only.</code></li>
+                  <li><strong>Run product smoke test:</strong> <code>Run python 03_scripts/ghoti_product_launcher.py --smoke --json and summarize endpoint health.</code></li>
+                  <li><strong>Find latest report:</strong> <code>List the newest relevant reports under 14_context and explain what each one proves.</code></li>
+                  <li><strong>Create next milestone:</strong> <code>Create a feature branch under .claude/worktrees for the next safe local-first Ghoti milestone.</code></li>
+                  <li><strong>Check dashboard truth:</strong> <code>Start the local dashboard, verify Daily Operator and Status Truth labels, then stop only the recorded PID.</code></li>
+                  <li><strong>Build N+5.5A:</strong> <code>Build N+5.5A local memory/context pack milestone with Obsidian compact memory and token-saving status, no live providers/tokens.</code></li>
+                </ul>
+              </section>
               <section class="console-card console-card-span-2" id="overview-product-control-center">
                 <div class="console-card-header">
                   <div>

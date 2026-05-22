@@ -1,5 +1,18 @@
 # Hermes Local Install And Provider Plan
 
+## Current N+5.3B Truth
+
+- Ubuntu WSL is installed.
+- Hermes is available at `/home/ai_sandbox/.local/bin/hermes`.
+- Verified version: `Hermes Agent v0.14.0`.
+- Browser/Playwright remains degraded/not claimed unless a later safe local
+  check proves it.
+- Codex provider support remains pending/not proven. The presence of a Hermes
+  `codex` skill is not proof of provider support.
+- Telegram setup is manual later. No token should be committed or configured by
+  Codex.
+- No VPS is required for the current local-first path.
+
 ## Official Installer
 
 - Official installer URL: `https://hermes-agent.nousresearch.com/install.sh`
