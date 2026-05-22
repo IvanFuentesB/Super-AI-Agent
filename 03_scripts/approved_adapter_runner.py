@@ -390,7 +390,9 @@ def cmd_execute_approved(adapter_key, dry_run, approval_token, demo_skill, outpu
         "external_code_executed": False,
         "installs_performed": False,
         "desktop_control_enabled": False,
+        "desktop_control": False,
         "live_api_used": False,
+        "live_api": False,
         "artifacts": full_artifacts,
         "generated_at": ts,
     }

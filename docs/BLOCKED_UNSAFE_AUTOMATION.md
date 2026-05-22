@@ -4,6 +4,7 @@ The following remain blocked:
 
 - bot detection bypass
 - captcha bypass
+- cloak browser bypass
 - fake engagement
 - spam
 - account abuse
