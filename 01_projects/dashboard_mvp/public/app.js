@@ -6977,6 +6977,87 @@ refreshLocalOrchestrator();
 })();
 
 // ---------------------------------------------------------------------
+// N+5.8A Hermes Agent / Manual Bridge (client-side handlers)
+// ---------------------------------------------------------------------
+(function attachHermesAgentManualBridge() {
+  function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value || "none";
+  }
+  function setResult(text) {
+    const el = document.getElementById("hermes-bridge-action-result");
+    if (!el) return;
+    el.innerHTML = "";
+    const p = document.createElement("p");
+    p.textContent = text;
+    el.appendChild(p);
+  }
+  async function callHermesBridge(endpoint, method) {
+    const res = await fetch(endpoint, { method: method || "GET", headers: { "Content-Type": "application/json" } });
+    return await res.json();
+  }
+  function renderStatus(data) {
+    if (!data || !data.ok) {
+      setText("hermes-bridge-status-line", (data && data.error) || "Hermes bridge status unavailable.");
+      setText("hermes-bridge-installed", "unknown");
+      setText("hermes-bridge-readiness", "unknown");
+      return;
+    }
+    const paths = data.output_paths || data.paths || {};
+    setText("hermes-bridge-installed", data.installed ? "yes" : "not detected");
+    setText("hermes-bridge-path", data.path || data.expected_path || "/home/ai_sandbox/.local/bin/hermes");
+    setText("hermes-bridge-version", data.version || "unknown");
+    setText("hermes-bridge-skills-count", String(data.skills_count || 0));
+    setText("hermes-bridge-readiness", String(data.readiness_percent || 0) + "%");
+    setText("hermes-bridge-output-path", paths["hermes_workflow_status.md"] || data.latest_status_path || "14_context/hermes_workflow/generated/hermes_workflow_status.md");
+    setText("hermes-bridge-status-line", data.status_line || "Hermes bridge status loaded.");
+  }
+  async function refreshHermesBridgeStatus() {
+    try {
+      renderStatus(await callHermesBridge("/api/hermes-bridge/status", "GET"));
+    } catch (err) {
+      setText("hermes-bridge-status-line", "Could not load Hermes bridge status.");
+    }
+  }
+  function bind(id, fn) {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("click", fn);
+  }
+  bind("hermes-bridge-refresh-btn", async function () {
+    setResult("Refreshing Hermes Agent / Manual Bridge status...");
+    await refreshHermesBridgeStatus();
+    setResult("Hermes bridge status refreshed. Safe probes only.");
+  });
+  bind("hermes-bridge-skills-btn", async function () {
+    setResult("Loading Hermes skills index with safe probes only...");
+    try {
+      const data = await callHermesBridge("/api/hermes-bridge/skills-index", "GET");
+      setText("hermes-bridge-skills-count", String((data && data.skills_count) || 0));
+      setResult(data && data.ok
+        ? "Hermes skills index loaded. Provider setup and Telegram remain manual."
+        : "Hermes skills index unavailable: " + ((data && data.error) || "unknown"));
+    } catch (err) {
+      setResult("Hermes skills index failed: " + (err && err.message));
+    }
+  });
+  bind("hermes-bridge-write-btn", async function () {
+    setResult("Writing Hermes readiness files. No live provider setup, tokens, or browser automation...");
+    try {
+      const data = await callHermesBridge("/api/hermes-bridge/write-readiness", "POST");
+      renderStatus(data);
+      setResult(data && data.ok
+        ? "Hermes readiness files written under 14_context/hermes_workflow/generated/."
+        : "Hermes readiness write reported unavailable: " + ((data && data.error) || "unknown"));
+    } catch (err) {
+      setResult("Hermes readiness write failed: " + (err && err.message));
+    }
+  });
+  if (document.getElementById("ghoti-hermes-bridge-card")) {
+    refreshHermesBridgeStatus();
+  }
+})();
+
+// ---------------------------------------------------------------------
 // N+4.8A External Tool Sandbox Truth (client-side handler, read-only)
 // ---------------------------------------------------------------------
 (function attachExternalToolSandbox() {

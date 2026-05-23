@@ -8,8 +8,8 @@ safe content demos, research plans, and future computer-use tooling from one
 truthful dashboard. It is not autonomous, it does not post, and it does not run
 live providers or account actions without explicit human approval.
 
-Current baseline: N+5.6B clean/local-model-easy-worker-lane on main at
-`c9413108006d920e0110413d3d5e195b504489c1`.
+Current baseline: N+5.7B clean/repo-knowledge-context-retrieval on main at
+`84e880e7c3f774580a5e4ac340acd497af3027ee`.
 
 ## Launch
 
@@ -26,7 +26,7 @@ http://127.0.0.1:3210
 ## What to check first
 
 1. Open the dashboard and read Start Here / Daily Operator.
-2. Confirm Status Truth still says N+5.6B clean/local-model-easy-worker-lane.
+2. Confirm Status Truth still says N+5.7B clean/repo-knowledge-context-retrieval.
 3. Confirm Hermes, Ollama/Gemma, Obsidian memory, UI-TARS, adapters, external
    sandbox, public audit, and readiness status are truthful.
 4. Confirm Local Model / Easy Worker Lane shows readiness percentage and
@@ -47,6 +47,8 @@ python 03_scripts/ghoti_product_launcher.py --local-worker-status --json
 python 03_scripts/ghoti_product_launcher.py --local-worker-demo --json
 python 03_scripts/ghoti_product_launcher.py --repo-map --json
 python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json
+python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json
+python 03_scripts/ghoti_product_launcher.py --hermes-bridge-write --json
 python 03_scripts/ghoti_context_pack_builder.py --write --json
 python 03_scripts/local_model_worker_lane.py --doctor --json
 python 03_scripts/ghoti_repo_knowledge_map.py --write --json
@@ -159,9 +161,16 @@ Known truth:
 - Hermes version: `Hermes Agent v0.14.0`
 - Browser/Playwright is degraded/not claimed unless separately verified.
 - Codex provider support inside Hermes is pending/not proven.
+- Hermes Agent / Manual Bridge can write local readiness files, a skills index,
+  manual checklist, and operator bridge packet under
+  `14_context/hermes_workflow/generated/`.
 
 Do not run Hermes setup, provider config, Telegram setup, token flows, or live
 APIs from this daily workflow.
+
+See `HERMES_AGENT_WORKFLOW_GUIDE.md`,
+`HERMES_MANUAL_PROVIDER_SETUP_CHECKLIST.md`, `HERMES_SKILLS_INDEX_GUIDE.md`,
+and `HERMES_BROWSER_PLAYWRIGHT_REMEDIATION_PLAN.md`.
 
 ## UI-TARS is currently allowed
 

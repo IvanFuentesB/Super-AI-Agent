@@ -1,15 +1,19 @@
 # Codex-Only Workflow
 
-Current baseline: N+5.6B clean/local-model-easy-worker-lane on main.
+Current baseline: N+5.7B clean/repo-knowledge-context-retrieval on main.
+
+Previous clean baseline: N+5.6B clean/local-model-easy-worker-lane on main at
+`c9413108006d920e0110413d3d5e195b504489c1`.
 
 ```text
-origin/main = c9413108006d920e0110413d3d5e195b504489c1
+origin/main = 84e880e7c3f774580a5e4ac340acd497af3027ee
 launcher = python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard
 dashboard = http://127.0.0.1:3210
 context_pack = python 03_scripts/ghoti_context_pack_builder.py --write --json
 local_worker = python 03_scripts/local_model_worker_lane.py --status --json
 repo_map = python 03_scripts/ghoti_repo_knowledge_map.py --write --json
 repo_bundle = python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json
+hermes_bridge = python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json
 ```
 
 This milestone is handled by Codex only. Work must stay inside repo-contained
@@ -90,6 +94,12 @@ Generate focused repo context:
 
 ```text
 Run python 03_scripts/ghoti_product_launcher.py --repo-map --json and python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json. Inspect 14_context/repo_knowledge/generated/repo_knowledge_map.md, latest_reports_index.md, and task_bundle_next_milestone.md. Confirm Graphify runtime is roadmap only/not wired, no external runtime, no network, and no live APIs.
+```
+
+Check Hermes manual bridge readiness:
+
+```text
+Run python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json and python 03_scripts/ghoti_product_launcher.py --hermes-bridge-write --json. Inspect 14_context/hermes_workflow/generated/hermes_operator_bridge_packet.md. Confirm Codex provider pending/not proven, Telegram manual later/no token, browser/Playwright degraded/not claimed, safe probes only, and no live provider setup.
 ```
 
 Use a task bundle before coding:

@@ -15,7 +15,7 @@
 - Cache source intelligence packets.
 - Compress context into Obsidian/compact memory.
 - Show token-saving truth in the dashboard through Local Memory, Local Worker,
-  and Repo Knowledge / Graphify Lane cards.
+  Repo Knowledge / Graphify Lane, and Hermes Agent / Manual Bridge cards.
 
 ## Repo Knowledge / Graphify Lane
 
@@ -31,6 +31,18 @@
 - Network: not used.
 - Later Graphify work should add richer graph retrieval only after a separate
   audit gate.
+
+## Hermes Manual Bridge
+
+- Current implementation: safe readiness files under
+  `14_context/hermes_workflow/generated/`.
+- Current commands:
+  `python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json`
+  and `python 03_scripts/ghoti_product_launcher.py --hermes-bridge-write --json`.
+- This saves tokens by producing a small skills index, manual setup checklist,
+  and operator bridge packet.
+- Hermes provider setup, Telegram, tokens, live APIs, and browser automation
+  remain manual later.
 
 ## Computer Use
 

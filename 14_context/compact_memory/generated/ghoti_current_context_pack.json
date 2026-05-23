@@ -2,14 +2,14 @@
   "ok": true,
   "local_only": true,
   "external_api_used": false,
-  "generated_at": "2026-05-23T12:40:04Z",
-  "main_hash": "c9413108006d920e0110413d3d5e195b504489c1",
-  "latest_clean_milestone": "N+5.6B - Local Model Easy Worker Lane landed on main",
-  "current_milestone": "N+5.7A - Graphify / Repo Knowledge Map + Better Context Retrieval",
-  "next_recommended_milestone": "N+5.8A - Hermes Agent Workflow / Provider Setup Plan + Manual Bridge Readiness",
+  "generated_at": "2026-05-23T16:11:09Z",
+  "main_hash": "84e880e7c3f774580a5e4ac340acd497af3027ee",
+  "latest_clean_milestone": "N+5.7B - Repo Knowledge Context Retrieval landed on main",
+  "current_milestone": "N+5.8A - Hermes Agent Workflow / Provider Setup Plan + Manual Bridge Readiness",
+  "next_recommended_milestone": "N+5.9A - Real Gemma Install/Model Availability Decision + Local Task Quality Evaluation",
   "launcher_command": "python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard",
   "dashboard_url": "http://127.0.0.1:3210",
-  "status_short": "Ghoti status: N+5.6B - Local Model Easy Worker Lane landed on main at origin/main c9413108006d. Launch with `python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard` and open http://127.0.0.1:3210. Hermes WSL is installed at /home/ai_sandbox/.local/bin/hermes (v0.14.0); browser/Playwright is degraded/not claimed, Codex provider is pending/not proven, Telegram is manual later/no token, and No VPS is in use. Ollama available (ollama version is 0.24.0); Gemma model missing; local_demo fallback active. Obsidian/local memory is present; UI-TARS is observation-only; adapters are approval-gated/local-only; external sandbox is static inspection only; repo knowledge map/task bundles are available with Graphify roadmap only/not wired. Next recommended milestone: N+5.8A - Hermes Agent Workflow / Provider Setup Plan + Manual Bridge Readiness.",
+  "status_short": "Ghoti status: N+5.7B - Repo Knowledge Context Retrieval landed on main at origin/main 84e880e7c3f7. Launch with `python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard` and open http://127.0.0.1:3210. Hermes WSL is installed at /home/ai_sandbox/.local/bin/hermes (v0.14.0); browser/Playwright is degraded/not claimed, Codex provider is pending/not proven, Telegram is manual later/no token, No VPS is in use, and Hermes Agent / Manual Bridge readiness files are available. Ollama available (ollama version is 0.24.0); Gemma model missing; local_demo fallback active. Obsidian/local memory is present; UI-TARS is observation-only; adapters are approval-gated/local-only; external sandbox is static inspection only; repo knowledge map/task bundles are available with Graphify roadmap only/not wired. Next recommended milestone: N+5.9A - Real Gemma Install/Model Availability Decision + Local Task Quality Evaluation.",
   "hermes": {
     "wsl_status": "installed",
     "path": "/home/ai_sandbox/.local/bin/hermes",
@@ -17,7 +17,14 @@
     "browser_playwright": "degraded/not claimed unless separately verified",
     "codex_provider": "pending/not proven",
     "telegram": "manual later/no token",
-    "vps": "No VPS"
+    "vps": "No VPS",
+    "manual_bridge": "available",
+    "readiness_percent": 58,
+    "status_path": "14_context/hermes_workflow/generated/hermes_workflow_status.md",
+    "skills_index_path": "14_context/hermes_workflow/generated/hermes_skills_index.md",
+    "bridge_packet_path": "14_context/hermes_workflow/generated/hermes_operator_bridge_packet.md",
+    "bridge_status_command": "python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json",
+    "bridge_write_command": "python 03_scripts/ghoti_product_launcher.py --hermes-bridge-write --json"
   },
   "local_model_truth": {
     "ollama_available": true,
@@ -50,6 +57,30 @@
   },
   "latest_reports": [
     {
+      "path": "14_context/codex_n5_7b_main_merge_repo_knowledge_context_retrieval.md",
+      "name": "codex_n5_7b_main_merge_repo_knowledge_context_retrieval.md",
+      "kind": "main",
+      "rank": [
+        5,
+        7,
+        2
+      ],
+      "modified_unix": 1779551693,
+      "verdict_hint": "CLEAN PASS / N+5.7B MAIN MERGE READY"
+    },
+    {
+      "path": "14_context/codex_n5_7a_graphify_repo_knowledge_map_context_retrieval.md",
+      "name": "codex_n5_7a_graphify_repo_knowledge_map_context_retrieval.md",
+      "kind": "report",
+      "rank": [
+        5,
+        7,
+        1
+      ],
+      "modified_unix": 1779551693,
+      "verdict_hint": "CLEAN PASS / N+5.7A REPO KNOWLEDGE MAP CONTEXT RETRIEVAL READY"
+    },
+    {
       "path": "14_context/codex_n5_6b_main_merge_local_model_easy_worker_lane.md",
       "name": "codex_n5_6b_main_merge_local_model_easy_worker_lane.md",
       "kind": "main",
@@ -58,7 +89,7 @@
         6,
         2
       ],
-      "modified_unix": 1779538779,
+      "modified_unix": 1779551693,
       "verdict_hint": "CLEAN PASS / N+5.6B MAIN MERGE READY"
     },
     {
@@ -70,7 +101,7 @@
         6,
         1
       ],
-      "modified_unix": 1779538779,
+      "modified_unix": 1779551693,
       "verdict_hint": "CLEAN PASS / N+5.6A LOCAL MODEL EASY WORKER LANE READY"
     },
     {
@@ -82,7 +113,7 @@
         5,
         2
       ],
-      "modified_unix": 1779538779,
+      "modified_unix": 1779551693,
       "verdict_hint": "CLEAN PASS / N+5.5B MAIN MERGE READY"
     },
     {
@@ -94,7 +125,7 @@
         5,
         1
       ],
-      "modified_unix": 1779538779,
+      "modified_unix": 1779551693,
       "verdict_hint": "CLEAN PASS / LOCAL MEMORY CONTEXT PACK READY"
     },
     {
@@ -106,7 +137,7 @@
         4,
         2
       ],
-      "modified_unix": 1779538779,
+      "modified_unix": 1779551693,
       "verdict_hint": "CLEAN PASS / N+5.4A DAILY OPERATOR USABILITY MERGE READY"
     },
     {
@@ -118,32 +149,8 @@
         4,
         1
       ],
-      "modified_unix": 1779538779,
+      "modified_unix": 1779551693,
       "verdict_hint": "CLEAN PASS / DAILY OPERATOR USABILITY READY"
-    },
-    {
-      "path": "14_context/codex_n5_3a_product_finish_remote_clean_audit.md",
-      "name": "codex_n5_3a_product_finish_remote_clean_audit.md",
-      "kind": "audit",
-      "rank": [
-        5,
-        3,
-        1
-      ],
-      "modified_unix": 1779538779,
-      "verdict_hint": "CLEAN PASS for local-first supervised MVP merge gating. No blocker was found that prevents merging N+5.3A to `main`."
-    },
-    {
-      "path": "14_context/codex_n5_3a_main_merge_product_finish_local_mvp.md",
-      "name": "codex_n5_3a_main_merge_product_finish_local_mvp.md",
-      "kind": "main",
-      "rank": [
-        5,
-        3,
-        1
-      ],
-      "modified_unix": 1779538779,
-      "verdict_hint": "CLEAN PASS. The N+5.3A Product Control Center work is suitable for `main` as a local-first supervised MVP. No blocker was found in tests, dashboard checks, public audit, model council scan, Hermes status, local memory status, dry-runs, or sandbox checks."
     }
   ],
   "safety_locks": [

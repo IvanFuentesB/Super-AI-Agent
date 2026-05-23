@@ -29,11 +29,13 @@ CONTEXT_PACK_COMMAND = "python 03_scripts/ghoti_product_launcher.py --context-pa
 LOCAL_WORKER_COMMAND = "python 03_scripts/ghoti_product_launcher.py --local-worker-status --json"
 REPO_MAP_COMMAND = "python 03_scripts/ghoti_product_launcher.py --repo-map --json"
 NEXT_BUNDLE_COMMAND = "python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json"
+HERMES_BRIDGE_COMMAND = "python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json"
+HERMES_BRIDGE_WRITE_COMMAND = "python 03_scripts/ghoti_product_launcher.py --hermes-bridge-write --json"
 DIRECT_WRITE_COMMAND = "python 03_scripts/ghoti_repo_knowledge_map.py --write --json"
 
-LATEST_CLEAN_MILESTONE = "N+5.6B - Local Model Easy Worker Lane landed on main"
-CURRENT_MILESTONE = "N+5.7A - Graphify / Repo Knowledge Map + Better Context Retrieval"
-NEXT_RECOMMENDED_MILESTONE = "N+5.8A - Hermes Agent Workflow / Provider Setup Plan + Manual Bridge Readiness"
+LATEST_CLEAN_MILESTONE = "N+5.7B - Repo Knowledge Context Retrieval landed on main"
+CURRENT_MILESTONE = "N+5.8A - Hermes Agent Workflow / Provider Setup Plan + Manual Bridge Readiness"
+NEXT_RECOMMENDED_MILESTONE = "N+5.9A - Real Gemma Install/Model Availability Decision + Local Task Quality Evaluation"
 
 READINESS_PERCENT = 55
 GRAPHIFY_RUNTIME = "roadmap_only_not_wired"
@@ -134,6 +136,12 @@ IMPORTANT_FILE_CATALOG = [
         "why": "Hermes is a planned local agent layer, but setup/provider actions remain manual.",
     },
     {
+        "path": "03_scripts/hermes_agent_workflow_bridge.py",
+        "subsystem": "Hermes/WSL",
+        "description": "Hermes manual bridge readiness, skills index, and generated setup packet.",
+        "why": "Makes Hermes useful and inspectable while keeping provider setup, Telegram, tokens, and browser automation manual later.",
+    },
+    {
         "path": "03_scripts/ui_tars_observation_adapter.py",
         "subsystem": "UI-TARS/computer-use",
         "description": "Observation-only UI-TARS dry-run lane.",
@@ -230,6 +238,18 @@ IMPORTANT_FILE_CATALOG = [
         "why": "Important next human/manual milestone context.",
     },
     {
+        "path": "docs/HERMES_AGENT_WORKFLOW_GUIDE.md",
+        "subsystem": "Hermes/WSL",
+        "description": "Hermes Agent workflow and manual bridge guide.",
+        "why": "Explains safe probes, generated readiness files, and manual later boundaries.",
+    },
+    {
+        "path": "docs/HERMES_MANUAL_PROVIDER_SETUP_CHECKLIST.md",
+        "subsystem": "Hermes/WSL",
+        "description": "Human checklist for later provider setup.",
+        "why": "Keeps provider setup out of Codex automation and behind explicit approval.",
+    },
+    {
         "path": "docs/COMPUTER_USE_ROADMAP.md",
         "subsystem": "UI-TARS/computer-use",
         "description": "Future computer-use roadmap and safety gates.",
@@ -258,6 +278,12 @@ IMPORTANT_FILE_CATALOG = [
         "subsystem": "local model/easy worker",
         "description": "Latest local worker status file.",
         "why": "Shows Ollama/Gemma/local_demo readiness.",
+    },
+    {
+        "path": "14_context/hermes_workflow/generated/hermes_workflow_status.md",
+        "subsystem": "Hermes/WSL",
+        "description": "Latest Hermes manual bridge readiness status file.",
+        "why": "Shows Hermes installed/version/skills truth and manual later boundaries.",
     },
     {
         "path": "01_projects/runtime_mvp/tests/test_n5_6a_local_model_easy_worker_lane.py",
@@ -484,6 +510,8 @@ def build_map(generated_at: str | None = None, output_dir: pathlib.Path | None =
         "local_worker_command": LOCAL_WORKER_COMMAND,
         "repo_map_command": REPO_MAP_COMMAND,
         "next_bundle_command": NEXT_BUNDLE_COMMAND,
+        "hermes_bridge_command": HERMES_BRIDGE_COMMAND,
+        "hermes_bridge_write_command": HERMES_BRIDGE_WRITE_COMMAND,
         "output_dir": _repo_rel(out_dir),
         "output_paths": _output_paths(out_dir),
         "task_bundles": TASK_BUNDLES,
@@ -572,6 +600,7 @@ def _map_markdown(map_data: Dict[str, object]) -> str:
         - Launcher: `{LAUNCHER_COMMAND}`
         - Dashboard: `{DASHBOARD_URL}`
         - Repo map command: `{REPO_MAP_COMMAND}`
+        - Hermes bridge command: `{HERMES_BRIDGE_COMMAND}`
         - Graphify runtime: roadmap only/not wired
         - no external repo runtime
         - no network
@@ -639,15 +668,19 @@ def _bundle_definition(bundle: str) -> Dict[str, object]:
             "prompt": "Improve the local model worker lane. Do not run ollama pull, downloads, live APIs, or provider setup.",
         },
         "hermes": {
-            "title": "Hermes Status Work",
-            "purpose": "Prepare the next human/manual Hermes workflow milestone without setup/token actions.",
+            "title": "Hermes Agent / Manual Bridge Work",
+            "purpose": "Inspect or improve the Hermes manual bridge without setup/token actions.",
             "files": [
+                "03_scripts/hermes_agent_workflow_bridge.py",
                 "03_scripts/hermes_local_bootstrap.py",
+                "docs/HERMES_AGENT_WORKFLOW_GUIDE.md",
+                "docs/HERMES_MANUAL_PROVIDER_SETUP_CHECKLIST.md",
                 "docs/HERMES_LOCAL_INSTALL_AND_PROVIDER_PLAN.md",
                 "docs/CODEX_ONLY_WORKFLOW.md",
-                "14_context/codex_n5_6b_main_merge_local_model_easy_worker_lane.md",
+                "14_context/hermes_workflow/generated/hermes_workflow_status.md",
+                "14_context/hermes_workflow/generated/hermes_operator_bridge_packet.md",
             ],
-            "prompt": "Plan N+5.8A Hermes Agent Workflow / Provider Setup Plan + Manual Bridge Readiness. Safe probes only; no setup/provider config/Telegram/tokens.",
+            "prompt": "Work on the Hermes Agent / Manual Bridge lane. Use safe probes only; no setup/provider config/Telegram/tokens/live APIs/browser automation.",
         },
         "content-workflow": {
             "title": "Supervised Content Workflow",
@@ -674,15 +707,15 @@ def _bundle_definition(bundle: str) -> Dict[str, object]:
         },
         "next-milestone": {
             "title": "Next Milestone",
-            "purpose": "Prepare N+5.8A Hermes Agent Workflow / Provider Setup Plan + Manual Bridge Readiness.",
+            "purpose": "Prepare N+5.9A Real Gemma Install/Model Availability Decision + Local Task Quality Evaluation.",
             "files": [
-                "03_scripts/hermes_local_bootstrap.py",
-                "docs/HERMES_LOCAL_INSTALL_AND_PROVIDER_PLAN.md",
-                "docs/REPO_KNOWLEDGE_MAP_GUIDE.md",
-                "docs/GRAPHIFY_REPO_KNOWLEDGE_ROADMAP.md",
-                "14_context/repo_knowledge/generated/task_bundle_hermes.md",
+                "03_scripts/local_model_worker_lane.py",
+                "docs/LOCAL_MODEL_GEMMA_SETUP_GUIDE.md",
+                "docs/EASY_WORKER_LANE_GUIDE.md",
+                "14_context/local_worker/generated/local_worker_status.md",
+                "14_context/hermes_workflow/generated/hermes_operator_bridge_packet.md",
             ],
-            "prompt": "Build N+5.8A Hermes Agent Workflow / Provider Setup Plan + Manual Bridge Readiness. Keep Hermes setup/provider config/Telegram/tokens manual later; safe WSL probes only.",
+            "prompt": "Plan N+5.9A Real Gemma Install/Model Availability Decision + Local Task Quality Evaluation. Do not run ollama pull unless the human explicitly approves it.",
         },
     }
     return definitions[bundle]
@@ -722,6 +755,7 @@ def build_bundle(bundle: str, map_data: Dict[str, object] | None = None) -> Dict
             CONTEXT_PACK_COMMAND,
             LOCAL_WORKER_COMMAND,
             REPO_MAP_COMMAND,
+            HERMES_BRIDGE_COMMAND,
             f"python 03_scripts/ghoti_repo_knowledge_map.py --bundle {normalized} --json",
             NEXT_BUNDLE_COMMAND,
         ]
@@ -730,7 +764,7 @@ def build_bundle(bundle: str, map_data: Dict[str, object] | None = None) -> Dict
         f"- Main hash: `{data['main_hash']}`",
         f"- Latest clean milestone: {data['latest_clean_milestone']}",
         f"- Current milestone: {data['milestone']}",
-        "- Hermes WSL installed at `/home/ai_sandbox/.local/bin/hermes`, v0.14.0; browser/Playwright degraded/not claimed.",
+        "- Hermes WSL installed at `/home/ai_sandbox/.local/bin/hermes`, v0.14.0; Hermes Agent / Manual Bridge files available; browser/Playwright degraded/not claimed.",
         "- Ollama available v0.24.0; Gemma missing unless a new local check proves otherwise; local_demo fallback active.",
         "- UI-TARS observation-only; adapter runner approval-gated/local-only; external sandbox static inspection only.",
         "- Graphify runtime: roadmap only/not wired; no external repo runtime; no network.",

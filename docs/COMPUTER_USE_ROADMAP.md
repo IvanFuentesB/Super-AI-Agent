@@ -11,6 +11,8 @@ general desktop control.
 - Approved adapters run local demo dry-runs only.
 - Browser and Playwright status may be degraded and must be reported
   truthfully.
+- Hermes Agent / Manual Bridge is status/readiness only. It does not run
+  browser automation or provider setup.
 - External tools stay in static-scan or planning mode.
 
 ## Later Milestones

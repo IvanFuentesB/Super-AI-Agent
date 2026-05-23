@@ -7036,6 +7036,38 @@ async function handleApiRequest(request, response, requestUrl) {
     }
   }
 
+  async function runHermesAgentBridge(argvTail, timeoutMs) {
+    const hermesBridgeScript = path.join(repoRoot, "03_scripts", "hermes_agent_workflow_bridge.py");
+    const py = resolvePython();
+    if (!py) {
+      return { ok: false, local_only: true, available: false, error: "Python interpreter not found" };
+    }
+    if (!fs.existsSync(hermesBridgeScript)) {
+      return { ok: false, local_only: true, available: false, error: "Hermes agent workflow bridge not found" };
+    }
+    const argv = [...py.baseArgs, hermesBridgeScript, ...argvTail, "--json"];
+    let raw;
+    try {
+      raw = await runCommand(py.command, argv, { cwd: repoRoot, timeoutMs: timeoutMs || 60000 });
+    } catch (err) {
+      return { ok: false, local_only: true, available: false, error: String(err && err.message) };
+    }
+    if (!raw.ok) {
+      return {
+        ok: false,
+        local_only: true,
+        available: false,
+        error: raw.stderr || `exit ${raw.exitCode}`,
+        output: raw.stdout,
+      };
+    }
+    try {
+      return JSON.parse(raw.stdout);
+    } catch (_) {
+      return { ok: false, local_only: true, available: false, error: "Failed to parse Hermes bridge output" };
+    }
+  }
+
   // GET /api/local-memory-context-pack/status
   if (request.method === "GET" && requestUrl.pathname === "/api/local-memory-context-pack/status") {
     sendJson(response, 200, await runContextPackBuilder(["--status"], 30000));
@@ -7111,6 +7143,33 @@ async function handleApiRequest(request, response, requestUrl) {
     return;
   }
 
+  // GET /api/hermes-bridge/status
+  if (request.method === "GET" && requestUrl.pathname === "/api/hermes-bridge/status") {
+    sendJson(response, 200, await runHermesAgentBridge(["--status"], 60000));
+    return;
+  }
+
+  // GET /api/hermes-bridge/doctor
+  if (request.method === "GET" && requestUrl.pathname === "/api/hermes-bridge/doctor") {
+    sendJson(response, 200, await runHermesAgentBridge(["--doctor"], 60000));
+    return;
+  }
+
+  // GET /api/hermes-bridge/skills-index
+  if (request.method === "GET" && requestUrl.pathname === "/api/hermes-bridge/skills-index") {
+    sendJson(response, 200, await runHermesAgentBridge(["--skills-index"], 60000));
+    return;
+  }
+
+  // POST /api/hermes-bridge/write-readiness
+  if (request.method === "POST" && requestUrl.pathname === "/api/hermes-bridge/write-readiness") {
+    // Fixed argv. Safe WSL status probes and repo-local files only. No live
+    // provider setup, no provider config, no Telegram setup, no tokens, and
+    // no browser automation.
+    sendJson(response, 200, await runHermesAgentBridge(["--write-readiness"], 90000));
+    return;
+  }
+
   // GET /api/product-control/status
   if (request.method === "GET" && requestUrl.pathname === "/api/product-control/status") {
     sendJson(response, 200, {
@@ -7175,6 +7234,13 @@ async function handleApiRequest(request, response, requestUrl) {
           available: true,
           mode: "local_map_and_task_bundles",
           how_to_run: "Run ghoti_repo_knowledge_map.py --write --json or POST /api/repo-knowledge/write. Graphify runtime is roadmap only/not wired; no external repo runtime; no network.",
+        },
+        {
+          key: "hermes_agent_manual_bridge",
+          label: "Hermes Agent / Manual Bridge",
+          available: true,
+          mode: "safe_wsl_probes_only",
+          how_to_run: "Run hermes_agent_workflow_bridge.py --status --json or POST /api/hermes-bridge/write-readiness. Codex provider pending/not proven; Telegram manual later/no token; browser/Playwright degraded/not claimed.",
         },
         {
           key: "external_tool_intake",

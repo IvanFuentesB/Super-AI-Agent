@@ -3,8 +3,12 @@
 Local repo knowledge grouped by subsystem.
 
 ## Hermes/WSL
+- `03_scripts/hermes_agent_workflow_bridge.py`
 - `03_scripts/hermes_local_bootstrap.py`
+- `14_context/hermes_workflow/generated/hermes_workflow_status.md`
+- `docs/HERMES_AGENT_WORKFLOW_GUIDE.md`
 - `docs/HERMES_LOCAL_INSTALL_AND_PROVIDER_PLAN.md`
+- `docs/HERMES_MANUAL_PROVIDER_SETUP_CHECKLIST.md`
 
 ## UI-TARS/computer-use
 - `03_scripts/ui_tars_observation_adapter.py`
@@ -49,8 +53,6 @@ Local repo knowledge grouped by subsystem.
 - `docs/BLOCKED_UNSAFE_AUTOMATION.md`
 
 ## reports/14_context
-- `14_context/codex_n5_2a_hermes_local_bootstrap_public_readiness_model_provider.md`
-- `14_context/codex_n5_2b_hermes_bootstrap_stack_ui_tars_manifest_fix.md`
 - `14_context/codex_n5_3a_main_merge_product_finish_local_mvp.md`
 - `14_context/codex_n5_3a_product_finish_remote_clean_audit.md`
 - `14_context/codex_n5_4a_first_real_operator_usability_pass.md`
@@ -59,6 +61,8 @@ Local repo knowledge grouped by subsystem.
 - `14_context/codex_n5_5b_main_merge_local_memory_context_pack.md`
 - `14_context/codex_n5_6a_local_model_gemma_setup_truth_easy_worker_lane.md`
 - `14_context/codex_n5_6b_main_merge_local_model_easy_worker_lane.md`
+- `14_context/codex_n5_7a_graphify_repo_knowledge_map_context_retrieval.md`
+- `14_context/codex_n5_7b_main_merge_repo_knowledge_context_retrieval.md`
 
 ## supervised content demo
 - `03_scripts/supervised_content_mvp_runner.py`
