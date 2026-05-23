@@ -1,0 +1,10 @@
+{
+  "handoff_path": "14_context/desktop_operator/runs/20260513T061500Z_recipe_runner_showcase/00_recipe_handoff.json",
+  "actions_executed": 0,
+  "recipe_id": "gemini_handoff_export",
+  "model_status_brief": {
+    "gemini_treated_as_unlimited": false,
+    "gemini_live_prompt_executed": false
+  },
+  "approval_required_next": true
+}

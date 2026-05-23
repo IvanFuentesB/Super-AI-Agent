@@ -1,0 +1,40 @@
+version: 1
+project: ghoti
+mode: placeholder_only
+secrets:
+  policy: "never commit real credentials"
+  env_file: ".env"
+frontend:
+  provider: vercel
+  project_name: "placeholder-ghoti"
+database:
+  provider: supabase
+  postgres_url: "${SUPABASE_URL}"
+auth:
+  default: supabase_auth
+  alternative: clerk
+payments:
+  provider: stripe
+  enabled: false
+email:
+  provider: resend
+  enabled: false
+observability:
+  analytics: posthog
+  errors: sentry
+queues_cache:
+  provider: upstash
+  enabled: false
+vector_search:
+  default: "supabase_pgvector_or_local"
+  managed_option: pinecone
+cloud_heavy_option:
+  provider: azure
+  enabled: false
+dns:
+  registrar: namecheap
+  dns_provider: cloudflare_style_provider
+policy:
+  paid_vps_required: false
+  live_api_used: false
+  human_review_required: true

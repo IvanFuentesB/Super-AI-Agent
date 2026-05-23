@@ -1,0 +1,70 @@
+{
+  "ok": true,
+  "lane": "local_model_easy_worker_lane",
+  "milestone": "N+5.6A",
+  "local_only": true,
+  "network_required": false,
+  "live_api_used": false,
+  "external_api_used": false,
+  "auto_downloads_enabled": false,
+  "ollama_pull_run": false,
+  "model_downloaded": false,
+  "posting_enabled": false,
+  "account_actions_enabled": false,
+  "launcher_command": "python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard",
+  "dashboard_url": "http://127.0.0.1:3210",
+  "context_pack_command": "python 03_scripts/ghoti_product_launcher.py --context-pack --json",
+  "local_worker_status_command": "python 03_scripts/ghoti_product_launcher.py --local-worker-status --json",
+  "local_worker_demo_command": "python 03_scripts/ghoti_product_launcher.py --local-worker-demo --json",
+  "direct_status_command": "python 03_scripts/local_model_worker_lane.py --status --json",
+  "direct_demo_command": "python 03_scripts/local_model_worker_lane.py --write-demo-output --json",
+  "main_hash": "23ace6dedb7acdfd19b148988be35e121f140070",
+  "ollama": {
+    "available": true,
+    "version": "ollama version is 0.24.0",
+    "models": [],
+    "list_ok": true,
+    "probe_error": ""
+  },
+  "gemma": {
+    "installed": false,
+    "preferred_model": "gemma3:4b",
+    "model_name": null,
+    "status": "missing",
+    "manual_install_command": "ollama pull gemma3:4b",
+    "manual_check_command": "ollama list"
+  },
+  "active_mode": "local_demo",
+  "fallback_available": true,
+  "readiness_percent": 45,
+  "readiness_label": "local_demo_fallback_active",
+  "status_line": "Local worker readiness: 45%. Ollama is installed (ollama version is 0.24.0), Gemma is missing, so Ghoti is using local_demo fallback. Context packs and deterministic summaries work now; run the documented manual Gemma command later to unlock real local worker tasks. No live APIs, no auto-downloads.",
+  "safe_demo_tasks": [
+    "summarize-latest-report",
+    "status-paragraph",
+    "classify-next-task",
+    "codex-next-prompt"
+  ],
+  "manual_next_commands": [
+    "ollama list",
+    "ollama pull gemma3:4b",
+    "python 03_scripts/local_model_worker_lane.py --status --json",
+    "python 03_scripts/local_model_worker_lane.py --write-demo-output --json"
+  ],
+  "output_paths": {
+    "local_worker_status.json": "14_context/local_worker/generated/local_worker_status.json",
+    "local_worker_status.md": "14_context/local_worker/generated/local_worker_status.md",
+    "latest_report_summary.md": "14_context/local_worker/generated/latest_report_summary.md",
+    "status_paragraph.md": "14_context/local_worker/generated/status_paragraph.md",
+    "codex_next_prompt_from_context.md": "14_context/local_worker/generated/codex_next_prompt_from_context.md"
+  },
+  "safety": {
+    "no_live_apis": true,
+    "no_auto_downloads": true,
+    "no_posting": true,
+    "no_account_actions": true,
+    "no_money_trading_legal": true,
+    "no_bot_captcha_cloak_bypass": true
+  },
+  "generated_at": "2026-05-23T11:08:47Z"
+}

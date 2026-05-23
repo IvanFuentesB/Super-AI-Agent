@@ -1,0 +1,806 @@
+{
+  "topic": "AI tools for students and creators",
+  "count": 100,
+  "titles": [
+    {
+      "id": "title_001",
+      "text": "I supervised 8 AI agents to make this short about AI tools for students and creators -- the boring truth (v001)",
+      "length": 111,
+      "variant_index": 1,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_002",
+      "text": "AI tools for students and creators: one workflow beats ten apps -- no hype (v002)",
+      "length": 81,
+      "variant_index": 2,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_003",
+      "text": "What AI tools for students and creators actually look like when you supervise them -- no live accounts (v003)",
+      "length": 109,
+      "variant_index": 3,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_004",
+      "text": "Stop autonomous AI. Try supervised AI tools for students and creators instead -- all local (v004)",
+      "length": 97,
+      "variant_index": 4,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_005",
+      "text": "AI tools for students and creators in 60 seconds (no live posting) -- with approval gates (v005)",
+      "length": 96,
+      "variant_index": 5,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_006",
+      "text": "The honest creator's stack for AI tools for students and creators -- before anyone touches publish (v006)",
+      "length": 105,
+      "variant_index": 6,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_007",
+      "text": "I built a local studio for AI tools for students and creators -- for 2026 (v007)",
+      "length": 80,
+      "variant_index": 7,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_008",
+      "text": "100 titles, zero auto-posts: AI tools for students and creators -- without scraping anything (v008)",
+      "length": 99,
+      "variant_index": 8,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_009",
+      "text": "Supervised AI tools for students and creators for students and creators -- without breaking ToS (v009)",
+      "length": 102,
+      "variant_index": 9,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_010",
+      "text": "Why I won't auto-post AI tools for students and creators -- with full receipts (v010)",
+      "length": 85,
+      "variant_index": 10,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_011",
+      "text": "I supervised 8 AI agents to make this short about AI tools for students and creators -- the boring truth (v011)",
+      "length": 111,
+      "variant_index": 11,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_012",
+      "text": "AI tools for students and creators: one workflow beats ten apps -- no hype (v012)",
+      "length": 81,
+      "variant_index": 12,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_013",
+      "text": "What AI tools for students and creators actually look like when you supervise them -- no live accounts (v013)",
+      "length": 109,
+      "variant_index": 13,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_014",
+      "text": "Stop autonomous AI. Try supervised AI tools for students and creators instead -- all local (v014)",
+      "length": 97,
+      "variant_index": 14,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_015",
+      "text": "AI tools for students and creators in 60 seconds (no live posting) -- with approval gates (v015)",
+      "length": 96,
+      "variant_index": 15,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_016",
+      "text": "The honest creator's stack for AI tools for students and creators -- before anyone touches publish (v016)",
+      "length": 105,
+      "variant_index": 16,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_017",
+      "text": "I built a local studio for AI tools for students and creators -- for 2026 (v017)",
+      "length": 80,
+      "variant_index": 17,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_018",
+      "text": "100 titles, zero auto-posts: AI tools for students and creators -- without scraping anything (v018)",
+      "length": 99,
+      "variant_index": 18,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_019",
+      "text": "Supervised AI tools for students and creators for students and creators -- without breaking ToS (v019)",
+      "length": 102,
+      "variant_index": 19,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_020",
+      "text": "Why I won't auto-post AI tools for students and creators -- with full receipts (v020)",
+      "length": 85,
+      "variant_index": 20,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_021",
+      "text": "I supervised 8 AI agents to make this short about AI tools for students and creators -- the boring truth (v021)",
+      "length": 111,
+      "variant_index": 21,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_022",
+      "text": "AI tools for students and creators: one workflow beats ten apps -- no hype (v022)",
+      "length": 81,
+      "variant_index": 22,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_023",
+      "text": "What AI tools for students and creators actually look like when you supervise them -- no live accounts (v023)",
+      "length": 109,
+      "variant_index": 23,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_024",
+      "text": "Stop autonomous AI. Try supervised AI tools for students and creators instead -- all local (v024)",
+      "length": 97,
+      "variant_index": 24,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_025",
+      "text": "AI tools for students and creators in 60 seconds (no live posting) -- with approval gates (v025)",
+      "length": 96,
+      "variant_index": 25,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_026",
+      "text": "The honest creator's stack for AI tools for students and creators -- before anyone touches publish (v026)",
+      "length": 105,
+      "variant_index": 26,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_027",
+      "text": "I built a local studio for AI tools for students and creators -- for 2026 (v027)",
+      "length": 80,
+      "variant_index": 27,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_028",
+      "text": "100 titles, zero auto-posts: AI tools for students and creators -- without scraping anything (v028)",
+      "length": 99,
+      "variant_index": 28,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_029",
+      "text": "Supervised AI tools for students and creators for students and creators -- without breaking ToS (v029)",
+      "length": 102,
+      "variant_index": 29,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_030",
+      "text": "Why I won't auto-post AI tools for students and creators -- with full receipts (v030)",
+      "length": 85,
+      "variant_index": 30,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_031",
+      "text": "I supervised 8 AI agents to make this short about AI tools for students and creators -- the boring truth (v031)",
+      "length": 111,
+      "variant_index": 31,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_032",
+      "text": "AI tools for students and creators: one workflow beats ten apps -- no hype (v032)",
+      "length": 81,
+      "variant_index": 32,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_033",
+      "text": "What AI tools for students and creators actually look like when you supervise them -- no live accounts (v033)",
+      "length": 109,
+      "variant_index": 33,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_034",
+      "text": "Stop autonomous AI. Try supervised AI tools for students and creators instead -- all local (v034)",
+      "length": 97,
+      "variant_index": 34,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_035",
+      "text": "AI tools for students and creators in 60 seconds (no live posting) -- with approval gates (v035)",
+      "length": 96,
+      "variant_index": 35,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_036",
+      "text": "The honest creator's stack for AI tools for students and creators -- before anyone touches publish (v036)",
+      "length": 105,
+      "variant_index": 36,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_037",
+      "text": "I built a local studio for AI tools for students and creators -- for 2026 (v037)",
+      "length": 80,
+      "variant_index": 37,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_038",
+      "text": "100 titles, zero auto-posts: AI tools for students and creators -- without scraping anything (v038)",
+      "length": 99,
+      "variant_index": 38,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_039",
+      "text": "Supervised AI tools for students and creators for students and creators -- without breaking ToS (v039)",
+      "length": 102,
+      "variant_index": 39,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_040",
+      "text": "Why I won't auto-post AI tools for students and creators -- with full receipts (v040)",
+      "length": 85,
+      "variant_index": 40,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_041",
+      "text": "I supervised 8 AI agents to make this short about AI tools for students and creators -- the boring truth (v041)",
+      "length": 111,
+      "variant_index": 41,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_042",
+      "text": "AI tools for students and creators: one workflow beats ten apps -- no hype (v042)",
+      "length": 81,
+      "variant_index": 42,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_043",
+      "text": "What AI tools for students and creators actually look like when you supervise them -- no live accounts (v043)",
+      "length": 109,
+      "variant_index": 43,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_044",
+      "text": "Stop autonomous AI. Try supervised AI tools for students and creators instead -- all local (v044)",
+      "length": 97,
+      "variant_index": 44,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_045",
+      "text": "AI tools for students and creators in 60 seconds (no live posting) -- with approval gates (v045)",
+      "length": 96,
+      "variant_index": 45,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_046",
+      "text": "The honest creator's stack for AI tools for students and creators -- before anyone touches publish (v046)",
+      "length": 105,
+      "variant_index": 46,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_047",
+      "text": "I built a local studio for AI tools for students and creators -- for 2026 (v047)",
+      "length": 80,
+      "variant_index": 47,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_048",
+      "text": "100 titles, zero auto-posts: AI tools for students and creators -- without scraping anything (v048)",
+      "length": 99,
+      "variant_index": 48,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_049",
+      "text": "Supervised AI tools for students and creators for students and creators -- without breaking ToS (v049)",
+      "length": 102,
+      "variant_index": 49,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_050",
+      "text": "Why I won't auto-post AI tools for students and creators -- with full receipts (v050)",
+      "length": 85,
+      "variant_index": 50,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_051",
+      "text": "I supervised 8 AI agents to make this short about AI tools for students and creators -- the boring truth (v051)",
+      "length": 111,
+      "variant_index": 51,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_052",
+      "text": "AI tools for students and creators: one workflow beats ten apps -- no hype (v052)",
+      "length": 81,
+      "variant_index": 52,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_053",
+      "text": "What AI tools for students and creators actually look like when you supervise them -- no live accounts (v053)",
+      "length": 109,
+      "variant_index": 53,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_054",
+      "text": "Stop autonomous AI. Try supervised AI tools for students and creators instead -- all local (v054)",
+      "length": 97,
+      "variant_index": 54,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_055",
+      "text": "AI tools for students and creators in 60 seconds (no live posting) -- with approval gates (v055)",
+      "length": 96,
+      "variant_index": 55,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_056",
+      "text": "The honest creator's stack for AI tools for students and creators -- before anyone touches publish (v056)",
+      "length": 105,
+      "variant_index": 56,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_057",
+      "text": "I built a local studio for AI tools for students and creators -- for 2026 (v057)",
+      "length": 80,
+      "variant_index": 57,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_058",
+      "text": "100 titles, zero auto-posts: AI tools for students and creators -- without scraping anything (v058)",
+      "length": 99,
+      "variant_index": 58,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_059",
+      "text": "Supervised AI tools for students and creators for students and creators -- without breaking ToS (v059)",
+      "length": 102,
+      "variant_index": 59,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_060",
+      "text": "Why I won't auto-post AI tools for students and creators -- with full receipts (v060)",
+      "length": 85,
+      "variant_index": 60,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_061",
+      "text": "I supervised 8 AI agents to make this short about AI tools for students and creators -- the boring truth (v061)",
+      "length": 111,
+      "variant_index": 61,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_062",
+      "text": "AI tools for students and creators: one workflow beats ten apps -- no hype (v062)",
+      "length": 81,
+      "variant_index": 62,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_063",
+      "text": "What AI tools for students and creators actually look like when you supervise them -- no live accounts (v063)",
+      "length": 109,
+      "variant_index": 63,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_064",
+      "text": "Stop autonomous AI. Try supervised AI tools for students and creators instead -- all local (v064)",
+      "length": 97,
+      "variant_index": 64,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_065",
+      "text": "AI tools for students and creators in 60 seconds (no live posting) -- with approval gates (v065)",
+      "length": 96,
+      "variant_index": 65,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_066",
+      "text": "The honest creator's stack for AI tools for students and creators -- before anyone touches publish (v066)",
+      "length": 105,
+      "variant_index": 66,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_067",
+      "text": "I built a local studio for AI tools for students and creators -- for 2026 (v067)",
+      "length": 80,
+      "variant_index": 67,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_068",
+      "text": "100 titles, zero auto-posts: AI tools for students and creators -- without scraping anything (v068)",
+      "length": 99,
+      "variant_index": 68,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_069",
+      "text": "Supervised AI tools for students and creators for students and creators -- without breaking ToS (v069)",
+      "length": 102,
+      "variant_index": 69,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_070",
+      "text": "Why I won't auto-post AI tools for students and creators -- with full receipts (v070)",
+      "length": 85,
+      "variant_index": 70,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_071",
+      "text": "I supervised 8 AI agents to make this short about AI tools for students and creators -- the boring truth (v071)",
+      "length": 111,
+      "variant_index": 71,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_072",
+      "text": "AI tools for students and creators: one workflow beats ten apps -- no hype (v072)",
+      "length": 81,
+      "variant_index": 72,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_073",
+      "text": "What AI tools for students and creators actually look like when you supervise them -- no live accounts (v073)",
+      "length": 109,
+      "variant_index": 73,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_074",
+      "text": "Stop autonomous AI. Try supervised AI tools for students and creators instead -- all local (v074)",
+      "length": 97,
+      "variant_index": 74,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_075",
+      "text": "AI tools for students and creators in 60 seconds (no live posting) -- with approval gates (v075)",
+      "length": 96,
+      "variant_index": 75,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_076",
+      "text": "The honest creator's stack for AI tools for students and creators -- before anyone touches publish (v076)",
+      "length": 105,
+      "variant_index": 76,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_077",
+      "text": "I built a local studio for AI tools for students and creators -- for 2026 (v077)",
+      "length": 80,
+      "variant_index": 77,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_078",
+      "text": "100 titles, zero auto-posts: AI tools for students and creators -- without scraping anything (v078)",
+      "length": 99,
+      "variant_index": 78,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_079",
+      "text": "Supervised AI tools for students and creators for students and creators -- without breaking ToS (v079)",
+      "length": 102,
+      "variant_index": 79,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_080",
+      "text": "Why I won't auto-post AI tools for students and creators -- with full receipts (v080)",
+      "length": 85,
+      "variant_index": 80,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_081",
+      "text": "I supervised 8 AI agents to make this short about AI tools for students and creators -- the boring truth (v081)",
+      "length": 111,
+      "variant_index": 81,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_082",
+      "text": "AI tools for students and creators: one workflow beats ten apps -- no hype (v082)",
+      "length": 81,
+      "variant_index": 82,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_083",
+      "text": "What AI tools for students and creators actually look like when you supervise them -- no live accounts (v083)",
+      "length": 109,
+      "variant_index": 83,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_084",
+      "text": "Stop autonomous AI. Try supervised AI tools for students and creators instead -- all local (v084)",
+      "length": 97,
+      "variant_index": 84,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_085",
+      "text": "AI tools for students and creators in 60 seconds (no live posting) -- with approval gates (v085)",
+      "length": 96,
+      "variant_index": 85,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_086",
+      "text": "The honest creator's stack for AI tools for students and creators -- before anyone touches publish (v086)",
+      "length": 105,
+      "variant_index": 86,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_087",
+      "text": "I built a local studio for AI tools for students and creators -- for 2026 (v087)",
+      "length": 80,
+      "variant_index": 87,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_088",
+      "text": "100 titles, zero auto-posts: AI tools for students and creators -- without scraping anything (v088)",
+      "length": 99,
+      "variant_index": 88,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_089",
+      "text": "Supervised AI tools for students and creators for students and creators -- without breaking ToS (v089)",
+      "length": 102,
+      "variant_index": 89,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_090",
+      "text": "Why I won't auto-post AI tools for students and creators -- with full receipts (v090)",
+      "length": 85,
+      "variant_index": 90,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_091",
+      "text": "I supervised 8 AI agents to make this short about AI tools for students and creators -- the boring truth (v091)",
+      "length": 111,
+      "variant_index": 91,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_092",
+      "text": "AI tools for students and creators: one workflow beats ten apps -- no hype (v092)",
+      "length": 81,
+      "variant_index": 92,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_093",
+      "text": "What AI tools for students and creators actually look like when you supervise them -- no live accounts (v093)",
+      "length": 109,
+      "variant_index": 93,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_094",
+      "text": "Stop autonomous AI. Try supervised AI tools for students and creators instead -- all local (v094)",
+      "length": 97,
+      "variant_index": 94,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_095",
+      "text": "AI tools for students and creators in 60 seconds (no live posting) -- with approval gates (v095)",
+      "length": 96,
+      "variant_index": 95,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_096",
+      "text": "The honest creator's stack for AI tools for students and creators -- before anyone touches publish (v096)",
+      "length": 105,
+      "variant_index": 96,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_097",
+      "text": "I built a local studio for AI tools for students and creators -- for 2026 (v097)",
+      "length": 80,
+      "variant_index": 97,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_098",
+      "text": "100 titles, zero auto-posts: AI tools for students and creators -- without scraping anything (v098)",
+      "length": 99,
+      "variant_index": 98,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_099",
+      "text": "Supervised AI tools for students and creators for students and creators -- without breaking ToS (v099)",
+      "length": 102,
+      "variant_index": 99,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    },
+    {
+      "id": "title_100",
+      "text": "Why I won't auto-post AI tools for students and creators -- with full receipts (v100)",
+      "length": 85,
+      "variant_index": 100,
+      "ab_test_runtime_wired": false,
+      "autonomous_posting_enabled": false
+    }
+  ]
+}

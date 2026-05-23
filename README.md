@@ -1,81 +1,307 @@
-# Super-AI-Agent
+# Ghoti / Super-AI-Agent
 
-Execution-first AI operating framework for legitimate business workflows, documentation, GitHub and project operations, internship and job-search ops, owned-account workflows, and later browser or app control plus multi-model orchestration.
+Ghoti is a local-first, approval-gated AI operating workspace for supervised demos, safe provider/tool intake, reviewable artifacts, and portfolio-grade engineering workflows.
 
-## Current Summary
+**License posture:** Source visible for demonstration and review. Not open source unless a license change says otherwise. See [LICENSE](LICENSE).
 
-This repo is the core workspace for building a controllable AI system that produces reviewable outputs, keeps risky actions explicit, and grows from a small checked runtime instead of a vague pile of prompts and notes.
+**Commit attribution:** commits are kept human-authored; AI co-author trailers are not used unless the owner explicitly changes that policy.
 
-## Live Capabilities
+<p align="center">
+  <img src="docs/assets/ghoti/ghoti_super_ai_agent_hero_clean.png" alt="Ghoti Super AI Agent hero image" width="100%" />
+</p>
 
-- approval-aware runtime with file-backed task state
-- durable context and handoff snapshots from `14_context`
-- GitHub read-only inspection plus approval-gated draft and write-action commands
-- environment and capability detection for `python`, `git`, and `gh`
-- repeatable runtime checker
-- internship, CV, LinkedIn, outreach, showcase, and portfolio scaffold generation
-- local deterministic browser playground with headless and visible Playwright demos
-- polished local operator-console dashboard for capability checks, clearer GitHub updates, scaffold generation, browser demo triggers, and artifact preview/open/reveal actions
-- always-on supervisor foundation with explicit task states for waiting, pending approval, and human-needed work
-- local approval inbox foundation for risky or uncertain actions
-- safe local desktop bridge actions for allowlisted window listing, active-window detection, focusing allowed windows, opening allowed local apps, and repo-local desktop screenshots
+## Quickstart
 
-## Scaffold-Only Or Research State
+Current clean local MVP baseline: **N+5.5B / CLEAN PASS / LOCAL MEMORY
+CONTEXT PACK ON MAIN**.
 
-- mail and Notion adapters are planning-only
-- notifications are local-dashboard-only summaries for now
-- arbitrary browser and app execution are still not implemented
-- arbitrary desktop click, type, clipboard, and general computer control are still not implemented
-- full autonomous executor is still not implemented
-- multi-model routing remains planning and policy scaffolding
-- remote GitHub smoke tests are explicit and available, but the default checker remains non-mutating
+```text
+origin/main = 23ace6dedb7acdfd19b148988be35e121f140070
+N+4: 329 OK
+N+5: 77 OK
+Public audit: 150 checks / 0 blockers / 7 warnings
+Readiness score: 100
+```
 
-## Reference Intake Role
+```powershell
+python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard
+```
 
-`21_repos/third_party` is an intake lane for external repos used as comparison and extraction material only. Those repos help evaluate patterns from tools like career-ops, official Claude Code, OpenClaw, Playwright, Windows-Use, Windows-MCP, Open Interpreter, Open Computer Use, Browser Use, Stagehand, OpenHands, and related ecosystems without merging vendor code into this core repo.
+Dashboard URL:
 
-## Internship And Showcase Relevance
+```text
+http://127.0.0.1:3210
+```
 
-This repo already demonstrates a few concrete recruiter-friendly angles:
+Daily guide:
 
-- GitHub workflow control with explicit approvals
-- internship application pack generation
-- structured personal-ops and career-ops scaffolding
-- durable context and checker-driven runtime discipline
-- a visible local browser demo and operator-console control surface
+- [Daily Operator Guide](docs/DAILY_OPERATOR_GUIDE.md)
+- [Local Memory Context Pack Guide](docs/LOCAL_MEMORY_CONTEXT_PACK_GUIDE.md)
+- [Local Model / Gemma Setup Guide](docs/LOCAL_MODEL_GEMMA_SETUP_GUIDE.md)
+- [Easy Worker Lane Guide](docs/EASY_WORKER_LANE_GUIDE.md)
+- Status: `python 03_scripts/ghoti_product_launcher.py --status --json`
+- Smoke: `python 03_scripts/ghoti_product_launcher.py --smoke --json`
+- Context pack: `python 03_scripts/ghoti_context_pack_builder.py --write --json`
+- Local worker status: `python 03_scripts/ghoti_product_launcher.py --local-worker-status --json`
+- Local worker demo: `python 03_scripts/ghoti_product_launcher.py --local-worker-demo --json`
+- Stop: `python 03_scripts/ghoti_product_launcher.py --stop-dashboard`
 
-## What You Can Do Right Now
+## What Ghoti Can Do Now
 
-- open the local operator console and inspect capability plus GitHub status
-- run the browser smoke demo or visible browser demo from the console
-- generate internship, showcase, and portfolio markdown outputs
-- preview, open, and reveal recent artifacts from one local control surface
-- queue and run a small set of approval-aware desktop bridge actions from the console
-- inspect persisted desktop action results before moving toward broader app control
+- Run local dashboard/product demos.
+- Show Start Here / Daily Operator, Status Truth, What Works Now, What Remains,
+  Safety Locks, and Ask Codex Next on the dashboard.
+- Generate compact local memory context packs for ChatGPT, Codex, Claude, and
+  Obsidian under `14_context/compact_memory/generated/`.
+- Inspect Ollama/Gemma truth and generate deterministic local worker demo
+  outputs under `14_context/local_worker/generated/`.
+- Generate supervised content studio artifacts and preview packages.
+- Validate the local content demo: 8 agents, 100 titles, 100 thumbnails, local
+  preview, approval packet, no posting.
+- Coordinate Claude Code implementation lanes and Codex audit lanes when both are available.
+- Run approved adapter demos that create local artifacts only.
+- Track external tool sandboxes without executing external repo code by default.
+- Prepare Hermes local bootstrap reports without paid VPS requirements.
+- Maintain public repo readiness, security checks, portfolio docs, and curated images.
+- Surface latest reports under `14_context/`.
 
-## Repo Structure
+## Hermes Local Bootstrap
 
-- `13_prompts`: reusable prompts, including handoff prompts
-- `14_context`: durable project state, decisions, open questions, and handoff files
-- `01_projects/runtime_mvp`: small checked runtime and CLI
-- `20_agents`: agent templates, shared patterns, and future agent-specific memory
-- `21_repos`: reference intake and later external evaluations
-- `23_configs`: local configuration files and setup state
+Hermes Agent is installed in Ubuntu WSL for the current local MVP, but Ghoti
+stays local-first and safe.
 
-## Working Method
+- Official installer URL is documented in [docs/HERMES_LOCAL_INSTALL_AND_PROVIDER_PLAN.md](docs/HERMES_LOCAL_INSTALL_AND_PROVIDER_PLAN.md).
+- `03_scripts/hermes_local_bootstrap.py` can check prerequisites, download the installer for inspection, hash it, and write reports.
+- Actual installer execution is guarded because this milestone does not install packages or run external installer code automatically.
+- Current verified WSL path: `/home/ai_sandbox/.local/bin/hermes`.
+- Current verified version: `Hermes Agent v0.14.0`.
+- Browser/Playwright is degraded/not claimed unless a later local Hermes check verifies it.
+- Windows PowerShell users should use `curl.exe`, not the `curl` alias.
+- The target machine is the Windows `ai_sandbox` profile.
+- If using Ubuntu WSL, check the exact distro with `wsl -d Ubuntu` or
+  `wsl.exe -d Ubuntu`.
+- If Ubuntu opens but Hermes is not found, the installer was not completed
+  inside Ubuntu yet; after reviewing the installer, run:
+  `curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash -s -- --skip-setup`,
+  then `source ~/.bashrc`, `command -v hermes`, and `hermes --help`.
+- Bash from PowerShell can route to WSL on some machines, so explicit
+  `wsl -d Ubuntu` is preferred for troubleshooting.
+- No paid VPS currently.
+- Telegram setup is later/manual; no Telegram token or chat ID is committed.
+- Hermes Codex provider support is pending / not verified until local Hermes commands or official docs confirm it.
 
-- Use summarized context files instead of relying on long chats
-- Keep changes small and reversible
-- Require approval for risky actions
+```powershell
+python 03_scripts/hermes_local_bootstrap.py --status --json
+python 03_scripts/hermes_local_bootstrap.py --check-prereqs --json
+python 03_scripts/hermes_local_bootstrap.py --print-windows-commands
+```
 
-## Next Milestones
+## Model Council Roadmap
 
-- Test the browser playground manually
-- Test the local dashboard manually
-- Keep improving the local operator console UX without pretending arbitrary desktop execution already exists
-- Decide between Playwright-first and browser-use-first for the next executor layer
-- Decide the next narrow desktop action to add without turning the bridge into generic computer control
-- Prepare one internship-facing live demo
-- Evaluate Windows-Use, Windows-MCP, official Claude Code, and OpenClaw for selective extraction value
-- Plan live Notion groundwork later
-- Keep outbound and remote actions approval-gated
+Ghoti keeps provider planning explicit:
+
+- Codex: preferred audit/verification lane and preferred Hermes provider if support is verified later.
+- Claude Code: implementation lane when available.
+- ChatGPT/Claude: planning, product reasoning, and source-intelligence lanes when manually invoked.
+- Gemma/Ollama: cheap local worker brains for summarization and classification.
+- Graphify: future knowledge graph/token-efficiency candidate.
+- Agent-browser and Browser Harness: future compliant browser QA candidates.
+
+No ChatGPT, Claude, Codex, Hermes, Gemma, or browser tool is launched automatically by Ghoti.
+
+## Local Memory And Context Packs
+
+Ghoti can generate a small current context pack so Ivan can move between
+ChatGPT, Codex, Claude, and Obsidian without replaying the whole repo history.
+
+```powershell
+python 03_scripts/ghoti_context_pack_builder.py --write --json
+python 03_scripts/ghoti_product_launcher.py --context-pack --json
+```
+
+Generated files:
+
+- `14_context/compact_memory/generated/ghoti_current_context_pack.md`
+- `14_context/compact_memory/generated/ghoti_current_context_pack.json`
+- `14_context/compact_memory/generated/ghoti_codex_next_prompt.md`
+- `14_context/compact_memory/generated/ghoti_chatgpt_migration_summary.md`
+- `14_context/compact_memory/generated/ghoti_status_short.md`
+
+The builder is repo-local, excludes secrets, does not read `.env` contents, and
+does not call live providers.
+
+## Local Model / Easy Worker Lane
+
+N+5.6A adds a safe local worker lane for small offline tasks:
+
+```powershell
+python 03_scripts/local_model_worker_lane.py --status --json
+python 03_scripts/local_model_worker_lane.py --doctor --json
+python 03_scripts/local_model_worker_lane.py --demo-task status-paragraph --json
+python 03_scripts/local_model_worker_lane.py --write-demo-output --json
+python 03_scripts/ghoti_product_launcher.py --local-worker-status --json
+python 03_scripts/ghoti_product_launcher.py --local-worker-demo --json
+```
+
+Generated files:
+
+- `14_context/local_worker/generated/local_worker_status.json`
+- `14_context/local_worker/generated/local_worker_status.md`
+- `14_context/local_worker/generated/latest_report_summary.md`
+- `14_context/local_worker/generated/status_paragraph.md`
+- `14_context/local_worker/generated/codex_next_prompt_from_context.md`
+
+Current Ollama/Gemma truth:
+
+- Ollama is available in the verified local baseline: `ollama version is 0.24.0`.
+- No Gemma model is currently installed, so `local_demo` fallback is active.
+- Local model reachability never means local models drive operator actions.
+- Ghoti shows the manual command `ollama pull gemma3:4b`, but never runs it
+  automatically. No live APIs and no auto-downloads.
+
+## Public Repo And Portfolio Lane
+
+Public polish is a side lane, not the whole project. See:
+
+- [GitHub profile and repo upgrade playbook](docs/GITHUB_PROFILE_AND_REPO_UPGRADE_PLAYBOOK.md)
+- [Repo branding and image playbook](docs/REPO_BRANDING_AND_IMAGE_PLAYBOOK.md)
+- [Public release security checklist](docs/PUBLIC_RELEASE_SECURITY_CHECKLIST.md)
+
+Fast wins: pin NXP/SDA/Doodle/Ghoti plus two strong repos, add topics, add demo GIFs, add Actions, and create portfolio releases.
+
+Every important repo should have a branded image/banner/diagram. Ghoti should later be renamed to include "Ghoti" clearly, for example `Super-AI-Agent-Ghoti`, `Ghoti-Super-AI-Agent`, or `Ghoti-Agent-OS`.
+
+## Image Tour
+
+Curated assets are copied from `Human Placed Stuff/` into `docs/assets/github/` after review. Raw imports remain ignored.
+
+![Ghoti System Architecture](docs/assets/github/ghoti-system-architecture.png)
+
+![Product Demo Workflow](docs/assets/github/product-demo-workflow.png)
+
+![Human Approval Gate](docs/assets/github/human-approval-gate-flow.png)
+
+![Safety Model](docs/assets/github/safety-model-diagram.png)
+
+## Safety Model
+
+- UI-TARS remains observation-only; no click/type/control is enabled.
+- Hermes WSL install is claimed only from local command evidence.
+- Hermes Codex provider support is not claimed until verified.
+- Telegram is not connected.
+- No running VPS is part of this setup.
+- No live account automation, posting, trading, money movement, legal action, or public action is enabled.
+- External repo runtime wiring is not enabled by default.
+- Bot-detection bypass, captcha bypass, fake engagement, spam, account abuse, unauthorized scraping, credential theft, and unauthorized desktop control are blocked.
+- Codex work must use repo-contained `.claude/worktrees/`; no primary worktree mutation except read-only inspection.
+- no live providers/tokens setup is part of the daily workflow.
+
+## Public Security Audit
+
+```powershell
+python 03_scripts/public_repo_security_audit.py --write-report --json
+```
+
+The audit reports `total_checks`, blockers, warnings, `safe_to_make_public`, and `human_review_required`.
+
+## Mermaid Diagrams
+
+### Ghoti System Architecture
+
+```mermaid
+flowchart LR
+  User["Human operator"] --> Launcher["Local launcher"]
+  Launcher --> Dashboard["Ghoti dashboard"]
+  Dashboard --> Studio["Content Studio"]
+  Dashboard --> Relay["Claude + Codex relay"]
+  Dashboard --> Hermes["Hermes local bootstrap reports"]
+  Dashboard --> Council["Model council roadmap"]
+  Studio --> Artifacts["Local artifacts"]
+  Relay --> Branches["Implementation + audit branches"]
+  Hermes --> Reports["Prereq/install/provider reports"]
+  Council --> Plans["Provider-safe plans"]
+```
+
+### Hermes Local Bootstrap Flow
+
+```mermaid
+flowchart TD
+  Start["Check prerequisites"] --> Download["Download installer for inspection"]
+  Download --> Inspect["Hash + first lines review"]
+  Inspect --> Gate{"Human approval and no-install policy cleared?"}
+  Gate -- "No" --> Plan["Write exact local next steps"]
+  Gate -- "Later" --> Local["Run in ai_sandbox non-admin shell"]
+  Plan --> Report["Hermes bootstrap report"]
+  Local --> Report
+```
+
+### Model Council Provider Routing
+
+```mermaid
+flowchart LR
+  Goal["User goal"] --> Router["Future model council router"]
+  Router --> Codex["Codex audit/verification"]
+  Router --> Claude["Claude Code implementation"]
+  Router --> ChatGPT["ChatGPT/Claude planning"]
+  Router --> Gemma["Gemma/Ollama local worker"]
+  Router --> Hermes["Hermes candidate layer"]
+  Hermes --> Truth["Provider support pending verification"]
+```
+
+### Token-Efficient Work Routing
+
+```mermaid
+flowchart TD
+  Repo["Repo context"] --> Compact["Compact memory snapshot"]
+  Compact --> Local["Gemma/Ollama cheap summary"]
+  Local --> Packet["Source intelligence packet"]
+  Packet --> Premium["Premium model only gets compressed context"]
+  Premium --> Audit["Codex verifies outputs"]
+```
+
+### Human Approval Gate Flow
+
+```mermaid
+flowchart TD
+  Request["Request"] --> Risk["Risk check"]
+  Risk --> Dry["Dry run / local report"]
+  Risk --> Approval["Human approval packet"]
+  Approval --> Token{"Approved token provided?"}
+  Token -- "No" --> Stop["Stop safely"]
+  Token -- "Yes" --> LocalAction["Approved local-only action"]
+```
+
+### Portfolio Repo Upgrade Flywheel
+
+```mermaid
+flowchart LR
+  Repos["NXP / SDA / Doodle / Ghoti"] --> Polish["README + images + topics"]
+  Polish --> Actions["Actions + tests"]
+  Actions --> Releases["Portfolio releases"]
+  Releases --> Issues["Real issues/discussions"]
+  Issues --> Commits["Consistent real commits"]
+  Commits --> Repos
+```
+
+### Safety Model
+
+```mermaid
+flowchart TD
+  Capability["New capability"] --> Local{"Local-only?"}
+  Local -- "Yes" --> DryRun["Dry-run/report first"]
+  Local -- "No" --> Block["Blocked until audited"]
+  DryRun --> Human{"Human approval?"}
+  Human -- "No" --> Stop["No action"]
+  Human -- "Yes" --> Logged["Logged local action"]
+```
+
+## Current Limitations
+
+- Hermes browser/Playwright is not claimed working.
+- Hermes provider support for Codex is pending / not verified.
+- Telegram setup requires manual token/chat setup from the user.
+- Graphify is not installed or working in this repo yet.
+- agent-browser and Browser Harness are not runtime-wired.
+- Gemma model availability is pending; Ollama exists but local_demo fallback is active when Gemma is missing.
+- Gemma/Ollama does not control the system.
+- This repo is public-facing but not open source.

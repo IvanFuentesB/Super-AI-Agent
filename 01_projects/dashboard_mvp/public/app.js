@@ -6403,3 +6403,731 @@ async function refreshLocalOrchestrator() {
 }
 
 refreshLocalOrchestrator();
+
+// ---------------------------------------------------------------------
+// N+4.4B Desktop Operator Action Center (client-side handlers)
+// ---------------------------------------------------------------------
+(function attachDesktopOperatorActionCenter() {
+  function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) {
+      el.textContent = value || "none";
+    }
+  }
+  function applyLatest(latest) {
+    if (!latest) return;
+    setText("doa-latest-handoff", latest.handoff_path);
+    setText("doa-latest-dry-run", latest.dry_run_plan_path);
+    setText("doa-latest-approval", latest.approval_record_path);
+    setText("doa-latest-execution", latest.execution_result_path);
+    setText("doa-latest-preview", latest.preview_path);
+  }
+  function applyStatus(status) {
+    if (!status) return;
+    setText("doa-default-mode", status.default_mode || "unknown");
+    if (status.model_adapters) {
+      const gemini = status.model_adapters.gemini_cli;
+      if (gemini) {
+        const txt = gemini.available
+          ? ("detected (status-only, quota=" + gemini.quota + ", treated_as_unlimited=" + gemini.treated_as_unlimited + ")")
+          : ("missing (quota=" + gemini.quota + ", treated_as_unlimited=" + gemini.treated_as_unlimited + ", live_prompt_executed=" + gemini.live_prompt_executed + ")");
+        setText("doa-gemini", txt);
+      }
+      const ldemo = status.model_adapters.local_demo;
+      if (ldemo) {
+        setText("doa-local-fallback", ldemo.available ? "available (local_demo)" : "unavailable");
+      }
+    }
+  }
+  async function callDoa(endpoint, method, body) {
+    const opts = { method: method, headers: { "Content-Type": "application/json" } };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(endpoint, opts);
+    return await res.json();
+  }
+  async function refreshDoaStatus() {
+    try {
+      const data = await callDoa("/api/desktop-operator/status", "GET");
+      applyStatus(data && data.status);
+      applyLatest(data && data.latest);
+    } catch (err) {
+      // silent fallback
+    }
+  }
+  function bind(id, fn) {
+    const el = document.getElementById(id);
+    if (el) { el.addEventListener("click", fn); }
+  }
+  bind("doa-create-handoff", async () => {
+    // Default goal/workflow; no live account, no posting
+    const body = {
+      goal: "Create a local video-style content package about AI tools for students",
+      workflow: "content_studio_demo",
+    };
+    const data = await callDoa("/api/desktop-operator/create-handoff", "POST", body);
+    applyLatest(data && data.latest);
+  });
+  bind("doa-dry-run", async () => {
+    const data = await callDoa("/api/desktop-operator/dry-run", "POST", {});
+    applyLatest(data && data.latest);
+  });
+  bind("doa-approve", async () => {
+    // We do NOT capture or display the approval token client-side. The server
+    // generates a local random token and stores only its SHA-256 hash.
+    const data = await callDoa("/api/desktop-operator/approve", "POST", {});
+    applyLatest(data && data.latest);
+  });
+  bind("doa-execute", async () => {
+    const data = await callDoa("/api/desktop-operator/execute-approved", "POST", {});
+    applyLatest(data && data.latest);
+  });
+  bind("doa-open-preview", async () => {
+    const latestRes = await callDoa("/api/desktop-operator/latest", "GET");
+    const previewPath = latestRes && latestRes.latest && latestRes.latest.preview_path;
+    if (!previewPath) {
+      // No preview yet; do not navigate anywhere.
+      return;
+    }
+    // Validate locally before requesting preview metadata. We do NOT open
+    // arbitrary URLs and do NOT click/type. Just request the safe preview
+    // metadata endpoint; the user can choose to follow the link manually.
+    const enc = encodeURIComponent(previewPath);
+    const meta = await callDoa("/api/desktop-operator/preview?path=" + enc, "GET");
+    if (meta && meta.ok && meta.previewPath) {
+      setText("doa-latest-preview", meta.previewPath);
+    }
+  });
+  // Initial render
+  if (document.getElementById("desktop-operator-action-center")) {
+    refreshDoaStatus();
+  }
+})();
+
+// ---------------------------------------------------------------------
+// N+4.4C Desktop Operator Recipe Runner (client-side handlers)
+// ---------------------------------------------------------------------
+(function attachDesktopOperatorRecipeRunner() {
+  function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) {
+      el.textContent = value || "none";
+    }
+  }
+  function applyRecipeLatest(latest) {
+    if (!latest) return;
+    setText("dorr-latest-recipe", latest.recipe_id);
+    setText("dorr-latest-handoff", latest.handoff_path);
+    setText("dorr-latest-dry-run", latest.dry_run_plan_path);
+    setText("dorr-latest-approval", latest.approval_record_path);
+    setText("dorr-latest-execution", latest.execution_result_path);
+    setText("dorr-latest-preview", latest.preview_path);
+    setText("dorr-latest-gemini-handoff", latest.handoff_export_path);
+  }
+  async function callDorr(endpoint, method, body) {
+    const opts = { method: method, headers: { "Content-Type": "application/json" } };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(endpoint, opts);
+    return await res.json();
+  }
+  async function refreshDorrLatest() {
+    try {
+      const data = await callDorr("/api/desktop-operator/latest-recipe", "GET");
+      applyRecipeLatest(data && data.latest);
+    } catch (err) { /* silent */ }
+  }
+  function selectedRecipeId() {
+    const el = document.getElementById("dorr-recipe-select");
+    return el ? el.value : null;
+  }
+  function bind(id, fn) {
+    const el = document.getElementById(id);
+    if (el) { el.addEventListener("click", fn); }
+  }
+  bind("dorr-create-handoff", async () => {
+    const recipeId = selectedRecipeId();
+    if (!recipeId) return;
+    const data = await callDorr("/api/desktop-operator/create-recipe-handoff", "POST", { recipe_id: recipeId });
+    applyRecipeLatest(data && data.latest);
+  });
+  bind("dorr-dry-run", async () => {
+    const data = await callDorr("/api/desktop-operator/run-recipe-dry-run", "POST", {});
+    applyRecipeLatest(data && data.latest);
+  });
+  bind("dorr-approve", async () => {
+    // The client does NOT collect or store the approval token; the server
+    // generates a local random token and stores only its SHA-256 hash.
+    const data = await callDorr("/api/desktop-operator/approve-recipe", "POST", {});
+    applyRecipeLatest(data && data.latest);
+  });
+  bind("dorr-execute", async () => {
+    const data = await callDorr("/api/desktop-operator/execute-approved-recipe", "POST", {});
+    applyRecipeLatest(data && data.latest);
+  });
+  bind("dorr-open-preview", async () => {
+    const latestRes = await callDorr("/api/desktop-operator/latest-recipe", "GET");
+    const previewPath = latestRes && latestRes.latest && latestRes.latest.preview_path;
+    if (!previewPath) return;
+    const enc = encodeURIComponent(previewPath);
+    const meta = await callDorr("/api/desktop-operator/preview?path=" + enc, "GET");
+    if (meta && meta.ok && meta.previewPath) {
+      setText("dorr-latest-preview", meta.previewPath);
+    }
+  });
+  // Initial render
+  if (document.getElementById("desktop-operator-recipe-runner")) {
+    refreshDorrLatest();
+  }
+})();
+
+// ─── Parallel Agent Relay Truth (N+4.5A) ─────────────────────────────────────
+(function () {
+  const RELAY_API = "/api/agent-relay/status";
+
+  function relayCard(data) {
+    if (!data || !data.ok) {
+      return `<p class="empty-state">Parallel Agent Relay status unavailable.</p>`;
+    }
+    return `
+      <h3 class="card-title">Parallel Agent Relay Truth</h3>
+      <ul class="status-list">
+        <li><strong>Mode:</strong> ${data.relay_mode || "copy_paste_only"}</li>
+        <li><strong>Autonomous launch:</strong> ${data.autonomous_launch ? "YES ⚠️" : "NO — human approval required"}</li>
+        <li><strong>Claude lane:</strong> /ultraplan + /goal — max planning, Sonnet high execution</li>
+        <li><strong>Codex lane:</strong> extra high effort, poll remote refs (ls-remote), no /goal</li>
+        <li><strong>Pairs generated:</strong> ${data.pair_count ?? 0}</li>
+        <li><strong>Future-compatible:</strong> AEX, Claude Cowork, The Agency, agent-skills-eval</li>
+        <li><strong>Relay version:</strong> ${data.relay_version || "—"}</li>
+      </ul>`;
+  }
+
+  async function refreshRelayStatus() {
+    const card = document.getElementById("agent-relay-card");
+    if (!card) return;
+    try {
+      const res = await fetch(RELAY_API);
+      const data = await res.json();
+      card.innerHTML = relayCard(data);
+    } catch (_) {
+      card.innerHTML = `<p class="empty-state">Could not load relay status.</p>`;
+    }
+  }
+
+  if (document.getElementById("section-agent-relay")) {
+    refreshRelayStatus();
+  }
+})();
+
+// ---------------------------------------------------------------------
+// N+4.6A Ghoti Product Control Center (client-side handlers)
+// ---------------------------------------------------------------------
+(function attachProductControlCenter() {
+  function esc(value) {
+    return escapeHtml(String(value == null ? "" : value));
+  }
+  function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value || "none";
+  }
+  function setActionResult(text) {
+    const el = document.getElementById("product-action-result");
+    if (!el) return;
+    el.innerHTML = "";
+    const p = document.createElement("p");
+    p.textContent = text;
+    el.appendChild(p);
+  }
+  async function callProduct(endpoint, method, body) {
+    const opts = { method: method, headers: { "Content-Type": "application/json" } };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(endpoint, opts);
+    return await res.json();
+  }
+  function renderCapabilities(data) {
+    const list = document.getElementById("product-control-capabilities");
+    if (!list) return;
+    if (!data || !data.ok || !Array.isArray(data.capabilities)) {
+      list.innerHTML = '<li class="empty-state">Product status unavailable.</li>';
+      return;
+    }
+    const rows = data.capabilities.map(function (c) {
+      const state = c.available ? "available" : "unavailable";
+      const mode = c.mode ? " (" + esc(c.mode) + ")" : "";
+      return "<li><strong>" + esc(c.label) + ":</strong> " + state + mode +
+        " — " + esc(c.how_to_run) + "</li>";
+    });
+    rows.push("<li><strong>Mode:</strong> local_only=" + esc(data.local_only) +
+      ", live_posting=" + esc(data.live_posting) +
+      ", live_account_actions=" + esc(data.live_account_actions) +
+      ", external_tools=" + esc(data.external_tools) +
+      ", approval_gates=" + esc(data.approval_gates) + "</li>");
+    list.innerHTML = rows.join("");
+  }
+  function renderLatest(data) {
+    const latest = data && data.latest ? data.latest : {};
+    setText("product-latest-content-studio",
+      latest.content_studio_run ? latest.content_studio_run.path : "none");
+    setText("product-latest-relay-pair",
+      latest.relay_pair ? latest.relay_pair.path : "none");
+    setText("product-latest-desktop-operator",
+      latest.desktop_operator_run
+        ? (latest.desktop_operator_run.execution_result_path ||
+           latest.desktop_operator_run.handoff_path || "none")
+        : "none");
+    setText("product-latest-preview", latest.preview_path || "none");
+  }
+  async function refreshProductStatus() {
+    try {
+      renderCapabilities(await callProduct("/api/product-control/status", "GET"));
+    } catch (err) {
+      const list = document.getElementById("product-control-capabilities");
+      if (list) list.innerHTML = '<li class="empty-state">Could not load product status.</li>';
+    }
+    try {
+      renderLatest(await callProduct("/api/product-control/latest", "GET"));
+    } catch (err) { /* silent — latest is best-effort */ }
+  }
+  function bind(id, fn) {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("click", fn);
+  }
+  bind("product-refresh-btn", async function () {
+    setActionResult("Refreshing product status…");
+    await refreshProductStatus();
+    setActionResult("Product status refreshed.");
+  });
+  bind("product-run-content-studio-btn", async function () {
+    setActionResult("Running Local Content Studio (dry-run only — no live posting, no external API)…");
+    try {
+      const data = await callProduct("/api/product-control/run-content-studio-demo", "POST", {});
+      if (data && data.ok) {
+        setActionResult("Local Content Studio dry-run complete (mode=" + (data.mode || "dry_run") +
+          "). No live posting, no external API.");
+      } else {
+        setActionResult("Local Content Studio reported unavailable: " +
+          ((data && data.error) || "unknown") + " (truthful report, no crash).");
+      }
+      await refreshProductStatus();
+    } catch (err) {
+      setActionResult("Local Content Studio could not run: " + (err && err.message));
+    }
+  });
+  bind("product-create-relay-pair-btn", async function () {
+    setActionResult("Generating Claude + Codex prompt pair (copy-paste only — no agent launch)…");
+    try {
+      const data = await callProduct("/api/product-control/create-relay-pair", "POST", {});
+      if (data && data.ok) {
+        setActionResult("Prompt pair generated at " + (data.pair_dir || "(see latest)") +
+          ". Copy-paste each prompt manually — nothing was launched automatically.");
+      } else {
+        setActionResult("Relay pair generation reported unavailable: " +
+          ((data && data.error) || "unknown"));
+      }
+      await refreshProductStatus();
+    } catch (err) {
+      setActionResult("Relay pair could not be generated: " + (err && err.message));
+    }
+  });
+  bind("product-open-preview-btn", async function () {
+    try {
+      const data = await callProduct("/api/product-control/latest", "GET");
+      const preview = data && data.latest ? data.latest.preview_path : null;
+      if (preview) {
+        setActionResult("Latest preview is a local repo file: " + preview +
+          ". No external browser was opened automatically.");
+      } else {
+        setActionResult("No local preview available yet. Run a content studio or desktop operator workflow first.");
+      }
+      renderLatest(data);
+    } catch (err) {
+      setActionResult("Could not read latest preview: " + (err && err.message));
+    }
+  });
+  if (document.getElementById("section-product-control")) {
+    refreshProductStatus();
+  }
+})();
+
+// ---------------------------------------------------------------------
+// N+5.5A Local Memory / Context Pack (client-side handlers)
+// ---------------------------------------------------------------------
+(function attachLocalMemoryContextPack() {
+  function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value || "none";
+  }
+  function setResult(text) {
+    const el = document.getElementById("context-pack-action-result");
+    if (!el) return;
+    el.innerHTML = "";
+    const p = document.createElement("p");
+    p.textContent = text;
+    el.appendChild(p);
+  }
+  async function callContextPack(endpoint, method) {
+    const res = await fetch(endpoint, { method: method || "GET", headers: { "Content-Type": "application/json" } });
+    return await res.json();
+  }
+  function renderStatus(data) {
+    if (!data || !data.ok) {
+      setText("context-pack-generated-at", "unavailable");
+      setText("context-pack-status-short", (data && data.error) || "Context pack status unavailable.");
+      return;
+    }
+    setText("context-pack-generated-at", data.generated_at || "not generated yet");
+    setText("context-pack-main-hash", data.main_hash || "origin/main pending");
+    setText("context-pack-status-short", data.status_short || "No generated context pack yet.");
+    setText("context-pack-latest-path", data.latest_context_pack_path || (data.paths && data.paths["ghoti_current_context_pack.md"]));
+    setText("context-pack-prompt-path", data.copy_paste_prompt_path || (data.paths && data.paths["ghoti_codex_next_prompt.md"]));
+  }
+  async function refreshContextPackStatus() {
+    try {
+      renderStatus(await callContextPack("/api/local-memory-context-pack/status", "GET"));
+    } catch (err) {
+      setText("context-pack-status-short", "Could not load context pack status.");
+    }
+  }
+  function bind(id, fn) {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("click", fn);
+  }
+  bind("context-pack-refresh-btn", async function () {
+    setResult("Refreshing context pack status...");
+    await refreshContextPackStatus();
+    setResult("Context pack status refreshed.");
+  });
+  bind("context-pack-build-btn", async function () {
+    setResult("Generating repo-local context pack files...");
+    try {
+      const data = await callContextPack("/api/local-memory-context-pack/build", "POST");
+      renderStatus(data);
+      setResult(data && data.ok
+        ? "Context pack generated. Copy-paste prompt path is shown above."
+        : "Context pack generation reported unavailable: " + ((data && data.error) || "unknown"));
+    } catch (err) {
+      setResult("Context pack generation failed: " + (err && err.message));
+    }
+  });
+  if (document.getElementById("ghoti-context-pack-card")) {
+    refreshContextPackStatus();
+  }
+})();
+
+// ---------------------------------------------------------------------
+// N+5.6A Local Model / Easy Worker Lane (client-side handlers)
+// ---------------------------------------------------------------------
+(function attachLocalModelEasyWorkerLane() {
+  function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value || "none";
+  }
+  function setResult(text) {
+    const el = document.getElementById("local-worker-action-result");
+    if (!el) return;
+    el.innerHTML = "";
+    const p = document.createElement("p");
+    p.textContent = text;
+    el.appendChild(p);
+  }
+  async function callLocalWorker(endpoint, method) {
+    const res = await fetch(endpoint, { method: method || "GET", headers: { "Content-Type": "application/json" } });
+    return await res.json();
+  }
+  function renderStatus(data) {
+    if (!data || !data.ok) {
+      setText("local-worker-status-line", (data && data.error) || "Local worker status unavailable.");
+      setText("local-worker-ollama-status", "unavailable");
+      setText("local-worker-gemma-status", "unavailable");
+      setText("local-worker-active-mode", "unknown");
+      setText("local-worker-readiness", "unknown");
+      return;
+    }
+    const ollama = data.ollama || {};
+    const gemma = data.gemma || {};
+    setText("local-worker-ollama-status", ollama.available ? "installed" : "not detected");
+    setText("local-worker-ollama-version", ollama.version || "unknown");
+    setText("local-worker-gemma-status", gemma.installed ? ("installed: " + (gemma.model_name || "gemma")) : "missing, local_demo fallback active");
+    setText("local-worker-active-mode", data.active_mode || "local_demo");
+    setText("local-worker-readiness", String(data.readiness_percent || 0) + "%");
+    setText("local-worker-status-line", data.status_line || "Local worker status loaded.");
+    const paths = data.output_paths || data.paths || {};
+    setText("local-worker-output-path", paths["local_worker_status.md"] || "14_context/local_worker/generated/");
+  }
+  async function refreshLocalWorkerStatus() {
+    try {
+      renderStatus(await callLocalWorker("/api/local-model-worker/status", "GET"));
+    } catch (err) {
+      setText("local-worker-status-line", "Could not load local worker status.");
+    }
+  }
+  function bind(id, fn) {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("click", fn);
+  }
+  bind("local-worker-refresh-btn", async function () {
+    setResult("Refreshing Local Model / Easy Worker Lane status...");
+    await refreshLocalWorkerStatus();
+    setResult("Local worker status refreshed.");
+  });
+  bind("local-worker-doctor-btn", async function () {
+    setResult("Running local worker doctor...");
+    try {
+      const data = await callLocalWorker("/api/local-model-worker/doctor", "GET");
+      renderStatus(data);
+      const checks = Array.isArray(data && data.checks) ? data.checks.length : 0;
+      setResult(data && data.ok ? ("Doctor complete: " + checks + " checks. No live APIs, no auto-downloads.") :
+        "Doctor reported unavailable: " + ((data && data.error) || "unknown"));
+    } catch (err) {
+      setResult("Local worker doctor failed: " + (err && err.message));
+    }
+  });
+  bind("local-worker-demo-btn", async function () {
+    setResult("Writing deterministic local worker demo outputs...");
+    try {
+      const data = await callLocalWorker("/api/local-model-worker/write-demo-output", "POST");
+      renderStatus(data);
+      setResult(data && data.ok
+        ? "Local worker demo outputs written under 14_context/local_worker/generated/."
+        : "Local worker demo reported unavailable: " + ((data && data.error) || "unknown"));
+    } catch (err) {
+      setResult("Local worker demo failed: " + (err && err.message));
+    }
+  });
+  if (document.getElementById("ghoti-local-model-worker-card")) {
+    refreshLocalWorkerStatus();
+  }
+})();
+
+// ---------------------------------------------------------------------
+// N+4.8A External Tool Sandbox Truth (client-side handler, read-only)
+// ---------------------------------------------------------------------
+(function attachExternalToolSandbox() {
+  function renderCloneStatus(data) {
+    const el = document.getElementById("external-tool-sandbox-clone-status");
+    if (!el) return;
+    if (!data || !data.ok) {
+      el.textContent = "External Tool Sandbox status unavailable.";
+      return;
+    }
+    const repos = Array.isArray(data.repos) ? data.repos : [];
+    if (repos.length === 0) {
+      el.textContent = "no repos synced yet — static scan only, no install, no runtime wiring";
+      return;
+    }
+    const cloned = repos.filter(function (r) { return r.clone_status === "cloned"; }).length;
+    const parts = repos.map(function (r) {
+      return (r.name || r.slug || "?") + ": " + (r.clone_status || "unknown");
+    });
+    el.textContent = cloned + "/" + repos.length + " cloned — " + parts.join("; ") +
+      " (static scan only — no install, no runtime wiring, no desktop control, no live APIs)";
+  }
+  async function refreshExternalToolSandbox() {
+    const el = document.getElementById("external-tool-sandbox-clone-status");
+    if (!el) return;
+    try {
+      const res = await fetch("/api/external-tool-sandbox/status");
+      renderCloneStatus(await res.json());
+    } catch (err) {
+      el.textContent = "Could not load External Tool Sandbox status.";
+    }
+  }
+  if (document.getElementById("external-tool-sandbox-truth")) {
+    refreshExternalToolSandbox();
+  }
+})();
+
+// ---------------------------------------------------------------------
+// N+4.9A Approved Adapter Execution Truth (client-side handlers)
+// ---------------------------------------------------------------------
+(function attachApprovedAdapterExecution() {
+  function setLatest(text) {
+    const el = document.getElementById("adapter-exec-latest");
+    if (el) el.textContent = text || "none";
+  }
+  function setResult(text) {
+    const host = document.getElementById("adapter-exec-status");
+    if (!host) return;
+    let res = document.getElementById("adapter-exec-result");
+    if (!res) {
+      res = document.createElement("p");
+      res.id = "adapter-exec-result";
+      host.appendChild(res);
+    }
+    res.textContent = text;
+  }
+  async function call(endpoint, method) {
+    const res = await fetch(endpoint, {
+      method: method, headers: { "Content-Type": "application/json" },
+    });
+    return await res.json();
+  }
+  async function refreshLatest() {
+    try {
+      const data = await call("/api/adapter-execution/latest", "GET");
+      const latest = data && data.latest;
+      if (latest) {
+        setLatest(latest.run_id + " — score " + latest.evaluation_score +
+          "/100 (" + latest.evaluation_grade + "), " +
+          (latest.artifacts ? latest.artifacts.length : 0) + " local artifacts");
+      } else {
+        setLatest("none yet — run the safe adapter demo");
+      }
+    } catch (err) {
+      setLatest("unavailable");
+    }
+  }
+  function bind(id, fn) {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("click", fn);
+  }
+  bind("adapter-exec-refresh-btn", async function () {
+    setResult("Refreshing adapter status…");
+    try {
+      const data = await call("/api/adapter-execution/status", "GET");
+      setResult("Adapter runner: " + (data && data.ok ? "ok" : "unavailable") +
+        " — default adapter " + ((data && data.default_adapter) || "?") +
+        ", external_code_executed=" + String(data && data.external_code_executed));
+    } catch (err) {
+      setResult("Could not load adapter status.");
+    }
+    await refreshLatest();
+  });
+  bind("adapter-exec-list-btn", async function () {
+    setResult("Listing adapters…");
+    try {
+      const data = await call("/api/adapter-execution/adapters", "GET");
+      const names = ((data && data.adapters) || []).map(function (a) {
+        return a.key + (a.execution_approved ? " (approved)" : " (not approved)");
+      });
+      setResult("Adapters: " + names.join("; "));
+    } catch (err) {
+      setResult("Could not list adapters.");
+    }
+  });
+  bind("adapter-exec-create-approval-btn", async function () {
+    setResult("Creating approval…");
+    try {
+      const data = await call("/api/adapter-execution/create-approval", "POST");
+      if (data && data.ok) {
+        // The one-time token is never rendered to the page or returned by GET.
+        setResult("Approval created: " + data.approval_id +
+          ". A one-time approval token was issued — use it from the CLI for a non-dry-run.");
+      } else {
+        setResult("Approval creation unavailable: " + ((data && data.error) || "unknown"));
+      }
+    } catch (err) {
+      setResult("Could not create approval.");
+    }
+  });
+  bind("adapter-exec-run-demo-btn", async function () {
+    setResult("Running safe adapter demo (dry run — no approval token, no external code)…");
+    try {
+      const data = await call("/api/adapter-execution/run-demo", "POST");
+      if (data && data.ok) {
+        setResult("Dry-run demo complete: " + data.run_id + " — score " +
+          data.evaluation_score + "/100 (" + data.evaluation_grade + "); " +
+          ((data.artifacts || []).length) + " local artifacts written.");
+      } else {
+        setResult("Demo run unavailable: " + ((data && data.error) || "unknown"));
+      }
+      await refreshLatest();
+    } catch (err) {
+      setResult("Could not run adapter demo.");
+    }
+  });
+  if (document.getElementById("approved-adapter-execution-truth")) {
+    refreshLatest();
+  }
+})();
+
+// ---------------------------------------------------------------------
+// N+5.0A UI-TARS Observation Truth (client-side handlers, observation-only)
+// ---------------------------------------------------------------------
+(function attachUiTarsObservation() {
+  function setLatest(text) {
+    const el = document.getElementById("ui-tars-obs-latest");
+    if (el) el.textContent = text || "none";
+  }
+  function setResult(text) {
+    const host = document.getElementById("ui-tars-obs-status");
+    if (!host) return;
+    let res = document.getElementById("ui-tars-obs-result");
+    if (!res) {
+      res = document.createElement("p");
+      res.id = "ui-tars-obs-result";
+      host.appendChild(res);
+    }
+    res.textContent = text;
+  }
+  async function call(endpoint, method) {
+    const res = await fetch(endpoint, {
+      method: method, headers: { "Content-Type": "application/json" },
+    });
+    return await res.json();
+  }
+  async function refreshLatest() {
+    try {
+      const data = await call("/api/ui-tars-observation/latest", "GET");
+      const latest = data && data.latest;
+      if (latest) {
+        setLatest(latest.run_id + " — " + latest.mode + ", screenshot_captured=" +
+          String(latest.screenshot_captured) + ", " +
+          (latest.artifacts ? latest.artifacts.length : 0) + " local artifacts");
+      } else {
+        setLatest("none yet — run a dry-run observation");
+      }
+    } catch (err) {
+      setLatest("unavailable");
+    }
+  }
+  function bind(id, fn) {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("click", fn);
+  }
+  bind("ui-tars-obs-refresh-btn", async function () {
+    setResult("Refreshing observation status…");
+    try {
+      const data = await call("/api/ui-tars-observation/status", "GET");
+      setResult("Observation adapter: " + (data && data.ok ? "ok" : "unavailable") +
+        " — mode " + ((data && data.mode) || "?") +
+        ", ui_tars_runtime_started=" + String(data && data.ui_tars_runtime_started) +
+        ", desktop_control_enabled=" + String(data && data.desktop_control_enabled));
+    } catch (err) {
+      setResult("Could not load observation status.");
+    }
+    await refreshLatest();
+  });
+  bind("ui-tars-obs-create-approval-btn", async function () {
+    setResult("Creating approval…");
+    try {
+      const data = await call("/api/ui-tars-observation/create-approval", "POST");
+      if (data && data.ok) {
+        // The one-time token is never rendered to the page or returned by GET.
+        setResult("Approval created: " + data.approval_id +
+          ". A one-time token was issued — use it from the CLI for an approved screen capture.");
+      } else {
+        setResult("Approval creation unavailable: " + ((data && data.error) || "unknown"));
+      }
+    } catch (err) {
+      setResult("Could not create approval.");
+    }
+  });
+  bind("ui-tars-obs-dry-run-btn", async function () {
+    setResult("Running dry-run observation (no screenshot, no desktop control, no UI-TARS)…");
+    try {
+      const data = await call("/api/ui-tars-observation/dry-run", "POST");
+      if (data && data.ok) {
+        setResult("Dry-run observation complete: " + data.run_id + " — " +
+          ((data.artifacts || []).length) + " local artifacts; screenshot_captured=" +
+          String(data.screenshot_captured) + ".");
+      } else {
+        setResult("Observation run unavailable: " + ((data && data.error) || "unknown"));
+      }
+      await refreshLatest();
+    } catch (err) {
+      setResult("Could not run observation.");
+    }
+  });
+  if (document.getElementById("ui-tars-observation-truth")) {
+    refreshLatest();
+  }
+})();

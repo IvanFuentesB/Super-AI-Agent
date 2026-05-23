@@ -1,0 +1,16 @@
+{
+  "adapter": "ui_tars_observation_only",
+  "mode": "dry_run",
+  "dry_run": true,
+  "local_only": true,
+  "capture_requested": false,
+  "screenshot_captured": false,
+  "external_repo_code_executed": false,
+  "installs_performed": false,
+  "ui_tars_runtime_started": false,
+  "desktop_control_enabled": false,
+  "click_enabled": false,
+  "type_enabled": false,
+  "live_api_used": false,
+  "generated_at": "20260518T104524Z"
+}

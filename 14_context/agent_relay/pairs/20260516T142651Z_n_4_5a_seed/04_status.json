@@ -1,0 +1,10 @@
+{
+  "pair_id": "20260516T142651Z_n_4_5a_seed",
+  "status": "ready",
+  "created_at": "20260516T142651Z",
+  "claude_lane": "pending_human_paste",
+  "codex_lane": "pending_human_paste",
+  "implementation_branch": "feat/ghoti-agent-claude-n4-5a-parallel-agent-relay-command-center",
+  "audit_branch": "audit/ghoti-agent-codex-n4-5a-parallel-agent-relay-command-center-real-audit-3",
+  "codex_effort": "extra-high"
+}

@@ -1,0 +1,38 @@
+{
+  "pair_id": "20260516T142651Z_n_4_5a_seed",
+  "milestone": "N+4.5A Seed",
+  "title": "Parallel Agent Relay Seed Pair",
+  "created_at": "20260516T142651Z",
+  "relay_version": "1.0.0",
+  "lanes": {
+    "claude": {
+      "role": "implementation",
+      "branch": "feat/ghoti-agent-claude-n4-5a-parallel-agent-relay-command-center",
+      "prompt_path": "14_context/agent_relay/pairs/20260516T142651Z_n_4_5a_seed/01_claude_code_prompt.md",
+      "model": "Claude Sonnet 4.6",
+      "effort": "high",
+      "planning": "/ultraplan max",
+      "execution": "/goal Sonnet high",
+      "autonomous_launch": false
+    },
+    "codex": {
+      "role": "audit",
+      "branch": "audit/ghoti-agent-codex-n4-5a-parallel-agent-relay-command-center-real-audit-3",
+      "prompt_path": "14_context/agent_relay/pairs/20260516T142651Z_n_4_5a_seed/02_codex_audit_prompt.md",
+      "effort": "extra-high",
+      "planning": "none (audit only, no /ultraplan, no /goal)",
+      "execution": "poll remote refs (extra-high), audit once branch appears",
+      "autonomous_launch": false
+    }
+  },
+  "relay_mode": "copy_paste_only",
+  "human_approval_required": true,
+  "autonomous_launch": false,
+  "external_coordinator_repos": "planning_only",
+  "future_compatible": {
+    "agent_exchange_aex": true,
+    "claude_cowork": true,
+    "the_agency": true,
+    "agent_skills_eval": true
+  }
+}

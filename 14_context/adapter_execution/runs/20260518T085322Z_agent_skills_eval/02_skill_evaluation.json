@@ -1,0 +1,71 @@
+{
+  "adapter": "agent_skills_eval",
+  "evaluator": "ghoti_local_skill_checklist",
+  "skill_file": "00_demo_skill.md",
+  "dry_run": true,
+  "external_code_executed": false,
+  "score": 80,
+  "grade": "adequate",
+  "dimensions": [
+    {
+      "dimension": "clarity",
+      "score": 10,
+      "max": 10,
+      "status": "pass"
+    },
+    {
+      "dimension": "safety_boundaries",
+      "score": 0,
+      "max": 10,
+      "status": "fail"
+    },
+    {
+      "dimension": "allowed_tools",
+      "score": 6,
+      "max": 10,
+      "status": "partial"
+    },
+    {
+      "dimension": "forbidden_actions",
+      "score": 6,
+      "max": 10,
+      "status": "partial"
+    },
+    {
+      "dimension": "approval_gates",
+      "score": 10,
+      "max": 10,
+      "status": "pass"
+    },
+    {
+      "dimension": "testability",
+      "score": 10,
+      "max": 10,
+      "status": "pass"
+    },
+    {
+      "dimension": "expected_outputs",
+      "score": 10,
+      "max": 10,
+      "status": "pass"
+    },
+    {
+      "dimension": "rollback_cleanup",
+      "score": 10,
+      "max": 10,
+      "status": "pass"
+    },
+    {
+      "dimension": "prompt_quality",
+      "score": 10,
+      "max": 10,
+      "status": "pass"
+    }
+  ],
+  "recommendations": [
+    "Define explicit safety boundaries and out-of-scope behavior.",
+    "List the exact tools the skill is allowed to use.",
+    "List forbidden actions the skill must never take."
+  ],
+  "generated_at": "20260518T085322Z"
+}

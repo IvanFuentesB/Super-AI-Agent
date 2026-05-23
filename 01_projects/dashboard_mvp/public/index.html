@@ -140,6 +140,187 @@
                 </div>
                 <div id="overview-dashboard-slot" class="slot-root"></div>
               </section>
+              <section class="console-card console-card-span-2" id="ghoti-daily-operator-card">
+                <div class="console-card-header">
+                  <div>
+                    <h2>Start Here / Daily Operator</h2>
+                    <p>Launch dashboard -> Check status truth -> Run smoke/demo -> Review report -> Stop dashboard.</p>
+                  </div>
+                </div>
+                <ul class="card-list">
+                  <li><strong>Launcher command:</strong> <code>python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard</code></li>
+                  <li><strong>Dashboard URL:</strong> <code>http://127.0.0.1:3210</code></li>
+                  <li><strong>Status check:</strong> <code>python 03_scripts/ghoti_product_launcher.py --status --json</code></li>
+                  <li><strong>Smoke test:</strong> <code>python 03_scripts/ghoti_product_launcher.py --smoke --json</code></li>
+                  <li><strong>Stop safely:</strong> <code>python 03_scripts/ghoti_product_launcher.py --stop-dashboard</code> stops only the recorded launcher PID.</li>
+                  <li><strong>Context pack:</strong> <code>python 03_scripts/ghoti_product_launcher.py --context-pack --json</code></li>
+                  <li><strong>Latest reports:</strong> see <code>14_context/</code>, especially N+5 audit and merge reports.</li>
+                </ul>
+              </section>
+              <section class="console-card console-card-span-2" id="ghoti-status-truth-card">
+                <div class="console-card-header">
+                  <div>
+                    <h2>Status Truth</h2>
+                    <p>Main baseline and local dependency truth. These are status labels, not hidden automation.</p>
+                  </div>
+                </div>
+                <ul class="card-list">
+                  <li><strong>Main baseline:</strong> N+5.5B clean/local-memory-context-pack on main; origin/main = 23ace6dedb7acdfd19b148988be35e121f140070.</li>
+                  <li><strong>Hermes WSL:</strong> installed at <code>/home/ai_sandbox/.local/bin/hermes</code>; Hermes Agent v0.14.0.</li>
+                  <li><strong>Hermes browser/Playwright:</strong> browser/Playwright: degraded/not claimed unless separately verified.</li>
+                  <li><strong>Hermes Codex provider:</strong> Codex provider in Hermes: pending/not proven.</li>
+                  <li><strong>Telegram:</strong> Telegram: manual later/no token. <strong>VPS:</strong> No VPS.</li>
+                  <li><strong>Local models:</strong> Ollama available v0.24.0; Gemma model missing/local_demo fallback active.</li>
+                  <li><strong>Easy worker:</strong> Local Model / Easy Worker Lane reports readiness percentage, uses existing Ollama/Gemma only when installed, and otherwise keeps local_demo fallback active.</li>
+                  <li><strong>Memory:</strong> Obsidian/local memory present; compact markdown stays repo-local.</li>
+                  <li><strong>Ruflo:</strong> source-missing/status-only unless a later audited milestone changes it.</li>
+                  <li><strong>Graphify:</strong> roadmap/token-plan only; not installed or wired.</li>
+                  <li><strong>UI-TARS:</strong> observation-only; no click/type/control.</li>
+                  <li><strong>Adapters and sandbox:</strong> approval-gated/local-only adapter runner; external sandbox static inspection only.</li>
+                  <li><strong>Public audit:</strong> Public audit: 0 blockers / 7 warnings human review. Readiness score: 100.</li>
+                </ul>
+              </section>
+              <section class="console-card console-card-span-2" id="ghoti-context-pack-card">
+                <div class="console-card-header">
+                  <div>
+                    <h2>Local Memory / Context Pack</h2>
+                    <p>Compact repo-local handoff files for Codex, ChatGPT, Claude, and Obsidian. No live providers or tokens.</p>
+                  </div>
+                </div>
+                <ul class="card-list">
+                  <li><strong>Generate:</strong> <code>python 03_scripts/ghoti_context_pack_builder.py --write --json</code></li>
+                  <li><strong>Launcher shortcut:</strong> <code>python 03_scripts/ghoti_product_launcher.py --context-pack --json</code></li>
+                  <li><strong>Latest pack:</strong> <code id="context-pack-latest-path">14_context/compact_memory/generated/ghoti_current_context_pack.md</code></li>
+                  <li><strong>Copy-paste prompt:</strong> <code id="context-pack-prompt-path">14_context/compact_memory/generated/ghoti_codex_next_prompt.md</code></li>
+                  <li><strong>Generated at:</strong> <code id="context-pack-generated-at">loading...</code></li>
+                  <li><strong>Main hash:</strong> <code id="context-pack-main-hash">loading...</code></li>
+                  <li><strong>Status:</strong> <span id="context-pack-status-short">Loading context pack status...</span></li>
+                </ul>
+                <div class="card-actions">
+                  <button id="context-pack-refresh-btn" type="button">Refresh Context Pack Status</button>
+                  <button id="context-pack-build-btn" type="button">Generate Context Pack</button>
+                </div>
+                <div id="context-pack-action-result" class="card-status">
+                  <p class="empty-state">No context pack action run yet.</p>
+                </div>
+              </section>
+              <section class="console-card console-card-span-2" id="ghoti-local-model-worker-card">
+                <div class="console-card-header">
+                  <div>
+                    <h2>Local Model / Easy Worker Lane</h2>
+                    <p>Ollama/Gemma setup truth plus deterministic local_demo fallback tasks. No live APIs and no auto-downloads.</p>
+                  </div>
+                </div>
+                <ul class="card-list">
+                  <li><strong>Status command:</strong> <code>python 03_scripts/ghoti_product_launcher.py --local-worker-status --json</code></li>
+                  <li><strong>Demo command:</strong> <code>python 03_scripts/ghoti_product_launcher.py --local-worker-demo --json</code></li>
+                  <li><strong>Direct doctor:</strong> <code>python 03_scripts/local_model_worker_lane.py --doctor --json</code></li>
+                  <li><strong>Ollama:</strong> <span id="local-worker-ollama-status">loading...</span> <code id="local-worker-ollama-version">unknown</code></li>
+                  <li><strong>Gemma:</strong> <span id="local-worker-gemma-status">loading...</span></li>
+                  <li><strong>Active mode:</strong> <code id="local-worker-active-mode">loading...</code></li>
+                  <li><strong>Local worker readiness percentage:</strong> <code id="local-worker-readiness">loading...</code></li>
+                  <li><strong>Safe demo tasks:</strong> summarize latest Ghoti report, compress status into one paragraph, classify next task, generate Codex next prompt.</li>
+                  <li><strong>Generated outputs:</strong> <code id="local-worker-output-path">14_context/local_worker/generated/</code></li>
+                  <li><strong>Manual check:</strong> <code>ollama list</code>. <strong>Manual Gemma install later:</strong> <code>ollama pull gemma3:4b</code>; Ghoti does not run this automatically.</li>
+                  <li><strong>Safety:</strong> local-only, no live APIs, no auto-downloads, no posting, no account actions.</li>
+                  <li><strong>Status:</strong> <span id="local-worker-status-line">Loading local worker status...</span></li>
+                </ul>
+                <div class="card-actions">
+                  <button id="local-worker-refresh-btn" type="button">Refresh Local Worker Status</button>
+                  <button id="local-worker-doctor-btn" type="button">Run Local Worker Doctor</button>
+                  <button id="local-worker-demo-btn" type="button">Write Demo Outputs</button>
+                </div>
+                <div id="local-worker-action-result" class="card-status">
+                  <p class="empty-state">No local worker action run yet.</p>
+                </div>
+              </section>
+              <section class="console-card" id="ghoti-works-now-card">
+                <div class="console-card-header">
+                  <div>
+                    <h2>What Works Now</h2>
+                    <p>Truthful current capabilities.</p>
+                  </div>
+                </div>
+                <ul class="card-list">
+                  <li>Launcher starts dashboard and Product Control Center is visible.</li>
+                  <li>Local supervised content demo: 8 agents / 100 titles / 100 thumbnails / local preview / no posting.</li>
+                  <li>Public/security audit gates and model council scan run local-only.</li>
+                  <li>UI-TARS observation dry-run; adapter dry-run/status; external sandbox static inspection.</li>
+                  <li>Local memory status/fallback, generated context packs, and Reports under 14_context.</li>
+                  <li>Local Model / Easy Worker Lane status and deterministic demo outputs run with local_demo fallback when Gemma is missing.</li>
+                </ul>
+              </section>
+              <section class="console-card" id="ghoti-remains-card">
+                <div class="console-card-header">
+                  <div>
+                    <h2>What Remains</h2>
+                    <p>Manual, pending, or future-gated work.</p>
+                  </div>
+                </div>
+                <ul class="card-list">
+                  <li>Hermes provider setup and Telegram connection remain manual later.</li>
+                  <li>Real Gemma model availability is pending; local_demo fallback is active.</li>
+                  <li>Real local model worker tasks require a manually installed Gemma model; Ghoti will not auto-download one.</li>
+                  <li>Ruflo runtime/source availability and Graphify runtime integration remain pending.</li>
+                  <li>Browser/Playwright verification remains pending.</li>
+                  <li>Future audited computer-use click/type requires a separate safety milestone.</li>
+                  <li>Production public release still requires human review.</li>
+                </ul>
+              </section>
+              <section class="console-card" id="ghoti-safety-locks-card">
+                <div class="console-card-header">
+                  <div>
+                    <h2>Safety Locks</h2>
+                    <p>These stay blocked unless a later audited milestone explicitly changes them.</p>
+                  </div>
+                </div>
+                <ul class="card-list">
+                  <li>No bot/captcha/cloak bypass.</li>
+                  <li>No fake engagement, spam, credential/session scraping, or unauthorized scraping.</li>
+                  <li>No autonomous posting.</li>
+                  <li>No autonomous money/trading/legal actions.</li>
+                  <li>No live providers without human approval.</li>
+                  <li>No external repo runtime wiring without approval.</li>
+                </ul>
+              </section>
+              <section class="console-card" id="ghoti-ask-codex-next-card">
+                <div class="console-card-header">
+                  <div>
+                    <h2>Ask Codex Next</h2>
+                    <p>Safe prompt snippets for the next supervised move.</p>
+                  </div>
+                </div>
+                <ul class="card-list">
+                  <li><strong>Audit current main:</strong> <code>Audit current origin/main from a clean .claude/worktrees audit worktree and report blockers only.</code></li>
+                  <li><strong>Run product smoke test:</strong> <code>Run python 03_scripts/ghoti_product_launcher.py --smoke --json and summarize endpoint health.</code></li>
+                  <li><strong>Find latest report:</strong> <code>List the newest relevant reports under 14_context and explain what each one proves.</code></li>
+                  <li><strong>Create next milestone:</strong> <code>Create a feature branch under .claude/worktrees for the next safe local-first Ghoti milestone.</code></li>
+                  <li><strong>Check dashboard truth:</strong> <code>Start the local dashboard, verify Daily Operator and Status Truth labels, then stop only the recorded PID.</code></li>
+                  <li><strong>Build N+5.7A:</strong> <code>Build N+5.7A Graphify / repo knowledge map and better context retrieval, no live providers/tokens.</code></li>
+                </ul>
+              </section>
+              <section class="console-card console-card-span-2" id="overview-product-control-center">
+                <div class="console-card-header">
+                  <div>
+                    <h2>Product Control Center</h2>
+                    <p>Local-first supervised operator MVP. Dashboard URL: http://127.0.0.1:3210.</p>
+                  </div>
+                </div>
+                <ul class="card-list">
+                  <li><strong>Hermes WSL Truth:</strong> Ubuntu WSL safe probes verify Hermes at <code>/home/ai_sandbox/.local/bin/hermes</code>, v0.14.0. Provider support pending; Telegram manual later; no VPS.</li>
+                  <li><strong>Local Model / Easy Worker Lane:</strong> Ollama/Gemma truth, readiness percentage, safe local demo tasks, and truthful fallback when models are missing.</li>
+                  <li><strong>Obsidian Compact Memory:</strong> repo-local compact markdown memory and vault plan.</li>
+                  <li><strong>Local Memory / Context Pack:</strong> repo-local copy-paste status packs for Codex, ChatGPT, Claude, and Obsidian.</li>
+                  <li><strong>Ruflo / Local Brain Bridge:</strong> status and read-only bridge truth; no runtime wiring.</li>
+                  <li><strong>Graphify / Token Plan:</strong> future graph/token-efficiency plan; not installed or wired.</li>
+                  <li><strong>UI-TARS Observation Only:</strong> dry-run observation packets; runtime is not started and pointer/keyboard actions are disabled.</li>
+                  <li><strong>Adapter Dry-Runs:</strong> approved local adapter dry-runs only; no external code or live API.</li>
+                  <li><strong>External Sandbox:</strong> static scan and planning only.</li>
+                  <li><strong>Public Readiness:</strong> local security audit must have no blockers and still needs human warning review.</li>
+                  <li><strong>Model Council:</strong> local-only provider/tool registry; unsafe automation remains blocked.</li>
+                  <li><strong>Safety Gates:</strong> no live posting, account actions, money, trading, legal action, secrets, or hidden operation.</li>
+                </ul>
+              </section>
               <section class="console-card console-card-span-2">
                 <div class="console-card-header">
                   <div>
@@ -382,6 +563,7 @@
         </div>
         <ul class="sidebar-nav" role="list">
           <li><a href="#section-overview" class="sidebar-link">Overview</a></li>
+          <li><a href="#section-product-control" class="sidebar-link">Product Control Center</a></li>
           <li><a href="#section-health" class="sidebar-link">System Health</a></li>
           <li><a href="#section-active" class="sidebar-link">Active Mode</a></li>
           <li>
@@ -433,6 +615,189 @@
             <h3 class="card-title">Next Actions</h3>
             <ul class="next-actions-list" id="next-actions-list">
               <li class="next-action-item">Loading health data…</li>
+            </ul>
+          </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- 1B. GHOTI PRODUCT CONTROL CENTER (N+4.6A)                           -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <section class="content-section" id="section-product-control">
+          <div class="section-hdr">
+            <h2>Ghoti Product Control Center</h2>
+            <p class="section-sub">N+4.6A: one place to see what Ghoti can do now and run safe local demos. Local Only. Approval-gated. No live account actions.</p>
+          </div>
+
+          <div class="card" id="product-control-capabilities-card">
+            <h3 class="card-title">What Ghoti Can Do Now</h3>
+            <p class="card-note">Live capability summary from <code>/api/product-control/status</code>.</p>
+            <ul class="card-list" id="product-control-capabilities">
+              <li class="empty-state">Loading product status…</li>
+            </ul>
+          </div>
+
+          <div class="card" id="product-control-n5-3a-lanes-card">
+            <h3 class="card-title">Product Control Center</h3>
+            <p class="card-note">N+5.3A local-first supervised operator MVP. These lanes are visible status and dry-run surfaces only; no live account, provider-token, posting, money, trading, legal, or hidden automation actions are enabled.</p>
+            <ul class="card-list">
+              <li><strong>Hermes WSL Truth:</strong> Ubuntu WSL verified with Hermes at <code>/home/ai_sandbox/.local/bin/hermes</code>, Hermes Agent v0.14.0. Provider setup and Telegram remain manual; no VPS.</li>
+              <li><strong>Gemma / Ollama Lane:</strong> local summarization and diagnostic worker lane with truthful fallback when Ollama or Gemma is unavailable.</li>
+              <li><strong>Obsidian Compact Memory:</strong> repo-local markdown memory snapshots and Obsidian-compatible compact context.</li>
+              <li><strong>Ruflo / Local Brain Bridge:</strong> read-only source/status bridge lane; no runtime wiring, no installs, no automatic orchestration.</li>
+              <li><strong>Graphify / Token Plan:</strong> future knowledge graph and token-efficiency plan; not installed or wired.</li>
+              <li><strong>UI-TARS Observation Only:</strong> dry-run observation packets only; UI-TARS runtime is not started and desktop control is disabled.</li>
+              <li><strong>Adapter Dry-Runs:</strong> approved local adapter dry-runs create repo-local artifacts without external code execution or live APIs.</li>
+              <li><strong>External Sandbox:</strong> external tool intake remains static scan and planning only.</li>
+              <li><strong>Public Readiness:</strong> public security audit must be clean of blockers and still receives human warning review.</li>
+              <li><strong>Model Council:</strong> provider/tool planning stays local-only; Codex provider support for Hermes is pending until proven.</li>
+              <li><strong>Safety Gates:</strong> browser/Playwright may be degraded; unsafe automation remains blocked; every real-world effect needs explicit human approval.</li>
+            </ul>
+          </div>
+
+          <div class="card" id="product-control-actions-card">
+            <h3 class="card-title">Run &amp; Generate</h3>
+            <p class="card-note">All actions below are local and safe. Local Content Studio runs in dry-run only — No Live Posting, no external API. Generating a prompt pair never launches Claude or Codex; you copy-paste each prompt manually.</p>
+            <div class="card-actions">
+              <button id="product-refresh-btn" type="button">Refresh Product Status</button>
+              <button id="product-run-content-studio-btn" type="button">Run Local Content Studio</button>
+              <button id="product-create-relay-pair-btn" type="button">Generate Claude + Codex Prompt Pair</button>
+              <button id="product-open-preview-btn" type="button">Open Latest Preview</button>
+            </div>
+            <ul class="card-list" style="margin-top:0.75rem;">
+              <li><strong>Desktop Operator Safe Dry Run:</strong> use the Desktop Operator Action Center — dry-run, then human approval, then execute.</li>
+              <li><strong>Recipe Runner:</strong> use the Desktop Operator Recipe Runner — pick a recipe, dry-run, approve, execute.</li>
+              <li><strong>Local Memory Compression:</strong> Gemma local fallback via <code>local_memory_compression_bridge.py</code> — Local Only, no external API.</li>
+              <li><strong>Context Pack Builder:</strong> <code>ghoti_context_pack_builder.py --write --json</code> — compact local handoff files, no live providers.</li>
+            </ul>
+            <div id="product-action-result" class="card-status">
+              <p class="empty-state">No product action run yet.</p>
+            </div>
+          </div>
+
+          <div class="card" id="product-control-latest-card">
+            <h3 class="card-title">Latest Outputs</h3>
+            <div class="card-status">
+              <p>Latest Content Studio Run: <code id="product-latest-content-studio">none</code></p>
+              <p>Latest Agent Relay Pair: <code id="product-latest-relay-pair">none</code></p>
+              <p>Latest Desktop Operator Run: <code id="product-latest-desktop-operator">none</code></p>
+              <p>Latest generated preview: <code id="product-latest-preview">none</code></p>
+            </div>
+            <p class="card-note">All paths are repo-local and path-contained (N+4.4D containment helper). Open Latest Preview never auto-opens an external browser; it surfaces the local preview path only.</p>
+          </div>
+
+          <div class="card" id="product-control-safety-card">
+            <h3 class="card-title">Safety &amp; Scope</h3>
+            <ul class="card-list">
+              <li><span class="chip chip--ok">Approval Gates Required</span> every risky or outbound action is approval-gated and human-confirmed.</li>
+              <li><span class="chip chip--ok">Local Only</span> all work stays on this machine, inside the repo root.</li>
+              <li><span class="chip chip--ok">No Live Posting</span> Local Content Studio is dry-run; nothing is uploaded or published.</li>
+              <li><span class="chip chip--ok">No Live Account Actions</span> no logins, no API keys, no money or trading actions.</li>
+              <li><span class="chip chip--ok">External Tools Planning Only</span> external tool intake is catalog/review only — nothing is cloned, installed, or run.</li>
+              <li><strong>Parallel Agent Relay:</strong> copy-paste only — no autonomous Claude/Codex launch.</li>
+            </ul>
+          </div>
+
+          <div class="card" id="ghoti-local-launcher-truth">
+            <h3 class="card-title">Ghoti Local Launcher Truth</h3>
+            <p class="card-note">N+4.7A: a One-Command Launcher to open and smoke-test Ghoti like a real local product. CLI: <code>03_scripts/ghoti_product_launcher.py</code>.</p>
+            <ul class="card-list">
+              <li><strong>One-Command Launcher:</strong> <code>python 03_scripts/ghoti_product_launcher.py --start-dashboard</code></li>
+              <li><strong>Dashboard URL:</strong> <code>http://127.0.0.1:3210</code> — printed exactly when the dashboard starts</li>
+              <li><strong>Start Dashboard:</strong> <code>--start-dashboard</code> — runs node server.js with fixed argv; records the PID</li>
+              <li><strong>Stop Dashboard:</strong> <code>--stop-dashboard</code> — stops only the launcher-recorded PID</li>
+              <li><strong>Product Smoke Test:</strong> <code>--smoke</code> — checks the four <code>/api/product-control/*</code> endpoints</li>
+              <li><strong>Open Dashboard Optional:</strong> <code>--open-dashboard</code> — opens the browser only when explicitly passed</li>
+              <li><strong>Run Demo Smoke:</strong> <code>--run-demo-smoke</code> — includes a local demo prompt-pair smoke</li>
+              <li><strong>Safe PID Tracking:</strong> launcher state stored in <code>runtime_data/ghoti_product_launcher_state.json</code></li>
+            </ul>
+            <ul class="card-list">
+              <li><span class="chip chip--ok">Localhost Only</span> the launcher and dashboard bind to 127.0.0.1.</li>
+              <li><span class="chip chip--ok">No External API</span> the smoke test uses only local product-control endpoints.</li>
+              <li><span class="chip chip--ok">No Live Account Actions</span> no logins, posting, money, or trading actions.</li>
+            </ul>
+          </div>
+
+          <div class="card" id="external-tool-sandbox-truth">
+            <h3 class="card-title">External Tool Sandbox Truth</h3>
+            <p class="card-note">N+4.8A: the External Tool Sandbox clones approved public repos into <code>21_repos/third_party/sandboxed/</code> for Static Scan Only. CLI: <code>03_scripts/external_tool_sandbox_manager.py</code>.</p>
+            <ul class="card-list">
+              <li><strong>UI-TARS Desktop</strong> — desktop GUI agent; sandbox static scan only</li>
+              <li><strong>UI-TARS Model</strong> — vision-language GUI model; sandbox static scan only</li>
+              <li><strong>TheAgency</strong> — multi-agent orchestration; sandbox static scan only</li>
+              <li><strong>agent-skills-eval</strong> — agent skill benchmark; sandbox static scan only</li>
+              <li><strong>Vouch Protocol</strong> — agent identity / vouching; sandbox static scan only</li>
+            </ul>
+            <div class="card-status" id="external-tool-sandbox-card-status">
+              <p><strong>Clone Status:</strong> <span id="external-tool-sandbox-clone-status">loading…</span></p>
+            </div>
+            <ul class="card-list">
+              <li><span class="chip chip--ok">Static Scan Only</span> approved repos are cloned and read — never installed or run.</li>
+              <li><span class="chip chip--ok">No Install Yet</span> no npm / pnpm / pip install is performed.</li>
+              <li><span class="chip chip--ok">No Runtime Wiring</span> external tools are not wired into Ghoti — adapter stubs only.</li>
+              <li><span class="chip chip--ok">No Desktop Control Yet</span> UI-TARS is not given control of the computer.</li>
+              <li><span class="chip chip--ok">No Live APIs</span> no Gemini / OpenAI / Anthropic API calls.</li>
+              <li><span class="chip chip--ok">Human Approval Required</span> real runtime wiring requires explicit operator approval.</li>
+              <li><strong>Adapter Stubs Generated:</strong> 5 safe local stubs under <code>02_automation/external_tool_adapters/</code></li>
+              <li><strong>Approval Packet Required:</strong> per-tool review packet under <code>14_context/external_tools/approval_packets/</code></li>
+            </ul>
+          </div>
+
+          <div class="card" id="approved-adapter-execution-truth">
+            <h3 class="card-title">Approved Adapter Execution Truth</h3>
+            <p class="card-note">N+4.9A: the first approved adapter can run a real LOCAL demo. CLI: <code>03_scripts/approved_adapter_runner.py</code>.</p>
+            <ul class="card-list">
+              <li><strong>Approved Adapter Execution:</strong> one safe adapter executes a local demo workflow and produces real artifacts.</li>
+              <li><strong>agent-skills-eval Adapter:</strong> evaluates a demo skill against the Ghoti skill-quality checklist — no external repo code.</li>
+            </ul>
+            <div class="card-actions">
+              <button id="adapter-exec-refresh-btn" type="button">Refresh Adapter Status</button>
+              <button id="adapter-exec-list-btn" type="button">List Adapters</button>
+              <button id="adapter-exec-create-approval-btn" type="button">Create Approval</button>
+              <button id="adapter-exec-run-demo-btn" type="button">Run Safe Adapter Demo</button>
+            </div>
+            <div class="card-status" id="adapter-exec-status">
+              <p><strong>Latest Adapter Run:</strong> <span id="adapter-exec-latest">none</span></p>
+            </div>
+            <ul class="card-list">
+              <li><span class="chip chip--ok">Run Safe Adapter Demo</span> the dashboard button runs a Dry Run only.</li>
+              <li><span class="chip chip--ok">Dry Run Available</span> dry-run needs no approval token.</li>
+              <li><span class="chip chip--ok">Approval Token Required</span> non-dry-run execution requires a human approval token.</li>
+              <li><span class="chip chip--ok">Local Artifacts Only</span> outputs are repo-local files under <code>14_context/adapter_execution/runs/</code>.</li>
+              <li><span class="chip chip--ok">No External Repo Code Execution</span> only Ghoti-owned adapter code runs.</li>
+              <li><span class="chip chip--ok">No Installs</span> no npm / pnpm / pip install.</li>
+              <li><span class="chip chip--ok">No Desktop Control</span> no click / type / screenshot control.</li>
+              <li><span class="chip chip--ok">No Live APIs</span> no Gemini / OpenAI / Anthropic calls.</li>
+              <li><span class="chip chip--ok">Human Approval Required</span> real runtime wiring stays human-gated.</li>
+            </ul>
+          </div>
+
+          <div class="card" id="ui-tars-observation-truth">
+            <h3 class="card-title">UI-TARS Observation Truth</h3>
+            <p class="card-note">N+5.0A: the first UI-TARS-related adapter — <strong>UI-TARS Observation Only</strong>. CLI: <code>03_scripts/ui_tars_observation_adapter.py</code>.</p>
+            <ul class="card-list">
+              <li><strong>UI-TARS Observation Only:</strong> produces a local Observation Packet — it does not run UI-TARS and does not control the desktop.</li>
+              <li><strong>Observation Packet:</strong> local artifacts describing the observation context, written under <code>14_context/ui_tars_observation/runs/</code>.</li>
+            </ul>
+            <div class="card-actions">
+              <button id="ui-tars-obs-refresh-btn" type="button">Refresh Observation Status</button>
+              <button id="ui-tars-obs-create-approval-btn" type="button">Create Approval</button>
+              <button id="ui-tars-obs-dry-run-btn" type="button">Dry Run Observation</button>
+            </div>
+            <div class="card-status" id="ui-tars-obs-status">
+              <p><strong>Latest Observation Run:</strong> <span id="ui-tars-obs-latest">none</span></p>
+            </div>
+            <ul class="card-list">
+              <li><span class="chip chip--ok">Dry Run Observation</span> the dashboard button runs a dry run only — no screenshot.</li>
+              <li><span class="chip chip--ok">Screenshot Capture Requires Approval</span> a read-only screen capture needs an explicit approval token.</li>
+              <li><span class="chip chip--ok">No Click</span> the adapter never clicks anything.</li>
+              <li><span class="chip chip--ok">No Type</span> the adapter never types anything.</li>
+              <li><span class="chip chip--ok">No Hotkeys</span> the adapter never sends keyboard hotkeys.</li>
+              <li><span class="chip chip--ok">No Desktop Control Yet</span> observation only — no desktop control.</li>
+              <li><span class="chip chip--ok">No UI-TARS Runtime Yet</span> UI-TARS is never started or imported.</li>
+              <li><span class="chip chip--ok">No External Repo Code Execution</span> only Ghoti-owned adapter code runs.</li>
+              <li><span class="chip chip--ok">No Installs</span> no npm / pnpm / pip install.</li>
+              <li><span class="chip chip--ok">Local Artifacts Only</span> outputs are repo-local files.</li>
+              <li><span class="chip chip--ok">Human Approval Required</span> capture and any non-dry-run observation are human-gated.</li>
             </ul>
           </div>
         </section>
@@ -602,6 +967,45 @@
             </ul>
             <p class="safety-note">No live account actions. No autonomous posting. No autonomous money movement. No clone/install/run of external repos. No runtime wiring without human approval. Human approval required before any wiring.</p>
           </div>
+          <div class="card" style="margin-bottom:var(--gap,1rem);">
+            <h3 class="card-title">Local Memory Truth</h3>
+            <p class="section-sub">Local-first memory compression &mdash; reads only repo-local approved files, never outside repo root. Rejects secrets/credential paths. Writes auditable snapshots to compact_memory and obsidian_vault. No external API calls. No secrets stored.</p>
+            <p class="safety-note">local_only: true &mdash; external_api_used: false &mdash; approval_required_for_external_actions: true</p>
+          </div>
+          <div class="card" style="margin-bottom:var(--gap,1rem);">
+            <h3 class="card-title">Gemma / Ollama Truth</h3>
+            <p class="section-sub">Local Ollama/Gemma availability probe &mdash; reports ollama_available, gemma_model_found, model_name, and fallback_mode truthfully. Falls back to local_demo mode if Ollama or Gemma is unavailable. Never calls external APIs. Never crashes on missing Ollama.</p>
+            <p class="safety-note">fallback_mode: local_demo when Ollama/Gemma unavailable &mdash; no fake availability claims &mdash; local_only: true</p>
+          </div>
+          <div class="card" style="margin-bottom:var(--gap,1rem);">
+            <h3 class="card-title">Repo / Skill / Plugin Intake Truth</h3>
+            <p class="section-sub">Controlled metadata catalog for 22 external tool/repo/skill candidates. All entries: intake/planning only. No runtime wiring. No clone/install/run. Human approval required before any external action.</p>
+            <ul class="section-sub" style="margin:0.5rem 0 0.5rem 1.25rem;">
+              <li>External Runtime Wiring: disabled</li>
+              <li>Clone/Install/Run: disabled</li>
+              <li>Human Approval Required</li>
+              <li>Automations / Plugins / Skills: future-reminder (after N+4.2 audit)</li>
+              <li>YouTube Title/Thumbnail Iteration: future workflow, no autonomous posting</li>
+              <li>Internship Scraper: future workflow, human approval required</li>
+              <li>Trading / MetaTrader: paper/simulation only</li>
+              <li>Ethical Hacking: legal/CTF/lab/authorized-only</li>
+            </ul>
+            <p class="safety-note">No live account actions. No autonomous posting. No money movement. No clone/install/run. Human approval required before any wiring or live action.</p>
+          </div>
+      <div class="card">
+        <h3 class="card-title">Supervised Content Studio Truth</h3>
+        <ul class="card-list">
+          <li>local_only: true</li>
+          <li>external_api_used: false</li>
+          <li>publish_enabled: false</li>
+          <li>approval_required: true</li>
+          <li>agent_count: 8</li>
+          <li>title/thumbnail iteration: future workflow, no autonomous posting</li>
+          <li>video render: optional / local only</li>
+          <li>external tools: planning-only (UI-TARS, The Agency, Weavy, Manychat, Vouch, AEX, AirLLM, OpenFang/MoneyPrinter)</li>
+          <li>latest run path: 14_context/content_studio/runs/&lt;timestamp_slug&gt;/</li>
+        </ul>
+      </div>
         </section>
 
         <!-- ═══════════════════════════════════════════════════════════════════ -->
@@ -612,11 +1016,102 @@
             <h2>Active Mode</h2>
             <p class="section-sub">Explicit operator-controlled activation. No hidden recording. Screen capture only when you trigger it.</p>
           </div>
+      <div class="card">
+        <h3 class="card-title">Desktop Operator Truth</h3>
+        <ul class="card-list">
+          <li>default_mode: dry_run</li>
+          <li>local_only: true</li>
+          <li>live_account_actions_enabled: false</li>
+          <li>external_api_actions_enabled: false</li>
+          <li>money_actions_enabled: false</li>
+          <li>publish_actions_enabled: false</li>
+          <li>arbitrary_click_or_type_enabled: false</li>
+          <li>shell_exec_from_model_output_enabled: false</li>
+          <li>approval_gate: required_with_token</li>
+          <li>Gemini CLI: status-only, quota=unknown_free_tier_limited, treated_as_unlimited=false</li>
+          <li>local fallback: available (local_demo)</li>
+          <li>external repos/tools: planning-only</li>
+          <li>content studio workflow: local preview only</li>
+          <li>safe handoff payload: enabled</li>
+          <li>last handoff path: 14_context/desktop_operator/runs/&lt;timestamp_slug&gt;/</li>
+        </ul>
+      </div>
           <section class="card" id="ghoti-active-mode-panel">
             <div class="ghoti-active-status-row">
               <span id="ghoti-active-pill" class="state-pill ghoti-active-pill-off">OFF — idle</span>
               <span id="ghoti-active-last-event" class="ghoti-active-meta"></span>
             </div>
+      <div class="card" id="desktop-operator-action-center">
+        <h3 class="card-title">Desktop Operator Action Center</h3>
+        <ul class="card-list">
+          <li>Default mode: <strong>dry_run</strong></li>
+          <li>safe handoff payload: <strong>enabled</strong></li>
+          <li>approval required: <strong>true</strong></li>
+          <li>arbitrary click/type: <strong>disabled</strong></li>
+          <li>shell execution from model output: <strong>disabled</strong></li>
+          <li>live account actions: <strong>disabled</strong></li>
+          <li>publish actions: <strong>disabled</strong></li>
+          <li>money actions: <strong>disabled</strong></li>
+          <li>content studio workflow: <strong>local preview only</strong></li>
+        </ul>
+        <div class="card-actions">
+          <button id="doa-create-handoff" type="button">1. Create Safe Handoff</button>
+          <button id="doa-dry-run" type="button">2. Dry-Run Handoff</button>
+          <button id="doa-approve" type="button">3. Generate Approval Record</button>
+          <button id="doa-execute" type="button">4. Execute Approved Local Action</button>
+          <button id="doa-open-preview" type="button">5. Open Latest Preview</button>
+        </div>
+        <div id="doa-status" class="card-status" data-testid="doa-status">
+          <p>desktop-operator status: <span id="doa-default-mode">unknown</span></p>
+          <p>Gemini CLI: <span id="doa-gemini">status-only / quota=unknown_free_tier_limited</span></p>
+          <p>local fallback: <span id="doa-local-fallback">available (local_demo)</span></p>
+          <p>latest handoff: <code id="doa-latest-handoff">none</code></p>
+          <p>latest dry-run plan: <code id="doa-latest-dry-run">none</code></p>
+          <p>latest approval record: <code id="doa-latest-approval">none</code></p>
+          <p>latest execution result: <code id="doa-latest-execution">none</code></p>
+          <p>latest preview: <code id="doa-latest-preview">none</code></p>
+        </div>
+        <p class="card-note"><em>Local only. No live posting. No external APIs. No arbitrary click/type. Gemini CLI is status-only (treated_as_unlimited=false).</em></p>
+      </div>
+      <div class="card" id="desktop-operator-recipe-runner">
+        <h3 class="card-title">Desktop Operator Recipe Runner</h3>
+        <ul class="card-list">
+          <li>Recipe list: <strong>4 allowlisted local recipes</strong></li>
+          <li>Default mode: <strong>dry_run</strong></li>
+          <li>Approval required: <strong>true</strong></li>
+          <li>Local-only execution: <strong>true</strong></li>
+          <li>Gemini live prompt: <strong>disabled</strong></li>
+          <li>Gemini handoff export only: <strong>true</strong></li>
+          <li>arbitrary click/type: <strong>disabled</strong></li>
+          <li>shell execution: <strong>disabled</strong></li>
+          <li>live account actions: <strong>disabled</strong></li>
+          <li>publish/money actions: <strong>disabled</strong></li>
+        </ul>
+        <div class="card-actions">
+          <label for="dorr-recipe-select">Select recipe:</label>
+          <select id="dorr-recipe-select" data-testid="dorr-recipe-select">
+            <option value="content_studio_generate_preview">Run Content Studio Recipe</option>
+            <option value="memory_compress_demo">Memory Compress Demo Recipe</option>
+            <option value="gemini_handoff_export">Gemini Handoff Export Recipe</option>
+            <option value="dashboard_open_preview">Dashboard Open Preview Recipe</option>
+          </select>
+          <button id="dorr-create-handoff" type="button">2. Create Recipe Handoff</button>
+          <button id="dorr-dry-run" type="button">3. Dry Run Recipe</button>
+          <button id="dorr-approve" type="button">4. Approve Recipe</button>
+          <button id="dorr-execute" type="button">5. Execute Approved Recipe</button>
+          <button id="dorr-open-preview" type="button">6. Open/View Latest Preview</button>
+        </div>
+        <div id="dorr-status" class="card-status" data-testid="dorr-status">
+          <p>latest recipe id: <code id="dorr-latest-recipe">none</code></p>
+          <p>latest recipe handoff: <code id="dorr-latest-handoff">none</code></p>
+          <p>latest recipe dry-run: <code id="dorr-latest-dry-run">none</code></p>
+          <p>latest recipe approval: <code id="dorr-latest-approval">none</code></p>
+          <p>latest recipe execution: <code id="dorr-latest-execution">none</code></p>
+          <p>latest recipe preview: <code id="dorr-latest-preview">none</code></p>
+          <p>latest Gemini handoff export: <code id="dorr-latest-gemini-handoff">none</code></p>
+        </div>
+        <p class="card-note"><em>Recipes are an allowlisted local workflow set. Gemini live prompt is disabled; Gemini handoff export writes a local MD file only and never calls Gemini. Quota=unknown_free_tier_limited.</em></p>
+      </div>
             <div class="ghoti-active-controls">
               <button id="ghoti-active-start-btn" class="action-btn action-btn-primary" type="button">Start Ghoti</button>
               <button id="ghoti-active-stop-btn" class="action-btn action-btn-danger" type="button">Stop Ghoti</button>
@@ -970,7 +1465,20 @@ Invoke-RestMethod -Uri "$base/api/ghoti/control-center-state" -Method Get | Conv
         </section>
 
         <!-- ═══════════════════════════════════════════════════════════════════ -->
-        <!-- 9. ABOUT                                                            -->
+        <!-- 9. PARALLEL AGENT RELAY                                             -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <section class="content-section" id="section-agent-relay">
+          <div class="section-hdr">
+            <h2>Parallel Agent Relay Truth</h2>
+            <p class="section-sub">N+4.5A: Copy-paste only relay. Human approval required for every prompt dispatch. No autonomous Claude/Codex launch.</p>
+          </div>
+          <div id="agent-relay-card" class="card">
+            <p class="empty-state">Loading relay status…</p>
+          </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- 10. ABOUT                                                           -->
         <!-- ═══════════════════════════════════════════════════════════════════ -->
         <section class="content-section" id="section-about">
           <div class="section-hdr">

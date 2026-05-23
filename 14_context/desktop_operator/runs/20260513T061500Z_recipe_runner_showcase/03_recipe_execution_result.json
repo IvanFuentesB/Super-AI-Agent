@@ -1,0 +1,15 @@
+{
+  "handoff_export_only": true,
+  "posting_executed": false,
+  "live_account_actions_executed": false,
+  "gemini_live_prompt_executed": false,
+  "external_repo_clone_install_run_executed": false,
+  "actions_executed": [
+    "wrote_local_gemini_prompt_markdown_no_live_call"
+  ],
+  "ok": true,
+  "handoff_export_path": "14_context/desktop_operator/handoffs/20260513T061141Z_gemini_handoff_export/gemini_prompt.md",
+  "gemini_treated_as_unlimited": false,
+  "quota_warning": "Gemini CLI is quota-limited / free-tier, not unlimited.",
+  "recipe_id": "gemini_handoff_export"
+}

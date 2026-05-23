@@ -15,7 +15,7 @@ Scaffold only. Not yet implemented. Browser operator not integrated.
 - User sees confirmation with "needs_user_approval: true"
 
 ### Step 3 — Transcript/caption retrieval
-- Attempt to fetch auto-generated captions from YouTube (yt-dlp or similar)
+- Attempt to fetch auto-generated captions only through an explicitly approved future caption/source-intelligence path
 - If unavailable: prompt user to paste transcript manually or wait for voice/screen capture capability
 - No video playback or downloads by default
 
@@ -51,7 +51,7 @@ Scaffold only. Not yet implemented. Browser operator not integrated.
 
 ## Dependencies Not Yet Met
 - Browser operator: browser-use is cloned as reference only, not integrated
-- yt-dlp or caption API: not installed
+- caption retrieval tool or caption API: not installed
 - Desktop action bridge: scaffolded but narrow
 - LLM step extraction: Claude Code is external, no runtime LLM call path yet
 
@@ -64,6 +64,6 @@ POST /api/ghoti/youtube-follower/task     — create planned task (no execution)
 
 ## Next Integration Step
 1. Integrate browser-use or Playwright for supervised browser control
-2. Add yt-dlp wrapper for caption fetching
+2. Add approved caption-source path for caption fetching
 3. Add LLM call path for step extraction
 4. Wire approval gate UI in dashboard

@@ -1,0 +1,25 @@
+{
+  "milestone": "N+4.9A",
+  "runner": "approved_adapter_runner",
+  "adapter": "agent_skills_eval",
+  "run_id": "20260518T085322Z_agent_skills_eval",
+  "run_dir": "14_context/adapter_execution/runs/20260518T085322Z_agent_skills_eval",
+  "mode": "dry_run",
+  "dry_run": true,
+  "approval_token_supplied": false,
+  "approval_verified": false,
+  "external_code_executed": false,
+  "external_repo_packages_imported": false,
+  "installs_performed": false,
+  "desktop_control_enabled": false,
+  "live_api_used": false,
+  "evaluation_score": 80,
+  "evaluation_grade": "adequate",
+  "artifacts": [
+    "14_context/adapter_execution/runs/20260518T085322Z_agent_skills_eval/00_demo_skill.md",
+    "14_context/adapter_execution/runs/20260518T085322Z_agent_skills_eval/01_skill_evaluation.md",
+    "14_context/adapter_execution/runs/20260518T085322Z_agent_skills_eval/02_skill_evaluation.json",
+    "14_context/adapter_execution/runs/20260518T085322Z_agent_skills_eval/03_safety_review.md"
+  ],
+  "generated_at": "20260518T085322Z"
+}

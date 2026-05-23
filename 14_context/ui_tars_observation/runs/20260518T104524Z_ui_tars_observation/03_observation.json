@@ -1,0 +1,41 @@
+{
+  "adapter_name": "ui_tars_observation_only",
+  "mode": "dry_run",
+  "dry_run": true,
+  "local_only": true,
+  "external_repo_code_executed": false,
+  "installs_performed": false,
+  "ui_tars_runtime_started": false,
+  "desktop_control_enabled": false,
+  "click_enabled": false,
+  "type_enabled": false,
+  "hotkeys_enabled": false,
+  "live_api_used": false,
+  "approval_required_for_capture": true,
+  "approval_token_supplied": false,
+  "capture_requested": false,
+  "screenshot_captured": false,
+  "screenshot_path": null,
+  "screenshot_skipped_reason": null,
+  "ui_tars_sandbox": {
+    "sandbox_dir_present": false,
+    "repos": [
+      {
+        "key": "ui_tars_desktop",
+        "name": "UI-TARS Desktop",
+        "sandbox_present": false
+      },
+      {
+        "key": "ui_tars_model",
+        "name": "UI-TARS Model",
+        "sandbox_present": false
+      }
+    ]
+  },
+  "next_safe_step_recommendations": [
+    "Review this observation packet with a human.",
+    "Approve an explicit screenshot capture only if a visual snapshot is needed.",
+    "Do NOT enable UI-TARS runtime, desktop control, click, or type without a dedicated approved milestone."
+  ],
+  "generated_at": "20260518T104524Z"
+}

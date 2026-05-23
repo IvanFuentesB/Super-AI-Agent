@@ -1,0 +1,29 @@
+{
+  "gemini_cli": {
+    "adapter": "gemini_cli",
+    "available": false,
+    "executable": null,
+    "version": null,
+    "quota": "unknown_free_tier_limited",
+    "treated_as_unlimited": false,
+    "live_prompt_executed": false,
+    "probe_error": "gemini executable not found in PATH"
+  },
+  "local_demo": {
+    "adapter": "local_demo",
+    "available": true,
+    "deterministic": true,
+    "live_prompt_executed": false,
+    "quota": "local_only_unlimited_local",
+    "probe_error": null
+  },
+  "ollama": {
+    "adapter": "ollama",
+    "available": true,
+    "via_bridge": true,
+    "ollama_available": true,
+    "gemma_model_found": false,
+    "fallback_mode": "local_demo",
+    "probe_error": null
+  }
+}
