@@ -22,6 +22,13 @@ Launcher shortcut:
 python 03_scripts/ghoti_product_launcher.py --context-pack --json
 ```
 
+Local worker companion:
+
+```powershell
+python 03_scripts/ghoti_product_launcher.py --local-worker-status --json
+python 03_scripts/ghoti_product_launcher.py --local-worker-demo --json
+```
+
 Dashboard:
 
 ```text
@@ -47,6 +54,10 @@ Files:
 - `ghoti_codex_next_prompt.md` - safe next Codex prompt.
 - `ghoti_chatgpt_migration_summary.md` - short ChatGPT migration summary.
 - `ghoti_status_short.md` - one compact paragraph for quick handoff.
+
+Local worker companion files live under `14_context/local_worker/generated/`.
+See [Local Model / Gemma Setup Guide](LOCAL_MODEL_GEMMA_SETUP_GUIDE.md) and
+[Easy Worker Lane Guide](EASY_WORKER_LANE_GUIDE.md).
 
 ## How To Use The Pack
 

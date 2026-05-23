@@ -1,4 +1,16 @@
-Continue Ghoti / Super-AI-Agent from the current local-first supervised baseline.
+        Continue Ghoti / Super-AI-Agent from the current clean local-first supervised baseline.
+
+        Use only repo-contained worktrees under `.claude/worktrees`. Keep the primary worktree read-only except inspection.
+        Refresh context first with `python 03_scripts/ghoti_product_launcher.py --context-pack --json` and inspect latest reports under `14_context/`.
+
+        Local worker truth:
+        - Run `python 03_scripts/ghoti_product_launcher.py --local-worker-status --json` to check Ollama/Gemma/local_demo mode.
+        - Run `python 03_scripts/ghoti_product_launcher.py --local-worker-demo --json` to refresh compact deterministic demo outputs.
+        - Do not run `ollama pull`, live APIs, providers, Telegram, posting, or account actions unless the human explicitly approves later.
+
+        Context prompt excerpt:
+
+        Continue Ghoti / Super-AI-Agent from the current local-first supervised baseline.
 
 Use only repo-contained worktrees under `.claude/worktrees`. Keep the primary
 worktree read-only except inspection. No force-push, no history rewrite, no

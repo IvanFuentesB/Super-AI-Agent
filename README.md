@@ -12,13 +12,13 @@ Ghoti is a local-first, approval-gated AI operating workspace for supervised dem
 
 ## Quickstart
 
-Current clean local MVP baseline: **N+5.4B / CLEAN PASS / DAILY OPERATOR
-USABILITY ON MAIN**.
+Current clean local MVP baseline: **N+5.5B / CLEAN PASS / LOCAL MEMORY
+CONTEXT PACK ON MAIN**.
 
 ```text
-origin/main = e309921ea27b7f93ce608dede4d0f8ff518937c9
+origin/main = 23ace6dedb7acdfd19b148988be35e121f140070
 N+4: 329 OK
-N+5: 74 OK
+N+5: 77 OK
 Public audit: 150 checks / 0 blockers / 7 warnings
 Readiness score: 100
 ```
@@ -37,9 +37,13 @@ Daily guide:
 
 - [Daily Operator Guide](docs/DAILY_OPERATOR_GUIDE.md)
 - [Local Memory Context Pack Guide](docs/LOCAL_MEMORY_CONTEXT_PACK_GUIDE.md)
+- [Local Model / Gemma Setup Guide](docs/LOCAL_MODEL_GEMMA_SETUP_GUIDE.md)
+- [Easy Worker Lane Guide](docs/EASY_WORKER_LANE_GUIDE.md)
 - Status: `python 03_scripts/ghoti_product_launcher.py --status --json`
 - Smoke: `python 03_scripts/ghoti_product_launcher.py --smoke --json`
 - Context pack: `python 03_scripts/ghoti_context_pack_builder.py --write --json`
+- Local worker status: `python 03_scripts/ghoti_product_launcher.py --local-worker-status --json`
+- Local worker demo: `python 03_scripts/ghoti_product_launcher.py --local-worker-demo --json`
 - Stop: `python 03_scripts/ghoti_product_launcher.py --stop-dashboard`
 
 ## What Ghoti Can Do Now
@@ -49,6 +53,8 @@ Daily guide:
   Safety Locks, and Ask Codex Next on the dashboard.
 - Generate compact local memory context packs for ChatGPT, Codex, Claude, and
   Obsidian under `14_context/compact_memory/generated/`.
+- Inspect Ollama/Gemma truth and generate deterministic local worker demo
+  outputs under `14_context/local_worker/generated/`.
 - Generate supervised content studio artifacts and preview packages.
 - Validate the local content demo: 8 agents, 100 titles, 100 thumbnails, local
   preview, approval packet, no posting.
@@ -124,11 +130,34 @@ Generated files:
 The builder is repo-local, excludes secrets, does not read `.env` contents, and
 does not call live providers.
 
+## Local Model / Easy Worker Lane
+
+N+5.6A adds a safe local worker lane for small offline tasks:
+
+```powershell
+python 03_scripts/local_model_worker_lane.py --status --json
+python 03_scripts/local_model_worker_lane.py --doctor --json
+python 03_scripts/local_model_worker_lane.py --demo-task status-paragraph --json
+python 03_scripts/local_model_worker_lane.py --write-demo-output --json
+python 03_scripts/ghoti_product_launcher.py --local-worker-status --json
+python 03_scripts/ghoti_product_launcher.py --local-worker-demo --json
+```
+
+Generated files:
+
+- `14_context/local_worker/generated/local_worker_status.json`
+- `14_context/local_worker/generated/local_worker_status.md`
+- `14_context/local_worker/generated/latest_report_summary.md`
+- `14_context/local_worker/generated/status_paragraph.md`
+- `14_context/local_worker/generated/codex_next_prompt_from_context.md`
+
 Current Ollama/Gemma truth:
 
-- Ollama is available in the verified N+5.4B baseline: `ollama version is 0.24.0`.
+- Ollama is available in the verified local baseline: `ollama version is 0.24.0`.
 - No Gemma model is currently installed, so `local_demo` fallback is active.
 - Local model reachability never means local models drive operator actions.
+- Ghoti shows the manual command `ollama pull gemma3:4b`, but never runs it
+  automatically. No live APIs and no auto-downloads.
 
 ## Public Repo And Portfolio Lane
 

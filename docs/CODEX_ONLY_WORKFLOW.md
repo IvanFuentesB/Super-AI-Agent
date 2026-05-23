@@ -1,12 +1,13 @@
 # Codex-Only Workflow
 
-Current baseline: N+5.4B clean/daily-operator-usability on main.
+Current baseline: N+5.5B clean/local-memory-context-pack on main.
 
 ```text
-origin/main = e309921ea27b7f93ce608dede4d0f8ff518937c9
+origin/main = 23ace6dedb7acdfd19b148988be35e121f140070
 launcher = python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard
 dashboard = http://127.0.0.1:3210
 context_pack = python 03_scripts/ghoti_context_pack_builder.py --write --json
+local_worker = python 03_scripts/local_model_worker_lane.py --status --json
 ```
 
 This milestone is handled by Codex only. Work must stay inside repo-contained
@@ -34,7 +35,8 @@ for inspection.
 1. Fetch remote truth.
 2. Audit the target branch in an isolated worktree.
 3. Run N+4/N+5 tests, launcher smoke, dashboard checks, public security audit,
-   model-council scan, Hermes status, adapter dry-runs, and content demo checks.
+   model-council scan, Hermes status, local memory/context pack checks, local
+   worker lane checks, adapter dry-runs, and content demo checks.
 4. Merge to main only when the audit gate has no blockers.
 5. Push main only after the clean local merge gate passes.
 
@@ -48,7 +50,7 @@ is still pending, and how any local dashboard process was cleaned up.
 Audit current main:
 
 ```text
-Audit current origin/main from a clean .claude/worktrees audit worktree. Run N+4/N+5 tests, launcher smoke, public audit, model council scan, Hermes status, UI-TARS dry-run, adapter status, external sandbox status, and content demo validation. Report blockers first.
+Audit current origin/main from a clean .claude/worktrees audit worktree. Run N+4/N+5 tests, launcher smoke, context pack, local worker status/demo, public audit, model council scan, Hermes status, UI-TARS dry-run, adapter status, external sandbox status, and content demo validation. Report blockers first.
 ```
 
 Create a feature branch:
@@ -73,4 +75,10 @@ Refresh the compact context pack:
 
 ```text
 Run python 03_scripts/ghoti_context_pack_builder.py --write --json, inspect 14_context/compact_memory/generated/ghoti_status_short.md and ghoti_codex_next_prompt.md, and confirm no secrets or live-provider claims were generated.
+```
+
+Check the Easy Worker Lane:
+
+```text
+Run python 03_scripts/local_model_worker_lane.py --doctor --json and python 03_scripts/local_model_worker_lane.py --write-demo-output --json. Confirm Ollama/Gemma truth, local_demo fallback when Gemma is missing, no live APIs, no auto-downloads, and generated files under 14_context/local_worker/generated/. See docs/LOCAL_MODEL_GEMMA_SETUP_GUIDE.md and docs/EASY_WORKER_LANE_GUIDE.md.
 ```

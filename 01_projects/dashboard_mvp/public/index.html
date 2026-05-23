@@ -165,12 +165,13 @@
                   </div>
                 </div>
                 <ul class="card-list">
-                  <li><strong>Main baseline:</strong> N+5.4B clean/daily-operator-usability on main; origin/main = e309921ea27b7f93ce608dede4d0f8ff518937c9.</li>
+                  <li><strong>Main baseline:</strong> N+5.5B clean/local-memory-context-pack on main; origin/main = 23ace6dedb7acdfd19b148988be35e121f140070.</li>
                   <li><strong>Hermes WSL:</strong> installed at <code>/home/ai_sandbox/.local/bin/hermes</code>; Hermes Agent v0.14.0.</li>
                   <li><strong>Hermes browser/Playwright:</strong> browser/Playwright: degraded/not claimed unless separately verified.</li>
                   <li><strong>Hermes Codex provider:</strong> Codex provider in Hermes: pending/not proven.</li>
                   <li><strong>Telegram:</strong> Telegram: manual later/no token. <strong>VPS:</strong> No VPS.</li>
                   <li><strong>Local models:</strong> Ollama available v0.24.0; Gemma model missing/local_demo fallback active.</li>
+                  <li><strong>Easy worker:</strong> Local Model / Easy Worker Lane reports readiness percentage, uses existing Ollama/Gemma only when installed, and otherwise keeps local_demo fallback active.</li>
                   <li><strong>Memory:</strong> Obsidian/local memory present; compact markdown stays repo-local.</li>
                   <li><strong>Ruflo:</strong> source-missing/status-only unless a later audited milestone changes it.</li>
                   <li><strong>Graphify:</strong> roadmap/token-plan only; not installed or wired.</li>
@@ -203,6 +204,36 @@
                   <p class="empty-state">No context pack action run yet.</p>
                 </div>
               </section>
+              <section class="console-card console-card-span-2" id="ghoti-local-model-worker-card">
+                <div class="console-card-header">
+                  <div>
+                    <h2>Local Model / Easy Worker Lane</h2>
+                    <p>Ollama/Gemma setup truth plus deterministic local_demo fallback tasks. No live APIs and no auto-downloads.</p>
+                  </div>
+                </div>
+                <ul class="card-list">
+                  <li><strong>Status command:</strong> <code>python 03_scripts/ghoti_product_launcher.py --local-worker-status --json</code></li>
+                  <li><strong>Demo command:</strong> <code>python 03_scripts/ghoti_product_launcher.py --local-worker-demo --json</code></li>
+                  <li><strong>Direct doctor:</strong> <code>python 03_scripts/local_model_worker_lane.py --doctor --json</code></li>
+                  <li><strong>Ollama:</strong> <span id="local-worker-ollama-status">loading...</span> <code id="local-worker-ollama-version">unknown</code></li>
+                  <li><strong>Gemma:</strong> <span id="local-worker-gemma-status">loading...</span></li>
+                  <li><strong>Active mode:</strong> <code id="local-worker-active-mode">loading...</code></li>
+                  <li><strong>Local worker readiness percentage:</strong> <code id="local-worker-readiness">loading...</code></li>
+                  <li><strong>Safe demo tasks:</strong> summarize latest Ghoti report, compress status into one paragraph, classify next task, generate Codex next prompt.</li>
+                  <li><strong>Generated outputs:</strong> <code id="local-worker-output-path">14_context/local_worker/generated/</code></li>
+                  <li><strong>Manual check:</strong> <code>ollama list</code>. <strong>Manual Gemma install later:</strong> <code>ollama pull gemma3:4b</code>; Ghoti does not run this automatically.</li>
+                  <li><strong>Safety:</strong> local-only, no live APIs, no auto-downloads, no posting, no account actions.</li>
+                  <li><strong>Status:</strong> <span id="local-worker-status-line">Loading local worker status...</span></li>
+                </ul>
+                <div class="card-actions">
+                  <button id="local-worker-refresh-btn" type="button">Refresh Local Worker Status</button>
+                  <button id="local-worker-doctor-btn" type="button">Run Local Worker Doctor</button>
+                  <button id="local-worker-demo-btn" type="button">Write Demo Outputs</button>
+                </div>
+                <div id="local-worker-action-result" class="card-status">
+                  <p class="empty-state">No local worker action run yet.</p>
+                </div>
+              </section>
               <section class="console-card" id="ghoti-works-now-card">
                 <div class="console-card-header">
                   <div>
@@ -216,6 +247,7 @@
                   <li>Public/security audit gates and model council scan run local-only.</li>
                   <li>UI-TARS observation dry-run; adapter dry-run/status; external sandbox static inspection.</li>
                   <li>Local memory status/fallback, generated context packs, and Reports under 14_context.</li>
+                  <li>Local Model / Easy Worker Lane status and deterministic demo outputs run with local_demo fallback when Gemma is missing.</li>
                 </ul>
               </section>
               <section class="console-card" id="ghoti-remains-card">
@@ -228,6 +260,7 @@
                 <ul class="card-list">
                   <li>Hermes provider setup and Telegram connection remain manual later.</li>
                   <li>Real Gemma model availability is pending; local_demo fallback is active.</li>
+                  <li>Real local model worker tasks require a manually installed Gemma model; Ghoti will not auto-download one.</li>
                   <li>Ruflo runtime/source availability and Graphify runtime integration remain pending.</li>
                   <li>Browser/Playwright verification remains pending.</li>
                   <li>Future audited computer-use click/type requires a separate safety milestone.</li>
@@ -263,7 +296,7 @@
                   <li><strong>Find latest report:</strong> <code>List the newest relevant reports under 14_context and explain what each one proves.</code></li>
                   <li><strong>Create next milestone:</strong> <code>Create a feature branch under .claude/worktrees for the next safe local-first Ghoti milestone.</code></li>
                   <li><strong>Check dashboard truth:</strong> <code>Start the local dashboard, verify Daily Operator and Status Truth labels, then stop only the recorded PID.</code></li>
-                  <li><strong>Build N+5.6A:</strong> <code>Build N+5.6A local model / Gemma setup truth and easy worker lane, no live providers/tokens.</code></li>
+                  <li><strong>Build N+5.7A:</strong> <code>Build N+5.7A Graphify / repo knowledge map and better context retrieval, no live providers/tokens.</code></li>
                 </ul>
               </section>
               <section class="console-card console-card-span-2" id="overview-product-control-center">
@@ -275,7 +308,7 @@
                 </div>
                 <ul class="card-list">
                   <li><strong>Hermes WSL Truth:</strong> Ubuntu WSL safe probes verify Hermes at <code>/home/ai_sandbox/.local/bin/hermes</code>, v0.14.0. Provider support pending; Telegram manual later; no VPS.</li>
-                  <li><strong>Gemma / Ollama Lane:</strong> local worker lane with truthful fallback when models are missing.</li>
+                  <li><strong>Local Model / Easy Worker Lane:</strong> Ollama/Gemma truth, readiness percentage, safe local demo tasks, and truthful fallback when models are missing.</li>
                   <li><strong>Obsidian Compact Memory:</strong> repo-local compact markdown memory and vault plan.</li>
                   <li><strong>Local Memory / Context Pack:</strong> repo-local copy-paste status packs for Codex, ChatGPT, Claude, and Obsidian.</li>
                   <li><strong>Ruflo / Local Brain Bridge:</strong> status and read-only bridge truth; no runtime wiring.</li>
