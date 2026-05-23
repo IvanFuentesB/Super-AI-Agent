@@ -47,8 +47,8 @@ class TestDailyOperatorDashboard(unittest.TestCase):
     def test_status_truth_is_explicit_and_current(self):
         required = [
             'id="ghoti-status-truth-card"',
-            "N+5.3B clean/product-ready",
-            "origin/main = 6628e6f6fc91921225182a66ebf927982bd5464d",
+            "N+5.4B clean/daily-operator-usability on main",
+            "origin/main = e309921ea27b7f93ce608dede4d0f8ff518937c9",
             "/home/ai_sandbox/.local/bin/hermes",
             "Hermes Agent v0.14.0",
             "browser/Playwright: degraded/not claimed",
@@ -78,7 +78,7 @@ class TestDailyOperatorDashboard(unittest.TestCase):
             "No autonomous money/trading/legal actions",
             "Audit current main",
             "Run product smoke test",
-            "Build N+5.5A local memory/context pack milestone",
+            "Build N+5.6A local model / Gemma setup truth",
         ]
         for label in required:
             with self.subTest(label=label):
@@ -141,8 +141,8 @@ class TestDailyOperatorDocs(unittest.TestCase):
         codex = CODEX_WORKFLOW.read_text(encoding="utf-8", errors="replace")
         for text in [readme, codex]:
             with self.subTest(path="baseline"):
-                self.assertIn("N+5.3B", text)
-                self.assertIn("6628e6f6fc91921225182a66ebf927982bd5464d", text)
+                self.assertIn("N+5.4B", text)
+                self.assertIn("e309921ea27b7f93ce608dede4d0f8ff518937c9", text)
                 self.assertIn("python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard", text)
                 self.assertIn("no primary worktree mutation", text.lower())
                 self.assertIn("no live providers/tokens", text.lower())

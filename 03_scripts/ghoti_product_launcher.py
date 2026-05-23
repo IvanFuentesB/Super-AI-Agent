@@ -28,6 +28,7 @@ REPO_ROOT = Path(__file__).parent.parent.resolve()
 DASHBOARD_DIR = REPO_ROOT / "01_projects" / "dashboard_mvp"
 SERVER_JS = DASHBOARD_DIR / "server.js"
 STATE_FILE = DASHBOARD_DIR / "runtime_data" / "ghoti_product_launcher_state.json"
+CONTEXT_PACK_SCRIPT = REPO_ROOT / "03_scripts" / "ghoti_context_pack_builder.py"
 
 LAUNCHER_VERSION = "1.0.0"
 MILESTONE = "N+4.7A"
@@ -48,6 +49,7 @@ WHAT_GHOTI_CAN_DO = [
     "Desktop Recipe Runner — allowlisted local recipes",
     "Parallel Agent Relay — copy-paste Claude + Codex prompt pairs (no auto-launch)",
     "Local Memory / Gemma fallback — local compression, no external API",
+    "Local Memory / Context Pack — compact copy-paste handoff files for Codex/ChatGPT/Claude/Obsidian",
     "Hermes WSL truth — Ubuntu WSL safe probes, no setup/provider/token action",
     "Obsidian Compact Memory — repo-local vault and compressed memory plan",
     "Ruflo / Local Brain Bridge — status/readiness only, no runtime wiring",
@@ -142,6 +144,7 @@ DAILY_OPERATOR_COMMANDS = [
     "python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard",
     "python 03_scripts/ghoti_product_launcher.py --status --json",
     "python 03_scripts/ghoti_product_launcher.py --smoke --json",
+    "python 03_scripts/ghoti_product_launcher.py --context-pack --json",
     "python 03_scripts/ghoti_product_launcher.py --stop-dashboard",
 ]
 
@@ -579,6 +582,60 @@ def cmd_smoke(port: int, run_demo: bool, timeout: int) -> dict:
     }
 
 
+def cmd_context_pack() -> dict:
+    """Generate the local context pack through a fixed argv, never a shell."""
+    if not CONTEXT_PACK_SCRIPT.exists():
+        return {
+            "ok": False,
+            "action": "context-pack",
+            "local_only": True,
+            "external_api_used": False,
+            "error": "ghoti_context_pack_builder.py not found",
+            "generated_at": _now(),
+        }
+    argv = [sys.executable, str(CONTEXT_PACK_SCRIPT), "--write", "--json"]
+    try:
+        completed = subprocess.run(
+            argv,
+            cwd=str(REPO_ROOT),
+            text=True,
+            capture_output=True,
+            timeout=30,
+            shell=False,
+        )
+    except Exception as exc:
+        return {
+            "ok": False,
+            "action": "context-pack",
+            "local_only": True,
+            "external_api_used": False,
+            "error": "context pack builder failed to start: %s" % exc,
+            "generated_at": _now(),
+        }
+    if completed.returncode != 0:
+        return {
+            "ok": False,
+            "action": "context-pack",
+            "local_only": True,
+            "external_api_used": False,
+            "error": completed.stderr or completed.stdout or ("exit %s" % completed.returncode),
+            "generated_at": _now(),
+        }
+    try:
+        payload = json.loads(completed.stdout)
+    except Exception:
+        return {
+            "ok": False,
+            "action": "context-pack",
+            "local_only": True,
+            "external_api_used": False,
+            "error": "context pack builder returned invalid JSON",
+            "generated_at": _now(),
+        }
+    payload["action"] = "context-pack"
+    return payload
+
+
 # ---------------------------------------------------------------------------
 # Human-readable rendering
 # ---------------------------------------------------------------------------
@@ -620,6 +677,12 @@ def _print_human(result: dict) -> None:
                   % (ep["method"], ep["path"], ep["http_status"], ep["passed"]))
         if result.get("demo"):
             print("  demo: %s" % json.dumps(result["demo"]))
+    elif action == "context-pack":
+        print("Context pack: %s" % ("PASS" if result.get("ok") else "FAIL"))
+        if result.get("status_short"):
+            print("  %s" % result["status_short"])
+        for filename, relpath in (result.get("paths") or {}).items():
+            print("  %s -> %s" % (filename, relpath))
 
 
 # ---------------------------------------------------------------------------
@@ -635,8 +698,9 @@ def main(argv=None) -> int:
             "  1. python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard\n"
             "  2. python 03_scripts/ghoti_product_launcher.py --status --json\n"
             "  3. python 03_scripts/ghoti_product_launcher.py --smoke --json\n"
-            "  4. review reports under 14_context/\n"
-            "  5. python 03_scripts/ghoti_product_launcher.py --stop-dashboard\n"
+            "  4. python 03_scripts/ghoti_product_launcher.py --context-pack --json\n"
+            "  5. review reports under 14_context/\n"
+            "  6. python 03_scripts/ghoti_product_launcher.py --stop-dashboard\n"
         ),
     )
     parser.add_argument("--status", action="store_true", help="show launcher + dashboard status")
@@ -644,6 +708,8 @@ def main(argv=None) -> int:
     parser.add_argument("--start-dashboard", action="store_true", help="start the local dashboard")
     parser.add_argument("--stop-dashboard", action="store_true", help="stop the launcher-recorded dashboard")
     parser.add_argument("--smoke", action="store_true", help="run the product smoke test")
+    parser.add_argument("--context-pack", action="store_true",
+                        help="generate the Ghoti current context pack (repo-local, no external API)")
     parser.add_argument("--open-dashboard", action="store_true",
                         help="open the localhost dashboard in a browser (only when explicitly passed)")
     parser.add_argument("--run-demo-smoke", action="store_true",
@@ -663,6 +729,8 @@ def main(argv=None) -> int:
             result = cmd_stop_dashboard()
         elif args.smoke:
             result = cmd_smoke(port, args.run_demo_smoke, timeout)
+        elif args.context_pack:
+            result = cmd_context_pack()
         else:
             # --status, bare --json, or no mode -> status.
             result = cmd_status()

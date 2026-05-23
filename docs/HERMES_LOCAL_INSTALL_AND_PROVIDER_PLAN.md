@@ -1,6 +1,6 @@
 # Hermes Local Install And Provider Plan
 
-## Current N+5.3B Truth
+## Current N+5.4B Truth
 
 - Ubuntu WSL is installed.
 - Hermes is available at `/home/ai_sandbox/.local/bin/hermes`.

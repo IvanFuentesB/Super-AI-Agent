@@ -1,0 +1,144 @@
+{
+  "ok": true,
+  "local_only": true,
+  "external_api_used": false,
+  "generated_at": "2026-05-22T21:18:09Z",
+  "main_hash": "e309921ea27b7f93ce608dede4d0f8ff518937c9",
+  "latest_clean_milestone": "N+5.4B - Daily Operator usability landed on main",
+  "current_milestone": "N+5.5A - Local Memory / Obsidian / Context Pack Brain Upgrade",
+  "next_recommended_milestone": "N+5.6A - Local Model / Gemma Setup Truth + Easy Worker Lane",
+  "launcher_command": "python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard",
+  "dashboard_url": "http://127.0.0.1:3210",
+  "status_short": "Ghoti status: N+5.4B - Daily Operator usability landed on main at origin/main e309921ea27b. Launch with `python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard` and open http://127.0.0.1:3210. Hermes WSL is installed at /home/ai_sandbox/.local/bin/hermes (v0.14.0); browser/Playwright is degraded/not claimed, Codex provider is pending/not proven, Telegram is manual later/no token, and No VPS is in use. Ollama available (ollama version is 0.24.0); Gemma model missing; local_demo fallback active. Obsidian/local memory is present; UI-TARS is observation-only; adapters are approval-gated/local-only; external sandbox is static inspection only. Next recommended milestone: N+5.6A - Local Model / Gemma Setup Truth + Easy Worker Lane.",
+  "hermes": {
+    "wsl_status": "installed",
+    "path": "/home/ai_sandbox/.local/bin/hermes",
+    "version": "v0.14.0",
+    "browser_playwright": "degraded/not claimed unless separately verified",
+    "codex_provider": "pending/not proven",
+    "telegram": "manual later/no token",
+    "vps": "No VPS"
+  },
+  "local_model_truth": {
+    "ollama_available": true,
+    "ollama_version": "ollama version is 0.24.0",
+    "gemma_model_found": false,
+    "gemma_status": "missing",
+    "fallback_mode": "local_demo",
+    "status_line": "Ollama available (ollama version is 0.24.0); Gemma model missing; local_demo fallback active."
+  },
+  "memory": {
+    "obsidian_local_memory": "present",
+    "generated_dir": "14_context/compact_memory/generated",
+    "vault_pattern": "14_context/obsidian_vault/",
+    "compact_memory_pattern": "14_context/compact_memory/"
+  },
+  "latest_reports": [
+    {
+      "path": "14_context/codex_n5_4b_main_merge_daily_operator_usability.md",
+      "name": "codex_n5_4b_main_merge_daily_operator_usability.md",
+      "kind": "main",
+      "rank": [
+        5,
+        4,
+        2
+      ],
+      "modified_unix": 1779483605,
+      "verdict_hint": "CLEAN PASS / N+5.4A DAILY OPERATOR USABILITY MERGE READY"
+    },
+    {
+      "path": "14_context/codex_n5_4a_first_real_operator_usability_pass.md",
+      "name": "codex_n5_4a_first_real_operator_usability_pass.md",
+      "kind": "product",
+      "rank": [
+        5,
+        4,
+        1
+      ],
+      "modified_unix": 1779483605,
+      "verdict_hint": "CLEAN PASS / DAILY OPERATOR USABILITY READY"
+    },
+    {
+      "path": "14_context/codex_n5_3a_product_finish_remote_clean_audit.md",
+      "name": "codex_n5_3a_product_finish_remote_clean_audit.md",
+      "kind": "audit",
+      "rank": [
+        5,
+        3,
+        1
+      ],
+      "modified_unix": 1779483605,
+      "verdict_hint": "CLEAN PASS for local-first supervised MVP merge gating. No blocker was found that prevents merging N+5.3A to `main`."
+    },
+    {
+      "path": "14_context/codex_n5_3a_main_merge_product_finish_local_mvp.md",
+      "name": "codex_n5_3a_main_merge_product_finish_local_mvp.md",
+      "kind": "main",
+      "rank": [
+        5,
+        3,
+        1
+      ],
+      "modified_unix": 1779483605,
+      "verdict_hint": "CLEAN PASS. The N+5.3A Product Control Center work is suitable for `main` as a local-first supervised MVP. No blocker was found in tests, dashboard checks, public audit, model council scan, Hermes status, local memory status, dry-runs, or sandbox checks."
+    },
+    {
+      "path": "14_context/codex_n5_2b_hermes_bootstrap_stack_ui_tars_manifest_fix.md",
+      "name": "codex_n5_2b_hermes_bootstrap_stack_ui_tars_manifest_fix.md",
+      "kind": "report",
+      "rank": [
+        5,
+        2,
+        2
+      ],
+      "modified_unix": 1779483605,
+      "verdict_hint": "unknown"
+    },
+    {
+      "path": "14_context/codex_n5_2a_hermes_local_bootstrap_public_readiness_model_provider.md",
+      "name": "codex_n5_2a_hermes_local_bootstrap_public_readiness_model_provider.md",
+      "kind": "report",
+      "rank": [
+        5,
+        2,
+        1
+      ],
+      "modified_unix": 1779483605,
+      "verdict_hint": "unknown"
+    },
+    {
+      "path": "14_context/codex_n3_48_roadmap_to_80_percent.md",
+      "name": "codex_n3_48_roadmap_to_80_percent.md",
+      "kind": "report",
+      "rank": [
+        3,
+        48,
+        0
+      ],
+      "modified_unix": 1779483605,
+      "verdict_hint": "unknown"
+    },
+    {
+      "path": "14_context/codex_n3_48_post_merge_audit.md",
+      "name": "codex_n3_48_post_merge_audit.md",
+      "kind": "audit",
+      "rank": [
+        3,
+        48,
+        0
+      ],
+      "modified_unix": 1779483605,
+      "verdict_hint": "unknown"
+    }
+  ],
+  "safety_locks": [
+    "No bot/captcha/cloak bypass.",
+    "No fake engagement.",
+    "No spam.",
+    "No credential/session scraping.",
+    "No autonomous posting.",
+    "No autonomous money/trading/legal actions.",
+    "No live providers without human approval.",
+    "No external repo runtime wiring without approval."
+  ]
+}
