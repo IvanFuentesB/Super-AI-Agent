@@ -29,6 +29,13 @@ python 03_scripts/ghoti_product_launcher.py --local-worker-status --json
 python 03_scripts/ghoti_product_launcher.py --local-worker-demo --json
 ```
 
+Repo knowledge companion:
+
+```powershell
+python 03_scripts/ghoti_product_launcher.py --repo-map --json
+python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json
+```
+
 Dashboard:
 
 ```text
@@ -58,6 +65,10 @@ Files:
 Local worker companion files live under `14_context/local_worker/generated/`.
 See [Local Model / Gemma Setup Guide](LOCAL_MODEL_GEMMA_SETUP_GUIDE.md) and
 [Easy Worker Lane Guide](EASY_WORKER_LANE_GUIDE.md).
+
+Repo knowledge companion files live under `14_context/repo_knowledge/generated/`.
+Start with `repo_knowledge_map.md`, `latest_reports_index.md`, and the
+task-specific bundles. See [Repo Knowledge Map Guide](REPO_KNOWLEDGE_MAP_GUIDE.md).
 
 ## How To Use The Pack
 
@@ -98,6 +109,7 @@ The repo-local vault pattern is:
 - active safety boundaries
 - latest repo reports
 - Ollama/Gemma/local_demo truth
+- repo knowledge map and task bundle paths
 - Hermes WSL truth
 - Obsidian/local memory truth
 - next recommended milestone
@@ -149,6 +161,17 @@ python 03_scripts/hermes_local_bootstrap.py --status --json
 Do not run Hermes setup, provider config, Telegram setup, token flows, or live
 APIs as part of context pack generation.
 
+### Repo knowledge bundle missing
+
+Run:
+
+```powershell
+python 03_scripts/ghoti_repo_knowledge_map.py --write --json
+```
+
+Then regenerate the context pack. The repo knowledge lane stays local-only:
+Graphify runtime is roadmap only/not wired, no external runtime, and no network.
+
 ### Generated residue appears
 
 Context pack files under `14_context/compact_memory/generated/` are intentional
@@ -159,7 +182,8 @@ should be inspected before commit and restored when it is not part of the work.
 
 Next local memory improvements:
 
-- Graphify repo knowledge graph and report index compression
+- local repo knowledge map and report index compression
+- future Graphify repo knowledge graph integration
 - real Gemma model availability and worker-lane diagnostics
 - milestone-aware memory summaries
 - automatic context pack refresh after clean merge gates

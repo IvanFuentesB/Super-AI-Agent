@@ -2,14 +2,14 @@
   "ok": true,
   "local_only": true,
   "external_api_used": false,
-  "generated_at": "2026-05-23T10:59:16Z",
-  "main_hash": "23ace6dedb7acdfd19b148988be35e121f140070",
-  "latest_clean_milestone": "N+5.5B - Local Memory Context Pack landed on main",
-  "current_milestone": "N+5.6A - Local Model / Gemma Setup Truth + Easy Worker Lane",
-  "next_recommended_milestone": "N+5.7A - Graphify / Repo Knowledge Map + Better Context Retrieval",
+  "generated_at": "2026-05-23T12:40:04Z",
+  "main_hash": "c9413108006d920e0110413d3d5e195b504489c1",
+  "latest_clean_milestone": "N+5.6B - Local Model Easy Worker Lane landed on main",
+  "current_milestone": "N+5.7A - Graphify / Repo Knowledge Map + Better Context Retrieval",
+  "next_recommended_milestone": "N+5.8A - Hermes Agent Workflow / Provider Setup Plan + Manual Bridge Readiness",
   "launcher_command": "python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard",
   "dashboard_url": "http://127.0.0.1:3210",
-  "status_short": "Ghoti status: N+5.5B - Local Memory Context Pack landed on main at origin/main 23ace6dedb7a. Launch with `python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard` and open http://127.0.0.1:3210. Hermes WSL is installed at /home/ai_sandbox/.local/bin/hermes (v0.14.0); browser/Playwright is degraded/not claimed, Codex provider is pending/not proven, Telegram is manual later/no token, and No VPS is in use. Ollama available (ollama version is 0.24.0); Gemma model missing; local_demo fallback active. Obsidian/local memory is present; UI-TARS is observation-only; adapters are approval-gated/local-only; external sandbox is static inspection only. Next recommended milestone: N+5.7A - Graphify / Repo Knowledge Map + Better Context Retrieval.",
+  "status_short": "Ghoti status: N+5.6B - Local Model Easy Worker Lane landed on main at origin/main c9413108006d. Launch with `python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard` and open http://127.0.0.1:3210. Hermes WSL is installed at /home/ai_sandbox/.local/bin/hermes (v0.14.0); browser/Playwright is degraded/not claimed, Codex provider is pending/not proven, Telegram is manual later/no token, and No VPS is in use. Ollama available (ollama version is 0.24.0); Gemma model missing; local_demo fallback active. Obsidian/local memory is present; UI-TARS is observation-only; adapters are approval-gated/local-only; external sandbox is static inspection only; repo knowledge map/task bundles are available with Graphify roadmap only/not wired. Next recommended milestone: N+5.8A - Hermes Agent Workflow / Provider Setup Plan + Manual Bridge Readiness.",
   "hermes": {
     "wsl_status": "installed",
     "path": "/home/ai_sandbox/.local/bin/hermes",
@@ -33,7 +33,46 @@
     "vault_pattern": "14_context/obsidian_vault/",
     "compact_memory_pattern": "14_context/compact_memory/"
   },
+  "repo_knowledge": {
+    "status": "available",
+    "readiness_percent": 55,
+    "generated_dir": "14_context/repo_knowledge/generated",
+    "map_path": "14_context/repo_knowledge/generated/repo_knowledge_map.md",
+    "map_json_path": "14_context/repo_knowledge/generated/repo_knowledge_map.json",
+    "latest_reports_index_path": "14_context/repo_knowledge/generated/latest_reports_index.md",
+    "next_milestone_bundle_path": "14_context/repo_knowledge/generated/task_bundle_next_milestone.md",
+    "codex_prompt_path": "14_context/repo_knowledge/generated/codex_next_prompt_graph_context.md",
+    "graphify_runtime": "roadmap only/not wired",
+    "external_repo_runtime": "not wired",
+    "network": "no network",
+    "repo_map_command": "python 03_scripts/ghoti_product_launcher.py --repo-map --json",
+    "next_bundle_command": "python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json"
+  },
   "latest_reports": [
+    {
+      "path": "14_context/codex_n5_6b_main_merge_local_model_easy_worker_lane.md",
+      "name": "codex_n5_6b_main_merge_local_model_easy_worker_lane.md",
+      "kind": "main",
+      "rank": [
+        5,
+        6,
+        2
+      ],
+      "modified_unix": 1779538779,
+      "verdict_hint": "CLEAN PASS / N+5.6B MAIN MERGE READY"
+    },
+    {
+      "path": "14_context/codex_n5_6a_local_model_gemma_setup_truth_easy_worker_lane.md",
+      "name": "codex_n5_6a_local_model_gemma_setup_truth_easy_worker_lane.md",
+      "kind": "report",
+      "rank": [
+        5,
+        6,
+        1
+      ],
+      "modified_unix": 1779538779,
+      "verdict_hint": "CLEAN PASS / N+5.6A LOCAL MODEL EASY WORKER LANE READY"
+    },
     {
       "path": "14_context/codex_n5_5b_main_merge_local_memory_context_pack.md",
       "name": "codex_n5_5b_main_merge_local_memory_context_pack.md",
@@ -43,7 +82,7 @@
         5,
         2
       ],
-      "modified_unix": 1779533064,
+      "modified_unix": 1779538779,
       "verdict_hint": "CLEAN PASS / N+5.5B MAIN MERGE READY"
     },
     {
@@ -55,7 +94,7 @@
         5,
         1
       ],
-      "modified_unix": 1779533064,
+      "modified_unix": 1779538779,
       "verdict_hint": "CLEAN PASS / LOCAL MEMORY CONTEXT PACK READY"
     },
     {
@@ -67,7 +106,7 @@
         4,
         2
       ],
-      "modified_unix": 1779533064,
+      "modified_unix": 1779538779,
       "verdict_hint": "CLEAN PASS / N+5.4A DAILY OPERATOR USABILITY MERGE READY"
     },
     {
@@ -79,7 +118,7 @@
         4,
         1
       ],
-      "modified_unix": 1779533064,
+      "modified_unix": 1779538779,
       "verdict_hint": "CLEAN PASS / DAILY OPERATOR USABILITY READY"
     },
     {
@@ -91,7 +130,7 @@
         3,
         1
       ],
-      "modified_unix": 1779533064,
+      "modified_unix": 1779538779,
       "verdict_hint": "CLEAN PASS for local-first supervised MVP merge gating. No blocker was found that prevents merging N+5.3A to `main`."
     },
     {
@@ -103,32 +142,8 @@
         3,
         1
       ],
-      "modified_unix": 1779533064,
+      "modified_unix": 1779538779,
       "verdict_hint": "CLEAN PASS. The N+5.3A Product Control Center work is suitable for `main` as a local-first supervised MVP. No blocker was found in tests, dashboard checks, public audit, model council scan, Hermes status, local memory status, dry-runs, or sandbox checks."
-    },
-    {
-      "path": "14_context/codex_n5_2b_hermes_bootstrap_stack_ui_tars_manifest_fix.md",
-      "name": "codex_n5_2b_hermes_bootstrap_stack_ui_tars_manifest_fix.md",
-      "kind": "report",
-      "rank": [
-        5,
-        2,
-        2
-      ],
-      "modified_unix": 1779533064,
-      "verdict_hint": "unknown"
-    },
-    {
-      "path": "14_context/codex_n5_2a_hermes_local_bootstrap_public_readiness_model_provider.md",
-      "name": "codex_n5_2a_hermes_local_bootstrap_public_readiness_model_provider.md",
-      "kind": "report",
-      "rank": [
-        5,
-        2,
-        1
-      ],
-      "modified_unix": 1779533064,
-      "verdict_hint": "unknown"
     }
   ],
   "safety_locks": [

@@ -165,7 +165,7 @@
                   </div>
                 </div>
                 <ul class="card-list">
-                  <li><strong>Main baseline:</strong> N+5.5B clean/local-memory-context-pack on main; origin/main = 23ace6dedb7acdfd19b148988be35e121f140070.</li>
+                  <li><strong>Main baseline:</strong> N+5.6B clean/local-model-easy-worker-lane on main; origin/main = c9413108006d920e0110413d3d5e195b504489c1.</li>
                   <li><strong>Hermes WSL:</strong> installed at <code>/home/ai_sandbox/.local/bin/hermes</code>; Hermes Agent v0.14.0.</li>
                   <li><strong>Hermes browser/Playwright:</strong> browser/Playwright: degraded/not claimed unless separately verified.</li>
                   <li><strong>Hermes Codex provider:</strong> Codex provider in Hermes: pending/not proven.</li>
@@ -174,7 +174,7 @@
                   <li><strong>Easy worker:</strong> Local Model / Easy Worker Lane reports readiness percentage, uses existing Ollama/Gemma only when installed, and otherwise keeps local_demo fallback active.</li>
                   <li><strong>Memory:</strong> Obsidian/local memory present; compact markdown stays repo-local.</li>
                   <li><strong>Ruflo:</strong> source-missing/status-only unless a later audited milestone changes it.</li>
-                  <li><strong>Graphify:</strong> roadmap/token-plan only; not installed or wired.</li>
+                  <li><strong>Graphify:</strong> local repo knowledge map available; external Graphify runtime roadmap only/not wired.</li>
                   <li><strong>UI-TARS:</strong> observation-only; no click/type/control.</li>
                   <li><strong>Adapters and sandbox:</strong> approval-gated/local-only adapter runner; external sandbox static inspection only.</li>
                   <li><strong>Public audit:</strong> Public audit: 0 blockers / 7 warnings human review. Readiness score: 100.</li>
@@ -234,6 +234,35 @@
                   <p class="empty-state">No local worker action run yet.</p>
                 </div>
               </section>
+              <section class="console-card console-card-span-2" id="ghoti-repo-knowledge-card">
+                <div class="console-card-header">
+                  <div>
+                    <h2>Repo Knowledge / Graphify Lane</h2>
+                    <p>Local file map, latest report index, and task bundles for focused context retrieval.</p>
+                  </div>
+                </div>
+                <ul class="card-list">
+                  <li><strong>Generate:</strong> <code>python 03_scripts/ghoti_product_launcher.py --repo-map --json</code></li>
+                  <li><strong>Next bundle:</strong> <code>python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json</code></li>
+                  <li><strong>Direct script:</strong> <code>python 03_scripts/ghoti_repo_knowledge_map.py --write --json</code></li>
+                  <li><strong>repo knowledge readiness:</strong> <code id="repo-knowledge-readiness">loading...</code></li>
+                  <li><strong>Map path:</strong> <code id="repo-knowledge-map-path">14_context/repo_knowledge/generated/repo_knowledge_map.md</code></li>
+                  <li><strong>latest report index:</strong> <code id="repo-knowledge-report-index">14_context/repo_knowledge/generated/latest_reports_index.md</code></li>
+                  <li><strong>task bundles:</strong> <code id="repo-knowledge-bundle-path">14_context/repo_knowledge/generated/task_bundle_next_milestone.md</code></li>
+                  <li><strong>Recommended prompt:</strong> <code id="repo-knowledge-prompt-path">14_context/repo_knowledge/generated/codex_next_prompt_graph_context.md</code></li>
+                  <li><strong>Graphify runtime:</strong> Graphify roadmap only; external runtime is not wired.</li>
+                  <li><strong>Safety:</strong> no external runtime, no network, no live APIs, no provider setup, no external repo execution.</li>
+                  <li><strong>Status:</strong> <span id="repo-knowledge-status-line">Loading repo knowledge status...</span></li>
+                </ul>
+                <div class="card-actions">
+                  <button id="repo-knowledge-refresh-btn" type="button">Refresh Repo Knowledge</button>
+                  <button id="repo-knowledge-write-btn" type="button">Generate Repo Map</button>
+                  <button id="repo-knowledge-bundle-btn" type="button">Load Next Bundle</button>
+                </div>
+                <div id="repo-knowledge-action-result" class="card-status">
+                  <p class="empty-state">No repo knowledge action run yet.</p>
+                </div>
+              </section>
               <section class="console-card" id="ghoti-works-now-card">
                 <div class="console-card-header">
                   <div>
@@ -248,6 +277,7 @@
                   <li>UI-TARS observation dry-run; adapter dry-run/status; external sandbox static inspection.</li>
                   <li>Local memory status/fallback, generated context packs, and Reports under 14_context.</li>
                   <li>Local Model / Easy Worker Lane status and deterministic demo outputs run with local_demo fallback when Gemma is missing.</li>
+                  <li>Repo Knowledge / Graphify Lane generates a local map, latest report index, task bundles, and next prompt with no external runtime.</li>
                 </ul>
               </section>
               <section class="console-card" id="ghoti-remains-card">
@@ -261,7 +291,7 @@
                   <li>Hermes provider setup and Telegram connection remain manual later.</li>
                   <li>Real Gemma model availability is pending; local_demo fallback is active.</li>
                   <li>Real local model worker tasks require a manually installed Gemma model; Ghoti will not auto-download one.</li>
-                  <li>Ruflo runtime/source availability and Graphify runtime integration remain pending.</li>
+                  <li>Ruflo runtime/source availability and external Graphify runtime integration remain pending.</li>
                   <li>Browser/Playwright verification remains pending.</li>
                   <li>Future audited computer-use click/type requires a separate safety milestone.</li>
                   <li>Production public release still requires human review.</li>
@@ -296,7 +326,7 @@
                   <li><strong>Find latest report:</strong> <code>List the newest relevant reports under 14_context and explain what each one proves.</code></li>
                   <li><strong>Create next milestone:</strong> <code>Create a feature branch under .claude/worktrees for the next safe local-first Ghoti milestone.</code></li>
                   <li><strong>Check dashboard truth:</strong> <code>Start the local dashboard, verify Daily Operator and Status Truth labels, then stop only the recorded PID.</code></li>
-                  <li><strong>Build N+5.7A:</strong> <code>Build N+5.7A Graphify / repo knowledge map and better context retrieval, no live providers/tokens.</code></li>
+                  <li><strong>Build N+5.8A:</strong> <code>Build N+5.8A Hermes Agent Workflow / Provider Setup Plan + Manual Bridge Readiness, safe probes only.</code></li>
                 </ul>
               </section>
               <section class="console-card console-card-span-2" id="overview-product-control-center">
@@ -312,7 +342,7 @@
                   <li><strong>Obsidian Compact Memory:</strong> repo-local compact markdown memory and vault plan.</li>
                   <li><strong>Local Memory / Context Pack:</strong> repo-local copy-paste status packs for Codex, ChatGPT, Claude, and Obsidian.</li>
                   <li><strong>Ruflo / Local Brain Bridge:</strong> status and read-only bridge truth; no runtime wiring.</li>
-                  <li><strong>Graphify / Token Plan:</strong> future graph/token-efficiency plan; not installed or wired.</li>
+                  <li><strong>Repo Knowledge / Graphify Lane:</strong> local map, latest report index, and task bundles now; external Graphify runtime remains roadmap only/not wired.</li>
                   <li><strong>UI-TARS Observation Only:</strong> dry-run observation packets; runtime is not started and pointer/keyboard actions are disabled.</li>
                   <li><strong>Adapter Dry-Runs:</strong> approved local adapter dry-runs only; no external code or live API.</li>
                   <li><strong>External Sandbox:</strong> static scan and planning only.</li>

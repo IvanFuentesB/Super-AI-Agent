@@ -47,8 +47,8 @@ class TestDailyOperatorDashboard(unittest.TestCase):
     def test_status_truth_is_explicit_and_current(self):
         required = [
             'id="ghoti-status-truth-card"',
-            "N+5.5B clean/local-memory-context-pack on main",
-            "origin/main = 23ace6dedb7acdfd19b148988be35e121f140070",
+            "N+5.6B clean/local-model-easy-worker-lane on main",
+            "origin/main = c9413108006d920e0110413d3d5e195b504489c1",
             "/home/ai_sandbox/.local/bin/hermes",
             "Hermes Agent v0.14.0",
             "browser/Playwright: degraded/not claimed",
@@ -79,7 +79,7 @@ class TestDailyOperatorDashboard(unittest.TestCase):
             "No autonomous money/trading/legal actions",
             "Audit current main",
             "Run product smoke test",
-            "Build N+5.7A Graphify / repo knowledge map",
+            "Build N+5.8A Hermes Agent Workflow",
         ]
         for label in required:
             with self.subTest(label=label):
@@ -100,6 +100,8 @@ class TestDailyOperatorLauncher(unittest.TestCase):
             "python 03_scripts/ghoti_product_launcher.py --smoke --json",
             "python 03_scripts/ghoti_product_launcher.py --local-worker-status --json",
             "python 03_scripts/ghoti_product_launcher.py --local-worker-demo --json",
+            "python 03_scripts/ghoti_product_launcher.py --repo-map --json",
+            "python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json",
             "python 03_scripts/ghoti_product_launcher.py --stop-dashboard",
         ]:
             with self.subTest(command=command):
@@ -144,8 +146,8 @@ class TestDailyOperatorDocs(unittest.TestCase):
         codex = CODEX_WORKFLOW.read_text(encoding="utf-8", errors="replace")
         for text in [readme, codex]:
             with self.subTest(path="baseline"):
-                self.assertIn("N+5.5B", text)
-                self.assertIn("23ace6dedb7acdfd19b148988be35e121f140070", text)
+                self.assertIn("N+5.6B", text)
+                self.assertIn("c9413108006d920e0110413d3d5e195b504489c1", text)
                 self.assertIn("python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard", text)
                 self.assertIn("no primary worktree mutation", text.lower())
                 self.assertIn("no live providers/tokens", text.lower())

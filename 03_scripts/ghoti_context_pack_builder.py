@@ -26,9 +26,12 @@ GENERATED_DIR = REPO_ROOT / "14_context" / "compact_memory" / "generated"
 
 LAUNCHER_COMMAND = "python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard"
 DASHBOARD_URL = "http://127.0.0.1:3210"
-LATEST_CLEAN_MILESTONE = "N+5.5B - Local Memory Context Pack landed on main"
-CURRENT_MILESTONE = "N+5.6A - Local Model / Gemma Setup Truth + Easy Worker Lane"
-NEXT_RECOMMENDED_MILESTONE = "N+5.7A - Graphify / Repo Knowledge Map + Better Context Retrieval"
+LATEST_CLEAN_MILESTONE = "N+5.6B - Local Model Easy Worker Lane landed on main"
+CURRENT_MILESTONE = "N+5.7A - Graphify / Repo Knowledge Map + Better Context Retrieval"
+NEXT_RECOMMENDED_MILESTONE = "N+5.8A - Hermes Agent Workflow / Provider Setup Plan + Manual Bridge Readiness"
+REPO_KNOWLEDGE_DIR = REPO_ROOT / "14_context" / "repo_knowledge" / "generated"
+REPO_MAP_COMMAND = "python 03_scripts/ghoti_product_launcher.py --repo-map --json"
+REPO_BUNDLE_NEXT_COMMAND = "python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json"
 
 OUTPUT_FILES = {
     "ghoti_current_context_pack.md": "context_pack_markdown",
@@ -217,6 +220,21 @@ def _static_truth() -> Dict[str, object]:
             "vault_pattern": "14_context/obsidian_vault/",
             "compact_memory_pattern": "14_context/compact_memory/",
         },
+        "repo_knowledge": {
+            "status": "available",
+            "readiness_percent": 55,
+            "generated_dir": _repo_rel(REPO_KNOWLEDGE_DIR),
+            "map_path": _repo_rel(REPO_KNOWLEDGE_DIR / "repo_knowledge_map.md"),
+            "map_json_path": _repo_rel(REPO_KNOWLEDGE_DIR / "repo_knowledge_map.json"),
+            "latest_reports_index_path": _repo_rel(REPO_KNOWLEDGE_DIR / "latest_reports_index.md"),
+            "next_milestone_bundle_path": _repo_rel(REPO_KNOWLEDGE_DIR / "task_bundle_next_milestone.md"),
+            "codex_prompt_path": _repo_rel(REPO_KNOWLEDGE_DIR / "codex_next_prompt_graph_context.md"),
+            "graphify_runtime": "roadmap only/not wired",
+            "external_repo_runtime": "not wired",
+            "network": "no network",
+            "repo_map_command": REPO_MAP_COMMAND,
+            "next_bundle_command": REPO_BUNDLE_NEXT_COMMAND,
+        },
         "works_now": [
             "Launcher starts the dashboard.",
             "Product Control Center is visible.",
@@ -227,6 +245,7 @@ def _static_truth() -> Dict[str, object]:
             "Adapter dry-run/status is approval-gated and local-only.",
             "External sandbox remains static inspection/planning-only.",
             "Local memory status and fallback are repo-local.",
+            "Repo Knowledge / Graphify Lane creates a local file map, latest report index, and task bundles.",
             "Reports live under 14_context/.",
         ],
         "pending_manual": [
@@ -234,7 +253,7 @@ def _static_truth() -> Dict[str, object]:
             "Telegram connection.",
             "Real Gemma model availability.",
             "Ruflo runtime/source availability.",
-            "Graphify runtime integration.",
+            "External Graphify runtime integration.",
             "Browser/Playwright verification.",
             "Future audited computer-use click/type.",
             "Production public release human review.",
@@ -288,7 +307,8 @@ def _render_status_short(facts: Dict[str, object]) -> str:
         "browser/Playwright is degraded/not claimed, Codex provider is pending/not proven, "
         "Telegram is manual later/no token, and No VPS is in use. "
         f"{model['status_line']} Obsidian/local memory is present; UI-TARS is observation-only; "
-        "adapters are approval-gated/local-only; external sandbox is static inspection only. "
+        "adapters are approval-gated/local-only; external sandbox is static inspection only; "
+        "repo knowledge map/task bundles are available with Graphify roadmap only/not wired. "
         f"Next recommended milestone: {NEXT_RECOMMENDED_MILESTONE}."
     )
 
@@ -320,6 +340,8 @@ def _render_context_pack(facts: Dict[str, object], status_short: str) -> str:
         - Launcher command: `{LAUNCHER_COMMAND}`
         - Dashboard URL: `{DASHBOARD_URL}`
         - Context pack command: `python 03_scripts/ghoti_context_pack_builder.py --write --json`
+        - Repo map command: `{REPO_MAP_COMMAND}`
+        - Next bundle command: `{REPO_BUNDLE_NEXT_COMMAND}`
 
         ## What Works Now
 
@@ -356,11 +378,26 @@ def _render_context_pack(facts: Dict[str, object], status_short: str) -> str:
         - Compact memory pattern: `{facts['memory']['compact_memory_pattern']}`
         - This context pack is file-based and does not require Obsidian installation.
 
+        ## Repo Knowledge / Graphify Lane
+
+        - Repo knowledge readiness: {facts['repo_knowledge']['readiness_percent']}%
+        - Local repo knowledge map: `{facts['repo_knowledge']['map_path']}`
+        - Repo knowledge JSON: `{facts['repo_knowledge']['map_json_path']}`
+        - Latest report index: `{facts['repo_knowledge']['latest_reports_index_path']}`
+        - Best next milestone bundle: `{facts['repo_knowledge']['next_milestone_bundle_path']}`
+        - Copy-paste repo prompt: `{facts['repo_knowledge']['codex_prompt_path']}`
+        - Graphify runtime: {facts['repo_knowledge']['graphify_runtime']}
+        - External repo runtime: {facts['repo_knowledge']['external_repo_runtime']}
+        - Network: {facts['repo_knowledge']['network']}
+        - Generate: `{facts['repo_knowledge']['repo_map_command']}`
+        - Bundle: `{facts['repo_knowledge']['next_bundle_command']}`
+
         ## Operator Lanes
 
         - UI-TARS: observation-only
         - Adapter runner: approval-gated/local-only
         - External sandbox: static inspection only
+        - Repo Knowledge / Graphify Lane: local map and task bundles; Graphify runtime roadmap only/not wired
 
         ## Latest Reports
 
@@ -405,13 +442,14 @@ def _render_codex_prompt(facts: Dict[str, object]) -> str:
         - UI-TARS observation-only.
         - Adapter runner approval-gated/local-only.
         - External sandbox static inspection/planning-only.
+        - Repo Knowledge / Graphify Lane available as local JSON/Markdown files.
 
         Next safe milestone after this pack:
         {NEXT_RECOMMENDED_MILESTONE}
 
         Ask Codex to create a feature branch, add focused tests first, implement only the
-        Graphify/repo knowledge map and context retrieval changes, validate, push feature,
-        then create a separate audit branch. Do not start live providers or tokens.
+        Hermes workflow/provider setup plan and manual bridge readiness changes, validate,
+        push feature, then create a separate audit branch. Do not start live providers or tokens.
     """)
 
 
@@ -455,6 +493,7 @@ def _json_pack(facts: Dict[str, object], status_short: str) -> Dict[str, object]
         "hermes": facts["hermes"],
         "local_model_truth": facts["local_model_truth"],
         "memory": facts["memory"],
+        "repo_knowledge": facts["repo_knowledge"],
         "latest_reports": facts["latest_reports"],
         "safety_locks": facts["safety_locks"],
     }
