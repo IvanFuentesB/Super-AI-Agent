@@ -3,6 +3,8 @@
 ## Token Efficiency
 
 - Evaluate Graphify for knowledge graph compression and source memory.
+- Use the N+5.7A local repo knowledge map now for selected file maps, latest
+  report indexes, subsystem indexes, and task bundles.
 - Create local compact memory snapshots before sending context to premium models.
 - Use Gemma/Ollama for cheap summarization and classification.
 - Avoid sending the whole repo to premium models.
@@ -12,7 +14,23 @@
 - Route planning/product reasoning to ChatGPT/Claude when manually invoked.
 - Cache source intelligence packets.
 - Compress context into Obsidian/compact memory.
-- Show token-saving truth in the dashboard later.
+- Show token-saving truth in the dashboard through Local Memory, Local Worker,
+  and Repo Knowledge / Graphify Lane cards.
+
+## Repo Knowledge / Graphify Lane
+
+- Current implementation: local JSON/Markdown files under
+  `14_context/repo_knowledge/generated/`.
+- Current commands:
+  `python 03_scripts/ghoti_repo_knowledge_map.py --write --json` and
+  `python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json`.
+- Current bundles: audit-main, dashboard, local-memory, local-model-worker,
+  hermes, content-workflow, safety, and next-milestone.
+- Graphify runtime status: roadmap only/not wired.
+- External repo runtime: not wired.
+- Network: not used.
+- Later Graphify work should add richer graph retrieval only after a separate
+  audit gate.
 
 ## Computer Use
 

@@ -17,9 +17,9 @@ worktree read-only except inspection. No force-push, no history rewrite, no
 secrets, no live account/API/posting/money/trading/legal actions, no bot/captcha/
 cloak bypass, no fake autonomy claims, no shell-true command execution, and no live providers/tokens.
 
-Current main hash: `23ace6dedb7acdfd19b148988be35e121f140070`
-Latest clean milestone: N+5.5B - Local Memory Context Pack landed on main
-Current context pack milestone: N+5.6A - Local Model / Gemma Setup Truth + Easy Worker Lane
+Current main hash: `c9413108006d920e0110413d3d5e195b504489c1`
+Latest clean milestone: N+5.6B - Local Model Easy Worker Lane landed on main
+Current context pack milestone: N+5.7A - Graphify / Repo Knowledge Map + Better Context Retrieval
 Launcher: `python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard`
 Dashboard: `http://127.0.0.1:3210`
 
@@ -33,10 +33,11 @@ Status truth:
 - UI-TARS observation-only.
 - Adapter runner approval-gated/local-only.
 - External sandbox static inspection/planning-only.
+- Repo Knowledge / Graphify Lane available as local JSON/Markdown files.
 
 Next safe milestone after this pack:
-N+5.7A - Graphify / Repo Knowledge Map + Better Context Retrieval
+N+5.8A - Hermes Agent Workflow / Provider Setup Plan + Manual Bridge Readiness
 
 Ask Codex to create a feature branch, add focused tests first, implement only the
-Graphify/repo knowledge map and context retrieval changes, validate, push feature,
-then create a separate audit branch. Do not start live providers or tokens.
+Hermes workflow/provider setup plan and manual bridge readiness changes, validate,
+push feature, then create a separate audit branch. Do not start live providers or tokens.

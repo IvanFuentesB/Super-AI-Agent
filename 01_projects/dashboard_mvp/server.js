@@ -7004,6 +7004,38 @@ async function handleApiRequest(request, response, requestUrl) {
     }
   }
 
+  async function runRepoKnowledgeMap(argvTail, timeoutMs) {
+    const repoKnowledgeScript = path.join(repoRoot, "03_scripts", "ghoti_repo_knowledge_map.py");
+    const py = resolvePython();
+    if (!py) {
+      return { ok: false, local_only: true, available: false, error: "Python interpreter not found" };
+    }
+    if (!fs.existsSync(repoKnowledgeScript)) {
+      return { ok: false, local_only: true, available: false, error: "Repo knowledge map not found" };
+    }
+    const argv = [...py.baseArgs, repoKnowledgeScript, ...argvTail, "--json"];
+    let raw;
+    try {
+      raw = await runCommand(py.command, argv, { cwd: repoRoot, timeoutMs: timeoutMs || 45000 });
+    } catch (err) {
+      return { ok: false, local_only: true, available: false, error: String(err && err.message) };
+    }
+    if (!raw.ok) {
+      return {
+        ok: false,
+        local_only: true,
+        available: false,
+        error: raw.stderr || `exit ${raw.exitCode}`,
+        output: raw.stdout,
+      };
+    }
+    try {
+      return JSON.parse(raw.stdout);
+    } catch (_) {
+      return { ok: false, local_only: true, available: false, error: "Failed to parse repo knowledge output" };
+    }
+  }
+
   // GET /api/local-memory-context-pack/status
   if (request.method === "GET" && requestUrl.pathname === "/api/local-memory-context-pack/status") {
     sendJson(response, 200, await runContextPackBuilder(["--status"], 30000));
@@ -7042,6 +7074,40 @@ async function handleApiRequest(request, response, requestUrl) {
   if (request.method === "POST" && requestUrl.pathname === "/api/local-model-worker/write-demo-output") {
     // Fixed argv. Repo-local file generation only. Ghoti never runs ollama pull.
     sendJson(response, 200, await runLocalModelWorkerLane(["--write-demo-output"], 45000));
+    return;
+  }
+
+  // GET /api/repo-knowledge/status
+  if (request.method === "GET" && requestUrl.pathname === "/api/repo-knowledge/status") {
+    sendJson(response, 200, await runRepoKnowledgeMap(["--status"], 45000));
+    return;
+  }
+
+  // POST /api/repo-knowledge/write
+  if (request.method === "POST" && requestUrl.pathname === "/api/repo-knowledge/write") {
+    // Fixed argv. Local JSON/Markdown generation only. No network, no external repo runtime.
+    sendJson(response, 200, await runRepoKnowledgeMap(["--write"], 60000));
+    return;
+  }
+
+  // GET /api/repo-knowledge/bundle?name=<bundle>
+  if (request.method === "GET" && requestUrl.pathname === "/api/repo-knowledge/bundle") {
+    const allowedBundles = new Set([
+      "audit-main",
+      "dashboard",
+      "local-memory",
+      "local-model-worker",
+      "hermes",
+      "content-workflow",
+      "safety",
+      "next-milestone",
+    ]);
+    const bundle = String(requestUrl.searchParams.get("name") || "next-milestone");
+    if (!allowedBundles.has(bundle)) {
+      sendJson(response, 400, { ok: false, local_only: true, error: "Unsupported repo knowledge bundle" });
+      return;
+    }
+    sendJson(response, 200, await runRepoKnowledgeMap(["--bundle", bundle], 45000));
     return;
   }
 
@@ -7102,6 +7168,13 @@ async function handleApiRequest(request, response, requestUrl) {
           available: true,
           mode: "local_demo_fallback_or_ollama_gemma",
           how_to_run: "Run local_model_worker_lane.py --status --json or POST /api/local-model-worker/write-demo-output. No live APIs, no auto-downloads.",
+        },
+        {
+          key: "repo_knowledge_graphify_lane",
+          label: "Repo Knowledge / Graphify Lane",
+          available: true,
+          mode: "local_map_and_task_bundles",
+          how_to_run: "Run ghoti_repo_knowledge_map.py --write --json or POST /api/repo-knowledge/write. Graphify runtime is roadmap only/not wired; no external repo runtime; no network.",
         },
         {
           key: "external_tool_intake",

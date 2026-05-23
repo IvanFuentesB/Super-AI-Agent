@@ -6898,6 +6898,85 @@ refreshLocalOrchestrator();
 })();
 
 // ---------------------------------------------------------------------
+// N+5.7A Repo Knowledge / Graphify Lane (client-side handlers)
+// ---------------------------------------------------------------------
+(function attachRepoKnowledgeGraphifyLane() {
+  function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value || "none";
+  }
+  function setResult(text) {
+    const el = document.getElementById("repo-knowledge-action-result");
+    if (!el) return;
+    el.innerHTML = "";
+    const p = document.createElement("p");
+    p.textContent = text;
+    el.appendChild(p);
+  }
+  async function callRepoKnowledge(endpoint, method) {
+    const res = await fetch(endpoint, { method: method || "GET", headers: { "Content-Type": "application/json" } });
+    return await res.json();
+  }
+  function renderStatus(data) {
+    if (!data || !data.ok) {
+      setText("repo-knowledge-status-line", (data && data.error) || "Repo knowledge status unavailable.");
+      setText("repo-knowledge-readiness", "unknown");
+      return;
+    }
+    const paths = data.output_paths || data.paths || {};
+    const bundles = data.task_bundle_paths || {};
+    setText("repo-knowledge-status-line", data.status_line || "Repo knowledge status loaded.");
+    setText("repo-knowledge-readiness", String(data.readiness_percent || 0) + "%");
+    setText("repo-knowledge-map-path", paths["repo_knowledge_map.md"] || data.latest_map_path || "14_context/repo_knowledge/generated/repo_knowledge_map.md");
+    setText("repo-knowledge-report-index", paths["latest_reports_index.md"] || data.latest_report_index_path || "14_context/repo_knowledge/generated/latest_reports_index.md");
+    setText("repo-knowledge-bundle-path", bundles["next-milestone"] || paths["task_bundle_next_milestone.md"] || "14_context/repo_knowledge/generated/task_bundle_next_milestone.md");
+    setText("repo-knowledge-prompt-path", paths["codex_next_prompt_graph_context.md"] || "14_context/repo_knowledge/generated/codex_next_prompt_graph_context.md");
+  }
+  async function refreshRepoKnowledgeStatus() {
+    try {
+      renderStatus(await callRepoKnowledge("/api/repo-knowledge/status", "GET"));
+    } catch (err) {
+      setText("repo-knowledge-status-line", "Could not load repo knowledge status.");
+    }
+  }
+  function bind(id, fn) {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("click", fn);
+  }
+  bind("repo-knowledge-refresh-btn", async function () {
+    setResult("Refreshing repo knowledge readiness...");
+    await refreshRepoKnowledgeStatus();
+    setResult("Repo knowledge status refreshed.");
+  });
+  bind("repo-knowledge-write-btn", async function () {
+    setResult("Generating local repo knowledge map and task bundles...");
+    try {
+      const data = await callRepoKnowledge("/api/repo-knowledge/write", "POST");
+      renderStatus(data);
+      setResult(data && data.ok
+        ? "Repo knowledge map generated. Latest report index and task bundles are shown above."
+        : "Repo knowledge generation reported unavailable: " + ((data && data.error) || "unknown"));
+    } catch (err) {
+      setResult("Repo knowledge generation failed: " + (err && err.message));
+    }
+  });
+  bind("repo-knowledge-bundle-btn", async function () {
+    setResult("Loading next-milestone task bundle...");
+    try {
+      const data = await callRepoKnowledge("/api/repo-knowledge/bundle?name=next-milestone", "GET");
+      setResult(data && data.ok
+        ? "Next bundle loaded. Use the generated bundle path for focused Codex/ChatGPT context."
+        : "Repo knowledge bundle reported unavailable: " + ((data && data.error) || "unknown"));
+    } catch (err) {
+      setResult("Repo knowledge bundle failed: " + (err && err.message));
+    }
+  });
+  if (document.getElementById("ghoti-repo-knowledge-card")) {
+    refreshRepoKnowledgeStatus();
+  }
+})();
+
+// ---------------------------------------------------------------------
 // N+4.8A External Tool Sandbox Truth (client-side handler, read-only)
 // ---------------------------------------------------------------------
 (function attachExternalToolSandbox() {

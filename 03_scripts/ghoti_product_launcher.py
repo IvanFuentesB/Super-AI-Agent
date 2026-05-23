@@ -30,6 +30,7 @@ SERVER_JS = DASHBOARD_DIR / "server.js"
 STATE_FILE = DASHBOARD_DIR / "runtime_data" / "ghoti_product_launcher_state.json"
 CONTEXT_PACK_SCRIPT = REPO_ROOT / "03_scripts" / "ghoti_context_pack_builder.py"
 LOCAL_WORKER_SCRIPT = REPO_ROOT / "03_scripts" / "local_model_worker_lane.py"
+REPO_KNOWLEDGE_SCRIPT = REPO_ROOT / "03_scripts" / "ghoti_repo_knowledge_map.py"
 
 LAUNCHER_VERSION = "1.0.0"
 MILESTONE = "N+4.7A"
@@ -52,6 +53,7 @@ WHAT_GHOTI_CAN_DO = [
     "Local Memory / Gemma fallback — local compression, no external API",
     "Local Memory / Context Pack — compact copy-paste handoff files for Codex/ChatGPT/Claude/Obsidian",
     "Local Model / Easy Worker Lane — Ollama/Gemma truth plus local_demo fallback tasks",
+    "Repo Knowledge / Graphify Lane — local file map and task bundles; Graphify runtime roadmap only",
     "Hermes WSL truth — Ubuntu WSL safe probes, no setup/provider/token action",
     "Obsidian Compact Memory — repo-local vault and compressed memory plan",
     "Ruflo / Local Brain Bridge — status/readiness only, no runtime wiring",
@@ -90,6 +92,13 @@ CONTROL_CENTER_LANES = [
         "status": "repo_local_plan",
         "truth": "Compact memory stays in repo-local files and Obsidian-compatible markdown.",
         "safe_next_step": "Follow docs/OBSIDIAN_COMPACT_MEMORY_PLAN.md before changing vault shape.",
+    },
+    {
+        "key": "repo_knowledge_graphify_lane",
+        "label": "Repo Knowledge / Graphify Lane",
+        "status": "local_map_available",
+        "truth": "Local repo knowledge map and task bundles are generated as JSON/Markdown; external Graphify runtime is roadmap only/not wired.",
+        "safe_next_step": "Run ghoti_repo_knowledge_map.py --write --json or use --repo-bundle next-milestone for focused context.",
     },
     {
         "key": "ruflo_local_brain_bridge",
@@ -156,6 +165,8 @@ DAILY_OPERATOR_COMMANDS = [
     "python 03_scripts/ghoti_product_launcher.py --context-pack --json",
     "python 03_scripts/ghoti_product_launcher.py --local-worker-status --json",
     "python 03_scripts/ghoti_product_launcher.py --local-worker-demo --json",
+    "python 03_scripts/ghoti_product_launcher.py --repo-map --json",
+    "python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json",
     "python 03_scripts/ghoti_product_launcher.py --stop-dashboard",
 ]
 
@@ -709,6 +720,72 @@ def cmd_local_worker_demo() -> dict:
     return _run_local_worker(["--write-demo-output"], "local-worker-demo", timeout=45)
 
 
+def _run_repo_knowledge(argv_tail, action: str, timeout: int = 45) -> dict:
+    """Run the repo knowledge map script with fixed argv, never a shell."""
+    if not REPO_KNOWLEDGE_SCRIPT.exists():
+        return {
+            "ok": False,
+            "action": action,
+            "local_only": True,
+            "external_api_used": False,
+            "network_used": False,
+            "error": "ghoti_repo_knowledge_map.py not found",
+            "generated_at": _now(),
+        }
+    argv = [sys.executable, str(REPO_KNOWLEDGE_SCRIPT), *argv_tail, "--json"]
+    try:
+        completed = subprocess.run(
+            argv,
+            cwd=str(REPO_ROOT),
+            text=True,
+            capture_output=True,
+            timeout=timeout,
+            shell=False,
+        )
+    except Exception as exc:
+        return {
+            "ok": False,
+            "action": action,
+            "local_only": True,
+            "external_api_used": False,
+            "network_used": False,
+            "error": "repo knowledge map failed to start: %s" % exc,
+            "generated_at": _now(),
+        }
+    if completed.returncode != 0:
+        return {
+            "ok": False,
+            "action": action,
+            "local_only": True,
+            "external_api_used": False,
+            "network_used": False,
+            "error": completed.stderr or completed.stdout or ("exit %s" % completed.returncode),
+            "generated_at": _now(),
+        }
+    try:
+        payload = json.loads(completed.stdout)
+    except Exception:
+        return {
+            "ok": False,
+            "action": action,
+            "local_only": True,
+            "external_api_used": False,
+            "network_used": False,
+            "error": "repo knowledge map returned invalid JSON",
+            "generated_at": _now(),
+        }
+    payload["action"] = action
+    return payload
+
+
+def cmd_repo_map() -> dict:
+    return _run_repo_knowledge(["--write"], "repo-map", timeout=60)
+
+
+def cmd_repo_bundle(bundle: str) -> dict:
+    return _run_repo_knowledge(["--bundle", bundle], "repo-bundle", timeout=45)
+
+
 # ---------------------------------------------------------------------------
 # Human-readable rendering
 # ---------------------------------------------------------------------------
@@ -764,6 +841,16 @@ def _print_human(result: dict) -> None:
             print("  readiness: %s%%" % result["readiness_percent"])
         for filename, relpath in (result.get("paths") or result.get("output_paths") or {}).items():
             print("  %s -> %s" % (filename, relpath))
+    elif action in ("repo-map", "repo-bundle"):
+        print("Repo Knowledge / Graphify Lane: %s" % ("PASS" if result.get("ok") else "FAIL"))
+        if result.get("status_line"):
+            print("  %s" % result["status_line"])
+        if result.get("readiness_percent") is not None:
+            print("  readiness: %s%%" % result["readiness_percent"])
+        if result.get("bundle"):
+            print("  bundle: %s" % result["bundle"])
+        for filename, relpath in (result.get("paths") or result.get("output_paths") or {}).items():
+            print("  %s -> %s" % (filename, relpath))
 
 
 # ---------------------------------------------------------------------------
@@ -782,8 +869,10 @@ def main(argv=None) -> int:
             "  4. python 03_scripts/ghoti_product_launcher.py --context-pack --json\n"
             "  5. python 03_scripts/ghoti_product_launcher.py --local-worker-status --json\n"
             "  6. python 03_scripts/ghoti_product_launcher.py --local-worker-demo --json\n"
-            "  7. review reports under 14_context/\n"
-            "  8. python 03_scripts/ghoti_product_launcher.py --stop-dashboard\n"
+            "  7. python 03_scripts/ghoti_product_launcher.py --repo-map --json\n"
+            "  8. python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json\n"
+            "  9. review reports under 14_context/\n"
+            "  10. python 03_scripts/ghoti_product_launcher.py --stop-dashboard\n"
         ),
     )
     parser.add_argument("--status", action="store_true", help="show launcher + dashboard status")
@@ -797,6 +886,20 @@ def main(argv=None) -> int:
                         help="show Ollama/Gemma/local_demo worker readiness (local only)")
     parser.add_argument("--local-worker-demo", action="store_true",
                         help="write safe deterministic local worker demo outputs")
+    parser.add_argument("--repo-map", action="store_true",
+                        help="write the local repo knowledge map and task bundles")
+    parser.add_argument("--repo-bundle",
+                        choices=[
+                            "audit-main",
+                            "dashboard",
+                            "local-memory",
+                            "local-model-worker",
+                            "hermes",
+                            "content-workflow",
+                            "safety",
+                            "next-milestone",
+                        ],
+                        help="emit a compact repo knowledge task bundle")
     parser.add_argument("--open-dashboard", action="store_true",
                         help="open the localhost dashboard in a browser (only when explicitly passed)")
     parser.add_argument("--run-demo-smoke", action="store_true",
@@ -822,6 +925,10 @@ def main(argv=None) -> int:
             result = cmd_local_worker_status()
         elif args.local_worker_demo:
             result = cmd_local_worker_demo()
+        elif args.repo_map:
+            result = cmd_repo_map()
+        elif args.repo_bundle:
+            result = cmd_repo_bundle(args.repo_bundle)
         else:
             # --status, bare --json, or no mode -> status.
             result = cmd_status()

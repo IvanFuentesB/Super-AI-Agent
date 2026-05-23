@@ -8,8 +8,8 @@ safe content demos, research plans, and future computer-use tooling from one
 truthful dashboard. It is not autonomous, it does not post, and it does not run
 live providers or account actions without explicit human approval.
 
-Current baseline: N+5.5B clean/local-memory-context-pack on main at
-`23ace6dedb7acdfd19b148988be35e121f140070`.
+Current baseline: N+5.6B clean/local-model-easy-worker-lane on main at
+`c9413108006d920e0110413d3d5e195b504489c1`.
 
 ## Launch
 
@@ -26,13 +26,16 @@ http://127.0.0.1:3210
 ## What to check first
 
 1. Open the dashboard and read Start Here / Daily Operator.
-2. Confirm Status Truth still says N+5.5B clean/local-memory-context-pack.
+2. Confirm Status Truth still says N+5.6B clean/local-model-easy-worker-lane.
 3. Confirm Hermes, Ollama/Gemma, Obsidian memory, UI-TARS, adapters, external
    sandbox, public audit, and readiness status are truthful.
 4. Confirm Local Model / Easy Worker Lane shows readiness percentage and
    `local_demo fallback` when Gemma is missing.
-5. Run a smoke check before relying on the dashboard.
-6. Review the latest relevant report under `14_context/`.
+5. Confirm Repo Knowledge / Graphify Lane shows repo knowledge readiness,
+   task bundles, latest report index, Graphify roadmap only, no external
+   runtime, and no network.
+6. Run a smoke check before relying on the dashboard.
+7. Review the latest relevant report under `14_context/`.
 
 ## Daily commands
 
@@ -42,8 +45,11 @@ python 03_scripts/ghoti_product_launcher.py --smoke --json
 python 03_scripts/ghoti_product_launcher.py --context-pack --json
 python 03_scripts/ghoti_product_launcher.py --local-worker-status --json
 python 03_scripts/ghoti_product_launcher.py --local-worker-demo --json
+python 03_scripts/ghoti_product_launcher.py --repo-map --json
+python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json
 python 03_scripts/ghoti_context_pack_builder.py --write --json
 python 03_scripts/local_model_worker_lane.py --doctor --json
+python 03_scripts/ghoti_repo_knowledge_map.py --write --json
 python 03_scripts/supervised_content_mvp_runner.py --validate-latest
 python 03_scripts/public_repo_security_audit.py --run --json
 python 03_scripts/model_council_tool_intake.py --scan --json
@@ -62,6 +68,7 @@ Most milestone reports live under `14_context/`. Useful starting points:
 - `14_context/codex_n5_4a_first_real_operator_usability_pass.md`
 - `14_context/codex_n5_4b_main_merge_daily_operator_usability.md`
 - `14_context/codex_n5_5b_final_main_local_memory_context_pack.md`
+- `14_context/codex_n5_6b_main_merge_local_model_easy_worker_lane.md`
 - audit branch report: `14_context/codex_n5_3b_final_main_full_product_finish.md`
 
 If the newest final-main audit report is not present on `origin/main`, inspect
@@ -90,6 +97,28 @@ Start with:
 - `ghoti_chatgpt_migration_summary.md` for ChatGPT migration.
 
 See [Local Memory Context Pack Guide](LOCAL_MEMORY_CONTEXT_PACK_GUIDE.md).
+
+## Repo knowledge map
+
+Use the repo knowledge map when you want focused context instead of pasting a
+large thread or broad file list:
+
+```powershell
+python 03_scripts/ghoti_repo_knowledge_map.py --write --json
+python 03_scripts/ghoti_repo_knowledge_map.py --bundle dashboard --json
+python 03_scripts/ghoti_repo_knowledge_map.py --bundle next-milestone --json
+```
+
+Generated files live under:
+
+```text
+14_context/repo_knowledge/generated/
+```
+
+Start with `repo_knowledge_map.md`, `latest_reports_index.md`,
+`subsystem_index.md`, and `task_bundle_next_milestone.md`. See
+[Repo Knowledge Map Guide](REPO_KNOWLEDGE_MAP_GUIDE.md) and
+[Graphify Repo Knowledge Roadmap](GRAPHIFY_REPO_KNOWLEDGE_ROADMAP.md).
 
 ## Local model easy worker lane
 
@@ -157,7 +186,7 @@ Not allowed:
 - Telegram connection and tokens
 - real Gemma model pull/install
 - Ruflo source/runtime enablement
-- Graphify runtime integration
+- external Graphify runtime integration
 - browser/Playwright repair and verification
 - public release human review
 - any live provider, account, posting, money, trading, or legal action
@@ -238,6 +267,18 @@ python 03_scripts/ghoti_context_pack_builder.py --write --json
 
 Then refresh the dashboard Local Memory / Context Pack card. The builder is
 repo-local and does not call live providers.
+
+### repo knowledge map stale or missing
+
+Run:
+
+```powershell
+python 03_scripts/ghoti_repo_knowledge_map.py --write --json
+```
+
+Then refresh the dashboard Repo Knowledge / Graphify Lane card. The generated
+map is local JSON/Markdown only; it does not run external Graphify, does not
+clone repositories, and does not use network.
 
 ### generated residue
 
