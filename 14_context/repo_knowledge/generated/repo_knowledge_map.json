@@ -1,0 +1,624 @@
+{
+  "ok": true,
+  "lane": "repo_knowledge_graphify_lane",
+  "milestone": "N+5.7A - Graphify / Repo Knowledge Map + Better Context Retrieval",
+  "latest_clean_milestone": "N+5.6B - Local Model Easy Worker Lane landed on main",
+  "next_recommended_milestone": "N+5.8A - Hermes Agent Workflow / Provider Setup Plan + Manual Bridge Readiness",
+  "local_only": true,
+  "external_api_used": false,
+  "live_api_used": false,
+  "network_used": false,
+  "external_repos_used": false,
+  "external_repo_runtime": "not_wired",
+  "graphify_runtime": "roadmap_only_not_wired",
+  "readiness_percent": 55,
+  "status_line": "Repo knowledge readiness: 55%. Local file map and task bundles are available. Graphify runtime: roadmap only/not wired; no external repo runtime; no network.",
+  "generated_at": "2026-05-23T12:40:07Z",
+  "main_hash": "c9413108006d920e0110413d3d5e195b504489c1",
+  "launcher_command": "python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard",
+  "dashboard_url": "http://127.0.0.1:3210",
+  "context_pack_command": "python 03_scripts/ghoti_product_launcher.py --context-pack --json",
+  "local_worker_command": "python 03_scripts/ghoti_product_launcher.py --local-worker-status --json",
+  "repo_map_command": "python 03_scripts/ghoti_product_launcher.py --repo-map --json",
+  "next_bundle_command": "python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json",
+  "output_dir": "14_context/repo_knowledge/generated",
+  "output_paths": {
+    "repo_knowledge_map.json": "14_context/repo_knowledge/generated/repo_knowledge_map.json",
+    "repo_knowledge_map.md": "14_context/repo_knowledge/generated/repo_knowledge_map.md",
+    "latest_reports_index.md": "14_context/repo_knowledge/generated/latest_reports_index.md",
+    "subsystem_index.md": "14_context/repo_knowledge/generated/subsystem_index.md",
+    "task_bundle_audit_main.md": "14_context/repo_knowledge/generated/task_bundle_audit_main.md",
+    "task_bundle_dashboard.md": "14_context/repo_knowledge/generated/task_bundle_dashboard.md",
+    "task_bundle_local_memory.md": "14_context/repo_knowledge/generated/task_bundle_local_memory.md",
+    "task_bundle_local_model_worker.md": "14_context/repo_knowledge/generated/task_bundle_local_model_worker.md",
+    "task_bundle_hermes.md": "14_context/repo_knowledge/generated/task_bundle_hermes.md",
+    "task_bundle_content_workflow.md": "14_context/repo_knowledge/generated/task_bundle_content_workflow.md",
+    "task_bundle_safety.md": "14_context/repo_knowledge/generated/task_bundle_safety.md",
+    "task_bundle_next_milestone.md": "14_context/repo_knowledge/generated/task_bundle_next_milestone.md",
+    "codex_next_prompt_graph_context.md": "14_context/repo_knowledge/generated/codex_next_prompt_graph_context.md",
+    "chatgpt_repo_context_summary.md": "14_context/repo_knowledge/generated/chatgpt_repo_context_summary.md"
+  },
+  "task_bundles": [
+    "audit-main",
+    "dashboard",
+    "local-memory",
+    "local-model-worker",
+    "hermes",
+    "content-workflow",
+    "safety",
+    "next-milestone"
+  ],
+  "task_bundle_paths": {
+    "audit-main": "14_context/repo_knowledge/generated/task_bundle_audit_main.md",
+    "dashboard": "14_context/repo_knowledge/generated/task_bundle_dashboard.md",
+    "local-memory": "14_context/repo_knowledge/generated/task_bundle_local_memory.md",
+    "local-model-worker": "14_context/repo_knowledge/generated/task_bundle_local_model_worker.md",
+    "hermes": "14_context/repo_knowledge/generated/task_bundle_hermes.md",
+    "content-workflow": "14_context/repo_knowledge/generated/task_bundle_content_workflow.md",
+    "safety": "14_context/repo_knowledge/generated/task_bundle_safety.md",
+    "next-milestone": "14_context/repo_knowledge/generated/task_bundle_next_milestone.md"
+  },
+  "latest_reports": [
+    {
+      "path": "14_context/codex_n5_6b_main_merge_local_model_easy_worker_lane.md",
+      "name": "codex_n5_6b_main_merge_local_model_easy_worker_lane.md",
+      "kind": "main",
+      "rank": [
+        5,
+        6,
+        2
+      ],
+      "modified_unix": 1779538779,
+      "verdict_hint": "CLEAN PASS / N+5.6B MAIN MERGE READY"
+    },
+    {
+      "path": "14_context/codex_n5_6a_local_model_gemma_setup_truth_easy_worker_lane.md",
+      "name": "codex_n5_6a_local_model_gemma_setup_truth_easy_worker_lane.md",
+      "kind": "report",
+      "rank": [
+        5,
+        6,
+        1
+      ],
+      "modified_unix": 1779538779,
+      "verdict_hint": "CLEAN PASS / N+5.6A LOCAL MODEL EASY WORKER LANE READY"
+    },
+    {
+      "path": "14_context/codex_n5_5b_main_merge_local_memory_context_pack.md",
+      "name": "codex_n5_5b_main_merge_local_memory_context_pack.md",
+      "kind": "main",
+      "rank": [
+        5,
+        5,
+        2
+      ],
+      "modified_unix": 1779538779,
+      "verdict_hint": "CLEAN PASS / N+5.5B MAIN MERGE READY"
+    },
+    {
+      "path": "14_context/codex_n5_5a_local_memory_obsidian_context_pack_brain_upgrade.md",
+      "name": "codex_n5_5a_local_memory_obsidian_context_pack_brain_upgrade.md",
+      "kind": "report",
+      "rank": [
+        5,
+        5,
+        1
+      ],
+      "modified_unix": 1779538779,
+      "verdict_hint": "CLEAN PASS / LOCAL MEMORY CONTEXT PACK READY"
+    },
+    {
+      "path": "14_context/codex_n5_4b_main_merge_daily_operator_usability.md",
+      "name": "codex_n5_4b_main_merge_daily_operator_usability.md",
+      "kind": "main",
+      "rank": [
+        5,
+        4,
+        2
+      ],
+      "modified_unix": 1779538779,
+      "verdict_hint": "CLEAN PASS / N+5.4A DAILY OPERATOR USABILITY MERGE READY"
+    },
+    {
+      "path": "14_context/codex_n5_4a_first_real_operator_usability_pass.md",
+      "name": "codex_n5_4a_first_real_operator_usability_pass.md",
+      "kind": "product",
+      "rank": [
+        5,
+        4,
+        1
+      ],
+      "modified_unix": 1779538779,
+      "verdict_hint": "CLEAN PASS / DAILY OPERATOR USABILITY READY"
+    },
+    {
+      "path": "14_context/codex_n5_3a_product_finish_remote_clean_audit.md",
+      "name": "codex_n5_3a_product_finish_remote_clean_audit.md",
+      "kind": "audit",
+      "rank": [
+        5,
+        3,
+        1
+      ],
+      "modified_unix": 1779538779,
+      "verdict_hint": "CLEAN PASS for local-first supervised MVP merge gating. No blocker was found that prevents merging N+5.3A to `main`."
+    },
+    {
+      "path": "14_context/codex_n5_3a_main_merge_product_finish_local_mvp.md",
+      "name": "codex_n5_3a_main_merge_product_finish_local_mvp.md",
+      "kind": "main",
+      "rank": [
+        5,
+        3,
+        1
+      ],
+      "modified_unix": 1779538779,
+      "verdict_hint": "CLEAN PASS. The N+5.3A Product Control Center work is suitable for `main` as a local-first supervised MVP. No blocker was found in tests, dashboard checks, public audit, model council scan, Hermes status, local memory status, dry-runs, or s"
+    },
+    {
+      "path": "14_context/codex_n5_2b_hermes_bootstrap_stack_ui_tars_manifest_fix.md",
+      "name": "codex_n5_2b_hermes_bootstrap_stack_ui_tars_manifest_fix.md",
+      "kind": "report",
+      "rank": [
+        5,
+        2,
+        2
+      ],
+      "modified_unix": 1779538779,
+      "verdict_hint": "verdict not detected"
+    },
+    {
+      "path": "14_context/codex_n5_2a_hermes_local_bootstrap_public_readiness_model_provider.md",
+      "name": "codex_n5_2a_hermes_local_bootstrap_public_readiness_model_provider.md",
+      "kind": "report",
+      "rank": [
+        5,
+        2,
+        1
+      ],
+      "modified_unix": 1779538779,
+      "verdict_hint": "verdict not detected"
+    }
+  ],
+  "important_files": [
+    {
+      "path": "README.md",
+      "subsystem": "docs/operator guides",
+      "description": "Public product overview, quickstart, local-first architecture, and safety model.",
+      "why_it_matters": "First file Ivan or GitHub visitors read before running Ghoti.",
+      "exists": true,
+      "size_bytes": 14883,
+      "snippet_hint": "# Ghoti / Super-AI-Agent"
+    },
+    {
+      "path": "03_scripts/ghoti_product_launcher.py",
+      "subsystem": "launcher",
+      "description": "One-command launcher, smoke runner, context-pack shortcut, and local worker shortcut.",
+      "why_it_matters": "Daily operator entry point and safest command surface.",
+      "exists": true,
+      "size_bytes": 37722,
+      "snippet_hint": "\"\"\"Ghoti Product Launcher (N+4.7A) \u2014 one-command local product launcher + smoke."
+    },
+    {
+      "path": "03_scripts/ghoti_context_pack_builder.py",
+      "subsystem": "local memory/context packs",
+      "description": "Builds compact Ghoti context packs for Codex, ChatGPT, Claude, and Obsidian.",
+      "why_it_matters": "Main token-saving continuity tool.",
+      "exists": true,
+      "size_bytes": 26697,
+      "snippet_hint": "\"\"\"Build compact Ghoti context packs for local memory handoff."
+    },
+    {
+      "path": "03_scripts/local_memory_compression_bridge.py",
+      "subsystem": "local memory/context packs",
+      "description": "Reports local compact memory bridge status and fallback truth.",
+      "why_it_matters": "Keeps durable memory visible without live providers.",
+      "exists": true,
+      "size_bytes": 17807,
+      "snippet_hint": "\"\"\"Local Memory Compression Bridge \u2014 N+4.2A."
+    },
+    {
+      "path": "03_scripts/local_model_worker_lane.py",
+      "subsystem": "local model/easy worker",
+      "description": "Detects Ollama/Gemma truth and writes deterministic local worker demo outputs.",
+      "why_it_matters": "Current credit-saving worker lane with local_demo fallback.",
+      "exists": true,
+      "size_bytes": 24266,
+      "snippet_hint": "\"\"\"Ghoti local model truth and easy worker lane."
+    },
+    {
+      "path": "03_scripts/hermes_local_bootstrap.py",
+      "subsystem": "Hermes/WSL",
+      "description": "Safe Hermes WSL status probes and bootstrap truth.",
+      "why_it_matters": "Hermes is a planned local agent layer, but setup/provider actions remain manual.",
+      "exists": true,
+      "size_bytes": 19272,
+      "snippet_hint": "\"\"\"Local-first Hermes Agent bootstrap helper for Windows ai_sandbox."
+    },
+    {
+      "path": "03_scripts/ui_tars_observation_adapter.py",
+      "subsystem": "UI-TARS/computer-use",
+      "description": "Observation-only UI-TARS dry-run lane.",
+      "why_it_matters": "Preserves computer-use research without click/type control.",
+      "exists": true,
+      "size_bytes": 9941,
+      "snippet_hint": "\"\"\"UI-TARS Observation-Only Adapter CLI (N+5.0A)."
+    },
+    {
+      "path": "03_scripts/approved_adapter_runner.py",
+      "subsystem": "adapter/external sandbox",
+      "description": "Approval-gated local adapter runner.",
+      "why_it_matters": "Keeps integrations dry-run/local unless explicitly approved.",
+      "exists": true,
+      "size_bytes": 16586,
+      "snippet_hint": "\"\"\"Approved Adapter Runner (N+4.9A) \u2014 first approved adapter execution demo."
+    },
+    {
+      "path": "03_scripts/external_tool_sandbox_manager.py",
+      "subsystem": "adapter/external sandbox",
+      "description": "Static external tool intake and sandbox status.",
+      "why_it_matters": "Prevents uncontrolled external repo runtime wiring.",
+      "exists": true,
+      "size_bytes": 29685,
+      "snippet_hint": "\"\"\"External Tool Sandbox Manager (N+4.8A)."
+    },
+    {
+      "path": "03_scripts/public_repo_security_audit.py",
+      "subsystem": "public/security audit",
+      "description": "Public readiness and security audit gate.",
+      "why_it_matters": "Finds blockers before public polish or main pushes.",
+      "exists": true,
+      "size_bytes": 19460,
+      "snippet_hint": "\"\"\"Public repository readiness audit for Ghoti.\"\"\""
+    },
+    {
+      "path": "03_scripts/model_council_tool_intake.py",
+      "subsystem": "public/security audit",
+      "description": "Local model/tool council scan.",
+      "why_it_matters": "Tracks provider/tool readiness without enabling unsafe automation.",
+      "exists": true,
+      "size_bytes": 10986,
+      "snippet_hint": "\"\"\"Model council and tool intake registry for Ghoti N+5.2A.\"\"\""
+    },
+    {
+      "path": "03_scripts/supervised_content_mvp_runner.py",
+      "subsystem": "supervised content demo",
+      "description": "Local-only content workflow demo with 8 agents, titles, thumbnails, and previews.",
+      "why_it_matters": "Demonstrates supervised content workflow without posting.",
+      "exists": true,
+      "size_bytes": 39286,
+      "snippet_hint": "\"\"\"Supervised Content MVP Runner \u2014 N+3.65."
+    },
+    {
+      "path": "01_projects/dashboard_mvp/server.js",
+      "subsystem": "dashboard",
+      "description": "Local dashboard HTTP server and fixed-argv product endpoints.",
+      "why_it_matters": "Backend for the Product Control Center and operator cards.",
+      "exists": true,
+      "size_bytes": 301567,
+      "snippet_hint": "not read or empty"
+    },
+    {
+      "path": "01_projects/dashboard_mvp/public/index.html",
+      "subsystem": "dashboard",
+      "description": "Dashboard UI structure and operator cards.",
+      "why_it_matters": "First-screen truth surface for daily use.",
+      "exists": true,
+      "size_bytes": 138695,
+      "snippet_hint": "<!DOCTYPE html>"
+    },
+    {
+      "path": "01_projects/dashboard_mvp/public/app.js",
+      "subsystem": "dashboard",
+      "description": "Dashboard client handlers for status cards and local actions.",
+      "why_it_matters": "Connects UI cards to local-only status endpoints.",
+      "exists": true,
+      "size_bytes": 303778,
+      "snippet_hint": "not read or empty"
+    },
+    {
+      "path": "01_projects/dashboard_mvp/public/styles.css",
+      "subsystem": "dashboard",
+      "description": "Dashboard styling.",
+      "why_it_matters": "Keeps the operator console usable and scannable.",
+      "exists": true,
+      "size_bytes": 19153,
+      "snippet_hint": ":root {"
+    },
+    {
+      "path": "docs/DAILY_OPERATOR_GUIDE.md",
+      "subsystem": "docs/operator guides",
+      "description": "Daily operator usage, troubleshooting, and cleanup guide.",
+      "why_it_matters": "Turns milestone work into repeatable human workflow.",
+      "exists": true,
+      "size_bytes": 10101,
+      "snippet_hint": "# Daily Operator Guide"
+    },
+    {
+      "path": "docs/CODEX_ONLY_WORKFLOW.md",
+      "subsystem": "docs/operator guides",
+      "description": "Codex-only worktree, branch, audit, and safety workflow.",
+      "why_it_matters": "Keeps future Codex work isolated and auditable.",
+      "exists": true,
+      "size_bytes": 4866,
+      "snippet_hint": "# Codex-Only Workflow"
+    },
+    {
+      "path": "docs/LOCAL_MEMORY_CONTEXT_PACK_GUIDE.md",
+      "subsystem": "local memory/context packs",
+      "description": "Guide for generating and using compact context packs.",
+      "why_it_matters": "Explains token-saving context handoff.",
+      "exists": true,
+      "size_bytes": 5752,
+      "snippet_hint": "# Local Memory Context Pack Guide"
+    },
+    {
+      "path": "docs/LOCAL_MODEL_GEMMA_SETUP_GUIDE.md",
+      "subsystem": "local model/easy worker",
+      "description": "Manual Ollama/Gemma setup truth and commands.",
+      "why_it_matters": "Shows how to unlock real local model work later without auto-downloads.",
+      "exists": true,
+      "size_bytes": 2850,
+      "snippet_hint": "# Local Model / Gemma Setup Guide"
+    },
+    {
+      "path": "docs/EASY_WORKER_LANE_GUIDE.md",
+      "subsystem": "local model/easy worker",
+      "description": "Easy worker lane usage and fallback guide.",
+      "why_it_matters": "Documents safe credit-saving local tasks.",
+      "exists": true,
+      "size_bytes": 3210,
+      "snippet_hint": "# Easy Worker Lane Guide"
+    },
+    {
+      "path": "docs/HERMES_LOCAL_INSTALL_AND_PROVIDER_PLAN.md",
+      "subsystem": "Hermes/WSL",
+      "description": "Hermes WSL install truth and provider plan.",
+      "why_it_matters": "Important next human/manual milestone context.",
+      "exists": true,
+      "size_bytes": 3083,
+      "snippet_hint": "# Hermes Local Install And Provider Plan"
+    },
+    {
+      "path": "docs/COMPUTER_USE_ROADMAP.md",
+      "subsystem": "UI-TARS/computer-use",
+      "description": "Future computer-use roadmap and safety gates.",
+      "why_it_matters": "Keeps click/type/autonomy future-gated.",
+      "exists": true,
+      "size_bytes": 1162,
+      "snippet_hint": "# Computer-Use Roadmap"
+    },
+    {
+      "path": "docs/TOKEN_EFFICIENT_COMPUTER_USE_ROADMAP.md",
+      "subsystem": "future Graphify roadmap",
+      "description": "Token-efficiency, local models, memory, and Graphify planning.",
+      "why_it_matters": "Connects repo knowledge with the broader token-saving roadmap.",
+      "exists": true,
+      "size_bytes": 1793,
+      "snippet_hint": "# Token-Efficient Computer-Use Roadmap"
+    },
+    {
+      "path": "docs/BLOCKED_UNSAFE_AUTOMATION.md",
+      "subsystem": "public/security audit",
+      "description": "Unsafe automation policy.",
+      "why_it_matters": "Canonical list of blocked automation categories.",
+      "exists": true,
+      "size_bytes": 499,
+      "snippet_hint": "# Blocked Unsafe Automation"
+    },
+    {
+      "path": "14_context/compact_memory/generated/ghoti_current_context_pack.md",
+      "subsystem": "local memory/context packs",
+      "description": "Latest generated context pack.",
+      "why_it_matters": "Short current-state handoff source.",
+      "exists": true,
+      "size_bytes": 6520,
+      "snippet_hint": "# Ghoti Current Context Pack"
+    },
+    {
+      "path": "14_context/local_worker/generated/local_worker_status.md",
+      "subsystem": "local model/easy worker",
+      "description": "Latest local worker status file.",
+      "why_it_matters": "Shows Ollama/Gemma/local_demo readiness.",
+      "exists": true,
+      "size_bytes": 1125,
+      "snippet_hint": "# Local Model / Easy Worker Lane Status"
+    },
+    {
+      "path": "01_projects/runtime_mvp/tests/test_n5_6a_local_model_easy_worker_lane.py",
+      "subsystem": "tests",
+      "description": "N+5.6 local worker lane tests.",
+      "why_it_matters": "Best current pattern for JSON script, launcher, docs, and dashboard checks.",
+      "exists": true,
+      "size_bytes": 7514,
+      "snippet_hint": "import json"
+    },
+    {
+      "path": "14_context/codex_n5_6b_main_merge_local_model_easy_worker_lane.md",
+      "subsystem": "reports/14_context",
+      "description": "main milestone report",
+      "why_it_matters": "CLEAN PASS / N+5.6B MAIN MERGE READY",
+      "exists": true,
+      "size_bytes": 5534,
+      "snippet_hint": "CLEAN PASS / N+5.6B MAIN MERGE READY"
+    },
+    {
+      "path": "14_context/codex_n5_6a_local_model_gemma_setup_truth_easy_worker_lane.md",
+      "subsystem": "reports/14_context",
+      "description": "report milestone report",
+      "why_it_matters": "CLEAN PASS / N+5.6A LOCAL MODEL EASY WORKER LANE READY",
+      "exists": true,
+      "size_bytes": 9260,
+      "snippet_hint": "CLEAN PASS / N+5.6A LOCAL MODEL EASY WORKER LANE READY"
+    },
+    {
+      "path": "14_context/codex_n5_5b_main_merge_local_memory_context_pack.md",
+      "subsystem": "reports/14_context",
+      "description": "main milestone report",
+      "why_it_matters": "CLEAN PASS / N+5.5B MAIN MERGE READY",
+      "exists": true,
+      "size_bytes": 5497,
+      "snippet_hint": "CLEAN PASS / N+5.5B MAIN MERGE READY"
+    },
+    {
+      "path": "14_context/codex_n5_5a_local_memory_obsidian_context_pack_brain_upgrade.md",
+      "subsystem": "reports/14_context",
+      "description": "report milestone report",
+      "why_it_matters": "CLEAN PASS / LOCAL MEMORY CONTEXT PACK READY",
+      "exists": true,
+      "size_bytes": 9552,
+      "snippet_hint": "CLEAN PASS / LOCAL MEMORY CONTEXT PACK READY"
+    },
+    {
+      "path": "14_context/codex_n5_4b_main_merge_daily_operator_usability.md",
+      "subsystem": "reports/14_context",
+      "description": "main milestone report",
+      "why_it_matters": "CLEAN PASS / N+5.4A DAILY OPERATOR USABILITY MERGE READY",
+      "exists": true,
+      "size_bytes": 4198,
+      "snippet_hint": "CLEAN PASS / N+5.4A DAILY OPERATOR USABILITY MERGE READY"
+    },
+    {
+      "path": "14_context/codex_n5_4a_first_real_operator_usability_pass.md",
+      "subsystem": "reports/14_context",
+      "description": "product milestone report",
+      "why_it_matters": "CLEAN PASS / DAILY OPERATOR USABILITY READY",
+      "exists": true,
+      "size_bytes": 7443,
+      "snippet_hint": "CLEAN PASS / DAILY OPERATOR USABILITY READY"
+    },
+    {
+      "path": "14_context/codex_n5_3a_product_finish_remote_clean_audit.md",
+      "subsystem": "reports/14_context",
+      "description": "audit milestone report",
+      "why_it_matters": "CLEAN PASS for local-first supervised MVP merge gating. No blocker was found that prevents merging N+5.3A to `main`.",
+      "exists": true,
+      "size_bytes": 5255,
+      "snippet_hint": "CLEAN PASS for local-first supervised MVP merge gating. No blocker was found that prevents merging N+5.3A to `main`."
+    },
+    {
+      "path": "14_context/codex_n5_3a_main_merge_product_finish_local_mvp.md",
+      "subsystem": "reports/14_context",
+      "description": "main milestone report",
+      "why_it_matters": "CLEAN PASS. The N+5.3A Product Control Center work is suitable for `main` as a local-first supervised MVP. No blocker was found in tests, dashboard checks, public audit, model council scan, Hermes status, local memory status, dry-runs, or s",
+      "exists": true,
+      "size_bytes": 5131,
+      "snippet_hint": "CLEAN PASS. The N+5.3A Product Control Center work is suitable for `main` as a local-first supervised MVP. No blocker was found in tests, dashboard checks, public audit, model council scan, Hermes status, local memory status, dry-runs, or s"
+    },
+    {
+      "path": "14_context/codex_n5_2b_hermes_bootstrap_stack_ui_tars_manifest_fix.md",
+      "subsystem": "reports/14_context",
+      "description": "report milestone report",
+      "why_it_matters": "verdict not detected",
+      "exists": true,
+      "size_bytes": 7176,
+      "snippet_hint": "verdict not detected"
+    },
+    {
+      "path": "14_context/codex_n5_2a_hermes_local_bootstrap_public_readiness_model_provider.md",
+      "subsystem": "reports/14_context",
+      "description": "report milestone report",
+      "why_it_matters": "verdict not detected",
+      "exists": true,
+      "size_bytes": 6385,
+      "snippet_hint": "verdict not detected"
+    }
+  ],
+  "subsystems": {
+    "Hermes/WSL": [
+      "03_scripts/hermes_local_bootstrap.py",
+      "docs/HERMES_LOCAL_INSTALL_AND_PROVIDER_PLAN.md"
+    ],
+    "UI-TARS/computer-use": [
+      "03_scripts/ui_tars_observation_adapter.py",
+      "docs/COMPUTER_USE_ROADMAP.md"
+    ],
+    "adapter/external sandbox": [
+      "03_scripts/approved_adapter_runner.py",
+      "03_scripts/external_tool_sandbox_manager.py"
+    ],
+    "dashboard": [
+      "01_projects/dashboard_mvp/public/app.js",
+      "01_projects/dashboard_mvp/public/index.html",
+      "01_projects/dashboard_mvp/public/styles.css",
+      "01_projects/dashboard_mvp/server.js"
+    ],
+    "docs/operator guides": [
+      "README.md",
+      "docs/CODEX_ONLY_WORKFLOW.md",
+      "docs/DAILY_OPERATOR_GUIDE.md"
+    ],
+    "future Graphify roadmap": [
+      "docs/TOKEN_EFFICIENT_COMPUTER_USE_ROADMAP.md"
+    ],
+    "launcher": [
+      "03_scripts/ghoti_product_launcher.py"
+    ],
+    "local memory/context packs": [
+      "03_scripts/ghoti_context_pack_builder.py",
+      "03_scripts/local_memory_compression_bridge.py",
+      "14_context/compact_memory/generated/ghoti_current_context_pack.md",
+      "docs/LOCAL_MEMORY_CONTEXT_PACK_GUIDE.md"
+    ],
+    "local model/easy worker": [
+      "03_scripts/local_model_worker_lane.py",
+      "14_context/local_worker/generated/local_worker_status.md",
+      "docs/EASY_WORKER_LANE_GUIDE.md",
+      "docs/LOCAL_MODEL_GEMMA_SETUP_GUIDE.md"
+    ],
+    "public/security audit": [
+      "03_scripts/model_council_tool_intake.py",
+      "03_scripts/public_repo_security_audit.py",
+      "docs/BLOCKED_UNSAFE_AUTOMATION.md"
+    ],
+    "reports/14_context": [
+      "14_context/codex_n5_2a_hermes_local_bootstrap_public_readiness_model_provider.md",
+      "14_context/codex_n5_2b_hermes_bootstrap_stack_ui_tars_manifest_fix.md",
+      "14_context/codex_n5_3a_main_merge_product_finish_local_mvp.md",
+      "14_context/codex_n5_3a_product_finish_remote_clean_audit.md",
+      "14_context/codex_n5_4a_first_real_operator_usability_pass.md",
+      "14_context/codex_n5_4b_main_merge_daily_operator_usability.md",
+      "14_context/codex_n5_5a_local_memory_obsidian_context_pack_brain_upgrade.md",
+      "14_context/codex_n5_5b_main_merge_local_memory_context_pack.md",
+      "14_context/codex_n5_6a_local_model_gemma_setup_truth_easy_worker_lane.md",
+      "14_context/codex_n5_6b_main_merge_local_model_easy_worker_lane.md"
+    ],
+    "supervised content demo": [
+      "03_scripts/supervised_content_mvp_runner.py"
+    ],
+    "tests": [
+      "01_projects/runtime_mvp/tests/test_n5_6a_local_model_easy_worker_lane.py"
+    ]
+  },
+  "scan_rules": [
+    "Selected repo-local allowlist only.",
+    "Skips git internals, worktrees, dependency folders, caches, browser profiles, archives, binaries, and generated heavy runtime folders.",
+    "Reads small text snippets from known product files and milestone reports.",
+    "Never reads environment files, browser sessions, cookies, or credentials."
+  ],
+  "safety_boundaries": [
+    "no live APIs",
+    "no provider setup or token flows",
+    "no posting or account actions",
+    "no money, trading, or legal actions",
+    "no bot, captcha, or cloak bypass",
+    "no external repo runtime wiring",
+    "no network",
+    "UI-TARS observation-only",
+    "Hermes setup, provider config, Telegram, and tokens remain manual later"
+  ],
+  "safety": {
+    "no_live_apis": true,
+    "no_network": true,
+    "no_external_repos": true,
+    "no_provider_setup": true,
+    "no_posting": true,
+    "ui_tars_observation_only": true
+  },
+  "confidence": "medium",
+  "freshness_notes": [
+    "Generated from local repo files and current git metadata.",
+    "Latest reports are ranked by milestone-like filename and modified time.",
+    "External Graphify runtime is planned but not wired."
+  ]
+}

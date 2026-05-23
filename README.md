@@ -12,13 +12,13 @@ Ghoti is a local-first, approval-gated AI operating workspace for supervised dem
 
 ## Quickstart
 
-Current clean local MVP baseline: **N+5.5B / CLEAN PASS / LOCAL MEMORY
-CONTEXT PACK ON MAIN**.
+Current clean local MVP baseline: **N+5.6B / CLEAN PASS / LOCAL MODEL EASY
+WORKER LANE ON MAIN**.
 
 ```text
-origin/main = 23ace6dedb7acdfd19b148988be35e121f140070
+origin/main = c9413108006d920e0110413d3d5e195b504489c1
 N+4: 329 OK
-N+5: 77 OK
+N+5: 81 OK
 Public audit: 150 checks / 0 blockers / 7 warnings
 Readiness score: 100
 ```
@@ -39,11 +39,15 @@ Daily guide:
 - [Local Memory Context Pack Guide](docs/LOCAL_MEMORY_CONTEXT_PACK_GUIDE.md)
 - [Local Model / Gemma Setup Guide](docs/LOCAL_MODEL_GEMMA_SETUP_GUIDE.md)
 - [Easy Worker Lane Guide](docs/EASY_WORKER_LANE_GUIDE.md)
+- [Repo Knowledge Map Guide](docs/REPO_KNOWLEDGE_MAP_GUIDE.md)
+- [Graphify Repo Knowledge Roadmap](docs/GRAPHIFY_REPO_KNOWLEDGE_ROADMAP.md)
 - Status: `python 03_scripts/ghoti_product_launcher.py --status --json`
 - Smoke: `python 03_scripts/ghoti_product_launcher.py --smoke --json`
 - Context pack: `python 03_scripts/ghoti_context_pack_builder.py --write --json`
 - Local worker status: `python 03_scripts/ghoti_product_launcher.py --local-worker-status --json`
 - Local worker demo: `python 03_scripts/ghoti_product_launcher.py --local-worker-demo --json`
+- Repo map: `python 03_scripts/ghoti_product_launcher.py --repo-map --json`
+- Next bundle: `python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json`
 - Stop: `python 03_scripts/ghoti_product_launcher.py --stop-dashboard`
 
 ## What Ghoti Can Do Now
@@ -55,6 +59,8 @@ Daily guide:
   Obsidian under `14_context/compact_memory/generated/`.
 - Inspect Ollama/Gemma truth and generate deterministic local worker demo
   outputs under `14_context/local_worker/generated/`.
+- Generate a local repo knowledge map, latest report index, subsystem index,
+  task bundles, and a focused next prompt under `14_context/repo_knowledge/generated/`.
 - Generate supervised content studio artifacts and preview packages.
 - Validate the local content demo: 8 agents, 100 titles, 100 thumbnails, local
   preview, approval packet, no posting.
@@ -104,7 +110,8 @@ Ghoti keeps provider planning explicit:
 - Claude Code: implementation lane when available.
 - ChatGPT/Claude: planning, product reasoning, and source-intelligence lanes when manually invoked.
 - Gemma/Ollama: cheap local worker brains for summarization and classification.
-- Graphify: future knowledge graph/token-efficiency candidate.
+- Graphify: future external knowledge graph/token-efficiency candidate; current
+  repo knowledge map is local JSON/Markdown only.
 - Agent-browser and Browser Harness: future compliant browser QA candidates.
 
 No ChatGPT, Claude, Codex, Hermes, Gemma, or browser tool is launched automatically by Ghoti.
@@ -158,6 +165,32 @@ Current Ollama/Gemma truth:
 - Local model reachability never means local models drive operator actions.
 - Ghoti shows the manual command `ollama pull gemma3:4b`, but never runs it
   automatically. No live APIs and no auto-downloads.
+
+## Repo Knowledge / Graphify Lane
+
+N+5.7A adds a local repo knowledge lane for targeted context retrieval:
+
+```powershell
+python 03_scripts/ghoti_repo_knowledge_map.py --status --json
+python 03_scripts/ghoti_repo_knowledge_map.py --write --json
+python 03_scripts/ghoti_repo_knowledge_map.py --bundle next-milestone --json
+python 03_scripts/ghoti_product_launcher.py --repo-map --json
+python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json
+```
+
+Generated files:
+
+- `14_context/repo_knowledge/generated/repo_knowledge_map.json`
+- `14_context/repo_knowledge/generated/repo_knowledge_map.md`
+- `14_context/repo_knowledge/generated/latest_reports_index.md`
+- `14_context/repo_knowledge/generated/subsystem_index.md`
+- `14_context/repo_knowledge/generated/task_bundle_next_milestone.md`
+- `14_context/repo_knowledge/generated/codex_next_prompt_graph_context.md`
+- `14_context/repo_knowledge/generated/chatgpt_repo_context_summary.md`
+
+Current truth: repo knowledge readiness is 55%. The local map and task bundles
+work now. External Graphify runtime is roadmap only/not wired, with no external
+repo runtime and no network.
 
 ## Public Repo And Portfolio Lane
 
