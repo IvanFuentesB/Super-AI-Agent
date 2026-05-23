@@ -6813,6 +6813,91 @@ refreshLocalOrchestrator();
 })();
 
 // ---------------------------------------------------------------------
+// N+5.6A Local Model / Easy Worker Lane (client-side handlers)
+// ---------------------------------------------------------------------
+(function attachLocalModelEasyWorkerLane() {
+  function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value || "none";
+  }
+  function setResult(text) {
+    const el = document.getElementById("local-worker-action-result");
+    if (!el) return;
+    el.innerHTML = "";
+    const p = document.createElement("p");
+    p.textContent = text;
+    el.appendChild(p);
+  }
+  async function callLocalWorker(endpoint, method) {
+    const res = await fetch(endpoint, { method: method || "GET", headers: { "Content-Type": "application/json" } });
+    return await res.json();
+  }
+  function renderStatus(data) {
+    if (!data || !data.ok) {
+      setText("local-worker-status-line", (data && data.error) || "Local worker status unavailable.");
+      setText("local-worker-ollama-status", "unavailable");
+      setText("local-worker-gemma-status", "unavailable");
+      setText("local-worker-active-mode", "unknown");
+      setText("local-worker-readiness", "unknown");
+      return;
+    }
+    const ollama = data.ollama || {};
+    const gemma = data.gemma || {};
+    setText("local-worker-ollama-status", ollama.available ? "installed" : "not detected");
+    setText("local-worker-ollama-version", ollama.version || "unknown");
+    setText("local-worker-gemma-status", gemma.installed ? ("installed: " + (gemma.model_name || "gemma")) : "missing, local_demo fallback active");
+    setText("local-worker-active-mode", data.active_mode || "local_demo");
+    setText("local-worker-readiness", String(data.readiness_percent || 0) + "%");
+    setText("local-worker-status-line", data.status_line || "Local worker status loaded.");
+    const paths = data.output_paths || data.paths || {};
+    setText("local-worker-output-path", paths["local_worker_status.md"] || "14_context/local_worker/generated/");
+  }
+  async function refreshLocalWorkerStatus() {
+    try {
+      renderStatus(await callLocalWorker("/api/local-model-worker/status", "GET"));
+    } catch (err) {
+      setText("local-worker-status-line", "Could not load local worker status.");
+    }
+  }
+  function bind(id, fn) {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("click", fn);
+  }
+  bind("local-worker-refresh-btn", async function () {
+    setResult("Refreshing Local Model / Easy Worker Lane status...");
+    await refreshLocalWorkerStatus();
+    setResult("Local worker status refreshed.");
+  });
+  bind("local-worker-doctor-btn", async function () {
+    setResult("Running local worker doctor...");
+    try {
+      const data = await callLocalWorker("/api/local-model-worker/doctor", "GET");
+      renderStatus(data);
+      const checks = Array.isArray(data && data.checks) ? data.checks.length : 0;
+      setResult(data && data.ok ? ("Doctor complete: " + checks + " checks. No live APIs, no auto-downloads.") :
+        "Doctor reported unavailable: " + ((data && data.error) || "unknown"));
+    } catch (err) {
+      setResult("Local worker doctor failed: " + (err && err.message));
+    }
+  });
+  bind("local-worker-demo-btn", async function () {
+    setResult("Writing deterministic local worker demo outputs...");
+    try {
+      const data = await callLocalWorker("/api/local-model-worker/write-demo-output", "POST");
+      renderStatus(data);
+      setResult(data && data.ok
+        ? "Local worker demo outputs written under 14_context/local_worker/generated/."
+        : "Local worker demo reported unavailable: " + ((data && data.error) || "unknown"));
+    } catch (err) {
+      setResult("Local worker demo failed: " + (err && err.message));
+    }
+  });
+  if (document.getElementById("ghoti-local-model-worker-card")) {
+    refreshLocalWorkerStatus();
+  }
+})();
+
+// ---------------------------------------------------------------------
 // N+4.8A External Tool Sandbox Truth (client-side handler, read-only)
 // ---------------------------------------------------------------------
 (function attachExternalToolSandbox() {

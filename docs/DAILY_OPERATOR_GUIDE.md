@@ -8,8 +8,8 @@ safe content demos, research plans, and future computer-use tooling from one
 truthful dashboard. It is not autonomous, it does not post, and it does not run
 live providers or account actions without explicit human approval.
 
-Current baseline: N+5.4B clean/daily-operator-usability on main at
-`e309921ea27b7f93ce608dede4d0f8ff518937c9`.
+Current baseline: N+5.5B clean/local-memory-context-pack on main at
+`23ace6dedb7acdfd19b148988be35e121f140070`.
 
 ## Launch
 
@@ -26,11 +26,13 @@ http://127.0.0.1:3210
 ## What to check first
 
 1. Open the dashboard and read Start Here / Daily Operator.
-2. Confirm Status Truth still says N+5.4B clean/daily-operator-usability.
+2. Confirm Status Truth still says N+5.5B clean/local-memory-context-pack.
 3. Confirm Hermes, Ollama/Gemma, Obsidian memory, UI-TARS, adapters, external
    sandbox, public audit, and readiness status are truthful.
-4. Run a smoke check before relying on the dashboard.
-5. Review the latest relevant report under `14_context/`.
+4. Confirm Local Model / Easy Worker Lane shows readiness percentage and
+   `local_demo fallback` when Gemma is missing.
+5. Run a smoke check before relying on the dashboard.
+6. Review the latest relevant report under `14_context/`.
 
 ## Daily commands
 
@@ -38,7 +40,10 @@ http://127.0.0.1:3210
 python 03_scripts/ghoti_product_launcher.py --status --json
 python 03_scripts/ghoti_product_launcher.py --smoke --json
 python 03_scripts/ghoti_product_launcher.py --context-pack --json
+python 03_scripts/ghoti_product_launcher.py --local-worker-status --json
+python 03_scripts/ghoti_product_launcher.py --local-worker-demo --json
 python 03_scripts/ghoti_context_pack_builder.py --write --json
+python 03_scripts/local_model_worker_lane.py --doctor --json
 python 03_scripts/supervised_content_mvp_runner.py --validate-latest
 python 03_scripts/public_repo_security_audit.py --run --json
 python 03_scripts/model_council_tool_intake.py --scan --json
@@ -56,11 +61,11 @@ Most milestone reports live under `14_context/`. Useful starting points:
 - `14_context/codex_n5_3a_product_finish_remote_clean_audit.md`
 - `14_context/codex_n5_4a_first_real_operator_usability_pass.md`
 - `14_context/codex_n5_4b_main_merge_daily_operator_usability.md`
+- `14_context/codex_n5_5b_final_main_local_memory_context_pack.md`
 - audit branch report: `14_context/codex_n5_3b_final_main_full_product_finish.md`
 
-If the N+5.4B final-main audit report is not present on `origin/main`, inspect
-the pushed audit branch
-`audit/ghoti-agent-codex-n5-4b-final-main-daily-operator-usability`.
+If the newest final-main audit report is not present on `origin/main`, inspect
+the pushed audit branch for that milestone.
 
 ## Local memory context pack
 
@@ -85,6 +90,28 @@ Start with:
 - `ghoti_chatgpt_migration_summary.md` for ChatGPT migration.
 
 See [Local Memory Context Pack Guide](LOCAL_MEMORY_CONTEXT_PACK_GUIDE.md).
+
+## Local model easy worker lane
+
+Use this lane for small local/offline tasks that save provider credits:
+
+```powershell
+python 03_scripts/local_model_worker_lane.py --status --json
+python 03_scripts/local_model_worker_lane.py --doctor --json
+python 03_scripts/local_model_worker_lane.py --demo-task status-paragraph --json
+python 03_scripts/local_model_worker_lane.py --write-demo-output --json
+```
+
+Generated files live under:
+
+```text
+14_context/local_worker/generated/
+```
+
+Start with `local_worker_status.md`, `status_paragraph.md`, and
+`codex_next_prompt_from_context.md`. See
+[Local Model / Gemma Setup Guide](LOCAL_MODEL_GEMMA_SETUP_GUIDE.md) and
+[Easy Worker Lane Guide](EASY_WORKER_LANE_GUIDE.md).
 
 ## local_demo fallback
 

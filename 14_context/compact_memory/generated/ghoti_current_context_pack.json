@@ -2,14 +2,14 @@
   "ok": true,
   "local_only": true,
   "external_api_used": false,
-  "generated_at": "2026-05-22T21:18:09Z",
-  "main_hash": "e309921ea27b7f93ce608dede4d0f8ff518937c9",
-  "latest_clean_milestone": "N+5.4B - Daily Operator usability landed on main",
-  "current_milestone": "N+5.5A - Local Memory / Obsidian / Context Pack Brain Upgrade",
-  "next_recommended_milestone": "N+5.6A - Local Model / Gemma Setup Truth + Easy Worker Lane",
+  "generated_at": "2026-05-23T10:59:16Z",
+  "main_hash": "23ace6dedb7acdfd19b148988be35e121f140070",
+  "latest_clean_milestone": "N+5.5B - Local Memory Context Pack landed on main",
+  "current_milestone": "N+5.6A - Local Model / Gemma Setup Truth + Easy Worker Lane",
+  "next_recommended_milestone": "N+5.7A - Graphify / Repo Knowledge Map + Better Context Retrieval",
   "launcher_command": "python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard",
   "dashboard_url": "http://127.0.0.1:3210",
-  "status_short": "Ghoti status: N+5.4B - Daily Operator usability landed on main at origin/main e309921ea27b. Launch with `python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard` and open http://127.0.0.1:3210. Hermes WSL is installed at /home/ai_sandbox/.local/bin/hermes (v0.14.0); browser/Playwright is degraded/not claimed, Codex provider is pending/not proven, Telegram is manual later/no token, and No VPS is in use. Ollama available (ollama version is 0.24.0); Gemma model missing; local_demo fallback active. Obsidian/local memory is present; UI-TARS is observation-only; adapters are approval-gated/local-only; external sandbox is static inspection only. Next recommended milestone: N+5.6A - Local Model / Gemma Setup Truth + Easy Worker Lane.",
+  "status_short": "Ghoti status: N+5.5B - Local Memory Context Pack landed on main at origin/main 23ace6dedb7a. Launch with `python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard` and open http://127.0.0.1:3210. Hermes WSL is installed at /home/ai_sandbox/.local/bin/hermes (v0.14.0); browser/Playwright is degraded/not claimed, Codex provider is pending/not proven, Telegram is manual later/no token, and No VPS is in use. Ollama available (ollama version is 0.24.0); Gemma model missing; local_demo fallback active. Obsidian/local memory is present; UI-TARS is observation-only; adapters are approval-gated/local-only; external sandbox is static inspection only. Next recommended milestone: N+5.7A - Graphify / Repo Knowledge Map + Better Context Retrieval.",
   "hermes": {
     "wsl_status": "installed",
     "path": "/home/ai_sandbox/.local/bin/hermes",
@@ -35,6 +35,30 @@
   },
   "latest_reports": [
     {
+      "path": "14_context/codex_n5_5b_main_merge_local_memory_context_pack.md",
+      "name": "codex_n5_5b_main_merge_local_memory_context_pack.md",
+      "kind": "main",
+      "rank": [
+        5,
+        5,
+        2
+      ],
+      "modified_unix": 1779533064,
+      "verdict_hint": "CLEAN PASS / N+5.5B MAIN MERGE READY"
+    },
+    {
+      "path": "14_context/codex_n5_5a_local_memory_obsidian_context_pack_brain_upgrade.md",
+      "name": "codex_n5_5a_local_memory_obsidian_context_pack_brain_upgrade.md",
+      "kind": "report",
+      "rank": [
+        5,
+        5,
+        1
+      ],
+      "modified_unix": 1779533064,
+      "verdict_hint": "CLEAN PASS / LOCAL MEMORY CONTEXT PACK READY"
+    },
+    {
       "path": "14_context/codex_n5_4b_main_merge_daily_operator_usability.md",
       "name": "codex_n5_4b_main_merge_daily_operator_usability.md",
       "kind": "main",
@@ -43,7 +67,7 @@
         4,
         2
       ],
-      "modified_unix": 1779483605,
+      "modified_unix": 1779533064,
       "verdict_hint": "CLEAN PASS / N+5.4A DAILY OPERATOR USABILITY MERGE READY"
     },
     {
@@ -55,7 +79,7 @@
         4,
         1
       ],
-      "modified_unix": 1779483605,
+      "modified_unix": 1779533064,
       "verdict_hint": "CLEAN PASS / DAILY OPERATOR USABILITY READY"
     },
     {
@@ -67,7 +91,7 @@
         3,
         1
       ],
-      "modified_unix": 1779483605,
+      "modified_unix": 1779533064,
       "verdict_hint": "CLEAN PASS for local-first supervised MVP merge gating. No blocker was found that prevents merging N+5.3A to `main`."
     },
     {
@@ -79,7 +103,7 @@
         3,
         1
       ],
-      "modified_unix": 1779483605,
+      "modified_unix": 1779533064,
       "verdict_hint": "CLEAN PASS. The N+5.3A Product Control Center work is suitable for `main` as a local-first supervised MVP. No blocker was found in tests, dashboard checks, public audit, model council scan, Hermes status, local memory status, dry-runs, or sandbox checks."
     },
     {
@@ -91,7 +115,7 @@
         2,
         2
       ],
-      "modified_unix": 1779483605,
+      "modified_unix": 1779533064,
       "verdict_hint": "unknown"
     },
     {
@@ -103,31 +127,7 @@
         2,
         1
       ],
-      "modified_unix": 1779483605,
-      "verdict_hint": "unknown"
-    },
-    {
-      "path": "14_context/codex_n3_48_roadmap_to_80_percent.md",
-      "name": "codex_n3_48_roadmap_to_80_percent.md",
-      "kind": "report",
-      "rank": [
-        3,
-        48,
-        0
-      ],
-      "modified_unix": 1779483605,
-      "verdict_hint": "unknown"
-    },
-    {
-      "path": "14_context/codex_n3_48_post_merge_audit.md",
-      "name": "codex_n3_48_post_merge_audit.md",
-      "kind": "audit",
-      "rank": [
-        3,
-        48,
-        0
-      ],
-      "modified_unix": 1779483605,
+      "modified_unix": 1779533064,
       "verdict_hint": "unknown"
     }
   ],

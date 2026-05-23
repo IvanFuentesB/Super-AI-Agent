@@ -47,8 +47,8 @@ class TestDailyOperatorDashboard(unittest.TestCase):
     def test_status_truth_is_explicit_and_current(self):
         required = [
             'id="ghoti-status-truth-card"',
-            "N+5.4B clean/daily-operator-usability on main",
-            "origin/main = e309921ea27b7f93ce608dede4d0f8ff518937c9",
+            "N+5.5B clean/local-memory-context-pack on main",
+            "origin/main = 23ace6dedb7acdfd19b148988be35e121f140070",
             "/home/ai_sandbox/.local/bin/hermes",
             "Hermes Agent v0.14.0",
             "browser/Playwright: degraded/not claimed",
@@ -57,6 +57,7 @@ class TestDailyOperatorDashboard(unittest.TestCase):
             "No VPS",
             "Ollama available v0.24.0",
             "Gemma model missing/local_demo fallback active",
+            "Local Model / Easy Worker Lane reports readiness percentage",
             "Obsidian/local memory present",
             "Public audit: 0 blockers / 7 warnings",
             "Readiness score: 100",
@@ -78,7 +79,7 @@ class TestDailyOperatorDashboard(unittest.TestCase):
             "No autonomous money/trading/legal actions",
             "Audit current main",
             "Run product smoke test",
-            "Build N+5.6A local model / Gemma setup truth",
+            "Build N+5.7A Graphify / repo knowledge map",
         ]
         for label in required:
             with self.subTest(label=label):
@@ -97,6 +98,8 @@ class TestDailyOperatorLauncher(unittest.TestCase):
             "python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard",
             "python 03_scripts/ghoti_product_launcher.py --status --json",
             "python 03_scripts/ghoti_product_launcher.py --smoke --json",
+            "python 03_scripts/ghoti_product_launcher.py --local-worker-status --json",
+            "python 03_scripts/ghoti_product_launcher.py --local-worker-demo --json",
             "python 03_scripts/ghoti_product_launcher.py --stop-dashboard",
         ]:
             with self.subTest(command=command):
@@ -141,8 +144,8 @@ class TestDailyOperatorDocs(unittest.TestCase):
         codex = CODEX_WORKFLOW.read_text(encoding="utf-8", errors="replace")
         for text in [readme, codex]:
             with self.subTest(path="baseline"):
-                self.assertIn("N+5.4B", text)
-                self.assertIn("e309921ea27b7f93ce608dede4d0f8ff518937c9", text)
+                self.assertIn("N+5.5B", text)
+                self.assertIn("23ace6dedb7acdfd19b148988be35e121f140070", text)
                 self.assertIn("python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard", text)
                 self.assertIn("no primary worktree mutation", text.lower())
                 self.assertIn("no live providers/tokens", text.lower())

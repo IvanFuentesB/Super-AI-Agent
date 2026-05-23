@@ -64,9 +64,9 @@ class GhotiContextPackBuilderTests(unittest.TestCase):
             pack = (output_dir / "ghoti_current_context_pack.md").read_text(encoding="utf-8")
             self.assertIn(LAUNCHER, pack)
             self.assertIn(DASHBOARD_URL, pack)
-            self.assertIn("N+5.4B", pack)
-            self.assertIn("N+5.5A", pack)
+            self.assertIn("N+5.5B", pack)
             self.assertIn("N+5.6A", pack)
+            self.assertIn("N+5.7A", pack)
             self.assertIn("Hermes WSL: installed", pack)
             self.assertIn("/home/ai_sandbox/.local/bin/hermes", pack)
             self.assertIn("v0.14.0", pack)
@@ -82,7 +82,7 @@ class GhotiContextPackBuilderTests(unittest.TestCase):
 
             prompt = (output_dir / "ghoti_codex_next_prompt.md").read_text(encoding="utf-8")
             self.assertIn("Use only repo-contained worktrees", prompt)
-            self.assertIn("N+5.6A", prompt)
+            self.assertIn("N+5.7A", prompt)
             self.assertIn("no live providers/tokens", prompt)
 
             summary = (output_dir / "ghoti_chatgpt_migration_summary.md").read_text(encoding="utf-8")
