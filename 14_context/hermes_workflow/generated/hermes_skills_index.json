@@ -1,0 +1,439 @@
+{
+  "ok": true,
+  "action": "skills-index",
+  "local_only": true,
+  "live_api_used": false,
+  "provider_setup_run": false,
+  "telegram_setup_run": false,
+  "tokens_read": false,
+  "skills_status": "visible",
+  "skills_count": 78,
+  "skills": [
+    {
+      "name": "dogfood",
+      "line": "\u2502 dogfood                 \u2502                      \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "yuanbao",
+      "line": "\u2502 yuanbao                 \u2502                      \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "claude-code",
+      "line": "\u2502 claude-code             \u2502 autonomous-ai-agents \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "codex",
+      "line": "\u2502 codex                   \u2502 autonomous-ai-agents \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "hermes-agent",
+      "line": "\u2502 hermes-agent            \u2502 autonomous-ai-agents \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "kanban-codex-lane",
+      "line": "\u2502 kanban-codex-lane       \u2502 autonomous-ai-agents \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "opencode",
+      "line": "\u2502 opencode                \u2502 autonomous-ai-agents \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "architecture-diagram",
+      "line": "\u2502 architecture-diagram    \u2502 creative             \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "ascii-art",
+      "line": "\u2502 ascii-art               \u2502 creative             \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "ascii-video",
+      "line": "\u2502 ascii-video             \u2502 creative             \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "baoyu-comic",
+      "line": "\u2502 baoyu-comic             \u2502 creative             \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "baoyu-infographic",
+      "line": "\u2502 baoyu-infographic       \u2502 creative             \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "claude-design",
+      "line": "\u2502 claude-design           \u2502 creative             \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "comfyui",
+      "line": "\u2502 comfyui                 \u2502 creative             \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "design-md",
+      "line": "\u2502 design-md               \u2502 creative             \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "excalidraw",
+      "line": "\u2502 excalidraw              \u2502 creative             \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "humanizer",
+      "line": "\u2502 humanizer               \u2502 creative             \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "ideation",
+      "line": "\u2502 ideation                \u2502 creative             \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "manim-video",
+      "line": "\u2502 manim-video             \u2502 creative             \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "p5js",
+      "line": "\u2502 p5js                    \u2502 creative             \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "pixel-art",
+      "line": "\u2502 pixel-art               \u2502 creative             \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "popular-web-designs",
+      "line": "\u2502 popular-web-designs     \u2502 creative             \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "pretext",
+      "line": "\u2502 pretext                 \u2502 creative             \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "sketch",
+      "line": "\u2502 sketch                  \u2502 creative             \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "touchdesigner-mcp",
+      "line": "\u2502 touchdesigner-mcp       \u2502 creative             \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "jupyter-live-kernel",
+      "line": "\u2502 jupyter-live-kernel     \u2502 data-science         \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "kanban-orchestrator",
+      "line": "\u2502 kanban-orchestrator     \u2502 devops               \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "kanban-worker",
+      "line": "\u2502 kanban-worker           \u2502 devops               \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "webhook-subscriptions",
+      "line": "\u2502 webhook-subscriptions   \u2502 devops               \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "himalaya",
+      "line": "\u2502 himalaya                \u2502 email                \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "pokemon-player",
+      "line": "\u2502 pokemon-player          \u2502 gaming               \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "codebase-inspection",
+      "line": "\u2502 codebase-inspection     \u2502 github               \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "github-auth",
+      "line": "\u2502 github-auth             \u2502 github               \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "github-code-review",
+      "line": "\u2502 github-code-review      \u2502 github               \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "github-issues",
+      "line": "\u2502 github-issues           \u2502 github               \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "github-pr-workflow",
+      "line": "\u2502 github-pr-workflow      \u2502 github               \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "github-repo-management",
+      "line": "\u2502 github-repo-management  \u2502 github               \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "native-mcp",
+      "line": "\u2502 native-mcp              \u2502 mcp                  \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "gif-search",
+      "line": "\u2502 gif-search              \u2502 media                \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "heartmula",
+      "line": "\u2502 heartmula               \u2502 media                \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "songsee",
+      "line": "\u2502 songsee                 \u2502 media                \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "spotify",
+      "line": "\u2502 spotify                 \u2502 media                \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "youtube-content",
+      "line": "\u2502 youtube-content         \u2502 media                \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "dspy",
+      "line": "\u2502 dspy                    \u2502 mlops                \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "evaluating-llms-harness",
+      "line": "\u2502 evaluating-llms-harness \u2502 mlops                \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "huggingface-hub",
+      "line": "\u2502 huggingface-hub         \u2502 mlops                \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "llama-cpp",
+      "line": "\u2502 llama-cpp               \u2502 mlops                \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "obliteratus",
+      "line": "\u2502 obliteratus             \u2502 mlops                \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "segment-anything-model",
+      "line": "\u2502 segment-anything-model  \u2502 mlops                \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "serving-llms-vllm",
+      "line": "\u2502 serving-llms-vllm       \u2502 mlops                \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "weights-and-biases",
+      "line": "\u2502 weights-and-biases      \u2502 mlops                \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "obsidian",
+      "line": "\u2502 obsidian                \u2502 note-taking          \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "airtable",
+      "line": "\u2502 airtable                \u2502 productivity         \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "google-workspace",
+      "line": "\u2502 google-workspace        \u2502 productivity         \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "linear",
+      "line": "\u2502 linear                  \u2502 productivity         \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "maps",
+      "line": "\u2502 maps                    \u2502 productivity         \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "nano-pdf",
+      "line": "\u2502 nano-pdf                \u2502 productivity         \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "notion",
+      "line": "\u2502 notion                  \u2502 productivity         \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "ocr-and-documents",
+      "line": "\u2502 ocr-and-documents       \u2502 productivity         \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "powerpoint",
+      "line": "\u2502 powerpoint              \u2502 productivity         \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "teams-meeting-pipeline",
+      "line": "\u2502 teams-meeting-pipeline  \u2502 productivity         \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "godmode",
+      "line": "\u2502 godmode                 \u2502 red-teaming          \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "arxiv",
+      "line": "\u2502 arxiv                   \u2502 research             \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "blogwatcher",
+      "line": "\u2502 blogwatcher             \u2502 research             \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "llm-wiki",
+      "line": "\u2502 llm-wiki                \u2502 research             \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "polymarket",
+      "line": "\u2502 polymarket              \u2502 research             \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "research-paper-writing",
+      "line": "\u2502 research-paper-writing  \u2502 research             \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "openhue",
+      "line": "\u2502 openhue                 \u2502 smart-home           \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "xurl",
+      "line": "\u2502 xurl                    \u2502 social-media         \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "node-inspect-debugger",
+      "line": "\u2502 node-inspect-debugger   \u2502 software-development \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "plan",
+      "line": "\u2502 plan                    \u2502 software-development \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "python-debugpy",
+      "line": "\u2502 python-debugpy          \u2502 software-development \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "requesting-code-review",
+      "line": "\u2502 requesting-code-review  \u2502 software-development \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "spike",
+      "line": "\u2502 spike                   \u2502 software-development \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "systematic-debugging",
+      "line": "\u2502 systematic-debugging    \u2502 software-development \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "test-driven-development",
+      "line": "\u2502 test-driven-development \u2502 software-development \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "writing-plans",
+      "line": "\u2502 writing-plans           \u2502 software-development \u2502 builtin \u2502 builtin \u2502 enabled \u2502"
+    },
+    {
+      "name": "0",
+      "line": "0 hub-installed, 84 builtin, 0 local \u2014 84 enabled, 0 disabled"
+    }
+  ],
+  "important_skill_names": [
+    "codex",
+    "claude-code",
+    "hermes-agent",
+    "mcp",
+    "memory",
+    "obsidian",
+    "github",
+    "plan",
+    "test-driven-development",
+    "browser",
+    "computer-use",
+    "youtube"
+  ],
+  "important_skills": [
+    {
+      "name": "codex",
+      "category": "coding/audit",
+      "future_use": "Possible Hermes Codex provider/operator skill after manual provider verification.",
+      "status_now": "manual later - Codex provider pending/not proven",
+      "detected": true,
+      "safe_now": false
+    },
+    {
+      "name": "claude-code",
+      "category": "coding",
+      "future_use": "Implementation lane when Claude Code credits/tooling are available.",
+      "status_now": "manual later",
+      "detected": true,
+      "safe_now": false
+    },
+    {
+      "name": "hermes-agent",
+      "category": "Hermes core",
+      "future_use": "Local Hermes agent workflow layer.",
+      "status_now": "safe to inspect only",
+      "detected": true,
+      "safe_now": true
+    },
+    {
+      "name": "mcp",
+      "category": "tool protocol",
+      "future_use": "Future provider/tool bridge through audited MCP workflows.",
+      "status_now": "planning only",
+      "detected": true,
+      "safe_now": false
+    },
+    {
+      "name": "memory",
+      "category": "memory",
+      "future_use": "Compact memory and Obsidian-like workflow support.",
+      "status_now": "safe to plan; repo memory remains file-based",
+      "detected": false,
+      "safe_now": false
+    },
+    {
+      "name": "obsidian",
+      "category": "memory",
+      "future_use": "Obsidian-style local memory workflows.",
+      "status_now": "safe to plan; no external API",
+      "detected": true,
+      "safe_now": false
+    },
+    {
+      "name": "github",
+      "category": "repo workflow",
+      "future_use": "GitHub workflow assistance after explicit approval gates.",
+      "status_now": "planning/local docs only",
+      "detected": true,
+      "safe_now": false
+    },
+    {
+      "name": "plan",
+      "category": "planning",
+      "future_use": "Structured planning and handoff workflows.",
+      "status_now": "safe to inspect",
+      "detected": true,
+      "safe_now": true
+    },
+    {
+      "name": "test-driven-development",
+      "category": "engineering",
+      "future_use": "Test-first development pattern support.",
+      "status_now": "safe to inspect",
+      "detected": true,
+      "safe_now": true
+    },
+    {
+      "name": "browser",
+      "category": "computer-use",
+      "future_use": "Future browser/computer-use research after remediation.",
+      "status_now": "manual later - browser/Playwright degraded/not claimed",
+      "detected": false,
+      "safe_now": false
+    },
+    {
+      "name": "computer-use",
+      "category": "computer-use",
+      "future_use": "Future audited observe/click/type work.",
+      "status_now": "blocked for control; observation-only in Ghoti",
+      "detected": false,
+      "safe_now": false
+    },
+    {
+      "name": "youtube",
+      "category": "content",
+      "future_use": "Content workflow planning after approvals.",
+      "status_now": "planning only - no posting",
+      "detected": true,
+      "safe_now": false
+    }
+  ],
+  "raw_line_count": 90,
+  "generated_at": "2026-05-23T16:12:43Z"
+}

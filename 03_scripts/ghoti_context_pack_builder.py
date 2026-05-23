@@ -26,12 +26,15 @@ GENERATED_DIR = REPO_ROOT / "14_context" / "compact_memory" / "generated"
 
 LAUNCHER_COMMAND = "python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard"
 DASHBOARD_URL = "http://127.0.0.1:3210"
-LATEST_CLEAN_MILESTONE = "N+5.6B - Local Model Easy Worker Lane landed on main"
-CURRENT_MILESTONE = "N+5.7A - Graphify / Repo Knowledge Map + Better Context Retrieval"
-NEXT_RECOMMENDED_MILESTONE = "N+5.8A - Hermes Agent Workflow / Provider Setup Plan + Manual Bridge Readiness"
+LATEST_CLEAN_MILESTONE = "N+5.7B - Repo Knowledge Context Retrieval landed on main"
+CURRENT_MILESTONE = "N+5.8A - Hermes Agent Workflow / Provider Setup Plan + Manual Bridge Readiness"
+NEXT_RECOMMENDED_MILESTONE = "N+5.9A - Real Gemma Install/Model Availability Decision + Local Task Quality Evaluation"
 REPO_KNOWLEDGE_DIR = REPO_ROOT / "14_context" / "repo_knowledge" / "generated"
+HERMES_WORKFLOW_DIR = REPO_ROOT / "14_context" / "hermes_workflow" / "generated"
 REPO_MAP_COMMAND = "python 03_scripts/ghoti_product_launcher.py --repo-map --json"
 REPO_BUNDLE_NEXT_COMMAND = "python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json"
+HERMES_BRIDGE_STATUS_COMMAND = "python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json"
+HERMES_BRIDGE_WRITE_COMMAND = "python 03_scripts/ghoti_product_launcher.py --hermes-bridge-write --json"
 
 OUTPUT_FILES = {
     "ghoti_current_context_pack.md": "context_pack_markdown",
@@ -213,6 +216,13 @@ def _static_truth() -> Dict[str, object]:
             "codex_provider": "pending/not proven",
             "telegram": "manual later/no token",
             "vps": "No VPS",
+            "manual_bridge": "available",
+            "readiness_percent": 58,
+            "status_path": _repo_rel(HERMES_WORKFLOW_DIR / "hermes_workflow_status.md"),
+            "skills_index_path": _repo_rel(HERMES_WORKFLOW_DIR / "hermes_skills_index.md"),
+            "bridge_packet_path": _repo_rel(HERMES_WORKFLOW_DIR / "hermes_operator_bridge_packet.md"),
+            "bridge_status_command": HERMES_BRIDGE_STATUS_COMMAND,
+            "bridge_write_command": HERMES_BRIDGE_WRITE_COMMAND,
         },
         "memory": {
             "obsidian_local_memory": "present",
@@ -246,10 +256,12 @@ def _static_truth() -> Dict[str, object]:
             "External sandbox remains static inspection/planning-only.",
             "Local memory status and fallback are repo-local.",
             "Repo Knowledge / Graphify Lane creates a local file map, latest report index, and task bundles.",
+            "Hermes Agent / Manual Bridge exposes safe probes, skills index, manual checklist, and bridge packet.",
             "Reports live under 14_context/.",
         ],
         "pending_manual": [
             "Hermes provider setup.",
+            "Hermes Codex provider verification.",
             "Telegram connection.",
             "Real Gemma model availability.",
             "Ruflo runtime/source availability.",
@@ -305,7 +317,7 @@ def _render_status_short(facts: Dict[str, object]) -> str:
         f"{main_hash[:12]}. Launch with `{LAUNCHER_COMMAND}` and open {DASHBOARD_URL}. "
         "Hermes WSL is installed at /home/ai_sandbox/.local/bin/hermes (v0.14.0); "
         "browser/Playwright is degraded/not claimed, Codex provider is pending/not proven, "
-        "Telegram is manual later/no token, and No VPS is in use. "
+        "Telegram is manual later/no token, No VPS is in use, and Hermes Agent / Manual Bridge readiness files are available. "
         f"{model['status_line']} Obsidian/local memory is present; UI-TARS is observation-only; "
         "adapters are approval-gated/local-only; external sandbox is static inspection only; "
         "repo knowledge map/task bundles are available with Graphify roadmap only/not wired. "
@@ -342,6 +354,8 @@ def _render_context_pack(facts: Dict[str, object], status_short: str) -> str:
         - Context pack command: `python 03_scripts/ghoti_context_pack_builder.py --write --json`
         - Repo map command: `{REPO_MAP_COMMAND}`
         - Next bundle command: `{REPO_BUNDLE_NEXT_COMMAND}`
+        - Hermes bridge status: `{HERMES_BRIDGE_STATUS_COMMAND}`
+        - Hermes bridge write: `{HERMES_BRIDGE_WRITE_COMMAND}`
 
         ## What Works Now
 
@@ -369,6 +383,17 @@ def _render_context_pack(facts: Dict[str, object], status_short: str) -> str:
         - Codex provider in Hermes: pending/not proven
         - Telegram: manual later/no token
         - No VPS
+
+        ## Hermes Agent / Manual Bridge
+
+        - Hermes workflow readiness: {facts['hermes']['readiness_percent']}%
+        - Status file: `{facts['hermes']['status_path']}`
+        - Skills index: `{facts['hermes']['skills_index_path']}`
+        - Operator bridge packet: `{facts['hermes']['bridge_packet_path']}`
+        - Status command: `{facts['hermes']['bridge_status_command']}`
+        - Write command: `{facts['hermes']['bridge_write_command']}`
+        - Hermes setup remains manual later.
+        - Safe probes only; no live provider setup, no provider config, no Telegram setup, no tokens, no browser automation, no live APIs.
 
         ## Obsidian / Local Memory Truth
 
@@ -398,6 +423,7 @@ def _render_context_pack(facts: Dict[str, object], status_short: str) -> str:
         - Adapter runner: approval-gated/local-only
         - External sandbox: static inspection only
         - Repo Knowledge / Graphify Lane: local map and task bundles; Graphify runtime roadmap only/not wired
+        - Hermes Agent / Manual Bridge: safe probes, generated readiness files, and manual setup plan
 
         ## Latest Reports
 
@@ -429,11 +455,13 @@ def _render_codex_prompt(facts: Dict[str, object]) -> str:
         Current main hash: `{facts['main_hash']}`
         Latest clean milestone: {facts['latest_clean_milestone']}
         Current context pack milestone: {facts['current_milestone']}
+        Previous repo knowledge milestone: N+5.7A - Graphify / Repo Knowledge Map + Better Context Retrieval
         Launcher: `{LAUNCHER_COMMAND}`
         Dashboard: `{DASHBOARD_URL}`
 
         Status truth:
         - Hermes WSL installed at `/home/ai_sandbox/.local/bin/hermes`, v0.14.0.
+        - Hermes Agent / Manual Bridge exposes safe status, skills index, manual checklist, and bridge packet.
         - Hermes browser/Playwright degraded/not claimed.
         - Codex provider in Hermes pending/not proven.
         - Telegram manual later/no token; No VPS.
@@ -448,8 +476,9 @@ def _render_codex_prompt(facts: Dict[str, object]) -> str:
         {NEXT_RECOMMENDED_MILESTONE}
 
         Ask Codex to create a feature branch, add focused tests first, implement only the
-        Hermes workflow/provider setup plan and manual bridge readiness changes, validate,
-        push feature, then create a separate audit branch. Do not start live providers or tokens.
+        next local model/Gemma decision and local task quality evaluation changes, validate,
+        push feature, then create a separate audit branch. Do not run `ollama pull` unless
+        the human explicitly approves it in that milestone.
     """)
 
 

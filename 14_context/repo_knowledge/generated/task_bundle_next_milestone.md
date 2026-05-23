@@ -2,22 +2,22 @@
 
 ## Purpose
 
-Prepare N+5.8A Hermes Agent Workflow / Provider Setup Plan + Manual Bridge Readiness.
+Prepare N+5.9A Real Gemma Install/Model Availability Decision + Local Task Quality Evaluation.
 
 ## Files To Inspect First
 
-- `03_scripts/hermes_local_bootstrap.py`
-- `docs/HERMES_LOCAL_INSTALL_AND_PROVIDER_PLAN.md`
-- `docs/REPO_KNOWLEDGE_MAP_GUIDE.md`
-- `docs/GRAPHIFY_REPO_KNOWLEDGE_ROADMAP.md`
-- `14_context/repo_knowledge/generated/task_bundle_hermes.md`
+- `03_scripts/local_model_worker_lane.py`
+- `docs/LOCAL_MODEL_GEMMA_SETUP_GUIDE.md`
+- `docs/EASY_WORKER_LANE_GUIDE.md`
+- `14_context/local_worker/generated/local_worker_status.md`
+- `14_context/hermes_workflow/generated/hermes_operator_bridge_packet.md`
 
 ## Current Truth
 
-- Main hash: `c9413108006d920e0110413d3d5e195b504489c1`
-- Latest clean milestone: N+5.6B - Local Model Easy Worker Lane landed on main
-- Current milestone: N+5.7A - Graphify / Repo Knowledge Map + Better Context Retrieval
-- Hermes WSL installed at `/home/ai_sandbox/.local/bin/hermes`, v0.14.0; browser/Playwright degraded/not claimed.
+- Main hash: `84e880e7c3f774580a5e4ac340acd497af3027ee`
+- Latest clean milestone: N+5.7B - Repo Knowledge Context Retrieval landed on main
+- Current milestone: N+5.8A - Hermes Agent Workflow / Provider Setup Plan + Manual Bridge Readiness
+- Hermes WSL installed at `/home/ai_sandbox/.local/bin/hermes`, v0.14.0; Hermes Agent / Manual Bridge files available; browser/Playwright degraded/not claimed.
 - Ollama available v0.24.0; Gemma missing unless a new local check proves otherwise; local_demo fallback active.
 - UI-TARS observation-only; adapter runner approval-gated/local-only; external sandbox static inspection only.
 - Graphify runtime: roadmap only/not wired; no external repo runtime; no network.
@@ -40,6 +40,7 @@ Prepare N+5.8A Hermes Agent Workflow / Provider Setup Plan + Manual Bridge Readi
 - `python 03_scripts/ghoti_product_launcher.py --context-pack --json`
 - `python 03_scripts/ghoti_product_launcher.py --local-worker-status --json`
 - `python 03_scripts/ghoti_product_launcher.py --repo-map --json`
+- `python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json`
 - `python 03_scripts/ghoti_repo_knowledge_map.py --bundle next-milestone --json`
 - `python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json`
 
@@ -62,4 +63,4 @@ Prepare N+5.8A Hermes Agent Workflow / Provider Setup Plan + Manual Bridge Readi
 
 ## Next Recommended Prompt
 
-Build N+5.8A Hermes Agent Workflow / Provider Setup Plan + Manual Bridge Readiness. Keep Hermes setup/provider config/Telegram/tokens manual later; safe WSL probes only.
+Plan N+5.9A Real Gemma Install/Model Availability Decision + Local Task Quality Evaluation. Do not run ollama pull unless the human explicitly approves it.

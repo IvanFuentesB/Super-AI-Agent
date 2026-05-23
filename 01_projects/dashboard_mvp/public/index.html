@@ -165,7 +165,8 @@
                   </div>
                 </div>
                 <ul class="card-list">
-                  <li><strong>Main baseline:</strong> N+5.6B clean/local-model-easy-worker-lane on main; origin/main = c9413108006d920e0110413d3d5e195b504489c1.</li>
+                  <li><strong>Main baseline:</strong> N+5.7B clean/repo-knowledge-context-retrieval on main; origin/main = 84e880e7c3f774580a5e4ac340acd497af3027ee.</li>
+                  <li><strong>Previous baseline:</strong> N+5.6B clean/local-model-easy-worker-lane on main; origin/main = c9413108006d920e0110413d3d5e195b504489c1.</li>
                   <li><strong>Hermes WSL:</strong> installed at <code>/home/ai_sandbox/.local/bin/hermes</code>; Hermes Agent v0.14.0.</li>
                   <li><strong>Hermes browser/Playwright:</strong> browser/Playwright: degraded/not claimed unless separately verified.</li>
                   <li><strong>Hermes Codex provider:</strong> Codex provider in Hermes: pending/not proven.</li>
@@ -263,6 +264,39 @@
                   <p class="empty-state">No repo knowledge action run yet.</p>
                 </div>
               </section>
+              <section class="console-card console-card-span-2" id="ghoti-hermes-bridge-card">
+                <div class="console-card-header">
+                  <div>
+                    <h2>Hermes Agent / Manual Bridge</h2>
+                    <p>Safe WSL probes, skills index, and manual setup packet. No live provider setup.</p>
+                  </div>
+                </div>
+                <ul class="card-list">
+                  <li><strong>Status command:</strong> <code>python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json</code></li>
+                  <li><strong>Write command:</strong> <code>python 03_scripts/ghoti_product_launcher.py --hermes-bridge-write --json</code></li>
+                  <li><strong>Direct script:</strong> <code>python 03_scripts/hermes_agent_workflow_bridge.py --write-readiness --json</code></li>
+                  <li><strong>Installed:</strong> <span id="hermes-bridge-installed">loading...</span></li>
+                  <li><strong>WSL path:</strong> <code id="hermes-bridge-path">/home/ai_sandbox/.local/bin/hermes</code></li>
+                  <li><strong>Version:</strong> <code id="hermes-bridge-version">loading...</code></li>
+                  <li><strong>Skills detected:</strong> <code id="hermes-bridge-skills-count">loading...</code></li>
+                  <li><strong>Hermes readiness percentage:</strong> <code id="hermes-bridge-readiness">loading...</code></li>
+                  <li><strong>Codex provider:</strong> Codex provider pending/not proven.</li>
+                  <li><strong>Telegram:</strong> Telegram manual later/no token.</li>
+                  <li><strong>Browser:</strong> browser/Playwright degraded/not claimed.</li>
+                  <li><strong>VPS:</strong> No VPS.</li>
+                  <li><strong>Generated files:</strong> <code id="hermes-bridge-output-path">14_context/hermes_workflow/generated/hermes_workflow_status.md</code></li>
+                  <li><strong>Safety:</strong> safe probes only, no live provider setup, no provider config, no Telegram setup, no tokens, no browser automation, no live APIs.</li>
+                  <li><strong>Status:</strong> <span id="hermes-bridge-status-line">Loading Hermes bridge status...</span></li>
+                </ul>
+                <div class="card-actions">
+                  <button id="hermes-bridge-refresh-btn" type="button">Refresh Hermes Bridge</button>
+                  <button id="hermes-bridge-skills-btn" type="button">Load Skills Index</button>
+                  <button id="hermes-bridge-write-btn" type="button">Write Readiness Files</button>
+                </div>
+                <div id="hermes-bridge-action-result" class="card-status">
+                  <p class="empty-state">No Hermes bridge action run yet.</p>
+                </div>
+              </section>
               <section class="console-card" id="ghoti-works-now-card">
                 <div class="console-card-header">
                   <div>
@@ -278,6 +312,7 @@
                   <li>Local memory status/fallback, generated context packs, and Reports under 14_context.</li>
                   <li>Local Model / Easy Worker Lane status and deterministic demo outputs run with local_demo fallback when Gemma is missing.</li>
                   <li>Repo Knowledge / Graphify Lane generates a local map, latest report index, task bundles, and next prompt with no external runtime.</li>
+                  <li>Hermes Agent / Manual Bridge generates safe status, skills index, manual checklist, and bridge packet without live setup.</li>
                 </ul>
               </section>
               <section class="console-card" id="ghoti-remains-card">
@@ -289,6 +324,7 @@
                 </div>
                 <ul class="card-list">
                   <li>Hermes provider setup and Telegram connection remain manual later.</li>
+                  <li>Hermes Codex provider verification remains pending/not proven; the manual bridge only exposes readiness.</li>
                   <li>Real Gemma model availability is pending; local_demo fallback is active.</li>
                   <li>Real local model worker tasks require a manually installed Gemma model; Ghoti will not auto-download one.</li>
                   <li>Ruflo runtime/source availability and external Graphify runtime integration remain pending.</li>

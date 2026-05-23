@@ -111,6 +111,7 @@ The repo-local vault pattern is:
 - Ollama/Gemma/local_demo truth
 - repo knowledge map and task bundle paths
 - Hermes WSL truth
+- Hermes Agent / Manual Bridge readiness paths
 - Obsidian/local memory truth
 - next recommended milestone
 - safe copy-paste prompt for Codex
@@ -160,6 +161,12 @@ python 03_scripts/hermes_local_bootstrap.py --status --json
 
 Do not run Hermes setup, provider config, Telegram setup, token flows, or live
 APIs as part of context pack generation.
+
+To refresh Hermes manual bridge context separately, run:
+
+```powershell
+python 03_scripts/ghoti_product_launcher.py --hermes-bridge-write --json
+```
 
 ### Repo knowledge bundle missing
 

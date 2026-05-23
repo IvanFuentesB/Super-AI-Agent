@@ -18,6 +18,7 @@ python 03_scripts/ghoti_repo_knowledge_map.py --write --json
 python 03_scripts/ghoti_repo_knowledge_map.py --bundle next-milestone --json
 python 03_scripts/ghoti_product_launcher.py --repo-map --json
 python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json
+python 03_scripts/ghoti_product_launcher.py --repo-bundle hermes --json
 ```
 
 ## Generated Files
@@ -61,6 +62,13 @@ Use task bundles to reduce token load:
 Each bundle includes purpose, files to inspect first, current truth, safety
 boundaries, useful commands, validation commands, known limitations, and a next
 prompt.
+
+The `hermes` bundle now points to the Hermes Agent / Manual Bridge files:
+
+- `03_scripts/hermes_agent_workflow_bridge.py`
+- `docs/HERMES_AGENT_WORKFLOW_GUIDE.md`
+- `docs/HERMES_MANUAL_PROVIDER_SETUP_CHECKLIST.md`
+- `14_context/hermes_workflow/generated/hermes_operator_bridge_packet.md`
 
 ## Safety
 

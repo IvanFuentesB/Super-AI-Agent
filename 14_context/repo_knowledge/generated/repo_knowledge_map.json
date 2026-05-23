@@ -1,9 +1,9 @@
 {
   "ok": true,
   "lane": "repo_knowledge_graphify_lane",
-  "milestone": "N+5.7A - Graphify / Repo Knowledge Map + Better Context Retrieval",
-  "latest_clean_milestone": "N+5.6B - Local Model Easy Worker Lane landed on main",
-  "next_recommended_milestone": "N+5.8A - Hermes Agent Workflow / Provider Setup Plan + Manual Bridge Readiness",
+  "milestone": "N+5.8A - Hermes Agent Workflow / Provider Setup Plan + Manual Bridge Readiness",
+  "latest_clean_milestone": "N+5.7B - Repo Knowledge Context Retrieval landed on main",
+  "next_recommended_milestone": "N+5.9A - Real Gemma Install/Model Availability Decision + Local Task Quality Evaluation",
   "local_only": true,
   "external_api_used": false,
   "live_api_used": false,
@@ -13,14 +13,16 @@
   "graphify_runtime": "roadmap_only_not_wired",
   "readiness_percent": 55,
   "status_line": "Repo knowledge readiness: 55%. Local file map and task bundles are available. Graphify runtime: roadmap only/not wired; no external repo runtime; no network.",
-  "generated_at": "2026-05-23T12:40:07Z",
-  "main_hash": "c9413108006d920e0110413d3d5e195b504489c1",
+  "generated_at": "2026-05-23T16:11:09Z",
+  "main_hash": "84e880e7c3f774580a5e4ac340acd497af3027ee",
   "launcher_command": "python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard",
   "dashboard_url": "http://127.0.0.1:3210",
   "context_pack_command": "python 03_scripts/ghoti_product_launcher.py --context-pack --json",
   "local_worker_command": "python 03_scripts/ghoti_product_launcher.py --local-worker-status --json",
   "repo_map_command": "python 03_scripts/ghoti_product_launcher.py --repo-map --json",
   "next_bundle_command": "python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json",
+  "hermes_bridge_command": "python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json",
+  "hermes_bridge_write_command": "python 03_scripts/ghoti_product_launcher.py --hermes-bridge-write --json",
   "output_dir": "14_context/repo_knowledge/generated",
   "output_paths": {
     "repo_knowledge_map.json": "14_context/repo_knowledge/generated/repo_knowledge_map.json",
@@ -60,6 +62,30 @@
   },
   "latest_reports": [
     {
+      "path": "14_context/codex_n5_7b_main_merge_repo_knowledge_context_retrieval.md",
+      "name": "codex_n5_7b_main_merge_repo_knowledge_context_retrieval.md",
+      "kind": "main",
+      "rank": [
+        5,
+        7,
+        2
+      ],
+      "modified_unix": 1779551693,
+      "verdict_hint": "CLEAN PASS / N+5.7B MAIN MERGE READY"
+    },
+    {
+      "path": "14_context/codex_n5_7a_graphify_repo_knowledge_map_context_retrieval.md",
+      "name": "codex_n5_7a_graphify_repo_knowledge_map_context_retrieval.md",
+      "kind": "report",
+      "rank": [
+        5,
+        7,
+        1
+      ],
+      "modified_unix": 1779551693,
+      "verdict_hint": "CLEAN PASS / N+5.7A REPO KNOWLEDGE MAP CONTEXT RETRIEVAL READY"
+    },
+    {
       "path": "14_context/codex_n5_6b_main_merge_local_model_easy_worker_lane.md",
       "name": "codex_n5_6b_main_merge_local_model_easy_worker_lane.md",
       "kind": "main",
@@ -68,7 +94,7 @@
         6,
         2
       ],
-      "modified_unix": 1779538779,
+      "modified_unix": 1779551693,
       "verdict_hint": "CLEAN PASS / N+5.6B MAIN MERGE READY"
     },
     {
@@ -80,7 +106,7 @@
         6,
         1
       ],
-      "modified_unix": 1779538779,
+      "modified_unix": 1779551693,
       "verdict_hint": "CLEAN PASS / N+5.6A LOCAL MODEL EASY WORKER LANE READY"
     },
     {
@@ -92,7 +118,7 @@
         5,
         2
       ],
-      "modified_unix": 1779538779,
+      "modified_unix": 1779551693,
       "verdict_hint": "CLEAN PASS / N+5.5B MAIN MERGE READY"
     },
     {
@@ -104,7 +130,7 @@
         5,
         1
       ],
-      "modified_unix": 1779538779,
+      "modified_unix": 1779551693,
       "verdict_hint": "CLEAN PASS / LOCAL MEMORY CONTEXT PACK READY"
     },
     {
@@ -116,7 +142,7 @@
         4,
         2
       ],
-      "modified_unix": 1779538779,
+      "modified_unix": 1779551693,
       "verdict_hint": "CLEAN PASS / N+5.4A DAILY OPERATOR USABILITY MERGE READY"
     },
     {
@@ -128,7 +154,7 @@
         4,
         1
       ],
-      "modified_unix": 1779538779,
+      "modified_unix": 1779551693,
       "verdict_hint": "CLEAN PASS / DAILY OPERATOR USABILITY READY"
     },
     {
@@ -140,7 +166,7 @@
         3,
         1
       ],
-      "modified_unix": 1779538779,
+      "modified_unix": 1779551693,
       "verdict_hint": "CLEAN PASS for local-first supervised MVP merge gating. No blocker was found that prevents merging N+5.3A to `main`."
     },
     {
@@ -152,32 +178,8 @@
         3,
         1
       ],
-      "modified_unix": 1779538779,
+      "modified_unix": 1779551693,
       "verdict_hint": "CLEAN PASS. The N+5.3A Product Control Center work is suitable for `main` as a local-first supervised MVP. No blocker was found in tests, dashboard checks, public audit, model council scan, Hermes status, local memory status, dry-runs, or s"
-    },
-    {
-      "path": "14_context/codex_n5_2b_hermes_bootstrap_stack_ui_tars_manifest_fix.md",
-      "name": "codex_n5_2b_hermes_bootstrap_stack_ui_tars_manifest_fix.md",
-      "kind": "report",
-      "rank": [
-        5,
-        2,
-        2
-      ],
-      "modified_unix": 1779538779,
-      "verdict_hint": "verdict not detected"
-    },
-    {
-      "path": "14_context/codex_n5_2a_hermes_local_bootstrap_public_readiness_model_provider.md",
-      "name": "codex_n5_2a_hermes_local_bootstrap_public_readiness_model_provider.md",
-      "kind": "report",
-      "rank": [
-        5,
-        2,
-        1
-      ],
-      "modified_unix": 1779538779,
-      "verdict_hint": "verdict not detected"
     }
   ],
   "important_files": [
@@ -187,7 +189,7 @@
       "description": "Public product overview, quickstart, local-first architecture, and safety model.",
       "why_it_matters": "First file Ivan or GitHub visitors read before running Ghoti.",
       "exists": true,
-      "size_bytes": 14883,
+      "size_bytes": 16970,
       "snippet_hint": "# Ghoti / Super-AI-Agent"
     },
     {
@@ -196,7 +198,7 @@
       "description": "One-command launcher, smoke runner, context-pack shortcut, and local worker shortcut.",
       "why_it_matters": "Daily operator entry point and safest command surface.",
       "exists": true,
-      "size_bytes": 37722,
+      "size_bytes": 41807,
       "snippet_hint": "\"\"\"Ghoti Product Launcher (N+4.7A) \u2014 one-command local product launcher + smoke."
     },
     {
@@ -205,7 +207,7 @@
       "description": "Builds compact Ghoti context packs for Codex, ChatGPT, Claude, and Obsidian.",
       "why_it_matters": "Main token-saving continuity tool.",
       "exists": true,
-      "size_bytes": 26697,
+      "size_bytes": 28921,
       "snippet_hint": "\"\"\"Build compact Ghoti context packs for local memory handoff."
     },
     {
@@ -234,6 +236,15 @@
       "exists": true,
       "size_bytes": 19272,
       "snippet_hint": "\"\"\"Local-first Hermes Agent bootstrap helper for Windows ai_sandbox."
+    },
+    {
+      "path": "03_scripts/hermes_agent_workflow_bridge.py",
+      "subsystem": "Hermes/WSL",
+      "description": "Hermes manual bridge readiness, skills index, and generated setup packet.",
+      "why_it_matters": "Makes Hermes useful and inspectable while keeping provider setup, Telegram, tokens, and browser automation manual later.",
+      "exists": true,
+      "size_bytes": 30558,
+      "snippet_hint": "\"\"\"Safe Hermes Agent manual bridge readiness lane."
     },
     {
       "path": "03_scripts/ui_tars_observation_adapter.py",
@@ -295,7 +306,7 @@
       "description": "Local dashboard HTTP server and fixed-argv product endpoints.",
       "why_it_matters": "Backend for the Product Control Center and operator cards.",
       "exists": true,
-      "size_bytes": 301567,
+      "size_bytes": 304350,
       "snippet_hint": "not read or empty"
     },
     {
@@ -304,7 +315,7 @@
       "description": "Dashboard UI structure and operator cards.",
       "why_it_matters": "First-screen truth surface for daily use.",
       "exists": true,
-      "size_bytes": 138695,
+      "size_bytes": 142019,
       "snippet_hint": "<!DOCTYPE html>"
     },
     {
@@ -313,7 +324,7 @@
       "description": "Dashboard client handlers for status cards and local actions.",
       "why_it_matters": "Connects UI cards to local-only status endpoints.",
       "exists": true,
-      "size_bytes": 303778,
+      "size_bytes": 307652,
       "snippet_hint": "not read or empty"
     },
     {
@@ -331,7 +342,7 @@
       "description": "Daily operator usage, troubleshooting, and cleanup guide.",
       "why_it_matters": "Turns milestone work into repeatable human workflow.",
       "exists": true,
-      "size_bytes": 10101,
+      "size_bytes": 10653,
       "snippet_hint": "# Daily Operator Guide"
     },
     {
@@ -340,7 +351,7 @@
       "description": "Codex-only worktree, branch, audit, and safety workflow.",
       "why_it_matters": "Keeps future Codex work isolated and auditable.",
       "exists": true,
-      "size_bytes": 4866,
+      "size_bytes": 5546,
       "snippet_hint": "# Codex-Only Workflow"
     },
     {
@@ -349,7 +360,7 @@
       "description": "Guide for generating and using compact context packs.",
       "why_it_matters": "Explains token-saving context handoff.",
       "exists": true,
-      "size_bytes": 5752,
+      "size_bytes": 5984,
       "snippet_hint": "# Local Memory Context Pack Guide"
     },
     {
@@ -376,8 +387,26 @@
       "description": "Hermes WSL install truth and provider plan.",
       "why_it_matters": "Important next human/manual milestone context.",
       "exists": true,
-      "size_bytes": 3083,
+      "size_bytes": 3800,
       "snippet_hint": "# Hermes Local Install And Provider Plan"
+    },
+    {
+      "path": "docs/HERMES_AGENT_WORKFLOW_GUIDE.md",
+      "subsystem": "Hermes/WSL",
+      "description": "Hermes Agent workflow and manual bridge guide.",
+      "why_it_matters": "Explains safe probes, generated readiness files, and manual later boundaries.",
+      "exists": true,
+      "size_bytes": 1361,
+      "snippet_hint": "# Hermes Agent Workflow Guide"
+    },
+    {
+      "path": "docs/HERMES_MANUAL_PROVIDER_SETUP_CHECKLIST.md",
+      "subsystem": "Hermes/WSL",
+      "description": "Human checklist for later provider setup.",
+      "why_it_matters": "Keeps provider setup out of Codex automation and behind explicit approval.",
+      "exists": true,
+      "size_bytes": 1077,
+      "snippet_hint": "# Hermes Manual Provider Setup Checklist"
     },
     {
       "path": "docs/COMPUTER_USE_ROADMAP.md",
@@ -385,7 +414,7 @@
       "description": "Future computer-use roadmap and safety gates.",
       "why_it_matters": "Keeps click/type/autonomy future-gated.",
       "exists": true,
-      "size_bytes": 1162,
+      "size_bytes": 1272,
       "snippet_hint": "# Computer-Use Roadmap"
     },
     {
@@ -394,7 +423,7 @@
       "description": "Token-efficiency, local models, memory, and Graphify planning.",
       "why_it_matters": "Connects repo knowledge with the broader token-saving roadmap.",
       "exists": true,
-      "size_bytes": 1793,
+      "size_bytes": 2353,
       "snippet_hint": "# Token-Efficient Computer-Use Roadmap"
     },
     {
@@ -412,7 +441,7 @@
       "description": "Latest generated context pack.",
       "why_it_matters": "Short current-state handoff source.",
       "exists": true,
-      "size_bytes": 6520,
+      "size_bytes": 7494,
       "snippet_hint": "# Ghoti Current Context Pack"
     },
     {
@@ -425,6 +454,15 @@
       "snippet_hint": "# Local Model / Easy Worker Lane Status"
     },
     {
+      "path": "14_context/hermes_workflow/generated/hermes_workflow_status.md",
+      "subsystem": "Hermes/WSL",
+      "description": "Latest Hermes manual bridge readiness status file.",
+      "why_it_matters": "Shows Hermes installed/version/skills truth and manual later boundaries.",
+      "exists": true,
+      "size_bytes": 1211,
+      "snippet_hint": "# Hermes Agent / Manual Bridge Status"
+    },
+    {
       "path": "01_projects/runtime_mvp/tests/test_n5_6a_local_model_easy_worker_lane.py",
       "subsystem": "tests",
       "description": "N+5.6 local worker lane tests.",
@@ -432,6 +470,24 @@
       "exists": true,
       "size_bytes": 7514,
       "snippet_hint": "import json"
+    },
+    {
+      "path": "14_context/codex_n5_7b_main_merge_repo_knowledge_context_retrieval.md",
+      "subsystem": "reports/14_context",
+      "description": "main milestone report",
+      "why_it_matters": "CLEAN PASS / N+5.7B MAIN MERGE READY",
+      "exists": true,
+      "size_bytes": 6575,
+      "snippet_hint": "CLEAN PASS / N+5.7B MAIN MERGE READY"
+    },
+    {
+      "path": "14_context/codex_n5_7a_graphify_repo_knowledge_map_context_retrieval.md",
+      "subsystem": "reports/14_context",
+      "description": "report milestone report",
+      "why_it_matters": "CLEAN PASS / N+5.7A REPO KNOWLEDGE MAP CONTEXT RETRIEVAL READY",
+      "exists": true,
+      "size_bytes": 9550,
+      "snippet_hint": "CLEAN PASS / N+5.7A REPO KNOWLEDGE MAP CONTEXT RETRIEVAL READY"
     },
     {
       "path": "14_context/codex_n5_6b_main_merge_local_model_easy_worker_lane.md",
@@ -504,30 +560,16 @@
       "exists": true,
       "size_bytes": 5131,
       "snippet_hint": "CLEAN PASS. The N+5.3A Product Control Center work is suitable for `main` as a local-first supervised MVP. No blocker was found in tests, dashboard checks, public audit, model council scan, Hermes status, local memory status, dry-runs, or s"
-    },
-    {
-      "path": "14_context/codex_n5_2b_hermes_bootstrap_stack_ui_tars_manifest_fix.md",
-      "subsystem": "reports/14_context",
-      "description": "report milestone report",
-      "why_it_matters": "verdict not detected",
-      "exists": true,
-      "size_bytes": 7176,
-      "snippet_hint": "verdict not detected"
-    },
-    {
-      "path": "14_context/codex_n5_2a_hermes_local_bootstrap_public_readiness_model_provider.md",
-      "subsystem": "reports/14_context",
-      "description": "report milestone report",
-      "why_it_matters": "verdict not detected",
-      "exists": true,
-      "size_bytes": 6385,
-      "snippet_hint": "verdict not detected"
     }
   ],
   "subsystems": {
     "Hermes/WSL": [
+      "03_scripts/hermes_agent_workflow_bridge.py",
       "03_scripts/hermes_local_bootstrap.py",
-      "docs/HERMES_LOCAL_INSTALL_AND_PROVIDER_PLAN.md"
+      "14_context/hermes_workflow/generated/hermes_workflow_status.md",
+      "docs/HERMES_AGENT_WORKFLOW_GUIDE.md",
+      "docs/HERMES_LOCAL_INSTALL_AND_PROVIDER_PLAN.md",
+      "docs/HERMES_MANUAL_PROVIDER_SETUP_CHECKLIST.md"
     ],
     "UI-TARS/computer-use": [
       "03_scripts/ui_tars_observation_adapter.py",
@@ -572,8 +614,6 @@
       "docs/BLOCKED_UNSAFE_AUTOMATION.md"
     ],
     "reports/14_context": [
-      "14_context/codex_n5_2a_hermes_local_bootstrap_public_readiness_model_provider.md",
-      "14_context/codex_n5_2b_hermes_bootstrap_stack_ui_tars_manifest_fix.md",
       "14_context/codex_n5_3a_main_merge_product_finish_local_mvp.md",
       "14_context/codex_n5_3a_product_finish_remote_clean_audit.md",
       "14_context/codex_n5_4a_first_real_operator_usability_pass.md",
@@ -581,7 +621,9 @@
       "14_context/codex_n5_5a_local_memory_obsidian_context_pack_brain_upgrade.md",
       "14_context/codex_n5_5b_main_merge_local_memory_context_pack.md",
       "14_context/codex_n5_6a_local_model_gemma_setup_truth_easy_worker_lane.md",
-      "14_context/codex_n5_6b_main_merge_local_model_easy_worker_lane.md"
+      "14_context/codex_n5_6b_main_merge_local_model_easy_worker_lane.md",
+      "14_context/codex_n5_7a_graphify_repo_knowledge_map_context_retrieval.md",
+      "14_context/codex_n5_7b_main_merge_repo_knowledge_context_retrieval.md"
     ],
     "supervised content demo": [
       "03_scripts/supervised_content_mvp_runner.py"

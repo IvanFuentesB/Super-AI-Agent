@@ -1,22 +1,26 @@
-# Task Bundle: Hermes Status Work
+# Task Bundle: Hermes Agent / Manual Bridge Work
 
 ## Purpose
 
-Prepare the next human/manual Hermes workflow milestone without setup/token actions.
+Inspect or improve the Hermes manual bridge without setup/token actions.
 
 ## Files To Inspect First
 
+- `03_scripts/hermes_agent_workflow_bridge.py`
 - `03_scripts/hermes_local_bootstrap.py`
+- `docs/HERMES_AGENT_WORKFLOW_GUIDE.md`
+- `docs/HERMES_MANUAL_PROVIDER_SETUP_CHECKLIST.md`
 - `docs/HERMES_LOCAL_INSTALL_AND_PROVIDER_PLAN.md`
 - `docs/CODEX_ONLY_WORKFLOW.md`
-- `14_context/codex_n5_6b_main_merge_local_model_easy_worker_lane.md`
+- `14_context/hermes_workflow/generated/hermes_workflow_status.md`
+- `14_context/hermes_workflow/generated/hermes_operator_bridge_packet.md`
 
 ## Current Truth
 
-- Main hash: `c9413108006d920e0110413d3d5e195b504489c1`
-- Latest clean milestone: N+5.6B - Local Model Easy Worker Lane landed on main
-- Current milestone: N+5.7A - Graphify / Repo Knowledge Map + Better Context Retrieval
-- Hermes WSL installed at `/home/ai_sandbox/.local/bin/hermes`, v0.14.0; browser/Playwright degraded/not claimed.
+- Main hash: `84e880e7c3f774580a5e4ac340acd497af3027ee`
+- Latest clean milestone: N+5.7B - Repo Knowledge Context Retrieval landed on main
+- Current milestone: N+5.8A - Hermes Agent Workflow / Provider Setup Plan + Manual Bridge Readiness
+- Hermes WSL installed at `/home/ai_sandbox/.local/bin/hermes`, v0.14.0; Hermes Agent / Manual Bridge files available; browser/Playwright degraded/not claimed.
 - Ollama available v0.24.0; Gemma missing unless a new local check proves otherwise; local_demo fallback active.
 - UI-TARS observation-only; adapter runner approval-gated/local-only; external sandbox static inspection only.
 - Graphify runtime: roadmap only/not wired; no external repo runtime; no network.
@@ -39,6 +43,7 @@ Prepare the next human/manual Hermes workflow milestone without setup/token acti
 - `python 03_scripts/ghoti_product_launcher.py --context-pack --json`
 - `python 03_scripts/ghoti_product_launcher.py --local-worker-status --json`
 - `python 03_scripts/ghoti_product_launcher.py --repo-map --json`
+- `python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json`
 - `python 03_scripts/ghoti_repo_knowledge_map.py --bundle hermes --json`
 - `python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json`
 
@@ -61,4 +66,4 @@ Prepare the next human/manual Hermes workflow milestone without setup/token acti
 
 ## Next Recommended Prompt
 
-Plan N+5.8A Hermes Agent Workflow / Provider Setup Plan + Manual Bridge Readiness. Safe probes only; no setup/provider config/Telegram/tokens.
+Work on the Hermes Agent / Manual Bridge lane. Use safe probes only; no setup/provider config/Telegram/tokens/live APIs/browser automation.

@@ -1,17 +1,17 @@
 # Ghoti Current Context Pack
 
-Generated: `2026-05-23T12:40:04Z`
+Generated: `2026-05-23T16:11:09Z`
 
 ## Compact Status
 
-Ghoti status: N+5.6B - Local Model Easy Worker Lane landed on main at origin/main c9413108006d. Launch with `python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard` and open http://127.0.0.1:3210. Hermes WSL is installed at /home/ai_sandbox/.local/bin/hermes (v0.14.0); browser/Playwright is degraded/not claimed, Codex provider is pending/not proven, Telegram is manual later/no token, and No VPS is in use. Ollama available (ollama version is 0.24.0); Gemma model missing; local_demo fallback active. Obsidian/local memory is present; UI-TARS is observation-only; adapters are approval-gated/local-only; external sandbox is static inspection only; repo knowledge map/task bundles are available with Graphify roadmap only/not wired. Next recommended milestone: N+5.8A - Hermes Agent Workflow / Provider Setup Plan + Manual Bridge Readiness.
+Ghoti status: N+5.7B - Repo Knowledge Context Retrieval landed on main at origin/main 84e880e7c3f7. Launch with `python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard` and open http://127.0.0.1:3210. Hermes WSL is installed at /home/ai_sandbox/.local/bin/hermes (v0.14.0); browser/Playwright is degraded/not claimed, Codex provider is pending/not proven, Telegram is manual later/no token, No VPS is in use, and Hermes Agent / Manual Bridge readiness files are available. Ollama available (ollama version is 0.24.0); Gemma model missing; local_demo fallback active. Obsidian/local memory is present; UI-TARS is observation-only; adapters are approval-gated/local-only; external sandbox is static inspection only; repo knowledge map/task bundles are available with Graphify roadmap only/not wired. Next recommended milestone: N+5.9A - Real Gemma Install/Model Availability Decision + Local Task Quality Evaluation.
 
 ## Current Main
 
-- Main hash: `c9413108006d920e0110413d3d5e195b504489c1`
-- Latest clean milestone: N+5.6B - Local Model Easy Worker Lane landed on main
-- Current milestone: N+5.7A - Graphify / Repo Knowledge Map + Better Context Retrieval
-- Next recommended milestone: N+5.8A - Hermes Agent Workflow / Provider Setup Plan + Manual Bridge Readiness
+- Main hash: `84e880e7c3f774580a5e4ac340acd497af3027ee`
+- Latest clean milestone: N+5.7B - Repo Knowledge Context Retrieval landed on main
+- Current milestone: N+5.8A - Hermes Agent Workflow / Provider Setup Plan + Manual Bridge Readiness
+- Next recommended milestone: N+5.9A - Real Gemma Install/Model Availability Decision + Local Task Quality Evaluation
 
 ## Launch
 
@@ -20,6 +20,8 @@ Ghoti status: N+5.6B - Local Model Easy Worker Lane landed on main at origin/mai
 - Context pack command: `python 03_scripts/ghoti_context_pack_builder.py --write --json`
 - Repo map command: `python 03_scripts/ghoti_product_launcher.py --repo-map --json`
 - Next bundle command: `python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json`
+- Hermes bridge status: `python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json`
+- Hermes bridge write: `python 03_scripts/ghoti_product_launcher.py --hermes-bridge-write --json`
 
 ## What Works Now
 
@@ -33,11 +35,13 @@ Ghoti status: N+5.6B - Local Model Easy Worker Lane landed on main at origin/mai
 - External sandbox remains static inspection/planning-only.
 - Local memory status and fallback are repo-local.
 - Repo Knowledge / Graphify Lane creates a local file map, latest report index, and task bundles.
+- Hermes Agent / Manual Bridge exposes safe probes, skills index, manual checklist, and bridge packet.
 - Reports live under 14_context/.
 
 ## Pending / Manual
 
 - Hermes provider setup.
+- Hermes Codex provider verification.
 - Telegram connection.
 - Real Gemma model availability.
 - Ruflo runtime/source availability.
@@ -64,6 +68,17 @@ Ghoti status: N+5.6B - Local Model Easy Worker Lane landed on main at origin/mai
 - Codex provider in Hermes: pending/not proven
 - Telegram: manual later/no token
 - No VPS
+
+## Hermes Agent / Manual Bridge
+
+- Hermes workflow readiness: 58%
+- Status file: `14_context/hermes_workflow/generated/hermes_workflow_status.md`
+- Skills index: `14_context/hermes_workflow/generated/hermes_skills_index.md`
+- Operator bridge packet: `14_context/hermes_workflow/generated/hermes_operator_bridge_packet.md`
+- Status command: `python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json`
+- Write command: `python 03_scripts/ghoti_product_launcher.py --hermes-bridge-write --json`
+- Hermes setup remains manual later.
+- Safe probes only; no live provider setup, no provider config, no Telegram setup, no tokens, no browser automation, no live APIs.
 
 ## Obsidian / Local Memory Truth
 
@@ -93,17 +108,18 @@ Ghoti status: N+5.6B - Local Model Easy Worker Lane landed on main at origin/mai
 - Adapter runner: approval-gated/local-only
 - External sandbox: static inspection only
 - Repo Knowledge / Graphify Lane: local map and task bundles; Graphify runtime roadmap only/not wired
+- Hermes Agent / Manual Bridge: safe probes, generated readiness files, and manual setup plan
 
 ## Latest Reports
 
+- `14_context/codex_n5_7b_main_merge_repo_knowledge_context_retrieval.md` (main): CLEAN PASS / N+5.7B MAIN MERGE READY
+- `14_context/codex_n5_7a_graphify_repo_knowledge_map_context_retrieval.md` (report): CLEAN PASS / N+5.7A REPO KNOWLEDGE MAP CONTEXT RETRIEVAL READY
 - `14_context/codex_n5_6b_main_merge_local_model_easy_worker_lane.md` (main): CLEAN PASS / N+5.6B MAIN MERGE READY
 - `14_context/codex_n5_6a_local_model_gemma_setup_truth_easy_worker_lane.md` (report): CLEAN PASS / N+5.6A LOCAL MODEL EASY WORKER LANE READY
 - `14_context/codex_n5_5b_main_merge_local_memory_context_pack.md` (main): CLEAN PASS / N+5.5B MAIN MERGE READY
 - `14_context/codex_n5_5a_local_memory_obsidian_context_pack_brain_upgrade.md` (report): CLEAN PASS / LOCAL MEMORY CONTEXT PACK READY
 - `14_context/codex_n5_4b_main_merge_daily_operator_usability.md` (main): CLEAN PASS / N+5.4A DAILY OPERATOR USABILITY MERGE READY
 - `14_context/codex_n5_4a_first_real_operator_usability_pass.md` (product): CLEAN PASS / DAILY OPERATOR USABILITY READY
-- `14_context/codex_n5_3a_product_finish_remote_clean_audit.md` (audit): CLEAN PASS for local-first supervised MVP merge gating. No blocker was found that prevents merging N+5.3A to `main`.
-- `14_context/codex_n5_3a_main_merge_product_finish_local_mvp.md` (main): CLEAN PASS. The N+5.3A Product Control Center work is suitable for `main` as a local-first supervised MVP. No blocker was found in tests, dashboard checks, public audit, model council scan, Hermes status, local memory status, dry-runs, or sandbox checks.
 
 ## Safety Locks
 
