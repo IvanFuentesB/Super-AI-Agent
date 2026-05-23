@@ -29,6 +29,7 @@ DASHBOARD_DIR = REPO_ROOT / "01_projects" / "dashboard_mvp"
 SERVER_JS = DASHBOARD_DIR / "server.js"
 STATE_FILE = DASHBOARD_DIR / "runtime_data" / "ghoti_product_launcher_state.json"
 CONTEXT_PACK_SCRIPT = REPO_ROOT / "03_scripts" / "ghoti_context_pack_builder.py"
+LOCAL_WORKER_SCRIPT = REPO_ROOT / "03_scripts" / "local_model_worker_lane.py"
 
 LAUNCHER_VERSION = "1.0.0"
 MILESTONE = "N+4.7A"
@@ -50,6 +51,7 @@ WHAT_GHOTI_CAN_DO = [
     "Parallel Agent Relay — copy-paste Claude + Codex prompt pairs (no auto-launch)",
     "Local Memory / Gemma fallback — local compression, no external API",
     "Local Memory / Context Pack — compact copy-paste handoff files for Codex/ChatGPT/Claude/Obsidian",
+    "Local Model / Easy Worker Lane — Ollama/Gemma truth plus local_demo fallback tasks",
     "Hermes WSL truth — Ubuntu WSL safe probes, no setup/provider/token action",
     "Obsidian Compact Memory — repo-local vault and compressed memory plan",
     "Ruflo / Local Brain Bridge — status/readiness only, no runtime wiring",
@@ -74,6 +76,13 @@ CONTROL_CENTER_LANES = [
         "status": "local_probe_or_demo_fallback",
         "truth": "Ollama/Gemma are optional local workers for summaries and diagnostics; unavailable models fall back truthfully.",
         "safe_next_step": "Use local_memory_compression_bridge.py --json for a local-only memory summary probe.",
+    },
+    {
+        "key": "local_model_easy_worker_lane",
+        "label": "Local Model / Easy Worker Lane",
+        "status": "local_demo_or_ollama_gemma",
+        "truth": "Ollama is checked locally; Gemma is used only if already installed, otherwise deterministic local_demo fallback stays active.",
+        "safe_next_step": "Run local_model_worker_lane.py --status --json or --write-demo-output --json. Ghoti never runs ollama pull automatically.",
     },
     {
         "key": "obsidian_compact_memory",
@@ -145,6 +154,8 @@ DAILY_OPERATOR_COMMANDS = [
     "python 03_scripts/ghoti_product_launcher.py --status --json",
     "python 03_scripts/ghoti_product_launcher.py --smoke --json",
     "python 03_scripts/ghoti_product_launcher.py --context-pack --json",
+    "python 03_scripts/ghoti_product_launcher.py --local-worker-status --json",
+    "python 03_scripts/ghoti_product_launcher.py --local-worker-demo --json",
     "python 03_scripts/ghoti_product_launcher.py --stop-dashboard",
 ]
 
@@ -636,6 +647,68 @@ def cmd_context_pack() -> dict:
     return payload
 
 
+def _run_local_worker(argv_tail, action: str, timeout: int = 30) -> dict:
+    """Run the local worker script with fixed argv, never a shell."""
+    if not LOCAL_WORKER_SCRIPT.exists():
+        return {
+            "ok": False,
+            "action": action,
+            "local_only": True,
+            "external_api_used": False,
+            "error": "local_model_worker_lane.py not found",
+            "generated_at": _now(),
+        }
+    argv = [sys.executable, str(LOCAL_WORKER_SCRIPT), *argv_tail, "--json"]
+    try:
+        completed = subprocess.run(
+            argv,
+            cwd=str(REPO_ROOT),
+            text=True,
+            capture_output=True,
+            timeout=timeout,
+            shell=False,
+        )
+    except Exception as exc:
+        return {
+            "ok": False,
+            "action": action,
+            "local_only": True,
+            "external_api_used": False,
+            "error": "local worker failed to start: %s" % exc,
+            "generated_at": _now(),
+        }
+    if completed.returncode != 0:
+        return {
+            "ok": False,
+            "action": action,
+            "local_only": True,
+            "external_api_used": False,
+            "error": completed.stderr or completed.stdout or ("exit %s" % completed.returncode),
+            "generated_at": _now(),
+        }
+    try:
+        payload = json.loads(completed.stdout)
+    except Exception:
+        return {
+            "ok": False,
+            "action": action,
+            "local_only": True,
+            "external_api_used": False,
+            "error": "local worker returned invalid JSON",
+            "generated_at": _now(),
+        }
+    payload["action"] = action
+    return payload
+
+
+def cmd_local_worker_status() -> dict:
+    return _run_local_worker(["--status"], "local-worker-status", timeout=30)
+
+
+def cmd_local_worker_demo() -> dict:
+    return _run_local_worker(["--write-demo-output"], "local-worker-demo", timeout=45)
+
+
 # ---------------------------------------------------------------------------
 # Human-readable rendering
 # ---------------------------------------------------------------------------
@@ -683,6 +756,14 @@ def _print_human(result: dict) -> None:
             print("  %s" % result["status_short"])
         for filename, relpath in (result.get("paths") or {}).items():
             print("  %s -> %s" % (filename, relpath))
+    elif action in ("local-worker-status", "local-worker-demo"):
+        print("Local worker lane: %s" % ("PASS" if result.get("ok") else "FAIL"))
+        if result.get("status_line"):
+            print("  %s" % result["status_line"])
+        if result.get("readiness_percent") is not None:
+            print("  readiness: %s%%" % result["readiness_percent"])
+        for filename, relpath in (result.get("paths") or result.get("output_paths") or {}).items():
+            print("  %s -> %s" % (filename, relpath))
 
 
 # ---------------------------------------------------------------------------
@@ -699,8 +780,10 @@ def main(argv=None) -> int:
             "  2. python 03_scripts/ghoti_product_launcher.py --status --json\n"
             "  3. python 03_scripts/ghoti_product_launcher.py --smoke --json\n"
             "  4. python 03_scripts/ghoti_product_launcher.py --context-pack --json\n"
-            "  5. review reports under 14_context/\n"
-            "  6. python 03_scripts/ghoti_product_launcher.py --stop-dashboard\n"
+            "  5. python 03_scripts/ghoti_product_launcher.py --local-worker-status --json\n"
+            "  6. python 03_scripts/ghoti_product_launcher.py --local-worker-demo --json\n"
+            "  7. review reports under 14_context/\n"
+            "  8. python 03_scripts/ghoti_product_launcher.py --stop-dashboard\n"
         ),
     )
     parser.add_argument("--status", action="store_true", help="show launcher + dashboard status")
@@ -710,6 +793,10 @@ def main(argv=None) -> int:
     parser.add_argument("--smoke", action="store_true", help="run the product smoke test")
     parser.add_argument("--context-pack", action="store_true",
                         help="generate the Ghoti current context pack (repo-local, no external API)")
+    parser.add_argument("--local-worker-status", action="store_true",
+                        help="show Ollama/Gemma/local_demo worker readiness (local only)")
+    parser.add_argument("--local-worker-demo", action="store_true",
+                        help="write safe deterministic local worker demo outputs")
     parser.add_argument("--open-dashboard", action="store_true",
                         help="open the localhost dashboard in a browser (only when explicitly passed)")
     parser.add_argument("--run-demo-smoke", action="store_true",
@@ -731,6 +818,10 @@ def main(argv=None) -> int:
             result = cmd_smoke(port, args.run_demo_smoke, timeout)
         elif args.context_pack:
             result = cmd_context_pack()
+        elif args.local_worker_status:
+            result = cmd_local_worker_status()
+        elif args.local_worker_demo:
+            result = cmd_local_worker_demo()
         else:
             # --status, bare --json, or no mode -> status.
             result = cmd_status()

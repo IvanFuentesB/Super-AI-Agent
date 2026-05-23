@@ -26,9 +26,9 @@ GENERATED_DIR = REPO_ROOT / "14_context" / "compact_memory" / "generated"
 
 LAUNCHER_COMMAND = "python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard"
 DASHBOARD_URL = "http://127.0.0.1:3210"
-LATEST_CLEAN_MILESTONE = "N+5.4B - Daily Operator usability landed on main"
-CURRENT_MILESTONE = "N+5.5A - Local Memory / Obsidian / Context Pack Brain Upgrade"
-NEXT_RECOMMENDED_MILESTONE = "N+5.6A - Local Model / Gemma Setup Truth + Easy Worker Lane"
+LATEST_CLEAN_MILESTONE = "N+5.5B - Local Memory Context Pack landed on main"
+CURRENT_MILESTONE = "N+5.6A - Local Model / Gemma Setup Truth + Easy Worker Lane"
+NEXT_RECOMMENDED_MILESTONE = "N+5.7A - Graphify / Repo Knowledge Map + Better Context Retrieval"
 
 OUTPUT_FILES = {
     "ghoti_current_context_pack.md": "context_pack_markdown",
@@ -410,7 +410,7 @@ def _render_codex_prompt(facts: Dict[str, object]) -> str:
         {NEXT_RECOMMENDED_MILESTONE}
 
         Ask Codex to create a feature branch, add focused tests first, implement only the
-        local model/Gemma truth and worker-lane usability changes, validate, push feature,
+        Graphify/repo knowledge map and context retrieval changes, validate, push feature,
         then create a separate audit branch. Do not start live providers or tokens.
     """)
 
