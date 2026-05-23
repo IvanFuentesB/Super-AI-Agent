@@ -12,13 +12,17 @@ Ghoti is a local-first, approval-gated AI operating workspace for supervised dem
 
 ## Quickstart
 
-Current clean local MVP baseline: **N+5.6B / CLEAN PASS / LOCAL MODEL EASY
-WORKER LANE ON MAIN**.
+Current clean local MVP baseline: **N+5.7B / CLEAN PASS / REPO KNOWLEDGE
+CONTEXT RETRIEVAL ON MAIN**.
+
+Previous clean baseline preserved for audit continuity: **N+5.6B /
+clean/local-model-easy-worker-lane on main** at
+`c9413108006d920e0110413d3d5e195b504489c1`.
 
 ```text
-origin/main = c9413108006d920e0110413d3d5e195b504489c1
+origin/main = 84e880e7c3f774580a5e4ac340acd497af3027ee
 N+4: 329 OK
-N+5: 81 OK
+N+5: 85 OK
 Public audit: 150 checks / 0 blockers / 7 warnings
 Readiness score: 100
 ```
@@ -41,6 +45,10 @@ Daily guide:
 - [Easy Worker Lane Guide](docs/EASY_WORKER_LANE_GUIDE.md)
 - [Repo Knowledge Map Guide](docs/REPO_KNOWLEDGE_MAP_GUIDE.md)
 - [Graphify Repo Knowledge Roadmap](docs/GRAPHIFY_REPO_KNOWLEDGE_ROADMAP.md)
+- [Hermes Agent Workflow Guide](docs/HERMES_AGENT_WORKFLOW_GUIDE.md)
+- [Hermes Manual Provider Setup Checklist](docs/HERMES_MANUAL_PROVIDER_SETUP_CHECKLIST.md)
+- [Hermes Skills Index Guide](docs/HERMES_SKILLS_INDEX_GUIDE.md)
+- [Hermes Browser / Playwright Remediation Plan](docs/HERMES_BROWSER_PLAYWRIGHT_REMEDIATION_PLAN.md)
 - Status: `python 03_scripts/ghoti_product_launcher.py --status --json`
 - Smoke: `python 03_scripts/ghoti_product_launcher.py --smoke --json`
 - Context pack: `python 03_scripts/ghoti_context_pack_builder.py --write --json`
@@ -48,6 +56,8 @@ Daily guide:
 - Local worker demo: `python 03_scripts/ghoti_product_launcher.py --local-worker-demo --json`
 - Repo map: `python 03_scripts/ghoti_product_launcher.py --repo-map --json`
 - Next bundle: `python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json`
+- Hermes bridge status: `python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json`
+- Hermes bridge write: `python 03_scripts/ghoti_product_launcher.py --hermes-bridge-write --json`
 - Stop: `python 03_scripts/ghoti_product_launcher.py --stop-dashboard`
 
 ## What Ghoti Can Do Now
@@ -61,6 +71,8 @@ Daily guide:
   outputs under `14_context/local_worker/generated/`.
 - Generate a local repo knowledge map, latest report index, subsystem index,
   task bundles, and a focused next prompt under `14_context/repo_knowledge/generated/`.
+- Generate Hermes manual bridge readiness files, skills index, setup checklist,
+  and bridge packet under `14_context/hermes_workflow/generated/`.
 - Generate supervised content studio artifacts and preview packages.
 - Validate the local content demo: 8 agents, 100 titles, 100 thumbnails, local
   preview, approval packet, no posting.
@@ -101,6 +113,33 @@ python 03_scripts/hermes_local_bootstrap.py --status --json
 python 03_scripts/hermes_local_bootstrap.py --check-prereqs --json
 python 03_scripts/hermes_local_bootstrap.py --print-windows-commands
 ```
+
+## Hermes Agent / Manual Bridge
+
+N+5.8A adds a safe Hermes readiness lane without live setup:
+
+```powershell
+python 03_scripts/hermes_agent_workflow_bridge.py --status --json
+python 03_scripts/hermes_agent_workflow_bridge.py --doctor --json
+python 03_scripts/hermes_agent_workflow_bridge.py --skills-index --json
+python 03_scripts/hermes_agent_workflow_bridge.py --write-readiness --json
+python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json
+python 03_scripts/ghoti_product_launcher.py --hermes-bridge-write --json
+```
+
+Generated files:
+
+- `14_context/hermes_workflow/generated/hermes_workflow_status.json`
+- `14_context/hermes_workflow/generated/hermes_workflow_status.md`
+- `14_context/hermes_workflow/generated/hermes_skills_index.md`
+- `14_context/hermes_workflow/generated/hermes_manual_setup_checklist.md`
+- `14_context/hermes_workflow/generated/hermes_operator_bridge_packet.md`
+
+Current truth: Hermes core is installed in WSL and skills are safely
+inspectable. Codex provider support remains pending/not proven, Telegram is
+manual later/no token, browser/Playwright is degraded/not claimed, and no VPS
+is required. The bridge uses safe probes only and does not run live provider
+setup.
 
 ## Model Council Roadmap
 

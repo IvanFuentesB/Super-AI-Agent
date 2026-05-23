@@ -1,6 +1,6 @@
 # Hermes Local Install And Provider Plan
 
-## Current N+5.4B Truth
+## Current N+5.8A Truth
 
 - Ubuntu WSL is installed.
 - Hermes is available at `/home/ai_sandbox/.local/bin/hermes`.
@@ -12,6 +12,20 @@
 - Telegram setup is manual later. No token should be committed or configured by
   Codex.
 - No VPS is required for the current local-first path.
+
+## Manual Bridge
+
+- The Hermes Agent / Manual Bridge is a local readiness lane, not live setup.
+- Run `python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json`
+  to inspect readiness.
+- Run `python 03_scripts/ghoti_product_launcher.py --hermes-bridge-write --json`
+  to write local readiness files under `14_context/hermes_workflow/generated/`.
+- The manual bridge records safe probes, a skills index, a provider setup
+  checklist, Telegram manual plan, browser/Playwright remediation plan, and an
+  operator bridge packet.
+- Codex provider support remains pending/not proven.
+- Provider setup, Telegram, token entry, live APIs, and browser automation
+  remain manual later and are not run by Codex.
 
 ## Official Installer
 
