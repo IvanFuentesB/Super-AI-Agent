@@ -66,7 +66,10 @@ Local repo knowledge grouped by subsystem.
 - `14_context/codex_n5_8b_main_merge_hermes_manual_bridge_readiness.md`
 - `14_context/codex_n5_9a_gemma_model_availability_local_task_quality_evaluation.md`
 - `14_context/codex_n5_9b_main_merge_gemma_readiness_local_quality_plan.md`
+- `14_context/codex_n6_0a_human_approved_gemma_install_first_local_evaluation.md`
 - `14_context/codex_n6_0a_roadmap_priority_hermes_computer_use_update.md`
+- `14_context/codex_n6_0a_roadmap_priority_hermes_computer_use_update_audit.md`
+- `14_context/codex_n6_0b_main_merge_gemma_install_first_local_eval.md`
 
 ## supervised content demo
 - `03_scripts/supervised_content_mvp_runner.py`

@@ -2,8 +2,8 @@
   "ok": true,
   "local_only": true,
   "external_api_used": false,
-  "generated_at": "2026-05-24T18:40:38Z",
-  "main_hash": "20e1dce1e89f15a337054864560b95b82233877c",
+  "generated_at": "2026-05-24T19:59:21Z",
+  "main_hash": "56f97929725f5a293e80e9ea2d15ad38c0c45887",
   "latest_clean_milestone": "N+5.9B - Gemma Readiness / Local Quality Plan landed on main",
   "current_milestone": "N+6.0A - Human-Approved Gemma Install + First Real Local Model Evaluation",
   "next_recommended_milestone": "N+6.1A - Constrained Gemma Worker Routing + Repo-Bundle Hallucination Guard",
@@ -14,7 +14,7 @@
   ],
   "launcher_command": "python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard",
   "dashboard_url": "http://127.0.0.1:3210",
-  "status_short": "Ghoti status: N+5.9B - Gemma Readiness / Local Quality Plan landed on main at origin/main 20e1dce1e89f. Launch `python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard` then open http://127.0.0.1:3210. Hermes WSL is installed at /home/ai_sandbox/.local/bin/hermes (v0.14.0); browser/Playwright is degraded/not claimed, Codex provider pending/not proven, Telegram manual/no token, no VPS. Ollama available (ollama version is 0.24.0); Gemma model found; local_demo fallback active as preserved backup. Gemma readiness 74%, mode `ollama_gemma`, quality `ready_for_human_approved_eval`, latest eval `real_gemma_eval_complete` at 86%, no auto-downloads. Obsidian memory, repo bundles, local worker fallback, safety gates, UI-TARS observation-only, adapter dry-runs, and external static sandbox are available. Next recommended milestone: N+6.1A - Constrained Gemma Worker Routing + Repo-Bundle Hallucination Guard.",
+  "status_short": "Ghoti status: N+5.9B - Gemma Readiness / Local Quality Plan landed on main at origin/main 56f97929725f. Launch `python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard` then open http://127.0.0.1:3210. Hermes WSL is installed at /home/ai_sandbox/.local/bin/hermes (v0.14.0); browser/Playwright is degraded/not claimed, Codex provider pending/not proven, Telegram manual/no token, no VPS. Ollama available (ollama version is 0.24.0); Gemma model found; local_demo fallback active as preserved backup. Gemma readiness 74%, mode `ollama_gemma`, quality `ready_for_human_approved_eval`, latest eval `real_gemma_eval_complete` at 86%, no auto-downloads. Obsidian memory, repo bundles, local worker fallback, safety gates, UI-TARS observation-only, adapter dry-runs, and external static sandbox are available. Next recommended milestone: N+6.1A - Constrained Gemma Worker Routing + Repo-Bundle Hallucination Guard.",
   "hermes": {
     "wsl_status": "installed",
     "path": "/home/ai_sandbox/.local/bin/hermes",
@@ -91,6 +91,30 @@
   },
   "latest_reports": [
     {
+      "path": "14_context/codex_n6_0b_main_merge_gemma_install_first_local_eval.md",
+      "name": "codex_n6_0b_main_merge_gemma_install_first_local_eval.md",
+      "kind": "main",
+      "rank": [
+        6,
+        0,
+        2
+      ],
+      "modified_unix": 1779652557,
+      "verdict_hint": "CLEAN PASS / N+6.0B MAIN MERGE READY."
+    },
+    {
+      "path": "14_context/codex_n6_0a_roadmap_priority_hermes_computer_use_update_audit.md",
+      "name": "codex_n6_0a_roadmap_priority_hermes_computer_use_update_audit.md",
+      "kind": "audit",
+      "rank": [
+        6,
+        0,
+        1
+      ],
+      "modified_unix": 1779652557,
+      "verdict_hint": "CLEAN PASS / N+6.0A ROADMAP PRIORITY UPDATED AND AUDITED."
+    },
+    {
       "path": "14_context/codex_n6_0a_roadmap_priority_hermes_computer_use_update.md",
       "name": "codex_n6_0a_roadmap_priority_hermes_computer_use_update.md",
       "kind": "report",
@@ -99,8 +123,20 @@
         0,
         1
       ],
-      "modified_unix": 1779647535,
+      "modified_unix": 1779652557,
       "verdict_hint": "unknown"
+    },
+    {
+      "path": "14_context/codex_n6_0a_human_approved_gemma_install_first_local_evaluation.md",
+      "name": "codex_n6_0a_human_approved_gemma_install_first_local_evaluation.md",
+      "kind": "report",
+      "rank": [
+        6,
+        0,
+        1
+      ],
+      "modified_unix": 1779652557,
+      "verdict_hint": "CLEAN PASS / N+6.0A HUMAN-APPROVED GEMMA INSTALL AND FIRST LOCAL EVAL READY"
     },
     {
       "path": "14_context/codex_n5_9b_main_merge_gemma_readiness_local_quality_plan.md",
@@ -111,7 +147,7 @@
         9,
         2
       ],
-      "modified_unix": 1779630863,
+      "modified_unix": 1779652557,
       "verdict_hint": "CLEAN PASS / N+5.9B MAIN MERGE READY"
     },
     {
@@ -123,7 +159,7 @@
         9,
         1
       ],
-      "modified_unix": 1779630863,
+      "modified_unix": 1779652557,
       "verdict_hint": "CLEAN PASS / N+5.9A GEMMA READINESS AND LOCAL QUALITY PLAN READY"
     },
     {
@@ -135,7 +171,7 @@
         8,
         2
       ],
-      "modified_unix": 1779630863,
+      "modified_unix": 1779652557,
       "verdict_hint": "CLEAN PASS / N+5.8B MAIN MERGE READY"
     },
     {
@@ -147,7 +183,7 @@
         8,
         1
       ],
-      "modified_unix": 1779630863,
+      "modified_unix": 1779652557,
       "verdict_hint": "CLEAN PASS / N+5.8A HERMES MANUAL BRIDGE READY"
     },
     {
@@ -159,7 +195,7 @@
         7,
         2
       ],
-      "modified_unix": 1779630863,
+      "modified_unix": 1779652557,
       "verdict_hint": "CLEAN PASS / N+5.7B MAIN MERGE READY"
     },
     {
@@ -171,7 +207,7 @@
         7,
         1
       ],
-      "modified_unix": 1779630863,
+      "modified_unix": 1779652557,
       "verdict_hint": "CLEAN PASS / N+5.7A REPO KNOWLEDGE MAP CONTEXT RETRIEVAL READY"
     },
     {
@@ -183,7 +219,7 @@
         6,
         2
       ],
-      "modified_unix": 1779630863,
+      "modified_unix": 1779652557,
       "verdict_hint": "CLEAN PASS / N+5.6B MAIN MERGE READY"
     },
     {
@@ -195,7 +231,7 @@
         6,
         1
       ],
-      "modified_unix": 1779630863,
+      "modified_unix": 1779652557,
       "verdict_hint": "CLEAN PASS / N+5.6A LOCAL MODEL EASY WORKER LANE READY"
     },
     {
@@ -207,32 +243,8 @@
         5,
         2
       ],
-      "modified_unix": 1779630863,
+      "modified_unix": 1779652557,
       "verdict_hint": "CLEAN PASS / N+5.5B MAIN MERGE READY"
-    },
-    {
-      "path": "14_context/codex_n5_5a_local_memory_obsidian_context_pack_brain_upgrade.md",
-      "name": "codex_n5_5a_local_memory_obsidian_context_pack_brain_upgrade.md",
-      "kind": "report",
-      "rank": [
-        5,
-        5,
-        1
-      ],
-      "modified_unix": 1779630863,
-      "verdict_hint": "CLEAN PASS / LOCAL MEMORY CONTEXT PACK READY"
-    },
-    {
-      "path": "14_context/codex_n5_4b_main_merge_daily_operator_usability.md",
-      "name": "codex_n5_4b_main_merge_daily_operator_usability.md",
-      "kind": "main",
-      "rank": [
-        5,
-        4,
-        2
-      ],
-      "modified_unix": 1779630863,
-      "verdict_hint": "CLEAN PASS / N+5.4A DAILY OPERATOR USABILITY MERGE READY"
     }
   ],
   "safety_locks": [

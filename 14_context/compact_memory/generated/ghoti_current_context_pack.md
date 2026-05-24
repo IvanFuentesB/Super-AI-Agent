@@ -1,14 +1,14 @@
 # Ghoti Current Context Pack
 
-Generated: `2026-05-24T18:40:38Z`
+Generated: `2026-05-24T19:59:21Z`
 
 ## Compact Status
 
-Ghoti status: N+5.9B - Gemma Readiness / Local Quality Plan landed on main at origin/main 20e1dce1e89f. Launch `python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard` then open http://127.0.0.1:3210. Hermes WSL is installed at /home/ai_sandbox/.local/bin/hermes (v0.14.0); browser/Playwright is degraded/not claimed, Codex provider pending/not proven, Telegram manual/no token, no VPS. Ollama available (ollama version is 0.24.0); Gemma model found; local_demo fallback active as preserved backup. Gemma readiness 74%, mode `ollama_gemma`, quality `ready_for_human_approved_eval`, latest eval `real_gemma_eval_complete` at 86%, no auto-downloads. Obsidian memory, repo bundles, local worker fallback, safety gates, UI-TARS observation-only, adapter dry-runs, and external static sandbox are available. Next recommended milestone: N+6.1A - Constrained Gemma Worker Routing + Repo-Bundle Hallucination Guard.
+Ghoti status: N+5.9B - Gemma Readiness / Local Quality Plan landed on main at origin/main 56f97929725f. Launch `python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard` then open http://127.0.0.1:3210. Hermes WSL is installed at /home/ai_sandbox/.local/bin/hermes (v0.14.0); browser/Playwright is degraded/not claimed, Codex provider pending/not proven, Telegram manual/no token, no VPS. Ollama available (ollama version is 0.24.0); Gemma model found; local_demo fallback active as preserved backup. Gemma readiness 74%, mode `ollama_gemma`, quality `ready_for_human_approved_eval`, latest eval `real_gemma_eval_complete` at 86%, no auto-downloads. Obsidian memory, repo bundles, local worker fallback, safety gates, UI-TARS observation-only, adapter dry-runs, and external static sandbox are available. Next recommended milestone: N+6.1A - Constrained Gemma Worker Routing + Repo-Bundle Hallucination Guard.
 
 ## Current Main
 
-- Main hash: `20e1dce1e89f15a337054864560b95b82233877c`
+- Main hash: `56f97929725f5a293e80e9ea2d15ad38c0c45887`
 - Latest clean milestone: N+5.9B - Gemma Readiness / Local Quality Plan landed on main
 - Current milestone: N+6.0A - Human-Approved Gemma Install + First Real Local Model Evaluation
 - Next recommended milestone: N+6.1A - Constrained Gemma Worker Routing + Repo-Bundle Hallucination Guard
@@ -150,7 +150,10 @@ guard and audit gate.
 
 ## Latest Reports
 
+- `14_context/codex_n6_0b_main_merge_gemma_install_first_local_eval.md` (main): CLEAN PASS / N+6.0B MAIN MERGE READY.
+- `14_context/codex_n6_0a_roadmap_priority_hermes_computer_use_update_audit.md` (audit): CLEAN PASS / N+6.0A ROADMAP PRIORITY UPDATED AND AUDITED.
 - `14_context/codex_n6_0a_roadmap_priority_hermes_computer_use_update.md` (report): unknown
+- `14_context/codex_n6_0a_human_approved_gemma_install_first_local_evaluation.md` (report): CLEAN PASS / N+6.0A HUMAN-APPROVED GEMMA INSTALL AND FIRST LOCAL EVAL READY
 - `14_context/codex_n5_9b_main_merge_gemma_readiness_local_quality_plan.md` (main): CLEAN PASS / N+5.9B MAIN MERGE READY
 - `14_context/codex_n5_9a_gemma_model_availability_local_task_quality_evaluation.md` (report): CLEAN PASS / N+5.9A GEMMA READINESS AND LOCAL QUALITY PLAN READY
 - `14_context/codex_n5_8b_main_merge_hermes_manual_bridge_readiness.md` (main): CLEAN PASS / N+5.8B MAIN MERGE READY
@@ -160,8 +163,6 @@ guard and audit gate.
 - `14_context/codex_n5_6b_main_merge_local_model_easy_worker_lane.md` (main): CLEAN PASS / N+5.6B MAIN MERGE READY
 - `14_context/codex_n5_6a_local_model_gemma_setup_truth_easy_worker_lane.md` (report): CLEAN PASS / N+5.6A LOCAL MODEL EASY WORKER LANE READY
 - `14_context/codex_n5_5b_main_merge_local_memory_context_pack.md` (main): CLEAN PASS / N+5.5B MAIN MERGE READY
-- `14_context/codex_n5_5a_local_memory_obsidian_context_pack_brain_upgrade.md` (report): CLEAN PASS / LOCAL MEMORY CONTEXT PACK READY
-- `14_context/codex_n5_4b_main_merge_daily_operator_usability.md` (main): CLEAN PASS / N+5.4A DAILY OPERATOR USABILITY MERGE READY
 
 ## Safety Locks
 

@@ -14,7 +14,7 @@ Keep unsafe automation blocked and public readiness truthful.
 
 ## Current Truth
 
-- Main hash: `20e1dce1e89f15a337054864560b95b82233877c`
+- Main hash: `56f97929725f5a293e80e9ea2d15ad38c0c45887`
 - Latest clean milestone: N+5.9B - Gemma Readiness / Local Quality Plan landed on main
 - Current milestone: N+6.0A - Human-Approved Gemma Install + First Real Local Model Evaluation
 - Previous Hermes bridge milestone: N+5.8A - Hermes Agent Workflow / Provider Setup Plan + Manual Bridge Readiness.

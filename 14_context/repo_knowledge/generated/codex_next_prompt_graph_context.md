@@ -5,7 +5,7 @@ Refresh compact context first with `python 03_scripts/ghoti_product_launcher.py 
 For the next milestone, inspect `14_context/repo_knowledge/generated/task_bundle_next_milestone.md`.
 
 Current truth:
-- Main hash: `20e1dce1e89f15a337054864560b95b82233877c`
+- Main hash: `56f97929725f5a293e80e9ea2d15ad38c0c45887`
 - Latest clean milestone: N+5.9B - Gemma Readiness / Local Quality Plan landed on main
 - Current feature milestone: N+6.0A - Human-Approved Gemma Install + First Real Local Model Evaluation
 - Graphify runtime: roadmap only/not wired; no external repo runtime; no network.

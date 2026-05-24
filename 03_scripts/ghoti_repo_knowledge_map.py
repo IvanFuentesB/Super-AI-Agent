@@ -77,6 +77,13 @@ OUTPUT_FILES = {
     "chatgpt_repo_context_summary.md": "chatgpt_summary",
 }
 
+REQUIRED_HISTORY_REPORTS = [
+    "codex_n5_5b_main_merge_local_memory_context_pack.md",
+    "codex_n5_6a_local_model_gemma_setup_truth_easy_worker_lane.md",
+    "codex_n5_6b_main_merge_local_model_easy_worker_lane.md",
+    "codex_n5_7a_graphify_repo_knowledge_map_context_retrieval.md",
+]
+
 FORBIDDEN_SECRET_PATTERNS = [
     re.compile(r"sk-[A-Za-z0-9_-]{20,}"),
     re.compile(r"ghp_[A-Za-z0-9_]{20,}"),
@@ -438,7 +445,13 @@ def discover_recent_reports(limit: int = 10) -> List[Dict[str, object]]:
             "verdict_hint": _verdict_hint(path),
         })
     reports.sort(key=lambda item: (item["rank"], item["modified_unix"], item["name"]), reverse=True)
-    return reports[:limit]
+    selected = reports[:limit]
+    selected_names = {str(item["name"]) for item in selected}
+    for report in reports:
+        if str(report["name"]) in REQUIRED_HISTORY_REPORTS and str(report["name"]) not in selected_names:
+            selected.append(report)
+            selected_names.add(str(report["name"]))
+    return selected
 
 
 def _file_summary(record: Dict[str, str]) -> Dict[str, object]:

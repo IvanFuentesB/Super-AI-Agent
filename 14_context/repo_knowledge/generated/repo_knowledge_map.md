@@ -1,10 +1,10 @@
 # Ghoti Repo Knowledge Map
 
-Generated: `2026-05-24T18:40:40Z`
+Generated: `2026-05-24T19:59:04Z`
 
 Repo knowledge readiness: 55%. Local file map and task bundles are available. Graphify runtime: roadmap only/not wired; no external repo runtime; no network.
 
-- Main hash: `20e1dce1e89f15a337054864560b95b82233877c`
+- Main hash: `56f97929725f5a293e80e9ea2d15ad38c0c45887`
 - Latest clean milestone: N+5.9B - Gemma Readiness / Local Quality Plan landed on main
 - Current milestone: N+6.0A - Human-Approved Gemma Install + First Real Local Model Evaluation
 - Next recommended milestone: N+6.1A - Constrained Gemma Worker Routing + Repo-Bundle Hallucination Guard
@@ -59,7 +59,10 @@ Repo knowledge readiness: 55%. Local file map and task bundles are available. Gr
 - `14_context/local_worker/generated/local_worker_status.md` [local model/easy worker]: Shows Ollama/Gemma/local_demo readiness.
 - `14_context/hermes_workflow/generated/hermes_workflow_status.md` [Hermes/WSL]: Shows Hermes installed/version/skills truth and manual later boundaries.
 - `01_projects/runtime_mvp/tests/test_n5_6a_local_model_easy_worker_lane.py` [tests]: Best current pattern for JSON script, launcher, docs, and dashboard checks.
+- `14_context/codex_n6_0b_main_merge_gemma_install_first_local_eval.md` [reports/14_context]: CLEAN PASS / N+6.0B MAIN MERGE READY.
+- `14_context/codex_n6_0a_roadmap_priority_hermes_computer_use_update_audit.md` [reports/14_context]: CLEAN PASS / N+6.0A ROADMAP PRIORITY UPDATED AND AUDITED.
 - `14_context/codex_n6_0a_roadmap_priority_hermes_computer_use_update.md` [reports/14_context]: verdict not detected
+- `14_context/codex_n6_0a_human_approved_gemma_install_first_local_evaluation.md` [reports/14_context]: CLEAN PASS / N+6.0A HUMAN-APPROVED GEMMA INSTALL AND FIRST LOCAL EVAL READY
 - `14_context/codex_n5_9b_main_merge_gemma_readiness_local_quality_plan.md` [reports/14_context]: CLEAN PASS / N+5.9B MAIN MERGE READY
 - `14_context/codex_n5_9a_gemma_model_availability_local_task_quality_evaluation.md` [reports/14_context]: CLEAN PASS / N+5.9A GEMMA READINESS AND LOCAL QUALITY PLAN READY
 - `14_context/codex_n5_8b_main_merge_hermes_manual_bridge_readiness.md` [reports/14_context]: CLEAN PASS / N+5.8B MAIN MERGE READY

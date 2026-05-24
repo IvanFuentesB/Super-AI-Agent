@@ -2,7 +2,10 @@
 
 This latest report index is local-only and generated from `14_context/codex_*.md`.
 
+- `14_context/codex_n6_0b_main_merge_gemma_install_first_local_eval.md` (main): CLEAN PASS / N+6.0B MAIN MERGE READY.
+- `14_context/codex_n6_0a_roadmap_priority_hermes_computer_use_update_audit.md` (audit): CLEAN PASS / N+6.0A ROADMAP PRIORITY UPDATED AND AUDITED.
 - `14_context/codex_n6_0a_roadmap_priority_hermes_computer_use_update.md` (report): verdict not detected
+- `14_context/codex_n6_0a_human_approved_gemma_install_first_local_evaluation.md` (report): CLEAN PASS / N+6.0A HUMAN-APPROVED GEMMA INSTALL AND FIRST LOCAL EVAL READY
 - `14_context/codex_n5_9b_main_merge_gemma_readiness_local_quality_plan.md` (main): CLEAN PASS / N+5.9B MAIN MERGE READY
 - `14_context/codex_n5_9a_gemma_model_availability_local_task_quality_evaluation.md` (report): CLEAN PASS / N+5.9A GEMMA READINESS AND LOCAL QUALITY PLAN READY
 - `14_context/codex_n5_8b_main_merge_hermes_manual_bridge_readiness.md` (main): CLEAN PASS / N+5.8B MAIN MERGE READY
