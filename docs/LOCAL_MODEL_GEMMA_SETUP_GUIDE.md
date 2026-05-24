@@ -18,10 +18,25 @@ take account actions.
 python 03_scripts/local_model_worker_lane.py --status --json
 python 03_scripts/local_model_worker_lane.py --doctor --json
 python 03_scripts/ghoti_product_launcher.py --local-worker-status --json
+python 03_scripts/ghoti_product_launcher.py --gemma-status --json
+python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json
+python 03_scripts/gemma_model_readiness.py --recommend --json
 ```
 
 The status reports Ollama availability, visible models, Gemma status, active
 mode, readiness percentage, and safety flags.
+
+N+5.9A also writes Gemma readiness files:
+
+```powershell
+python 03_scripts/gemma_model_readiness.py --write-readiness --json
+```
+
+Output folder:
+
+```text
+14_context/local_model_readiness/generated/
+```
 
 ## Manual Gemma Commands
 
@@ -31,16 +46,30 @@ automatically:
 ```powershell
 ollama list
 ollama pull gemma3:4b
+ollama pull gemma3:1b
+ollama pull gemma3:270m
 ```
 
 Do not pull large models from an automated milestone unless Ivan explicitly
 approves it.
+
+`gemma3:4b` is the preferred first serious local worker candidate. It is listed
+at about 3.3GB on Ollama's Gemma 3 page. `gemma3:1b` and `gemma3:270m` are
+lighter manual alternatives for fast setup checks or constrained hardware.
 
 ## What Gemma Unlocks
 
 With a Gemma model installed, later audited milestones can route small local
 summaries and classifications through Ollama. Until then, the easy worker lane
 keeps using deterministic local_demo output.
+
+Run the quality plan before trusting the model:
+
+```powershell
+python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json
+```
+
+Production routing remains disabled until a later human-approved milestone.
 
 ## Safety Boundaries
 

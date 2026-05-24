@@ -6898,6 +6898,108 @@ refreshLocalOrchestrator();
 })();
 
 // ---------------------------------------------------------------------
+// N+5.9A Gemma / Local Model Quality (client-side handlers)
+// ---------------------------------------------------------------------
+(function attachGemmaReadinessLane() {
+  function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value || "none";
+  }
+  function setResult(text) {
+    const el = document.getElementById("gemma-action-result");
+    if (!el) return;
+    el.innerHTML = "";
+    const p = document.createElement("p");
+    p.textContent = text;
+    el.appendChild(p);
+  }
+  async function callGemma(endpoint, method) {
+    const res = await fetch(endpoint, { method: method || "GET", headers: { "Content-Type": "application/json" } });
+    return await res.json();
+  }
+  function renderStatus(data) {
+    if (!data || !data.ok) {
+      setText("gemma-status-line", (data && data.error) || "Gemma readiness unavailable.");
+      setText("gemma-ollama-installed", "unavailable");
+      setText("gemma-installed-status", "unavailable");
+      setText("gemma-active-mode", "unknown");
+      setText("gemma-readiness-percent", "unknown");
+      return;
+    }
+    const paths = data.output_paths || data.paths || {};
+    const selected = data.selected_model || "local_demo";
+    setText("gemma-ollama-installed", data.ollama_installed ? "yes" : "not detected");
+    setText("gemma-ollama-version", data.ollama_version || "unknown");
+    setText("gemma-installed-model-count", String(data.installed_models_count || 0));
+    setText("gemma-installed-status", data.gemma_installed ? ("yes: " + (data.installed_gemma_models || []).join(", ")) : "Gemma missing");
+    setText("gemma-selected-model", selected);
+    setText("gemma-active-mode", data.active_worker_mode || "local_demo fallback");
+    setText("gemma-readiness-percent", String(data.gemma_readiness_percent || data.readiness_percent || 0) + "%");
+    setText("gemma-local-worker-readiness", String(data.local_worker_readiness_percent || 0) + "%");
+    setText("gemma-manual-command", data.recommended_manual_command || "ollama pull gemma3:4b");
+    setText("gemma-quality-status", data.quality_evaluation_status || "pending/not run");
+    setText("gemma-output-path", paths["gemma_readiness_status.md"] || "14_context/local_model_readiness/generated/gemma_readiness_status.md");
+    setText("gemma-status-line", data.status_line || "Gemma readiness loaded.");
+  }
+  async function refreshGemmaStatus() {
+    try {
+      renderStatus(await callGemma("/api/gemma-readiness/status", "GET"));
+    } catch (err) {
+      setText("gemma-status-line", "Could not load Gemma readiness.");
+    }
+  }
+  function bind(id, fn) {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("click", fn);
+  }
+  bind("gemma-refresh-btn", async function () {
+    setResult("Refreshing Gemma / Local Model Quality status...");
+    await refreshGemmaStatus();
+    setResult("Gemma readiness refreshed.");
+  });
+  bind("gemma-doctor-btn", async function () {
+    setResult("Running Gemma doctor...");
+    try {
+      const data = await callGemma("/api/gemma-readiness/doctor", "GET");
+      renderStatus(data);
+      const checks = Array.isArray(data && data.checks) ? data.checks.length : 0;
+      setResult(data && data.ok ? ("Doctor complete: " + checks + " checks. No live APIs, no auto-downloads.") :
+        "Gemma doctor reported unavailable: " + ((data && data.error) || "unknown"));
+    } catch (err) {
+      setResult("Gemma doctor failed: " + (err && err.message));
+    }
+  });
+  bind("gemma-quality-btn", async function () {
+    setResult("Loading local task quality plan...");
+    try {
+      const data = await callGemma("/api/gemma-readiness/quality-plan", "GET");
+      renderStatus(data && data.status ? data.status : data);
+      const evalData = data && data.quality_evaluation;
+      setResult(evalData
+        ? "Quality plan loaded: mode " + evalData.mode + ", score " + evalData.score_percent + "%. Production routing remains disabled."
+        : "Quality plan loaded.");
+    } catch (err) {
+      setResult("Gemma quality plan failed: " + (err && err.message));
+    }
+  });
+  bind("gemma-write-btn", async function () {
+    setResult("Writing Gemma readiness files...");
+    try {
+      const data = await callGemma("/api/gemma-readiness/write-readiness", "POST");
+      renderStatus(data);
+      setResult(data && data.ok
+        ? "Gemma readiness files written under 14_context/local_model_readiness/generated/."
+        : "Gemma readiness write reported unavailable: " + ((data && data.error) || "unknown"));
+    } catch (err) {
+      setResult("Gemma readiness write failed: " + (err && err.message));
+    }
+  });
+  if (document.getElementById("ghoti-gemma-readiness-card")) {
+    refreshGemmaStatus();
+  }
+})();
+
+// ---------------------------------------------------------------------
 // N+5.7A Repo Knowledge / Graphify Lane (client-side handlers)
 // ---------------------------------------------------------------------
 (function attachRepoKnowledgeGraphifyLane() {

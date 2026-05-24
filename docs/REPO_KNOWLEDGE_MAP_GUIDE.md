@@ -19,6 +19,7 @@ python 03_scripts/ghoti_repo_knowledge_map.py --bundle next-milestone --json
 python 03_scripts/ghoti_product_launcher.py --repo-map --json
 python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json
 python 03_scripts/ghoti_product_launcher.py --repo-bundle hermes --json
+python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json
 ```
 
 ## Generated Files
@@ -53,7 +54,8 @@ Use task bundles to reduce token load:
 - `audit-main` for current-main verification.
 - `dashboard` for Product Control Center work.
 - `local-memory` for context pack and Obsidian work.
-- `local-model-worker` for Ollama/Gemma/local_demo work.
+- `local-model-worker` for Ollama/Gemma/local_demo work, Gemma readiness, and
+  local task quality planning.
 - `hermes` for the next Hermes manual bridge milestone.
 - `content-workflow` for supervised content demo work.
 - `safety` for public/security and unsafe automation checks.
@@ -70,6 +72,14 @@ The `hermes` bundle now points to the Hermes Agent / Manual Bridge files:
 - `docs/HERMES_MANUAL_PROVIDER_SETUP_CHECKLIST.md`
 - `14_context/hermes_workflow/generated/hermes_operator_bridge_packet.md`
 
+The `local-model-worker` bundle includes the Gemma readiness lane:
+
+- `03_scripts/gemma_model_readiness.py`
+- `docs/GEMMA_MODEL_INSTALL_DECISION.md`
+- `docs/LOCAL_MODEL_QUALITY_EVALUATION_GUIDE.md`
+- `14_context/local_model_readiness/generated/gemma_readiness_status.md`
+- `14_context/local_model_readiness/generated/local_task_quality_plan.md`
+
 ## Safety
 
 - Local-only.
@@ -77,6 +87,8 @@ The `hermes` bundle now points to the Hermes Agent / Manual Bridge files:
 - No network.
 - No external repo runtime.
 - No provider setup.
+- No automatic `ollama pull`; Gemma model installation remains a manual
+  approval step.
 - No posting or account actions.
 - No money, trading, or legal actions.
 - UI-TARS remains observation-only.

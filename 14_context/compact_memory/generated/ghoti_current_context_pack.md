@@ -1,17 +1,17 @@
 # Ghoti Current Context Pack
 
-Generated: `2026-05-23T16:11:09Z`
+Generated: `2026-05-24T08:42:12Z`
 
 ## Compact Status
 
-Ghoti status: N+5.7B - Repo Knowledge Context Retrieval landed on main at origin/main 84e880e7c3f7. Launch with `python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard` and open http://127.0.0.1:3210. Hermes WSL is installed at /home/ai_sandbox/.local/bin/hermes (v0.14.0); browser/Playwright is degraded/not claimed, Codex provider is pending/not proven, Telegram is manual later/no token, No VPS is in use, and Hermes Agent / Manual Bridge readiness files are available. Ollama available (ollama version is 0.24.0); Gemma model missing; local_demo fallback active. Obsidian/local memory is present; UI-TARS is observation-only; adapters are approval-gated/local-only; external sandbox is static inspection only; repo knowledge map/task bundles are available with Graphify roadmap only/not wired. Next recommended milestone: N+5.9A - Real Gemma Install/Model Availability Decision + Local Task Quality Evaluation.
+Ghoti status: N+5.8B - Hermes Manual Bridge Readiness landed on main at origin/main 6d1a9238d2ca. Launch `python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard` then open http://127.0.0.1:3210. Hermes WSL is installed at /home/ai_sandbox/.local/bin/hermes (v0.14.0); browser/Playwright is degraded/not claimed, Codex provider pending/not proven, Telegram manual/no token, no VPS. Ollama available (ollama version is 0.24.0); Gemma model missing; local_demo fallback active. Gemma readiness 45%, mode `local_demo`, quality `pending_real_gemma_install`, no auto-downloads. Obsidian memory, repo bundles, local worker fallback, safety gates, UI-TARS observation-only, adapter dry-runs, and external static sandbox are available. Next recommended milestone: N+6.0A - Human-Approved Gemma Install + First Real Local Model Evaluation.
 
 ## Current Main
 
-- Main hash: `84e880e7c3f774580a5e4ac340acd497af3027ee`
-- Latest clean milestone: N+5.7B - Repo Knowledge Context Retrieval landed on main
-- Current milestone: N+5.8A - Hermes Agent Workflow / Provider Setup Plan + Manual Bridge Readiness
-- Next recommended milestone: N+5.9A - Real Gemma Install/Model Availability Decision + Local Task Quality Evaluation
+- Main hash: `6d1a9238d2caa4355e475904c6433310e6cb568b`
+- Latest clean milestone: N+5.8B - Hermes Manual Bridge Readiness landed on main
+- Current milestone: N+5.9A - Real Gemma Install / Model Availability Decision + Local Task Quality Evaluation
+- Next recommended milestone: N+6.0A - Human-Approved Gemma Install + First Real Local Model Evaluation
 
 ## Launch
 
@@ -22,6 +22,9 @@ Ghoti status: N+5.7B - Repo Knowledge Context Retrieval landed on main at origin
 - Next bundle command: `python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json`
 - Hermes bridge status: `python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json`
 - Hermes bridge write: `python 03_scripts/ghoti_product_launcher.py --hermes-bridge-write --json`
+- Gemma readiness status: `python 03_scripts/ghoti_product_launcher.py --gemma-status --json`
+- Gemma readiness doctor: `python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json`
+- Gemma quality plan: `python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json`
 
 ## What Works Now
 
@@ -36,6 +39,7 @@ Ghoti status: N+5.7B - Repo Knowledge Context Retrieval landed on main at origin
 - Local memory status and fallback are repo-local.
 - Repo Knowledge / Graphify Lane creates a local file map, latest report index, and task bundles.
 - Hermes Agent / Manual Bridge exposes safe probes, skills index, manual checklist, and bridge packet.
+- Gemma / Local Model Quality shows real model availability, manual install decision, and quality evaluation plan.
 - Reports live under 14_context/.
 
 ## Pending / Manual
@@ -58,6 +62,22 @@ Ghoti status: N+5.7B - Repo Knowledge Context Retrieval landed on main at origin
 - Gemma status: missing
 - Fallback mode: local_demo
 - Truth line: Ollama available (ollama version is 0.24.0); Gemma model missing; local_demo fallback active.
+
+## Gemma / Local Model Quality
+
+- Gemma readiness: 45%
+- Local worker readiness: 45%
+- Gemma installed: false
+- Installed model count: 0
+- Active local worker mode: `local_demo`
+- Recommended manual command: `ollama pull gemma3:4b`
+- Quality evaluation status: pending_real_gemma_install
+- Status file: `14_context/local_model_readiness/generated/gemma_readiness_status.md`
+- Install decision: `14_context/local_model_readiness/generated/gemma_install_decision.md`
+- Quality plan: `14_context/local_model_readiness/generated/local_task_quality_plan.md`
+- Rubric JSON: `14_context/local_model_readiness/generated/local_task_quality_rubric.json`
+- Production routing: disabled
+- Safety: no live APIs, no auto-downloads, no `ollama pull` performed by Ghoti, manual approval required before model download.
 
 ## Hermes / WSL Truth
 
@@ -109,17 +129,18 @@ Ghoti status: N+5.7B - Repo Knowledge Context Retrieval landed on main at origin
 - External sandbox: static inspection only
 - Repo Knowledge / Graphify Lane: local map and task bundles; Graphify runtime roadmap only/not wired
 - Hermes Agent / Manual Bridge: safe probes, generated readiness files, and manual setup plan
+- Gemma / Local Model Quality: manual install decision and quality evaluation plan; local_demo fallback preserved
 
 ## Latest Reports
 
+- `14_context/codex_n5_8b_main_merge_hermes_manual_bridge_readiness.md` (main): CLEAN PASS / N+5.8B MAIN MERGE READY
+- `14_context/codex_n5_8a_hermes_agent_workflow_provider_setup_plan_manual_bridge.md` (report): CLEAN PASS / N+5.8A HERMES MANUAL BRIDGE READY
 - `14_context/codex_n5_7b_main_merge_repo_knowledge_context_retrieval.md` (main): CLEAN PASS / N+5.7B MAIN MERGE READY
 - `14_context/codex_n5_7a_graphify_repo_knowledge_map_context_retrieval.md` (report): CLEAN PASS / N+5.7A REPO KNOWLEDGE MAP CONTEXT RETRIEVAL READY
 - `14_context/codex_n5_6b_main_merge_local_model_easy_worker_lane.md` (main): CLEAN PASS / N+5.6B MAIN MERGE READY
 - `14_context/codex_n5_6a_local_model_gemma_setup_truth_easy_worker_lane.md` (report): CLEAN PASS / N+5.6A LOCAL MODEL EASY WORKER LANE READY
 - `14_context/codex_n5_5b_main_merge_local_memory_context_pack.md` (main): CLEAN PASS / N+5.5B MAIN MERGE READY
 - `14_context/codex_n5_5a_local_memory_obsidian_context_pack_brain_upgrade.md` (report): CLEAN PASS / LOCAL MEMORY CONTEXT PACK READY
-- `14_context/codex_n5_4b_main_merge_daily_operator_usability.md` (main): CLEAN PASS / N+5.4A DAILY OPERATOR USABILITY MERGE READY
-- `14_context/codex_n5_4a_first_real_operator_usability_pass.md` (product): CLEAN PASS / DAILY OPERATOR USABILITY READY
 
 ## Safety Locks
 

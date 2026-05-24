@@ -235,6 +235,40 @@
                   <p class="empty-state">No local worker action run yet.</p>
                 </div>
               </section>
+              <section class="console-card console-card-span-2" id="ghoti-gemma-readiness-card">
+                <div class="console-card-header">
+                  <div>
+                    <h2>Gemma / Local Model Quality</h2>
+                    <p>Real Gemma availability, manual install decision, and local task quality plan. No live APIs and no auto-downloads.</p>
+                  </div>
+                </div>
+                <ul class="card-list">
+                  <li><strong>Status command:</strong> <code>python 03_scripts/ghoti_product_launcher.py --gemma-status --json</code></li>
+                  <li><strong>Doctor command:</strong> <code>python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json</code></li>
+                  <li><strong>Quality plan:</strong> <code>python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json</code></li>
+                  <li><strong>Ollama installed:</strong> <span id="gemma-ollama-installed">loading...</span> <code id="gemma-ollama-version">unknown</code></li>
+                  <li><strong>Installed model count:</strong> <code id="gemma-installed-model-count">loading...</code></li>
+                  <li><strong>Gemma installed:</strong> <span id="gemma-installed-status">Gemma missing until Ollama list proves otherwise</span></li>
+                  <li><strong>Selected local model:</strong> <code id="gemma-selected-model">local_demo</code></li>
+                  <li><strong>Active mode:</strong> <code id="gemma-active-mode">local_demo fallback</code></li>
+                  <li><strong>Gemma readiness percentage:</strong> <code id="gemma-readiness-percent">loading...</code></li>
+                  <li><strong>Local worker readiness percentage:</strong> <code id="gemma-local-worker-readiness">loading...</code></li>
+                  <li><strong>Recommended manual command:</strong> <code id="gemma-manual-command">ollama pull gemma3:4b</code></li>
+                  <li><strong>Quality evaluation status:</strong> <span id="gemma-quality-status">pending/not run</span></li>
+                  <li><strong>Generated files:</strong> <code id="gemma-output-path">14_context/local_model_readiness/generated/gemma_readiness_status.md</code></li>
+                  <li><strong>Safety:</strong> no live APIs, no auto-downloads, no ollama pull performed, production routing enabled false, local_demo fallback preserved true, manual approval required before model download.</li>
+                  <li><strong>Status:</strong> <span id="gemma-status-line">Loading Gemma readiness...</span></li>
+                </ul>
+                <div class="card-actions">
+                  <button id="gemma-refresh-btn" type="button">Refresh Gemma Status</button>
+                  <button id="gemma-doctor-btn" type="button">Run Gemma Doctor</button>
+                  <button id="gemma-quality-btn" type="button">Load Quality Plan</button>
+                  <button id="gemma-write-btn" type="button">Write Readiness Files</button>
+                </div>
+                <div id="gemma-action-result" class="card-status">
+                  <p class="empty-state">No Gemma readiness action run yet.</p>
+                </div>
+              </section>
               <section class="console-card console-card-span-2" id="ghoti-repo-knowledge-card">
                 <div class="console-card-header">
                   <div>

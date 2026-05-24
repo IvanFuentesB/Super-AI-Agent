@@ -1,16 +1,22 @@
 # Codex-Only Workflow
 
-Current baseline: N+5.7B clean/repo-knowledge-context-retrieval on main.
+Current baseline: N+5.8B clean/Hermes-manual-bridge-readiness on main.
 
-Previous clean baseline: N+5.6B clean/local-model-easy-worker-lane on main at
+Previous clean baseline: N+5.7B clean/repo-knowledge-context-retrieval on main
+at `84e880e7c3f774580a5e4ac340acd497af3027ee`.
+
+Lineage note: N+5.6B clean/local-model-easy-worker-lane landed at
 `c9413108006d920e0110413d3d5e195b504489c1`.
 
 ```text
-origin/main = 84e880e7c3f774580a5e4ac340acd497af3027ee
+origin/main = 6d1a9238d2caa4355e475904c6433310e6cb568b
 launcher = python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard
 dashboard = http://127.0.0.1:3210
 context_pack = python 03_scripts/ghoti_context_pack_builder.py --write --json
 local_worker = python 03_scripts/local_model_worker_lane.py --status --json
+gemma_status = python 03_scripts/ghoti_product_launcher.py --gemma-status --json
+gemma_doctor = python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json
+gemma_quality = python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json
 repo_map = python 03_scripts/ghoti_repo_knowledge_map.py --write --json
 repo_bundle = python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json
 hermes_bridge = python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json
@@ -28,6 +34,8 @@ for inspection.
   generated runtime bundles.
 - Do not perform live account actions, posting, money movement, trading, legal
   actions, provider setup, or token setup.
+- Do not run `ollama pull` from Codex. Gemma installation is a later
+  human-approved command, not an automatic workflow.
 - Do not claim hidden or independent operation. Ghoti is supervised,
   local-first, and approval-gated.
 - Keep unsafe browser/computer-use behavior blocked.
@@ -88,6 +96,12 @@ Check the Easy Worker Lane:
 
 ```text
 Run python 03_scripts/local_model_worker_lane.py --doctor --json and python 03_scripts/local_model_worker_lane.py --write-demo-output --json. Confirm Ollama/Gemma truth, local_demo fallback when Gemma is missing, no live APIs, no auto-downloads, and generated files under 14_context/local_worker/generated/. See docs/LOCAL_MODEL_GEMMA_SETUP_GUIDE.md and docs/EASY_WORKER_LANE_GUIDE.md.
+```
+
+Check Gemma readiness and quality plan:
+
+```text
+Run python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json, python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json, and python 03_scripts/ghoti_product_launcher.py --gemma-write-readiness --json. Confirm Ollama status, Gemma installed yes/no, local_demo fallback when missing, manual approval required before model download, no ollama pull performed, production routing disabled, and generated files under 14_context/local_model_readiness/generated/. See docs/GEMMA_MODEL_INSTALL_DECISION.md and docs/LOCAL_MODEL_QUALITY_EVALUATION_GUIDE.md.
 ```
 
 Generate focused repo context:
