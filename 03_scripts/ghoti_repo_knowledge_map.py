@@ -38,7 +38,12 @@ DIRECT_WRITE_COMMAND = "python 03_scripts/ghoti_repo_knowledge_map.py --write --
 
 LATEST_CLEAN_MILESTONE = "N+5.9B - Gemma Readiness / Local Quality Plan landed on main"
 CURRENT_MILESTONE = "N+6.0A - Human-Approved Gemma Install + First Real Local Model Evaluation"
-NEXT_RECOMMENDED_MILESTONE = "N+6.1A - Local Model Routing + Real Worker Task Integration"
+NEXT_RECOMMENDED_MILESTONE = "N+6.1A - Constrained Gemma Worker Routing + Repo-Bundle Hallucination Guard"
+ROADMAP_PRIORITY_SEQUENCE = [
+    "N+6.1A - Constrained Gemma worker routing for boring/simple local tasks, with known repo-bundle IDs only and fallback on guard failure.",
+    "N+6.2A - Hermes Agent Workflow / Manual Bridge Verification for faster supervised task execution; safe probes only, no tokens, no provider setup.",
+    "N+6.3A - Safe Computer-Use Preparation with Gemma + Hermes + UI-TARS observation + Browser Harness/Vercel agent-browser roadmap; observation first, human approval for every click/type/live-account action.",
+]
 
 READINESS_PERCENT = 55
 GRAPHIFY_RUNTIME = "roadmap_only_not_wired"
@@ -520,6 +525,7 @@ def build_map(generated_at: str | None = None, output_dir: pathlib.Path | None =
         "milestone": CURRENT_MILESTONE,
         "latest_clean_milestone": LATEST_CLEAN_MILESTONE,
         "next_recommended_milestone": NEXT_RECOMMENDED_MILESTONE,
+        "roadmap_priority_sequence": ROADMAP_PRIORITY_SEQUENCE,
         "local_only": True,
         "external_api_used": False,
         "live_api_used": False,
@@ -625,6 +631,7 @@ def _map_markdown(map_data: Dict[str, object]) -> str:
         f"- `{name}` -> `{path}`"
         for name, path in map_data["task_bundle_paths"].items()
     )
+    roadmap = "\n".join(f"- {item}" for item in map_data["roadmap_priority_sequence"])
     safety = "\n".join(f"- {item}" for item in SAFETY_BOUNDARIES)
     return _strip(f"""
         # Ghoti Repo Knowledge Map
@@ -657,6 +664,15 @@ def _map_markdown(map_data: Dict[str, object]) -> str:
         ## Task Bundles
 
         {bundles}
+
+        ## Roadmap Priority
+
+        {roadmap}
+
+        Hermes and safe computer-use are the next high-value lanes for long,
+        boring supervised tasks, but only after the constrained Gemma routing
+        guard is clean. No provider setup, live APIs, Telegram setup,
+        uncontrolled click/type, or browser automation is enabled here.
 
         ## Safety Boundaries
 
@@ -759,7 +775,7 @@ def _bundle_definition(bundle: str) -> Dict[str, object]:
         },
         "next-milestone": {
             "title": "Next Milestone",
-            "purpose": "Prepare N+6.1A Local Model Routing + Real Worker Task Integration after a clean N+6.0A evaluation.",
+            "purpose": "Prepare N+6.1A constrained Gemma worker routing with a repo-bundle hallucination guard before any Hermes or computer-use expansion.",
             "files": [
                 "03_scripts/local_model_worker_lane.py",
                 "03_scripts/gemma_model_readiness.py",
@@ -774,7 +790,7 @@ def _bundle_definition(bundle: str) -> Dict[str, object]:
                 "14_context/local_model_evaluation/runs/",
                 "14_context/hermes_workflow/generated/hermes_operator_bridge_packet.md",
             ],
-            "prompt": "Plan N+6.1A Local Model Routing + Real Worker Task Integration only if N+6.0A installed and evaluated a real local model cleanly. No live APIs, provider setup, Telegram setup, or production routing without audit.",
+            "prompt": "Plan N+6.1A constrained Gemma worker routing only after reading the N+6.0A eval. Use known repo-map bundle IDs only, reject invented bundle/file claims, require source metadata, fall back to local_demo when the guard fails, never execute or edit from model output, and keep production routing disabled unless the audit gate explicitly clears it. Then prioritize N+6.2A Hermes manual bridge verification and N+6.3A safe computer-use preparation; no live APIs/provider setup/Telegram/browser automation.",
         },
     }
     return definitions[bundle]
@@ -900,6 +916,8 @@ def _codex_prompt(map_data: Dict[str, object]) -> str:
         - Graphify runtime: roadmap only/not wired; no external repo runtime; no network.
         - Hermes setup/provider config/Telegram/tokens remain manual later.
         - Gemma local evaluation runs live under `14_context/local_model_evaluation/runs/`; production routing remains disabled.
+        - N+6.1A must guard against repo-bundle hallucination before routing boring local tasks.
+        - After N+6.1A, prioritize N+6.2A Hermes manual bridge verification and N+6.3A safe computer-use preparation.
         - UI-TARS remains observation-only.
 
         Next recommended milestone:

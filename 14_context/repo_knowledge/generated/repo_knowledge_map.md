@@ -1,13 +1,13 @@
 # Ghoti Repo Knowledge Map
 
-Generated: `2026-05-24T14:55:17Z`
+Generated: `2026-05-24T18:40:40Z`
 
 Repo knowledge readiness: 55%. Local file map and task bundles are available. Graphify runtime: roadmap only/not wired; no external repo runtime; no network.
 
 - Main hash: `20e1dce1e89f15a337054864560b95b82233877c`
 - Latest clean milestone: N+5.9B - Gemma Readiness / Local Quality Plan landed on main
 - Current milestone: N+6.0A - Human-Approved Gemma Install + First Real Local Model Evaluation
-- Next recommended milestone: N+6.1A - Local Model Routing + Real Worker Task Integration
+- Next recommended milestone: N+6.1A - Constrained Gemma Worker Routing + Repo-Bundle Hallucination Guard
 - Launcher: `python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard`
 - Dashboard: `http://127.0.0.1:3210`
 - Repo map command: `python 03_scripts/ghoti_product_launcher.py --repo-map --json`
@@ -59,6 +59,7 @@ Repo knowledge readiness: 55%. Local file map and task bundles are available. Gr
 - `14_context/local_worker/generated/local_worker_status.md` [local model/easy worker]: Shows Ollama/Gemma/local_demo readiness.
 - `14_context/hermes_workflow/generated/hermes_workflow_status.md` [Hermes/WSL]: Shows Hermes installed/version/skills truth and manual later boundaries.
 - `01_projects/runtime_mvp/tests/test_n5_6a_local_model_easy_worker_lane.py` [tests]: Best current pattern for JSON script, launcher, docs, and dashboard checks.
+- `14_context/codex_n6_0a_roadmap_priority_hermes_computer_use_update.md` [reports/14_context]: verdict not detected
 - `14_context/codex_n5_9b_main_merge_gemma_readiness_local_quality_plan.md` [reports/14_context]: CLEAN PASS / N+5.9B MAIN MERGE READY
 - `14_context/codex_n5_9a_gemma_model_availability_local_task_quality_evaluation.md` [reports/14_context]: CLEAN PASS / N+5.9A GEMMA READINESS AND LOCAL QUALITY PLAN READY
 - `14_context/codex_n5_8b_main_merge_hermes_manual_bridge_readiness.md` [reports/14_context]: CLEAN PASS / N+5.8B MAIN MERGE READY
@@ -68,7 +69,6 @@ Repo knowledge readiness: 55%. Local file map and task bundles are available. Gr
 - `14_context/codex_n5_6b_main_merge_local_model_easy_worker_lane.md` [reports/14_context]: CLEAN PASS / N+5.6B MAIN MERGE READY
 - `14_context/codex_n5_6a_local_model_gemma_setup_truth_easy_worker_lane.md` [reports/14_context]: CLEAN PASS / N+5.6A LOCAL MODEL EASY WORKER LANE READY
 - `14_context/codex_n5_5b_main_merge_local_memory_context_pack.md` [reports/14_context]: CLEAN PASS / N+5.5B MAIN MERGE READY
-- `14_context/codex_n5_5a_local_memory_obsidian_context_pack_brain_upgrade.md` [reports/14_context]: CLEAN PASS / LOCAL MEMORY CONTEXT PACK READY
 
 ## Task Bundles
 
@@ -80,6 +80,17 @@ Repo knowledge readiness: 55%. Local file map and task bundles are available. Gr
 - `content-workflow` -> `14_context/repo_knowledge/generated/task_bundle_content_workflow.md`
 - `safety` -> `14_context/repo_knowledge/generated/task_bundle_safety.md`
 - `next-milestone` -> `14_context/repo_knowledge/generated/task_bundle_next_milestone.md`
+
+## Roadmap Priority
+
+- N+6.1A - Constrained Gemma worker routing for boring/simple local tasks, with known repo-bundle IDs only and fallback on guard failure.
+- N+6.2A - Hermes Agent Workflow / Manual Bridge Verification for faster supervised task execution; safe probes only, no tokens, no provider setup.
+- N+6.3A - Safe Computer-Use Preparation with Gemma + Hermes + UI-TARS observation + Browser Harness/Vercel agent-browser roadmap; observation first, human approval for every click/type/live-account action.
+
+Hermes and safe computer-use are the next high-value lanes for long,
+boring supervised tasks, but only after the constrained Gemma routing
+guard is clean. No provider setup, live APIs, Telegram setup,
+uncontrolled click/type, or browser automation is enabled here.
 
 ## Safety Boundaries
 

@@ -12,19 +12,23 @@ Ghoti is a local-first, approval-gated AI operating workspace for supervised dem
 
 ## Quickstart
 
-Current clean local MVP baseline: **N+5.8B / CLEAN PASS / HERMES MANUAL
-BRIDGE MAIN AUDITED**.
+Current clean main baseline: **N+5.9B / CLEAN PASS / GEMMA READINESS AND
+LOCAL QUALITY PLAN LANDED ON MAIN**.
+
+Current feature/audit lane: **N+6.0A / HUMAN-APPROVED GEMMA INSTALL + FIRST
+LOCAL EVALUATION READY**. N+6.0A is intentionally feature/audit only until a
+future merge gate lands it on main.
 
 Previous clean baseline preserved for audit continuity: **N+5.6B /
 clean/local-model-easy-worker-lane on main** at
 `c9413108006d920e0110413d3d5e195b504489c1`.
 
 ```text
-origin/main = 6d1a9238d2caa4355e475904c6433310e6cb568b
+origin/main = 20e1dce1e89f15a337054864560b95b82233877c
 N+4: 329 OK
-N+5: 90 OK
-Public audit: 150 checks / 0 blockers / 7 warnings
-Readiness score: 100
+N+5: 97 OK
+N+6: 5 OK
+Public audit: 150 checks / 0 blockers / 7 warnings on the N+6.0A audit branch
 ```
 
 ```powershell
@@ -93,6 +97,27 @@ Daily guide:
 - Prepare Hermes local bootstrap reports without paid VPS requirements.
 - Maintain public repo readiness, security checks, portfolio docs, and curated images.
 - Surface latest reports under `14_context/`.
+
+## Near-Term Roadmap Priority
+
+Ivan's current priority is to reduce paid credit usage while preparing Ghoti
+for long, boring supervised tasks that are simple one-by-one but advanced as a
+workflow. The safe order is:
+
+1. N+6.1A - constrained Gemma worker routing with a repo-bundle hallucination
+   guard. Allowed tasks are summaries, status paragraphs, Codex prompts, safety
+   classification, context-bundle summaries, next milestone outlines, and
+   report-to-bullets only.
+2. N+6.2A - Hermes Agent Workflow / Manual Bridge Verification for faster task
+   execution. Safe probes only; no tokens, provider setup, Telegram setup, live
+   APIs, or browser automation.
+3. N+6.3A - Safe Computer-Use Preparation with Gemma, Hermes, UI-TARS
+   observation, Browser Harness, and Vercel agent-browser roadmap. Observation
+   comes first, and every click/type/live-account action remains human-approved.
+
+N+6.1A must not execute commands or edit files from model output. It must use
+known repo-map bundle IDs only, reject invented bundle or file claims, require
+source metadata, and fall back to `local_demo` when the guard fails.
 
 ## Hermes Local Bootstrap
 

@@ -1,17 +1,28 @@
 # Ghoti Current Context Pack
 
-Generated: `2026-05-24T14:56:11Z`
+Generated: `2026-05-24T18:40:38Z`
 
 ## Compact Status
 
-Ghoti status: N+5.9B - Gemma Readiness / Local Quality Plan landed on main at origin/main 20e1dce1e89f. Launch `python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard` then open http://127.0.0.1:3210. Hermes WSL is installed at /home/ai_sandbox/.local/bin/hermes (v0.14.0); browser/Playwright is degraded/not claimed, Codex provider pending/not proven, Telegram manual/no token, no VPS. Ollama available (ollama version is 0.24.0); Gemma model found; local_demo fallback active as preserved backup. Gemma readiness 74%, mode `ollama_gemma`, quality `ready_for_human_approved_eval`, latest eval `real_gemma_eval_complete` at 86%, no auto-downloads. Obsidian memory, repo bundles, local worker fallback, safety gates, UI-TARS observation-only, adapter dry-runs, and external static sandbox are available. Next recommended milestone: N+6.1A - Local Model Routing + Real Worker Task Integration.
+Ghoti status: N+5.9B - Gemma Readiness / Local Quality Plan landed on main at origin/main 20e1dce1e89f. Launch `python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard` then open http://127.0.0.1:3210. Hermes WSL is installed at /home/ai_sandbox/.local/bin/hermes (v0.14.0); browser/Playwright is degraded/not claimed, Codex provider pending/not proven, Telegram manual/no token, no VPS. Ollama available (ollama version is 0.24.0); Gemma model found; local_demo fallback active as preserved backup. Gemma readiness 74%, mode `ollama_gemma`, quality `ready_for_human_approved_eval`, latest eval `real_gemma_eval_complete` at 86%, no auto-downloads. Obsidian memory, repo bundles, local worker fallback, safety gates, UI-TARS observation-only, adapter dry-runs, and external static sandbox are available. Next recommended milestone: N+6.1A - Constrained Gemma Worker Routing + Repo-Bundle Hallucination Guard.
 
 ## Current Main
 
 - Main hash: `20e1dce1e89f15a337054864560b95b82233877c`
 - Latest clean milestone: N+5.9B - Gemma Readiness / Local Quality Plan landed on main
 - Current milestone: N+6.0A - Human-Approved Gemma Install + First Real Local Model Evaluation
-- Next recommended milestone: N+6.1A - Local Model Routing + Real Worker Task Integration
+- Next recommended milestone: N+6.1A - Constrained Gemma Worker Routing + Repo-Bundle Hallucination Guard
+
+## Roadmap Priority
+
+- N+6.1A - Constrained Gemma worker routing for boring/simple local tasks, with known repo-bundle IDs only and fallback on guard failure.
+- N+6.2A - Hermes Agent Workflow / Manual Bridge Verification for faster supervised task execution; safe probes only, no tokens, no provider setup.
+- N+6.3A - Safe Computer-Use Preparation with Gemma + Hermes + UI-TARS observation + Browser Harness/Vercel agent-browser roadmap; observation first, human approval for every click/type/live-account action.
+
+Keep Hermes and safe computer-use high priority because they are the
+path to long, boring supervised task execution without burning paid
+credits. Do not start N+6.2A or N+6.3A until N+6.1A has a clean routing
+guard and audit gate.
 
 ## Launch
 
@@ -139,6 +150,7 @@ Ghoti status: N+5.9B - Gemma Readiness / Local Quality Plan landed on main at or
 
 ## Latest Reports
 
+- `14_context/codex_n6_0a_roadmap_priority_hermes_computer_use_update.md` (report): unknown
 - `14_context/codex_n5_9b_main_merge_gemma_readiness_local_quality_plan.md` (main): CLEAN PASS / N+5.9B MAIN MERGE READY
 - `14_context/codex_n5_9a_gemma_model_availability_local_task_quality_evaluation.md` (report): CLEAN PASS / N+5.9A GEMMA READINESS AND LOCAL QUALITY PLAN READY
 - `14_context/codex_n5_8b_main_merge_hermes_manual_bridge_readiness.md` (main): CLEAN PASS / N+5.8B MAIN MERGE READY
@@ -150,7 +162,6 @@ Ghoti status: N+5.9B - Gemma Readiness / Local Quality Plan landed on main at or
 - `14_context/codex_n5_5b_main_merge_local_memory_context_pack.md` (main): CLEAN PASS / N+5.5B MAIN MERGE READY
 - `14_context/codex_n5_5a_local_memory_obsidian_context_pack_brain_upgrade.md` (report): CLEAN PASS / LOCAL MEMORY CONTEXT PACK READY
 - `14_context/codex_n5_4b_main_merge_daily_operator_usability.md` (main): CLEAN PASS / N+5.4A DAILY OPERATOR USABILITY MERGE READY
-- `14_context/codex_n5_4a_first_real_operator_usability_pass.md` (product): CLEAN PASS / DAILY OPERATOR USABILITY READY
 
 ## Safety Locks
 

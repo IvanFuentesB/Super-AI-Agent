@@ -9,7 +9,7 @@ Lineage note: N+5.6B clean/local-model-easy-worker-lane landed at
 `c9413108006d920e0110413d3d5e195b504489c1`.
 
 ```text
-origin/main = 6d1a9238d2caa4355e475904c6433310e6cb568b
+origin/main = 20e1dce1e89f15a337054864560b95b82233877c
 launcher = python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard
 dashboard = http://127.0.0.1:3210
 context_pack = python 03_scripts/ghoti_context_pack_builder.py --write --json
@@ -62,6 +62,22 @@ for inspection.
 Feature branches must provide tests and a final report showing what works, what
 is still pending, and how any local dashboard process was cleaned up.
 
+## Current Roadmap Priority
+
+The next safe order is:
+
+1. N+6.1A - constrained Gemma worker routing plus repo-bundle hallucination
+   guard. Only route boring/offline local tasks, use known bundle IDs, require
+   source metadata, and fall back to `local_demo` on guard failure.
+2. N+6.2A - Hermes Agent Workflow / Manual Bridge Verification. Safe probes and
+   manual bridge packet only; no tokens, provider setup, Telegram setup, live
+   APIs, or browser automation.
+3. N+6.3A - Safe Computer-Use Preparation with Gemma, Hermes, UI-TARS
+   observation, Browser Harness, and Vercel agent-browser roadmap. Observation
+   first; every click/type/live-account action remains human-approved.
+
+Do not start N+6.2A or N+6.3A until N+6.1A passes a clean audit gate.
+
 ## Safe Codex Prompts
 
 Audit current main:
@@ -110,6 +126,12 @@ Check first local model eval:
 
 ```text
 Run python 03_scripts/ghoti_product_launcher.py --local-model-eval --json. Confirm the model, score, task pass count, safety/JSON flags, production routing disabled, and latest run path under 14_context/local_model_evaluation/runs/. Do not treat a real model score as permission for autonomous routing.
+```
+
+Plan constrained Gemma routing:
+
+```text
+Build N+6.1A constrained Gemma worker routing from the clean N+6.0A result. Allowed tasks only: summarize latest report, status paragraph, Codex next prompt, safety classification, context bundle summary, next milestone outline, and report-to-bullets. Use known repo-map bundle IDs only, reject invented bundle/file claims, require source metadata, fall back to local_demo on guard failure, and never execute commands or edit files from model output.
 ```
 
 Generate focused repo context:

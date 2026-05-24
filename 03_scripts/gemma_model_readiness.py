@@ -1284,7 +1284,11 @@ def _quality_review_markdown(eval_payload: Dict[str, object]) -> str:
 
 def _next_steps_eval_markdown(eval_payload: Dict[str, object]) -> str:
     if eval_payload.get("real_model_evaluated"):
-        next_line = "Review the score, then build N+6.1A routing only if the audit stays clean."
+        next_line = (
+            "Review the score, then build N+6.1A constrained Gemma routing only with a repo-bundle "
+            "hallucination guard. If that guard passes, prioritize N+6.2A Hermes manual bridge "
+            "verification, then N+6.3A safe computer-use preparation."
+        )
     else:
         next_line = "Install `gemma3:4b` only with human approval, then rerun the evaluation."
     return textwrap.dedent(f"""\
