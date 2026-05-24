@@ -18,27 +18,29 @@
   "local_worker_demo_command": "python 03_scripts/ghoti_product_launcher.py --local-worker-demo --json",
   "direct_status_command": "python 03_scripts/local_model_worker_lane.py --status --json",
   "direct_demo_command": "python 03_scripts/local_model_worker_lane.py --write-demo-output --json",
-  "main_hash": "c9413108006d920e0110413d3d5e195b504489c1",
+  "main_hash": "20e1dce1e89f15a337054864560b95b82233877c",
   "ollama": {
     "available": true,
     "version": "ollama version is 0.24.0",
-    "models": [],
+    "models": [
+      "gemma3:4b"
+    ],
     "list_ok": true,
     "probe_error": ""
   },
   "gemma": {
-    "installed": false,
+    "installed": true,
     "preferred_model": "gemma3:4b",
-    "model_name": null,
-    "status": "missing",
+    "model_name": "gemma3:4b",
+    "status": "installed",
     "manual_install_command": "ollama pull gemma3:4b",
     "manual_check_command": "ollama list"
   },
-  "active_mode": "local_demo",
+  "active_mode": "ollama_gemma",
   "fallback_available": true,
-  "readiness_percent": 45,
-  "readiness_label": "local_demo_fallback_active",
-  "status_line": "Local worker readiness: 45%. Ollama is installed (ollama version is 0.24.0), Gemma is missing, so Ghoti is using local_demo fallback. Context packs and deterministic summaries work now; run the documented manual Gemma command later to unlock real local worker tasks. No live APIs, no auto-downloads.",
+  "readiness_percent": 75,
+  "readiness_label": "real_local_model_available",
+  "status_line": "Local worker readiness: 75%. Ollama is installed (ollama version is 0.24.0), Gemma is installed, so real local evaluation is possible. Production routing remains gated. No live APIs, no auto-downloads.",
   "safe_demo_tasks": [
     "summarize-latest-report",
     "status-paragraph",
@@ -66,5 +68,5 @@
     "no_money_trading_legal": true,
     "no_bot_captcha_cloak_bypass": true
   },
-  "generated_at": "2026-05-23T12:40:05Z"
+  "generated_at": "2026-05-24T14:56:12Z"
 }

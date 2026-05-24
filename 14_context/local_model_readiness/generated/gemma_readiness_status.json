@@ -2,8 +2,8 @@
   "ok": true,
   "action": "status",
   "lane": "gemma_model_availability_local_task_quality",
-  "milestone": "N+5.9A",
-  "main_hash": "6d1a9238d2caa4355e475904c6433310e6cb568b",
+  "milestone": "N+6.0A",
+  "main_hash": "20e1dce1e89f15a337054864560b95b82233877c",
   "local_only": true,
   "network_required": false,
   "live_api_used": false,
@@ -18,23 +18,31 @@
   "ollama_installed": true,
   "ollama_version": "ollama version is 0.24.0",
   "ollama_reachable": true,
-  "installed_models": [],
-  "installed_models_count": 0,
+  "installed_models": [
+    "gemma3:4b"
+  ],
+  "installed_models_count": 1,
   "model_list_parse_ok": true,
   "probe_error": "",
   "list_error": "",
-  "gemma_installed": false,
-  "installed_gemma_models": [],
+  "gemma_installed": true,
+  "installed_gemma_models": [
+    "gemma3:4b"
+  ],
   "preferred_model": "gemma3:4b",
-  "preferred_model_installed": false,
+  "preferred_model_installed": true,
   "fallback_models_installed": [],
-  "selected_model": null,
-  "active_worker_mode": "local_demo",
-  "local_worker_readiness_percent": 45,
-  "gemma_readiness_percent": 45,
-  "readiness_percent": 45,
-  "quality_evaluation_status": "pending_real_gemma_install",
+  "selected_model": "gemma3:4b",
+  "active_worker_mode": "ollama_gemma",
+  "local_worker_readiness_percent": 75,
+  "gemma_readiness_percent": 74,
+  "readiness_percent": 74,
+  "quality_evaluation_status": "ready_for_human_approved_eval",
+  "real_local_evaluation_status": "real_gemma_eval_complete",
+  "latest_eval_score_percent": 86,
+  "latest_eval_run_path": "14_context/local_model_evaluation/runs/20260524T143110Z_gemma3_4b_quality_eval",
   "quality_plan_command": "python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json",
+  "local_model_eval_command": "python 03_scripts/ghoti_product_launcher.py --local-model-eval --json",
   "manual_commands": [
     "ollama list",
     "ollama pull gemma3:4b",
@@ -47,8 +55,8 @@
     "gemma3:1b",
     "gemma3:270m"
   ],
-  "recommendation": "Gemma is missing. Keep local_demo fallback active, or manually approve `ollama pull gemma3:4b` later.",
-  "status_line": "Local model readiness: 45%. Ollama is installed (ollama version is 0.24.0). Gemma is missing, active mode is local_demo fallback, and no auto-downloads are enabled.",
+  "recommendation": "gemma3:4b is installed. Run the local quality plan next, but keep production routing disabled until a later human-approved milestone.",
+  "status_line": "Local model readiness: 74%. Ollama is installed (ollama version is 0.24.0). Gemma model available: gemma3:4b. Active mode is ollama_gemma. Production routing remains disabled.",
   "launcher_command": "python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard",
   "dashboard_url": "http://127.0.0.1:3210",
   "context_pack_command": "python 03_scripts/ghoti_product_launcher.py --context-pack --json",
@@ -61,7 +69,8 @@
     "gemma_readiness_status.md": "14_context/local_model_readiness/generated/gemma_readiness_status.md",
     "gemma_install_decision.md": "14_context/local_model_readiness/generated/gemma_install_decision.md",
     "local_task_quality_plan.md": "14_context/local_model_readiness/generated/local_task_quality_plan.md",
-    "local_task_quality_rubric.json": "14_context/local_model_readiness/generated/local_task_quality_rubric.json"
+    "local_task_quality_rubric.json": "14_context/local_model_readiness/generated/local_task_quality_rubric.json",
+    "latest_local_model_eval": "14_context/local_model_evaluation/runs/20260524T143110Z_gemma3_4b_quality_eval"
   },
   "safety": {
     "no_live_apis": true,
@@ -71,5 +80,5 @@
     "production_routing_disabled": true,
     "local_demo_fallback_preserved": true
   },
-  "generated_at": "2026-05-24T08:42:12Z"
+  "generated_at": "2026-05-24T14:32:23Z"
 }

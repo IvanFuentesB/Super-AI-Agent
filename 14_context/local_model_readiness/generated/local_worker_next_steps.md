@@ -7,5 +7,5 @@
 5. Rerun `python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json`.
 6. Keep production routing disabled until a later audited milestone.
 
-Current mode: `local_demo`.
-Recommendation: Gemma is missing. Keep local_demo fallback active, or manually approve `ollama pull gemma3:4b` later.
+Current mode: `ollama_gemma`.
+Recommendation: gemma3:4b is installed. Run the local quality plan next, but keep production routing disabled until a later human-approved milestone.

@@ -246,6 +246,7 @@
                   <li><strong>Status command:</strong> <code>python 03_scripts/ghoti_product_launcher.py --gemma-status --json</code></li>
                   <li><strong>Doctor command:</strong> <code>python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json</code></li>
                   <li><strong>Quality plan:</strong> <code>python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json</code></li>
+                  <li><strong>Local model eval:</strong> <code>python 03_scripts/ghoti_product_launcher.py --local-model-eval --json</code></li>
                   <li><strong>Ollama installed:</strong> <span id="gemma-ollama-installed">loading...</span> <code id="gemma-ollama-version">unknown</code></li>
                   <li><strong>Installed model count:</strong> <code id="gemma-installed-model-count">loading...</code></li>
                   <li><strong>Gemma installed:</strong> <span id="gemma-installed-status">Gemma missing until Ollama list proves otherwise</span></li>
@@ -255,6 +256,9 @@
                   <li><strong>Local worker readiness percentage:</strong> <code id="gemma-local-worker-readiness">loading...</code></li>
                   <li><strong>Recommended manual command:</strong> <code id="gemma-manual-command">ollama pull gemma3:4b</code></li>
                   <li><strong>Quality evaluation status:</strong> <span id="gemma-quality-status">pending/not run</span></li>
+                  <li><strong>Real local evaluation status:</strong> <span id="gemma-real-eval-status">not run</span></li>
+                  <li><strong>Last local eval score:</strong> <code id="gemma-eval-score">not run</code></li>
+                  <li><strong>Latest eval run path:</strong> <code id="gemma-latest-eval-run">14_context/local_model_evaluation/runs/</code></li>
                   <li><strong>Generated files:</strong> <code id="gemma-output-path">14_context/local_model_readiness/generated/gemma_readiness_status.md</code></li>
                   <li><strong>Safety:</strong> no live APIs, no auto-downloads, no ollama pull performed, production routing enabled false, local_demo fallback preserved true, manual approval required before model download.</li>
                   <li><strong>Status:</strong> <span id="gemma-status-line">Loading Gemma readiness...</span></li>
@@ -263,6 +267,7 @@
                   <button id="gemma-refresh-btn" type="button">Refresh Gemma Status</button>
                   <button id="gemma-doctor-btn" type="button">Run Gemma Doctor</button>
                   <button id="gemma-quality-btn" type="button">Load Quality Plan</button>
+                  <button id="gemma-local-eval-btn" type="button">Load Local Eval</button>
                   <button id="gemma-write-btn" type="button">Write Readiness Files</button>
                 </div>
                 <div id="gemma-action-result" class="card-status">

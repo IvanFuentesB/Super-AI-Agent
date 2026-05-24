@@ -8,8 +8,11 @@ take account actions.
 ## Current Truth
 
 - Ollama is available in the current local baseline: `ollama version is 0.24.0`.
-- Gemma is not installed unless `ollama list` proves a Gemma model is present.
-- When Gemma is missing, Ghoti uses `local_demo fallback`.
+- Gemma is installed only when `ollama list` proves a Gemma model is present.
+- N+6.0A ran the human-approved `ollama pull gemma3:4b` on this local machine;
+  verify current truth with `ollama list`.
+- When Gemma is missing, weak, or not appropriate for a task, Ghoti uses
+  `local_demo fallback`.
 - `local_demo fallback` is deterministic local code, not a fake model claim.
 
 ## Check Status
@@ -20,6 +23,7 @@ python 03_scripts/local_model_worker_lane.py --doctor --json
 python 03_scripts/ghoti_product_launcher.py --local-worker-status --json
 python 03_scripts/ghoti_product_launcher.py --gemma-status --json
 python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json
+python 03_scripts/ghoti_product_launcher.py --local-model-eval --json
 python 03_scripts/gemma_model_readiness.py --recommend --json
 ```
 
@@ -30,6 +34,13 @@ N+5.9A also writes Gemma readiness files:
 
 ```powershell
 python 03_scripts/gemma_model_readiness.py --write-readiness --json
+```
+
+N+6.0A writes human-approved install/evaluation records:
+
+```powershell
+python 03_scripts/gemma_model_readiness.py --preflight --json
+python 03_scripts/gemma_model_readiness.py --write-evaluation --json
 ```
 
 Output folder:
@@ -53,6 +64,15 @@ ollama pull gemma3:270m
 Do not pull large models from an automated milestone unless Ivan explicitly
 approves it.
 
+For N+6.0A only, Ivan explicitly approved one local model command:
+
+```powershell
+ollama pull gemma3:4b
+```
+
+That approval does not allow multiple pulls, provider setup, Telegram setup,
+browser automation, or production routing.
+
 `gemma3:4b` is the preferred first serious local worker candidate. It is listed
 at about 3.3GB on Ollama's Gemma 3 page. `gemma3:1b` and `gemma3:270m` are
 lighter manual alternatives for fast setup checks or constrained hardware.
@@ -67,6 +87,7 @@ Run the quality plan before trusting the model:
 
 ```powershell
 python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json
+python 03_scripts/ghoti_product_launcher.py --local-model-eval --json
 ```
 
 Production routing remains disabled until a later human-approved milestone.

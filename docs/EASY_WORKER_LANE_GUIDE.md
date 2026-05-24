@@ -23,6 +23,7 @@ python 03_scripts/ghoti_product_launcher.py --local-worker-status --json
 python 03_scripts/ghoti_product_launcher.py --local-worker-demo --json
 python 03_scripts/ghoti_product_launcher.py --gemma-status --json
 python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json
+python 03_scripts/ghoti_product_launcher.py --local-model-eval --json
 ```
 
 ## Safe Demo Tasks
@@ -39,6 +40,15 @@ N+5.9A adds the **Gemma / Local Model Quality** lane. Use it to decide whether
 to stay on `local_demo`, manually pull `gemma3:4b`, or try a lighter manual
 fallback (`gemma3:1b` or `gemma3:270m`). The lane writes a quality plan but does
 not route production work to Gemma.
+
+N+6.0A adds the first human-approved local evaluation packet. When `gemma3:4b`
+is installed, the eval command can compare real local Gemma output to
+`local_demo`. If the model is missing, the eval reports a controlled fallback
+instead of pretending quality was measured.
+
+Current N+6.0A result: `gemma3:4b` installed locally and the first eval scored
+86%, with 6 of 7 tasks passing. The failed task hallucinated a repo bundle, so
+real routing remains a later audited decision rather than an automatic switch.
 
 ## Generated Outputs
 

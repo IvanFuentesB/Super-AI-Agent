@@ -7165,6 +7165,14 @@ async function handleApiRequest(request, response, requestUrl) {
     return;
   }
 
+  // GET /api/gemma-readiness/local-model-eval
+  if (request.method === "GET" && requestUrl.pathname === "/api/gemma-readiness/local-model-eval") {
+    // Local Ollama/Gemma evaluation summary only. No downloads, no provider setup,
+    // no Telegram setup, no browser automation, and no production routing.
+    sendJson(response, 200, await runGemmaModelReadiness(["--local-model-eval"], 150000));
+    return;
+  }
+
   // POST /api/gemma-readiness/write-readiness
   if (request.method === "POST" && requestUrl.pathname === "/api/gemma-readiness/write-readiness") {
     // Fixed argv. Repo-local file generation only. No downloads, no live API,

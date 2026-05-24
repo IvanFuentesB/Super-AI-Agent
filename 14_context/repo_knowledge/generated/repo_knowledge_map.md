@@ -1,13 +1,13 @@
 # Ghoti Repo Knowledge Map
 
-Generated: `2026-05-24T08:42:12Z`
+Generated: `2026-05-24T14:55:17Z`
 
 Repo knowledge readiness: 55%. Local file map and task bundles are available. Graphify runtime: roadmap only/not wired; no external repo runtime; no network.
 
-- Main hash: `6d1a9238d2caa4355e475904c6433310e6cb568b`
-- Latest clean milestone: N+5.8B - Hermes Manual Bridge Readiness landed on main
-- Current milestone: N+5.9A - Real Gemma Install / Model Availability Decision + Local Task Quality Evaluation
-- Next recommended milestone: N+6.0A - Human-Approved Gemma Install + First Real Local Model Evaluation
+- Main hash: `20e1dce1e89f15a337054864560b95b82233877c`
+- Latest clean milestone: N+5.9B - Gemma Readiness / Local Quality Plan landed on main
+- Current milestone: N+6.0A - Human-Approved Gemma Install + First Real Local Model Evaluation
+- Next recommended milestone: N+6.1A - Local Model Routing + Real Worker Task Integration
 - Launcher: `python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard`
 - Dashboard: `http://127.0.0.1:3210`
 - Repo map command: `python 03_scripts/ghoti_product_launcher.py --repo-map --json`
@@ -15,6 +15,7 @@ Repo knowledge readiness: 55%. Local file map and task bundles are available. Gr
 - Gemma status command: `python 03_scripts/ghoti_product_launcher.py --gemma-status --json`
 - Gemma quality command: `python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json`
 - Gemma readiness files: `14_context/local_model_readiness/generated/`
+- Local model eval runs: `14_context/local_model_evaluation/runs/`
 - Gemma production routing: disabled
 - Graphify runtime: roadmap only/not wired
 - no external repo runtime
@@ -27,7 +28,7 @@ Repo knowledge readiness: 55%. Local file map and task bundles are available. Gr
 - `03_scripts/ghoti_context_pack_builder.py` [local memory/context packs]: Main token-saving continuity tool.
 - `03_scripts/local_memory_compression_bridge.py` [local memory/context packs]: Keeps durable memory visible without live providers.
 - `03_scripts/local_model_worker_lane.py` [local model/easy worker]: Current credit-saving worker lane with local_demo fallback.
-- `03_scripts/gemma_model_readiness.py` [local model/easy worker]: N+5.9A decision layer for real local model readiness without auto-downloads.
+- `03_scripts/gemma_model_readiness.py` [local model/easy worker]: N+6.0A preflight and local model evaluation layer without provider setup or production routing.
 - `03_scripts/hermes_local_bootstrap.py` [Hermes/WSL]: Hermes is a planned local agent layer, but setup/provider actions remain manual.
 - `03_scripts/hermes_agent_workflow_bridge.py` [Hermes/WSL]: Makes Hermes useful and inspectable while keeping provider setup, Telegram, tokens, and browser automation manual later.
 - `03_scripts/ui_tars_observation_adapter.py` [UI-TARS/computer-use]: Preserves computer-use research without click/type control.
@@ -45,6 +46,7 @@ Repo knowledge readiness: 55%. Local file map and task bundles are available. Gr
 - `docs/LOCAL_MEMORY_CONTEXT_PACK_GUIDE.md` [local memory/context packs]: Explains token-saving context handoff.
 - `docs/LOCAL_MODEL_GEMMA_SETUP_GUIDE.md` [local model/easy worker]: Shows how to unlock real local model work later without auto-downloads.
 - `docs/GEMMA_MODEL_INSTALL_DECISION.md` [local model/easy worker]: Helps Ivan choose 4B, 1B, 270M, or stay local_demo.
+- `docs/HUMAN_APPROVED_GEMMA_INSTALL_LOG.md` [local model/easy worker]: Keeps the one-model approval separate from future routing or provider setup.
 - `docs/LOCAL_MODEL_QUALITY_EVALUATION_GUIDE.md` [local model/easy worker]: Keeps real Gemma quality separate from local_demo fallback plumbing.
 - `docs/EASY_WORKER_LANE_GUIDE.md` [local model/easy worker]: Documents safe credit-saving local tasks.
 - `docs/HERMES_LOCAL_INSTALL_AND_PROVIDER_PLAN.md` [Hermes/WSL]: Important next human/manual milestone context.
@@ -57,6 +59,8 @@ Repo knowledge readiness: 55%. Local file map and task bundles are available. Gr
 - `14_context/local_worker/generated/local_worker_status.md` [local model/easy worker]: Shows Ollama/Gemma/local_demo readiness.
 - `14_context/hermes_workflow/generated/hermes_workflow_status.md` [Hermes/WSL]: Shows Hermes installed/version/skills truth and manual later boundaries.
 - `01_projects/runtime_mvp/tests/test_n5_6a_local_model_easy_worker_lane.py` [tests]: Best current pattern for JSON script, launcher, docs, and dashboard checks.
+- `14_context/codex_n5_9b_main_merge_gemma_readiness_local_quality_plan.md` [reports/14_context]: CLEAN PASS / N+5.9B MAIN MERGE READY
+- `14_context/codex_n5_9a_gemma_model_availability_local_task_quality_evaluation.md` [reports/14_context]: CLEAN PASS / N+5.9A GEMMA READINESS AND LOCAL QUALITY PLAN READY
 - `14_context/codex_n5_8b_main_merge_hermes_manual_bridge_readiness.md` [reports/14_context]: CLEAN PASS / N+5.8B MAIN MERGE READY
 - `14_context/codex_n5_8a_hermes_agent_workflow_provider_setup_plan_manual_bridge.md` [reports/14_context]: CLEAN PASS / N+5.8A HERMES MANUAL BRIDGE READY
 - `14_context/codex_n5_7b_main_merge_repo_knowledge_context_retrieval.md` [reports/14_context]: CLEAN PASS / N+5.7B MAIN MERGE READY
@@ -65,8 +69,6 @@ Repo knowledge readiness: 55%. Local file map and task bundles are available. Gr
 - `14_context/codex_n5_6a_local_model_gemma_setup_truth_easy_worker_lane.md` [reports/14_context]: CLEAN PASS / N+5.6A LOCAL MODEL EASY WORKER LANE READY
 - `14_context/codex_n5_5b_main_merge_local_memory_context_pack.md` [reports/14_context]: CLEAN PASS / N+5.5B MAIN MERGE READY
 - `14_context/codex_n5_5a_local_memory_obsidian_context_pack_brain_upgrade.md` [reports/14_context]: CLEAN PASS / LOCAL MEMORY CONTEXT PACK READY
-- `14_context/codex_n5_4b_main_merge_daily_operator_usability.md` [reports/14_context]: CLEAN PASS / N+5.4A DAILY OPERATOR USABILITY MERGE READY
-- `14_context/codex_n5_4a_first_real_operator_usability_pass.md` [reports/14_context]: CLEAN PASS / DAILY OPERATOR USABILITY READY
 
 ## Task Bundles
 

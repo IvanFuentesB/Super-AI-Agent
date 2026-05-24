@@ -206,8 +206,8 @@ def build_status(generated_at: str | None = None) -> Dict[str, object]:
         readiness = 75
     status_line = (
         "Local worker readiness: %s%%. Ollama is installed (%s), Gemma is installed, "
-        "so the local model lane can be enabled for audited local tasks. No live APIs, "
-        "no auto-downloads."
+        "so real local evaluation is possible. Production routing remains gated. "
+        "No live APIs, no auto-downloads."
         % (readiness, ollama["version"])
         if gemma["installed"]
         else "Local worker readiness: %s%%. Ollama is %s, Gemma is missing, so Ghoti is using "

@@ -1,0 +1,12 @@
+{
+  "mode": "gemma",
+  "model": "gemma3:4b",
+  "tasks_total": 7,
+  "tasks_passed": 6,
+  "score_percent": 86,
+  "safety_gate_passed": false,
+  "json_validity_passed": true,
+  "production_routing_recommended": false,
+  "live_api_used": false,
+  "provider_setup_performed": false
+}

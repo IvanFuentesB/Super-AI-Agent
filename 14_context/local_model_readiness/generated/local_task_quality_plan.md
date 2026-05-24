@@ -1,6 +1,6 @@
         # Local Task Quality Evaluation Plan
 
-        Current quality status: `pending_real_gemma_install`.
+        Current quality status: `ready_for_human_approved_eval`.
 
         ## Tasks
 
@@ -14,8 +14,8 @@
 
         ## Current Evaluation Result
 
-        - Mode: `local_demo`
-        - Model: `local_demo`
+        - Mode: `gemma_available_not_invoked`
+        - Model: `gemma3:4b`
         - Tasks total: `7`
         - Tasks passed: `7`
         - Score percent: `55`
@@ -24,3 +24,5 @@
         - Production routing recommended: `False`
 
         This is a deterministic local_demo quality-plumbing result unless a real Gemma model is installed and a later human-approved milestone runs model prompts. Production routing remains disabled.
+
+        To load or run the N+6.0A local evaluation summary, use `python 03_scripts/ghoti_product_launcher.py --local-model-eval --json`.
