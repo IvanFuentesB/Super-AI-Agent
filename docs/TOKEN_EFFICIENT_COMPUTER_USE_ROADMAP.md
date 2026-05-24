@@ -6,7 +6,8 @@
 - Use the N+5.7A local repo knowledge map now for selected file maps, latest
   report indexes, subsystem indexes, and task bundles.
 - Create local compact memory snapshots before sending context to premium models.
-- Use Gemma/Ollama for cheap summarization and classification.
+- Use Gemma/Ollama for cheap summarization and classification only after local
+  availability and quality are proven.
 - Avoid sending the whole repo to premium models.
 - Route easy tasks to local workers when possible.
 - Route implementation to Claude Code when available.
@@ -15,7 +16,24 @@
 - Cache source intelligence packets.
 - Compress context into Obsidian/compact memory.
 - Show token-saving truth in the dashboard through Local Memory, Local Worker,
-  Repo Knowledge / Graphify Lane, and Hermes Agent / Manual Bridge cards.
+  Gemma / Local Model Quality, Repo Knowledge / Graphify Lane, and Hermes Agent
+  / Manual Bridge cards.
+
+## Gemma / Local Model Quality
+
+- Current implementation: local readiness and quality-plan files under
+  `14_context/local_model_readiness/generated/`.
+- Current commands:
+  `python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json`,
+  `python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json`,
+  and `python 03_scripts/ghoti_product_launcher.py --gemma-write-readiness --json`.
+- Current truth: Ollama is checked locally, Gemma is not claimed unless
+  `ollama list` shows an installed Gemma model, and `local_demo fallback`
+  remains the safe mode when no Gemma model is available.
+- Manual command candidates are documented, but Codex must not run
+  `ollama pull` automatically.
+- Production routing to Gemma remains disabled until a later audited milestone
+  runs a real local quality evaluation after human-approved install.
 
 ## Repo Knowledge / Graphify Lane
 

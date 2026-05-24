@@ -12,17 +12,17 @@ Ghoti is a local-first, approval-gated AI operating workspace for supervised dem
 
 ## Quickstart
 
-Current clean local MVP baseline: **N+5.7B / CLEAN PASS / REPO KNOWLEDGE
-CONTEXT RETRIEVAL ON MAIN**.
+Current clean local MVP baseline: **N+5.8B / CLEAN PASS / HERMES MANUAL
+BRIDGE MAIN AUDITED**.
 
 Previous clean baseline preserved for audit continuity: **N+5.6B /
 clean/local-model-easy-worker-lane on main** at
 `c9413108006d920e0110413d3d5e195b504489c1`.
 
 ```text
-origin/main = 84e880e7c3f774580a5e4ac340acd497af3027ee
+origin/main = 6d1a9238d2caa4355e475904c6433310e6cb568b
 N+4: 329 OK
-N+5: 85 OK
+N+5: 90 OK
 Public audit: 150 checks / 0 blockers / 7 warnings
 Readiness score: 100
 ```
@@ -43,6 +43,8 @@ Daily guide:
 - [Local Memory Context Pack Guide](docs/LOCAL_MEMORY_CONTEXT_PACK_GUIDE.md)
 - [Local Model / Gemma Setup Guide](docs/LOCAL_MODEL_GEMMA_SETUP_GUIDE.md)
 - [Easy Worker Lane Guide](docs/EASY_WORKER_LANE_GUIDE.md)
+- [Gemma Model Install Decision](docs/GEMMA_MODEL_INSTALL_DECISION.md)
+- [Local Model Quality Evaluation Guide](docs/LOCAL_MODEL_QUALITY_EVALUATION_GUIDE.md)
 - [Repo Knowledge Map Guide](docs/REPO_KNOWLEDGE_MAP_GUIDE.md)
 - [Graphify Repo Knowledge Roadmap](docs/GRAPHIFY_REPO_KNOWLEDGE_ROADMAP.md)
 - [Hermes Agent Workflow Guide](docs/HERMES_AGENT_WORKFLOW_GUIDE.md)
@@ -54,6 +56,9 @@ Daily guide:
 - Context pack: `python 03_scripts/ghoti_context_pack_builder.py --write --json`
 - Local worker status: `python 03_scripts/ghoti_product_launcher.py --local-worker-status --json`
 - Local worker demo: `python 03_scripts/ghoti_product_launcher.py --local-worker-demo --json`
+- Gemma readiness: `python 03_scripts/ghoti_product_launcher.py --gemma-status --json`
+- Gemma doctor: `python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json`
+- Gemma quality plan: `python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json`
 - Repo map: `python 03_scripts/ghoti_product_launcher.py --repo-map --json`
 - Next bundle: `python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json`
 - Hermes bridge status: `python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json`
@@ -69,6 +74,8 @@ Daily guide:
   Obsidian under `14_context/compact_memory/generated/`.
 - Inspect Ollama/Gemma truth and generate deterministic local worker demo
   outputs under `14_context/local_worker/generated/`.
+- Show Gemma readiness, manual install decision, and local task quality plan
+  under `14_context/local_model_readiness/generated/`.
 - Generate a local repo knowledge map, latest report index, subsystem index,
   task bundles, and a focused next prompt under `14_context/repo_knowledge/generated/`.
 - Generate Hermes manual bridge readiness files, skills index, setup checklist,
@@ -204,6 +211,35 @@ Current Ollama/Gemma truth:
 - Local model reachability never means local models drive operator actions.
 - Ghoti shows the manual command `ollama pull gemma3:4b`, but never runs it
   automatically. No live APIs and no auto-downloads.
+
+## Gemma Readiness And Quality Plan
+
+N+5.9A adds a Gemma readiness decision lane:
+
+```powershell
+python 03_scripts/gemma_model_readiness.py --status --json
+python 03_scripts/gemma_model_readiness.py --doctor --json
+python 03_scripts/gemma_model_readiness.py --recommend --json
+python 03_scripts/gemma_model_readiness.py --quality-plan --json
+python 03_scripts/gemma_model_readiness.py --write-readiness --json
+python 03_scripts/ghoti_product_launcher.py --gemma-status --json
+python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json
+python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json
+```
+
+Gemma readiness is local-only. It checks Ollama, lists installed models, reports
+whether `gemma3:4b` or lighter alternatives are installed, and writes manual
+decision files. It does not run `ollama pull`, call live APIs, use provider
+tokens, or enable production routing. If Gemma is missing, `local_demo` fallback
+remains active.
+
+Generated files:
+
+- `14_context/local_model_readiness/generated/gemma_readiness_status.md`
+- `14_context/local_model_readiness/generated/gemma_install_decision.md`
+- `14_context/local_model_readiness/generated/gemma_manual_commands.md`
+- `14_context/local_model_readiness/generated/local_task_quality_plan.md`
+- `14_context/local_model_readiness/generated/local_task_quality_rubric.json`
 
 ## Repo Knowledge / Graphify Lane
 

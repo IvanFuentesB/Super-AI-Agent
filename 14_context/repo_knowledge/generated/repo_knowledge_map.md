@@ -1,17 +1,21 @@
 # Ghoti Repo Knowledge Map
 
-Generated: `2026-05-23T16:11:09Z`
+Generated: `2026-05-24T08:42:12Z`
 
 Repo knowledge readiness: 55%. Local file map and task bundles are available. Graphify runtime: roadmap only/not wired; no external repo runtime; no network.
 
-- Main hash: `84e880e7c3f774580a5e4ac340acd497af3027ee`
-- Latest clean milestone: N+5.7B - Repo Knowledge Context Retrieval landed on main
-- Current milestone: N+5.8A - Hermes Agent Workflow / Provider Setup Plan + Manual Bridge Readiness
-- Next recommended milestone: N+5.9A - Real Gemma Install/Model Availability Decision + Local Task Quality Evaluation
+- Main hash: `6d1a9238d2caa4355e475904c6433310e6cb568b`
+- Latest clean milestone: N+5.8B - Hermes Manual Bridge Readiness landed on main
+- Current milestone: N+5.9A - Real Gemma Install / Model Availability Decision + Local Task Quality Evaluation
+- Next recommended milestone: N+6.0A - Human-Approved Gemma Install + First Real Local Model Evaluation
 - Launcher: `python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard`
 - Dashboard: `http://127.0.0.1:3210`
 - Repo map command: `python 03_scripts/ghoti_product_launcher.py --repo-map --json`
 - Hermes bridge command: `python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json`
+- Gemma status command: `python 03_scripts/ghoti_product_launcher.py --gemma-status --json`
+- Gemma quality command: `python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json`
+- Gemma readiness files: `14_context/local_model_readiness/generated/`
+- Gemma production routing: disabled
 - Graphify runtime: roadmap only/not wired
 - no external repo runtime
 - no network
@@ -23,6 +27,7 @@ Repo knowledge readiness: 55%. Local file map and task bundles are available. Gr
 - `03_scripts/ghoti_context_pack_builder.py` [local memory/context packs]: Main token-saving continuity tool.
 - `03_scripts/local_memory_compression_bridge.py` [local memory/context packs]: Keeps durable memory visible without live providers.
 - `03_scripts/local_model_worker_lane.py` [local model/easy worker]: Current credit-saving worker lane with local_demo fallback.
+- `03_scripts/gemma_model_readiness.py` [local model/easy worker]: N+5.9A decision layer for real local model readiness without auto-downloads.
 - `03_scripts/hermes_local_bootstrap.py` [Hermes/WSL]: Hermes is a planned local agent layer, but setup/provider actions remain manual.
 - `03_scripts/hermes_agent_workflow_bridge.py` [Hermes/WSL]: Makes Hermes useful and inspectable while keeping provider setup, Telegram, tokens, and browser automation manual later.
 - `03_scripts/ui_tars_observation_adapter.py` [UI-TARS/computer-use]: Preserves computer-use research without click/type control.
@@ -39,6 +44,8 @@ Repo knowledge readiness: 55%. Local file map and task bundles are available. Gr
 - `docs/CODEX_ONLY_WORKFLOW.md` [docs/operator guides]: Keeps future Codex work isolated and auditable.
 - `docs/LOCAL_MEMORY_CONTEXT_PACK_GUIDE.md` [local memory/context packs]: Explains token-saving context handoff.
 - `docs/LOCAL_MODEL_GEMMA_SETUP_GUIDE.md` [local model/easy worker]: Shows how to unlock real local model work later without auto-downloads.
+- `docs/GEMMA_MODEL_INSTALL_DECISION.md` [local model/easy worker]: Helps Ivan choose 4B, 1B, 270M, or stay local_demo.
+- `docs/LOCAL_MODEL_QUALITY_EVALUATION_GUIDE.md` [local model/easy worker]: Keeps real Gemma quality separate from local_demo fallback plumbing.
 - `docs/EASY_WORKER_LANE_GUIDE.md` [local model/easy worker]: Documents safe credit-saving local tasks.
 - `docs/HERMES_LOCAL_INSTALL_AND_PROVIDER_PLAN.md` [Hermes/WSL]: Important next human/manual milestone context.
 - `docs/HERMES_AGENT_WORKFLOW_GUIDE.md` [Hermes/WSL]: Explains safe probes, generated readiness files, and manual later boundaries.
@@ -50,6 +57,8 @@ Repo knowledge readiness: 55%. Local file map and task bundles are available. Gr
 - `14_context/local_worker/generated/local_worker_status.md` [local model/easy worker]: Shows Ollama/Gemma/local_demo readiness.
 - `14_context/hermes_workflow/generated/hermes_workflow_status.md` [Hermes/WSL]: Shows Hermes installed/version/skills truth and manual later boundaries.
 - `01_projects/runtime_mvp/tests/test_n5_6a_local_model_easy_worker_lane.py` [tests]: Best current pattern for JSON script, launcher, docs, and dashboard checks.
+- `14_context/codex_n5_8b_main_merge_hermes_manual_bridge_readiness.md` [reports/14_context]: CLEAN PASS / N+5.8B MAIN MERGE READY
+- `14_context/codex_n5_8a_hermes_agent_workflow_provider_setup_plan_manual_bridge.md` [reports/14_context]: CLEAN PASS / N+5.8A HERMES MANUAL BRIDGE READY
 - `14_context/codex_n5_7b_main_merge_repo_knowledge_context_retrieval.md` [reports/14_context]: CLEAN PASS / N+5.7B MAIN MERGE READY
 - `14_context/codex_n5_7a_graphify_repo_knowledge_map_context_retrieval.md` [reports/14_context]: CLEAN PASS / N+5.7A REPO KNOWLEDGE MAP CONTEXT RETRIEVAL READY
 - `14_context/codex_n5_6b_main_merge_local_model_easy_worker_lane.md` [reports/14_context]: CLEAN PASS / N+5.6B MAIN MERGE READY
@@ -58,8 +67,6 @@ Repo knowledge readiness: 55%. Local file map and task bundles are available. Gr
 - `14_context/codex_n5_5a_local_memory_obsidian_context_pack_brain_upgrade.md` [reports/14_context]: CLEAN PASS / LOCAL MEMORY CONTEXT PACK READY
 - `14_context/codex_n5_4b_main_merge_daily_operator_usability.md` [reports/14_context]: CLEAN PASS / N+5.4A DAILY OPERATOR USABILITY MERGE READY
 - `14_context/codex_n5_4a_first_real_operator_usability_pass.md` [reports/14_context]: CLEAN PASS / DAILY OPERATOR USABILITY READY
-- `14_context/codex_n5_3a_product_finish_remote_clean_audit.md` [reports/14_context]: CLEAN PASS for local-first supervised MVP merge gating. No blocker was found that prevents merging N+5.3A to `main`.
-- `14_context/codex_n5_3a_main_merge_product_finish_local_mvp.md` [reports/14_context]: CLEAN PASS. The N+5.3A Product Control Center work is suitable for `main` as a local-first supervised MVP. No blocker was found in tests, dashboard checks, public audit, model council scan, Hermes status, local memory status, dry-runs, or s
 
 ## Task Bundles
 

@@ -21,6 +21,8 @@ Launcher shortcuts:
 ```powershell
 python 03_scripts/ghoti_product_launcher.py --local-worker-status --json
 python 03_scripts/ghoti_product_launcher.py --local-worker-demo --json
+python 03_scripts/ghoti_product_launcher.py --gemma-status --json
+python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json
 ```
 
 ## Safe Demo Tasks
@@ -32,6 +34,11 @@ python 03_scripts/ghoti_product_launcher.py --local-worker-demo --json
 
 These tasks are deterministic in `local_demo fallback` mode. They do not call
 live APIs or download models.
+
+N+5.9A adds the **Gemma / Local Model Quality** lane. Use it to decide whether
+to stay on `local_demo`, manually pull `gemma3:4b`, or try a lighter manual
+fallback (`gemma3:1b` or `gemma3:270m`). The lane writes a quality plan but does
+not route production work to Gemma.
 
 ## Generated Outputs
 
@@ -57,6 +64,10 @@ Read the **Local Model / Easy Worker Lane** card. It shows Ollama status, Gemma
 status, active mode, readiness percentage, safe demo tasks, generated output
 paths, and the manual Gemma command. It also states no live APIs and no
 auto-downloads.
+
+Read the **Gemma / Local Model Quality** card for real model availability,
+manual approval status, the recommended manual command, quality evaluation
+status, and generated readiness files.
 
 ## What Still Requires Premium Models
 

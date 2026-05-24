@@ -7004,6 +7004,38 @@ async function handleApiRequest(request, response, requestUrl) {
     }
   }
 
+  async function runGemmaModelReadiness(argvTail, timeoutMs) {
+    const gemmaReadinessScript = path.join(repoRoot, "03_scripts", "gemma_model_readiness.py");
+    const py = resolvePython();
+    if (!py) {
+      return { ok: false, local_only: true, available: false, error: "Python interpreter not found" };
+    }
+    if (!fs.existsSync(gemmaReadinessScript)) {
+      return { ok: false, local_only: true, available: false, error: "Gemma model readiness script not found" };
+    }
+    const argv = [...py.baseArgs, gemmaReadinessScript, ...argvTail, "--json"];
+    let raw;
+    try {
+      raw = await runCommand(py.command, argv, { cwd: repoRoot, timeoutMs: timeoutMs || 45000 });
+    } catch (err) {
+      return { ok: false, local_only: true, available: false, error: String(err && err.message) };
+    }
+    if (!raw.ok) {
+      return {
+        ok: false,
+        local_only: true,
+        available: false,
+        error: raw.stderr || `exit ${raw.exitCode}`,
+        output: raw.stdout,
+      };
+    }
+    try {
+      return JSON.parse(raw.stdout);
+    } catch (_) {
+      return { ok: false, local_only: true, available: false, error: "Failed to parse Gemma readiness output" };
+    }
+  }
+
   async function runRepoKnowledgeMap(argvTail, timeoutMs) {
     const repoKnowledgeScript = path.join(repoRoot, "03_scripts", "ghoti_repo_knowledge_map.py");
     const py = resolvePython();
@@ -7106,6 +7138,38 @@ async function handleApiRequest(request, response, requestUrl) {
   if (request.method === "POST" && requestUrl.pathname === "/api/local-model-worker/write-demo-output") {
     // Fixed argv. Repo-local file generation only. Ghoti never runs ollama pull.
     sendJson(response, 200, await runLocalModelWorkerLane(["--write-demo-output"], 45000));
+    return;
+  }
+
+  // GET /api/gemma-readiness/status
+  if (request.method === "GET" && requestUrl.pathname === "/api/gemma-readiness/status") {
+    sendJson(response, 200, await runGemmaModelReadiness(["--status"], 45000));
+    return;
+  }
+
+  // GET /api/gemma-readiness/doctor
+  if (request.method === "GET" && requestUrl.pathname === "/api/gemma-readiness/doctor") {
+    sendJson(response, 200, await runGemmaModelReadiness(["--doctor"], 45000));
+    return;
+  }
+
+  // GET /api/gemma-readiness/recommend
+  if (request.method === "GET" && requestUrl.pathname === "/api/gemma-readiness/recommend") {
+    sendJson(response, 200, await runGemmaModelReadiness(["--recommend"], 45000));
+    return;
+  }
+
+  // GET /api/gemma-readiness/quality-plan
+  if (request.method === "GET" && requestUrl.pathname === "/api/gemma-readiness/quality-plan") {
+    sendJson(response, 200, await runGemmaModelReadiness(["--quality-plan"], 45000));
+    return;
+  }
+
+  // POST /api/gemma-readiness/write-readiness
+  if (request.method === "POST" && requestUrl.pathname === "/api/gemma-readiness/write-readiness") {
+    // Fixed argv. Repo-local file generation only. No downloads, no live API,
+    // no provider setup, and no production routing.
+    sendJson(response, 200, await runGemmaModelReadiness(["--write-readiness"], 60000));
     return;
   }
 
@@ -7227,6 +7291,13 @@ async function handleApiRequest(request, response, requestUrl) {
           available: true,
           mode: "local_demo_fallback_or_ollama_gemma",
           how_to_run: "Run local_model_worker_lane.py --status --json or POST /api/local-model-worker/write-demo-output. No live APIs, no auto-downloads.",
+        },
+        {
+          key: "gemma_local_model_quality",
+          label: "Gemma / Local Model Quality",
+          available: true,
+          mode: "manual_install_decision_and_quality_plan",
+          how_to_run: "Run gemma_model_readiness.py --doctor --json or GET /api/gemma-readiness/quality-plan. No live APIs, no auto-downloads, no ollama pull, production routing disabled.",
         },
         {
           key: "repo_knowledge_graphify_lane",

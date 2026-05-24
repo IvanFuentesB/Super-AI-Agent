@@ -5,12 +5,12 @@ Refresh compact context first with `python 03_scripts/ghoti_product_launcher.py 
 For the next milestone, inspect `14_context/repo_knowledge/generated/task_bundle_next_milestone.md`.
 
 Current truth:
-- Main hash: `84e880e7c3f774580a5e4ac340acd497af3027ee`
-- Latest clean milestone: N+5.7B - Repo Knowledge Context Retrieval landed on main
-- Current feature milestone: N+5.8A - Hermes Agent Workflow / Provider Setup Plan + Manual Bridge Readiness
+- Main hash: `6d1a9238d2caa4355e475904c6433310e6cb568b`
+- Latest clean milestone: N+5.8B - Hermes Manual Bridge Readiness landed on main
+- Current feature milestone: N+5.9A - Real Gemma Install / Model Availability Decision + Local Task Quality Evaluation
 - Graphify runtime: roadmap only/not wired; no external repo runtime; no network.
 - Hermes setup/provider config/Telegram/tokens remain manual later.
 - UI-TARS remains observation-only.
 
 Next recommended milestone:
-N+5.9A - Real Gemma Install/Model Availability Decision + Local Task Quality Evaluation
+N+6.0A - Human-Approved Gemma Install + First Real Local Model Evaluation
