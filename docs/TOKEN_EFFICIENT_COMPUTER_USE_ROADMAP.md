@@ -22,18 +22,21 @@
 ## Gemma / Local Model Quality
 
 - Current implementation: local readiness and quality-plan files under
-  `14_context/local_model_readiness/generated/`.
+  `14_context/local_model_readiness/generated/`, plus N+6.0A evaluation runs
+  under `14_context/local_model_evaluation/runs/`.
 - Current commands:
   `python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json`,
   `python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json`,
+  `python 03_scripts/ghoti_product_launcher.py --local-model-eval --json`,
   and `python 03_scripts/ghoti_product_launcher.py --gemma-write-readiness --json`.
-- Current truth: Ollama is checked locally, Gemma is not claimed unless
-  `ollama list` shows an installed Gemma model, and `local_demo fallback`
-  remains the safe mode when no Gemma model is available.
-- Manual command candidates are documented, but Codex must not run
-  `ollama pull` automatically.
+- Current truth: N+6.0A installed `gemma3:4b` after explicit human approval;
+  future truth must still be verified with `ollama list`.
+- First real local quality eval: 86%, 6 of 7 tasks passed. The failed
+  repo-bundle task hallucinated an external bundle, so routing remains blocked.
+- Manual command candidates are documented, but Codex must not run additional
+  `ollama pull` commands automatically.
 - Production routing to Gemma remains disabled until a later audited milestone
-  runs a real local quality evaluation after human-approved install.
+  wraps tasks tightly enough to avoid repo-context hallucination.
 
 ## Repo Knowledge / Graphify Lane
 

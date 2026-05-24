@@ -1,7 +1,7 @@
 {
-  "mode": "local_demo",
-  "model": "local_demo",
-  "real_gemma_quality_status": "pending_manual_install",
+  "mode": "gemma_available_not_invoked",
+  "model": "gemma3:4b",
+  "real_gemma_quality_status": "available_but_not_run_by_default",
   "tasks_total": 7,
   "tasks_passed": 7,
   "score_percent": 55,
@@ -10,6 +10,7 @@
   "latency_summary": "deterministic local_demo; no model latency measured",
   "production_routing_recommended": false,
   "notes": [
+    "Gemma is installed, but N+5.9A does not enable production routing or hidden model use.",
     "This score is a plumbing/fallback score, not real Gemma quality.",
     "Production routing remains disabled.",
     "Run a future human-approved real model evaluation after installing Gemma."

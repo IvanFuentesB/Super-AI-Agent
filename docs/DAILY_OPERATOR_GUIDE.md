@@ -51,6 +51,7 @@ python 03_scripts/ghoti_product_launcher.py --local-worker-demo --json
 python 03_scripts/ghoti_product_launcher.py --gemma-status --json
 python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json
 python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json
+python 03_scripts/ghoti_product_launcher.py --local-model-eval --json
 python 03_scripts/ghoti_product_launcher.py --repo-map --json
 python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json
 python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json
@@ -161,6 +162,8 @@ python 03_scripts/gemma_model_readiness.py --status --json
 python 03_scripts/gemma_model_readiness.py --doctor --json
 python 03_scripts/gemma_model_readiness.py --recommend --json
 python 03_scripts/gemma_model_readiness.py --quality-plan --json
+python 03_scripts/gemma_model_readiness.py --local-model-eval --json
+python 03_scripts/gemma_model_readiness.py --write-evaluation --json
 python 03_scripts/gemma_model_readiness.py --write-readiness --json
 ```
 
@@ -168,10 +171,12 @@ Generated files live under:
 
 ```text
 14_context/local_model_readiness/generated/
+14_context/local_model_evaluation/runs/
 ```
 
 Start with `gemma_readiness_status.md`, `gemma_install_decision.md`,
 `gemma_manual_commands.md`, and `local_task_quality_plan.md`. See
+[Human-Approved Gemma Install Log](HUMAN_APPROVED_GEMMA_INSTALL_LOG.md),
 [Gemma Model Install Decision](GEMMA_MODEL_INSTALL_DECISION.md) and
 [Local Model Quality Evaluation Guide](LOCAL_MODEL_QUALITY_EVALUATION_GUIDE.md).
 
@@ -180,12 +185,18 @@ Ghoti must not run them automatically. Manual approval is required before any
 model download, and production routing remains disabled until a later audited
 milestone proves quality.
 
+N+6.0A may write a first local evaluation run under
+`14_context/local_model_evaluation/runs/`. If `gemma3:4b` is missing, that run is
+a controlled fallback. If `gemma3:4b` is installed, it records real local model
+outputs and a score, while still keeping production routing disabled.
+
 ## local_demo fallback
 
 `local_demo fallback` means Ghoti keeps the workflow local and truthful when a
-real local model is unavailable. In the current baseline, Ollama is available
-but a Gemma model is missing, so memory compression/status tools report
-`fallback_mode=local_demo` instead of pretending Gemma is active.
+real local model is unavailable or not trustworthy enough for a task. In N+6.0A,
+`gemma3:4b` was installed after explicit human approval and the first local eval
+scored 86%, but one repo-bundle task hallucinated. Keep fallback available and
+keep production routing disabled until a later audited routing milestone.
 
 ## Hermes is currently allowed
 

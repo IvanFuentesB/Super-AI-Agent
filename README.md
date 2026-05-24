@@ -44,6 +44,7 @@ Daily guide:
 - [Local Model / Gemma Setup Guide](docs/LOCAL_MODEL_GEMMA_SETUP_GUIDE.md)
 - [Easy Worker Lane Guide](docs/EASY_WORKER_LANE_GUIDE.md)
 - [Gemma Model Install Decision](docs/GEMMA_MODEL_INSTALL_DECISION.md)
+- [Human-Approved Gemma Install Log](docs/HUMAN_APPROVED_GEMMA_INSTALL_LOG.md)
 - [Local Model Quality Evaluation Guide](docs/LOCAL_MODEL_QUALITY_EVALUATION_GUIDE.md)
 - [Repo Knowledge Map Guide](docs/REPO_KNOWLEDGE_MAP_GUIDE.md)
 - [Graphify Repo Knowledge Roadmap](docs/GRAPHIFY_REPO_KNOWLEDGE_ROADMAP.md)
@@ -59,6 +60,7 @@ Daily guide:
 - Gemma readiness: `python 03_scripts/ghoti_product_launcher.py --gemma-status --json`
 - Gemma doctor: `python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json`
 - Gemma quality plan: `python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json`
+- Local model eval: `python 03_scripts/ghoti_product_launcher.py --local-model-eval --json`
 - Repo map: `python 03_scripts/ghoti_product_launcher.py --repo-map --json`
 - Next bundle: `python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json`
 - Hermes bridge status: `python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json`
@@ -76,6 +78,8 @@ Daily guide:
   outputs under `14_context/local_worker/generated/`.
 - Show Gemma readiness, manual install decision, and local task quality plan
   under `14_context/local_model_readiness/generated/`.
+- Record a human-approved Gemma preflight and first local quality evaluation
+  under `14_context/local_model_evaluation/runs/`.
 - Generate a local repo knowledge map, latest report index, subsystem index,
   task bundles, and a focused next prompt under `14_context/repo_knowledge/generated/`.
 - Generate Hermes manual bridge readiness files, skills index, setup checklist,
@@ -207,10 +211,15 @@ Generated files:
 Current Ollama/Gemma truth:
 
 - Ollama is available in the verified local baseline: `ollama version is 0.24.0`.
-- No Gemma model is currently installed, so `local_demo` fallback is active.
+- N+6.0A ran the human-approved local command `ollama pull gemma3:4b`; verify
+  current model presence with `ollama list`.
+- If `gemma3:4b` is present, local worker status reports `ollama_gemma`.
+- `local_demo` fallback remains available and must be used whenever the model is
+  missing, weak, too slow, or unsafe for a task.
 - Local model reachability never means local models drive operator actions.
 - Ghoti shows the manual command `ollama pull gemma3:4b`, but never runs it
-  automatically. No live APIs and no auto-downloads.
+  automatically outside the explicit N+6.0A human-approved pull. No live APIs
+  and no provider setup.
 
 ## Gemma Readiness And Quality Plan
 
@@ -221,10 +230,13 @@ python 03_scripts/gemma_model_readiness.py --status --json
 python 03_scripts/gemma_model_readiness.py --doctor --json
 python 03_scripts/gemma_model_readiness.py --recommend --json
 python 03_scripts/gemma_model_readiness.py --quality-plan --json
+python 03_scripts/gemma_model_readiness.py --local-model-eval --json
+python 03_scripts/gemma_model_readiness.py --write-evaluation --json
 python 03_scripts/gemma_model_readiness.py --write-readiness --json
 python 03_scripts/ghoti_product_launcher.py --gemma-status --json
 python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json
 python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json
+python 03_scripts/ghoti_product_launcher.py --local-model-eval --json
 ```
 
 Gemma readiness is local-only. It checks Ollama, lists installed models, reports
@@ -233,6 +245,15 @@ decision files. It does not run `ollama pull`, call live APIs, use provider
 tokens, or enable production routing. If Gemma is missing, `local_demo` fallback
 remains active.
 
+N+6.0A adds the **Human-approved Gemma install** and first local evaluation
+packet. The only approved install command for that milestone is
+`ollama pull gemma3:4b`; Ghoti records preflight and evaluation files but keeps
+production routing disabled. If the pull fails or Gemma is absent, the eval
+truthfully reports controlled `local_demo` fallback instead of claiming real
+model quality. In the current N+6.0A run, `gemma3:4b` installed successfully and
+the first real local evaluation scored 86% with 6 of 7 tasks passing; one
+repo-bundle task hallucinated, so routing remains blocked.
+
 Generated files:
 
 - `14_context/local_model_readiness/generated/gemma_readiness_status.md`
@@ -240,6 +261,8 @@ Generated files:
 - `14_context/local_model_readiness/generated/gemma_manual_commands.md`
 - `14_context/local_model_readiness/generated/local_task_quality_plan.md`
 - `14_context/local_model_readiness/generated/local_task_quality_rubric.json`
+- `14_context/local_model_evaluation/runs/<timestamp>_gemma_preflight/`
+- `14_context/local_model_evaluation/runs/<timestamp>_gemma3_4b_quality_eval/`
 
 ## Repo Knowledge / Graphify Lane
 

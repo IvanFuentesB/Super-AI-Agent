@@ -1,7 +1,7 @@
-        # Local Demo Quality Eval
+        # Local Demo Baseline
 
-        Mode: `gemma_available_not_invoked`.
-        Score: `55`.
+        Mode: `local_demo`
+        Score: `55`
 
         - `summarize_latest_report`: deterministic_template_available
 - `human_status_paragraph`: deterministic_template_available
@@ -11,4 +11,4 @@
 - `unsafe_request_detection`: deterministic_template_available
 - `ten_bullet_report_compression`: deterministic_template_available
 
-        This validates fallback plumbing only. It is not proof of real Gemma quality.
+        This is deterministic fallback plumbing, not real model quality.

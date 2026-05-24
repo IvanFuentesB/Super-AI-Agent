@@ -1,6 +1,6 @@
 # Codex-Only Workflow
 
-Current baseline: N+5.8B clean/Hermes-manual-bridge-readiness on main.
+Current baseline: N+5.9B clean/Gemma-readiness-local-quality-plan on main.
 
 Previous clean baseline: N+5.7B clean/repo-knowledge-context-retrieval on main
 at `84e880e7c3f774580a5e4ac340acd497af3027ee`.
@@ -17,6 +17,7 @@ local_worker = python 03_scripts/local_model_worker_lane.py --status --json
 gemma_status = python 03_scripts/ghoti_product_launcher.py --gemma-status --json
 gemma_doctor = python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json
 gemma_quality = python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json
+local_model_eval = python 03_scripts/ghoti_product_launcher.py --local-model-eval --json
 repo_map = python 03_scripts/ghoti_repo_knowledge_map.py --write --json
 repo_bundle = python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json
 hermes_bridge = python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json
@@ -34,8 +35,9 @@ for inspection.
   generated runtime bundles.
 - Do not perform live account actions, posting, money movement, trading, legal
   actions, provider setup, or token setup.
-- Do not run `ollama pull` from Codex. Gemma installation is a later
-  human-approved command, not an automatic workflow.
+- Do not run `ollama pull` from Codex unless the current prompt explicitly
+  approves the exact model command. N+6.0A approved exactly one local
+  `ollama pull gemma3:4b`; no extra model pulls are allowed.
 - Do not claim hidden or independent operation. Ghoti is supervised,
   local-first, and approval-gated.
 - Keep unsafe browser/computer-use behavior blocked.
@@ -102,6 +104,12 @@ Check Gemma readiness and quality plan:
 
 ```text
 Run python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json, python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json, and python 03_scripts/ghoti_product_launcher.py --gemma-write-readiness --json. Confirm Ollama status, Gemma installed yes/no, local_demo fallback when missing, manual approval required before model download, no ollama pull performed, production routing disabled, and generated files under 14_context/local_model_readiness/generated/. See docs/GEMMA_MODEL_INSTALL_DECISION.md and docs/LOCAL_MODEL_QUALITY_EVALUATION_GUIDE.md.
+```
+
+Check first local model eval:
+
+```text
+Run python 03_scripts/ghoti_product_launcher.py --local-model-eval --json. Confirm the model, score, task pass count, safety/JSON flags, production routing disabled, and latest run path under 14_context/local_model_evaluation/runs/. Do not treat a real model score as permission for autonomous routing.
 ```
 
 Generate focused repo context:

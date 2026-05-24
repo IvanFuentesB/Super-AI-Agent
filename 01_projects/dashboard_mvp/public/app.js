@@ -6938,6 +6938,9 @@ refreshLocalOrchestrator();
     setText("gemma-local-worker-readiness", String(data.local_worker_readiness_percent || 0) + "%");
     setText("gemma-manual-command", data.recommended_manual_command || "ollama pull gemma3:4b");
     setText("gemma-quality-status", data.quality_evaluation_status || "pending/not run");
+    setText("gemma-real-eval-status", data.real_local_evaluation_status || data.quality_evaluation_status || "not run");
+    setText("gemma-eval-score", data.score_percent !== undefined ? String(data.score_percent) + "%" : (data.latest_eval_score_percent !== null && data.latest_eval_score_percent !== undefined ? String(data.latest_eval_score_percent) + "%" : "not run"));
+    setText("gemma-latest-eval-run", data.run_dir || data.latest_eval_run_path || "14_context/local_model_evaluation/runs/");
     setText("gemma-output-path", paths["gemma_readiness_status.md"] || "14_context/local_model_readiness/generated/gemma_readiness_status.md");
     setText("gemma-status-line", data.status_line || "Gemma readiness loaded.");
   }
@@ -6980,6 +6983,18 @@ refreshLocalOrchestrator();
         : "Quality plan loaded.");
     } catch (err) {
       setResult("Gemma quality plan failed: " + (err && err.message));
+    }
+  });
+  bind("gemma-local-eval-btn", async function () {
+    setResult("Loading local model evaluation summary...");
+    try {
+      const data = await callGemma("/api/gemma-readiness/local-model-eval", "GET");
+      renderStatus(data && data.status ? Object.assign({}, data.status, data) : data);
+      setResult(data && data.ok
+        ? "Local eval loaded: mode " + data.mode + ", model " + data.model + ", score " + data.score_percent + "%. Production routing remains disabled."
+        : "Local eval reported unavailable: " + ((data && data.error) || "unknown"));
+    } catch (err) {
+      setResult("Local eval failed: " + (err && err.message));
     }
   });
   bind("gemma-write-btn", async function () {
