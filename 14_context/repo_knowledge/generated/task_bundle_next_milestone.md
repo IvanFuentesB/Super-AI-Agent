@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Prepare N+6.1A Local Model Routing + Real Worker Task Integration after a clean N+6.0A evaluation.
+Prepare N+6.1A constrained Gemma worker routing with a repo-bundle hallucination guard before any Hermes or computer-use expansion.
 
 ## Files To Inspect First
 
@@ -76,4 +76,4 @@ Prepare N+6.1A Local Model Routing + Real Worker Task Integration after a clean 
 
 ## Next Recommended Prompt
 
-Plan N+6.1A Local Model Routing + Real Worker Task Integration only if N+6.0A installed and evaluated a real local model cleanly. No live APIs, provider setup, Telegram setup, or production routing without audit.
+Plan N+6.1A constrained Gemma worker routing only after reading the N+6.0A eval. Use known repo-map bundle IDs only, reject invented bundle/file claims, require source metadata, fall back to local_demo when the guard fails, never execute or edit from model output, and keep production routing disabled unless the audit gate explicitly clears it. Then prioritize N+6.2A Hermes manual bridge verification and N+6.3A safe computer-use preparation; no live APIs/provider setup/Telegram/browser automation.

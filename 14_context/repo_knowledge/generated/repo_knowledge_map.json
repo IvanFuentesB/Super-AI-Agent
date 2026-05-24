@@ -3,7 +3,12 @@
   "lane": "repo_knowledge_graphify_lane",
   "milestone": "N+6.0A - Human-Approved Gemma Install + First Real Local Model Evaluation",
   "latest_clean_milestone": "N+5.9B - Gemma Readiness / Local Quality Plan landed on main",
-  "next_recommended_milestone": "N+6.1A - Local Model Routing + Real Worker Task Integration",
+  "next_recommended_milestone": "N+6.1A - Constrained Gemma Worker Routing + Repo-Bundle Hallucination Guard",
+  "roadmap_priority_sequence": [
+    "N+6.1A - Constrained Gemma worker routing for boring/simple local tasks, with known repo-bundle IDs only and fallback on guard failure.",
+    "N+6.2A - Hermes Agent Workflow / Manual Bridge Verification for faster supervised task execution; safe probes only, no tokens, no provider setup.",
+    "N+6.3A - Safe Computer-Use Preparation with Gemma + Hermes + UI-TARS observation + Browser Harness/Vercel agent-browser roadmap; observation first, human approval for every click/type/live-account action."
+  ],
   "local_only": true,
   "external_api_used": false,
   "live_api_used": false,
@@ -13,7 +18,7 @@
   "graphify_runtime": "roadmap_only_not_wired",
   "readiness_percent": 55,
   "status_line": "Repo knowledge readiness: 55%. Local file map and task bundles are available. Graphify runtime: roadmap only/not wired; no external repo runtime; no network.",
-  "generated_at": "2026-05-24T14:55:17Z",
+  "generated_at": "2026-05-24T18:40:40Z",
   "main_hash": "20e1dce1e89f15a337054864560b95b82233877c",
   "launcher_command": "python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard",
   "dashboard_url": "http://127.0.0.1:3210",
@@ -74,6 +79,18 @@
     "next-milestone": "14_context/repo_knowledge/generated/task_bundle_next_milestone.md"
   },
   "latest_reports": [
+    {
+      "path": "14_context/codex_n6_0a_roadmap_priority_hermes_computer_use_update.md",
+      "name": "codex_n6_0a_roadmap_priority_hermes_computer_use_update.md",
+      "kind": "report",
+      "rank": [
+        6,
+        0,
+        1
+      ],
+      "modified_unix": 1779647535,
+      "verdict_hint": "verdict not detected"
+    },
     {
       "path": "14_context/codex_n5_9b_main_merge_gemma_readiness_local_quality_plan.md",
       "name": "codex_n5_9b_main_merge_gemma_readiness_local_quality_plan.md",
@@ -181,18 +198,6 @@
       ],
       "modified_unix": 1779630863,
       "verdict_hint": "CLEAN PASS / N+5.5B MAIN MERGE READY"
-    },
-    {
-      "path": "14_context/codex_n5_5a_local_memory_obsidian_context_pack_brain_upgrade.md",
-      "name": "codex_n5_5a_local_memory_obsidian_context_pack_brain_upgrade.md",
-      "kind": "report",
-      "rank": [
-        5,
-        5,
-        1
-      ],
-      "modified_unix": 1779630863,
-      "verdict_hint": "CLEAN PASS / LOCAL MEMORY CONTEXT PACK READY"
     }
   ],
   "important_files": [
@@ -202,7 +207,7 @@
       "description": "Public product overview, quickstart, local-first architecture, and safety model.",
       "why_it_matters": "First file Ivan or GitHub visitors read before running Ghoti.",
       "exists": true,
-      "size_bytes": 20473,
+      "size_bytes": 21803,
       "snippet_hint": "# Ghoti / Super-AI-Agent"
     },
     {
@@ -220,7 +225,7 @@
       "description": "Builds compact Ghoti context packs for Codex, ChatGPT, Claude, and Obsidian.",
       "why_it_matters": "Main token-saving continuity tool.",
       "exists": true,
-      "size_bytes": 35246,
+      "size_bytes": 36874,
       "snippet_hint": "\"\"\"Build compact Ghoti context packs for local memory handoff."
     },
     {
@@ -247,7 +252,7 @@
       "description": "Detects Gemma availability, writes manual install decision files, and prepares local task quality evaluation.",
       "why_it_matters": "N+6.0A preflight and local model evaluation layer without provider setup or production routing.",
       "exists": true,
-      "size_bytes": 62772,
+      "size_bytes": 62976,
       "snippet_hint": "\"\"\"Gemma model availability and local task quality readiness."
     },
     {
@@ -364,7 +369,7 @@
       "description": "Daily operator usage, troubleshooting, and cleanup guide.",
       "why_it_matters": "Turns milestone work into repeatable human workflow.",
       "exists": true,
-      "size_bytes": 13561,
+      "size_bytes": 14736,
       "snippet_hint": "# Daily Operator Guide"
     },
     {
@@ -373,7 +378,7 @@
       "description": "Codex-only worktree, branch, audit, and safety workflow.",
       "why_it_matters": "Keeps future Codex work isolated and auditable.",
       "exists": true,
-      "size_bytes": 7210,
+      "size_bytes": 8461,
       "snippet_hint": "# Codex-Only Workflow"
     },
     {
@@ -409,7 +414,7 @@
       "description": "Human-approved gemma3:4b install scope and generated run locations.",
       "why_it_matters": "Keeps the one-model approval separate from future routing or provider setup.",
       "exists": true,
-      "size_bytes": 2523,
+      "size_bytes": 3530,
       "snippet_hint": "# Human-Approved Gemma Install Log"
     },
     {
@@ -418,7 +423,7 @@
       "description": "Local model quality rubric and evaluation workflow.",
       "why_it_matters": "Keeps real Gemma quality separate from local_demo fallback plumbing.",
       "exists": true,
-      "size_bytes": 2748,
+      "size_bytes": 3611,
       "snippet_hint": "# Local Model Quality Evaluation Guide"
     },
     {
@@ -427,7 +432,7 @@
       "description": "Easy worker lane usage and fallback guide.",
       "why_it_matters": "Documents safe credit-saving local tasks.",
       "exists": true,
-      "size_bytes": 4395,
+      "size_bytes": 5031,
       "snippet_hint": "# Easy Worker Lane Guide"
     },
     {
@@ -445,7 +450,7 @@
       "description": "Hermes Agent workflow and manual bridge guide.",
       "why_it_matters": "Explains safe probes, generated readiness files, and manual later boundaries.",
       "exists": true,
-      "size_bytes": 1629,
+      "size_bytes": 2322,
       "snippet_hint": "# Hermes Agent Workflow Guide"
     },
     {
@@ -463,7 +468,7 @@
       "description": "Future computer-use roadmap and safety gates.",
       "why_it_matters": "Keeps click/type/autonomy future-gated.",
       "exists": true,
-      "size_bytes": 1277,
+      "size_bytes": 2312,
       "snippet_hint": "# Computer-Use Roadmap"
     },
     {
@@ -472,7 +477,7 @@
       "description": "Token-efficiency, local models, memory, and Graphify planning.",
       "why_it_matters": "Connects repo knowledge with the broader token-saving roadmap.",
       "exists": true,
-      "size_bytes": 3568,
+      "size_bytes": 4843,
       "snippet_hint": "# Token-Efficient Computer-Use Roadmap"
     },
     {
@@ -490,7 +495,7 @@
       "description": "Latest generated context pack.",
       "why_it_matters": "Short current-state handoff source.",
       "exists": true,
-      "size_bytes": 9807,
+      "size_bytes": 10569,
       "snippet_hint": "# Ghoti Current Context Pack"
     },
     {
@@ -519,6 +524,15 @@
       "exists": true,
       "size_bytes": 7514,
       "snippet_hint": "import json"
+    },
+    {
+      "path": "14_context/codex_n6_0a_roadmap_priority_hermes_computer_use_update.md",
+      "subsystem": "reports/14_context",
+      "description": "report milestone report",
+      "why_it_matters": "verdict not detected",
+      "exists": true,
+      "size_bytes": 4136,
+      "snippet_hint": "verdict not detected"
     },
     {
       "path": "14_context/codex_n5_9b_main_merge_gemma_readiness_local_quality_plan.md",
@@ -600,15 +614,6 @@
       "exists": true,
       "size_bytes": 5497,
       "snippet_hint": "CLEAN PASS / N+5.5B MAIN MERGE READY"
-    },
-    {
-      "path": "14_context/codex_n5_5a_local_memory_obsidian_context_pack_brain_upgrade.md",
-      "subsystem": "reports/14_context",
-      "description": "report milestone report",
-      "why_it_matters": "CLEAN PASS / LOCAL MEMORY CONTEXT PACK READY",
-      "exists": true,
-      "size_bytes": 9552,
-      "snippet_hint": "CLEAN PASS / LOCAL MEMORY CONTEXT PACK READY"
     }
   ],
   "subsystems": {
@@ -667,7 +672,6 @@
       "docs/BLOCKED_UNSAFE_AUTOMATION.md"
     ],
     "reports/14_context": [
-      "14_context/codex_n5_5a_local_memory_obsidian_context_pack_brain_upgrade.md",
       "14_context/codex_n5_5b_main_merge_local_memory_context_pack.md",
       "14_context/codex_n5_6a_local_model_gemma_setup_truth_easy_worker_lane.md",
       "14_context/codex_n5_6b_main_merge_local_model_easy_worker_lane.md",
@@ -676,7 +680,8 @@
       "14_context/codex_n5_8a_hermes_agent_workflow_provider_setup_plan_manual_bridge.md",
       "14_context/codex_n5_8b_main_merge_hermes_manual_bridge_readiness.md",
       "14_context/codex_n5_9a_gemma_model_availability_local_task_quality_evaluation.md",
-      "14_context/codex_n5_9b_main_merge_gemma_readiness_local_quality_plan.md"
+      "14_context/codex_n5_9b_main_merge_gemma_readiness_local_quality_plan.md",
+      "14_context/codex_n6_0a_roadmap_priority_hermes_computer_use_update.md"
     ],
     "supervised content demo": [
       "03_scripts/supervised_content_mvp_runner.py"

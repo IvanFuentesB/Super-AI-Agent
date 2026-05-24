@@ -71,14 +71,27 @@ Score each task on:
 ## Routing Rule
 
 Do not route production work to Gemma by default; production routing remains disabled.
-A later human-approved
-milestone should install a model, run the quality plan, inspect outputs, and
-only then decide whether any low-risk tasks can use the local model.
+N+6.0A proved Gemma can help, but one repo-bundle task hallucinated a
+nonexistent external bundle. N+6.1A must therefore build constrained routing
+with a repo-bundle hallucination guard before any real worker task integration.
+
+Allowed N+6.1A tasks are deliberately boring and local: summarize latest report,
+status paragraph, Codex next prompt, safety classification, context bundle
+summary, next milestone outline, and report-to-bullets. The router must use
+known repo-map bundle IDs only, reject invented bundle or file claims, require
+source metadata, fall back to `local_demo` if the guard fails, and never execute
+commands or edit files from model output.
 
 Local Gemma should start with easy, low-risk work only: summaries,
 classifications, tracker rows, compact memory, simple drafts, and status
 extraction. Codex, Claude, and ChatGPT remain for hard coding, audits, browser
 work, and complex reasoning until local quality is proven.
+
+After N+6.1A is clean, the roadmap priority moves to N+6.2A Hermes Agent
+Workflow / Manual Bridge Verification, then N+6.3A Safe Computer-Use
+Preparation with Gemma, Hermes, UI-TARS observation, Browser Harness, and Vercel
+agent-browser roadmap. Those milestones still exclude provider setup, Telegram,
+live APIs, uncontrolled click/type, and autonomous account actions.
 
 ## Safety Notes
 

@@ -28,7 +28,12 @@ LAUNCHER_COMMAND = "python 03_scripts/ghoti_product_launcher.py --start-dashboar
 DASHBOARD_URL = "http://127.0.0.1:3210"
 LATEST_CLEAN_MILESTONE = "N+5.9B - Gemma Readiness / Local Quality Plan landed on main"
 CURRENT_MILESTONE = "N+6.0A - Human-Approved Gemma Install + First Real Local Model Evaluation"
-NEXT_RECOMMENDED_MILESTONE = "N+6.1A - Local Model Routing + Real Worker Task Integration"
+NEXT_RECOMMENDED_MILESTONE = "N+6.1A - Constrained Gemma Worker Routing + Repo-Bundle Hallucination Guard"
+ROADMAP_PRIORITY_SEQUENCE = [
+    "N+6.1A - Constrained Gemma worker routing for boring/simple local tasks, with known repo-bundle IDs only and fallback on guard failure.",
+    "N+6.2A - Hermes Agent Workflow / Manual Bridge Verification for faster supervised task execution; safe probes only, no tokens, no provider setup.",
+    "N+6.3A - Safe Computer-Use Preparation with Gemma + Hermes + UI-TARS observation + Browser Harness/Vercel agent-browser roadmap; observation first, human approval for every click/type/live-account action.",
+]
 REPO_KNOWLEDGE_DIR = REPO_ROOT / "14_context" / "repo_knowledge" / "generated"
 HERMES_WORKFLOW_DIR = REPO_ROOT / "14_context" / "hermes_workflow" / "generated"
 GEMMA_READINESS_DIR = REPO_ROOT / "14_context" / "local_model_readiness" / "generated"
@@ -260,6 +265,7 @@ def _static_truth() -> Dict[str, object]:
         "latest_clean_milestone": LATEST_CLEAN_MILESTONE,
         "current_milestone": CURRENT_MILESTONE,
         "next_recommended_milestone": NEXT_RECOMMENDED_MILESTONE,
+        "roadmap_priority_sequence": ROADMAP_PRIORITY_SEQUENCE,
         "hermes": {
             "wsl_status": "installed",
             "path": "/home/ai_sandbox/.local/bin/hermes",
@@ -403,6 +409,7 @@ def _render_context_pack(facts: Dict[str, object], status_short: str) -> str:
     works = "\n".join(f"- {item}" for item in facts["works_now"])
     pending = "\n".join(f"- {item}" for item in facts["pending_manual"])
     locks = "\n".join(f"- {item}" for item in facts["safety_locks"])
+    roadmap = "\n".join(f"- {item}" for item in facts["roadmap_priority_sequence"])
     model = facts["local_model_truth"]
     gemma = facts["gemma_readiness_truth"]
     return _strip_template_indent(f"""\
@@ -420,6 +427,15 @@ def _render_context_pack(facts: Dict[str, object], status_short: str) -> str:
         - Latest clean milestone: {facts['latest_clean_milestone']}
         - Current milestone: {facts['current_milestone']}
         - Next recommended milestone: {facts['next_recommended_milestone']}
+
+        ## Roadmap Priority
+
+        {roadmap}
+
+        Keep Hermes and safe computer-use high priority because they are the
+        path to long, boring supervised task execution without burning paid
+        credits. Do not start N+6.2A or N+6.3A until N+6.1A has a clean routing
+        guard and audit gate.
 
         ## Launch
 
@@ -567,6 +583,9 @@ def _render_codex_prompt(facts: Dict[str, object]) -> str:
         - Telegram manual later/no token; No VPS.
         - Gemma model missing unless a new local check proves otherwise; local_demo fallback active.
         - Gemma / Local Model Quality files live under `14_context/local_model_readiness/generated/`; local model eval runs live under `14_context/local_model_evaluation/runs/`.
+        - N+6.1A must guard against repo-bundle hallucination before routing.
+        - N+6.2A should verify Hermes manual bridge workflow readiness without setup/tokens/live APIs.
+        - N+6.3A should prepare safe computer-use with observation first and human approval for every click/type/live-account action.
         - Obsidian/local memory present.
         - UI-TARS observation-only.
         - Adapter runner approval-gated/local-only.
@@ -577,9 +596,12 @@ def _render_codex_prompt(facts: Dict[str, object]) -> str:
         {NEXT_RECOMMENDED_MILESTONE}
 
         Ask Codex to create a feature branch, add focused tests first, implement only the
-        next local model routing changes, validate, push feature, then create a separate
-        audit branch. Do not run new `ollama pull` commands unless the human explicitly
-        approves them in that milestone.
+        constrained local model routing guard, validate, push feature, then create a
+        separate audit branch. If the routing guard passes, prioritize Hermes manual
+        bridge verification next, then safe computer-use preparation. Do not run new
+        `ollama pull` commands, Hermes setup, provider config, Telegram setup, live APIs,
+        or uncontrolled click/type actions unless a later human prompt explicitly approves
+        the exact action.
     """)
 
 
@@ -617,6 +639,7 @@ def _json_pack(facts: Dict[str, object], status_short: str) -> Dict[str, object]
         "latest_clean_milestone": facts["latest_clean_milestone"],
         "current_milestone": facts["current_milestone"],
         "next_recommended_milestone": facts["next_recommended_milestone"],
+        "roadmap_priority_sequence": facts["roadmap_priority_sequence"],
         "launcher_command": LAUNCHER_COMMAND,
         "dashboard_url": DASHBOARD_URL,
         "status_short": status_short,

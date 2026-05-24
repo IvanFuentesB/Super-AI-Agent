@@ -11,7 +11,9 @@ Current truth:
 - Graphify runtime: roadmap only/not wired; no external repo runtime; no network.
 - Hermes setup/provider config/Telegram/tokens remain manual later.
 - Gemma local evaluation runs live under `14_context/local_model_evaluation/runs/`; production routing remains disabled.
+- N+6.1A must guard against repo-bundle hallucination before routing boring local tasks.
+- After N+6.1A, prioritize N+6.2A Hermes manual bridge verification and N+6.3A safe computer-use preparation.
 - UI-TARS remains observation-only.
 
 Next recommended milestone:
-N+6.1A - Local Model Routing + Real Worker Task Integration
+N+6.1A - Constrained Gemma Worker Routing + Repo-Bundle Hallucination Guard

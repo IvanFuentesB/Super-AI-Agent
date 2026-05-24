@@ -81,3 +81,29 @@ real Gemma worker is available.
   the repo-bundle identification task hallucinated a nonexistent external bundle,
   so production routing remains disabled and N+6.1A should not route repo
   knowledge selection to Gemma without a tighter task wrapper and another audit.
+
+## Updated Roadmap Priority
+
+The next milestone is not broader autonomy. The next milestone is N+6.1A:
+constrained Gemma worker routing with a repo-bundle hallucination guard.
+
+N+6.1A may only attempt boring, offline local tasks:
+
+- summarize latest report
+- status paragraph
+- Codex next prompt
+- safety classification
+- context bundle summary
+- next milestone outline
+- report-to-bullets
+
+The router must use known repo-map bundle IDs only, reject invented bundle/file
+claims, require source metadata, fall back to `local_demo` if the guard fails,
+and never execute commands or edit files from model output.
+
+After N+6.1A passes a clean audit gate, prioritize N+6.2A Hermes Agent Workflow
+/ Manual Bridge Verification, then N+6.3A Safe Computer-Use Preparation with
+Gemma, Hermes, UI-TARS observation, Browser Harness, and Vercel agent-browser
+roadmap. Both remain local/safe preparation milestones: no provider setup,
+tokens, Telegram, live APIs, uncontrolled click/type, or autonomous account
+actions.

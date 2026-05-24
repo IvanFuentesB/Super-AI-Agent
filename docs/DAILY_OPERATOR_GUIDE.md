@@ -8,8 +8,13 @@ safe content demos, research plans, and future computer-use tooling from one
 truthful dashboard. It is not autonomous, it does not post, and it does not run
 live providers or account actions without explicit human approval.
 
-Current baseline: N+5.8B clean/Hermes-manual-bridge-readiness on main at
-`6d1a9238d2caa4355e475904c6433310e6cb568b`.
+Current main baseline: N+5.9B clean/Gemma-readiness-and-local-quality-plan on
+main at `20e1dce1e89f15a337054864560b95b82233877c`.
+
+Current feature/audit lane: N+6.0A installed `gemma3:4b` after explicit human
+approval and recorded the first real local evaluation. Production routing is
+still disabled because one repo-bundle task hallucinated a nonexistent external
+bundle.
 
 ## Launch
 
@@ -26,7 +31,8 @@ http://127.0.0.1:3210
 ## What to check first
 
 1. Open the dashboard and read Start Here / Daily Operator.
-2. Confirm Status Truth still says N+5.8B clean/Hermes-manual-bridge-readiness.
+2. Confirm Status Truth still says N+5.9B clean on main and N+6.0A local model
+   evaluation ready on the feature/audit branch when that branch is checked out.
 3. Confirm Hermes, Ollama/Gemma, Obsidian memory, UI-TARS, adapters, external
    sandbox, public audit, and readiness status are truthful.
 4. Confirm Local Model / Easy Worker Lane shows readiness percentage and
@@ -39,6 +45,24 @@ http://127.0.0.1:3210
    runtime, and no network.
 7. Run a smoke check before relying on the dashboard.
 8. Review the latest relevant report under `14_context/`.
+
+## Current roadmap priority
+
+The next work is ordered for paid-credit reduction and safer long-task
+automation:
+
+1. N+6.1A: constrained Gemma worker routing with a repo-bundle hallucination
+   guard. Use known repo-map bundle IDs only, reject invented bundle/file
+   claims, require source metadata, and fall back to `local_demo` if the guard
+   fails.
+2. N+6.2A: Hermes Agent Workflow / Manual Bridge Verification. Use safe probes
+   and manual bridge packets only. No tokens, provider setup, Telegram setup,
+   live APIs, or browser automation.
+3. N+6.3A: Safe Computer-Use Preparation with Gemma, Hermes, UI-TARS
+   observation, Browser Harness, and Vercel agent-browser roadmap. Observation
+   first; every click/type/live-account action stays human-approved.
+
+Do not start N+6.2A or N+6.3A until N+6.1A passes a clean guard/audit gate.
 
 ## Daily commands
 
