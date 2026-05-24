@@ -42,10 +42,13 @@ Local repo knowledge grouped by subsystem.
 - `docs/LOCAL_MEMORY_CONTEXT_PACK_GUIDE.md`
 
 ## local model/easy worker
+- `03_scripts/gemma_model_readiness.py`
 - `03_scripts/local_model_worker_lane.py`
 - `14_context/local_worker/generated/local_worker_status.md`
 - `docs/EASY_WORKER_LANE_GUIDE.md`
+- `docs/GEMMA_MODEL_INSTALL_DECISION.md`
 - `docs/LOCAL_MODEL_GEMMA_SETUP_GUIDE.md`
+- `docs/LOCAL_MODEL_QUALITY_EVALUATION_GUIDE.md`
 
 ## public/security audit
 - `03_scripts/model_council_tool_intake.py`
@@ -53,8 +56,6 @@ Local repo knowledge grouped by subsystem.
 - `docs/BLOCKED_UNSAFE_AUTOMATION.md`
 
 ## reports/14_context
-- `14_context/codex_n5_3a_main_merge_product_finish_local_mvp.md`
-- `14_context/codex_n5_3a_product_finish_remote_clean_audit.md`
 - `14_context/codex_n5_4a_first_real_operator_usability_pass.md`
 - `14_context/codex_n5_4b_main_merge_daily_operator_usability.md`
 - `14_context/codex_n5_5a_local_memory_obsidian_context_pack_brain_upgrade.md`
@@ -63,6 +64,8 @@ Local repo knowledge grouped by subsystem.
 - `14_context/codex_n5_6b_main_merge_local_model_easy_worker_lane.md`
 - `14_context/codex_n5_7a_graphify_repo_knowledge_map_context_retrieval.md`
 - `14_context/codex_n5_7b_main_merge_repo_knowledge_context_retrieval.md`
+- `14_context/codex_n5_8a_hermes_agent_workflow_provider_setup_plan_manual_bridge.md`
+- `14_context/codex_n5_8b_main_merge_hermes_manual_bridge_readiness.md`
 
 ## supervised content demo
 - `03_scripts/supervised_content_mvp_runner.py`

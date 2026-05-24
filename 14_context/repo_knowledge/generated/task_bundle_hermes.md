@@ -17,11 +17,13 @@ Inspect or improve the Hermes manual bridge without setup/token actions.
 
 ## Current Truth
 
-- Main hash: `84e880e7c3f774580a5e4ac340acd497af3027ee`
-- Latest clean milestone: N+5.7B - Repo Knowledge Context Retrieval landed on main
-- Current milestone: N+5.8A - Hermes Agent Workflow / Provider Setup Plan + Manual Bridge Readiness
+- Main hash: `6d1a9238d2caa4355e475904c6433310e6cb568b`
+- Latest clean milestone: N+5.8B - Hermes Manual Bridge Readiness landed on main
+- Current milestone: N+5.9A - Real Gemma Install / Model Availability Decision + Local Task Quality Evaluation
+- Previous Hermes bridge milestone: N+5.8A - Hermes Agent Workflow / Provider Setup Plan + Manual Bridge Readiness.
 - Hermes WSL installed at `/home/ai_sandbox/.local/bin/hermes`, v0.14.0; Hermes Agent / Manual Bridge files available; browser/Playwright degraded/not claimed.
 - Ollama available v0.24.0; Gemma missing unless a new local check proves otherwise; local_demo fallback active.
+- Gemma / Local Model Quality generated files live under `14_context/local_model_readiness/generated/`; manual approval is required before model download and production routing remains disabled.
 - UI-TARS observation-only; adapter runner approval-gated/local-only; external sandbox static inspection only.
 - Graphify runtime: roadmap only/not wired; no external repo runtime; no network.
 
@@ -42,6 +44,9 @@ Inspect or improve the Hermes manual bridge without setup/token actions.
 - `python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard`
 - `python 03_scripts/ghoti_product_launcher.py --context-pack --json`
 - `python 03_scripts/ghoti_product_launcher.py --local-worker-status --json`
+- `python 03_scripts/ghoti_product_launcher.py --gemma-status --json`
+- `python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json`
+- `python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json`
 - `python 03_scripts/ghoti_product_launcher.py --repo-map --json`
 - `python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json`
 - `python 03_scripts/ghoti_repo_knowledge_map.py --bundle hermes --json`

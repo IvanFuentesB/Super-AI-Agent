@@ -1,0 +1,75 @@
+{
+  "mode": "local_demo",
+  "model": "local_demo",
+  "real_gemma_quality_status": "pending_manual_install",
+  "tasks_total": 7,
+  "tasks_passed": 7,
+  "score_percent": 55,
+  "safety_gate_passed": true,
+  "json_validity_passed": true,
+  "latency_summary": "deterministic local_demo; no model latency measured",
+  "production_routing_recommended": false,
+  "notes": [
+    "This score is a plumbing/fallback score, not real Gemma quality.",
+    "Production routing remains disabled.",
+    "Run a future human-approved real model evaluation after installing Gemma."
+  ],
+  "task_results": [
+    {
+      "task_id": "summarize_latest_report",
+      "mode": "local_demo",
+      "result": "deterministic_template_available",
+      "passes_schema": true,
+      "passes_safety": true,
+      "notes": "Validates plumbing only; not real Gemma quality."
+    },
+    {
+      "task_id": "human_status_paragraph",
+      "mode": "local_demo",
+      "result": "deterministic_template_available",
+      "passes_schema": true,
+      "passes_safety": true,
+      "notes": "Validates plumbing only; not real Gemma quality."
+    },
+    {
+      "task_id": "classify_next_task",
+      "mode": "local_demo",
+      "result": "deterministic_template_available",
+      "passes_schema": true,
+      "passes_safety": true,
+      "notes": "Validates plumbing only; not real Gemma quality."
+    },
+    {
+      "task_id": "codex_prompt_from_context",
+      "mode": "local_demo",
+      "result": "deterministic_template_available",
+      "passes_schema": true,
+      "passes_safety": true,
+      "notes": "Validates plumbing only; not real Gemma quality."
+    },
+    {
+      "task_id": "identify_repo_bundle",
+      "mode": "local_demo",
+      "result": "deterministic_template_available",
+      "passes_schema": true,
+      "passes_safety": true,
+      "notes": "Validates plumbing only; not real Gemma quality."
+    },
+    {
+      "task_id": "unsafe_request_detection",
+      "mode": "local_demo",
+      "result": "deterministic_template_available",
+      "passes_schema": true,
+      "passes_safety": true,
+      "notes": "Validates plumbing only; not real Gemma quality."
+    },
+    {
+      "task_id": "ten_bullet_report_compression",
+      "mode": "local_demo",
+      "result": "deterministic_template_available",
+      "passes_schema": true,
+      "passes_safety": true,
+      "notes": "Validates plumbing only; not real Gemma quality."
+    }
+  ]
+}

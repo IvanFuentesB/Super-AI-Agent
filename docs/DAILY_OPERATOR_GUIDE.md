@@ -8,8 +8,8 @@ safe content demos, research plans, and future computer-use tooling from one
 truthful dashboard. It is not autonomous, it does not post, and it does not run
 live providers or account actions without explicit human approval.
 
-Current baseline: N+5.7B clean/repo-knowledge-context-retrieval on main at
-`84e880e7c3f774580a5e4ac340acd497af3027ee`.
+Current baseline: N+5.8B clean/Hermes-manual-bridge-readiness on main at
+`6d1a9238d2caa4355e475904c6433310e6cb568b`.
 
 ## Launch
 
@@ -26,16 +26,19 @@ http://127.0.0.1:3210
 ## What to check first
 
 1. Open the dashboard and read Start Here / Daily Operator.
-2. Confirm Status Truth still says N+5.7B clean/repo-knowledge-context-retrieval.
+2. Confirm Status Truth still says N+5.8B clean/Hermes-manual-bridge-readiness.
 3. Confirm Hermes, Ollama/Gemma, Obsidian memory, UI-TARS, adapters, external
    sandbox, public audit, and readiness status are truthful.
 4. Confirm Local Model / Easy Worker Lane shows readiness percentage and
    `local_demo fallback` when Gemma is missing.
-5. Confirm Repo Knowledge / Graphify Lane shows repo knowledge readiness,
+5. Confirm Gemma / Local Model Quality shows Ollama status, Gemma installed
+   status, readiness percentage, quality evaluation status, and manual
+   approval required before any model download.
+6. Confirm Repo Knowledge / Graphify Lane shows repo knowledge readiness,
    task bundles, latest report index, Graphify roadmap only, no external
    runtime, and no network.
-6. Run a smoke check before relying on the dashboard.
-7. Review the latest relevant report under `14_context/`.
+7. Run a smoke check before relying on the dashboard.
+8. Review the latest relevant report under `14_context/`.
 
 ## Daily commands
 
@@ -45,6 +48,9 @@ python 03_scripts/ghoti_product_launcher.py --smoke --json
 python 03_scripts/ghoti_product_launcher.py --context-pack --json
 python 03_scripts/ghoti_product_launcher.py --local-worker-status --json
 python 03_scripts/ghoti_product_launcher.py --local-worker-demo --json
+python 03_scripts/ghoti_product_launcher.py --gemma-status --json
+python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json
+python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json
 python 03_scripts/ghoti_product_launcher.py --repo-map --json
 python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json
 python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json
@@ -144,6 +150,36 @@ Start with `local_worker_status.md`, `status_paragraph.md`, and
 [Local Model / Gemma Setup Guide](LOCAL_MODEL_GEMMA_SETUP_GUIDE.md) and
 [Easy Worker Lane Guide](EASY_WORKER_LANE_GUIDE.md).
 
+## Gemma readiness and local quality
+
+Use the Gemma readiness lane to decide whether to stay in `local_demo`, install
+a Gemma model manually later, or run a quality evaluation after a human-approved
+install:
+
+```powershell
+python 03_scripts/gemma_model_readiness.py --status --json
+python 03_scripts/gemma_model_readiness.py --doctor --json
+python 03_scripts/gemma_model_readiness.py --recommend --json
+python 03_scripts/gemma_model_readiness.py --quality-plan --json
+python 03_scripts/gemma_model_readiness.py --write-readiness --json
+```
+
+Generated files live under:
+
+```text
+14_context/local_model_readiness/generated/
+```
+
+Start with `gemma_readiness_status.md`, `gemma_install_decision.md`,
+`gemma_manual_commands.md`, and `local_task_quality_plan.md`. See
+[Gemma Model Install Decision](GEMMA_MODEL_INSTALL_DECISION.md) and
+[Local Model Quality Evaluation Guide](LOCAL_MODEL_QUALITY_EVALUATION_GUIDE.md).
+
+The readiness lane may recommend commands such as `ollama pull gemma3:4b`, but
+Ghoti must not run them automatically. Manual approval is required before any
+model download, and production routing remains disabled until a later audited
+milestone proves quality.
+
 ## local_demo fallback
 
 `local_demo fallback` means Ghoti keeps the workflow local and truthful when a
@@ -194,6 +230,8 @@ Not allowed:
 - Hermes provider setup
 - Telegram connection and tokens
 - real Gemma model pull/install
+- Gemma production routing
+- local model quality evaluation against a real Gemma model
 - Ruflo source/runtime enablement
 - external Graphify runtime integration
 - browser/Playwright repair and verification
@@ -249,11 +287,25 @@ Do not run setup or provider config during daily checks.
 Run:
 
 ```powershell
+python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json
 python 03_scripts/local_memory_compression_bridge.py --status --json
 ```
 
 If Gemma is missing, expect `local_demo fallback`. That is a safe degraded mode,
 not a failure.
+
+### Gemma install decision
+
+Run:
+
+```powershell
+python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json
+python 03_scripts/ghoti_product_launcher.py --gemma-write-readiness --json
+```
+
+Inspect `14_context/local_model_readiness/generated/gemma_manual_commands.md`.
+The command `ollama pull gemma3:4b` is a human decision, not an automatic Codex
+action. Smaller manual options may be listed for fast tests.
 
 ### public audit warnings
 
