@@ -139,7 +139,7 @@ def _report_rank(name: str) -> List[int]:
     return [int(match.group(1)), int(match.group(2)), suffix_rank]
 
 
-def discover_recent_reports(limit: int = 8) -> List[Dict[str, object]]:
+def discover_recent_reports(limit: int = 12) -> List[Dict[str, object]]:
     context_dir = REPO_ROOT / "14_context"
     reports: List[Dict[str, object]] = []
     try:
@@ -346,7 +346,7 @@ def _build_facts(generated_at: str) -> Dict[str, object]:
         "external_api_used": False,
         "generated_at": generated_at,
         "main_hash": _current_main_hash(),
-        "latest_reports": discover_recent_reports(limit=8),
+        "latest_reports": discover_recent_reports(limit=12),
         "local_model_truth": _probe_ollama_truth(),
         "gemma_readiness_truth": _probe_gemma_readiness(),
     })

@@ -105,6 +105,10 @@ Verified labels:
 
 Generated validation residue from context-pack, repo-map, Gemma readiness, and external sandbox probes was restored before this report was committed. The dashboard DOM smoke used the launcher state file and stopped only the recorded PID `72032`.
 
+## Merge-Gate Repair
+
+Post-report N+5 validation found that adding this merge report pushed the N+5.5B report outside the context-pack builder's eight-report window, while the context-pack contract still expects historical milestone anchors to remain visible. The merge gate widened the local report window to 12 recent reports in `03_scripts/ghoti_context_pack_builder.py`. No network calls, model downloads, provider setup, or safety boundary changes were made.
+
 ## Human Status
 
 Human status: Ghoti is about 84% complete toward the bigger local-first agent OS vision. The local MVP is stable and usable. Current capabilities are dashboard-first local operation, compact context packs, repo knowledge bundles, Hermes manual bridge readiness, Gemma readiness planning, safety audits, UI-TARS observation-only checks, adapter dry-runs, external sandbox static inspection, and supervised content demos. The main gaps are a real installed/evaluated local model lane, production routing decisions, provider council verification, Hermes provider setup, Telegram, browser/Playwright remediation, and audited future computer-use click/type workflows. Confidence: high because the merge gate passed the runtime, dashboard, product, safety, and public-readiness checks without blockers.
