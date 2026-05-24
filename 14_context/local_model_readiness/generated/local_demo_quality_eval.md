@@ -1,6 +1,6 @@
         # Local Demo Quality Eval
 
-        Mode: `local_demo`.
+        Mode: `gemma_available_not_invoked`.
         Score: `55`.
 
         - `summarize_latest_report`: deterministic_template_available

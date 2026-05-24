@@ -29,6 +29,6 @@ Use gemma3:1b or gemma3:270m when Ivan wants a quick low-risk local smoke before
 
 ## Current Recommendation
 
-Gemma is missing. Keep local_demo fallback active, or manually approve `ollama pull gemma3:4b` later.
+gemma3:4b is installed. Run the local quality plan next, but keep production routing disabled until a later human-approved milestone.
 
 Production routing remains disabled until a later human-approved quality milestone.

@@ -8,8 +8,13 @@ safe content demos, research plans, and future computer-use tooling from one
 truthful dashboard. It is not autonomous, it does not post, and it does not run
 live providers or account actions without explicit human approval.
 
-Current baseline: N+5.8B clean/Hermes-manual-bridge-readiness on main at
-`6d1a9238d2caa4355e475904c6433310e6cb568b`.
+Current main baseline: N+5.9B clean/Gemma-readiness-and-local-quality-plan on
+main at `20e1dce1e89f15a337054864560b95b82233877c`.
+
+Current feature/audit lane: N+6.0A installed `gemma3:4b` after explicit human
+approval and recorded the first real local evaluation. Production routing is
+still disabled because one repo-bundle task hallucinated a nonexistent external
+bundle.
 
 ## Launch
 
@@ -26,7 +31,8 @@ http://127.0.0.1:3210
 ## What to check first
 
 1. Open the dashboard and read Start Here / Daily Operator.
-2. Confirm Status Truth still says N+5.8B clean/Hermes-manual-bridge-readiness.
+2. Confirm Status Truth still says N+5.9B clean on main and N+6.0A local model
+   evaluation ready on the feature/audit branch when that branch is checked out.
 3. Confirm Hermes, Ollama/Gemma, Obsidian memory, UI-TARS, adapters, external
    sandbox, public audit, and readiness status are truthful.
 4. Confirm Local Model / Easy Worker Lane shows readiness percentage and
@@ -40,6 +46,24 @@ http://127.0.0.1:3210
 7. Run a smoke check before relying on the dashboard.
 8. Review the latest relevant report under `14_context/`.
 
+## Current roadmap priority
+
+The next work is ordered for paid-credit reduction and safer long-task
+automation:
+
+1. N+6.1A: constrained Gemma worker routing with a repo-bundle hallucination
+   guard. Use known repo-map bundle IDs only, reject invented bundle/file
+   claims, require source metadata, and fall back to `local_demo` if the guard
+   fails.
+2. N+6.2A: Hermes Agent Workflow / Manual Bridge Verification. Use safe probes
+   and manual bridge packets only. No tokens, provider setup, Telegram setup,
+   live APIs, or browser automation.
+3. N+6.3A: Safe Computer-Use Preparation with Gemma, Hermes, UI-TARS
+   observation, Browser Harness, and Vercel agent-browser roadmap. Observation
+   first; every click/type/live-account action stays human-approved.
+
+Do not start N+6.2A or N+6.3A until N+6.1A passes a clean guard/audit gate.
+
 ## Daily commands
 
 ```powershell
@@ -51,6 +75,7 @@ python 03_scripts/ghoti_product_launcher.py --local-worker-demo --json
 python 03_scripts/ghoti_product_launcher.py --gemma-status --json
 python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json
 python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json
+python 03_scripts/ghoti_product_launcher.py --local-model-eval --json
 python 03_scripts/ghoti_product_launcher.py --repo-map --json
 python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json
 python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json
@@ -161,6 +186,8 @@ python 03_scripts/gemma_model_readiness.py --status --json
 python 03_scripts/gemma_model_readiness.py --doctor --json
 python 03_scripts/gemma_model_readiness.py --recommend --json
 python 03_scripts/gemma_model_readiness.py --quality-plan --json
+python 03_scripts/gemma_model_readiness.py --local-model-eval --json
+python 03_scripts/gemma_model_readiness.py --write-evaluation --json
 python 03_scripts/gemma_model_readiness.py --write-readiness --json
 ```
 
@@ -168,10 +195,12 @@ Generated files live under:
 
 ```text
 14_context/local_model_readiness/generated/
+14_context/local_model_evaluation/runs/
 ```
 
 Start with `gemma_readiness_status.md`, `gemma_install_decision.md`,
 `gemma_manual_commands.md`, and `local_task_quality_plan.md`. See
+[Human-Approved Gemma Install Log](HUMAN_APPROVED_GEMMA_INSTALL_LOG.md),
 [Gemma Model Install Decision](GEMMA_MODEL_INSTALL_DECISION.md) and
 [Local Model Quality Evaluation Guide](LOCAL_MODEL_QUALITY_EVALUATION_GUIDE.md).
 
@@ -180,12 +209,18 @@ Ghoti must not run them automatically. Manual approval is required before any
 model download, and production routing remains disabled until a later audited
 milestone proves quality.
 
+N+6.0A may write a first local evaluation run under
+`14_context/local_model_evaluation/runs/`. If `gemma3:4b` is missing, that run is
+a controlled fallback. If `gemma3:4b` is installed, it records real local model
+outputs and a score, while still keeping production routing disabled.
+
 ## local_demo fallback
 
 `local_demo fallback` means Ghoti keeps the workflow local and truthful when a
-real local model is unavailable. In the current baseline, Ollama is available
-but a Gemma model is missing, so memory compression/status tools report
-`fallback_mode=local_demo` instead of pretending Gemma is active.
+real local model is unavailable or not trustworthy enough for a task. In N+6.0A,
+`gemma3:4b` was installed after explicit human approval and the first local eval
+scored 86%, but one repo-bundle task hallucinated. Keep fallback available and
+keep production routing disabled until a later audited routing milestone.
 
 ## Hermes is currently allowed
 

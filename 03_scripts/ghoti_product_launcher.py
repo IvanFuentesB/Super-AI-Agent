@@ -186,6 +186,7 @@ DAILY_OPERATOR_COMMANDS = [
     "python 03_scripts/ghoti_product_launcher.py --gemma-status --json",
     "python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json",
     "python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json",
+    "python 03_scripts/ghoti_product_launcher.py --local-model-eval --json",
     "python 03_scripts/ghoti_product_launcher.py --repo-map --json",
     "python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json",
     "python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json",
@@ -821,6 +822,10 @@ def cmd_gemma_quality_plan() -> dict:
     return _run_gemma_readiness(["--quality-plan"], "gemma-quality-plan", timeout=45)
 
 
+def cmd_local_model_eval() -> dict:
+    return _run_gemma_readiness(["--local-model-eval"], "local-model-eval", timeout=150)
+
+
 def cmd_gemma_write_readiness() -> dict:
     return _run_gemma_readiness(["--write-readiness"], "gemma-write-readiness", timeout=60)
 
@@ -1008,12 +1013,14 @@ def _print_human(result: dict) -> None:
             print("  readiness: %s%%" % result["readiness_percent"])
         for filename, relpath in (result.get("paths") or result.get("output_paths") or {}).items():
             print("  %s -> %s" % (filename, relpath))
-    elif action in ("gemma-status", "gemma-doctor", "gemma-recommend", "gemma-quality-plan", "gemma-write-readiness"):
+    elif action in ("gemma-status", "gemma-doctor", "gemma-recommend", "gemma-quality-plan", "gemma-write-readiness", "local-model-eval"):
         print("Gemma / Local Model Quality: %s" % ("PASS" if result.get("ok") else "FAIL"))
         if result.get("status_line"):
             print("  %s" % result["status_line"])
         if result.get("gemma_readiness_percent") is not None:
             print("  readiness: %s%%" % result["gemma_readiness_percent"])
+        if result.get("score_percent") is not None:
+            print("  local eval score: %s%%" % result["score_percent"])
         if result.get("recommendation"):
             print("  recommendation: %s" % result["recommendation"])
         for filename, relpath in (result.get("paths") or result.get("output_paths") or {}).items():
@@ -1057,12 +1064,13 @@ def main(argv=None) -> int:
             "  7. python 03_scripts/ghoti_product_launcher.py --gemma-status --json\n"
             "  8. python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json\n"
             "  9. python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json\n"
-            "  10. python 03_scripts/ghoti_product_launcher.py --repo-map --json\n"
-            "  11. python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json\n"
-            "  12. python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json\n"
-            "  13. python 03_scripts/ghoti_product_launcher.py --hermes-bridge-write --json\n"
-            "  14. review reports under 14_context/\n"
-            "  15. python 03_scripts/ghoti_product_launcher.py --stop-dashboard\n"
+            "  10. python 03_scripts/ghoti_product_launcher.py --local-model-eval --json\n"
+            "  11. python 03_scripts/ghoti_product_launcher.py --repo-map --json\n"
+            "  12. python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json\n"
+            "  13. python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json\n"
+            "  14. python 03_scripts/ghoti_product_launcher.py --hermes-bridge-write --json\n"
+            "  15. review reports under 14_context/\n"
+            "  16. python 03_scripts/ghoti_product_launcher.py --stop-dashboard\n"
         ),
     )
     parser.add_argument("--status", action="store_true", help="show launcher + dashboard status")
@@ -1084,6 +1092,8 @@ def main(argv=None) -> int:
                         help="show manual Gemma install decision plan without pulling models")
     parser.add_argument("--gemma-quality-plan", action="store_true",
                         help="show local task quality evaluation plan and fallback result")
+    parser.add_argument("--local-model-eval", action="store_true",
+                        help="show the first local model evaluation summary or controlled fallback")
     parser.add_argument("--gemma-write-readiness", action="store_true",
                         help="write Gemma readiness and quality-plan files")
     parser.add_argument("--repo-map", action="store_true",
@@ -1137,6 +1147,8 @@ def main(argv=None) -> int:
             result = cmd_gemma_recommend()
         elif args.gemma_quality_plan:
             result = cmd_gemma_quality_plan()
+        elif args.local_model_eval:
+            result = cmd_local_model_eval()
         elif args.gemma_write_readiness:
             result = cmd_gemma_write_readiness()
         elif args.repo_map:

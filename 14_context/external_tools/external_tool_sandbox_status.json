@@ -21,7 +21,7 @@
       "purpose": "Desktop GUI agent \u2014 screenshot capture and click/type control of the local computer.",
       "clone_status": "cloned",
       "clone_error": null,
-      "commit": "7986f5aea500c4535c0e55dc5c5d0cda73767c45",
+      "commit": "e9f3387288da4af2ad99972da2ac916cdabce093",
       "clone_path": "21_repos/third_party/sandboxed/ui_tars_desktop",
       "scan": {
         "scanned": true,
@@ -241,7 +241,7 @@
       "purpose": "Agent identity / attestation / vouching protocol.",
       "clone_status": "cloned",
       "clone_error": null,
-      "commit": "1b37c3ef661bd1c4ed87c5349e51be7ce5038bcc",
+      "commit": "d4fa16b54273e126bb06e965916014c0683a4be9",
       "clone_path": "21_repos/third_party/sandboxed/vouch",
       "scan": {
         "scanned": true,
@@ -344,7 +344,7 @@
       "exists": true
     }
   ],
-  "last_sync_at": "20260517T193027Z",
-  "last_scan_at": "20260517T193027Z",
-  "generated_at": "20260517T193027Z"
+  "last_sync_at": "20260524T145509Z",
+  "last_scan_at": "20260524T145509Z",
+  "generated_at": "20260524T145509Z"
 }

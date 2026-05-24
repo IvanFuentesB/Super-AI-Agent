@@ -2,6 +2,22 @@
 
 Ghoti treats Hermes as a local WSL agent layer that can be inspected safely now and configured manually later. N+5.8A does not run live setup, provider config, Telegram setup, token commands, or browser automation.
 
+## Current Priority
+
+Hermes is the next major workflow accelerator after constrained Gemma routing.
+The updated order is:
+
+1. N+6.1A first: constrain Gemma worker routing and add a repo-bundle
+   hallucination guard for boring local tasks.
+2. N+6.2A next: verify the Hermes Agent Workflow / Manual Bridge for faster
+   supervised task execution.
+3. N+6.3A next: prepare safe computer-use with Gemma, Hermes, UI-TARS
+   observation, Browser Harness, and Vercel agent-browser roadmap.
+
+N+6.2A still must not run Hermes setup, provider config, Telegram setup, token
+commands, live APIs, or browser automation. Its job is to verify safe local
+workflow surfaces and produce a manual bridge packet.
+
 ## What Works Now
 
 - Hermes WSL status can be checked with safe probes.

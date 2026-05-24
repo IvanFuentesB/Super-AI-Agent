@@ -23,6 +23,7 @@ python 03_scripts/ghoti_product_launcher.py --local-worker-status --json
 python 03_scripts/ghoti_product_launcher.py --local-worker-demo --json
 python 03_scripts/ghoti_product_launcher.py --gemma-status --json
 python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json
+python 03_scripts/ghoti_product_launcher.py --local-model-eval --json
 ```
 
 ## Safe Demo Tasks
@@ -31,6 +32,10 @@ python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json
 - compress latest status into one paragraph
 - classify next task as coding, docs, audit, content, or research
 - generate a short Codex next prompt from the context pack
+- classify safety risk for a local-only request
+- summarize a known context bundle
+- outline the next milestone from repo-local context
+- compress a report to bullets
 
 These tasks are deterministic in `local_demo fallback` mode. They do not call
 live APIs or download models.
@@ -39,6 +44,20 @@ N+5.9A adds the **Gemma / Local Model Quality** lane. Use it to decide whether
 to stay on `local_demo`, manually pull `gemma3:4b`, or try a lighter manual
 fallback (`gemma3:1b` or `gemma3:270m`). The lane writes a quality plan but does
 not route production work to Gemma.
+
+N+6.0A adds the first human-approved local evaluation packet. When `gemma3:4b`
+is installed, the eval command can compare real local Gemma output to
+`local_demo`. If the model is missing, the eval reports a controlled fallback
+instead of pretending quality was measured.
+
+Current N+6.0A result: `gemma3:4b` installed locally and the first eval scored
+86%, with 6 of 7 tasks passing. The failed task hallucinated a repo bundle, so
+real routing remains a later audited decision rather than an automatic switch.
+
+N+6.1A should build only constrained routing for these boring local tasks. It
+must use known repo-map bundle IDs only, reject invented bundle/file claims,
+require source metadata, fall back to `local_demo` if the guard fails, and never
+execute commands or edit files from model output.
 
 ## Generated Outputs
 
@@ -104,8 +123,9 @@ python 03_scripts/ghoti_product_launcher.py --stop-dashboard
 
 ## Next Roadmap
 
-- Graphify repo knowledge map
-- better context retrieval
-- real Gemma model routing after manual install
-- local report summarizer using an installed model
-- Hermes provider later, only after support is proven
+- N+6.1A constrained Gemma worker routing plus repo-bundle hallucination guard
+- N+6.2A Hermes Agent Workflow / Manual Bridge Verification, safe probes only
+- N+6.3A Safe Computer-Use Preparation with Gemma, Hermes, UI-TARS observation,
+  Browser Harness, and Vercel agent-browser roadmap
+- Graphify-grade context retrieval later
+- Hermes provider later, only after support is proven and explicitly approved

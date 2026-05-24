@@ -1,6 +1,6 @@
 # Codex-Only Workflow
 
-Current baseline: N+5.8B clean/Hermes-manual-bridge-readiness on main.
+Current baseline: N+5.9B clean/Gemma-readiness-local-quality-plan on main.
 
 Previous clean baseline: N+5.7B clean/repo-knowledge-context-retrieval on main
 at `84e880e7c3f774580a5e4ac340acd497af3027ee`.
@@ -9,7 +9,7 @@ Lineage note: N+5.6B clean/local-model-easy-worker-lane landed at
 `c9413108006d920e0110413d3d5e195b504489c1`.
 
 ```text
-origin/main = 6d1a9238d2caa4355e475904c6433310e6cb568b
+origin/main = 20e1dce1e89f15a337054864560b95b82233877c
 launcher = python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard
 dashboard = http://127.0.0.1:3210
 context_pack = python 03_scripts/ghoti_context_pack_builder.py --write --json
@@ -17,6 +17,7 @@ local_worker = python 03_scripts/local_model_worker_lane.py --status --json
 gemma_status = python 03_scripts/ghoti_product_launcher.py --gemma-status --json
 gemma_doctor = python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json
 gemma_quality = python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json
+local_model_eval = python 03_scripts/ghoti_product_launcher.py --local-model-eval --json
 repo_map = python 03_scripts/ghoti_repo_knowledge_map.py --write --json
 repo_bundle = python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json
 hermes_bridge = python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json
@@ -34,8 +35,9 @@ for inspection.
   generated runtime bundles.
 - Do not perform live account actions, posting, money movement, trading, legal
   actions, provider setup, or token setup.
-- Do not run `ollama pull` from Codex. Gemma installation is a later
-  human-approved command, not an automatic workflow.
+- Do not run `ollama pull` from Codex unless the current prompt explicitly
+  approves the exact model command. N+6.0A approved exactly one local
+  `ollama pull gemma3:4b`; no extra model pulls are allowed.
 - Do not claim hidden or independent operation. Ghoti is supervised,
   local-first, and approval-gated.
 - Keep unsafe browser/computer-use behavior blocked.
@@ -59,6 +61,22 @@ for inspection.
 
 Feature branches must provide tests and a final report showing what works, what
 is still pending, and how any local dashboard process was cleaned up.
+
+## Current Roadmap Priority
+
+The next safe order is:
+
+1. N+6.1A - constrained Gemma worker routing plus repo-bundle hallucination
+   guard. Only route boring/offline local tasks, use known bundle IDs, require
+   source metadata, and fall back to `local_demo` on guard failure.
+2. N+6.2A - Hermes Agent Workflow / Manual Bridge Verification. Safe probes and
+   manual bridge packet only; no tokens, provider setup, Telegram setup, live
+   APIs, or browser automation.
+3. N+6.3A - Safe Computer-Use Preparation with Gemma, Hermes, UI-TARS
+   observation, Browser Harness, and Vercel agent-browser roadmap. Observation
+   first; every click/type/live-account action remains human-approved.
+
+Do not start N+6.2A or N+6.3A until N+6.1A passes a clean audit gate.
 
 ## Safe Codex Prompts
 
@@ -102,6 +120,18 @@ Check Gemma readiness and quality plan:
 
 ```text
 Run python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json, python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json, and python 03_scripts/ghoti_product_launcher.py --gemma-write-readiness --json. Confirm Ollama status, Gemma installed yes/no, local_demo fallback when missing, manual approval required before model download, no ollama pull performed, production routing disabled, and generated files under 14_context/local_model_readiness/generated/. See docs/GEMMA_MODEL_INSTALL_DECISION.md and docs/LOCAL_MODEL_QUALITY_EVALUATION_GUIDE.md.
+```
+
+Check first local model eval:
+
+```text
+Run python 03_scripts/ghoti_product_launcher.py --local-model-eval --json. Confirm the model, score, task pass count, safety/JSON flags, production routing disabled, and latest run path under 14_context/local_model_evaluation/runs/. Do not treat a real model score as permission for autonomous routing.
+```
+
+Plan constrained Gemma routing:
+
+```text
+Build N+6.1A constrained Gemma worker routing from the clean N+6.0A result. Allowed tasks only: summarize latest report, status paragraph, Codex next prompt, safety classification, context bundle summary, next milestone outline, and report-to-bullets. Use known repo-map bundle IDs only, reject invented bundle/file claims, require source metadata, fall back to local_demo on guard failure, and never execute commands or edit files from model output.
 ```
 
 Generate focused repo context:

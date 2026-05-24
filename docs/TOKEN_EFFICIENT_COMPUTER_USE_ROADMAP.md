@@ -19,21 +19,46 @@
   Gemma / Local Model Quality, Repo Knowledge / Graphify Lane, and Hermes Agent
   / Manual Bridge cards.
 
+## Current Priority Sequence
+
+Ghoti's near-term roadmap now prioritizes local models, Hermes workflows, and
+safe computer-use preparation because the operator needs to automate long,
+boring task sequences without burning paid credits.
+
+1. N+6.1A - constrained Gemma worker routing with a repo-bundle hallucination
+   guard. Allowed local tasks: summarize latest report, status paragraph, Codex
+   next prompt, safety classification, context bundle summary, next milestone
+   outline, and report-to-bullets.
+2. N+6.2A - Hermes Agent Workflow / Manual Bridge Verification. Verify skills
+   and safe command surfaces only; no tokens, provider setup, Telegram setup,
+   live APIs, or browser automation.
+3. N+6.3A - Safe Computer-Use Preparation with Gemma, Hermes, UI-TARS
+   observation, Browser Harness, and Vercel agent-browser roadmap. Observation
+   comes first, and every click/type/live-account action stays behind explicit
+   human approval.
+
+N+6.1A must never execute commands, edit files, or take account/browser actions
+from model output. It must reject invented repo bundles/files and fall back to
+`local_demo` when source metadata is missing or unsafe.
+
 ## Gemma / Local Model Quality
 
 - Current implementation: local readiness and quality-plan files under
-  `14_context/local_model_readiness/generated/`.
+  `14_context/local_model_readiness/generated/`, plus N+6.0A evaluation runs
+  under `14_context/local_model_evaluation/runs/`.
 - Current commands:
   `python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json`,
   `python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json`,
+  `python 03_scripts/ghoti_product_launcher.py --local-model-eval --json`,
   and `python 03_scripts/ghoti_product_launcher.py --gemma-write-readiness --json`.
-- Current truth: Ollama is checked locally, Gemma is not claimed unless
-  `ollama list` shows an installed Gemma model, and `local_demo fallback`
-  remains the safe mode when no Gemma model is available.
-- Manual command candidates are documented, but Codex must not run
-  `ollama pull` automatically.
+- Current truth: N+6.0A installed `gemma3:4b` after explicit human approval;
+  future truth must still be verified with `ollama list`.
+- First real local quality eval: 86%, 6 of 7 tasks passed. The failed
+  repo-bundle task hallucinated an external bundle, so routing remains blocked.
+- Manual command candidates are documented, but Codex must not run additional
+  `ollama pull` commands automatically.
 - Production routing to Gemma remains disabled until a later audited milestone
-  runs a real local quality evaluation after human-approved install.
+  wraps tasks tightly enough to avoid repo-context hallucination.
 
 ## Repo Knowledge / Graphify Lane
 
@@ -65,6 +90,8 @@
 ## Computer Use
 
 - UI-TARS remains observation-only.
+- Hermes remains manual-bridge only until N+6.2A verifies safe local workflow
+  surfaces without setup/tokens/live APIs.
 - Future click/type controls require a separate audited milestone.
 - Browser automation should be compliant QA, not bypass or abuse.
 - Browser actions need human approval for real effects.

@@ -26,12 +26,18 @@ GENERATED_DIR = REPO_ROOT / "14_context" / "compact_memory" / "generated"
 
 LAUNCHER_COMMAND = "python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard"
 DASHBOARD_URL = "http://127.0.0.1:3210"
-LATEST_CLEAN_MILESTONE = "N+5.8B - Hermes Manual Bridge Readiness landed on main"
-CURRENT_MILESTONE = "N+5.9A - Real Gemma Install / Model Availability Decision + Local Task Quality Evaluation"
-NEXT_RECOMMENDED_MILESTONE = "N+6.0A - Human-Approved Gemma Install + First Real Local Model Evaluation"
+LATEST_CLEAN_MILESTONE = "N+5.9B - Gemma Readiness / Local Quality Plan landed on main"
+CURRENT_MILESTONE = "N+6.0A - Human-Approved Gemma Install + First Real Local Model Evaluation"
+NEXT_RECOMMENDED_MILESTONE = "N+6.1A - Constrained Gemma Worker Routing + Repo-Bundle Hallucination Guard"
+ROADMAP_PRIORITY_SEQUENCE = [
+    "N+6.1A - Constrained Gemma worker routing for boring/simple local tasks, with known repo-bundle IDs only and fallback on guard failure.",
+    "N+6.2A - Hermes Agent Workflow / Manual Bridge Verification for faster supervised task execution; safe probes only, no tokens, no provider setup.",
+    "N+6.3A - Safe Computer-Use Preparation with Gemma + Hermes + UI-TARS observation + Browser Harness/Vercel agent-browser roadmap; observation first, human approval for every click/type/live-account action.",
+]
 REPO_KNOWLEDGE_DIR = REPO_ROOT / "14_context" / "repo_knowledge" / "generated"
 HERMES_WORKFLOW_DIR = REPO_ROOT / "14_context" / "hermes_workflow" / "generated"
 GEMMA_READINESS_DIR = REPO_ROOT / "14_context" / "local_model_readiness" / "generated"
+LOCAL_MODEL_EVAL_DIR = REPO_ROOT / "14_context" / "local_model_evaluation" / "runs"
 REPO_MAP_COMMAND = "python 03_scripts/ghoti_product_launcher.py --repo-map --json"
 REPO_BUNDLE_NEXT_COMMAND = "python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json"
 HERMES_BRIDGE_STATUS_COMMAND = "python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json"
@@ -39,6 +45,7 @@ HERMES_BRIDGE_WRITE_COMMAND = "python 03_scripts/ghoti_product_launcher.py --her
 GEMMA_STATUS_COMMAND = "python 03_scripts/ghoti_product_launcher.py --gemma-status --json"
 GEMMA_DOCTOR_COMMAND = "python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json"
 GEMMA_QUALITY_COMMAND = "python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json"
+LOCAL_MODEL_EVAL_COMMAND = "python 03_scripts/ghoti_product_launcher.py --local-model-eval --json"
 
 OUTPUT_FILES = {
     "ghoti_current_context_pack.md": "context_pack_markdown",
@@ -199,7 +206,10 @@ def _probe_ollama_truth() -> Dict[str, object]:
         truth["gemma_model_found"] = True
         truth["gemma_status"] = "installed"
         truth["fallback_mode"] = "ollama_gemma"
-        truth["status_line"] = f"Ollama available ({truth['ollama_version']}); Gemma model found."
+        truth["status_line"] = (
+            f"Ollama available ({truth['ollama_version']}); Gemma model found; "
+            "local_demo fallback active as preserved backup."
+        )
     else:
         truth["status_line"] = f"Ollama available ({truth['ollama_version']}); Gemma model missing; local_demo fallback active."
     return truth
@@ -214,6 +224,9 @@ def _probe_gemma_readiness() -> Dict[str, object]:
         "gemma_installed": False,
         "active_worker_mode": "local_demo",
         "quality_evaluation_status": "pending_real_gemma_install",
+        "real_local_evaluation_status": "not_run",
+        "latest_eval_score_percent": None,
+        "latest_eval_run_path": "14_context/local_model_evaluation/runs/",
         "recommended_manual_command": "ollama pull gemma3:4b",
         "status_line": "Gemma readiness script unavailable; keep local_demo fallback active.",
     }
@@ -237,6 +250,9 @@ def _probe_gemma_readiness() -> Dict[str, object]:
         "installed_models_count": payload.get("installed_models_count", 0),
         "active_worker_mode": payload.get("active_worker_mode", "local_demo"),
         "quality_evaluation_status": payload.get("quality_evaluation_status", "pending_real_gemma_install"),
+        "real_local_evaluation_status": payload.get("real_local_evaluation_status", "not_run"),
+        "latest_eval_score_percent": payload.get("latest_eval_score_percent"),
+        "latest_eval_run_path": payload.get("latest_eval_run_path") or "14_context/local_model_evaluation/runs/",
         "recommended_manual_command": payload.get("recommended_manual_command", "ollama pull gemma3:4b"),
         "status_line": payload.get("status_line", fallback["status_line"]),
     }
@@ -249,6 +265,7 @@ def _static_truth() -> Dict[str, object]:
         "latest_clean_milestone": LATEST_CLEAN_MILESTONE,
         "current_milestone": CURRENT_MILESTONE,
         "next_recommended_milestone": NEXT_RECOMMENDED_MILESTONE,
+        "roadmap_priority_sequence": ROADMAP_PRIORITY_SEQUENCE,
         "hermes": {
             "wsl_status": "installed",
             "path": "/home/ai_sandbox/.local/bin/hermes",
@@ -278,9 +295,11 @@ def _static_truth() -> Dict[str, object]:
             "install_decision_path": _repo_rel(GEMMA_READINESS_DIR / "gemma_install_decision.md"),
             "quality_plan_path": _repo_rel(GEMMA_READINESS_DIR / "local_task_quality_plan.md"),
             "rubric_path": _repo_rel(GEMMA_READINESS_DIR / "local_task_quality_rubric.json"),
+            "evaluation_runs_dir": _repo_rel(LOCAL_MODEL_EVAL_DIR),
             "status_command": GEMMA_STATUS_COMMAND,
             "doctor_command": GEMMA_DOCTOR_COMMAND,
             "quality_command": GEMMA_QUALITY_COMMAND,
+            "local_model_eval_command": LOCAL_MODEL_EVAL_COMMAND,
             "manual_install_command": "ollama pull gemma3:4b",
             "production_routing": "disabled",
         },
@@ -375,7 +394,10 @@ def _render_status_short(facts: Dict[str, object]) -> str:
         "Hermes WSL is installed at /home/ai_sandbox/.local/bin/hermes (v0.14.0); "
         "browser/Playwright is degraded/not claimed, Codex provider pending/not proven, Telegram manual/no token, no VPS. "
         f"{model['status_line']} Gemma readiness {gemma['gemma_readiness_percent']}%, "
-        f"mode `{gemma['active_worker_mode']}`, quality `{gemma['quality_evaluation_status']}`, no auto-downloads. "
+        f"mode `{gemma['active_worker_mode']}`, quality `{gemma['quality_evaluation_status']}`, "
+        f"latest eval `{gemma['real_local_evaluation_status']}`"
+        f"{' at ' + str(gemma['latest_eval_score_percent']) + '%' if gemma['latest_eval_score_percent'] is not None else ''}, "
+        "no auto-downloads. "
         "Obsidian memory, repo bundles, local worker fallback, safety gates, UI-TARS observation-only, adapter dry-runs, "
         "and external static sandbox are available. "
         f"Next recommended milestone: {NEXT_RECOMMENDED_MILESTONE}."
@@ -387,6 +409,7 @@ def _render_context_pack(facts: Dict[str, object], status_short: str) -> str:
     works = "\n".join(f"- {item}" for item in facts["works_now"])
     pending = "\n".join(f"- {item}" for item in facts["pending_manual"])
     locks = "\n".join(f"- {item}" for item in facts["safety_locks"])
+    roadmap = "\n".join(f"- {item}" for item in facts["roadmap_priority_sequence"])
     model = facts["local_model_truth"]
     gemma = facts["gemma_readiness_truth"]
     return _strip_template_indent(f"""\
@@ -405,6 +428,15 @@ def _render_context_pack(facts: Dict[str, object], status_short: str) -> str:
         - Current milestone: {facts['current_milestone']}
         - Next recommended milestone: {facts['next_recommended_milestone']}
 
+        ## Roadmap Priority
+
+        {roadmap}
+
+        Keep Hermes and safe computer-use high priority because they are the
+        path to long, boring supervised task execution without burning paid
+        credits. Do not start N+6.2A or N+6.3A until N+6.1A has a clean routing
+        guard and audit gate.
+
         ## Launch
 
         - Launcher command: `{LAUNCHER_COMMAND}`
@@ -417,6 +449,7 @@ def _render_context_pack(facts: Dict[str, object], status_short: str) -> str:
         - Gemma readiness status: `{GEMMA_STATUS_COMMAND}`
         - Gemma readiness doctor: `{GEMMA_DOCTOR_COMMAND}`
         - Gemma quality plan: `{GEMMA_QUALITY_COMMAND}`
+        - Local model eval: `{LOCAL_MODEL_EVAL_COMMAND}`
 
         ## What Works Now
 
@@ -431,9 +464,10 @@ def _render_context_pack(facts: Dict[str, object], status_short: str) -> str:
         - Ollama available: {str(model['ollama_available']).lower()}
         - Ollama version: {model['ollama_version']}
         - Gemma model found: {str(model['gemma_model_found']).lower()}
-        - Gemma status: {model['gemma_status']}
-        - Fallback mode: {model['fallback_mode']}
-        - Truth line: {model['status_line']}
+- Gemma status: {model['gemma_status']}
+- Active local worker mode: {model['fallback_mode']}
+- local_demo fallback active: true (preserved backup for missing-model or quality-gated paths)
+- Truth line: {model['status_line']}
 
         ## Gemma / Local Model Quality
 
@@ -444,10 +478,14 @@ def _render_context_pack(facts: Dict[str, object], status_short: str) -> str:
         - Active local worker mode: `{gemma['active_worker_mode']}`
         - Recommended manual command: `{gemma['recommended_manual_command']}`
         - Quality evaluation status: {gemma['quality_evaluation_status']}
+        - Real local evaluation status: {gemma['real_local_evaluation_status']}
+        - Latest local eval score: {gemma['latest_eval_score_percent'] if gemma['latest_eval_score_percent'] is not None else 'not_run'}
+        - Latest local eval run: `{gemma['latest_eval_run_path']}`
         - Status file: `{facts['gemma_readiness']['status_path']}`
         - Install decision: `{facts['gemma_readiness']['install_decision_path']}`
         - Quality plan: `{facts['gemma_readiness']['quality_plan_path']}`
         - Rubric JSON: `{facts['gemma_readiness']['rubric_path']}`
+        - Evaluation runs: `{facts['gemma_readiness']['evaluation_runs_dir']}`
         - Production routing: {facts['gemma_readiness']['production_routing']}
         - Safety: no live APIs, no auto-downloads, no `ollama pull` performed by Ghoti, manual approval required before model download.
 
@@ -544,7 +582,10 @@ def _render_codex_prompt(facts: Dict[str, object]) -> str:
         - Codex provider in Hermes pending/not proven.
         - Telegram manual later/no token; No VPS.
         - Gemma model missing unless a new local check proves otherwise; local_demo fallback active.
-        - Gemma / Local Model Quality files live under `14_context/local_model_readiness/generated/`; quality evaluation is pending until manual model install.
+        - Gemma / Local Model Quality files live under `14_context/local_model_readiness/generated/`; local model eval runs live under `14_context/local_model_evaluation/runs/`.
+        - N+6.1A must guard against repo-bundle hallucination before routing.
+        - N+6.2A should verify Hermes manual bridge workflow readiness without setup/tokens/live APIs.
+        - N+6.3A should prepare safe computer-use with observation first and human approval for every click/type/live-account action.
         - Obsidian/local memory present.
         - UI-TARS observation-only.
         - Adapter runner approval-gated/local-only.
@@ -555,9 +596,12 @@ def _render_codex_prompt(facts: Dict[str, object]) -> str:
         {NEXT_RECOMMENDED_MILESTONE}
 
         Ask Codex to create a feature branch, add focused tests first, implement only the
-        next local model/Gemma decision and local task quality evaluation changes, validate,
-        push feature, then create a separate audit branch. Do not run `ollama pull` unless
-        the human explicitly approves it in that milestone.
+        constrained local model routing guard, validate, push feature, then create a
+        separate audit branch. If the routing guard passes, prioritize Hermes manual
+        bridge verification next, then safe computer-use preparation. Do not run new
+        `ollama pull` commands, Hermes setup, provider config, Telegram setup, live APIs,
+        or uncontrolled click/type actions unless a later human prompt explicitly approves
+        the exact action.
     """)
 
 
@@ -595,6 +639,7 @@ def _json_pack(facts: Dict[str, object], status_short: str) -> Dict[str, object]
         "latest_clean_milestone": facts["latest_clean_milestone"],
         "current_milestone": facts["current_milestone"],
         "next_recommended_milestone": facts["next_recommended_milestone"],
+        "roadmap_priority_sequence": facts["roadmap_priority_sequence"],
         "launcher_command": LAUNCHER_COMMAND,
         "dashboard_url": DASHBOARD_URL,
         "status_short": status_short,

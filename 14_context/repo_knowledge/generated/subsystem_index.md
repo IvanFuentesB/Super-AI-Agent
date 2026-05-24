@@ -47,6 +47,7 @@ Local repo knowledge grouped by subsystem.
 - `14_context/local_worker/generated/local_worker_status.md`
 - `docs/EASY_WORKER_LANE_GUIDE.md`
 - `docs/GEMMA_MODEL_INSTALL_DECISION.md`
+- `docs/HUMAN_APPROVED_GEMMA_INSTALL_LOG.md`
 - `docs/LOCAL_MODEL_GEMMA_SETUP_GUIDE.md`
 - `docs/LOCAL_MODEL_QUALITY_EVALUATION_GUIDE.md`
 
@@ -56,9 +57,6 @@ Local repo knowledge grouped by subsystem.
 - `docs/BLOCKED_UNSAFE_AUTOMATION.md`
 
 ## reports/14_context
-- `14_context/codex_n5_4a_first_real_operator_usability_pass.md`
-- `14_context/codex_n5_4b_main_merge_daily_operator_usability.md`
-- `14_context/codex_n5_5a_local_memory_obsidian_context_pack_brain_upgrade.md`
 - `14_context/codex_n5_5b_main_merge_local_memory_context_pack.md`
 - `14_context/codex_n5_6a_local_model_gemma_setup_truth_easy_worker_lane.md`
 - `14_context/codex_n5_6b_main_merge_local_model_easy_worker_lane.md`
@@ -66,6 +64,9 @@ Local repo knowledge grouped by subsystem.
 - `14_context/codex_n5_7b_main_merge_repo_knowledge_context_retrieval.md`
 - `14_context/codex_n5_8a_hermes_agent_workflow_provider_setup_plan_manual_bridge.md`
 - `14_context/codex_n5_8b_main_merge_hermes_manual_bridge_readiness.md`
+- `14_context/codex_n5_9a_gemma_model_availability_local_task_quality_evaluation.md`
+- `14_context/codex_n5_9b_main_merge_gemma_readiness_local_quality_plan.md`
+- `14_context/codex_n6_0a_roadmap_priority_hermes_computer_use_update.md`
 
 ## supervised content demo
 - `03_scripts/supervised_content_mvp_runner.py`

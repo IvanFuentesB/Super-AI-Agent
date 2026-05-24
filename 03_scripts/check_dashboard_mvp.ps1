@@ -1186,7 +1186,8 @@ try {
                 $desktopHotkeyExecute.task.lastExecutionStatus -eq 'failed' -and `
                 ($desktopHotkeyExecute.summary.headline -match 'manual operator focus' -or `
                  $desktopHotkeyExecute.summary.headline -match 'manual target resolution is required' -or `
-                 $desktopHotkeyExecute.summary.headline -match 'Failed after 2 attempt')`
+                 $desktopHotkeyExecute.summary.headline -match 'Failed after 2 attempt' -or `
+                 $desktopHotkeyExecute.summary.headline -match 'Clipboard guard blocked|checker or recipe label|payload was blocked')`
             )))
         Write-Check -Name 'Desktop send_hotkey execution endpoint' -Passed $desktopHotkeyExecuteOk -Detail ($(if ($desktopHotkeyExecuteOk) { $desktopHotkeyExecute.summary.headline } else { 'desktop send_hotkey execute failed' }))
         if (-not $desktopHotkeyExecuteOk) { $failed++ }

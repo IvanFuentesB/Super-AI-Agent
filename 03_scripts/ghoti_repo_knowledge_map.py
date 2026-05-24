@@ -36,9 +36,14 @@ GEMMA_DOCTOR_COMMAND = "python 03_scripts/ghoti_product_launcher.py --gemma-doct
 GEMMA_QUALITY_COMMAND = "python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json"
 DIRECT_WRITE_COMMAND = "python 03_scripts/ghoti_repo_knowledge_map.py --write --json"
 
-LATEST_CLEAN_MILESTONE = "N+5.8B - Hermes Manual Bridge Readiness landed on main"
-CURRENT_MILESTONE = "N+5.9A - Real Gemma Install / Model Availability Decision + Local Task Quality Evaluation"
-NEXT_RECOMMENDED_MILESTONE = "N+6.0A - Human-Approved Gemma Install + First Real Local Model Evaluation"
+LATEST_CLEAN_MILESTONE = "N+5.9B - Gemma Readiness / Local Quality Plan landed on main"
+CURRENT_MILESTONE = "N+6.0A - Human-Approved Gemma Install + First Real Local Model Evaluation"
+NEXT_RECOMMENDED_MILESTONE = "N+6.1A - Constrained Gemma Worker Routing + Repo-Bundle Hallucination Guard"
+ROADMAP_PRIORITY_SEQUENCE = [
+    "N+6.1A - Constrained Gemma worker routing for boring/simple local tasks, with known repo-bundle IDs only and fallback on guard failure.",
+    "N+6.2A - Hermes Agent Workflow / Manual Bridge Verification for faster supervised task execution; safe probes only, no tokens, no provider setup.",
+    "N+6.3A - Safe Computer-Use Preparation with Gemma + Hermes + UI-TARS observation + Browser Harness/Vercel agent-browser roadmap; observation first, human approval for every click/type/live-account action.",
+]
 
 READINESS_PERCENT = 55
 GRAPHIFY_RUNTIME = "roadmap_only_not_wired"
@@ -136,7 +141,7 @@ IMPORTANT_FILE_CATALOG = [
         "path": "03_scripts/gemma_model_readiness.py",
         "subsystem": "local model/easy worker",
         "description": "Detects Gemma availability, writes manual install decision files, and prepares local task quality evaluation.",
-        "why": "N+5.9A decision layer for real local model readiness without auto-downloads.",
+        "why": "N+6.0A preflight and local model evaluation layer without provider setup or production routing.",
     },
     {
         "path": "03_scripts/hermes_local_bootstrap.py",
@@ -239,6 +244,12 @@ IMPORTANT_FILE_CATALOG = [
         "subsystem": "local model/easy worker",
         "description": "Gemma model install decision, manual commands, and no-auto-download policy.",
         "why": "Helps Ivan choose 4B, 1B, 270M, or stay local_demo.",
+    },
+    {
+        "path": "docs/HUMAN_APPROVED_GEMMA_INSTALL_LOG.md",
+        "subsystem": "local model/easy worker",
+        "description": "Human-approved gemma3:4b install scope and generated run locations.",
+        "why": "Keeps the one-model approval separate from future routing or provider setup.",
     },
     {
         "path": "docs/LOCAL_MODEL_QUALITY_EVALUATION_GUIDE.md",
@@ -514,6 +525,7 @@ def build_map(generated_at: str | None = None, output_dir: pathlib.Path | None =
         "milestone": CURRENT_MILESTONE,
         "latest_clean_milestone": LATEST_CLEAN_MILESTONE,
         "next_recommended_milestone": NEXT_RECOMMENDED_MILESTONE,
+        "roadmap_priority_sequence": ROADMAP_PRIORITY_SEQUENCE,
         "local_only": True,
         "external_api_used": False,
         "live_api_used": False,
@@ -538,6 +550,7 @@ def build_map(generated_at: str | None = None, output_dir: pathlib.Path | None =
             "status_path": "14_context/local_model_readiness/generated/gemma_readiness_status.md",
             "install_decision_path": "14_context/local_model_readiness/generated/gemma_install_decision.md",
             "quality_plan_path": "14_context/local_model_readiness/generated/local_task_quality_plan.md",
+            "evaluation_runs_dir": "14_context/local_model_evaluation/runs",
             "production_routing": "disabled",
             "manual_download": "manual approval required before model download",
         },
@@ -618,6 +631,7 @@ def _map_markdown(map_data: Dict[str, object]) -> str:
         f"- `{name}` -> `{path}`"
         for name, path in map_data["task_bundle_paths"].items()
     )
+    roadmap = "\n".join(f"- {item}" for item in map_data["roadmap_priority_sequence"])
     safety = "\n".join(f"- {item}" for item in SAFETY_BOUNDARIES)
     return _strip(f"""
         # Ghoti Repo Knowledge Map
@@ -637,6 +651,7 @@ def _map_markdown(map_data: Dict[str, object]) -> str:
         - Gemma status command: `{GEMMA_STATUS_COMMAND}`
         - Gemma quality command: `{GEMMA_QUALITY_COMMAND}`
         - Gemma readiness files: `14_context/local_model_readiness/generated/`
+        - Local model eval runs: `14_context/local_model_evaluation/runs/`
         - Gemma production routing: disabled
         - Graphify runtime: roadmap only/not wired
         - no external repo runtime
@@ -649,6 +664,15 @@ def _map_markdown(map_data: Dict[str, object]) -> str:
         ## Task Bundles
 
         {bundles}
+
+        ## Roadmap Priority
+
+        {roadmap}
+
+        Hermes and safe computer-use are the next high-value lanes for long,
+        boring supervised tasks, but only after the constrained Gemma routing
+        guard is clean. No provider setup, live APIs, Telegram setup,
+        uncontrolled click/type, or browser automation is enabled here.
 
         ## Safety Boundaries
 
@@ -695,19 +719,21 @@ def _bundle_definition(bundle: str) -> Dict[str, object]:
         },
         "local-model-worker": {
             "title": "Local Model / Easy Worker Work",
-            "purpose": "Improve Ollama/Gemma truth, Gemma readiness, local_demo fallback tasks, and quality plans without downloads.",
+            "purpose": "Improve Ollama/Gemma truth, Gemma readiness, local_demo fallback tasks, and local model quality evaluation without provider setup.",
             "files": [
                 "03_scripts/local_model_worker_lane.py",
                 "03_scripts/gemma_model_readiness.py",
                 "docs/LOCAL_MODEL_GEMMA_SETUP_GUIDE.md",
                 "docs/EASY_WORKER_LANE_GUIDE.md",
                 "docs/GEMMA_MODEL_INSTALL_DECISION.md",
+                "docs/HUMAN_APPROVED_GEMMA_INSTALL_LOG.md",
                 "docs/LOCAL_MODEL_QUALITY_EVALUATION_GUIDE.md",
                 "14_context/local_worker/generated/local_worker_status.md",
                 "14_context/local_model_readiness/generated/gemma_readiness_status.md",
                 "14_context/local_model_readiness/generated/local_task_quality_plan.md",
+                "14_context/local_model_evaluation/runs/",
             ],
-            "prompt": "Improve the local model worker lane and Gemma readiness. Do not run ollama pull, downloads, live APIs, provider setup, or production routing.",
+            "prompt": "Improve the local model worker lane and Gemma evaluation. Do not run new model pulls, live APIs, provider setup, or production routing without explicit approval.",
         },
         "hermes": {
             "title": "Hermes Agent / Manual Bridge Work",
@@ -749,20 +775,22 @@ def _bundle_definition(bundle: str) -> Dict[str, object]:
         },
         "next-milestone": {
             "title": "Next Milestone",
-            "purpose": "Prepare N+6.0A Human-Approved Gemma Install + First Real Local Model Evaluation.",
+            "purpose": "Prepare N+6.1A constrained Gemma worker routing with a repo-bundle hallucination guard before any Hermes or computer-use expansion.",
             "files": [
                 "03_scripts/local_model_worker_lane.py",
                 "03_scripts/gemma_model_readiness.py",
                 "docs/LOCAL_MODEL_GEMMA_SETUP_GUIDE.md",
                 "docs/EASY_WORKER_LANE_GUIDE.md",
                 "docs/GEMMA_MODEL_INSTALL_DECISION.md",
+                "docs/HUMAN_APPROVED_GEMMA_INSTALL_LOG.md",
                 "docs/LOCAL_MODEL_QUALITY_EVALUATION_GUIDE.md",
                 "14_context/local_worker/generated/local_worker_status.md",
                 "14_context/local_model_readiness/generated/gemma_install_decision.md",
                 "14_context/local_model_readiness/generated/local_task_quality_plan.md",
+                "14_context/local_model_evaluation/runs/",
                 "14_context/hermes_workflow/generated/hermes_operator_bridge_packet.md",
             ],
-            "prompt": "Plan N+6.0A Human-Approved Gemma Install + First Real Local Model Evaluation. Do not run ollama pull unless the human explicitly approves it in that milestone.",
+            "prompt": "Plan N+6.1A constrained Gemma worker routing only after reading the N+6.0A eval. Use known repo-map bundle IDs only, reject invented bundle/file claims, require source metadata, fall back to local_demo when the guard fails, never execute or edit from model output, and keep production routing disabled unless the audit gate explicitly clears it. Then prioritize N+6.2A Hermes manual bridge verification and N+6.3A safe computer-use preparation; no live APIs/provider setup/Telegram/browser automation.",
         },
     }
     return definitions[bundle]
@@ -804,6 +832,7 @@ def build_bundle(bundle: str, map_data: Dict[str, object] | None = None) -> Dict
             GEMMA_STATUS_COMMAND,
             GEMMA_DOCTOR_COMMAND,
             GEMMA_QUALITY_COMMAND,
+            "python 03_scripts/ghoti_product_launcher.py --local-model-eval --json",
             REPO_MAP_COMMAND,
             HERMES_BRIDGE_COMMAND,
             f"python 03_scripts/ghoti_repo_knowledge_map.py --bundle {normalized} --json",
@@ -816,8 +845,8 @@ def build_bundle(bundle: str, map_data: Dict[str, object] | None = None) -> Dict
         f"- Current milestone: {data['milestone']}",
         "- Previous Hermes bridge milestone: N+5.8A - Hermes Agent Workflow / Provider Setup Plan + Manual Bridge Readiness.",
         "- Hermes WSL installed at `/home/ai_sandbox/.local/bin/hermes`, v0.14.0; Hermes Agent / Manual Bridge files available; browser/Playwright degraded/not claimed.",
-        "- Ollama available v0.24.0; Gemma missing unless a new local check proves otherwise; local_demo fallback active.",
-        "- Gemma / Local Model Quality generated files live under `14_context/local_model_readiness/generated/`; manual approval is required before model download and production routing remains disabled.",
+        "- Ollama available v0.24.0; Gemma is installed only if local `ollama list` proves it; local_demo fallback remains available.",
+        "- Gemma / Local Model Quality files live under `14_context/local_model_readiness/generated/`; local eval runs live under `14_context/local_model_evaluation/runs/`; production routing remains disabled.",
         "- UI-TARS observation-only; adapter runner approval-gated/local-only; external sandbox static inspection only.",
         "- Graphify runtime: roadmap only/not wired; no external repo runtime; no network.",
     ])
@@ -886,6 +915,9 @@ def _codex_prompt(map_data: Dict[str, object]) -> str:
         - Current feature milestone: {map_data['milestone']}
         - Graphify runtime: roadmap only/not wired; no external repo runtime; no network.
         - Hermes setup/provider config/Telegram/tokens remain manual later.
+        - Gemma local evaluation runs live under `14_context/local_model_evaluation/runs/`; production routing remains disabled.
+        - N+6.1A must guard against repo-bundle hallucination before routing boring local tasks.
+        - After N+6.1A, prioritize N+6.2A Hermes manual bridge verification and N+6.3A safe computer-use preparation.
         - UI-TARS remains observation-only.
 
         Next recommended milestone:

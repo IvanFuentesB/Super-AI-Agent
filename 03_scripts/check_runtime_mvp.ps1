@@ -1402,10 +1402,10 @@ if (-not [string]::IsNullOrWhiteSpace($desktopPasteTaskId)) {
         ) -or (
             ($desktopPasteExecuteText -match 'status:\s+blocked_human_needed') -and
             ($desktopPasteExecuteText -match 'execution_status:\s+failed') -and
-            ($desktopPasteExecuteText -match 'manual operator focus|manual target resolution is required')
+            ($desktopPasteExecuteText -match 'manual operator focus|manual target resolution is required|Clipboard guard blocked|checker or recipe label|payload was blocked')
         )
     )
-    Write-Check -Name 'Desktop executor paste_clipboard execution succeeds or blocks safely for manual focus' -Passed $desktopPasteExecuteOk -Detail $desktopPasteExecuteText.Trim()
+    Write-Check -Name 'Desktop executor paste_clipboard execution succeeds or blocks safely for manual focus/safety guard' -Passed $desktopPasteExecuteOk -Detail $desktopPasteExecuteText.Trim()
     if (-not $desktopPasteExecuteOk) { $failed++ }
 }
 
@@ -1446,10 +1446,10 @@ if (-not [string]::IsNullOrWhiteSpace($desktopHotkeyTaskId)) {
         ) -or (
             ($desktopHotkeyExecuteText -match 'status:\s+blocked_human_needed') -and
             ($desktopHotkeyExecuteText -match 'execution_status:\s+failed') -and
-            ($desktopHotkeyExecuteText -match 'manual operator focus|manual target resolution is required')
+            ($desktopHotkeyExecuteText -match 'manual operator focus|manual target resolution is required|Clipboard guard blocked|checker or recipe label|payload was blocked')
         )
     )
-    Write-Check -Name 'Desktop executor send_hotkey execution succeeds or blocks safely for manual focus' -Passed $desktopHotkeyExecuteOk -Detail $desktopHotkeyExecuteText.Trim()
+    Write-Check -Name 'Desktop executor send_hotkey execution succeeds or blocks safely for manual focus/safety guard' -Passed $desktopHotkeyExecuteOk -Detail $desktopHotkeyExecuteText.Trim()
     if (-not $desktopHotkeyExecuteOk) { $failed++ }
 }
 
