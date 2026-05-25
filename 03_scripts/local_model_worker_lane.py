@@ -9,18 +9,26 @@ from __future__ import annotations
 
 import argparse
 import datetime as _dt
+import importlib.util
 import json
+import os
 import pathlib
 import re
 import subprocess
 import sys
 import textwrap
+import time
+import urllib.error
+import urllib.request
 from typing import Dict, Iterable, List
 
 
 REPO_ROOT = pathlib.Path(__file__).parent.parent.resolve()
 GENERATED_DIR = REPO_ROOT / "14_context" / "local_worker" / "generated"
+ROUTING_RUNS_DIR = REPO_ROOT / "14_context" / "local_worker" / "routing_runs"
 CONTEXT_PACK_DIR = REPO_ROOT / "14_context" / "compact_memory" / "generated"
+REPO_KNOWLEDGE_DIR = REPO_ROOT / "14_context" / "repo_knowledge" / "generated"
+OUTPUT_GUARD_SCRIPT = REPO_ROOT / "03_scripts" / "local_model_output_guard.py"
 
 LAUNCHER_COMMAND = "python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard"
 DASHBOARD_URL = "http://127.0.0.1:3210"
@@ -29,6 +37,9 @@ WORKER_STATUS_COMMAND = "python 03_scripts/ghoti_product_launcher.py --local-wor
 WORKER_DEMO_COMMAND = "python 03_scripts/ghoti_product_launcher.py --local-worker-demo --json"
 DIRECT_STATUS_COMMAND = "python 03_scripts/local_model_worker_lane.py --status --json"
 DIRECT_DEMO_COMMAND = "python 03_scripts/local_model_worker_lane.py --write-demo-output --json"
+DIRECT_ROUTING_STATUS_COMMAND = "python 03_scripts/local_model_worker_lane.py --routing-status --json"
+DIRECT_ROUTE_TASK_COMMAND = "python 03_scripts/local_model_worker_lane.py --route-task status-paragraph --json"
+DIRECT_ROUTING_DEMO_COMMAND = "python 03_scripts/local_model_worker_lane.py --write-routing-demo --json"
 PREFERRED_GEMMA_MODEL = "gemma3:4b"
 MANUAL_GEMMA_PULL_COMMAND = f"ollama pull {PREFERRED_GEMMA_MODEL}"
 MODEL_LIST_COMMAND = "ollama list"
@@ -38,6 +49,34 @@ SAFE_DEMO_TASKS = [
     "status-paragraph",
     "classify-next-task",
     "codex-next-prompt",
+]
+
+SAFE_ROUTED_TASKS = [
+    "summarize-latest-report",
+    "status-paragraph",
+    "codex-next-prompt",
+    "safety-classification",
+    "context-bundle-summary",
+    "next-milestone-outline",
+    "report-to-bullets",
+]
+
+BLOCKED_ROUTED_TASKS = [
+    "code editing",
+    "shell commands",
+    "browser actions",
+    "API actions",
+    "posting",
+    "money/trading/legal decisions",
+    "credential/session handling",
+    "unsupported file claims",
+    "live account operations",
+]
+
+DEFAULT_ROUTING_DEMO_TASKS = [
+    "status-paragraph",
+    "context-bundle-summary",
+    "safety-classification",
 ]
 
 OUTPUT_FILES = {
@@ -91,6 +130,16 @@ def _repo_rel(path: pathlib.Path) -> str:
 
 
 def _run(cmd: List[str], timeout: int = 10) -> subprocess.CompletedProcess:
+    if cmd == ["ollama", "--version"]:
+        if os.environ.get("GHOTI_LOCAL_WORKER_FAKE_OLLAMA_MISSING") == "1":
+            raise FileNotFoundError("ollama")
+        fake = os.environ.get("GHOTI_LOCAL_WORKER_FAKE_OLLAMA_VERSION")
+        if fake is not None:
+            return subprocess.CompletedProcess(args=cmd, returncode=0, stdout=fake, stderr="")
+    if cmd == ["ollama", "list"]:
+        fake = os.environ.get("GHOTI_LOCAL_WORKER_FAKE_OLLAMA_LIST")
+        if fake is not None:
+            return subprocess.CompletedProcess(args=cmd, returncode=0, stdout=fake, stderr="")
     return subprocess.run(
         cmd,
         cwd=REPO_ROOT,
@@ -426,6 +475,10 @@ def _codex_next_prompt() -> str:
     prompt = _read_text(prompt_path, limit=3000).strip()
     if not prompt:
         prompt = "Use only repo-contained worktrees under `.claude/worktrees`. Keep the primary worktree read-only except inspection."
+    excerpt = prompt
+    if len(excerpt) > 1800:
+        excerpt = excerpt[:1800].rsplit("\n", 1)[0].rstrip()
+        excerpt += "\n\n[excerpt truncated; run the context-pack command for the full prompt.]"
     return textwrap.dedent(f"""\
         Continue Ghoti / Super-AI-Agent from the current clean local-first supervised baseline.
 
@@ -439,7 +492,7 @@ def _codex_next_prompt() -> str:
 
         Context prompt excerpt:
 
-        {prompt[:1800]}
+        {excerpt}
     """)
 
 
@@ -484,6 +537,410 @@ def run_demo_task(task: str, generated_at: str | None = None, task_text: str | N
     }
     payload.update(extra)
     return payload
+
+
+def _load_output_guard():
+    spec = importlib.util.spec_from_file_location("local_model_output_guard", OUTPUT_GUARD_SCRIPT)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("local_model_output_guard.py is unavailable")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _call_ollama_generate(model: str, prompt: str, timeout: int = 60) -> Dict[str, object]:
+    payload = json.dumps({"model": model, "prompt": prompt, "stream": False}).encode("utf-8")
+    request = urllib.request.Request(
+        "http://127.0.0.1:11434/api/generate",
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    started = time.time()
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            raw = response.read().decode("utf-8", errors="replace")
+    except urllib.error.URLError as exc:
+        return {"ok": False, "model": model, "text": "", "latency_seconds": round(time.time() - started, 3), "error": str(exc)}
+    except TimeoutError:
+        return {"ok": False, "model": model, "text": "", "latency_seconds": round(time.time() - started, 3), "error": "ollama generate timed out"}
+    try:
+        data = json.loads(raw)
+    except Exception as exc:
+        return {"ok": False, "model": model, "text": "", "latency_seconds": round(time.time() - started, 3), "error": f"invalid Ollama JSON: {exc}"}
+    text = str(data.get("response") or "").strip()
+    return {
+        "ok": bool(text),
+        "model": model,
+        "text": text,
+        "latency_seconds": round(time.time() - started, 3),
+        "error": "" if text else "empty response",
+    }
+
+
+def _latest_routing_manifest() -> pathlib.Path | None:
+    try:
+        manifests = [path for path in ROUTING_RUNS_DIR.glob("*/00_routing_manifest.json") if path.is_file()]
+    except Exception:
+        manifests = []
+    if not manifests:
+        return None
+    return max(manifests, key=lambda path: (path.stat().st_mtime, path.as_posix()))
+
+
+def _task_bundle_path(bundle_id: str) -> str:
+    normalized = bundle_id.replace("-", "_")
+    return f"14_context/repo_knowledge/generated/task_bundle_{normalized}.md"
+
+
+def _source_metadata_for_task(task: str) -> Dict[str, object]:
+    latest_report = discover_latest_report()
+    latest_report_path = _repo_rel(latest_report) if latest_report else "14_context/repo_knowledge/generated/latest_reports_index.md"
+    mapping = {
+        "summarize-latest-report": {
+            "bundle_ids": ["audit-main", "next-milestone"],
+            "file_paths": [latest_report_path, _task_bundle_path("next-milestone")],
+        },
+        "status-paragraph": {
+            "bundle_ids": ["next-milestone", "local-model-worker"],
+            "file_paths": [_task_bundle_path("next-milestone"), "03_scripts/local_model_worker_lane.py"],
+        },
+        "codex-next-prompt": {
+            "bundle_ids": ["next-milestone", "local-model-worker"],
+            "file_paths": [
+                "14_context/compact_memory/generated/ghoti_codex_next_prompt.md",
+                _task_bundle_path("next-milestone"),
+            ],
+        },
+        "safety-classification": {
+            "bundle_ids": ["safety", "next-milestone"],
+            "file_paths": [_task_bundle_path("safety"), "docs/BLOCKED_UNSAFE_AUTOMATION.md"],
+        },
+        "context-bundle-summary": {
+            "bundle_ids": ["next-milestone", "local-model-worker", "local-model-routing"],
+            "file_paths": [_task_bundle_path("next-milestone"), _task_bundle_path("local-model-worker"), _task_bundle_path("local-model-routing")],
+        },
+        "next-milestone-outline": {
+            "bundle_ids": ["next-milestone", "hermes"],
+            "file_paths": [_task_bundle_path("next-milestone"), _task_bundle_path("hermes")],
+        },
+        "report-to-bullets": {
+            "bundle_ids": ["audit-main", "next-milestone"],
+            "file_paths": [latest_report_path, _task_bundle_path("next-milestone")],
+        },
+    }
+    metadata = dict(mapping.get(task, mapping["status-paragraph"]))
+    metadata["local_only"] = True
+    metadata["live_api_used"] = False
+    return metadata
+
+
+def _json_task_output(answer: str, task: str) -> str:
+    return json.dumps({
+        "answer": answer.strip(),
+        "source_metadata": _source_metadata_for_task(task),
+    }, indent=2)
+
+
+def _extract_answer(text: str) -> str:
+    try:
+        parsed = json.loads(text)
+    except Exception:
+        return text.strip()
+    if isinstance(parsed, dict):
+        return str(parsed.get("answer") or parsed.get("summary") or parsed.get("text") or "").strip()
+    return text.strip()
+
+
+def _local_demo_routed_output(task: str, status: Dict[str, object]) -> str:
+    if task == "summarize-latest-report":
+        summary = _latest_report_summary()
+        answer = (
+            "Latest report summary from local files only:\n"
+            + "\n".join(line for line in summary["text"].splitlines() if line.strip())[:1600]
+        )
+    elif task == "status-paragraph":
+        answer = _status_paragraph(status)
+    elif task == "codex-next-prompt":
+        answer = _codex_next_prompt()[:2200]
+    elif task == "safety-classification":
+        answer = (
+            "Safe classification: local-only summary or planning task. Blocked if it requests code execution, "
+            "browser clicks/typing, live APIs, posting, money/trading/legal actions, credentials, sessions, "
+            "bot/captcha/cloak bypass, or unsupported repo/file claims."
+        )
+    elif task == "context-bundle-summary":
+        bundle = _read_text(REPO_KNOWLEDGE_DIR / "task_bundle_next_milestone.md", limit=2400)
+        answer = (
+            "Use known bundle `next-milestone` for N+6.1A and `local-model-worker` for routing code. "
+            "Do not invent bundle IDs or external repositories.\n\n" + bundle[:1400]
+        )
+    elif task == "next-milestone-outline":
+        answer = (
+            "Next milestone order: finish N+6.1A guarded local routing, then N+6.2A Hermes manual bridge "
+            "verification, then N+6.3A safe computer-use observation harness. Keep no live APIs, no provider "
+            "tokens, no Telegram setup, and no autonomous click/type."
+        )
+    elif task == "report-to-bullets":
+        summary = _latest_report_summary()
+        bullets = [line.strip("- ").strip() for line in summary["text"].splitlines() if line.strip().startswith("-")]
+        answer = "\n".join(f"- {item}" for item in bullets[:10]) or "- No latest report bullets available."
+    else:
+        answer = "Unsupported routed task."
+    return _json_task_output(answer, task)
+
+
+def _route_prompt(task: str, status: Dict[str, object]) -> str:
+    metadata = _source_metadata_for_task(task)
+    source_text = ""
+    for relpath in metadata["file_paths"]:
+        source_text += f"\n\n# Source: {relpath}\n"
+        source_text += _read_text(REPO_ROOT / relpath, limit=2200)
+    return textwrap.dedent(f"""\
+        You are Ghoti's local offline worker. Return ONLY valid JSON with:
+        {{
+          "answer": "short useful answer",
+          "source_metadata": {{
+            "bundle_ids": {json.dumps(metadata['bundle_ids'])},
+            "file_paths": {json.dumps(metadata['file_paths'])},
+            "local_only": true,
+            "live_api_used": false
+          }}
+        }}
+
+        Task: {task}
+
+        Hard constraints:
+        - Use only the listed bundle_ids and file_paths.
+        - Do not invent repo bundles, external repositories, URLs, files, providers, browser abilities, or setup status.
+        - Do not write shell commands to execute, edit files, click/type, post, use accounts, or call live APIs.
+        - If unsure, say uncertainty in the answer while keeping the exact source_metadata.
+
+        Current worker status: {status['status_line']}
+
+        Sources:
+        {source_text[:5200]}
+    """)
+
+
+def routing_status_payload(output_root: pathlib.Path | None = None, generated_at: str | None = None) -> Dict[str, object]:
+    status = build_status(generated_at=generated_at)
+    latest_manifest = _latest_routing_manifest()
+    output_root = output_root or ROUTING_RUNS_DIR
+    return {
+        "ok": True,
+        "action": "routing-status",
+        "milestone": "N+6.1A",
+        "local_only": True,
+        "live_api_used": False,
+        "external_api_used": False,
+        "auto_downloads_enabled": False,
+        "ollama_pull_run": False,
+        "provider_setup_performed": False,
+        "telegram_setup_performed": False,
+        "browser_automation_performed": False,
+        "production_routing_enabled": False,
+        "guard_enabled": True,
+        "source_metadata_required": True,
+        "known_bundle_allowlist_source": "14_context/repo_knowledge/generated/repo_knowledge_map.json",
+        "routing_enabled_for_safe_tasks": bool(status["gemma"]["installed"]),
+        "active_model": status["gemma"]["model_name"] or "local_demo",
+        "active_route_preference": "ollama_gemma_guarded" if status["gemma"]["installed"] else "local_demo_fallback",
+        "fallback_available": True,
+        "safe_routed_tasks": SAFE_ROUTED_TASKS,
+        "blocked_routed_tasks": BLOCKED_ROUTED_TASKS,
+        "readiness_percent": 82 if status["gemma"]["installed"] else 55,
+        "status_line": (
+            "Local model routing readiness: 82%. Gemma is installed, guarded safe-task routing is available, "
+            "and repo-bundle hallucination guard is enabled. Production routing remains limited to offline safe tasks."
+            if status["gemma"]["installed"]
+            else "Local model routing readiness: 55%. Gemma is missing, so routing uses local_demo fallback with the same guard shape."
+        ),
+        "latest_routing_run_path": _repo_rel(latest_manifest.parent) if latest_manifest else _repo_rel(output_root),
+        "output_dir": _repo_rel(output_root),
+        "generated_at": status["generated_at"],
+    }
+
+
+def route_task(task: str, generated_at: str | None = None) -> Dict[str, object]:
+    normalized = task.strip().lower()
+    if normalized not in SAFE_ROUTED_TASKS:
+        return {
+            "ok": False,
+            "action": "route-task",
+            "local_only": True,
+            "live_api_used": False,
+            "task": normalized,
+            "error": "unsupported routed task",
+            "safe_routed_tasks": SAFE_ROUTED_TASKS,
+            "blocked_routed_tasks": BLOCKED_ROUTED_TASKS,
+            "generated_at": generated_at or _utc_now(),
+        }
+    status = build_status(generated_at=generated_at)
+    guard = _load_output_guard()
+    gemma_installed = bool(status["gemma"]["installed"])
+    model_name = str(status["gemma"]["model_name"] or PREFERRED_GEMMA_MODEL)
+    gemma_generation = {"ok": False, "model": model_name, "text": "", "latency_seconds": None, "error": "gemma not attempted"}
+    rejected_model_text = ""
+    guard_result: Dict[str, object]
+    final_json: str
+    active_route = "local_demo_fallback"
+
+    if gemma_installed:
+        prompt = _route_prompt(normalized, status)
+        gemma_generation = _call_ollama_generate(model_name, prompt, timeout=60)
+        if gemma_generation.get("ok"):
+            raw_text = str(gemma_generation.get("text") or "")
+            validation = guard.validate_model_output(raw_text, task=normalized)
+            if validation["status"] in ("pass", "warn"):
+                final_json = raw_text
+                guard_result = validation
+                active_route = "ollama_gemma"
+            else:
+                rejected_model_text = raw_text
+                final_json = _local_demo_routed_output(normalized, status)
+                guard_result = guard.fallback_guard_result(validation, "Gemma output rejected; local_demo fallback used.")
+        else:
+            final_json = _local_demo_routed_output(normalized, status)
+            validation = {
+                "ok": False,
+                "status": "reject",
+                "task": normalized,
+                "local_only": True,
+                "live_api_used": False,
+                "bundle_ids": [],
+                "file_paths": [],
+                "known_bundle_count": 0,
+                "known_file_count": 0,
+                "reasons": [gemma_generation.get("error") or "Gemma generation failed"],
+                "warnings": [],
+                "requires_fallback": True,
+            }
+            guard_result = guard.fallback_guard_result(validation, "Gemma generation failed; local_demo fallback used.")
+    else:
+        final_json = _local_demo_routed_output(normalized, status)
+        guard_result = guard.validate_model_output(final_json, task=normalized)
+
+    return {
+        "ok": True,
+        "action": "route-task",
+        "milestone": "N+6.1A",
+        "local_only": True,
+        "live_api_used": False,
+        "external_api_used": False,
+        "auto_downloads_enabled": False,
+        "ollama_pull_run": False,
+        "provider_setup_performed": False,
+        "telegram_setup_performed": False,
+        "browser_automation_performed": False,
+        "production_routing_enabled": False,
+        "task": normalized,
+        "safe_routed_tasks": SAFE_ROUTED_TASKS,
+        "active_route": active_route,
+        "active_model": model_name if active_route == "ollama_gemma" else "local_demo",
+        "gemma_attempted": gemma_installed,
+        "gemma_generation": gemma_generation,
+        "guard_enabled": True,
+        "guard_result": guard_result,
+        "fallback_available": True,
+        "fallback_used": active_route == "local_demo_fallback",
+        "text": _extract_answer(final_json),
+        "final_output_json": final_json,
+        "rejected_model_text": rejected_model_text,
+        "generated_at": status["generated_at"],
+    }
+
+
+def _routing_run_dir(output_root: pathlib.Path, generated_at: str | None = None) -> pathlib.Path:
+    stamp = re.sub(r"[^0-9A-Za-z]+", "", generated_at or _utc_now()) or "timestamp"
+    return output_root / f"{stamp}_guarded_routing_demo"
+
+
+def write_routing_demo(output_root: pathlib.Path | None = None, generated_at: str | None = None) -> Dict[str, object]:
+    root = output_root or ROUTING_RUNS_DIR
+    if not _is_inside_repo(root):
+        raise ValueError("routing output directory must stay inside repo root")
+    created = generated_at or _utc_now()
+    run_dir = _routing_run_dir(root, generated_at=created)
+    tasks = DEFAULT_ROUTING_DEMO_TASKS
+    results = [route_task(task, generated_at=created) for task in tasks]
+    manifest = routing_status_payload(output_root=root, generated_at=created)
+    manifest.update({
+        "action": "write-routing-demo",
+        "run_dir": _repo_rel(run_dir),
+        "tasks": tasks,
+        "guard_statuses": [result["guard_result"]["status"] for result in results],
+        "fallback_used": any(result["fallback_used"] for result in results),
+    })
+    task_inputs = [{"task": task, "source_metadata": _source_metadata_for_task(task)} for task in tasks]
+    gemma_outputs = "\n\n".join(
+        f"## {result['task']}\n\n{result['gemma_generation'].get('text') or result['gemma_generation'].get('error') or 'not attempted'}"
+        for result in results
+    )
+    guard_results = {
+        "ok": True,
+        "local_only": True,
+        "live_api_used": False,
+        "results": [result["guard_result"] for result in results],
+    }
+    fallback_outputs = "\n\n".join(
+        f"## {result['task']}\n\n{result['text']}" for result in results if result["fallback_used"]
+    ) or "No fallback was needed in this routing demo.\n"
+    final_outputs = "\n\n".join(f"## {result['task']}\n\n{result['text']}" for result in results)
+    quality_review = textwrap.dedent(f"""\
+        # Guarded Local Routing Quality Review
+
+        - Tasks routed: {len(results)}
+        - Guard enabled: true
+        - Fallback used: {str(manifest['fallback_used']).lower()}
+        - Live APIs used: false
+        - Commands executed from model output: false
+        - Files edited from model output: false
+
+        N+6.0A hallucination fix: Gemma previously invented a `StableLM-DanceDiffusion`
+        bundle and cited an external GitHub URL. N+6.1A now rejects invented bundle IDs,
+        unknown source files, URLs, and missing source metadata before a routed answer can
+        be accepted.
+    """)
+    next_steps = textwrap.dedent("""\
+        # Next Steps
+
+        Keep N+6.1A limited to offline safe tasks. N+6.2A should verify the Hermes manual
+        bridge without tokens or provider setup. N+6.3A should prepare observation-only
+        computer-use tests with human approval for every future click/type.
+    """)
+    files = {
+        "00_routing_manifest.json": json.dumps(manifest, indent=2) + "\n",
+        "01_task_inputs.json": json.dumps(task_inputs, indent=2) + "\n",
+        "02_gemma_outputs.md": gemma_outputs + "\n",
+        "03_guard_results.json": json.dumps(guard_results, indent=2) + "\n",
+        "04_fallback_outputs.md": fallback_outputs,
+        "05_final_outputs.md": final_outputs + "\n",
+        "06_quality_review.md": quality_review,
+        "07_next_steps.md": next_steps,
+    }
+    _assert_secret_safe(files.values())
+    run_dir.mkdir(parents=True, exist_ok=True)
+    paths: Dict[str, str] = {}
+    for filename, content in files.items():
+        dest = run_dir / filename
+        if not _is_inside_repo(dest):
+            raise ValueError("refusing to write routing demo output outside repo root")
+        dest.write_text(content, encoding="utf-8")
+        paths[filename] = _repo_rel(dest)
+    return {
+        "ok": True,
+        "action": "write-routing-demo",
+        "local_only": True,
+        "live_api_used": False,
+        "guard_enabled": True,
+        "safe_routed_tasks": SAFE_ROUTED_TASKS,
+        "run_dir": _repo_rel(run_dir),
+        "paths": paths,
+        "fallback_used": manifest["fallback_used"],
+        "guard_statuses": manifest["guard_statuses"],
+        "generated_at": created,
+    }
 
 
 def _assert_secret_safe(contents: Iterable[str]) -> None:
@@ -564,6 +1021,9 @@ def main(argv: List[str] | None = None) -> int:
             "  python 03_scripts/local_model_worker_lane.py --doctor --json\n"
             "  python 03_scripts/local_model_worker_lane.py --demo-task status-paragraph --json\n"
             "  python 03_scripts/local_model_worker_lane.py --write-demo-output --json\n"
+            "  python 03_scripts/local_model_worker_lane.py --routing-status --json\n"
+            "  python 03_scripts/local_model_worker_lane.py --route-task status-paragraph --json\n"
+            "  python 03_scripts/local_model_worker_lane.py --write-routing-demo --json\n"
             "\nManual Gemma command for later, not run by Ghoti automatically:\n"
             f"  {MANUAL_GEMMA_PULL_COMMAND}\n"
         ),
@@ -573,6 +1033,9 @@ def main(argv: List[str] | None = None) -> int:
     parser.add_argument("--demo-task", choices=SAFE_DEMO_TASKS, help="run one deterministic safe demo task")
     parser.add_argument("--task-text", help="text to classify for --demo-task classify-next-task")
     parser.add_argument("--write-demo-output", action="store_true", help="write all demo output files")
+    parser.add_argument("--routing-status", action="store_true", help="show guarded local model routing status")
+    parser.add_argument("--route-task", choices=SAFE_ROUTED_TASKS, help="route one allowlisted local worker task through guard/fallback")
+    parser.add_argument("--write-routing-demo", action="store_true", help="write a guarded routing demo run")
     parser.add_argument("--json", action="store_true", help="emit JSON")
     parser.add_argument("--output-dir", help="repo-local output directory override")
     parser.add_argument("--generated-at", help="override generated timestamp for deterministic tests")
@@ -582,6 +1045,12 @@ def main(argv: List[str] | None = None) -> int:
         output_dir = _resolve_output_dir(args.output_dir)
         if args.doctor:
             payload = build_doctor(generated_at=args.generated_at)
+        elif args.routing_status:
+            payload = routing_status_payload(output_root=ROUTING_RUNS_DIR, generated_at=args.generated_at)
+        elif args.route_task:
+            payload = route_task(args.route_task, generated_at=args.generated_at)
+        elif args.write_routing_demo:
+            payload = write_routing_demo(output_root=ROUTING_RUNS_DIR, generated_at=args.generated_at)
         elif args.demo_task:
             payload = run_demo_task(args.demo_task, generated_at=args.generated_at, task_text=args.task_text)
         elif args.write_demo_output:

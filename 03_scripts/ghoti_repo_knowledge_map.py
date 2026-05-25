@@ -34,11 +34,14 @@ HERMES_BRIDGE_WRITE_COMMAND = "python 03_scripts/ghoti_product_launcher.py --her
 GEMMA_STATUS_COMMAND = "python 03_scripts/ghoti_product_launcher.py --gemma-status --json"
 GEMMA_DOCTOR_COMMAND = "python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json"
 GEMMA_QUALITY_COMMAND = "python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json"
+LOCAL_WORKER_ROUTING_STATUS_COMMAND = "python 03_scripts/ghoti_product_launcher.py --local-worker-routing-status --json"
+LOCAL_WORKER_ROUTE_TASK_COMMAND = "python 03_scripts/ghoti_product_launcher.py --local-worker-route-task status-paragraph --json"
+LOCAL_WORKER_ROUTING_DEMO_COMMAND = "python 03_scripts/ghoti_product_launcher.py --local-worker-routing-demo --json"
 DIRECT_WRITE_COMMAND = "python 03_scripts/ghoti_repo_knowledge_map.py --write --json"
 
-LATEST_CLEAN_MILESTONE = "N+5.9B - Gemma Readiness / Local Quality Plan landed on main"
-CURRENT_MILESTONE = "N+6.0A - Human-Approved Gemma Install + First Real Local Model Evaluation"
-NEXT_RECOMMENDED_MILESTONE = "N+6.1A - Constrained Gemma Worker Routing + Repo-Bundle Hallucination Guard"
+LATEST_CLEAN_MILESTONE = "N+6.0B - Human-Approved Gemma Install + First Local Evaluation landed on main"
+CURRENT_MILESTONE = "N+6.1A - Constrained Local Model Routing + Repo-Bundle Hallucination Guard"
+NEXT_RECOMMENDED_MILESTONE = "N+6.2A - Hermes Agent Manual Bridge Verification + WSL Usage Guide"
 ROADMAP_PRIORITY_SEQUENCE = [
     "N+6.1A - Constrained Gemma worker routing for boring/simple local tasks, with known repo-bundle IDs only and fallback on guard failure.",
     "N+6.2A - Hermes Agent Workflow / Manual Bridge Verification for faster supervised task execution; safe probes only, no tokens, no provider setup.",
@@ -54,6 +57,7 @@ TASK_BUNDLES = [
     "dashboard",
     "local-memory",
     "local-model-worker",
+    "local-model-routing",
     "hermes",
     "content-workflow",
     "safety",
@@ -69,6 +73,7 @@ OUTPUT_FILES = {
     "task_bundle_dashboard.md": "bundle_dashboard",
     "task_bundle_local_memory.md": "bundle_local_memory",
     "task_bundle_local_model_worker.md": "bundle_local_model_worker",
+    "task_bundle_local_model_routing.md": "bundle_local_model_routing",
     "task_bundle_hermes.md": "bundle_hermes",
     "task_bundle_content_workflow.md": "bundle_content_workflow",
     "task_bundle_safety.md": "bundle_safety",
@@ -141,8 +146,14 @@ IMPORTANT_FILE_CATALOG = [
     {
         "path": "03_scripts/local_model_worker_lane.py",
         "subsystem": "local model/easy worker",
-        "description": "Detects Ollama/Gemma truth and writes deterministic local worker demo outputs.",
-        "why": "Current credit-saving worker lane with local_demo fallback.",
+        "description": "Detects Ollama/Gemma truth, writes demo outputs, and routes safe local worker tasks through guard/fallback.",
+        "why": "Credit-saving worker lane with Gemma and local_demo fallback.",
+    },
+    {
+        "path": "03_scripts/local_model_output_guard.py",
+        "subsystem": "local model/easy worker",
+        "description": "Validates routed model output against known repo bundles, known source files, and local-only safety metadata.",
+        "why": "Rejects the repo-bundle hallucination found in the first Gemma evaluation.",
     },
     {
         "path": "03_scripts/gemma_model_readiness.py",
@@ -259,6 +270,24 @@ IMPORTANT_FILE_CATALOG = [
         "why": "Keeps the one-model approval separate from future routing or provider setup.",
     },
     {
+        "path": "docs/LOCAL_MODEL_ROUTING_GUIDE.md",
+        "subsystem": "local model/easy worker",
+        "description": "Guide for guarded local model routing and fallback behavior.",
+        "why": "Explains what Gemma can route now and what remains blocked.",
+    },
+    {
+        "path": "docs/LOCAL_MODEL_OUTPUT_GUARD.md",
+        "subsystem": "local model/easy worker",
+        "description": "Guard requirements for source metadata, known bundle IDs, known files, and local-only flags.",
+        "why": "Documents the hallucination fix and output acceptance criteria.",
+    },
+    {
+        "path": "docs/LOCAL_WORKER_SAFE_TASKS.md",
+        "subsystem": "local model/easy worker",
+        "description": "Allowlist and blocked-task list for local worker routing.",
+        "why": "Keeps boring local tasks useful without unsafe autonomy.",
+    },
+    {
         "path": "docs/LOCAL_MODEL_QUALITY_EVALUATION_GUIDE.md",
         "subsystem": "local model/easy worker",
         "description": "Local model quality rubric and evaluation workflow.",
@@ -295,6 +324,12 @@ IMPORTANT_FILE_CATALOG = [
         "why": "Keeps click/type/autonomy future-gated.",
     },
     {
+        "path": "docs/SAFE_COMPUTER_USE_TEST_PLAN_APPLE_COMPARISON.md",
+        "subsystem": "UI-TARS/computer-use",
+        "description": "Future Apple comparison test plan for observation/manual-approval browser work.",
+        "why": "Documents the boring-task computer-use target without executing browser control now.",
+    },
+    {
         "path": "docs/TOKEN_EFFICIENT_COMPUTER_USE_ROADMAP.md",
         "subsystem": "future Graphify roadmap",
         "description": "Token-efficiency, local models, memory, and Graphify planning.",
@@ -319,6 +354,12 @@ IMPORTANT_FILE_CATALOG = [
         "why": "Shows Ollama/Gemma/local_demo readiness.",
     },
     {
+        "path": "14_context/local_worker/routing_runs/",
+        "subsystem": "local model/easy worker",
+        "description": "Generated guarded routing demo runs.",
+        "why": "Shows guard results, fallback use, final routed text, and next steps.",
+    },
+    {
         "path": "14_context/hermes_workflow/generated/hermes_workflow_status.md",
         "subsystem": "Hermes/WSL",
         "description": "Latest Hermes manual bridge readiness status file.",
@@ -329,6 +370,12 @@ IMPORTANT_FILE_CATALOG = [
         "subsystem": "tests",
         "description": "N+5.6 local worker lane tests.",
         "why": "Best current pattern for JSON script, launcher, docs, and dashboard checks.",
+    },
+    {
+        "path": "01_projects/runtime_mvp/tests/test_n6_1a_constrained_local_model_routing_repo_bundle_guard.py",
+        "subsystem": "tests",
+        "description": "N+6.1 guarded routing and hallucination guard tests.",
+        "why": "Protects source metadata, safe task allowlist, fallback, dashboard labels, and Apple test plan.",
     },
 ]
 
@@ -557,6 +604,9 @@ def build_map(generated_at: str | None = None, output_dir: pathlib.Path | None =
         "gemma_status_command": GEMMA_STATUS_COMMAND,
         "gemma_doctor_command": GEMMA_DOCTOR_COMMAND,
         "gemma_quality_command": GEMMA_QUALITY_COMMAND,
+        "local_worker_routing_status_command": LOCAL_WORKER_ROUTING_STATUS_COMMAND,
+        "local_worker_route_task_command": LOCAL_WORKER_ROUTE_TASK_COMMAND,
+        "local_worker_routing_demo_command": LOCAL_WORKER_ROUTING_DEMO_COMMAND,
         "gemma_readiness": {
             "status": "manual_install_decision_ready",
             "generated_dir": "14_context/local_model_readiness/generated",
@@ -566,6 +616,23 @@ def build_map(generated_at: str | None = None, output_dir: pathlib.Path | None =
             "evaluation_runs_dir": "14_context/local_model_evaluation/runs",
             "production_routing": "disabled",
             "manual_download": "manual approval required before model download",
+        },
+        "local_model_routing": {
+            "status": "guarded_safe_tasks_only",
+            "guard_enabled": True,
+            "source_metadata_required": True,
+            "routing_runs_dir": "14_context/local_worker/routing_runs",
+            "output_guard": "03_scripts/local_model_output_guard.py",
+            "safe_tasks": [
+                "summarize-latest-report",
+                "status-paragraph",
+                "codex-next-prompt",
+                "safety-classification",
+                "context-bundle-summary",
+                "next-milestone-outline",
+                "report-to-bullets",
+            ],
+            "blocked": "no command execution, browser actions, live APIs, posting, account actions, credentials, or unsupported file claims",
         },
         "repo_map_command": REPO_MAP_COMMAND,
         "next_bundle_command": NEXT_BUNDLE_COMMAND,
@@ -735,7 +802,11 @@ def _bundle_definition(bundle: str) -> Dict[str, object]:
             "purpose": "Improve Ollama/Gemma truth, Gemma readiness, local_demo fallback tasks, and local model quality evaluation without provider setup.",
             "files": [
                 "03_scripts/local_model_worker_lane.py",
+                "03_scripts/local_model_output_guard.py",
                 "03_scripts/gemma_model_readiness.py",
+                "docs/LOCAL_MODEL_ROUTING_GUIDE.md",
+                "docs/LOCAL_MODEL_OUTPUT_GUARD.md",
+                "docs/LOCAL_WORKER_SAFE_TASKS.md",
                 "docs/LOCAL_MODEL_GEMMA_SETUP_GUIDE.md",
                 "docs/EASY_WORKER_LANE_GUIDE.md",
                 "docs/GEMMA_MODEL_INSTALL_DECISION.md",
@@ -747,6 +818,22 @@ def _bundle_definition(bundle: str) -> Dict[str, object]:
                 "14_context/local_model_evaluation/runs/",
             ],
             "prompt": "Improve the local model worker lane and Gemma evaluation. Do not run new model pulls, live APIs, provider setup, or production routing without explicit approval.",
+        },
+        "local-model-routing": {
+            "title": "Local Model Routing / Guarded Worker",
+            "purpose": "Route safe offline tasks through Gemma only when output passes repo-bundle and source metadata guard checks.",
+            "files": [
+                "03_scripts/local_model_worker_lane.py",
+                "03_scripts/local_model_output_guard.py",
+                "03_scripts/ghoti_repo_knowledge_map.py",
+                "docs/LOCAL_MODEL_ROUTING_GUIDE.md",
+                "docs/LOCAL_MODEL_OUTPUT_GUARD.md",
+                "docs/LOCAL_WORKER_SAFE_TASKS.md",
+                "14_context/local_worker/routing_runs/",
+                "14_context/repo_knowledge/generated/task_bundle_next_milestone.md",
+                "01_projects/runtime_mvp/tests/test_n6_1a_constrained_local_model_routing_repo_bundle_guard.py",
+            ],
+            "prompt": "Work on constrained local model routing. Use only known repo-map bundle IDs, require source metadata, reject invented files/URLs, fallback to local_demo on guard failure, and never execute or edit from model output.",
         },
         "hermes": {
             "title": "Hermes Agent / Manual Bridge Work",
@@ -788,22 +875,30 @@ def _bundle_definition(bundle: str) -> Dict[str, object]:
         },
         "next-milestone": {
             "title": "Next Milestone",
-            "purpose": "Prepare N+6.1A constrained Gemma worker routing with a repo-bundle hallucination guard before any Hermes or computer-use expansion.",
+            "purpose": "Prepare N+6.2A Hermes manual bridge verification after N+6.1A guarded routing is audited.",
             "files": [
                 "03_scripts/local_model_worker_lane.py",
+                "03_scripts/local_model_output_guard.py",
                 "03_scripts/gemma_model_readiness.py",
+                "03_scripts/hermes_agent_workflow_bridge.py",
+                "docs/LOCAL_MODEL_ROUTING_GUIDE.md",
+                "docs/LOCAL_MODEL_OUTPUT_GUARD.md",
+                "docs/LOCAL_WORKER_SAFE_TASKS.md",
                 "docs/LOCAL_MODEL_GEMMA_SETUP_GUIDE.md",
                 "docs/EASY_WORKER_LANE_GUIDE.md",
                 "docs/GEMMA_MODEL_INSTALL_DECISION.md",
                 "docs/HUMAN_APPROVED_GEMMA_INSTALL_LOG.md",
                 "docs/LOCAL_MODEL_QUALITY_EVALUATION_GUIDE.md",
+                "docs/HERMES_AGENT_WORKFLOW_GUIDE.md",
+                "docs/SAFE_COMPUTER_USE_TEST_PLAN_APPLE_COMPARISON.md",
                 "14_context/local_worker/generated/local_worker_status.md",
+                "14_context/local_worker/routing_runs/",
                 "14_context/local_model_readiness/generated/gemma_install_decision.md",
                 "14_context/local_model_readiness/generated/local_task_quality_plan.md",
                 "14_context/local_model_evaluation/runs/",
                 "14_context/hermes_workflow/generated/hermes_operator_bridge_packet.md",
             ],
-            "prompt": "Plan N+6.1A constrained Gemma worker routing only after reading the N+6.0A eval. Use known repo-map bundle IDs only, reject invented bundle/file claims, require source metadata, fall back to local_demo when the guard fails, never execute or edit from model output, and keep production routing disabled unless the audit gate explicitly clears it. Then prioritize N+6.2A Hermes manual bridge verification and N+6.3A safe computer-use preparation; no live APIs/provider setup/Telegram/browser automation.",
+            "prompt": "Plan N+6.2A Hermes manual bridge verification after N+6.1A guarded routing is clean. Keep safe probes only, no tokens/provider setup/Telegram/live APIs/browser automation. Preserve the N+6.3A computer-use plan as observation/manual-approval only.",
         },
     }
     return definitions[bundle]

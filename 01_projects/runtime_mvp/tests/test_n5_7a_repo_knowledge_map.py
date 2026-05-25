@@ -73,6 +73,7 @@ class GhotiRepoKnowledgeMapTests(unittest.TestCase):
                 "task_bundle_dashboard.md",
                 "task_bundle_local_memory.md",
                 "task_bundle_local_model_worker.md",
+                "task_bundle_local_model_routing.md",
                 "task_bundle_hermes.md",
                 "task_bundle_content_workflow.md",
                 "task_bundle_safety.md",

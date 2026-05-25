@@ -45,4 +45,12 @@ python 03_scripts/hermes_agent_workflow_bridge.py --skills-index --json
 
 ## How Hermes Fits
 
-Hermes is a future local agent workflow bridge beside Codex, ChatGPT, Claude, Ollama/Gemma, context packs, Gemma readiness files, and repo knowledge bundles. For now, Ghoti exposes Hermes truth and manual next steps without enabling autonomy. Gemma install and quality work remains separate: use `python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json` and do not run `ollama pull` from Hermes or Codex without a later human-approved milestone.
+Hermes is a future local agent workflow bridge beside Codex, ChatGPT, Claude,
+Ollama/Gemma, context packs, guarded local routing, and repo knowledge bundles.
+For now, Ghoti exposes Hermes truth and manual next steps without enabling
+autonomy. Gemma install and quality work remains separate: use
+`python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json` and do not
+run `ollama pull` from Hermes or Codex without a later human-approved milestone.
+N+6.1A's guarded routing output can help draft Hermes next-step packets, but it
+must not run Hermes setup, provider config, Telegram setup, tokens, live APIs,
+or browser automation.

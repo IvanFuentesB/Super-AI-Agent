@@ -13,6 +13,7 @@ Local repo knowledge grouped by subsystem.
 ## UI-TARS/computer-use
 - `03_scripts/ui_tars_observation_adapter.py`
 - `docs/COMPUTER_USE_ROADMAP.md`
+- `docs/SAFE_COMPUTER_USE_TEST_PLAN_APPLE_COMPARISON.md`
 
 ## adapter/external sandbox
 - `03_scripts/approved_adapter_runner.py`
@@ -43,13 +44,18 @@ Local repo knowledge grouped by subsystem.
 
 ## local model/easy worker
 - `03_scripts/gemma_model_readiness.py`
+- `03_scripts/local_model_output_guard.py`
 - `03_scripts/local_model_worker_lane.py`
 - `14_context/local_worker/generated/local_worker_status.md`
+- `14_context/local_worker/routing_runs/`
 - `docs/EASY_WORKER_LANE_GUIDE.md`
 - `docs/GEMMA_MODEL_INSTALL_DECISION.md`
 - `docs/HUMAN_APPROVED_GEMMA_INSTALL_LOG.md`
 - `docs/LOCAL_MODEL_GEMMA_SETUP_GUIDE.md`
+- `docs/LOCAL_MODEL_OUTPUT_GUARD.md`
 - `docs/LOCAL_MODEL_QUALITY_EVALUATION_GUIDE.md`
+- `docs/LOCAL_MODEL_ROUTING_GUIDE.md`
+- `docs/LOCAL_WORKER_SAFE_TASKS.md`
 
 ## public/security audit
 - `03_scripts/model_council_tool_intake.py`
@@ -61,7 +67,6 @@ Local repo knowledge grouped by subsystem.
 - `14_context/codex_n5_6a_local_model_gemma_setup_truth_easy_worker_lane.md`
 - `14_context/codex_n5_6b_main_merge_local_model_easy_worker_lane.md`
 - `14_context/codex_n5_7a_graphify_repo_knowledge_map_context_retrieval.md`
-- `14_context/codex_n5_7b_main_merge_repo_knowledge_context_retrieval.md`
 - `14_context/codex_n5_8a_hermes_agent_workflow_provider_setup_plan_manual_bridge.md`
 - `14_context/codex_n5_8b_main_merge_hermes_manual_bridge_readiness.md`
 - `14_context/codex_n5_9a_gemma_model_availability_local_task_quality_evaluation.md`
@@ -70,9 +75,12 @@ Local repo knowledge grouped by subsystem.
 - `14_context/codex_n6_0a_roadmap_priority_hermes_computer_use_update.md`
 - `14_context/codex_n6_0a_roadmap_priority_hermes_computer_use_update_audit.md`
 - `14_context/codex_n6_0b_main_merge_gemma_install_first_local_eval.md`
+- `14_context/codex_n6_0c_report_history_stability_repair.md`
+- `14_context/codex_n6_1a_constrained_local_model_routing_repo_bundle_guard.md`
 
 ## supervised content demo
 - `03_scripts/supervised_content_mvp_runner.py`
 
 ## tests
 - `01_projects/runtime_mvp/tests/test_n5_6a_local_model_easy_worker_lane.py`
+- `01_projects/runtime_mvp/tests/test_n6_1a_constrained_local_model_routing_repo_bundle_guard.py`

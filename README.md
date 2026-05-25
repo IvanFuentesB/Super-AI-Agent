@@ -12,23 +12,23 @@ Ghoti is a local-first, approval-gated AI operating workspace for supervised dem
 
 ## Quickstart
 
-Current clean main baseline: **N+5.9B / CLEAN PASS / GEMMA READINESS AND
-LOCAL QUALITY PLAN LANDED ON MAIN**.
+Current clean main baseline: **N+6.0B / CLEAN PASS / GEMMA INSTALL AND FIRST
+LOCAL EVALUATION LANDED ON MAIN**.
 
-Current feature/audit lane: **N+6.0A / HUMAN-APPROVED GEMMA INSTALL + FIRST
-LOCAL EVALUATION READY**. N+6.0A is intentionally feature/audit only until a
-future merge gate lands it on main.
+Current feature/audit lane: **N+6.1A / CONSTRAINED LOCAL MODEL ROUTING +
+REPO-BUNDLE HALLUCINATION GUARD**. N+6.1A is intentionally feature/audit only
+until a future clean merge gate lands it on main.
 
 Previous clean baseline preserved for audit continuity: **N+5.6B /
 clean/local-model-easy-worker-lane on main** at
 `c9413108006d920e0110413d3d5e195b504489c1`.
 
 ```text
-origin/main = 20e1dce1e89f15a337054864560b95b82233877c
+origin/main = 1ddeb0f39d5316e90ee2d0b8caa276b1fec9e4e6
 N+4: 329 OK
 N+5: 97 OK
 N+6: 5 OK
-Public audit: 150 checks / 0 blockers / 7 warnings on the N+6.0A audit branch
+Public audit: 150 checks / 0 blockers / 7 warnings on the N+6.0B final main audit
 ```
 
 ```powershell
@@ -50,6 +50,10 @@ Daily guide:
 - [Gemma Model Install Decision](docs/GEMMA_MODEL_INSTALL_DECISION.md)
 - [Human-Approved Gemma Install Log](docs/HUMAN_APPROVED_GEMMA_INSTALL_LOG.md)
 - [Local Model Quality Evaluation Guide](docs/LOCAL_MODEL_QUALITY_EVALUATION_GUIDE.md)
+- [Local Model Routing Guide](docs/LOCAL_MODEL_ROUTING_GUIDE.md)
+- [Local Model Output Guard](docs/LOCAL_MODEL_OUTPUT_GUARD.md)
+- [Local Worker Safe Tasks](docs/LOCAL_WORKER_SAFE_TASKS.md)
+- [Safe Computer-Use Apple Test Plan](docs/SAFE_COMPUTER_USE_TEST_PLAN_APPLE_COMPARISON.md)
 - [Repo Knowledge Map Guide](docs/REPO_KNOWLEDGE_MAP_GUIDE.md)
 - [Graphify Repo Knowledge Roadmap](docs/GRAPHIFY_REPO_KNOWLEDGE_ROADMAP.md)
 - [Hermes Agent Workflow Guide](docs/HERMES_AGENT_WORKFLOW_GUIDE.md)
@@ -61,6 +65,9 @@ Daily guide:
 - Context pack: `python 03_scripts/ghoti_context_pack_builder.py --write --json`
 - Local worker status: `python 03_scripts/ghoti_product_launcher.py --local-worker-status --json`
 - Local worker demo: `python 03_scripts/ghoti_product_launcher.py --local-worker-demo --json`
+- Local worker routing status: `python 03_scripts/ghoti_product_launcher.py --local-worker-routing-status --json`
+- Local worker route task: `python 03_scripts/ghoti_product_launcher.py --local-worker-route-task status-paragraph --json`
+- Local worker routing demo: `python 03_scripts/ghoti_product_launcher.py --local-worker-routing-demo --json`
 - Gemma readiness: `python 03_scripts/ghoti_product_launcher.py --gemma-status --json`
 - Gemma doctor: `python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json`
 - Gemma quality plan: `python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json`
@@ -84,6 +91,9 @@ Daily guide:
   under `14_context/local_model_readiness/generated/`.
 - Record a human-approved Gemma preflight and first local quality evaluation
   under `14_context/local_model_evaluation/runs/`.
+- Route allowlisted offline local worker tasks through Gemma only when the
+  output guard accepts known repo bundle IDs, known file sources, and
+  `local_only=true`; otherwise fall back to `local_demo`.
 - Generate a local repo knowledge map, latest report index, subsystem index,
   task bundles, and a focused next prompt under `14_context/repo_knowledge/generated/`.
 - Generate Hermes manual bridge readiness files, skills index, setup checklist,
@@ -458,6 +468,6 @@ flowchart TD
 - Telegram setup requires manual token/chat setup from the user.
 - Graphify is not installed or working in this repo yet.
 - agent-browser and Browser Harness are not runtime-wired.
-- Gemma model availability is pending; Ollama exists but local_demo fallback is active when Gemma is missing.
-- Gemma/Ollama does not control the system.
+- Gemma `gemma3:4b` is installed locally, but broad production routing remains disabled.
+- Gemma/Ollama does not control the system; N+6.1A routes only allowlisted offline text tasks through a source guard and fallback.
 - This repo is public-facing but not open source.

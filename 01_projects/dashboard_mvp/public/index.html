@@ -165,14 +165,15 @@
                   </div>
                 </div>
                 <ul class="card-list">
-                  <li><strong>Main baseline:</strong> N+5.7B clean/repo-knowledge-context-retrieval on main; origin/main = 84e880e7c3f774580a5e4ac340acd497af3027ee.</li>
-                  <li><strong>Previous baseline:</strong> N+5.6B clean/local-model-easy-worker-lane on main; origin/main = c9413108006d920e0110413d3d5e195b504489c1.</li>
+                  <li><strong>Main baseline:</strong> N+6.0B clean/Gemma install first local eval on main; origin/main = 1ddeb0f39d5316e90ee2d0b8caa276b1fec9e4e6.</li>
+                  <li><strong>Previous baseline:</strong> N+5.9B clean/Gemma readiness local quality plan on main; origin/main = 20e1dce1e89f15a337054864560b95b82233877c.</li>
+                  <li><strong>Historical baseline:</strong> N+5.6B clean/local-model-easy-worker-lane on main; origin/main = c9413108006d920e0110413d3d5e195b504489c1.</li>
                   <li><strong>Hermes WSL:</strong> installed at <code>/home/ai_sandbox/.local/bin/hermes</code>; Hermes Agent v0.14.0.</li>
                   <li><strong>Hermes browser/Playwright:</strong> browser/Playwright: degraded/not claimed unless separately verified.</li>
                   <li><strong>Hermes Codex provider:</strong> Codex provider in Hermes: pending/not proven.</li>
                   <li><strong>Telegram:</strong> Telegram: manual later/no token. <strong>VPS:</strong> No VPS.</li>
-                  <li><strong>Local models:</strong> Ollama available v0.24.0; Gemma model missing/local_demo fallback active.</li>
-                  <li><strong>Easy worker:</strong> Local Model / Easy Worker Lane reports readiness percentage, uses existing Ollama/Gemma only when installed, and otherwise keeps local_demo fallback active.</li>
+                  <li><strong>Local models:</strong> Ollama available v0.24.0; Gemma <code>gemma3:4b</code> installed from explicit approval; local_demo fallback remains available. Historical pre-install truth: Gemma model missing/local_demo fallback active.</li>
+                  <li><strong>Easy worker:</strong> Local Model / Easy Worker Lane reports readiness percentage, uses existing Ollama/Gemma only when installed, and keeps local_demo fallback active for guard failures.</li>
                   <li><strong>Memory:</strong> Obsidian/local memory present; compact markdown stays repo-local.</li>
                   <li><strong>Ruflo:</strong> source-missing/status-only unless a later audited milestone changes it.</li>
                   <li><strong>Graphify:</strong> local repo knowledge map available; external Graphify runtime roadmap only/not wired.</li>
@@ -270,8 +271,41 @@
                   <button id="gemma-local-eval-btn" type="button">Load Local Eval</button>
                   <button id="gemma-write-btn" type="button">Write Readiness Files</button>
                 </div>
-                <div id="gemma-action-result" class="card-status">
+              <div id="gemma-action-result" class="card-status">
                   <p class="empty-state">No Gemma readiness action run yet.</p>
+                </div>
+              </section>
+              <section class="console-card console-card-span-2" id="ghoti-local-model-routing-card">
+                <div class="console-card-header">
+                  <div>
+                    <h2>Local Model Routing / Guarded Worker</h2>
+                    <p>Gemma-backed offline routing for safe tasks, protected by a repo-bundle hallucination guard and local_demo fallback.</p>
+                  </div>
+                </div>
+                <ul class="card-list">
+                  <li><strong>Routing status:</strong> <code>python 03_scripts/ghoti_product_launcher.py --local-worker-routing-status --json</code></li>
+                  <li><strong>Route one task:</strong> <code>python 03_scripts/ghoti_product_launcher.py --local-worker-route-task status-paragraph --json</code></li>
+                  <li><strong>Routing demo:</strong> <code>python 03_scripts/ghoti_product_launcher.py --local-worker-routing-demo --json</code></li>
+                  <li><strong>Gemma installed:</strong> <span id="local-routing-gemma-installed">loading...</span></li>
+                  <li><strong>Active model:</strong> <code id="local-routing-active-model">loading...</code></li>
+                  <li><strong>routing enabled for safe tasks:</strong> <span id="local-routing-enabled">loading...</span></li>
+                  <li><strong>guard enabled:</strong> <span id="local-routing-guard-enabled">loading...</span></li>
+                  <li><strong>last guard result:</strong> <code id="local-routing-last-guard">loading...</code></li>
+                  <li><strong>known bundle IDs source:</strong> <code id="local-routing-bundle-source">14_context/repo_knowledge/generated/repo_knowledge_map.json</code></li>
+                  <li><strong>hallucination guard status:</strong> <span id="local-routing-guard-status">enabled; invented bundles/files rejected</span></li>
+                  <li><strong>fallback status:</strong> <span id="local-routing-fallback">local_demo fallback available</span></li>
+                  <li><strong>latest routing run path:</strong> <code id="local-routing-run-path">14_context/local_worker/routing_runs/</code></li>
+                  <li><strong>Safe task list:</strong> summarize-latest-report, status-paragraph, codex-next-prompt, safety-classification, context-bundle-summary, next-milestone-outline, report-to-bullets.</li>
+                  <li><strong>Safety:</strong> no live APIs, no command execution from model output, no file edits from model output, no browser actions, no provider setup.</li>
+                  <li><strong>Status:</strong> <span id="local-routing-status-line">Loading guarded routing status...</span></li>
+                </ul>
+                <div class="card-actions">
+                  <button id="local-routing-refresh-btn" type="button">Refresh Routing Status</button>
+                  <button id="local-routing-route-btn" type="button">Route Status Paragraph</button>
+                  <button id="local-routing-demo-btn" type="button">Write Routing Demo</button>
+                </div>
+                <div id="local-routing-action-result" class="card-status">
+                  <p class="empty-state">No guarded routing action run yet.</p>
                 </div>
               </section>
               <section class="console-card console-card-span-2" id="ghoti-repo-knowledge-card">
@@ -349,7 +383,8 @@
                   <li>Public/security audit gates and model council scan run local-only.</li>
                   <li>UI-TARS observation dry-run; adapter dry-run/status; external sandbox static inspection.</li>
                   <li>Local memory status/fallback, generated context packs, and Reports under 14_context.</li>
-                  <li>Local Model / Easy Worker Lane status and deterministic demo outputs run with local_demo fallback when Gemma is missing.</li>
+                  <li>Local Model / Easy Worker Lane status and deterministic demo outputs run with <code>gemma3:4b</code> when available and local_demo fallback when guard checks fail.</li>
+                  <li>Local Model Routing / Guarded Worker routes safe offline tasks only, rejects invented repo bundles/files, and never executes model output.</li>
                   <li>Repo Knowledge / Graphify Lane generates a local map, latest report index, task bundles, and next prompt with no external runtime.</li>
                   <li>Hermes Agent / Manual Bridge generates safe status, skills index, manual checklist, and bridge packet without live setup.</li>
                 </ul>
@@ -364,8 +399,8 @@
                 <ul class="card-list">
                   <li>Hermes provider setup and Telegram connection remain manual later.</li>
                   <li>Hermes Codex provider verification remains pending/not proven; the manual bridge only exposes readiness.</li>
-                  <li>Real Gemma model availability is pending; local_demo fallback is active.</li>
-                  <li>Real local model worker tasks require a manually installed Gemma model; Ghoti will not auto-download one.</li>
+                  <li>Gemma is installed, but broad production routing remains disabled outside N+6.1A's guarded safe-task lane.</li>
+                  <li>Real local model worker tasks require repo-bundle source metadata and pass/fallback guard results before being trusted.</li>
                   <li>Ruflo runtime/source availability and external Graphify runtime integration remain pending.</li>
                   <li>Browser/Playwright verification remains pending.</li>
                   <li>Future audited computer-use click/type requires a separate safety milestone.</li>

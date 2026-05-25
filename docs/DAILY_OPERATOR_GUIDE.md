@@ -8,13 +8,13 @@ safe content demos, research plans, and future computer-use tooling from one
 truthful dashboard. It is not autonomous, it does not post, and it does not run
 live providers or account actions without explicit human approval.
 
-Current main baseline: N+5.9B clean/Gemma-readiness-and-local-quality-plan on
-main at `20e1dce1e89f15a337054864560b95b82233877c`.
+Current main baseline: N+6.0B clean/Gemma install and first local evaluation on
+main at `1ddeb0f39d5316e90ee2d0b8caa276b1fec9e4e6`.
 
-Current feature/audit lane: N+6.0A installed `gemma3:4b` after explicit human
-approval and recorded the first real local evaluation. Production routing is
-still disabled because one repo-bundle task hallucinated a nonexistent external
-bundle.
+Current feature/audit lane: N+6.1A adds constrained local model routing with a
+repo-bundle hallucination guard. `gemma3:4b` is installed, but Ghoti accepts
+Gemma routed output only when it cites known repo bundles/files with
+`source_metadata`; otherwise it falls back to `local_demo`.
 
 ## Launch
 
@@ -31,20 +31,23 @@ http://127.0.0.1:3210
 ## What to check first
 
 1. Open the dashboard and read Start Here / Daily Operator.
-2. Confirm Status Truth still says N+5.9B clean on main and N+6.0A local model
-   evaluation ready on the feature/audit branch when that branch is checked out.
+2. Confirm Status Truth says N+6.0B clean on main and N+6.1A guarded routing is
+   feature/audit only when that branch is checked out.
 3. Confirm Hermes, Ollama/Gemma, Obsidian memory, UI-TARS, adapters, external
    sandbox, public audit, and readiness status are truthful.
-4. Confirm Local Model / Easy Worker Lane shows readiness percentage and
-   `local_demo fallback` when Gemma is missing.
+4. Confirm Local Model / Easy Worker Lane shows readiness percentage, Gemma
+   truth, and `local_demo fallback` availability.
 5. Confirm Gemma / Local Model Quality shows Ollama status, Gemma installed
    status, readiness percentage, quality evaluation status, and manual
-   approval required before any model download.
-6. Confirm Repo Knowledge / Graphify Lane shows repo knowledge readiness,
+   latest eval score, and no broad production routing.
+6. Confirm Local Model Routing / Guarded Worker shows guard enabled, safe task
+   allowlist, last guard result, fallback status, and no command execution from
+   model output.
+7. Confirm Repo Knowledge / Graphify Lane shows repo knowledge readiness,
    task bundles, latest report index, Graphify roadmap only, no external
    runtime, and no network.
-7. Run a smoke check before relying on the dashboard.
-8. Review the latest relevant report under `14_context/`.
+8. Run a smoke check before relying on the dashboard.
+9. Review the latest relevant report under `14_context/`.
 
 ## Current roadmap priority
 
@@ -64,6 +67,23 @@ automation:
 
 Do not start N+6.2A or N+6.3A until N+6.1A passes a clean guard/audit gate.
 
+## Guarded local routing
+
+Use N+6.1A routing only for boring offline text work:
+
+```powershell
+python 03_scripts/ghoti_product_launcher.py --local-worker-routing-status --json
+python 03_scripts/ghoti_product_launcher.py --local-worker-route-task status-paragraph --json
+python 03_scripts/ghoti_product_launcher.py --local-worker-routing-demo --json
+```
+
+Allowed tasks are `summarize-latest-report`, `status-paragraph`,
+`codex-next-prompt`, `safety-classification`, `context-bundle-summary`,
+`next-milestone-outline`, and `report-to-bullets`. The guard rejects invented
+repo bundles, unknown source files, URLs, missing `source_metadata`, and any
+claim that live APIs, provider setup, Telegram, browser automation, or broad
+production routing are enabled.
+
 ## Daily commands
 
 ```powershell
@@ -72,6 +92,9 @@ python 03_scripts/ghoti_product_launcher.py --smoke --json
 python 03_scripts/ghoti_product_launcher.py --context-pack --json
 python 03_scripts/ghoti_product_launcher.py --local-worker-status --json
 python 03_scripts/ghoti_product_launcher.py --local-worker-demo --json
+python 03_scripts/ghoti_product_launcher.py --local-worker-routing-status --json
+python 03_scripts/ghoti_product_launcher.py --local-worker-route-task status-paragraph --json
+python 03_scripts/ghoti_product_launcher.py --local-worker-routing-demo --json
 python 03_scripts/ghoti_product_launcher.py --gemma-status --json
 python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json
 python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json
@@ -264,9 +287,9 @@ Not allowed:
 
 - Hermes provider setup
 - Telegram connection and tokens
-- real Gemma model pull/install
-- Gemma production routing
-- local model quality evaluation against a real Gemma model
+- additional Gemma model pulls or model removal
+- broad Gemma production routing outside the N+6.1A guarded safe-task lane
+- trusting local model output without source metadata and guard pass/fallback evidence
 - Ruflo source/runtime enablement
 - external Graphify runtime integration
 - browser/Playwright repair and verification
