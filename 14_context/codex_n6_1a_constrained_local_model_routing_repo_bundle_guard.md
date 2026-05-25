@@ -2,8 +2,10 @@ CLEAN PASS / N+6.1A CONSTRAINED LOCAL MODEL ROUTING GUARD READY
 
 Branch:
 - Feature: feat/ghoti-agent-codex-n6-1a-constrained-local-model-routing-repo-bundle-guard
+- Feature commit: 7d4069189efb1d454ae3380eeff3f579db596b39
 - Starting main: 1ddeb0f39d5316e90ee2d0b8caa276b1fec9e4e6
-- Audit branch: pending until clean audit worktree merge
+- Audit branch: audit/ghoti-agent-codex-n6-1a-constrained-local-model-routing-repo-bundle-guard
+- Audit merge HEAD before this report commit: 69f0f1357761fe5b500b22ef092b34b7f08c4e84
 - Main merge: not performed in this run
 
 Scope:
@@ -110,7 +112,8 @@ Validation:
 - Supervised content demo validate-latest: PASS
 - Node syntax checks: PASS
 - Runtime PowerShell check: PASS
-- Dashboard PowerShell check: first run hit a local transport interruption during a desktop hotkey check; rerun with repo-supported resource-guard fixture passed.
+- Dashboard PowerShell check: PASS
+- Note: an initial parallel runtime/dashboard PowerShell run caused the runtime checker to report fixture interference. The runtime check was rerun by itself and passed cleanly. The dashboard checker passed.
 
 Public/Safety Truth:
 - No live APIs used.
@@ -158,8 +161,10 @@ What Remains:
 
 Cleanup:
 - Only repo-local validation artifacts were generated.
+- Validation-only generated status files were restored after audit evidence was recorded.
+- A duplicate audit routing-demo directory generated during validation was removed after confirming it was inside the audit worktree.
 - No broad process kills were used.
-- Dashboard checker rerun passed; no unrelated processes were killed.
+- No unrelated processes were killed.
 - Primary worktree remained read-only except inspection.
 
 Human Status:
