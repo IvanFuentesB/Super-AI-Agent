@@ -55,6 +55,7 @@ WHAT_GHOTI_CAN_DO = [
     "Local Memory / Gemma fallback — local compression, no external API",
     "Local Memory / Context Pack — compact copy-paste handoff files for Codex/ChatGPT/Claude/Obsidian",
     "Local Model / Easy Worker Lane — Ollama/Gemma truth plus local_demo fallback tasks",
+    "Local Model Routing / Guarded Worker — Gemma/local_demo safe task routing with repo-bundle hallucination guard",
     "Gemma / Local Model Quality — model availability, manual install decision, and quality plan",
     "Repo Knowledge / Graphify Lane — local file map and task bundles; Graphify runtime roadmap only",
     "Hermes Agent / Manual Bridge — safe WSL probes, skills index, and manual setup packet",
@@ -96,6 +97,13 @@ CONTROL_CENTER_LANES = [
         "status": "local_demo_or_ollama_gemma",
         "truth": "Ollama is checked locally; Gemma is used only if already installed, otherwise deterministic local_demo fallback stays active.",
         "safe_next_step": "Run local_model_worker_lane.py --status --json or --write-demo-output --json. Ghoti never runs ollama pull automatically.",
+    },
+    {
+        "key": "local_model_guarded_worker",
+        "label": "Local Model Routing / Guarded Worker",
+        "status": "guarded_safe_tasks_only",
+        "truth": "Gemma can be tried for allowlisted offline tasks only; repo-bundle hallucination guard rejects invented bundles/files and falls back to local_demo.",
+        "safe_next_step": "Run local_model_worker_lane.py --routing-status --json or --route-task status-paragraph --json. Never execute model output.",
     },
     {
         "key": "gemma_local_model_quality",
@@ -183,6 +191,9 @@ DAILY_OPERATOR_COMMANDS = [
     "python 03_scripts/ghoti_product_launcher.py --context-pack --json",
     "python 03_scripts/ghoti_product_launcher.py --local-worker-status --json",
     "python 03_scripts/ghoti_product_launcher.py --local-worker-demo --json",
+    "python 03_scripts/ghoti_product_launcher.py --local-worker-routing-status --json",
+    "python 03_scripts/ghoti_product_launcher.py --local-worker-route-task status-paragraph --json",
+    "python 03_scripts/ghoti_product_launcher.py --local-worker-routing-demo --json",
     "python 03_scripts/ghoti_product_launcher.py --gemma-status --json",
     "python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json",
     "python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json",
@@ -744,6 +755,18 @@ def cmd_local_worker_demo() -> dict:
     return _run_local_worker(["--write-demo-output"], "local-worker-demo", timeout=45)
 
 
+def cmd_local_worker_routing_status() -> dict:
+    return _run_local_worker(["--routing-status"], "local-worker-routing-status", timeout=45)
+
+
+def cmd_local_worker_route_task(task: str) -> dict:
+    return _run_local_worker(["--route-task", task], "local-worker-route-task", timeout=90)
+
+
+def cmd_local_worker_routing_demo() -> dict:
+    return _run_local_worker(["--write-routing-demo"], "local-worker-routing-demo", timeout=180)
+
+
 def _run_gemma_readiness(argv_tail, action: str, timeout: int = 45) -> dict:
     """Run the Gemma readiness script with fixed argv, never a shell."""
     if not GEMMA_READINESS_SCRIPT.exists():
@@ -1005,12 +1028,16 @@ def _print_human(result: dict) -> None:
             print("  %s" % result["status_short"])
         for filename, relpath in (result.get("paths") or {}).items():
             print("  %s -> %s" % (filename, relpath))
-    elif action in ("local-worker-status", "local-worker-demo"):
+    elif action in ("local-worker-status", "local-worker-demo", "local-worker-routing-status", "local-worker-route-task", "local-worker-routing-demo"):
         print("Local worker lane: %s" % ("PASS" if result.get("ok") else "FAIL"))
         if result.get("status_line"):
             print("  %s" % result["status_line"])
         if result.get("readiness_percent") is not None:
             print("  readiness: %s%%" % result["readiness_percent"])
+        if result.get("guard_result"):
+            print("  guard: %s" % result["guard_result"].get("status"))
+        if result.get("active_route"):
+            print("  route: %s" % result["active_route"])
         for filename, relpath in (result.get("paths") or result.get("output_paths") or {}).items():
             print("  %s -> %s" % (filename, relpath))
     elif action in ("gemma-status", "gemma-doctor", "gemma-recommend", "gemma-quality-plan", "gemma-write-readiness", "local-model-eval"):
@@ -1061,16 +1088,19 @@ def main(argv=None) -> int:
             "  4. python 03_scripts/ghoti_product_launcher.py --context-pack --json\n"
             "  5. python 03_scripts/ghoti_product_launcher.py --local-worker-status --json\n"
             "  6. python 03_scripts/ghoti_product_launcher.py --local-worker-demo --json\n"
-            "  7. python 03_scripts/ghoti_product_launcher.py --gemma-status --json\n"
-            "  8. python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json\n"
-            "  9. python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json\n"
-            "  10. python 03_scripts/ghoti_product_launcher.py --local-model-eval --json\n"
-            "  11. python 03_scripts/ghoti_product_launcher.py --repo-map --json\n"
-            "  12. python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json\n"
-            "  13. python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json\n"
-            "  14. python 03_scripts/ghoti_product_launcher.py --hermes-bridge-write --json\n"
-            "  15. review reports under 14_context/\n"
-            "  16. python 03_scripts/ghoti_product_launcher.py --stop-dashboard\n"
+            "  7. python 03_scripts/ghoti_product_launcher.py --local-worker-routing-status --json\n"
+            "  8. python 03_scripts/ghoti_product_launcher.py --local-worker-route-task status-paragraph --json\n"
+            "  9. python 03_scripts/ghoti_product_launcher.py --local-worker-routing-demo --json\n"
+            "  10. python 03_scripts/ghoti_product_launcher.py --gemma-status --json\n"
+            "  11. python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json\n"
+            "  12. python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json\n"
+            "  13. python 03_scripts/ghoti_product_launcher.py --local-model-eval --json\n"
+            "  14. python 03_scripts/ghoti_product_launcher.py --repo-map --json\n"
+            "  15. python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json\n"
+            "  16. python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json\n"
+            "  17. python 03_scripts/ghoti_product_launcher.py --hermes-bridge-write --json\n"
+            "  18. review reports under 14_context/\n"
+            "  19. python 03_scripts/ghoti_product_launcher.py --stop-dashboard\n"
         ),
     )
     parser.add_argument("--status", action="store_true", help="show launcher + dashboard status")
@@ -1084,6 +1114,21 @@ def main(argv=None) -> int:
                         help="show Ollama/Gemma/local_demo worker readiness (local only)")
     parser.add_argument("--local-worker-demo", action="store_true",
                         help="write safe deterministic local worker demo outputs")
+    parser.add_argument("--local-worker-routing-status", action="store_true",
+                        help="show guarded local worker routing status")
+    parser.add_argument("--local-worker-route-task",
+                        choices=[
+                            "summarize-latest-report",
+                            "status-paragraph",
+                            "codex-next-prompt",
+                            "safety-classification",
+                            "context-bundle-summary",
+                            "next-milestone-outline",
+                            "report-to-bullets",
+                        ],
+                        help="route one allowlisted offline local worker task through guard/fallback")
+    parser.add_argument("--local-worker-routing-demo", action="store_true",
+                        help="write a guarded local worker routing demo")
     parser.add_argument("--gemma-status", action="store_true",
                         help="show Gemma/Ollama model availability and active worker mode")
     parser.add_argument("--gemma-doctor", action="store_true",
@@ -1104,6 +1149,7 @@ def main(argv=None) -> int:
                             "dashboard",
                             "local-memory",
                             "local-model-worker",
+                            "local-model-routing",
                             "hermes",
                             "content-workflow",
                             "safety",
@@ -1139,6 +1185,12 @@ def main(argv=None) -> int:
             result = cmd_local_worker_status()
         elif args.local_worker_demo:
             result = cmd_local_worker_demo()
+        elif args.local_worker_routing_status:
+            result = cmd_local_worker_routing_status()
+        elif args.local_worker_route_task:
+            result = cmd_local_worker_route_task(args.local_worker_route_task)
+        elif args.local_worker_routing_demo:
+            result = cmd_local_worker_routing_demo()
         elif args.gemma_status:
             result = cmd_gemma_status()
         elif args.gemma_doctor:

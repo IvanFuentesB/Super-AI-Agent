@@ -2,18 +2,26 @@
 
 ## Purpose
 
-Prepare N+6.1A constrained Gemma worker routing with a repo-bundle hallucination guard before any Hermes or computer-use expansion.
+Prepare N+6.2A Hermes manual bridge verification after N+6.1A guarded routing is audited.
 
 ## Files To Inspect First
 
 - `03_scripts/local_model_worker_lane.py`
+- `03_scripts/local_model_output_guard.py`
 - `03_scripts/gemma_model_readiness.py`
+- `03_scripts/hermes_agent_workflow_bridge.py`
+- `docs/LOCAL_MODEL_ROUTING_GUIDE.md`
+- `docs/LOCAL_MODEL_OUTPUT_GUARD.md`
+- `docs/LOCAL_WORKER_SAFE_TASKS.md`
 - `docs/LOCAL_MODEL_GEMMA_SETUP_GUIDE.md`
 - `docs/EASY_WORKER_LANE_GUIDE.md`
 - `docs/GEMMA_MODEL_INSTALL_DECISION.md`
 - `docs/HUMAN_APPROVED_GEMMA_INSTALL_LOG.md`
 - `docs/LOCAL_MODEL_QUALITY_EVALUATION_GUIDE.md`
+- `docs/HERMES_AGENT_WORKFLOW_GUIDE.md`
+- `docs/SAFE_COMPUTER_USE_TEST_PLAN_APPLE_COMPARISON.md`
 - `14_context/local_worker/generated/local_worker_status.md`
+- `14_context/local_worker/routing_runs/`
 - `14_context/local_model_readiness/generated/gemma_install_decision.md`
 - `14_context/local_model_readiness/generated/local_task_quality_plan.md`
 - `14_context/local_model_evaluation/runs/`
@@ -21,9 +29,9 @@ Prepare N+6.1A constrained Gemma worker routing with a repo-bundle hallucination
 
 ## Current Truth
 
-- Main hash: `56f97929725f5a293e80e9ea2d15ad38c0c45887`
-- Latest clean milestone: N+5.9B - Gemma Readiness / Local Quality Plan landed on main
-- Current milestone: N+6.0A - Human-Approved Gemma Install + First Real Local Model Evaluation
+- Main hash: `1ddeb0f39d5316e90ee2d0b8caa276b1fec9e4e6`
+- Latest clean milestone: N+6.0B - Human-Approved Gemma Install + First Local Evaluation landed on main
+- Current milestone: N+6.1A - Constrained Local Model Routing + Repo-Bundle Hallucination Guard
 - Previous Hermes bridge milestone: N+5.8A - Hermes Agent Workflow / Provider Setup Plan + Manual Bridge Readiness.
 - Hermes WSL installed at `/home/ai_sandbox/.local/bin/hermes`, v0.14.0; Hermes Agent / Manual Bridge files available; browser/Playwright degraded/not claimed.
 - Ollama available v0.24.0; Gemma is installed only if local `ollama list` proves it; local_demo fallback remains available.
@@ -76,4 +84,4 @@ Prepare N+6.1A constrained Gemma worker routing with a repo-bundle hallucination
 
 ## Next Recommended Prompt
 
-Plan N+6.1A constrained Gemma worker routing only after reading the N+6.0A eval. Use known repo-map bundle IDs only, reject invented bundle/file claims, require source metadata, fall back to local_demo when the guard fails, never execute or edit from model output, and keep production routing disabled unless the audit gate explicitly clears it. Then prioritize N+6.2A Hermes manual bridge verification and N+6.3A safe computer-use preparation; no live APIs/provider setup/Telegram/browser automation.
+Plan N+6.2A Hermes manual bridge verification after N+6.1A guarded routing is clean. Keep safe probes only, no tokens/provider setup/Telegram/live APIs/browser automation. Preserve the N+6.3A computer-use plan as observation/manual-approval only.

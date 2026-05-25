@@ -1,6 +1,6 @@
 # Codex-Only Workflow
 
-Current baseline: N+5.9B clean/Gemma-readiness-local-quality-plan on main.
+Current baseline: N+6.0B clean/Gemma install and first local evaluation on main.
 
 Previous clean baseline: N+5.7B clean/repo-knowledge-context-retrieval on main
 at `84e880e7c3f774580a5e4ac340acd497af3027ee`.
@@ -9,11 +9,12 @@ Lineage note: N+5.6B clean/local-model-easy-worker-lane landed at
 `c9413108006d920e0110413d3d5e195b504489c1`.
 
 ```text
-origin/main = 20e1dce1e89f15a337054864560b95b82233877c
+origin/main = 1ddeb0f39d5316e90ee2d0b8caa276b1fec9e4e6
 launcher = python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard
 dashboard = http://127.0.0.1:3210
 context_pack = python 03_scripts/ghoti_context_pack_builder.py --write --json
 local_worker = python 03_scripts/local_model_worker_lane.py --status --json
+local_worker_routing = python 03_scripts/ghoti_product_launcher.py --local-worker-routing-status --json
 gemma_status = python 03_scripts/ghoti_product_launcher.py --gemma-status --json
 gemma_doctor = python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json
 gemma_quality = python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json
@@ -131,7 +132,7 @@ Run python 03_scripts/ghoti_product_launcher.py --local-model-eval --json. Confi
 Plan constrained Gemma routing:
 
 ```text
-Build N+6.1A constrained Gemma worker routing from the clean N+6.0A result. Allowed tasks only: summarize latest report, status paragraph, Codex next prompt, safety classification, context bundle summary, next milestone outline, and report-to-bullets. Use known repo-map bundle IDs only, reject invented bundle/file claims, require source metadata, fall back to local_demo on guard failure, and never execute commands or edit files from model output.
+Build or audit N+6.1A constrained Gemma worker routing from the clean N+6.0B result. Allowed tasks only: summarize latest report, status paragraph, Codex next prompt, safety classification, context bundle summary, next milestone outline, and report-to-bullets. Run python 03_scripts/local_model_output_guard.py --self-test --json. Use known repo-map bundle IDs only, reject invented bundle/file claims, require source metadata, fall back to local_demo on guard failure, and never execute commands or edit files from model output.
 ```
 
 Generate focused repo context:

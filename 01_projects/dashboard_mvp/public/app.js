@@ -6898,6 +6898,91 @@ refreshLocalOrchestrator();
 })();
 
 // ---------------------------------------------------------------------
+// N+6.1A Local Model Routing / Guarded Worker (client-side handlers)
+// Launcher flag: --local-worker-routing-status
+// ---------------------------------------------------------------------
+(function attachLocalModelRoutingGuardedWorker() {
+  function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value || "none";
+  }
+  function setResult(text) {
+    const el = document.getElementById("local-routing-action-result");
+    if (!el) return;
+    el.innerHTML = "";
+    const p = document.createElement("p");
+    p.textContent = text;
+    el.appendChild(p);
+  }
+  async function callRouting(endpoint, method) {
+    const res = await fetch(endpoint, { method: method || "GET", headers: { "Content-Type": "application/json" } });
+    return await res.json();
+  }
+  function renderStatus(data) {
+    if (!data || !data.ok) {
+      setText("local-routing-status-line", (data && data.error) || "Guarded routing status unavailable.");
+      setText("local-routing-enabled", "unknown");
+      setText("local-routing-guard-enabled", "unknown");
+      return;
+    }
+    const guard = data.guard_result || {};
+    setText("local-routing-gemma-installed", data.routing_enabled_for_safe_tasks || data.gemma_attempted ? "yes" : "fallback/local_demo");
+    setText("local-routing-active-model", data.active_model || data.active_route_preference || "local_demo");
+    setText("local-routing-enabled", data.routing_enabled_for_safe_tasks ? "yes, safe tasks only" : "fallback only");
+    setText("local-routing-guard-enabled", data.guard_enabled ? "yes" : "no");
+    setText("local-routing-last-guard", guard.status || (Array.isArray(data.guard_statuses) ? data.guard_statuses.join(", ") : "not run"));
+    setText("local-routing-bundle-source", data.known_bundle_allowlist_source || "14_context/repo_knowledge/generated/repo_knowledge_map.json");
+    setText("local-routing-guard-status", data.guard_enabled ? "enabled; invented bundles/files rejected" : "unavailable");
+    setText("local-routing-fallback", data.fallback_used ? "local_demo fallback used" : (data.fallback_available ? "local_demo fallback available" : "unknown"));
+    setText("local-routing-run-path", data.latest_routing_run_path || data.run_dir || "14_context/local_worker/routing_runs/");
+    setText("local-routing-status-line", data.status_line || ("Guarded routing loaded. Active route: " + (data.active_route || data.active_route_preference || "unknown")));
+  }
+  async function refreshRoutingStatus() {
+    try {
+      renderStatus(await callRouting("/api/local-model-worker/routing-status", "GET"));
+    } catch (err) {
+      setText("local-routing-status-line", "Could not load guarded routing status.");
+    }
+  }
+  function bind(id, fn) {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("click", fn);
+  }
+  bind("local-routing-refresh-btn", async function () {
+    setResult("Refreshing guarded routing status...");
+    await refreshRoutingStatus();
+    setResult("Guarded routing status refreshed.");
+  });
+  bind("local-routing-route-btn", async function () {
+    setResult("Routing status paragraph through guard...");
+    try {
+      const data = await callRouting("/api/local-model-worker/route-task?task=status-paragraph", "POST");
+      renderStatus(data);
+      setResult(data && data.ok
+        ? "Route complete. Guard result: " + ((data.guard_result && data.guard_result.status) || "unknown") + ". No commands executed from model output."
+        : "Route task reported unavailable: " + ((data && data.error) || "unknown"));
+    } catch (err) {
+      setResult("Route task failed: " + (err && err.message));
+    }
+  });
+  bind("local-routing-demo-btn", async function () {
+    setResult("Writing guarded routing demo...");
+    try {
+      const data = await callRouting("/api/local-model-worker/write-routing-demo", "POST");
+      renderStatus(data);
+      setResult(data && data.ok
+        ? "Guarded routing demo written under 14_context/local_worker/routing_runs/."
+        : "Routing demo reported unavailable: " + ((data && data.error) || "unknown"));
+    } catch (err) {
+      setResult("Routing demo failed: " + (err && err.message));
+    }
+  });
+  if (document.getElementById("ghoti-local-model-routing-card")) {
+    refreshRoutingStatus();
+  }
+})();
+
+// ---------------------------------------------------------------------
 // N+5.9A Gemma / Local Model Quality (client-side handlers)
 // ---------------------------------------------------------------------
 (function attachGemmaReadinessLane() {

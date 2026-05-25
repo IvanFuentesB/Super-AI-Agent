@@ -17,9 +17,9 @@ worktree read-only except inspection. No force-push, no history rewrite, no
 secrets, no live account/API/posting/money/trading/legal actions, no bot/captcha/
 cloak bypass, no fake autonomy claims, no shell-true command execution, and no live providers/tokens.
 
-Current main hash: `20e1dce1e89f15a337054864560b95b82233877c`
-Latest clean milestone: N+5.9B - Gemma Readiness / Local Quality Plan landed on main
-Current context pack milestone: N+6.0A - Human-Approved Gemma Install + First Real Local Model Evaluation
+Current main hash: `1ddeb0f39d5316e90ee2d0b8caa276b1fec9e4e6`
+Latest clean milestone: N+6.0B - Human-Approved Gemma Install + First Local Evaluation landed on main
+Current context pack milestone: N+6.1A - Constrained Local Model Routing + Repo-Bundle Hallucination Guard
 Previous repo knowledge milestone: N+5.7A - Graphify / Repo Knowledge Map + Better Context Retrieval
 Launcher: `python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard`
 Dashboard: `http://127.0.0.1:3210`
@@ -30,13 +30,9 @@ Status truth:
 - Hermes browser/Playwright degraded/not claimed.
 - Codex provider in Hermes pending/not proven.
 - Telegram manual later/no token; No VPS.
-- Gemma model missing unless a new local check proves otherwise; local_demo fallback active.
+- Gemma `gemma3:4b` is installed if local `ollama list` still proves it; local_demo fallback remains available.
 - Gemma / Local Model Quality files live under `14_context/local_model_readiness/generated/`; local model eval runs live under `14_context/local_model_evaluation/runs/`.
-- Obsidian/local memory present.
-- UI-TARS observation-only.
-- Adapter runner approval-gated/local-only.
-- External sandbox static inspection/planning-only.
-- Repo Knowledge / Graphify Lane available as local JSON/Markdown files.
+- N+6.1A local routing must require source metadata, known repo bundle IDs, known files, and fallback when guard checks fail.
+- N+6.2A should verify Hermes manual bridge workflow readiness without setup/tokens/live APIs.
 
-Next safe milestone after this pack:
-N+6.1A - Local Model Routing + Real W
+[excerpt truncated; run the context-pack command for the full prompt.]

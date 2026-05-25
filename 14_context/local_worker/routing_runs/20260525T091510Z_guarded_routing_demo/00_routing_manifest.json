@@ -1,0 +1,58 @@
+{
+  "ok": true,
+  "action": "write-routing-demo",
+  "milestone": "N+6.1A",
+  "local_only": true,
+  "live_api_used": false,
+  "external_api_used": false,
+  "auto_downloads_enabled": false,
+  "ollama_pull_run": false,
+  "provider_setup_performed": false,
+  "telegram_setup_performed": false,
+  "browser_automation_performed": false,
+  "production_routing_enabled": false,
+  "guard_enabled": true,
+  "source_metadata_required": true,
+  "known_bundle_allowlist_source": "14_context/repo_knowledge/generated/repo_knowledge_map.json",
+  "routing_enabled_for_safe_tasks": true,
+  "active_model": "gemma3:4b",
+  "active_route_preference": "ollama_gemma_guarded",
+  "fallback_available": true,
+  "safe_routed_tasks": [
+    "summarize-latest-report",
+    "status-paragraph",
+    "codex-next-prompt",
+    "safety-classification",
+    "context-bundle-summary",
+    "next-milestone-outline",
+    "report-to-bullets"
+  ],
+  "blocked_routed_tasks": [
+    "code editing",
+    "shell commands",
+    "browser actions",
+    "API actions",
+    "posting",
+    "money/trading/legal decisions",
+    "credential/session handling",
+    "unsupported file claims",
+    "live account operations"
+  ],
+  "readiness_percent": 82,
+  "status_line": "Local model routing readiness: 82%. Gemma is installed, guarded safe-task routing is available, and repo-bundle hallucination guard is enabled. Production routing remains limited to offline safe tasks.",
+  "latest_routing_run_path": "14_context/local_worker/routing_runs/20260525T090749Z_guarded_routing_demo",
+  "output_dir": "14_context/local_worker/routing_runs",
+  "generated_at": "2026-05-25T09:15:10Z",
+  "run_dir": "14_context/local_worker/routing_runs/20260525T091510Z_guarded_routing_demo",
+  "tasks": [
+    "status-paragraph",
+    "context-bundle-summary",
+    "safety-classification"
+  ],
+  "guard_statuses": [
+    "pass",
+    "pass",
+    "pass"
+  ],
+  "fallback_used": false
+}

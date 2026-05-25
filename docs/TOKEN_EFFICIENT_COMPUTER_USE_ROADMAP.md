@@ -54,11 +54,13 @@ from model output. It must reject invented repo bundles/files and fall back to
 - Current truth: N+6.0A installed `gemma3:4b` after explicit human approval;
   future truth must still be verified with `ollama list`.
 - First real local quality eval: 86%, 6 of 7 tasks passed. The failed
-  repo-bundle task hallucinated an external bundle, so routing remains blocked.
+  repo-bundle task hallucinated an external bundle, so N+6.1A routes only
+  allowlisted offline tasks through a source guard and fallback.
 - Manual command candidates are documented, but Codex must not run additional
   `ollama pull` commands automatically.
-- Production routing to Gemma remains disabled until a later audited milestone
-  wraps tasks tightly enough to avoid repo-context hallucination.
+- Broad production routing to Gemma remains disabled; N+6.1A is a constrained
+  safe-task lane with no command/file/browser/account execution from model
+  output.
 
 ## Repo Knowledge / Graphify Lane
 
@@ -68,7 +70,7 @@ from model output. It must reject invented repo bundles/files and fall back to
   `python 03_scripts/ghoti_repo_knowledge_map.py --write --json` and
   `python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json`.
 - Current bundles: audit-main, dashboard, local-memory, local-model-worker,
-  hermes, content-workflow, safety, and next-milestone.
+  local-model-routing, hermes, content-workflow, safety, and next-milestone.
 - Graphify runtime status: roadmap only/not wired.
 - External repo runtime: not wired.
 - Network: not used.

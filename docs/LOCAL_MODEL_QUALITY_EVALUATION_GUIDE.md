@@ -4,7 +4,7 @@ N+5.9A prepares local task quality evaluation without pretending Gemma is
 installed. N+6.0A adds the first human-approved local model evaluation packet.
 If `gemma3:4b` is installed, the evaluation can call the local Ollama service on
 localhost. If Gemma is missing, the result stays a controlled `local_demo`
-fallback. Production routing remains disabled either way.
+fallback. production routing remains disabled for broad/unsafe work either way.
 
 ## Commands
 
@@ -70,7 +70,8 @@ Score each task on:
 
 ## Routing Rule
 
-Do not route production work to Gemma by default; production routing remains disabled.
+Do not route broad production work to Gemma by default; N+6.1A allows only a
+small guarded offline task lane.
 N+6.0A proved Gemma can help, but one repo-bundle task hallucinated a
 nonexistent external bundle. N+6.1A must therefore build constrained routing
 with a repo-bundle hallucination guard before any real worker task integration.
@@ -81,6 +82,19 @@ summary, next milestone outline, and report-to-bullets. The router must use
 known repo-map bundle IDs only, reject invented bundle or file claims, require
 source metadata, fall back to `local_demo` if the guard fails, and never execute
 commands or edit files from model output.
+
+Run:
+
+```powershell
+python 03_scripts/ghoti_product_launcher.py --local-worker-routing-status --json
+python 03_scripts/ghoti_product_launcher.py --local-worker-route-task status-paragraph --json
+python 03_scripts/local_model_output_guard.py --self-test --json
+```
+
+Routing acceptance requires known repo bundle IDs, known source files,
+`local_only=true`, and `live_api_used=false`. If the guard rejects output, Ghoti
+uses `local_demo` fallback. No live APIs, provider setup, browser actions, or
+command/file execution from model output are allowed.
 
 Local Gemma should start with easy, low-risk work only: summaries,
 classifications, tracker rows, compact memory, simple drafts, and status

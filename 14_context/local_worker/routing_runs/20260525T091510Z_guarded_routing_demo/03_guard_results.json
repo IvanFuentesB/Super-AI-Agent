@@ -1,0 +1,69 @@
+{
+  "ok": true,
+  "local_only": true,
+  "live_api_used": false,
+  "results": [
+    {
+      "ok": true,
+      "status": "pass",
+      "task": "status-paragraph",
+      "local_only": true,
+      "live_api_used": false,
+      "bundle_ids": [
+        "next-milestone",
+        "local-model-worker"
+      ],
+      "file_paths": [
+        "14_context/repo_knowledge/generated/task_bundle_next_milestone.md",
+        "03_scripts/local_model_worker_lane.py"
+      ],
+      "known_bundle_count": 9,
+      "known_file_count": 74,
+      "reasons": [],
+      "warnings": [],
+      "requires_fallback": false
+    },
+    {
+      "ok": true,
+      "status": "pass",
+      "task": "context-bundle-summary",
+      "local_only": true,
+      "live_api_used": false,
+      "bundle_ids": [
+        "next-milestone",
+        "local-model-worker",
+        "local-model-routing"
+      ],
+      "file_paths": [
+        "14_context/repo_knowledge/generated/task_bundle_next_milestone.md",
+        "14_context/repo_knowledge/generated/task_bundle_local_model_worker.md",
+        "14_context/repo_knowledge/generated/task_bundle_local_model_routing.md"
+      ],
+      "known_bundle_count": 9,
+      "known_file_count": 74,
+      "reasons": [],
+      "warnings": [],
+      "requires_fallback": false
+    },
+    {
+      "ok": true,
+      "status": "pass",
+      "task": "safety-classification",
+      "local_only": true,
+      "live_api_used": false,
+      "bundle_ids": [
+        "safety",
+        "next-milestone"
+      ],
+      "file_paths": [
+        "14_context/repo_knowledge/generated/task_bundle_safety.md",
+        "docs/BLOCKED_UNSAFE_AUTOMATION.md"
+      ],
+      "known_bundle_count": 9,
+      "known_file_count": 74,
+      "reasons": [],
+      "warnings": [],
+      "requires_fallback": false
+    }
+  ]
+}
