@@ -7,7 +7,11 @@ Improve Ollama/Gemma truth, Gemma readiness, local_demo fallback tasks, and loca
 ## Files To Inspect First
 
 - `03_scripts/local_model_worker_lane.py`
+- `03_scripts/local_model_output_guard.py`
 - `03_scripts/gemma_model_readiness.py`
+- `docs/LOCAL_MODEL_ROUTING_GUIDE.md`
+- `docs/LOCAL_MODEL_OUTPUT_GUARD.md`
+- `docs/LOCAL_WORKER_SAFE_TASKS.md`
 - `docs/LOCAL_MODEL_GEMMA_SETUP_GUIDE.md`
 - `docs/EASY_WORKER_LANE_GUIDE.md`
 - `docs/GEMMA_MODEL_INSTALL_DECISION.md`
@@ -20,9 +24,9 @@ Improve Ollama/Gemma truth, Gemma readiness, local_demo fallback tasks, and loca
 
 ## Current Truth
 
-- Main hash: `56f97929725f5a293e80e9ea2d15ad38c0c45887`
-- Latest clean milestone: N+5.9B - Gemma Readiness / Local Quality Plan landed on main
-- Current milestone: N+6.0A - Human-Approved Gemma Install + First Real Local Model Evaluation
+- Main hash: `1ddeb0f39d5316e90ee2d0b8caa276b1fec9e4e6`
+- Latest clean milestone: N+6.0B - Human-Approved Gemma Install + First Local Evaluation landed on main
+- Current milestone: N+6.1A - Constrained Local Model Routing + Repo-Bundle Hallucination Guard
 - Previous Hermes bridge milestone: N+5.8A - Hermes Agent Workflow / Provider Setup Plan + Manual Bridge Readiness.
 - Hermes WSL installed at `/home/ai_sandbox/.local/bin/hermes`, v0.14.0; Hermes Agent / Manual Bridge files available; browser/Playwright degraded/not claimed.
 - Ollama available v0.24.0; Gemma is installed only if local `ollama list` proves it; local_demo fallback remains available.

@@ -1,0 +1,49 @@
+[
+  {
+    "task": "status-paragraph",
+    "source_metadata": {
+      "bundle_ids": [
+        "next-milestone",
+        "local-model-worker"
+      ],
+      "file_paths": [
+        "14_context/repo_knowledge/generated/task_bundle_next_milestone.md",
+        "03_scripts/local_model_worker_lane.py"
+      ],
+      "local_only": true,
+      "live_api_used": false
+    }
+  },
+  {
+    "task": "context-bundle-summary",
+    "source_metadata": {
+      "bundle_ids": [
+        "next-milestone",
+        "local-model-worker",
+        "local-model-routing"
+      ],
+      "file_paths": [
+        "14_context/repo_knowledge/generated/task_bundle_next_milestone.md",
+        "14_context/repo_knowledge/generated/task_bundle_local_model_worker.md",
+        "14_context/repo_knowledge/generated/task_bundle_local_model_routing.md"
+      ],
+      "local_only": true,
+      "live_api_used": false
+    }
+  },
+  {
+    "task": "safety-classification",
+    "source_metadata": {
+      "bundle_ids": [
+        "safety",
+        "next-milestone"
+      ],
+      "file_paths": [
+        "14_context/repo_knowledge/generated/task_bundle_safety.md",
+        "docs/BLOCKED_UNSAFE_AUTOMATION.md"
+      ],
+      "local_only": true,
+      "live_api_used": false
+    }
+  }
+]

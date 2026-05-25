@@ -1,16 +1,20 @@
-# Task Bundle: Dashboard Work
+# Task Bundle: Local Model Routing / Guarded Worker
 
 ## Purpose
 
-Update the local Product Control Center without changing safety semantics.
+Route safe offline tasks through Gemma only when output passes repo-bundle and source metadata guard checks.
 
 ## Files To Inspect First
 
-- `01_projects/dashboard_mvp/server.js`
-- `01_projects/dashboard_mvp/public/index.html`
-- `01_projects/dashboard_mvp/public/app.js`
-- `01_projects/dashboard_mvp/public/styles.css`
-- `03_scripts/ghoti_product_launcher.py`
+- `03_scripts/local_model_worker_lane.py`
+- `03_scripts/local_model_output_guard.py`
+- `03_scripts/ghoti_repo_knowledge_map.py`
+- `docs/LOCAL_MODEL_ROUTING_GUIDE.md`
+- `docs/LOCAL_MODEL_OUTPUT_GUARD.md`
+- `docs/LOCAL_WORKER_SAFE_TASKS.md`
+- `14_context/local_worker/routing_runs/`
+- `14_context/repo_knowledge/generated/task_bundle_next_milestone.md`
+- `01_projects/runtime_mvp/tests/test_n6_1a_constrained_local_model_routing_repo_bundle_guard.py`
 
 ## Current Truth
 
@@ -47,7 +51,7 @@ Update the local Product Control Center without changing safety semantics.
 - `python 03_scripts/ghoti_product_launcher.py --local-model-eval --json`
 - `python 03_scripts/ghoti_product_launcher.py --repo-map --json`
 - `python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json`
-- `python 03_scripts/ghoti_repo_knowledge_map.py --bundle dashboard --json`
+- `python 03_scripts/ghoti_repo_knowledge_map.py --bundle local-model-routing --json`
 - `python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json`
 
 ## Validation Commands
@@ -69,4 +73,4 @@ Update the local Product Control Center without changing safety semantics.
 
 ## Next Recommended Prompt
 
-Improve the dashboard from a repo-contained worktree. Keep UI-TARS observation-only, use fixed argv endpoints, and verify local DOM labels.
+Work on constrained local model routing. Use only known repo-map bundle IDs, require source metadata, reject invented files/URLs, fallback to local_demo on guard failure, and never execute or edit from model output.

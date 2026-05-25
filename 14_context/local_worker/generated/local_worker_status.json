@@ -18,7 +18,7 @@
   "local_worker_demo_command": "python 03_scripts/ghoti_product_launcher.py --local-worker-demo --json",
   "direct_status_command": "python 03_scripts/local_model_worker_lane.py --status --json",
   "direct_demo_command": "python 03_scripts/local_model_worker_lane.py --write-demo-output --json",
-  "main_hash": "20e1dce1e89f15a337054864560b95b82233877c",
+  "main_hash": "1ddeb0f39d5316e90ee2d0b8caa276b1fec9e4e6",
   "ollama": {
     "available": true,
     "version": "ollama version is 0.24.0",
@@ -68,5 +68,5 @@
     "no_money_trading_legal": true,
     "no_bot_captcha_cloak_bypass": true
   },
-  "generated_at": "2026-05-24T14:56:12Z"
+  "generated_at": "2026-05-25T09:22:42Z"
 }

@@ -80,6 +80,19 @@ The `local-model-worker` bundle includes the Gemma readiness lane:
 - `14_context/local_model_readiness/generated/gemma_readiness_status.md`
 - `14_context/local_model_readiness/generated/local_task_quality_plan.md`
 
+The `local-model-routing` bundle covers the N+6.1A guard lane:
+
+- `03_scripts/local_model_worker_lane.py`
+- `03_scripts/local_model_output_guard.py`
+- `docs/LOCAL_MODEL_ROUTING_GUIDE.md`
+- `docs/LOCAL_MODEL_OUTPUT_GUARD.md`
+- `docs/LOCAL_WORKER_SAFE_TASKS.md`
+- `14_context/local_worker/routing_runs/`
+
+`03_scripts/local_model_output_guard.py` uses the generated repo map as the
+allowlist for known bundle IDs and source files. If Gemma cites an invented
+bundle or unknown file, the local worker falls back to `local_demo`.
+
 ## Safety
 
 - Local-only.
@@ -93,6 +106,8 @@ The `local-model-worker` bundle includes the Gemma readiness lane:
 - No money, trading, or legal actions.
 - UI-TARS remains observation-only.
 - Hermes setup, provider config, Telegram, and token flows remain manual later.
+- No command execution, file edit, browser action, or account action from model
+  output.
 
 ## Dashboard
 

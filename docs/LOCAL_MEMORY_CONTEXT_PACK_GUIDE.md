@@ -147,9 +147,23 @@ the dashboard card.
 
 ### Ollama or Gemma is missing
 
-This is expected in the current local MVP if Gemma has not been pulled. The
-context pack should say `local_demo fallback active` instead of pretending a
-Gemma worker is running.
+If Gemma is missing, the context pack should say `local_demo fallback active`
+instead of pretending a Gemma worker is running. After N+6.0B, `gemma3:4b` is
+expected to be installed on Ivan's machine, but every context pack should still
+trust local `ollama list` truth over assumptions.
+
+### Guarded local routing context
+
+N+6.1A context packs include the Local Model Routing / Guarded Worker lane:
+
+```powershell
+python 03_scripts/ghoti_product_launcher.py --local-worker-routing-status --json
+python 03_scripts/ghoti_product_launcher.py --local-worker-route-task status-paragraph --json
+```
+
+The context pack should mention repo-bundle hallucination guard, known source
+metadata, local_demo fallback, and no live APIs or command/file execution from
+model output.
 
 ### Hermes is not found
 
@@ -191,7 +205,7 @@ Next local memory improvements:
 
 - local repo knowledge map and report index compression
 - future Graphify repo knowledge graph integration
-- real Gemma model availability and worker-lane diagnostics
+- guarded Gemma worker routing and worker-lane diagnostics
 - milestone-aware memory summaries
 - automatic context pack refresh after clean merge gates
 - richer Obsidian vault links while staying file-based and local-first

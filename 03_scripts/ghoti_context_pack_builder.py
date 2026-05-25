@@ -26,9 +26,9 @@ GENERATED_DIR = REPO_ROOT / "14_context" / "compact_memory" / "generated"
 
 LAUNCHER_COMMAND = "python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard"
 DASHBOARD_URL = "http://127.0.0.1:3210"
-LATEST_CLEAN_MILESTONE = "N+5.9B - Gemma Readiness / Local Quality Plan landed on main"
-CURRENT_MILESTONE = "N+6.0A - Human-Approved Gemma Install + First Real Local Model Evaluation"
-NEXT_RECOMMENDED_MILESTONE = "N+6.1A - Constrained Gemma Worker Routing + Repo-Bundle Hallucination Guard"
+LATEST_CLEAN_MILESTONE = "N+6.0B - Human-Approved Gemma Install + First Local Evaluation landed on main"
+CURRENT_MILESTONE = "N+6.1A - Constrained Local Model Routing + Repo-Bundle Hallucination Guard"
+NEXT_RECOMMENDED_MILESTONE = "N+6.2A - Hermes Agent Manual Bridge Verification + WSL Usage Guide"
 ROADMAP_PRIORITY_SEQUENCE = [
     "N+6.1A - Constrained Gemma worker routing for boring/simple local tasks, with known repo-bundle IDs only and fallback on guard failure.",
     "N+6.2A - Hermes Agent Workflow / Manual Bridge Verification for faster supervised task execution; safe probes only, no tokens, no provider setup.",
@@ -38,6 +38,7 @@ REPO_KNOWLEDGE_DIR = REPO_ROOT / "14_context" / "repo_knowledge" / "generated"
 HERMES_WORKFLOW_DIR = REPO_ROOT / "14_context" / "hermes_workflow" / "generated"
 GEMMA_READINESS_DIR = REPO_ROOT / "14_context" / "local_model_readiness" / "generated"
 LOCAL_MODEL_EVAL_DIR = REPO_ROOT / "14_context" / "local_model_evaluation" / "runs"
+LOCAL_MODEL_ROUTING_DIR = REPO_ROOT / "14_context" / "local_worker" / "routing_runs"
 REPO_MAP_COMMAND = "python 03_scripts/ghoti_product_launcher.py --repo-map --json"
 REPO_BUNDLE_NEXT_COMMAND = "python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json"
 HERMES_BRIDGE_STATUS_COMMAND = "python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json"
@@ -46,6 +47,9 @@ GEMMA_STATUS_COMMAND = "python 03_scripts/ghoti_product_launcher.py --gemma-stat
 GEMMA_DOCTOR_COMMAND = "python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json"
 GEMMA_QUALITY_COMMAND = "python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json"
 LOCAL_MODEL_EVAL_COMMAND = "python 03_scripts/ghoti_product_launcher.py --local-model-eval --json"
+LOCAL_WORKER_ROUTING_STATUS_COMMAND = "python 03_scripts/ghoti_product_launcher.py --local-worker-routing-status --json"
+LOCAL_WORKER_ROUTE_TASK_COMMAND = "python 03_scripts/ghoti_product_launcher.py --local-worker-route-task status-paragraph --json"
+LOCAL_WORKER_ROUTING_DEMO_COMMAND = "python 03_scripts/ghoti_product_launcher.py --local-worker-routing-demo --json"
 
 OUTPUT_FILES = {
     "ghoti_current_context_pack.md": "context_pack_markdown",
@@ -309,12 +313,34 @@ def _static_truth() -> Dict[str, object]:
             "quality_plan_path": _repo_rel(GEMMA_READINESS_DIR / "local_task_quality_plan.md"),
             "rubric_path": _repo_rel(GEMMA_READINESS_DIR / "local_task_quality_rubric.json"),
             "evaluation_runs_dir": _repo_rel(LOCAL_MODEL_EVAL_DIR),
+            "routing_runs_dir": _repo_rel(LOCAL_MODEL_ROUTING_DIR),
             "status_command": GEMMA_STATUS_COMMAND,
             "doctor_command": GEMMA_DOCTOR_COMMAND,
             "quality_command": GEMMA_QUALITY_COMMAND,
             "local_model_eval_command": LOCAL_MODEL_EVAL_COMMAND,
             "manual_install_command": "ollama pull gemma3:4b",
             "production_routing": "disabled",
+        },
+        "local_model_routing": {
+            "status": "guarded_safe_tasks_only",
+            "readiness_percent": 82,
+            "guard_enabled": True,
+            "source_metadata_required": True,
+            "routing_runs_dir": _repo_rel(LOCAL_MODEL_ROUTING_DIR),
+            "output_guard_script": "03_scripts/local_model_output_guard.py",
+            "routing_status_command": LOCAL_WORKER_ROUTING_STATUS_COMMAND,
+            "route_task_command": LOCAL_WORKER_ROUTE_TASK_COMMAND,
+            "routing_demo_command": LOCAL_WORKER_ROUTING_DEMO_COMMAND,
+            "safe_tasks": [
+                "summarize-latest-report",
+                "status-paragraph",
+                "codex-next-prompt",
+                "safety-classification",
+                "context-bundle-summary",
+                "next-milestone-outline",
+                "report-to-bullets",
+            ],
+            "blocked": "no code edits, shell commands, browser actions, live APIs, posting, account actions, credentials, or unsupported file claims",
         },
         "repo_knowledge": {
             "status": "available",
@@ -344,6 +370,7 @@ def _static_truth() -> Dict[str, object]:
             "Repo Knowledge / Graphify Lane creates a local file map, latest report index, and task bundles.",
             "Hermes Agent / Manual Bridge exposes safe probes, skills index, manual checklist, and bridge packet.",
             "Gemma / Local Model Quality shows real model availability, manual install decision, and quality evaluation plan.",
+            "Local Model Routing / Guarded Worker routes allowlisted offline tasks with repo-bundle hallucination guard and local_demo fallback.",
             "Reports live under 14_context/.",
         ],
         "pending_manual": [
@@ -463,6 +490,9 @@ def _render_context_pack(facts: Dict[str, object], status_short: str) -> str:
         - Gemma readiness doctor: `{GEMMA_DOCTOR_COMMAND}`
         - Gemma quality plan: `{GEMMA_QUALITY_COMMAND}`
         - Local model eval: `{LOCAL_MODEL_EVAL_COMMAND}`
+        - Guarded routing status: `{LOCAL_WORKER_ROUTING_STATUS_COMMAND}`
+        - Route status paragraph: `{LOCAL_WORKER_ROUTE_TASK_COMMAND}`
+        - Guarded routing demo: `{LOCAL_WORKER_ROUTING_DEMO_COMMAND}`
 
         ## What Works Now
 
@@ -501,6 +531,21 @@ def _render_context_pack(facts: Dict[str, object], status_short: str) -> str:
         - Evaluation runs: `{facts['gemma_readiness']['evaluation_runs_dir']}`
         - Production routing: {facts['gemma_readiness']['production_routing']}
         - Safety: no live APIs, no auto-downloads, no `ollama pull` performed by Ghoti, manual approval required before model download.
+
+        ## Local Model Routing / Guarded Worker
+
+        - Routing status: {facts['local_model_routing']['status']}
+        - Routing readiness: {facts['local_model_routing']['readiness_percent']}%
+        - Guard enabled: {str(facts['local_model_routing']['guard_enabled']).lower()}
+        - Source metadata required: {str(facts['local_model_routing']['source_metadata_required']).lower()}
+        - Routing runs: `{facts['local_model_routing']['routing_runs_dir']}`
+        - Output guard: `{facts['local_model_routing']['output_guard_script']}`
+        - Routing status command: `{facts['local_model_routing']['routing_status_command']}`
+        - Route task command: `{facts['local_model_routing']['route_task_command']}`
+        - Routing demo command: `{facts['local_model_routing']['routing_demo_command']}`
+        - Safe tasks: {', '.join(facts['local_model_routing']['safe_tasks'])}
+        - Blocked: {facts['local_model_routing']['blocked']}
+        - N+6.0A hallucination fix: reject invented repo bundles/files and fallback to local_demo.
 
         ## Hermes / WSL Truth
 
@@ -553,6 +598,7 @@ def _render_context_pack(facts: Dict[str, object], status_short: str) -> str:
         - Repo Knowledge / Graphify Lane: local map and task bundles; Graphify runtime roadmap only/not wired
         - Hermes Agent / Manual Bridge: safe probes, generated readiness files, and manual setup plan
         - Gemma / Local Model Quality: manual install decision and quality evaluation plan; local_demo fallback preserved
+        - Local Model Routing / Guarded Worker: allowlisted offline tasks only; repo-bundle hallucination guard required; fallback on guard failure
 
         ## Latest Reports
 
@@ -594,9 +640,9 @@ def _render_codex_prompt(facts: Dict[str, object]) -> str:
         - Hermes browser/Playwright degraded/not claimed.
         - Codex provider in Hermes pending/not proven.
         - Telegram manual later/no token; No VPS.
-        - Gemma model missing unless a new local check proves otherwise; local_demo fallback active.
+        - Gemma `gemma3:4b` is installed if local `ollama list` still proves it; local_demo fallback remains available.
         - Gemma / Local Model Quality files live under `14_context/local_model_readiness/generated/`; local model eval runs live under `14_context/local_model_evaluation/runs/`.
-        - N+6.1A must guard against repo-bundle hallucination before routing.
+        - N+6.1A local routing must require source metadata, known repo bundle IDs, known files, and fallback when guard checks fail.
         - N+6.2A should verify Hermes manual bridge workflow readiness without setup/tokens/live APIs.
         - N+6.3A should prepare safe computer-use with observation first and human approval for every click/type/live-account action.
         - Obsidian/local memory present.
@@ -660,6 +706,7 @@ def _json_pack(facts: Dict[str, object], status_short: str) -> Dict[str, object]
         "local_model_truth": facts["local_model_truth"],
         "gemma_readiness": facts["gemma_readiness"],
         "gemma_readiness_truth": facts["gemma_readiness_truth"],
+        "local_model_routing": facts["local_model_routing"],
         "memory": facts["memory"],
         "repo_knowledge": facts["repo_knowledge"],
         "latest_reports": facts["latest_reports"],

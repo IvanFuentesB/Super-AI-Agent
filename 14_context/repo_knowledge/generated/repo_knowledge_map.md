@@ -1,13 +1,13 @@
 # Ghoti Repo Knowledge Map
 
-Generated: `2026-05-24T19:59:04Z`
+Generated: `2026-05-25T09:25:01Z`
 
 Repo knowledge readiness: 55%. Local file map and task bundles are available. Graphify runtime: roadmap only/not wired; no external repo runtime; no network.
 
-- Main hash: `56f97929725f5a293e80e9ea2d15ad38c0c45887`
-- Latest clean milestone: N+5.9B - Gemma Readiness / Local Quality Plan landed on main
-- Current milestone: N+6.0A - Human-Approved Gemma Install + First Real Local Model Evaluation
-- Next recommended milestone: N+6.1A - Constrained Gemma Worker Routing + Repo-Bundle Hallucination Guard
+- Main hash: `1ddeb0f39d5316e90ee2d0b8caa276b1fec9e4e6`
+- Latest clean milestone: N+6.0B - Human-Approved Gemma Install + First Local Evaluation landed on main
+- Current milestone: N+6.1A - Constrained Local Model Routing + Repo-Bundle Hallucination Guard
+- Next recommended milestone: N+6.2A - Hermes Agent Manual Bridge Verification + WSL Usage Guide
 - Launcher: `python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard`
 - Dashboard: `http://127.0.0.1:3210`
 - Repo map command: `python 03_scripts/ghoti_product_launcher.py --repo-map --json`
@@ -27,7 +27,8 @@ Repo knowledge readiness: 55%. Local file map and task bundles are available. Gr
 - `03_scripts/ghoti_product_launcher.py` [launcher]: Daily operator entry point and safest command surface.
 - `03_scripts/ghoti_context_pack_builder.py` [local memory/context packs]: Main token-saving continuity tool.
 - `03_scripts/local_memory_compression_bridge.py` [local memory/context packs]: Keeps durable memory visible without live providers.
-- `03_scripts/local_model_worker_lane.py` [local model/easy worker]: Current credit-saving worker lane with local_demo fallback.
+- `03_scripts/local_model_worker_lane.py` [local model/easy worker]: Credit-saving worker lane with Gemma and local_demo fallback.
+- `03_scripts/local_model_output_guard.py` [local model/easy worker]: Rejects the repo-bundle hallucination found in the first Gemma evaluation.
 - `03_scripts/gemma_model_readiness.py` [local model/easy worker]: N+6.0A preflight and local model evaluation layer without provider setup or production routing.
 - `03_scripts/hermes_local_bootstrap.py` [Hermes/WSL]: Hermes is a planned local agent layer, but setup/provider actions remain manual.
 - `03_scripts/hermes_agent_workflow_bridge.py` [Hermes/WSL]: Makes Hermes useful and inspectable while keeping provider setup, Telegram, tokens, and browser automation manual later.
@@ -47,18 +48,25 @@ Repo knowledge readiness: 55%. Local file map and task bundles are available. Gr
 - `docs/LOCAL_MODEL_GEMMA_SETUP_GUIDE.md` [local model/easy worker]: Shows how to unlock real local model work later without auto-downloads.
 - `docs/GEMMA_MODEL_INSTALL_DECISION.md` [local model/easy worker]: Helps Ivan choose 4B, 1B, 270M, or stay local_demo.
 - `docs/HUMAN_APPROVED_GEMMA_INSTALL_LOG.md` [local model/easy worker]: Keeps the one-model approval separate from future routing or provider setup.
+- `docs/LOCAL_MODEL_ROUTING_GUIDE.md` [local model/easy worker]: Explains what Gemma can route now and what remains blocked.
+- `docs/LOCAL_MODEL_OUTPUT_GUARD.md` [local model/easy worker]: Documents the hallucination fix and output acceptance criteria.
+- `docs/LOCAL_WORKER_SAFE_TASKS.md` [local model/easy worker]: Keeps boring local tasks useful without unsafe autonomy.
 - `docs/LOCAL_MODEL_QUALITY_EVALUATION_GUIDE.md` [local model/easy worker]: Keeps real Gemma quality separate from local_demo fallback plumbing.
 - `docs/EASY_WORKER_LANE_GUIDE.md` [local model/easy worker]: Documents safe credit-saving local tasks.
 - `docs/HERMES_LOCAL_INSTALL_AND_PROVIDER_PLAN.md` [Hermes/WSL]: Important next human/manual milestone context.
 - `docs/HERMES_AGENT_WORKFLOW_GUIDE.md` [Hermes/WSL]: Explains safe probes, generated readiness files, and manual later boundaries.
 - `docs/HERMES_MANUAL_PROVIDER_SETUP_CHECKLIST.md` [Hermes/WSL]: Keeps provider setup out of Codex automation and behind explicit approval.
 - `docs/COMPUTER_USE_ROADMAP.md` [UI-TARS/computer-use]: Keeps click/type/autonomy future-gated.
+- `docs/SAFE_COMPUTER_USE_TEST_PLAN_APPLE_COMPARISON.md` [UI-TARS/computer-use]: Documents the boring-task computer-use target without executing browser control now.
 - `docs/TOKEN_EFFICIENT_COMPUTER_USE_ROADMAP.md` [future Graphify roadmap]: Connects repo knowledge with the broader token-saving roadmap.
 - `docs/BLOCKED_UNSAFE_AUTOMATION.md` [public/security audit]: Canonical list of blocked automation categories.
 - `14_context/compact_memory/generated/ghoti_current_context_pack.md` [local memory/context packs]: Short current-state handoff source.
 - `14_context/local_worker/generated/local_worker_status.md` [local model/easy worker]: Shows Ollama/Gemma/local_demo readiness.
 - `14_context/hermes_workflow/generated/hermes_workflow_status.md` [Hermes/WSL]: Shows Hermes installed/version/skills truth and manual later boundaries.
 - `01_projects/runtime_mvp/tests/test_n5_6a_local_model_easy_worker_lane.py` [tests]: Best current pattern for JSON script, launcher, docs, and dashboard checks.
+- `01_projects/runtime_mvp/tests/test_n6_1a_constrained_local_model_routing_repo_bundle_guard.py` [tests]: Protects source metadata, safe task allowlist, fallback, dashboard labels, and Apple test plan.
+- `14_context/codex_n6_1a_constrained_local_model_routing_repo_bundle_guard.md` [reports/14_context]: CLEAN PASS / N+6.1A CONSTRAINED LOCAL MODEL ROUTING GUARD READY
+- `14_context/codex_n6_0c_report_history_stability_repair.md` [reports/14_context]: CLEAN PASS / REPORT HISTORY STABILITY REPAIR READY.
 - `14_context/codex_n6_0b_main_merge_gemma_install_first_local_eval.md` [reports/14_context]: CLEAN PASS / N+6.0B MAIN MERGE READY.
 - `14_context/codex_n6_0a_roadmap_priority_hermes_computer_use_update_audit.md` [reports/14_context]: CLEAN PASS / N+6.0A ROADMAP PRIORITY UPDATED AND AUDITED.
 - `14_context/codex_n6_0a_roadmap_priority_hermes_computer_use_update.md` [reports/14_context]: verdict not detected
@@ -67,7 +75,6 @@ Repo knowledge readiness: 55%. Local file map and task bundles are available. Gr
 - `14_context/codex_n5_9a_gemma_model_availability_local_task_quality_evaluation.md` [reports/14_context]: CLEAN PASS / N+5.9A GEMMA READINESS AND LOCAL QUALITY PLAN READY
 - `14_context/codex_n5_8b_main_merge_hermes_manual_bridge_readiness.md` [reports/14_context]: CLEAN PASS / N+5.8B MAIN MERGE READY
 - `14_context/codex_n5_8a_hermes_agent_workflow_provider_setup_plan_manual_bridge.md` [reports/14_context]: CLEAN PASS / N+5.8A HERMES MANUAL BRIDGE READY
-- `14_context/codex_n5_7b_main_merge_repo_knowledge_context_retrieval.md` [reports/14_context]: CLEAN PASS / N+5.7B MAIN MERGE READY
 - `14_context/codex_n5_7a_graphify_repo_knowledge_map_context_retrieval.md` [reports/14_context]: CLEAN PASS / N+5.7A REPO KNOWLEDGE MAP CONTEXT RETRIEVAL READY
 - `14_context/codex_n5_6b_main_merge_local_model_easy_worker_lane.md` [reports/14_context]: CLEAN PASS / N+5.6B MAIN MERGE READY
 - `14_context/codex_n5_6a_local_model_gemma_setup_truth_easy_worker_lane.md` [reports/14_context]: CLEAN PASS / N+5.6A LOCAL MODEL EASY WORKER LANE READY
@@ -79,6 +86,7 @@ Repo knowledge readiness: 55%. Local file map and task bundles are available. Gr
 - `dashboard` -> `14_context/repo_knowledge/generated/task_bundle_dashboard.md`
 - `local-memory` -> `14_context/repo_knowledge/generated/task_bundle_local_memory.md`
 - `local-model-worker` -> `14_context/repo_knowledge/generated/task_bundle_local_model_worker.md`
+- `local-model-routing` -> `14_context/repo_knowledge/generated/task_bundle_local_model_routing.md`
 - `hermes` -> `14_context/repo_knowledge/generated/task_bundle_hermes.md`
 - `content-workflow` -> `14_context/repo_knowledge/generated/task_bundle_content_workflow.md`
 - `safety` -> `14_context/repo_knowledge/generated/task_bundle_safety.md`

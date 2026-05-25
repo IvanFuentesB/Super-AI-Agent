@@ -41,6 +41,18 @@ draft prompts, and classifying safety risk. These can be accelerated with Gemma
 and Hermes only when each step remains local, inspectable, and approval-gated.
 Ghoti must not convert this into uncontrolled browser/account automation.
 
+## Future Apple Comparison Test
+
+N+6.1A documents a future observation/manual-approval test plan at
+`docs/SAFE_COMPUTER_USE_TEST_PLAN_APPLE_COMPARISON.md`. The plan is to use
+Chrome in Incognito mode on the Apple website to compare the newest Mac laptop
+option with Mac mini and write a local decision packet. Do not execute it yet.
+
+N+6.3A may build an observation/manual-approval harness for that test. It must
+start observation-only, require human approval for every click/type, avoid
+login/cart/purchase/account actions, avoid CAPTCHA/bot/cloak bypass, and use
+Gemma only to summarize visible page text. No live APIs.
+
 ## Always Blocked
 
 - Captcha, cloak, or anti-abuse bypass.

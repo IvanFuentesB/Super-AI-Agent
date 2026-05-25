@@ -21,6 +21,9 @@ Launcher shortcuts:
 ```powershell
 python 03_scripts/ghoti_product_launcher.py --local-worker-status --json
 python 03_scripts/ghoti_product_launcher.py --local-worker-demo --json
+python 03_scripts/ghoti_product_launcher.py --local-worker-routing-status --json
+python 03_scripts/ghoti_product_launcher.py --local-worker-route-task status-paragraph --json
+python 03_scripts/ghoti_product_launcher.py --local-worker-routing-demo --json
 python 03_scripts/ghoti_product_launcher.py --gemma-status --json
 python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json
 python 03_scripts/ghoti_product_launcher.py --local-model-eval --json
@@ -54,15 +57,17 @@ Current N+6.0A result: `gemma3:4b` installed locally and the first eval scored
 86%, with 6 of 7 tasks passing. The failed task hallucinated a repo bundle, so
 real routing remains a later audited decision rather than an automatic switch.
 
-N+6.1A should build only constrained routing for these boring local tasks. It
-must use known repo-map bundle IDs only, reject invented bundle/file claims,
-require source metadata, fall back to `local_demo` if the guard fails, and never
-execute commands or edit files from model output.
+N+6.1A builds only constrained routing for these boring local tasks. It uses
+known repo-map bundle IDs only, rejects invented bundle/file claims, requires
+source metadata, falls back to `local_demo` if the guard fails, and never
+executes commands or edits files from model output. No live APIs, no browser
+actions, no account actions, and no provider setup are allowed.
 
 ## Generated Outputs
 
 ```text
 14_context/local_worker/generated/
+14_context/local_worker/routing_runs/
 ```
 
 - `local_worker_status.json`

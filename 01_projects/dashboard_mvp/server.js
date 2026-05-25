@@ -7141,6 +7141,44 @@ async function handleApiRequest(request, response, requestUrl) {
     return;
   }
 
+  // GET /api/local-model-worker/routing-status
+  if (request.method === "GET" && requestUrl.pathname === "/api/local-model-worker/routing-status") {
+    // N+6.1A guarded routing status only. No live APIs, no command execution from
+    // model output, no provider setup, no browser actions, and no file edits.
+    sendJson(response, 200, await runLocalModelWorkerLane(["--routing-status"], 45000));
+    return;
+  }
+
+  // GET or POST /api/local-model-worker/route-task?task=<safe-task>
+  if ((request.method === "GET" || request.method === "POST") && requestUrl.pathname === "/api/local-model-worker/route-task") {
+    const allowedRouteTasks = new Set([
+      "summarize-latest-report",
+      "status-paragraph",
+      "codex-next-prompt",
+      "safety-classification",
+      "context-bundle-summary",
+      "next-milestone-outline",
+      "report-to-bullets",
+    ]);
+    const task = String(requestUrl.searchParams.get("task") || "status-paragraph");
+    if (!allowedRouteTasks.has(task)) {
+      sendJson(response, 400, { ok: false, local_only: true, error: "Unsupported guarded local worker task" });
+      return;
+    }
+    // Fixed argv allowlist. The worker validates source metadata and falls back to
+    // local_demo when Gemma invents bundles/files or omits required source truth.
+    sendJson(response, 200, await runLocalModelWorkerLane(["--route-task", task], 90000));
+    return;
+  }
+
+  // POST /api/local-model-worker/write-routing-demo
+  if (request.method === "POST" && requestUrl.pathname === "/api/local-model-worker/write-routing-demo") {
+    // Repo-local guarded routing artifacts only. No browser/computer-use, no live
+    // providers, no commands or file edits from model output.
+    sendJson(response, 200, await runLocalModelWorkerLane(["--write-routing-demo"], 180000));
+    return;
+  }
+
   // GET /api/gemma-readiness/status
   if (request.method === "GET" && requestUrl.pathname === "/api/gemma-readiness/status") {
     sendJson(response, 200, await runGemmaModelReadiness(["--status"], 45000));
@@ -7201,6 +7239,7 @@ async function handleApiRequest(request, response, requestUrl) {
       "dashboard",
       "local-memory",
       "local-model-worker",
+      "local-model-routing",
       "hermes",
       "content-workflow",
       "safety",
@@ -7306,6 +7345,13 @@ async function handleApiRequest(request, response, requestUrl) {
           available: true,
           mode: "manual_install_decision_and_quality_plan",
           how_to_run: "Run gemma_model_readiness.py --doctor --json or GET /api/gemma-readiness/quality-plan. No live APIs, no auto-downloads, no ollama pull, production routing disabled.",
+        },
+        {
+          key: "local_model_guarded_worker",
+          label: "Local Model Routing / Guarded Worker",
+          available: true,
+          mode: "guarded_safe_tasks_only",
+          how_to_run: "Run local_model_worker_lane.py --routing-status --json or GET /api/local-model-worker/routing-status. Gemma output must pass source metadata guard or local_demo fallback is used.",
         },
         {
           key: "repo_knowledge_graphify_lane",
