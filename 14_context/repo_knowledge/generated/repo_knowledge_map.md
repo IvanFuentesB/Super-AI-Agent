@@ -1,13 +1,13 @@
 # Ghoti Repo Knowledge Map
 
-Generated: `2026-05-25T09:25:01Z`
+Generated: `2026-05-26T05:34:18Z`
 
 Repo knowledge readiness: 55%. Local file map and task bundles are available. Graphify runtime: roadmap only/not wired; no external repo runtime; no network.
 
-- Main hash: `1ddeb0f39d5316e90ee2d0b8caa276b1fec9e4e6`
-- Latest clean milestone: N+6.0B - Human-Approved Gemma Install + First Local Evaluation landed on main
-- Current milestone: N+6.1A - Constrained Local Model Routing + Repo-Bundle Hallucination Guard
-- Next recommended milestone: N+6.2A - Hermes Agent Manual Bridge Verification + WSL Usage Guide
+- Main hash: `39daf4d81f8a5dc123c9949ce6d7c3ea49763978`
+- Latest clean milestone: N+6.1B - Constrained Local Model Routing + Repo-Bundle Hallucination Guard landed on main
+- Current milestone: N+6.2A - Hermes Agent Manual Bridge Verification + WSL Usage Guide
+- Next recommended milestone: N+6.3A - Safe Computer-Use Observation Harness / Apple Comparison Dry-Run
 - Launcher: `python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard`
 - Dashboard: `http://127.0.0.1:3210`
 - Repo map command: `python 03_scripts/ghoti_product_launcher.py --repo-map --json`
@@ -32,6 +32,7 @@ Repo knowledge readiness: 55%. Local file map and task bundles are available. Gr
 - `03_scripts/gemma_model_readiness.py` [local model/easy worker]: N+6.0A preflight and local model evaluation layer without provider setup or production routing.
 - `03_scripts/hermes_local_bootstrap.py` [Hermes/WSL]: Hermes is a planned local agent layer, but setup/provider actions remain manual.
 - `03_scripts/hermes_agent_workflow_bridge.py` [Hermes/WSL]: Makes Hermes useful and inspectable while keeping provider setup, Telegram, tokens, and browser automation manual later.
+- `03_scripts/hermes_manual_bridge_verifier.py` [Hermes/WSL]: N+6.2A daily usability layer for WSL/Hermes without provider setup, Telegram, browser automation, or computer-use control.
 - `03_scripts/ui_tars_observation_adapter.py` [UI-TARS/computer-use]: Preserves computer-use research without click/type control.
 - `03_scripts/approved_adapter_runner.py` [adapter/external sandbox]: Keeps integrations dry-run/local unless explicitly approved.
 - `03_scripts/external_tool_sandbox_manager.py` [adapter/external sandbox]: Prevents uncontrolled external repo runtime wiring.
@@ -55,6 +56,10 @@ Repo knowledge readiness: 55%. Local file map and task bundles are available. Gr
 - `docs/EASY_WORKER_LANE_GUIDE.md` [local model/easy worker]: Documents safe credit-saving local tasks.
 - `docs/HERMES_LOCAL_INSTALL_AND_PROVIDER_PLAN.md` [Hermes/WSL]: Important next human/manual milestone context.
 - `docs/HERMES_AGENT_WORKFLOW_GUIDE.md` [Hermes/WSL]: Explains safe probes, generated readiness files, and manual later boundaries.
+- `docs/WSL_USAGE_GUIDE_FOR_GHOTI.md` [Hermes/WSL]: Turns WSL/Hermes from mysterious terminal output into daily operator muscle memory.
+- `docs/HERMES_MANUAL_BRIDGE_VERIFICATION.md` [Hermes/WSL]: Separates safe inspectability from provider setup or live automation claims.
+- `docs/HERMES_SAFE_COMMANDS.md` [Hermes/WSL]: Keeps status probing repeatable without triggering auth/setup/browser control.
+- `docs/HERMES_BLOCKED_COMMANDS.md` [Hermes/WSL]: Protects against accidental provider setup, Telegram setup, tokens, and live computer-use.
 - `docs/HERMES_MANUAL_PROVIDER_SETUP_CHECKLIST.md` [Hermes/WSL]: Keeps provider setup out of Codex automation and behind explicit approval.
 - `docs/COMPUTER_USE_ROADMAP.md` [UI-TARS/computer-use]: Keeps click/type/autonomy future-gated.
 - `docs/SAFE_COMPUTER_USE_TEST_PLAN_APPLE_COMPARISON.md` [UI-TARS/computer-use]: Documents the boring-task computer-use target without executing browser control now.
@@ -65,6 +70,7 @@ Repo knowledge readiness: 55%. Local file map and task bundles are available. Gr
 - `14_context/hermes_workflow/generated/hermes_workflow_status.md` [Hermes/WSL]: Shows Hermes installed/version/skills truth and manual later boundaries.
 - `01_projects/runtime_mvp/tests/test_n5_6a_local_model_easy_worker_lane.py` [tests]: Best current pattern for JSON script, launcher, docs, and dashboard checks.
 - `01_projects/runtime_mvp/tests/test_n6_1a_constrained_local_model_routing_repo_bundle_guard.py` [tests]: Protects source metadata, safe task allowlist, fallback, dashboard labels, and Apple test plan.
+- `14_context/codex_n6_1b_main_merge_constrained_local_model_routing_guard.md` [reports/14_context]: CLEAN PASS / N+6.1B MAIN MERGE CONSTRAINED LOCAL MODEL ROUTING GUARD
 - `14_context/codex_n6_1a_constrained_local_model_routing_repo_bundle_guard.md` [reports/14_context]: CLEAN PASS / N+6.1A CONSTRAINED LOCAL MODEL ROUTING GUARD READY
 - `14_context/codex_n6_0c_report_history_stability_repair.md` [reports/14_context]: CLEAN PASS / REPORT HISTORY STABILITY REPAIR READY.
 - `14_context/codex_n6_0b_main_merge_gemma_install_first_local_eval.md` [reports/14_context]: CLEAN PASS / N+6.0B MAIN MERGE READY.
@@ -74,7 +80,6 @@ Repo knowledge readiness: 55%. Local file map and task bundles are available. Gr
 - `14_context/codex_n5_9b_main_merge_gemma_readiness_local_quality_plan.md` [reports/14_context]: CLEAN PASS / N+5.9B MAIN MERGE READY
 - `14_context/codex_n5_9a_gemma_model_availability_local_task_quality_evaluation.md` [reports/14_context]: CLEAN PASS / N+5.9A GEMMA READINESS AND LOCAL QUALITY PLAN READY
 - `14_context/codex_n5_8b_main_merge_hermes_manual_bridge_readiness.md` [reports/14_context]: CLEAN PASS / N+5.8B MAIN MERGE READY
-- `14_context/codex_n5_8a_hermes_agent_workflow_provider_setup_plan_manual_bridge.md` [reports/14_context]: CLEAN PASS / N+5.8A HERMES MANUAL BRIDGE READY
 - `14_context/codex_n5_7a_graphify_repo_knowledge_map_context_retrieval.md` [reports/14_context]: CLEAN PASS / N+5.7A REPO KNOWLEDGE MAP CONTEXT RETRIEVAL READY
 - `14_context/codex_n5_6b_main_merge_local_model_easy_worker_lane.md` [reports/14_context]: CLEAN PASS / N+5.6B MAIN MERGE READY
 - `14_context/codex_n5_6a_local_model_gemma_setup_truth_easy_worker_lane.md` [reports/14_context]: CLEAN PASS / N+5.6A LOCAL MODEL EASY WORKER LANE READY

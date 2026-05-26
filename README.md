@@ -12,23 +12,23 @@ Ghoti is a local-first, approval-gated AI operating workspace for supervised dem
 
 ## Quickstart
 
-Current clean main baseline: **N+6.0B / CLEAN PASS / GEMMA INSTALL AND FIRST
-LOCAL EVALUATION LANDED ON MAIN**.
+Current clean main baseline: **N+6.1B / CLEAN PASS / CONSTRAINED LOCAL MODEL
+ROUTING GUARD LANDED ON MAIN**.
 
-Current feature/audit lane: **N+6.1A / CONSTRAINED LOCAL MODEL ROUTING +
-REPO-BUNDLE HALLUCINATION GUARD**. N+6.1A is intentionally feature/audit only
-until a future clean merge gate lands it on main.
+Current feature/audit lane: **N+6.2A / HERMES MANUAL BRIDGE + WSL GUIDE**.
+N+6.2A is intentionally feature/audit only until a future clean merge gate
+lands it on main.
 
 Previous clean baseline preserved for audit continuity: **N+5.6B /
 clean/local-model-easy-worker-lane on main** at
 `c9413108006d920e0110413d3d5e195b504489c1`.
 
 ```text
-origin/main = 1ddeb0f39d5316e90ee2d0b8caa276b1fec9e4e6
+origin/main = 39daf4d81f8a5dc123c9949ce6d7c3ea49763978
 N+4: 329 OK
 N+5: 97 OK
-N+6: 5 OK
-Public audit: 150 checks / 0 blockers / 7 warnings on the N+6.0B final main audit
+N+6: 14 OK
+Public audit: 150 checks / 0 blockers / 7 warnings on the N+6.1B final main audit
 ```
 
 ```powershell
@@ -57,6 +57,11 @@ Daily guide:
 - [Repo Knowledge Map Guide](docs/REPO_KNOWLEDGE_MAP_GUIDE.md)
 - [Graphify Repo Knowledge Roadmap](docs/GRAPHIFY_REPO_KNOWLEDGE_ROADMAP.md)
 - [Hermes Agent Workflow Guide](docs/HERMES_AGENT_WORKFLOW_GUIDE.md)
+- [WSL Usage Guide For Ghoti](docs/WSL_USAGE_GUIDE_FOR_GHOTI.md)
+- [Hermes Manual Bridge Verification](docs/HERMES_MANUAL_BRIDGE_VERIFICATION.md)
+- [Hermes Safe Commands](docs/HERMES_SAFE_COMMANDS.md)
+- [Hermes Blocked Commands](docs/HERMES_BLOCKED_COMMANDS.md)
+- [Hermes To Computer-Use Roadmap](docs/HERMES_TO_COMPUTER_USE_ROADMAP.md)
 - [Hermes Manual Provider Setup Checklist](docs/HERMES_MANUAL_PROVIDER_SETUP_CHECKLIST.md)
 - [Hermes Skills Index Guide](docs/HERMES_SKILLS_INDEX_GUIDE.md)
 - [Hermes Browser / Playwright Remediation Plan](docs/HERMES_BROWSER_PLAYWRIGHT_REMEDIATION_PLAN.md)
@@ -76,6 +81,9 @@ Daily guide:
 - Next bundle: `python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json`
 - Hermes bridge status: `python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json`
 - Hermes bridge write: `python 03_scripts/ghoti_product_launcher.py --hermes-bridge-write --json`
+- Hermes manual status: `python 03_scripts/ghoti_product_launcher.py --hermes-manual-status --json`
+- Hermes WSL guide: `python 03_scripts/ghoti_product_launcher.py --hermes-wsl-guide --json`
+- Hermes safe commands: `python 03_scripts/ghoti_product_launcher.py --hermes-safe-commands --json`
 - Stop: `python 03_scripts/ghoti_product_launcher.py --stop-dashboard`
 
 ## What Ghoti Can Do Now
@@ -98,6 +106,10 @@ Daily guide:
   task bundles, and a focused next prompt under `14_context/repo_knowledge/generated/`.
 - Generate Hermes manual bridge readiness files, skills index, setup checklist,
   and bridge packet under `14_context/hermes_workflow/generated/`.
+- Generate Hermes Manual Bridge / WSL Guide files under
+  `14_context/hermes_manual_bridge/generated/` with Windows-to-WSL path mapping,
+  safe commands, blocked commands, skills summary, and future Apple comparison
+  plan.
 - Generate supervised content studio artifacts and preview packages.
 - Validate the local content demo: 8 agents, 100 titles, 100 thumbnails, local
   preview, approval packet, no posting.
@@ -114,10 +126,10 @@ Ivan's current priority is to reduce paid credit usage while preparing Ghoti
 for long, boring supervised tasks that are simple one-by-one but advanced as a
 workflow. The safe order is:
 
-1. N+6.1A - constrained Gemma worker routing with a repo-bundle hallucination
-   guard. Allowed tasks are summaries, status paragraphs, Codex prompts, safety
-   classification, context-bundle summaries, next milestone outlines, and
-   report-to-bullets only.
+1. N+6.1B - constrained Gemma worker routing with a repo-bundle hallucination
+   guard is now the main baseline. Allowed tasks are summaries, status
+   paragraphs, Codex prompts, safety classification, context-bundle summaries,
+   next milestone outlines, and report-to-bullets only.
 2. N+6.2A - Hermes Agent Workflow / Manual Bridge Verification for faster task
    execution. Safe probes only; no tokens, provider setup, Telegram setup, live
    APIs, or browser automation.
@@ -125,9 +137,9 @@ workflow. The safe order is:
    observation, Browser Harness, and Vercel agent-browser roadmap. Observation
    comes first, and every click/type/live-account action remains human-approved.
 
-N+6.1A must not execute commands or edit files from model output. It must use
-known repo-map bundle IDs only, reject invented bundle or file claims, require
-source metadata, and fall back to `local_demo` when the guard fails.
+N+6.2A must not run Hermes setup, provider config, Telegram setup, live APIs,
+browser automation, or computer-use click/type. It verifies WSL/Hermes manual
+bridge usability only.
 
 ## Hermes Local Bootstrap
 
@@ -186,6 +198,31 @@ inspectable. Codex provider support remains pending/not proven, Telegram is
 manual later/no token, browser/Playwright is degraded/not claimed, and no VPS
 is required. The bridge uses safe probes only and does not run live provider
 setup.
+
+## Hermes Manual Bridge / WSL Guide
+
+N+6.2A adds the daily WSL/Hermes usage layer:
+
+```powershell
+python 03_scripts/hermes_manual_bridge_verifier.py --status --json
+python 03_scripts/hermes_manual_bridge_verifier.py --wsl-explain --json
+python 03_scripts/hermes_manual_bridge_verifier.py --safe-commands --json
+python 03_scripts/hermes_manual_bridge_verifier.py --write-guide --json
+python 03_scripts/ghoti_product_launcher.py --hermes-manual-status --json
+```
+
+Generated files:
+
+- `14_context/hermes_manual_bridge/generated/00_hermes_manual_bridge_status.json`
+- `14_context/hermes_manual_bridge/generated/01_wsl_usage_guide.md`
+- `14_context/hermes_manual_bridge/generated/02_hermes_safe_commands.md`
+- `14_context/hermes_manual_bridge/generated/03_hermes_blocked_commands.md`
+- `14_context/hermes_manual_bridge/generated/07_apple_comparison_manual_bridge_plan.md`
+
+Windows path `C:\Users\ai_sandbox\Documents\AI_Managed_Only` maps to WSL path
+`/mnt/c/Users/ai_sandbox/Documents/AI_Managed_Only`. This lane uses safe probes
+only: no live API calls, no provider setup, no Telegram setup, no tokens, no
+browser automation, and no computer-use click/type.
 
 ## Model Council Roadmap
 

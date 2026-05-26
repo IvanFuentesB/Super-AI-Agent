@@ -26,9 +26,9 @@ GENERATED_DIR = REPO_ROOT / "14_context" / "compact_memory" / "generated"
 
 LAUNCHER_COMMAND = "python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard"
 DASHBOARD_URL = "http://127.0.0.1:3210"
-LATEST_CLEAN_MILESTONE = "N+6.0B - Human-Approved Gemma Install + First Local Evaluation landed on main"
-CURRENT_MILESTONE = "N+6.1A - Constrained Local Model Routing + Repo-Bundle Hallucination Guard"
-NEXT_RECOMMENDED_MILESTONE = "N+6.2A - Hermes Agent Manual Bridge Verification + WSL Usage Guide"
+LATEST_CLEAN_MILESTONE = "N+6.1B - Constrained Local Model Routing + Repo-Bundle Hallucination Guard landed on main"
+CURRENT_MILESTONE = "N+6.2A - Hermes Agent Manual Bridge Verification + WSL Usage Guide"
+NEXT_RECOMMENDED_MILESTONE = "N+6.3A - Safe Computer-Use Observation Harness / Apple Comparison Dry-Run"
 ROADMAP_PRIORITY_SEQUENCE = [
     "N+6.1A - Constrained Gemma worker routing for boring/simple local tasks, with known repo-bundle IDs only and fallback on guard failure.",
     "N+6.2A - Hermes Agent Workflow / Manual Bridge Verification for faster supervised task execution; safe probes only, no tokens, no provider setup.",
@@ -36,6 +36,7 @@ ROADMAP_PRIORITY_SEQUENCE = [
 ]
 REPO_KNOWLEDGE_DIR = REPO_ROOT / "14_context" / "repo_knowledge" / "generated"
 HERMES_WORKFLOW_DIR = REPO_ROOT / "14_context" / "hermes_workflow" / "generated"
+HERMES_MANUAL_BRIDGE_DIR = REPO_ROOT / "14_context" / "hermes_manual_bridge" / "generated"
 GEMMA_READINESS_DIR = REPO_ROOT / "14_context" / "local_model_readiness" / "generated"
 LOCAL_MODEL_EVAL_DIR = REPO_ROOT / "14_context" / "local_model_evaluation" / "runs"
 LOCAL_MODEL_ROUTING_DIR = REPO_ROOT / "14_context" / "local_worker" / "routing_runs"
@@ -43,6 +44,9 @@ REPO_MAP_COMMAND = "python 03_scripts/ghoti_product_launcher.py --repo-map --jso
 REPO_BUNDLE_NEXT_COMMAND = "python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json"
 HERMES_BRIDGE_STATUS_COMMAND = "python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json"
 HERMES_BRIDGE_WRITE_COMMAND = "python 03_scripts/ghoti_product_launcher.py --hermes-bridge-write --json"
+HERMES_MANUAL_STATUS_COMMAND = "python 03_scripts/ghoti_product_launcher.py --hermes-manual-status --json"
+HERMES_WSL_GUIDE_COMMAND = "python 03_scripts/ghoti_product_launcher.py --hermes-wsl-guide --json"
+HERMES_SAFE_COMMANDS_COMMAND = "python 03_scripts/ghoti_product_launcher.py --hermes-safe-commands --json"
 GEMMA_STATUS_COMMAND = "python 03_scripts/ghoti_product_launcher.py --gemma-status --json"
 GEMMA_DOCTOR_COMMAND = "python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json"
 GEMMA_QUALITY_COMMAND = "python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json"
@@ -298,6 +302,15 @@ def _static_truth() -> Dict[str, object]:
             "bridge_packet_path": _repo_rel(HERMES_WORKFLOW_DIR / "hermes_operator_bridge_packet.md"),
             "bridge_status_command": HERMES_BRIDGE_STATUS_COMMAND,
             "bridge_write_command": HERMES_BRIDGE_WRITE_COMMAND,
+            "manual_bridge_status_command": HERMES_MANUAL_STATUS_COMMAND,
+            "wsl_guide_command": HERMES_WSL_GUIDE_COMMAND,
+            "safe_commands_command": HERMES_SAFE_COMMANDS_COMMAND,
+            "manual_bridge_dir": _repo_rel(HERMES_MANUAL_BRIDGE_DIR),
+            "manual_bridge_status_path": _repo_rel(HERMES_MANUAL_BRIDGE_DIR / "00_hermes_manual_bridge_status.json"),
+            "wsl_usage_guide_path": _repo_rel(HERMES_MANUAL_BRIDGE_DIR / "01_wsl_usage_guide.md"),
+            "safe_commands_path": _repo_rel(HERMES_MANUAL_BRIDGE_DIR / "02_hermes_safe_commands.md"),
+            "blocked_commands_path": _repo_rel(HERMES_MANUAL_BRIDGE_DIR / "03_hermes_blocked_commands.md"),
+            "apple_comparison_plan_path": _repo_rel(HERMES_MANUAL_BRIDGE_DIR / "07_apple_comparison_manual_bridge_plan.md"),
         },
         "memory": {
             "obsidian_local_memory": "present",
@@ -369,6 +382,7 @@ def _static_truth() -> Dict[str, object]:
             "Local memory status and fallback are repo-local.",
             "Repo Knowledge / Graphify Lane creates a local file map, latest report index, and task bundles.",
             "Hermes Agent / Manual Bridge exposes safe probes, skills index, manual checklist, and bridge packet.",
+            "Hermes Manual Bridge / WSL Guide explains Windows-to-/mnt/c path mapping, safe commands, blocked commands, and future Apple comparison plan.",
             "Gemma / Local Model Quality shows real model availability, manual install decision, and quality evaluation plan.",
             "Local Model Routing / Guarded Worker routes allowlisted offline tasks with repo-bundle hallucination guard and local_demo fallback.",
             "Reports live under 14_context/.",
@@ -486,6 +500,9 @@ def _render_context_pack(facts: Dict[str, object], status_short: str) -> str:
         - Next bundle command: `{REPO_BUNDLE_NEXT_COMMAND}`
         - Hermes bridge status: `{HERMES_BRIDGE_STATUS_COMMAND}`
         - Hermes bridge write: `{HERMES_BRIDGE_WRITE_COMMAND}`
+        - Hermes manual status: `{HERMES_MANUAL_STATUS_COMMAND}`
+        - Hermes WSL guide: `{HERMES_WSL_GUIDE_COMMAND}`
+        - Hermes safe commands: `{HERMES_SAFE_COMMANDS_COMMAND}`
         - Gemma readiness status: `{GEMMA_STATUS_COMMAND}`
         - Gemma readiness doctor: `{GEMMA_DOCTOR_COMMAND}`
         - Gemma quality plan: `{GEMMA_QUALITY_COMMAND}`
@@ -568,6 +585,20 @@ def _render_context_pack(facts: Dict[str, object], status_short: str) -> str:
         - Hermes setup remains manual later.
         - Safe probes only; no live provider setup, no provider config, no Telegram setup, no tokens, no browser automation, no live APIs.
 
+        ## Hermes Manual Bridge / WSL Guide
+
+        - Manual bridge status command: `{facts['hermes']['manual_bridge_status_command']}`
+        - WSL guide command: `{facts['hermes']['wsl_guide_command']}`
+        - Safe commands command: `{facts['hermes']['safe_commands_command']}`
+        - Generated guide directory: `{facts['hermes']['manual_bridge_dir']}`
+        - Manual bridge status: `{facts['hermes']['manual_bridge_status_path']}`
+        - WSL usage guide: `{facts['hermes']['wsl_usage_guide_path']}`
+        - Safe commands: `{facts['hermes']['safe_commands_path']}`
+        - Blocked commands: `{facts['hermes']['blocked_commands_path']}`
+        - Apple comparison future test plan: `{facts['hermes']['apple_comparison_plan_path']}`
+        - Windows path mapping: `C:\\Users\\ai_sandbox\\Documents\\AI_Managed_Only` maps to `/mnt/c/Users/ai_sandbox/Documents/AI_Managed_Only`.
+        - This is a manual bridge/readiness lane only; no live provider setup, no Telegram setup, no browser automation, and no computer-use click/type.
+
         ## Obsidian / Local Memory Truth
 
         - Obsidian/local memory: present
@@ -637,6 +668,7 @@ def _render_codex_prompt(facts: Dict[str, object]) -> str:
         Status truth:
         - Hermes WSL installed at `/home/ai_sandbox/.local/bin/hermes`, v0.14.0.
         - Hermes Agent / Manual Bridge exposes safe status, skills index, manual checklist, and bridge packet.
+        - Hermes Manual Bridge / WSL Guide exposes `/mnt/c` path mapping, safe commands, blocked commands, and an Apple comparison future test plan.
         - Hermes browser/Playwright degraded/not claimed.
         - Codex provider in Hermes pending/not proven.
         - Telegram manual later/no token; No VPS.
@@ -703,6 +735,16 @@ def _json_pack(facts: Dict[str, object], status_short: str) -> Dict[str, object]
         "dashboard_url": DASHBOARD_URL,
         "status_short": status_short,
         "hermes": facts["hermes"],
+        "hermes_manual_bridge": {
+            "status_command": facts["hermes"]["manual_bridge_status_command"],
+            "wsl_guide_command": facts["hermes"]["wsl_guide_command"],
+            "safe_commands_command": facts["hermes"]["safe_commands_command"],
+            "generated_dir": facts["hermes"]["manual_bridge_dir"],
+            "wsl_usage_guide_path": facts["hermes"]["wsl_usage_guide_path"],
+            "safe_commands_path": facts["hermes"]["safe_commands_path"],
+            "blocked_commands_path": facts["hermes"]["blocked_commands_path"],
+            "apple_comparison_plan_path": facts["hermes"]["apple_comparison_plan_path"],
+        },
         "local_model_truth": facts["local_model_truth"],
         "gemma_readiness": facts["gemma_readiness"],
         "gemma_readiness_truth": facts["gemma_readiness_truth"],

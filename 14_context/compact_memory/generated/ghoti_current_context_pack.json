@@ -2,11 +2,11 @@
   "ok": true,
   "local_only": true,
   "external_api_used": false,
-  "generated_at": "2026-05-25T09:14:46Z",
-  "main_hash": "1ddeb0f39d5316e90ee2d0b8caa276b1fec9e4e6",
-  "latest_clean_milestone": "N+6.0B - Human-Approved Gemma Install + First Local Evaluation landed on main",
-  "current_milestone": "N+6.1A - Constrained Local Model Routing + Repo-Bundle Hallucination Guard",
-  "next_recommended_milestone": "N+6.2A - Hermes Agent Manual Bridge Verification + WSL Usage Guide",
+  "generated_at": "2026-05-26T05:34:17Z",
+  "main_hash": "39daf4d81f8a5dc123c9949ce6d7c3ea49763978",
+  "latest_clean_milestone": "N+6.1B - Constrained Local Model Routing + Repo-Bundle Hallucination Guard landed on main",
+  "current_milestone": "N+6.2A - Hermes Agent Manual Bridge Verification + WSL Usage Guide",
+  "next_recommended_milestone": "N+6.3A - Safe Computer-Use Observation Harness / Apple Comparison Dry-Run",
   "roadmap_priority_sequence": [
     "N+6.1A - Constrained Gemma worker routing for boring/simple local tasks, with known repo-bundle IDs only and fallback on guard failure.",
     "N+6.2A - Hermes Agent Workflow / Manual Bridge Verification for faster supervised task execution; safe probes only, no tokens, no provider setup.",
@@ -14,7 +14,7 @@
   ],
   "launcher_command": "python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard",
   "dashboard_url": "http://127.0.0.1:3210",
-  "status_short": "Ghoti status: N+6.0B - Human-Approved Gemma Install + First Local Evaluation landed on main at origin/main 1ddeb0f39d53. Launch `python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard` then open http://127.0.0.1:3210. Hermes WSL is installed at /home/ai_sandbox/.local/bin/hermes (v0.14.0); browser/Playwright is degraded/not claimed, Codex provider pending/not proven, Telegram manual/no token, no VPS. Ollama available (ollama version is 0.24.0); Gemma model found; local_demo fallback active as preserved backup. Gemma readiness 74%, mode `ollama_gemma`, quality `ready_for_human_approved_eval`, latest eval `real_gemma_eval_complete` at 86%, no auto-downloads. Obsidian memory, repo bundles, local worker fallback, safety gates, UI-TARS observation-only, adapter dry-runs, and external static sandbox are available. Next recommended milestone: N+6.2A - Hermes Agent Manual Bridge Verification + WSL Usage Guide.",
+  "status_short": "Ghoti status: N+6.1B - Constrained Local Model Routing + Repo-Bundle Hallucination Guard landed on main at origin/main 39daf4d81f8a. Launch `python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard` then open http://127.0.0.1:3210. Hermes WSL is installed at /home/ai_sandbox/.local/bin/hermes (v0.14.0); browser/Playwright is degraded/not claimed, Codex provider pending/not proven, Telegram manual/no token, no VPS. Ollama available (ollama version is 0.24.0); Gemma model found; local_demo fallback active as preserved backup. Gemma readiness 74%, mode `ollama_gemma`, quality `ready_for_human_approved_eval`, latest eval `real_gemma_eval_complete` at 86%, no auto-downloads. Obsidian memory, repo bundles, local worker fallback, safety gates, UI-TARS observation-only, adapter dry-runs, and external static sandbox are available. Next recommended milestone: N+6.3A - Safe Computer-Use Observation Harness / Apple Comparison Dry-Run.",
   "hermes": {
     "wsl_status": "installed",
     "path": "/home/ai_sandbox/.local/bin/hermes",
@@ -29,7 +29,26 @@
     "skills_index_path": "14_context/hermes_workflow/generated/hermes_skills_index.md",
     "bridge_packet_path": "14_context/hermes_workflow/generated/hermes_operator_bridge_packet.md",
     "bridge_status_command": "python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json",
-    "bridge_write_command": "python 03_scripts/ghoti_product_launcher.py --hermes-bridge-write --json"
+    "bridge_write_command": "python 03_scripts/ghoti_product_launcher.py --hermes-bridge-write --json",
+    "manual_bridge_status_command": "python 03_scripts/ghoti_product_launcher.py --hermes-manual-status --json",
+    "wsl_guide_command": "python 03_scripts/ghoti_product_launcher.py --hermes-wsl-guide --json",
+    "safe_commands_command": "python 03_scripts/ghoti_product_launcher.py --hermes-safe-commands --json",
+    "manual_bridge_dir": "14_context/hermes_manual_bridge/generated",
+    "manual_bridge_status_path": "14_context/hermes_manual_bridge/generated/00_hermes_manual_bridge_status.json",
+    "wsl_usage_guide_path": "14_context/hermes_manual_bridge/generated/01_wsl_usage_guide.md",
+    "safe_commands_path": "14_context/hermes_manual_bridge/generated/02_hermes_safe_commands.md",
+    "blocked_commands_path": "14_context/hermes_manual_bridge/generated/03_hermes_blocked_commands.md",
+    "apple_comparison_plan_path": "14_context/hermes_manual_bridge/generated/07_apple_comparison_manual_bridge_plan.md"
+  },
+  "hermes_manual_bridge": {
+    "status_command": "python 03_scripts/ghoti_product_launcher.py --hermes-manual-status --json",
+    "wsl_guide_command": "python 03_scripts/ghoti_product_launcher.py --hermes-wsl-guide --json",
+    "safe_commands_command": "python 03_scripts/ghoti_product_launcher.py --hermes-safe-commands --json",
+    "generated_dir": "14_context/hermes_manual_bridge/generated",
+    "wsl_usage_guide_path": "14_context/hermes_manual_bridge/generated/01_wsl_usage_guide.md",
+    "safe_commands_path": "14_context/hermes_manual_bridge/generated/02_hermes_safe_commands.md",
+    "blocked_commands_path": "14_context/hermes_manual_bridge/generated/03_hermes_blocked_commands.md",
+    "apple_comparison_plan_path": "14_context/hermes_manual_bridge/generated/07_apple_comparison_manual_bridge_plan.md"
   },
   "local_model_truth": {
     "ollama_available": true,
@@ -113,6 +132,30 @@
   },
   "latest_reports": [
     {
+      "path": "14_context/codex_n6_1b_main_merge_constrained_local_model_routing_guard.md",
+      "name": "codex_n6_1b_main_merge_constrained_local_model_routing_guard.md",
+      "kind": "main",
+      "rank": [
+        6,
+        1,
+        2
+      ],
+      "modified_unix": 1779744464,
+      "verdict_hint": "CLEAN PASS / N+6.1B MAIN MERGE CONSTRAINED LOCAL MODEL ROUTING GUARD"
+    },
+    {
+      "path": "14_context/codex_n6_1a_constrained_local_model_routing_repo_bundle_guard.md",
+      "name": "codex_n6_1a_constrained_local_model_routing_repo_bundle_guard.md",
+      "kind": "report",
+      "rank": [
+        6,
+        1,
+        1
+      ],
+      "modified_unix": 1779744464,
+      "verdict_hint": "CLEAN PASS / N+6.1A CONSTRAINED LOCAL MODEL ROUTING GUARD READY"
+    },
+    {
       "path": "14_context/codex_n6_0c_report_history_stability_repair.md",
       "name": "codex_n6_0c_report_history_stability_repair.md",
       "kind": "report",
@@ -121,7 +164,7 @@
         0,
         3
       ],
-      "modified_unix": 1779653949,
+      "modified_unix": 1779744464,
       "verdict_hint": "CLEAN PASS / REPORT HISTORY STABILITY REPAIR READY."
     },
     {
@@ -133,7 +176,7 @@
         0,
         2
       ],
-      "modified_unix": 1779653949,
+      "modified_unix": 1779744464,
       "verdict_hint": "CLEAN PASS / N+6.0B MAIN MERGE READY."
     },
     {
@@ -145,7 +188,7 @@
         0,
         1
       ],
-      "modified_unix": 1779653949,
+      "modified_unix": 1779744464,
       "verdict_hint": "CLEAN PASS / N+6.0A ROADMAP PRIORITY UPDATED AND AUDITED."
     },
     {
@@ -157,7 +200,7 @@
         0,
         1
       ],
-      "modified_unix": 1779653949,
+      "modified_unix": 1779744464,
       "verdict_hint": "unknown"
     },
     {
@@ -169,7 +212,7 @@
         0,
         1
       ],
-      "modified_unix": 1779653949,
+      "modified_unix": 1779744464,
       "verdict_hint": "CLEAN PASS / N+6.0A HUMAN-APPROVED GEMMA INSTALL AND FIRST LOCAL EVAL READY"
     },
     {
@@ -181,7 +224,7 @@
         9,
         2
       ],
-      "modified_unix": 1779653949,
+      "modified_unix": 1779744464,
       "verdict_hint": "CLEAN PASS / N+5.9B MAIN MERGE READY"
     },
     {
@@ -193,7 +236,7 @@
         9,
         1
       ],
-      "modified_unix": 1779653949,
+      "modified_unix": 1779744464,
       "verdict_hint": "CLEAN PASS / N+5.9A GEMMA READINESS AND LOCAL QUALITY PLAN READY"
     },
     {
@@ -205,7 +248,7 @@
         8,
         2
       ],
-      "modified_unix": 1779653949,
+      "modified_unix": 1779744464,
       "verdict_hint": "CLEAN PASS / N+5.8B MAIN MERGE READY"
     },
     {
@@ -217,7 +260,7 @@
         8,
         1
       ],
-      "modified_unix": 1779653949,
+      "modified_unix": 1779744464,
       "verdict_hint": "CLEAN PASS / N+5.8A HERMES MANUAL BRIDGE READY"
     },
     {
@@ -229,7 +272,7 @@
         7,
         2
       ],
-      "modified_unix": 1779653949,
+      "modified_unix": 1779744464,
       "verdict_hint": "CLEAN PASS / N+5.7B MAIN MERGE READY"
     },
     {
@@ -241,7 +284,7 @@
         7,
         1
       ],
-      "modified_unix": 1779653949,
+      "modified_unix": 1779744464,
       "verdict_hint": "CLEAN PASS / N+5.7A REPO KNOWLEDGE MAP CONTEXT RETRIEVAL READY"
     },
     {
@@ -253,7 +296,7 @@
         6,
         2
       ],
-      "modified_unix": 1779653949,
+      "modified_unix": 1779744464,
       "verdict_hint": "CLEAN PASS / N+5.6B MAIN MERGE READY"
     },
     {
@@ -265,7 +308,7 @@
         6,
         1
       ],
-      "modified_unix": 1779653949,
+      "modified_unix": 1779744464,
       "verdict_hint": "CLEAN PASS / N+5.6A LOCAL MODEL EASY WORKER LANE READY"
     },
     {
@@ -277,7 +320,7 @@
         5,
         2
       ],
-      "modified_unix": 1779653949,
+      "modified_unix": 1779744464,
       "verdict_hint": "CLEAN PASS / N+5.5B MAIN MERGE READY"
     }
   ],

@@ -25,21 +25,20 @@ Ghoti's near-term roadmap now prioritizes local models, Hermes workflows, and
 safe computer-use preparation because the operator needs to automate long,
 boring task sequences without burning paid credits.
 
-1. N+6.1A - constrained Gemma worker routing with a repo-bundle hallucination
-   guard. Allowed local tasks: summarize latest report, status paragraph, Codex
-   next prompt, safety classification, context bundle summary, next milestone
-   outline, and report-to-bullets.
-2. N+6.2A - Hermes Agent Workflow / Manual Bridge Verification. Verify skills
-   and safe command surfaces only; no tokens, provider setup, Telegram setup,
-   live APIs, or browser automation.
+1. N+6.1B - constrained Gemma worker routing with a repo-bundle hallucination
+   guard is the current main baseline.
+2. N+6.2A - Hermes Agent Workflow / Manual Bridge Verification. Verify WSL path
+   mapping, skills, safe commands, blocked commands, and manual bridge guide
+   files only; no tokens, provider setup, Telegram setup, live APIs, browser
+   automation, or computer-use click/type.
 3. N+6.3A - Safe Computer-Use Preparation with Gemma, Hermes, UI-TARS
    observation, Browser Harness, and Vercel agent-browser roadmap. Observation
    comes first, and every click/type/live-account action stays behind explicit
    human approval.
 
-N+6.1A must never execute commands, edit files, or take account/browser actions
-from model output. It must reject invented repo bundles/files and fall back to
-`local_demo` when source metadata is missing or unsafe.
+N+6.2A must never run Hermes setup, provider config, Telegram setup, live APIs,
+browser automation, or computer-use click/type. It verifies the manual bridge
+only.
 
 ## Gemma / Local Model Quality
 
@@ -80,14 +79,17 @@ from model output. It must reject invented repo bundles/files and fall back to
 ## Hermes Manual Bridge
 
 - Current implementation: safe readiness files under
-  `14_context/hermes_workflow/generated/`.
+  `14_context/hermes_workflow/generated/` and WSL/manual guide files under
+  `14_context/hermes_manual_bridge/generated/`.
 - Current commands:
   `python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json`
-  and `python 03_scripts/ghoti_product_launcher.py --hermes-bridge-write --json`.
+  `python 03_scripts/ghoti_product_launcher.py --hermes-bridge-write --json`,
+  `python 03_scripts/ghoti_product_launcher.py --hermes-manual-status --json`,
+  and `python 03_scripts/ghoti_product_launcher.py --hermes-wsl-guide --json`.
 - This saves tokens by producing a small skills index, manual setup checklist,
   and operator bridge packet.
-- Hermes provider setup, Telegram, tokens, live APIs, and browser automation
-  remain manual later.
+- Hermes provider setup, Telegram, tokens, live APIs, browser automation, and
+  computer-use click/type remain manual later.
 
 ## Computer Use
 
