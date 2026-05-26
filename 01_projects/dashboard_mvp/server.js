@@ -7100,6 +7100,38 @@ async function handleApiRequest(request, response, requestUrl) {
     }
   }
 
+  async function runHermesManualBridge(argvTail, timeoutMs) {
+    const hermesManualScript = path.join(repoRoot, "03_scripts", "hermes_manual_bridge_verifier.py");
+    const py = resolvePython();
+    if (!py) {
+      return { ok: false, local_only: true, available: false, error: "Python interpreter not found" };
+    }
+    if (!fs.existsSync(hermesManualScript)) {
+      return { ok: false, local_only: true, available: false, error: "Hermes manual bridge verifier not found" };
+    }
+    const argv = [...py.baseArgs, hermesManualScript, ...argvTail, "--json"];
+    let raw;
+    try {
+      raw = await runCommand(py.command, argv, { cwd: repoRoot, timeoutMs: timeoutMs || 60000 });
+    } catch (err) {
+      return { ok: false, local_only: true, available: false, error: String(err && err.message) };
+    }
+    if (!raw.ok) {
+      return {
+        ok: false,
+        local_only: true,
+        available: false,
+        error: raw.stderr || `exit ${raw.exitCode}`,
+        output: raw.stdout,
+      };
+    }
+    try {
+      return JSON.parse(raw.stdout);
+    } catch (_) {
+      return { ok: false, local_only: true, available: false, error: "Failed to parse Hermes manual bridge output" };
+    }
+  }
+
   // GET /api/local-memory-context-pack/status
   if (request.method === "GET" && requestUrl.pathname === "/api/local-memory-context-pack/status") {
     sendJson(response, 200, await runContextPackBuilder(["--status"], 30000));
@@ -7278,6 +7310,51 @@ async function handleApiRequest(request, response, requestUrl) {
     // provider setup, no provider config, no Telegram setup, no tokens, and
     // no browser automation.
     sendJson(response, 200, await runHermesAgentBridge(["--write-readiness"], 90000));
+    return;
+  }
+
+  // GET /api/hermes-manual-bridge/status
+  if (request.method === "GET" && requestUrl.pathname === "/api/hermes-manual-bridge/status") {
+    sendJson(response, 200, await runHermesManualBridge(["--status"], 60000));
+    return;
+  }
+
+  // GET /api/hermes-manual-bridge/doctor
+  if (request.method === "GET" && requestUrl.pathname === "/api/hermes-manual-bridge/doctor") {
+    sendJson(response, 200, await runHermesManualBridge(["--doctor"], 60000));
+    return;
+  }
+
+  // GET /api/hermes-manual-bridge/wsl-explain
+  if (request.method === "GET" && requestUrl.pathname === "/api/hermes-manual-bridge/wsl-explain") {
+    sendJson(response, 200, await runHermesManualBridge(["--wsl-explain"], 30000));
+    return;
+  }
+
+  // GET /api/hermes-manual-bridge/safe-commands
+  if (request.method === "GET" && requestUrl.pathname === "/api/hermes-manual-bridge/safe-commands") {
+    sendJson(response, 200, await runHermesManualBridge(["--safe-commands"], 30000));
+    return;
+  }
+
+  // GET /api/hermes-manual-bridge/blocked-commands
+  if (request.method === "GET" && requestUrl.pathname === "/api/hermes-manual-bridge/blocked-commands") {
+    sendJson(response, 200, await runHermesManualBridge(["--blocked-commands"], 30000));
+    return;
+  }
+
+  // GET /api/hermes-manual-bridge/skills-summary
+  if (request.method === "GET" && requestUrl.pathname === "/api/hermes-manual-bridge/skills-summary") {
+    sendJson(response, 200, await runHermesManualBridge(["--skills-summary"], 60000));
+    return;
+  }
+
+  // POST /api/hermes-manual-bridge/write-guide
+  if (request.method === "POST" && requestUrl.pathname === "/api/hermes-manual-bridge/write-guide") {
+    // Fixed argv. Safe WSL probes and repo-local guide files only. No live
+    // provider setup, no provider config, no Telegram, no tokens, no browser
+    // automation, and no computer-use click/type.
+    sendJson(response, 200, await runHermesManualBridge(["--write-guide"], 90000));
     return;
   }
 

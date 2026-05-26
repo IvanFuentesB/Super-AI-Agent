@@ -1,6 +1,6 @@
 # Safe Computer-Use Test Plan: Apple Comparison
 
-Do not execute this plan in N+6.1A. This is a future N+6.3A+ observation/manual-approval test design only.
+Do not execute this plan in N+6.2A. This is a future N+6.3A+ observation/manual-approval test design only.
 
 Goal: with explicit future human approval, open Chrome in Incognito mode, go to the Apple website, navigate to Mac, find the newest Mac laptop option, compare it with Mac mini, and create a local decision packet.
 
@@ -15,7 +15,9 @@ Rules:
 - no cookie, CAPTCHA, bot, or cloak bypass
 - no fake user behavior
 - no live APIs
-- no autonomous browser control in N+6.1A
+- no autonomous browser control in N+6.2A
+- no data scraping beyond visible page notes
+- no account automation
 
 Future tools may include Gemma for summarizing visible page text, Hermes for a manual bridge, UI-TARS for observation, and Browser Harness or Vercel agent-browser only after a separate audited milestone.
 
@@ -27,4 +29,4 @@ Expected local markdown decision packet:
 - uncertainty notes
 - recommended next human action
 
-Do not execute this plan now. N+6.1A only documents it so N+6.3A can build an observation/manual-approval harness safely.
+Do not execute this plan now. N+6.2A only documents it so N+6.3A can build an observation/manual-approval harness safely.

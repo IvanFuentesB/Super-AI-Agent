@@ -15,8 +15,8 @@ The updated order is:
    observation, Browser Harness, and Vercel agent-browser roadmap.
 
 N+6.2A still must not run Hermes setup, provider config, Telegram setup, token
-commands, live APIs, or browser automation. Its job is to verify safe local
-workflow surfaces and produce a manual bridge packet.
+commands, live APIs, browser automation, or computer-use click/type. Its job is
+to verify safe local workflow surfaces and produce a WSL/manual bridge packet.
 
 ## What Works Now
 
@@ -33,7 +33,16 @@ python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json
 python 03_scripts/ghoti_product_launcher.py --hermes-bridge-write --json
 python 03_scripts/hermes_agent_workflow_bridge.py --doctor --json
 python 03_scripts/hermes_agent_workflow_bridge.py --skills-index --json
+python 03_scripts/ghoti_product_launcher.py --hermes-manual-status --json
+python 03_scripts/ghoti_product_launcher.py --hermes-wsl-guide --json
+python 03_scripts/ghoti_product_launcher.py --hermes-safe-commands --json
+python 03_scripts/hermes_manual_bridge_verifier.py --write-guide --json
 ```
+
+Generated N+6.2A files live under `14_context/hermes_manual_bridge/generated/`.
+Start with `01_wsl_usage_guide.md`, `02_hermes_safe_commands.md`,
+`03_hermes_blocked_commands.md`, and
+`07_apple_comparison_manual_bridge_plan.md`.
 
 ## Boundaries
 
@@ -42,6 +51,8 @@ python 03_scripts/hermes_agent_workflow_bridge.py --skills-index --json
 - Browser/Playwright is degraded/not claimed.
 - No VPS is required.
 - Safe probes only; no live provider setup.
+- WSL path mapping: `C:\Users\ai_sandbox\Documents\AI_Managed_Only` maps to
+  `/mnt/c/Users/ai_sandbox/Documents/AI_Managed_Only`.
 
 ## How Hermes Fits
 

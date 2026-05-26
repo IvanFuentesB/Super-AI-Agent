@@ -14,11 +14,12 @@ Keep unsafe automation blocked and public readiness truthful.
 
 ## Current Truth
 
-- Main hash: `1ddeb0f39d5316e90ee2d0b8caa276b1fec9e4e6`
-- Latest clean milestone: N+6.0B - Human-Approved Gemma Install + First Local Evaluation landed on main
-- Current milestone: N+6.1A - Constrained Local Model Routing + Repo-Bundle Hallucination Guard
+- Main hash: `39daf4d81f8a5dc123c9949ce6d7c3ea49763978`
+- Latest clean milestone: N+6.1B - Constrained Local Model Routing + Repo-Bundle Hallucination Guard landed on main
+- Current milestone: N+6.2A - Hermes Agent Manual Bridge Verification + WSL Usage Guide
 - Previous Hermes bridge milestone: N+5.8A - Hermes Agent Workflow / Provider Setup Plan + Manual Bridge Readiness.
-- Hermes WSL installed at `/home/ai_sandbox/.local/bin/hermes`, v0.14.0; Hermes Agent / Manual Bridge files available; browser/Playwright degraded/not claimed.
+- Hermes WSL installed at `/home/ai_sandbox/.local/bin/hermes`, v0.14.0; Hermes Agent / Manual Bridge and Hermes Manual Bridge / WSL Guide files available; browser/Playwright degraded/not claimed.
+- Windows `C:\Users\ai_sandbox\Documents\AI_Managed_Only` maps to WSL `/mnt/c/Users/ai_sandbox/Documents/AI_Managed_Only`.
 - Ollama available v0.24.0; Gemma is installed only if local `ollama list` proves it; local_demo fallback remains available.
 - Gemma / Local Model Quality files live under `14_context/local_model_readiness/generated/`; local eval runs live under `14_context/local_model_evaluation/runs/`; production routing remains disabled.
 - UI-TARS observation-only; adapter runner approval-gated/local-only; external sandbox static inspection only.
@@ -47,6 +48,9 @@ Keep unsafe automation blocked and public readiness truthful.
 - `python 03_scripts/ghoti_product_launcher.py --local-model-eval --json`
 - `python 03_scripts/ghoti_product_launcher.py --repo-map --json`
 - `python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json`
+- `python 03_scripts/ghoti_product_launcher.py --hermes-manual-status --json`
+- `python 03_scripts/ghoti_product_launcher.py --hermes-wsl-guide --json`
+- `python 03_scripts/ghoti_product_launcher.py --hermes-safe-commands --json`
 - `python 03_scripts/ghoti_repo_knowledge_map.py --bundle safety --json`
 - `python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json`
 

@@ -20,12 +20,20 @@
   to inspect readiness.
 - Run `python 03_scripts/ghoti_product_launcher.py --hermes-bridge-write --json`
   to write local readiness files under `14_context/hermes_workflow/generated/`.
+- Run `python 03_scripts/ghoti_product_launcher.py --hermes-manual-status --json`
+  to inspect the N+6.2A WSL/manual bridge guide.
+- Run `python 03_scripts/hermes_manual_bridge_verifier.py --write-guide --json`
+  to write WSL usage, safe commands, blocked commands, skills summary, and
+  future Apple comparison plan files under
+  `14_context/hermes_manual_bridge/generated/`.
+- Windows `C:\Users\ai_sandbox\Documents\AI_Managed_Only` maps to WSL
+  `/mnt/c/Users/ai_sandbox/Documents/AI_Managed_Only`.
 - The manual bridge records safe probes, a skills index, a provider setup
   checklist, Telegram manual plan, browser/Playwright remediation plan, and an
   operator bridge packet.
 - Codex provider support remains pending/not proven.
-- Provider setup, Telegram, token entry, live APIs, and browser automation
-  remain manual later and are not run by Codex.
+- Provider setup, Telegram, token entry, live APIs, browser automation, and
+  computer-use click/type remain manual later and are not run by Codex.
 
 ## Official Installer
 

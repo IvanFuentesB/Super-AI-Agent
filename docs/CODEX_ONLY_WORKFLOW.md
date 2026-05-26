@@ -1,6 +1,6 @@
 # Codex-Only Workflow
 
-Current baseline: N+6.0B clean/Gemma install and first local evaluation on main.
+Current baseline: N+6.1B clean/constrained local model routing guard on main.
 
 Previous clean baseline: N+5.7B clean/repo-knowledge-context-retrieval on main
 at `84e880e7c3f774580a5e4ac340acd497af3027ee`.
@@ -9,7 +9,7 @@ Lineage note: N+5.6B clean/local-model-easy-worker-lane landed at
 `c9413108006d920e0110413d3d5e195b504489c1`.
 
 ```text
-origin/main = 1ddeb0f39d5316e90ee2d0b8caa276b1fec9e4e6
+origin/main = 39daf4d81f8a5dc123c9949ce6d7c3ea49763978
 launcher = python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard
 dashboard = http://127.0.0.1:3210
 context_pack = python 03_scripts/ghoti_context_pack_builder.py --write --json
@@ -22,6 +22,8 @@ local_model_eval = python 03_scripts/ghoti_product_launcher.py --local-model-eva
 repo_map = python 03_scripts/ghoti_repo_knowledge_map.py --write --json
 repo_bundle = python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json
 hermes_bridge = python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json
+hermes_manual = python 03_scripts/ghoti_product_launcher.py --hermes-manual-status --json
+hermes_wsl_guide = python 03_scripts/ghoti_product_launcher.py --hermes-wsl-guide --json
 ```
 
 This milestone is handled by Codex only. Work must stay inside repo-contained
@@ -67,17 +69,16 @@ is still pending, and how any local dashboard process was cleaned up.
 
 The next safe order is:
 
-1. N+6.1A - constrained Gemma worker routing plus repo-bundle hallucination
-   guard. Only route boring/offline local tasks, use known bundle IDs, require
-   source metadata, and fall back to `local_demo` on guard failure.
+1. N+6.1B - constrained Gemma worker routing plus repo-bundle hallucination
+   guard is the current main baseline.
 2. N+6.2A - Hermes Agent Workflow / Manual Bridge Verification. Safe probes and
    manual bridge packet only; no tokens, provider setup, Telegram setup, live
-   APIs, or browser automation.
+   APIs, browser automation, or computer-use click/type.
 3. N+6.3A - Safe Computer-Use Preparation with Gemma, Hermes, UI-TARS
    observation, Browser Harness, and Vercel agent-browser roadmap. Observation
    first; every click/type/live-account action remains human-approved.
 
-Do not start N+6.2A or N+6.3A until N+6.1A passes a clean audit gate.
+Do not start N+6.3A until N+6.2A passes a clean audit gate.
 
 ## Safe Codex Prompts
 
@@ -145,6 +146,12 @@ Check Hermes manual bridge readiness:
 
 ```text
 Run python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json and python 03_scripts/ghoti_product_launcher.py --hermes-bridge-write --json. Inspect 14_context/hermes_workflow/generated/hermes_operator_bridge_packet.md. Confirm Codex provider pending/not proven, Telegram manual later/no token, browser/Playwright degraded/not claimed, safe probes only, and no live provider setup.
+```
+
+Check Hermes WSL guide:
+
+```text
+Run python 03_scripts/ghoti_product_launcher.py --hermes-manual-status --json, python 03_scripts/ghoti_product_launcher.py --hermes-wsl-guide --json, and python 03_scripts/ghoti_product_launcher.py --hermes-safe-commands --json. Confirm C:\\Users\\ai_sandbox\\Documents\\AI_Managed_Only maps to /mnt/c/Users/ai_sandbox/Documents/AI_Managed_Only, generated files live under 14_context/hermes_manual_bridge/generated/, and no live API/provider/Telegram/browser/computer-use action was run.
 ```
 
 Use a task bundle before coding:

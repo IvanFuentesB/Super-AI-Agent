@@ -5,9 +5,9 @@ worktree read-only except inspection. No force-push, no history rewrite, no
 secrets, no live account/API/posting/money/trading/legal actions, no bot/captcha/
 cloak bypass, no fake autonomy claims, no shell-true command execution, and no live providers/tokens.
 
-Current main hash: `1ddeb0f39d5316e90ee2d0b8caa276b1fec9e4e6`
-Latest clean milestone: N+6.0B - Human-Approved Gemma Install + First Local Evaluation landed on main
-Current context pack milestone: N+6.1A - Constrained Local Model Routing + Repo-Bundle Hallucination Guard
+Current main hash: `39daf4d81f8a5dc123c9949ce6d7c3ea49763978`
+Latest clean milestone: N+6.1B - Constrained Local Model Routing + Repo-Bundle Hallucination Guard landed on main
+Current context pack milestone: N+6.2A - Hermes Agent Manual Bridge Verification + WSL Usage Guide
 Previous repo knowledge milestone: N+5.7A - Graphify / Repo Knowledge Map + Better Context Retrieval
 Launcher: `python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard`
 Dashboard: `http://127.0.0.1:3210`
@@ -15,6 +15,7 @@ Dashboard: `http://127.0.0.1:3210`
 Status truth:
 - Hermes WSL installed at `/home/ai_sandbox/.local/bin/hermes`, v0.14.0.
 - Hermes Agent / Manual Bridge exposes safe status, skills index, manual checklist, and bridge packet.
+- Hermes Manual Bridge / WSL Guide exposes `/mnt/c` path mapping, safe commands, blocked commands, and an Apple comparison future test plan.
 - Hermes browser/Playwright degraded/not claimed.
 - Codex provider in Hermes pending/not proven.
 - Telegram manual later/no token; No VPS.
@@ -30,7 +31,7 @@ Status truth:
 - Repo Knowledge / Graphify Lane available as local JSON/Markdown files.
 
 Next safe milestone after this pack:
-N+6.2A - Hermes Agent Manual Bridge Verification + WSL Usage Guide
+N+6.3A - Safe Computer-Use Observation Harness / Apple Comparison Dry-Run
 
 Ask Codex to create a feature branch, add focused tests first, implement only the
 constrained local model routing guard, validate, push feature, then create a

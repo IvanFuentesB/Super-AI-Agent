@@ -17,12 +17,11 @@ general desktop control.
 
 ## Later Milestones
 
-1. N+6.1A first: constrain Gemma worker routing so local model outputs can help
-   summarize, classify, and prepare prompts without inventing repo bundles or
-   triggering actions.
-2. N+6.2A next: verify Hermes Agent manual bridge workflow and safe command
-   surface. This remains probes/readiness only; no provider config, tokens,
-   Telegram, live APIs, or browser automation.
+1. N+6.1B first: constrained Gemma worker routing is now on main.
+2. N+6.2A next: verify Hermes Agent manual bridge workflow, WSL path mapping,
+   safe commands, blocked commands, and guide files. This remains
+   probes/readiness only; no provider config, tokens, Telegram, live APIs,
+   browser automation, or computer-use click/type.
 3. N+6.3A next: prepare safe computer-use with Gemma, Hermes, UI-TARS
    observation, Browser Harness, and Vercel agent-browser roadmap. Observation
    comes first; every click/type/live-account action requires explicit future
@@ -43,7 +42,7 @@ Ghoti must not convert this into uncontrolled browser/account automation.
 
 ## Future Apple Comparison Test
 
-N+6.1A documents a future observation/manual-approval test plan at
+N+6.2A maintains a future observation/manual-approval test plan at
 `docs/SAFE_COMPUTER_USE_TEST_PLAN_APPLE_COMPARISON.md`. The plan is to use
 Chrome in Incognito mode on the Apple website to compare the newest Mac laptop
 option with Mac mini and write a local decision packet. Do not execute it yet.
