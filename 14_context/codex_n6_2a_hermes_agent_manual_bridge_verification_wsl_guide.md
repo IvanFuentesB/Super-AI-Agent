@@ -4,8 +4,9 @@
 
 - Starting main: `39daf4d81f8a5dc123c9949ce6d7c3ea49763978`
 - N+6.1B final main audit: `audit/ghoti-agent-codex-n6-1b-final-main-constrained-local-model-routing-guard` at `cc5bb498f27f2902497f929bca6c8930ba8e538a`
-- Feature branch: `feat/ghoti-agent-codex-n6-2a-hermes-agent-manual-bridge-verification-wsl-guide`
+- Feature branch: `feat/ghoti-agent-codex-n6-2a-hermes-agent-manual-bridge-verification-wsl-guide` at `b77304b088538e5440f260e989f5845c1a3adeec`
 - Audit branch: `audit/ghoti-agent-codex-n6-2a-hermes-agent-manual-bridge-verification-wsl-guide`
+- Audit merge HEAD before this report commit: `20a33135c93880044ee5388d4a7bc1214f2a4b65`
 - Merge policy: N+6.2A remains feature/audit only; it is not merged to main in this run.
 
 ## What Changed
@@ -79,6 +80,7 @@ The Apple plan is observation/manual-approval only. It does not execute browser 
 ## Validation
 
 - `git diff --check`: PASS.
+- `git show --check --stat HEAD`: PASS.
 - N+4 tests: 329 OK.
 - N+5 tests: 97 OK.
 - N+6 tests: 18 OK.
@@ -102,6 +104,8 @@ The Apple plan is observation/manual-approval only. It does not execute browser 
 - Runtime PowerShell check: PASS.
 - Dashboard PowerShell check: initial parallel run timed out after ~124 seconds; rerun with repo-supported `-RuntimeLockSafe` mode passed.
 - Safe WSL probes: PASS for Hermes path, version, and skills list.
+
+Audit note: an initial pre-report N+5 run on the automatic audit merge commit failed only the latest-commit attribution scan because Git's default merge subject included the feature branch name. The audit branch then added this report with the clean commit message `audit(ghoti): validate Hermes manual bridge WSL guide`; final validation is run against that report commit.
 
 ## Status Truth
 
