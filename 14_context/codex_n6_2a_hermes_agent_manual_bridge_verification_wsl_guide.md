@@ -94,7 +94,8 @@ The Apple plan is observation/manual-approval only. It does not execute browser 
 - Hermes agent workflow bridge: PASS.
 - Local model routing status: PASS.
 - Local model output guard self-test: PASS.
-- Public audit: 150 checks / 0 blockers / 7 warnings requiring human review.
+- Public audit: 150 checks / 0 blockers / 8 warnings requiring human review.
+  The final audit rerun added the existing visible runtime-file warning; it remained non-blocking and requires human review before any public release.
 - Model council scan: PASS.
 - UI-TARS dry-run: PASS, observation-only.
 - Adapter runner status: PASS, approval-gated/local-only.
