@@ -5,10 +5,15 @@ Local repo knowledge grouped by subsystem.
 ## Hermes/WSL
 - `03_scripts/hermes_agent_workflow_bridge.py`
 - `03_scripts/hermes_local_bootstrap.py`
+- `03_scripts/hermes_manual_bridge_verifier.py`
 - `14_context/hermes_workflow/generated/hermes_workflow_status.md`
 - `docs/HERMES_AGENT_WORKFLOW_GUIDE.md`
+- `docs/HERMES_BLOCKED_COMMANDS.md`
 - `docs/HERMES_LOCAL_INSTALL_AND_PROVIDER_PLAN.md`
+- `docs/HERMES_MANUAL_BRIDGE_VERIFICATION.md`
 - `docs/HERMES_MANUAL_PROVIDER_SETUP_CHECKLIST.md`
+- `docs/HERMES_SAFE_COMMANDS.md`
+- `docs/WSL_USAGE_GUIDE_FOR_GHOTI.md`
 
 ## UI-TARS/computer-use
 - `03_scripts/ui_tars_observation_adapter.py`
@@ -67,7 +72,6 @@ Local repo knowledge grouped by subsystem.
 - `14_context/codex_n5_6a_local_model_gemma_setup_truth_easy_worker_lane.md`
 - `14_context/codex_n5_6b_main_merge_local_model_easy_worker_lane.md`
 - `14_context/codex_n5_7a_graphify_repo_knowledge_map_context_retrieval.md`
-- `14_context/codex_n5_8a_hermes_agent_workflow_provider_setup_plan_manual_bridge.md`
 - `14_context/codex_n5_8b_main_merge_hermes_manual_bridge_readiness.md`
 - `14_context/codex_n5_9a_gemma_model_availability_local_task_quality_evaluation.md`
 - `14_context/codex_n5_9b_main_merge_gemma_readiness_local_quality_plan.md`
@@ -77,6 +81,7 @@ Local repo knowledge grouped by subsystem.
 - `14_context/codex_n6_0b_main_merge_gemma_install_first_local_eval.md`
 - `14_context/codex_n6_0c_report_history_stability_repair.md`
 - `14_context/codex_n6_1a_constrained_local_model_routing_repo_bundle_guard.md`
+- `14_context/codex_n6_1b_main_merge_constrained_local_model_routing_guard.md`
 
 ## supervised content demo
 - `03_scripts/supervised_content_mvp_runner.py`

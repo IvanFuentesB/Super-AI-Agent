@@ -1,17 +1,17 @@
 # Ghoti Current Context Pack
 
-Generated: `2026-05-25T09:14:46Z`
+Generated: `2026-05-26T05:34:17Z`
 
 ## Compact Status
 
-Ghoti status: N+6.0B - Human-Approved Gemma Install + First Local Evaluation landed on main at origin/main 1ddeb0f39d53. Launch `python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard` then open http://127.0.0.1:3210. Hermes WSL is installed at /home/ai_sandbox/.local/bin/hermes (v0.14.0); browser/Playwright is degraded/not claimed, Codex provider pending/not proven, Telegram manual/no token, no VPS. Ollama available (ollama version is 0.24.0); Gemma model found; local_demo fallback active as preserved backup. Gemma readiness 74%, mode `ollama_gemma`, quality `ready_for_human_approved_eval`, latest eval `real_gemma_eval_complete` at 86%, no auto-downloads. Obsidian memory, repo bundles, local worker fallback, safety gates, UI-TARS observation-only, adapter dry-runs, and external static sandbox are available. Next recommended milestone: N+6.2A - Hermes Agent Manual Bridge Verification + WSL Usage Guide.
+Ghoti status: N+6.1B - Constrained Local Model Routing + Repo-Bundle Hallucination Guard landed on main at origin/main 39daf4d81f8a. Launch `python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard` then open http://127.0.0.1:3210. Hermes WSL is installed at /home/ai_sandbox/.local/bin/hermes (v0.14.0); browser/Playwright is degraded/not claimed, Codex provider pending/not proven, Telegram manual/no token, no VPS. Ollama available (ollama version is 0.24.0); Gemma model found; local_demo fallback active as preserved backup. Gemma readiness 74%, mode `ollama_gemma`, quality `ready_for_human_approved_eval`, latest eval `real_gemma_eval_complete` at 86%, no auto-downloads. Obsidian memory, repo bundles, local worker fallback, safety gates, UI-TARS observation-only, adapter dry-runs, and external static sandbox are available. Next recommended milestone: N+6.3A - Safe Computer-Use Observation Harness / Apple Comparison Dry-Run.
 
 ## Current Main
 
-- Main hash: `1ddeb0f39d5316e90ee2d0b8caa276b1fec9e4e6`
-- Latest clean milestone: N+6.0B - Human-Approved Gemma Install + First Local Evaluation landed on main
-- Current milestone: N+6.1A - Constrained Local Model Routing + Repo-Bundle Hallucination Guard
-- Next recommended milestone: N+6.2A - Hermes Agent Manual Bridge Verification + WSL Usage Guide
+- Main hash: `39daf4d81f8a5dc123c9949ce6d7c3ea49763978`
+- Latest clean milestone: N+6.1B - Constrained Local Model Routing + Repo-Bundle Hallucination Guard landed on main
+- Current milestone: N+6.2A - Hermes Agent Manual Bridge Verification + WSL Usage Guide
+- Next recommended milestone: N+6.3A - Safe Computer-Use Observation Harness / Apple Comparison Dry-Run
 
 ## Roadmap Priority
 
@@ -33,6 +33,9 @@ guard and audit gate.
 - Next bundle command: `python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json`
 - Hermes bridge status: `python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json`
 - Hermes bridge write: `python 03_scripts/ghoti_product_launcher.py --hermes-bridge-write --json`
+- Hermes manual status: `python 03_scripts/ghoti_product_launcher.py --hermes-manual-status --json`
+- Hermes WSL guide: `python 03_scripts/ghoti_product_launcher.py --hermes-wsl-guide --json`
+- Hermes safe commands: `python 03_scripts/ghoti_product_launcher.py --hermes-safe-commands --json`
 - Gemma readiness status: `python 03_scripts/ghoti_product_launcher.py --gemma-status --json`
 - Gemma readiness doctor: `python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json`
 - Gemma quality plan: `python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json`
@@ -54,6 +57,7 @@ guard and audit gate.
 - Local memory status and fallback are repo-local.
 - Repo Knowledge / Graphify Lane creates a local file map, latest report index, and task bundles.
 - Hermes Agent / Manual Bridge exposes safe probes, skills index, manual checklist, and bridge packet.
+- Hermes Manual Bridge / WSL Guide explains Windows-to-/mnt/c path mapping, safe commands, blocked commands, and future Apple comparison plan.
 - Gemma / Local Model Quality shows real model availability, manual install decision, and quality evaluation plan.
 - Local Model Routing / Guarded Worker routes allowlisted offline tasks with repo-bundle hallucination guard and local_demo fallback.
 - Reports live under 14_context/.
@@ -136,6 +140,20 @@ guard and audit gate.
 - Hermes setup remains manual later.
 - Safe probes only; no live provider setup, no provider config, no Telegram setup, no tokens, no browser automation, no live APIs.
 
+## Hermes Manual Bridge / WSL Guide
+
+- Manual bridge status command: `python 03_scripts/ghoti_product_launcher.py --hermes-manual-status --json`
+- WSL guide command: `python 03_scripts/ghoti_product_launcher.py --hermes-wsl-guide --json`
+- Safe commands command: `python 03_scripts/ghoti_product_launcher.py --hermes-safe-commands --json`
+- Generated guide directory: `14_context/hermes_manual_bridge/generated`
+- Manual bridge status: `14_context/hermes_manual_bridge/generated/00_hermes_manual_bridge_status.json`
+- WSL usage guide: `14_context/hermes_manual_bridge/generated/01_wsl_usage_guide.md`
+- Safe commands: `14_context/hermes_manual_bridge/generated/02_hermes_safe_commands.md`
+- Blocked commands: `14_context/hermes_manual_bridge/generated/03_hermes_blocked_commands.md`
+- Apple comparison future test plan: `14_context/hermes_manual_bridge/generated/07_apple_comparison_manual_bridge_plan.md`
+- Windows path mapping: `C:\Users\ai_sandbox\Documents\AI_Managed_Only` maps to `/mnt/c/Users/ai_sandbox/Documents/AI_Managed_Only`.
+- This is a manual bridge/readiness lane only; no live provider setup, no Telegram setup, no browser automation, and no computer-use click/type.
+
 ## Obsidian / Local Memory Truth
 
 - Obsidian/local memory: present
@@ -170,6 +188,8 @@ guard and audit gate.
 
 ## Latest Reports
 
+- `14_context/codex_n6_1b_main_merge_constrained_local_model_routing_guard.md` (main): CLEAN PASS / N+6.1B MAIN MERGE CONSTRAINED LOCAL MODEL ROUTING GUARD
+- `14_context/codex_n6_1a_constrained_local_model_routing_repo_bundle_guard.md` (report): CLEAN PASS / N+6.1A CONSTRAINED LOCAL MODEL ROUTING GUARD READY
 - `14_context/codex_n6_0c_report_history_stability_repair.md` (report): CLEAN PASS / REPORT HISTORY STABILITY REPAIR READY.
 - `14_context/codex_n6_0b_main_merge_gemma_install_first_local_eval.md` (main): CLEAN PASS / N+6.0B MAIN MERGE READY.
 - `14_context/codex_n6_0a_roadmap_priority_hermes_computer_use_update_audit.md` (audit): CLEAN PASS / N+6.0A ROADMAP PRIORITY UPDATED AND AUDITED.

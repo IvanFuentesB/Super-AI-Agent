@@ -1,0 +1,218 @@
+{
+  "ok": true,
+  "action": "status",
+  "lane": "hermes_manual_bridge_wsl_guide",
+  "milestone": "N+6.2A - Hermes Agent Manual Bridge Verification + WSL Usage Guide",
+  "local_only": true,
+  "network_required": false,
+  "live_api_used": false,
+  "external_api_used": false,
+  "provider_setup_run": false,
+  "telegram_setup_run": false,
+  "tokens_read": false,
+  "browser_automation_run": false,
+  "computer_use_run": false,
+  "setup_commands_run": false,
+  "installed": true,
+  "wsl_available": true,
+  "ubuntu_available": true,
+  "path": "/home/ai_sandbox/.local/bin/hermes",
+  "expected_path": "/home/ai_sandbox/.local/bin/hermes",
+  "version": "Hermes Agent v0.14.0 (2026.5.16)",
+  "expected_version_hint": "v0.14.0",
+  "skills_count": 79,
+  "important_skills": [
+    {
+      "name": "codex",
+      "detected": true,
+      "status_now": "safe to inspect now"
+    },
+    {
+      "name": "claude-code",
+      "detected": true,
+      "status_now": "safe to inspect now"
+    },
+    {
+      "name": "hermes-agent",
+      "detected": true,
+      "status_now": "safe to inspect now"
+    },
+    {
+      "name": "mcp",
+      "detected": true,
+      "status_now": "safe to inspect now"
+    },
+    {
+      "name": "memory",
+      "detected": false,
+      "status_now": "manual later or blocked"
+    },
+    {
+      "name": "obsidian",
+      "detected": true,
+      "status_now": "safe to inspect now"
+    },
+    {
+      "name": "github",
+      "detected": true,
+      "status_now": "safe to inspect now"
+    },
+    {
+      "name": "plan",
+      "detected": true,
+      "status_now": "safe to inspect now"
+    },
+    {
+      "name": "test-driven-development",
+      "detected": true,
+      "status_now": "safe to inspect now"
+    },
+    {
+      "name": "browser",
+      "detected": false,
+      "status_now": "future-gated; no click/type/control now"
+    },
+    {
+      "name": "computer-use",
+      "detected": false,
+      "status_now": "future-gated; no click/type/control now"
+    },
+    {
+      "name": "youtube",
+      "detected": true,
+      "status_now": "safe to inspect now"
+    }
+  ],
+  "readiness_percent": 64,
+  "status_line": "Hermes manual bridge readiness: 64%. WSL/Hermes can be safely inspected. Provider setup, Codex provider verification, Telegram, browser/Playwright, and computer-use control remain manual/unproven or blocked.",
+  "codex_provider_status": "pending/not proven",
+  "telegram_status": "manual later/no token",
+  "browser_playwright_status": "degraded/not claimed",
+  "provider_setup_status": "manual later",
+  "no_vps": true,
+  "wsl_explanation": {
+    "ok": true,
+    "action": "wsl-explain",
+    "local_only": true,
+    "live_api_used": false,
+    "windows_repo_path": "C:\\Users\\ai_sandbox\\Documents\\AI_Managed_Only",
+    "wsl_repo_path": "/mnt/c/Users/ai_sandbox/Documents/AI_Managed_Only",
+    "prompt_example": "ai_sandbox@Ivan-G14:/mnt/c/Users/ai_sandbox$",
+    "meaning": "From Windows PowerShell, `wsl -d Ubuntu` opens Ubuntu. In WSL, `/mnt/c/...` is the Linux path for the Windows C: drive. The prompt shows user@machine:current-linux-directory$.",
+    "how_to_open": "wsl -d Ubuntu",
+    "how_to_exit": "exit",
+    "generated_at": "2026-05-26T05:34:59Z"
+  },
+  "safe_commands": [
+    {
+      "label": "show WSL working directory",
+      "command": "wsl -d Ubuntu -- bash -lc \"source ~/.bashrc >/dev/null 2>&1 || true; pwd\"",
+      "why": "Confirms Ubuntu WSL opens and shows the current Linux path."
+    },
+    {
+      "label": "find Hermes",
+      "command": "wsl -d Ubuntu -- bash -lc \"source ~/.bashrc >/dev/null 2>&1 || true; command -v hermes || true\"",
+      "why": "Read-only command lookup; no setup or login."
+    },
+    {
+      "label": "print Hermes version",
+      "command": "wsl -d Ubuntu -- bash -lc \"source ~/.bashrc >/dev/null 2>&1 || true; hermes --version || true\"",
+      "why": "Read-only version check."
+    },
+    {
+      "label": "list visible Hermes skills",
+      "command": "wsl -d Ubuntu -- bash -lc \"source ~/.bashrc >/dev/null 2>&1 || true; hermes skills list | head -120 || true\"",
+      "why": "Read-only skills view capped at 120 lines."
+    },
+    {
+      "label": "show Hermes help",
+      "command": "wsl -d Ubuntu -- bash -lc \"source ~/.bashrc >/dev/null 2>&1 || true; hermes --help | head -120 || true\"",
+      "why": "Read-only command surface overview capped at 120 lines."
+    },
+    {
+      "label": "Ghoti manual bridge status",
+      "command": "python 03_scripts/ghoti_product_launcher.py --hermes-manual-status --json",
+      "why": "Repo-local JSON status wrapper for daily use."
+    }
+  ],
+  "blocked_commands": [
+    {
+      "command": "hermes setup",
+      "reason": "provider/setup flow must be human-approved later"
+    },
+    {
+      "command": "hermes login",
+      "reason": "auth flow may request credentials or tokens"
+    },
+    {
+      "command": "hermes auth",
+      "reason": "auth/token flow is out of scope"
+    },
+    {
+      "command": "hermes auth add",
+      "reason": "token/provider configuration is out of scope"
+    },
+    {
+      "command": "hermes provider",
+      "reason": "provider setup is pending/not proven"
+    },
+    {
+      "command": "hermes telegram",
+      "reason": "Telegram is manual later/no token"
+    },
+    {
+      "command": "hermes whatsapp",
+      "reason": "live account messaging is out of scope"
+    },
+    {
+      "command": "hermes browser",
+      "reason": "browser/Playwright is degraded/not claimed"
+    },
+    {
+      "command": "hermes computer-use",
+      "reason": "click/type/control is future-gated"
+    },
+    {
+      "command": "hermes gateway install",
+      "reason": "external install/runtime wiring needs separate approval"
+    },
+    {
+      "command": "hermes mcp install",
+      "reason": "external install/runtime wiring needs separate approval"
+    }
+  ],
+  "next_human_steps": [
+    "Use the dashboard Hermes Manual Bridge / WSL Guide card.",
+    "Run the safe WSL path/version/skills probes.",
+    "Read generated WSL usage and safe/blocked command files.",
+    "Keep provider setup, Telegram, tokens, browser automation, and click/type for later audited milestones.",
+    "Use Gemma guarded routing for small local text tasks while Hermes remains manual bridge only."
+  ],
+  "paths": {
+    "00_hermes_manual_bridge_status.json": "14_context/hermes_manual_bridge/generated/00_hermes_manual_bridge_status.json",
+    "01_wsl_usage_guide.md": "14_context/hermes_manual_bridge/generated/01_wsl_usage_guide.md",
+    "02_hermes_safe_commands.md": "14_context/hermes_manual_bridge/generated/02_hermes_safe_commands.md",
+    "03_hermes_blocked_commands.md": "14_context/hermes_manual_bridge/generated/03_hermes_blocked_commands.md",
+    "04_hermes_skills_summary.md": "14_context/hermes_manual_bridge/generated/04_hermes_skills_summary.md",
+    "05_hermes_agent_bridge_next_steps.md": "14_context/hermes_manual_bridge/generated/05_hermes_agent_bridge_next_steps.md",
+    "06_computer_use_roadmap_note.md": "14_context/hermes_manual_bridge/generated/06_computer_use_roadmap_note.md",
+    "07_apple_comparison_manual_bridge_plan.md": "14_context/hermes_manual_bridge/generated/07_apple_comparison_manual_bridge_plan.md"
+  },
+  "latest_status_path": "14_context/hermes_manual_bridge/generated/00_hermes_manual_bridge_status.json",
+  "wsl_usage_guide_path": "14_context/hermes_manual_bridge/generated/01_wsl_usage_guide.md",
+  "safe_commands_path": "14_context/hermes_manual_bridge/generated/02_hermes_safe_commands.md",
+  "blocked_commands_path": "14_context/hermes_manual_bridge/generated/03_hermes_blocked_commands.md",
+  "apple_plan_path": "14_context/hermes_manual_bridge/generated/07_apple_comparison_manual_bridge_plan.md",
+  "confidence": "medium",
+  "generated_at": "2026-05-26T05:34:59Z",
+  "safety": {
+    "no_live_apis": true,
+    "no_provider_setup": true,
+    "no_telegram_setup": true,
+    "no_tokens_read": true,
+    "no_browser_automation": true,
+    "no_computer_use": true,
+    "no_vps": true,
+    "safe_probes_only": true
+  }
+}

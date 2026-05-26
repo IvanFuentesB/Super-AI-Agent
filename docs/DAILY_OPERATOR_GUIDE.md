@@ -8,13 +8,13 @@ safe content demos, research plans, and future computer-use tooling from one
 truthful dashboard. It is not autonomous, it does not post, and it does not run
 live providers or account actions without explicit human approval.
 
-Current main baseline: N+6.0B clean/Gemma install and first local evaluation on
-main at `1ddeb0f39d5316e90ee2d0b8caa276b1fec9e4e6`.
+Current main baseline: N+6.1B clean/constrained local model routing guard on
+main at `39daf4d81f8a5dc123c9949ce6d7c3ea49763978`.
 
-Current feature/audit lane: N+6.1A adds constrained local model routing with a
-repo-bundle hallucination guard. `gemma3:4b` is installed, but Ghoti accepts
-Gemma routed output only when it cites known repo bundles/files with
-`source_metadata`; otherwise it falls back to `local_demo`.
+Current feature/audit lane: N+6.2A adds Hermes Manual Bridge / WSL Guide
+verification. It explains WSL, `/mnt/c` path mapping, Hermes safe commands,
+blocked commands, and future computer-use planning without provider setup,
+Telegram, browser automation, computer-use click/type, or live APIs.
 
 ## Launch
 
@@ -31,8 +31,8 @@ http://127.0.0.1:3210
 ## What to check first
 
 1. Open the dashboard and read Start Here / Daily Operator.
-2. Confirm Status Truth says N+6.0B clean on main and N+6.1A guarded routing is
-   feature/audit only when that branch is checked out.
+2. Confirm Status Truth says N+6.1B clean on main and N+6.2A Hermes manual
+   bridge is feature/audit only when that branch is checked out.
 3. Confirm Hermes, Ollama/Gemma, Obsidian memory, UI-TARS, adapters, external
    sandbox, public audit, and readiness status are truthful.
 4. Confirm Local Model / Easy Worker Lane shows readiness percentage, Gemma
@@ -46,18 +46,19 @@ http://127.0.0.1:3210
 7. Confirm Repo Knowledge / Graphify Lane shows repo knowledge readiness,
    task bundles, latest report index, Graphify roadmap only, no external
    runtime, and no network.
-8. Run a smoke check before relying on the dashboard.
-9. Review the latest relevant report under `14_context/`.
+8. Confirm Hermes Manual Bridge / WSL Guide shows WSL path mapping, safe
+   commands, blocked commands, no live provider setup, and generated guide
+   path.
+9. Run a smoke check before relying on the dashboard.
+10. Review the latest relevant report under `14_context/`.
 
 ## Current roadmap priority
 
 The next work is ordered for paid-credit reduction and safer long-task
 automation:
 
-1. N+6.1A: constrained Gemma worker routing with a repo-bundle hallucination
-   guard. Use known repo-map bundle IDs only, reject invented bundle/file
-   claims, require source metadata, and fall back to `local_demo` if the guard
-   fails.
+1. N+6.1B: constrained Gemma worker routing with a repo-bundle hallucination
+   guard is now the main baseline.
 2. N+6.2A: Hermes Agent Workflow / Manual Bridge Verification. Use safe probes
    and manual bridge packets only. No tokens, provider setup, Telegram setup,
    live APIs, or browser automation.
@@ -65,7 +66,7 @@ automation:
    observation, Browser Harness, and Vercel agent-browser roadmap. Observation
    first; every click/type/live-account action stays human-approved.
 
-Do not start N+6.2A or N+6.3A until N+6.1A passes a clean guard/audit gate.
+Do not start N+6.3A until N+6.2A passes a clean manual bridge/audit gate.
 
 ## Guarded local routing
 
@@ -103,6 +104,9 @@ python 03_scripts/ghoti_product_launcher.py --repo-map --json
 python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json
 python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json
 python 03_scripts/ghoti_product_launcher.py --hermes-bridge-write --json
+python 03_scripts/ghoti_product_launcher.py --hermes-manual-status --json
+python 03_scripts/ghoti_product_launcher.py --hermes-wsl-guide --json
+python 03_scripts/ghoti_product_launcher.py --hermes-safe-commands --json
 python 03_scripts/ghoti_context_pack_builder.py --write --json
 python 03_scripts/local_model_worker_lane.py --doctor --json
 python 03_scripts/ghoti_repo_knowledge_map.py --write --json
@@ -258,6 +262,23 @@ Known truth:
 - Hermes Agent / Manual Bridge can write local readiness files, a skills index,
   manual checklist, and operator bridge packet under
   `14_context/hermes_workflow/generated/`.
+- Hermes Manual Bridge / WSL Guide can write WSL usage, safe commands, blocked
+  commands, skills summary, and Apple comparison future-plan files under
+  `14_context/hermes_manual_bridge/generated/`.
+
+Use:
+
+```powershell
+python 03_scripts/hermes_manual_bridge_verifier.py --status --json
+python 03_scripts/hermes_manual_bridge_verifier.py --wsl-explain --json
+python 03_scripts/hermes_manual_bridge_verifier.py --safe-commands --json
+python 03_scripts/hermes_manual_bridge_verifier.py --write-guide --json
+```
+
+Safe WSL mapping: `C:\Users\ai_sandbox\Documents\AI_Managed_Only` maps to
+`/mnt/c/Users/ai_sandbox/Documents/AI_Managed_Only`. No live API calls,
+provider setup, Telegram setup, browser automation, or computer-use click/type
+are allowed in this lane.
 
 Do not run Hermes setup, provider config, Telegram setup, token flows, or live
 APIs from this daily workflow.

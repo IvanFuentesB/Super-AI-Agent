@@ -1,9 +1,9 @@
 {
   "ok": true,
   "lane": "repo_knowledge_graphify_lane",
-  "milestone": "N+6.1A - Constrained Local Model Routing + Repo-Bundle Hallucination Guard",
-  "latest_clean_milestone": "N+6.0B - Human-Approved Gemma Install + First Local Evaluation landed on main",
-  "next_recommended_milestone": "N+6.2A - Hermes Agent Manual Bridge Verification + WSL Usage Guide",
+  "milestone": "N+6.2A - Hermes Agent Manual Bridge Verification + WSL Usage Guide",
+  "latest_clean_milestone": "N+6.1B - Constrained Local Model Routing + Repo-Bundle Hallucination Guard landed on main",
+  "next_recommended_milestone": "N+6.3A - Safe Computer-Use Observation Harness / Apple Comparison Dry-Run",
   "roadmap_priority_sequence": [
     "N+6.1A - Constrained Gemma worker routing for boring/simple local tasks, with known repo-bundle IDs only and fallback on guard failure.",
     "N+6.2A - Hermes Agent Workflow / Manual Bridge Verification for faster supervised task execution; safe probes only, no tokens, no provider setup.",
@@ -18,8 +18,8 @@
   "graphify_runtime": "roadmap_only_not_wired",
   "readiness_percent": 55,
   "status_line": "Repo knowledge readiness: 55%. Local file map and task bundles are available. Graphify runtime: roadmap only/not wired; no external repo runtime; no network.",
-  "generated_at": "2026-05-25T09:25:01Z",
-  "main_hash": "1ddeb0f39d5316e90ee2d0b8caa276b1fec9e4e6",
+  "generated_at": "2026-05-26T05:34:18Z",
+  "main_hash": "39daf4d81f8a5dc123c9949ce6d7c3ea49763978",
   "launcher_command": "python 03_scripts/ghoti_product_launcher.py --start-dashboard --open-dashboard",
   "dashboard_url": "http://127.0.0.1:3210",
   "context_pack_command": "python 03_scripts/ghoti_product_launcher.py --context-pack --json",
@@ -103,6 +103,18 @@
   },
   "latest_reports": [
     {
+      "path": "14_context/codex_n6_1b_main_merge_constrained_local_model_routing_guard.md",
+      "name": "codex_n6_1b_main_merge_constrained_local_model_routing_guard.md",
+      "kind": "main",
+      "rank": [
+        6,
+        1,
+        2
+      ],
+      "modified_unix": 1779744464,
+      "verdict_hint": "CLEAN PASS / N+6.1B MAIN MERGE CONSTRAINED LOCAL MODEL ROUTING GUARD"
+    },
+    {
       "path": "14_context/codex_n6_1a_constrained_local_model_routing_repo_bundle_guard.md",
       "name": "codex_n6_1a_constrained_local_model_routing_repo_bundle_guard.md",
       "kind": "report",
@@ -111,7 +123,7 @@
         1,
         1
       ],
-      "modified_unix": 1779701019,
+      "modified_unix": 1779744464,
       "verdict_hint": "CLEAN PASS / N+6.1A CONSTRAINED LOCAL MODEL ROUTING GUARD READY"
     },
     {
@@ -123,7 +135,7 @@
         0,
         3
       ],
-      "modified_unix": 1779653949,
+      "modified_unix": 1779744464,
       "verdict_hint": "CLEAN PASS / REPORT HISTORY STABILITY REPAIR READY."
     },
     {
@@ -135,7 +147,7 @@
         0,
         2
       ],
-      "modified_unix": 1779653949,
+      "modified_unix": 1779744464,
       "verdict_hint": "CLEAN PASS / N+6.0B MAIN MERGE READY."
     },
     {
@@ -147,7 +159,7 @@
         0,
         1
       ],
-      "modified_unix": 1779653949,
+      "modified_unix": 1779744464,
       "verdict_hint": "CLEAN PASS / N+6.0A ROADMAP PRIORITY UPDATED AND AUDITED."
     },
     {
@@ -159,7 +171,7 @@
         0,
         1
       ],
-      "modified_unix": 1779653949,
+      "modified_unix": 1779744464,
       "verdict_hint": "verdict not detected"
     },
     {
@@ -171,7 +183,7 @@
         0,
         1
       ],
-      "modified_unix": 1779653949,
+      "modified_unix": 1779744464,
       "verdict_hint": "CLEAN PASS / N+6.0A HUMAN-APPROVED GEMMA INSTALL AND FIRST LOCAL EVAL READY"
     },
     {
@@ -183,7 +195,7 @@
         9,
         2
       ],
-      "modified_unix": 1779653949,
+      "modified_unix": 1779744464,
       "verdict_hint": "CLEAN PASS / N+5.9B MAIN MERGE READY"
     },
     {
@@ -195,7 +207,7 @@
         9,
         1
       ],
-      "modified_unix": 1779653949,
+      "modified_unix": 1779744464,
       "verdict_hint": "CLEAN PASS / N+5.9A GEMMA READINESS AND LOCAL QUALITY PLAN READY"
     },
     {
@@ -207,20 +219,8 @@
         8,
         2
       ],
-      "modified_unix": 1779653949,
+      "modified_unix": 1779744464,
       "verdict_hint": "CLEAN PASS / N+5.8B MAIN MERGE READY"
-    },
-    {
-      "path": "14_context/codex_n5_8a_hermes_agent_workflow_provider_setup_plan_manual_bridge.md",
-      "name": "codex_n5_8a_hermes_agent_workflow_provider_setup_plan_manual_bridge.md",
-      "kind": "report",
-      "rank": [
-        5,
-        8,
-        1
-      ],
-      "modified_unix": 1779653949,
-      "verdict_hint": "CLEAN PASS / N+5.8A HERMES MANUAL BRIDGE READY"
     },
     {
       "path": "14_context/codex_n5_7a_graphify_repo_knowledge_map_context_retrieval.md",
@@ -231,7 +231,7 @@
         7,
         1
       ],
-      "modified_unix": 1779653949,
+      "modified_unix": 1779744464,
       "verdict_hint": "CLEAN PASS / N+5.7A REPO KNOWLEDGE MAP CONTEXT RETRIEVAL READY"
     },
     {
@@ -243,7 +243,7 @@
         6,
         2
       ],
-      "modified_unix": 1779653949,
+      "modified_unix": 1779744464,
       "verdict_hint": "CLEAN PASS / N+5.6B MAIN MERGE READY"
     },
     {
@@ -255,7 +255,7 @@
         6,
         1
       ],
-      "modified_unix": 1779653949,
+      "modified_unix": 1779744464,
       "verdict_hint": "CLEAN PASS / N+5.6A LOCAL MODEL EASY WORKER LANE READY"
     },
     {
@@ -267,7 +267,7 @@
         5,
         2
       ],
-      "modified_unix": 1779653949,
+      "modified_unix": 1779744464,
       "verdict_hint": "CLEAN PASS / N+5.5B MAIN MERGE READY"
     }
   ],
@@ -278,7 +278,7 @@
       "description": "Public product overview, quickstart, local-first architecture, and safety model.",
       "why_it_matters": "First file Ivan or GitHub visitors read before running Ghoti.",
       "exists": true,
-      "size_bytes": 22789,
+      "size_bytes": 24741,
       "snippet_hint": "# Ghoti / Super-AI-Agent"
     },
     {
@@ -287,7 +287,7 @@
       "description": "One-command launcher, smoke runner, context-pack shortcut, and local worker shortcut.",
       "why_it_matters": "Daily operator entry point and safest command surface.",
       "exists": true,
-      "size_bytes": 51553,
+      "size_bytes": 57181,
       "snippet_hint": "\"\"\"Ghoti Product Launcher (N+4.7A) \u2014 one-command local product launcher + smoke."
     },
     {
@@ -296,7 +296,7 @@
       "description": "Builds compact Ghoti context packs for Codex, ChatGPT, Claude, and Obsidian.",
       "why_it_matters": "Main token-saving continuity tool.",
       "exists": true,
-      "size_bytes": 40831,
+      "size_bytes": 44319,
       "snippet_hint": "\"\"\"Build compact Ghoti context packs for local memory handoff."
     },
     {
@@ -314,7 +314,7 @@
       "description": "Detects Ollama/Gemma truth, writes demo outputs, and routes safe local worker tasks through guard/fallback.",
       "why_it_matters": "Credit-saving worker lane with Gemma and local_demo fallback.",
       "exists": true,
-      "size_bytes": 45270,
+      "size_bytes": 45802,
       "snippet_hint": "\"\"\"Ghoti local model truth and easy worker lane."
     },
     {
@@ -323,7 +323,7 @@
       "description": "Validates routed model output against known repo bundles, known source files, and local-only safety metadata.",
       "why_it_matters": "Rejects the repo-bundle hallucination found in the first Gemma evaluation.",
       "exists": true,
-      "size_bytes": 12130,
+      "size_bytes": 12461,
       "snippet_hint": "\"\"\"Guard local model output against invented repo sources and unsafe claims."
     },
     {
@@ -352,6 +352,15 @@
       "exists": true,
       "size_bytes": 32218,
       "snippet_hint": "\"\"\"Safe Hermes Agent manual bridge readiness lane."
+    },
+    {
+      "path": "03_scripts/hermes_manual_bridge_verifier.py",
+      "subsystem": "Hermes/WSL",
+      "description": "Hermes manual bridge verifier, WSL usage guide, safe commands, blocked commands, and Apple comparison bridge plan.",
+      "why_it_matters": "N+6.2A daily usability layer for WSL/Hermes without provider setup, Telegram, browser automation, or computer-use control.",
+      "exists": true,
+      "size_bytes": 29659,
+      "snippet_hint": "\"\"\"Hermes manual bridge verifier and WSL usage guide."
     },
     {
       "path": "03_scripts/ui_tars_observation_adapter.py",
@@ -413,7 +422,7 @@
       "description": "Local dashboard HTTP server and fixed-argv product endpoints.",
       "why_it_matters": "Backend for the Product Control Center and operator cards.",
       "exists": true,
-      "size_bytes": 310057,
+      "size_bytes": 313270,
       "snippet_hint": "not read or empty"
     },
     {
@@ -422,7 +431,7 @@
       "description": "Dashboard UI structure and operator cards.",
       "why_it_matters": "First-screen truth surface for daily use.",
       "exists": true,
-      "size_bytes": 149760,
+      "size_bytes": 152889,
       "snippet_hint": "<!DOCTYPE html>"
     },
     {
@@ -431,7 +440,7 @@
       "description": "Dashboard client handlers for status cards and local actions.",
       "why_it_matters": "Connects UI cards to local-only status endpoints.",
       "exists": true,
-      "size_bytes": 318213,
+      "size_bytes": 322694,
       "snippet_hint": "not read or empty"
     },
     {
@@ -449,7 +458,7 @@
       "description": "Daily operator usage, troubleshooting, and cleanup guide.",
       "why_it_matters": "Turns milestone work into repeatable human workflow.",
       "exists": true,
-      "size_bytes": 16072,
+      "size_bytes": 17107,
       "snippet_hint": "# Daily Operator Guide"
     },
     {
@@ -458,7 +467,7 @@
       "description": "Codex-only worktree, branch, audit, and safety workflow.",
       "why_it_matters": "Keeps future Codex work isolated and auditable.",
       "exists": true,
-      "size_bytes": 8679,
+      "size_bytes": 9287,
       "snippet_hint": "# Codex-Only Workflow"
     },
     {
@@ -467,7 +476,7 @@
       "description": "Guide for generating and using compact context packs.",
       "why_it_matters": "Explains token-saving context handoff.",
       "exists": true,
-      "size_bytes": 6574,
+      "size_bytes": 6594,
       "snippet_hint": "# Local Memory Context Pack Guide"
     },
     {
@@ -503,7 +512,7 @@
       "description": "Guide for guarded local model routing and fallback behavior.",
       "why_it_matters": "Explains what Gemma can route now and what remains blocked.",
       "exists": true,
-      "size_bytes": 1174,
+      "size_bytes": 1199,
       "snippet_hint": "# Local Model Routing Guide"
     },
     {
@@ -512,7 +521,7 @@
       "description": "Guard requirements for source metadata, known bundle IDs, known files, and local-only flags.",
       "why_it_matters": "Documents the hallucination fix and output acceptance criteria.",
       "exists": true,
-      "size_bytes": 1030,
+      "size_bytes": 1056,
       "snippet_hint": "# Local Model Output Guard"
     },
     {
@@ -521,7 +530,7 @@
       "description": "Allowlist and blocked-task list for local worker routing.",
       "why_it_matters": "Keeps boring local tasks useful without unsafe autonomy.",
       "exists": true,
-      "size_bytes": 1073,
+      "size_bytes": 1098,
       "snippet_hint": "# Local Worker Safe Tasks"
     },
     {
@@ -530,7 +539,7 @@
       "description": "Local model quality rubric and evaluation workflow.",
       "why_it_matters": "Keeps real Gemma quality separate from local_demo fallback plumbing.",
       "exists": true,
-      "size_bytes": 4261,
+      "size_bytes": 4282,
       "snippet_hint": "# Local Model Quality Evaluation Guide"
     },
     {
@@ -539,7 +548,7 @@
       "description": "Easy worker lane usage and fallback guide.",
       "why_it_matters": "Documents safe credit-saving local tasks.",
       "exists": true,
-      "size_bytes": 5442,
+      "size_bytes": 5455,
       "snippet_hint": "# Easy Worker Lane Guide"
     },
     {
@@ -548,7 +557,7 @@
       "description": "Hermes WSL install truth and provider plan.",
       "why_it_matters": "Important next human/manual milestone context.",
       "exists": true,
-      "size_bytes": 3816,
+      "size_bytes": 4330,
       "snippet_hint": "# Hermes Local Install And Provider Plan"
     },
     {
@@ -557,8 +566,44 @@
       "description": "Hermes Agent workflow and manual bridge guide.",
       "why_it_matters": "Explains safe probes, generated readiness files, and manual later boundaries.",
       "exists": true,
-      "size_bytes": 2520,
+      "size_bytes": 3201,
       "snippet_hint": "# Hermes Agent Workflow Guide"
+    },
+    {
+      "path": "docs/WSL_USAGE_GUIDE_FOR_GHOTI.md",
+      "subsystem": "Hermes/WSL",
+      "description": "Human guide to WSL, /mnt/c path mapping, opening/exiting Ubuntu, and Hermes checks.",
+      "why_it_matters": "Turns WSL/Hermes from mysterious terminal output into daily operator muscle memory.",
+      "exists": true,
+      "size_bytes": 1606,
+      "snippet_hint": "# WSL Usage Guide For Ghoti"
+    },
+    {
+      "path": "docs/HERMES_MANUAL_BRIDGE_VERIFICATION.md",
+      "subsystem": "Hermes/WSL",
+      "description": "Manual bridge verification guide and N+6.2A safe command scope.",
+      "why_it_matters": "Separates safe inspectability from provider setup or live automation claims.",
+      "exists": true,
+      "size_bytes": 1358,
+      "snippet_hint": "# Hermes Manual Bridge Verification"
+    },
+    {
+      "path": "docs/HERMES_SAFE_COMMANDS.md",
+      "subsystem": "Hermes/WSL",
+      "description": "Allowlisted safe Hermes/WSL commands.",
+      "why_it_matters": "Keeps status probing repeatable without triggering auth/setup/browser control.",
+      "exists": true,
+      "size_bytes": 1098,
+      "snippet_hint": "# Hermes Safe Commands"
+    },
+    {
+      "path": "docs/HERMES_BLOCKED_COMMANDS.md",
+      "subsystem": "Hermes/WSL",
+      "description": "Blocked Hermes commands and why they remain manual later.",
+      "why_it_matters": "Protects against accidental provider setup, Telegram setup, tokens, and live computer-use.",
+      "exists": true,
+      "size_bytes": 638,
+      "snippet_hint": "# Hermes Blocked Commands"
     },
     {
       "path": "docs/HERMES_MANUAL_PROVIDER_SETUP_CHECKLIST.md",
@@ -575,7 +620,7 @@
       "description": "Future computer-use roadmap and safety gates.",
       "why_it_matters": "Keeps click/type/autonomy future-gated.",
       "exists": true,
-      "size_bytes": 2958,
+      "size_bytes": 2921,
       "snippet_hint": "# Computer-Use Roadmap"
     },
     {
@@ -584,7 +629,7 @@
       "description": "Future Apple comparison test plan for observation/manual-approval browser work.",
       "why_it_matters": "Documents the boring-task computer-use target without executing browser control now.",
       "exists": true,
-      "size_bytes": 1147,
+      "size_bytes": 1241,
       "snippet_hint": "# Safe Computer-Use Test Plan: Apple Comparison"
     },
     {
@@ -593,7 +638,7 @@
       "description": "Token-efficiency, local models, memory, and Graphify planning.",
       "why_it_matters": "Connects repo knowledge with the broader token-saving roadmap.",
       "exists": true,
-      "size_bytes": 4984,
+      "size_bytes": 5111,
       "snippet_hint": "# Token-Efficient Computer-Use Roadmap"
     },
     {
@@ -611,7 +656,7 @@
       "description": "Latest generated context pack.",
       "why_it_matters": "Short current-state handoff source.",
       "exists": true,
-      "size_bytes": 12510,
+      "size_bytes": 14490,
       "snippet_hint": "# Ghoti Current Context Pack"
     },
     {
@@ -656,8 +701,17 @@
       "description": "N+6.1 guarded routing and hallucination guard tests.",
       "why_it_matters": "Protects source metadata, safe task allowlist, fallback, dashboard labels, and Apple test plan.",
       "exists": true,
-      "size_bytes": 10394,
+      "size_bytes": 10622,
       "snippet_hint": "import importlib.util"
+    },
+    {
+      "path": "14_context/codex_n6_1b_main_merge_constrained_local_model_routing_guard.md",
+      "subsystem": "reports/14_context",
+      "description": "main milestone report",
+      "why_it_matters": "CLEAN PASS / N+6.1B MAIN MERGE CONSTRAINED LOCAL MODEL ROUTING GUARD",
+      "exists": true,
+      "size_bytes": 4537,
+      "snippet_hint": "CLEAN PASS / N+6.1B MAIN MERGE CONSTRAINED LOCAL MODEL ROUTING GUARD"
     },
     {
       "path": "14_context/codex_n6_1a_constrained_local_model_routing_repo_bundle_guard.md",
@@ -665,7 +719,7 @@
       "description": "report milestone report",
       "why_it_matters": "CLEAN PASS / N+6.1A CONSTRAINED LOCAL MODEL ROUTING GUARD READY",
       "exists": true,
-      "size_bytes": 8449,
+      "size_bytes": 9080,
       "snippet_hint": "CLEAN PASS / N+6.1A CONSTRAINED LOCAL MODEL ROUTING GUARD READY"
     },
     {
@@ -741,15 +795,6 @@
       "snippet_hint": "CLEAN PASS / N+5.8B MAIN MERGE READY"
     },
     {
-      "path": "14_context/codex_n5_8a_hermes_agent_workflow_provider_setup_plan_manual_bridge.md",
-      "subsystem": "reports/14_context",
-      "description": "report milestone report",
-      "why_it_matters": "CLEAN PASS / N+5.8A HERMES MANUAL BRIDGE READY",
-      "exists": true,
-      "size_bytes": 9323,
-      "snippet_hint": "CLEAN PASS / N+5.8A HERMES MANUAL BRIDGE READY"
-    },
-    {
       "path": "14_context/codex_n5_7a_graphify_repo_knowledge_map_context_retrieval.md",
       "subsystem": "reports/14_context",
       "description": "report milestone report",
@@ -790,10 +835,15 @@
     "Hermes/WSL": [
       "03_scripts/hermes_agent_workflow_bridge.py",
       "03_scripts/hermes_local_bootstrap.py",
+      "03_scripts/hermes_manual_bridge_verifier.py",
       "14_context/hermes_workflow/generated/hermes_workflow_status.md",
       "docs/HERMES_AGENT_WORKFLOW_GUIDE.md",
+      "docs/HERMES_BLOCKED_COMMANDS.md",
       "docs/HERMES_LOCAL_INSTALL_AND_PROVIDER_PLAN.md",
-      "docs/HERMES_MANUAL_PROVIDER_SETUP_CHECKLIST.md"
+      "docs/HERMES_MANUAL_BRIDGE_VERIFICATION.md",
+      "docs/HERMES_MANUAL_PROVIDER_SETUP_CHECKLIST.md",
+      "docs/HERMES_SAFE_COMMANDS.md",
+      "docs/WSL_USAGE_GUIDE_FOR_GHOTI.md"
     ],
     "UI-TARS/computer-use": [
       "03_scripts/ui_tars_observation_adapter.py",
@@ -852,7 +902,6 @@
       "14_context/codex_n5_6a_local_model_gemma_setup_truth_easy_worker_lane.md",
       "14_context/codex_n5_6b_main_merge_local_model_easy_worker_lane.md",
       "14_context/codex_n5_7a_graphify_repo_knowledge_map_context_retrieval.md",
-      "14_context/codex_n5_8a_hermes_agent_workflow_provider_setup_plan_manual_bridge.md",
       "14_context/codex_n5_8b_main_merge_hermes_manual_bridge_readiness.md",
       "14_context/codex_n5_9a_gemma_model_availability_local_task_quality_evaluation.md",
       "14_context/codex_n5_9b_main_merge_gemma_readiness_local_quality_plan.md",
@@ -861,7 +910,8 @@
       "14_context/codex_n6_0a_roadmap_priority_hermes_computer_use_update_audit.md",
       "14_context/codex_n6_0b_main_merge_gemma_install_first_local_eval.md",
       "14_context/codex_n6_0c_report_history_stability_repair.md",
-      "14_context/codex_n6_1a_constrained_local_model_routing_repo_bundle_guard.md"
+      "14_context/codex_n6_1a_constrained_local_model_routing_repo_bundle_guard.md",
+      "14_context/codex_n6_1b_main_merge_constrained_local_model_routing_guard.md"
     ],
     "supervised content demo": [
       "03_scripts/supervised_content_mvp_runner.py"

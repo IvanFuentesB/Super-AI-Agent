@@ -31,6 +31,9 @@ REPO_MAP_COMMAND = "python 03_scripts/ghoti_product_launcher.py --repo-map --jso
 NEXT_BUNDLE_COMMAND = "python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json"
 HERMES_BRIDGE_COMMAND = "python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json"
 HERMES_BRIDGE_WRITE_COMMAND = "python 03_scripts/ghoti_product_launcher.py --hermes-bridge-write --json"
+HERMES_MANUAL_STATUS_COMMAND = "python 03_scripts/ghoti_product_launcher.py --hermes-manual-status --json"
+HERMES_WSL_GUIDE_COMMAND = "python 03_scripts/ghoti_product_launcher.py --hermes-wsl-guide --json"
+HERMES_SAFE_COMMANDS_COMMAND = "python 03_scripts/ghoti_product_launcher.py --hermes-safe-commands --json"
 GEMMA_STATUS_COMMAND = "python 03_scripts/ghoti_product_launcher.py --gemma-status --json"
 GEMMA_DOCTOR_COMMAND = "python 03_scripts/ghoti_product_launcher.py --gemma-doctor --json"
 GEMMA_QUALITY_COMMAND = "python 03_scripts/ghoti_product_launcher.py --gemma-quality-plan --json"
@@ -39,9 +42,9 @@ LOCAL_WORKER_ROUTE_TASK_COMMAND = "python 03_scripts/ghoti_product_launcher.py -
 LOCAL_WORKER_ROUTING_DEMO_COMMAND = "python 03_scripts/ghoti_product_launcher.py --local-worker-routing-demo --json"
 DIRECT_WRITE_COMMAND = "python 03_scripts/ghoti_repo_knowledge_map.py --write --json"
 
-LATEST_CLEAN_MILESTONE = "N+6.0B - Human-Approved Gemma Install + First Local Evaluation landed on main"
-CURRENT_MILESTONE = "N+6.1A - Constrained Local Model Routing + Repo-Bundle Hallucination Guard"
-NEXT_RECOMMENDED_MILESTONE = "N+6.2A - Hermes Agent Manual Bridge Verification + WSL Usage Guide"
+LATEST_CLEAN_MILESTONE = "N+6.1B - Constrained Local Model Routing + Repo-Bundle Hallucination Guard landed on main"
+CURRENT_MILESTONE = "N+6.2A - Hermes Agent Manual Bridge Verification + WSL Usage Guide"
+NEXT_RECOMMENDED_MILESTONE = "N+6.3A - Safe Computer-Use Observation Harness / Apple Comparison Dry-Run"
 ROADMAP_PRIORITY_SEQUENCE = [
     "N+6.1A - Constrained Gemma worker routing for boring/simple local tasks, with known repo-bundle IDs only and fallback on guard failure.",
     "N+6.2A - Hermes Agent Workflow / Manual Bridge Verification for faster supervised task execution; safe probes only, no tokens, no provider setup.",
@@ -172,6 +175,12 @@ IMPORTANT_FILE_CATALOG = [
         "subsystem": "Hermes/WSL",
         "description": "Hermes manual bridge readiness, skills index, and generated setup packet.",
         "why": "Makes Hermes useful and inspectable while keeping provider setup, Telegram, tokens, and browser automation manual later.",
+    },
+    {
+        "path": "03_scripts/hermes_manual_bridge_verifier.py",
+        "subsystem": "Hermes/WSL",
+        "description": "Hermes manual bridge verifier, WSL usage guide, safe commands, blocked commands, and Apple comparison bridge plan.",
+        "why": "N+6.2A daily usability layer for WSL/Hermes without provider setup, Telegram, browser automation, or computer-use control.",
     },
     {
         "path": "03_scripts/ui_tars_observation_adapter.py",
@@ -310,6 +319,30 @@ IMPORTANT_FILE_CATALOG = [
         "subsystem": "Hermes/WSL",
         "description": "Hermes Agent workflow and manual bridge guide.",
         "why": "Explains safe probes, generated readiness files, and manual later boundaries.",
+    },
+    {
+        "path": "docs/WSL_USAGE_GUIDE_FOR_GHOTI.md",
+        "subsystem": "Hermes/WSL",
+        "description": "Human guide to WSL, /mnt/c path mapping, opening/exiting Ubuntu, and Hermes checks.",
+        "why": "Turns WSL/Hermes from mysterious terminal output into daily operator muscle memory.",
+    },
+    {
+        "path": "docs/HERMES_MANUAL_BRIDGE_VERIFICATION.md",
+        "subsystem": "Hermes/WSL",
+        "description": "Manual bridge verification guide and N+6.2A safe command scope.",
+        "why": "Separates safe inspectability from provider setup or live automation claims.",
+    },
+    {
+        "path": "docs/HERMES_SAFE_COMMANDS.md",
+        "subsystem": "Hermes/WSL",
+        "description": "Allowlisted safe Hermes/WSL commands.",
+        "why": "Keeps status probing repeatable without triggering auth/setup/browser control.",
+    },
+    {
+        "path": "docs/HERMES_BLOCKED_COMMANDS.md",
+        "subsystem": "Hermes/WSL",
+        "description": "Blocked Hermes commands and why they remain manual later.",
+        "why": "Protects against accidental provider setup, Telegram setup, tokens, and live computer-use.",
     },
     {
         "path": "docs/HERMES_MANUAL_PROVIDER_SETUP_CHECKLIST.md",
@@ -840,15 +873,25 @@ def _bundle_definition(bundle: str) -> Dict[str, object]:
             "purpose": "Inspect or improve the Hermes manual bridge without setup/token actions.",
             "files": [
                 "03_scripts/hermes_agent_workflow_bridge.py",
+                "03_scripts/hermes_manual_bridge_verifier.py",
                 "03_scripts/hermes_local_bootstrap.py",
                 "docs/HERMES_AGENT_WORKFLOW_GUIDE.md",
+                "docs/WSL_USAGE_GUIDE_FOR_GHOTI.md",
+                "docs/HERMES_MANUAL_BRIDGE_VERIFICATION.md",
+                "docs/HERMES_SAFE_COMMANDS.md",
+                "docs/HERMES_BLOCKED_COMMANDS.md",
+                "docs/HERMES_TO_COMPUTER_USE_ROADMAP.md",
                 "docs/HERMES_MANUAL_PROVIDER_SETUP_CHECKLIST.md",
                 "docs/HERMES_LOCAL_INSTALL_AND_PROVIDER_PLAN.md",
                 "docs/CODEX_ONLY_WORKFLOW.md",
+                "docs/SAFE_COMPUTER_USE_TEST_PLAN_APPLE_COMPARISON.md",
                 "14_context/hermes_workflow/generated/hermes_workflow_status.md",
                 "14_context/hermes_workflow/generated/hermes_operator_bridge_packet.md",
+                "14_context/hermes_manual_bridge/generated/01_wsl_usage_guide.md",
+                "14_context/hermes_manual_bridge/generated/02_hermes_safe_commands.md",
+                "14_context/hermes_manual_bridge/generated/03_hermes_blocked_commands.md",
             ],
-            "prompt": "Work on the Hermes Agent / Manual Bridge lane. Use safe probes only; no setup/provider config/Telegram/tokens/live APIs/browser automation.",
+            "prompt": "Work on the Hermes Agent / Manual Bridge lane. Use safe probes only; no setup/provider config/Telegram/tokens/live APIs/browser automation/computer-use control.",
         },
         "content-workflow": {
             "title": "Supervised Content Workflow",
@@ -875,7 +918,7 @@ def _bundle_definition(bundle: str) -> Dict[str, object]:
         },
         "next-milestone": {
             "title": "Next Milestone",
-            "purpose": "Prepare N+6.2A Hermes manual bridge verification after N+6.1A guarded routing is audited.",
+            "purpose": "Prepare N+6.3A safe computer-use observation harness after N+6.2A Hermes manual bridge verification is audited.",
             "files": [
                 "03_scripts/local_model_worker_lane.py",
                 "03_scripts/local_model_output_guard.py",
@@ -890,6 +933,11 @@ def _bundle_definition(bundle: str) -> Dict[str, object]:
                 "docs/HUMAN_APPROVED_GEMMA_INSTALL_LOG.md",
                 "docs/LOCAL_MODEL_QUALITY_EVALUATION_GUIDE.md",
                 "docs/HERMES_AGENT_WORKFLOW_GUIDE.md",
+                "docs/WSL_USAGE_GUIDE_FOR_GHOTI.md",
+                "docs/HERMES_MANUAL_BRIDGE_VERIFICATION.md",
+                "docs/HERMES_SAFE_COMMANDS.md",
+                "docs/HERMES_BLOCKED_COMMANDS.md",
+                "docs/HERMES_TO_COMPUTER_USE_ROADMAP.md",
                 "docs/SAFE_COMPUTER_USE_TEST_PLAN_APPLE_COMPARISON.md",
                 "14_context/local_worker/generated/local_worker_status.md",
                 "14_context/local_worker/routing_runs/",
@@ -897,8 +945,10 @@ def _bundle_definition(bundle: str) -> Dict[str, object]:
                 "14_context/local_model_readiness/generated/local_task_quality_plan.md",
                 "14_context/local_model_evaluation/runs/",
                 "14_context/hermes_workflow/generated/hermes_operator_bridge_packet.md",
+                "14_context/hermes_manual_bridge/generated/01_wsl_usage_guide.md",
+                "14_context/hermes_manual_bridge/generated/07_apple_comparison_manual_bridge_plan.md",
             ],
-            "prompt": "Plan N+6.2A Hermes manual bridge verification after N+6.1A guarded routing is clean. Keep safe probes only, no tokens/provider setup/Telegram/live APIs/browser automation. Preserve the N+6.3A computer-use plan as observation/manual-approval only.",
+            "prompt": "Plan N+6.3A safe computer-use observation harness after N+6.2A Hermes manual bridge verification is clean. Observation/manual approval only; no provider setup, Telegram, live APIs, uncontrolled browser automation, click/type, account actions, purchasing, bot/CAPTCHA/cloak bypass, or fake behavior.",
         },
     }
     return definitions[bundle]
@@ -943,6 +993,9 @@ def build_bundle(bundle: str, map_data: Dict[str, object] | None = None) -> Dict
             "python 03_scripts/ghoti_product_launcher.py --local-model-eval --json",
             REPO_MAP_COMMAND,
             HERMES_BRIDGE_COMMAND,
+            HERMES_MANUAL_STATUS_COMMAND,
+            HERMES_WSL_GUIDE_COMMAND,
+            HERMES_SAFE_COMMANDS_COMMAND,
             f"python 03_scripts/ghoti_repo_knowledge_map.py --bundle {normalized} --json",
             NEXT_BUNDLE_COMMAND,
         ]
@@ -952,7 +1005,8 @@ def build_bundle(bundle: str, map_data: Dict[str, object] | None = None) -> Dict
         f"- Latest clean milestone: {data['latest_clean_milestone']}",
         f"- Current milestone: {data['milestone']}",
         "- Previous Hermes bridge milestone: N+5.8A - Hermes Agent Workflow / Provider Setup Plan + Manual Bridge Readiness.",
-        "- Hermes WSL installed at `/home/ai_sandbox/.local/bin/hermes`, v0.14.0; Hermes Agent / Manual Bridge files available; browser/Playwright degraded/not claimed.",
+        "- Hermes WSL installed at `/home/ai_sandbox/.local/bin/hermes`, v0.14.0; Hermes Agent / Manual Bridge and Hermes Manual Bridge / WSL Guide files available; browser/Playwright degraded/not claimed.",
+        "- Windows `C:\\Users\\ai_sandbox\\Documents\\AI_Managed_Only` maps to WSL `/mnt/c/Users/ai_sandbox/Documents/AI_Managed_Only`.",
         "- Ollama available v0.24.0; Gemma is installed only if local `ollama list` proves it; local_demo fallback remains available.",
         "- Gemma / Local Model Quality files live under `14_context/local_model_readiness/generated/`; local eval runs live under `14_context/local_model_evaluation/runs/`; production routing remains disabled.",
         "- UI-TARS observation-only; adapter runner approval-gated/local-only; external sandbox static inspection only.",
@@ -1023,9 +1077,10 @@ def _codex_prompt(map_data: Dict[str, object]) -> str:
         - Current feature milestone: {map_data['milestone']}
         - Graphify runtime: roadmap only/not wired; no external repo runtime; no network.
         - Hermes setup/provider config/Telegram/tokens remain manual later.
+        - Hermes Manual Bridge / WSL Guide files live under `14_context/hermes_manual_bridge/generated/`.
         - Gemma local evaluation runs live under `14_context/local_model_evaluation/runs/`; production routing remains disabled.
-        - N+6.1A must guard against repo-bundle hallucination before routing boring local tasks.
-        - After N+6.1A, prioritize N+6.2A Hermes manual bridge verification and N+6.3A safe computer-use preparation.
+        - N+6.1B landed repo-bundle hallucination guard before routing boring local tasks.
+        - After N+6.2A, prioritize N+6.3A safe computer-use preparation.
         - UI-TARS remains observation-only.
 
         Next recommended milestone:

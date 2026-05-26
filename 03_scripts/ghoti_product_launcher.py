@@ -32,6 +32,7 @@ CONTEXT_PACK_SCRIPT = REPO_ROOT / "03_scripts" / "ghoti_context_pack_builder.py"
 LOCAL_WORKER_SCRIPT = REPO_ROOT / "03_scripts" / "local_model_worker_lane.py"
 REPO_KNOWLEDGE_SCRIPT = REPO_ROOT / "03_scripts" / "ghoti_repo_knowledge_map.py"
 HERMES_BRIDGE_SCRIPT = REPO_ROOT / "03_scripts" / "hermes_agent_workflow_bridge.py"
+HERMES_MANUAL_BRIDGE_SCRIPT = REPO_ROOT / "03_scripts" / "hermes_manual_bridge_verifier.py"
 GEMMA_READINESS_SCRIPT = REPO_ROOT / "03_scripts" / "gemma_model_readiness.py"
 
 LAUNCHER_VERSION = "1.0.0"
@@ -59,6 +60,7 @@ WHAT_GHOTI_CAN_DO = [
     "Gemma / Local Model Quality — model availability, manual install decision, and quality plan",
     "Repo Knowledge / Graphify Lane — local file map and task bundles; Graphify runtime roadmap only",
     "Hermes Agent / Manual Bridge — safe WSL probes, skills index, and manual setup packet",
+    "Hermes Manual Bridge / WSL Guide — Windows-to-WSL path mapping, safe/blocked commands, and manual bridge guide",
     "Hermes WSL truth — Ubuntu WSL safe probes, no setup/provider/token action",
     "Obsidian Compact Memory — repo-local vault and compressed memory plan",
     "Ruflo / Local Brain Bridge — status/readiness only, no runtime wiring",
@@ -83,6 +85,13 @@ CONTROL_CENTER_LANES = [
         "status": "manual_bridge_ready",
         "truth": "Safe WSL probes, skills index, manual checklist, and bridge packet are available; provider setup, Telegram, and browser/Playwright remain manual/not claimed.",
         "safe_next_step": "Run hermes_agent_workflow_bridge.py --status --json or --write-readiness --json; no live provider setup.",
+    },
+    {
+        "key": "hermes_manual_bridge_wsl_guide",
+        "label": "Hermes Manual Bridge / WSL Guide",
+        "status": "manual_bridge_verified",
+        "truth": "WSL usage, Windows-to-/mnt/c path mapping, safe commands, blocked commands, and future Apple comparison plan are generated locally.",
+        "safe_next_step": "Run hermes_manual_bridge_verifier.py --write-guide --json; do not run provider setup, Telegram, browser automation, or computer-use control.",
     },
     {
         "key": "gemma_ollama_lane",
@@ -202,6 +211,9 @@ DAILY_OPERATOR_COMMANDS = [
     "python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json",
     "python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json",
     "python 03_scripts/ghoti_product_launcher.py --hermes-bridge-write --json",
+    "python 03_scripts/ghoti_product_launcher.py --hermes-manual-status --json",
+    "python 03_scripts/ghoti_product_launcher.py --hermes-wsl-guide --json",
+    "python 03_scripts/ghoti_product_launcher.py --hermes-safe-commands --json",
     "python 03_scripts/ghoti_product_launcher.py --stop-dashboard",
 ]
 
@@ -981,6 +993,88 @@ def cmd_hermes_bridge_write() -> dict:
     return _run_hermes_bridge(["--write-readiness"], "hermes-bridge-write", timeout=90)
 
 
+def _run_hermes_manual_bridge(argv_tail, action: str, timeout: int = 60) -> dict:
+    """Run the N+6.2A Hermes manual bridge verifier with fixed argv."""
+    if not HERMES_MANUAL_BRIDGE_SCRIPT.exists():
+        return {
+            "ok": False,
+            "action": action,
+            "local_only": True,
+            "live_api_used": False,
+            "provider_setup_run": False,
+            "telegram_setup_run": False,
+            "tokens_read": False,
+            "error": "hermes_manual_bridge_verifier.py not found",
+            "generated_at": _now(),
+        }
+    argv = [sys.executable, str(HERMES_MANUAL_BRIDGE_SCRIPT), *argv_tail, "--json"]
+    try:
+        completed = subprocess.run(
+            argv,
+            cwd=str(REPO_ROOT),
+            text=True,
+            capture_output=True,
+            timeout=timeout,
+            shell=False,
+        )
+    except Exception as exc:
+        return {
+            "ok": False,
+            "action": action,
+            "local_only": True,
+            "live_api_used": False,
+            "provider_setup_run": False,
+            "telegram_setup_run": False,
+            "tokens_read": False,
+            "error": "Hermes manual bridge failed to start: %s" % exc,
+            "generated_at": _now(),
+        }
+    if completed.returncode != 0:
+        return {
+            "ok": False,
+            "action": action,
+            "local_only": True,
+            "live_api_used": False,
+            "provider_setup_run": False,
+            "telegram_setup_run": False,
+            "tokens_read": False,
+            "error": completed.stderr or completed.stdout or ("exit %s" % completed.returncode),
+            "generated_at": _now(),
+        }
+    try:
+        payload = json.loads(completed.stdout)
+    except Exception:
+        return {
+            "ok": False,
+            "action": action,
+            "local_only": True,
+            "live_api_used": False,
+            "provider_setup_run": False,
+            "telegram_setup_run": False,
+            "tokens_read": False,
+            "error": "Hermes manual bridge returned invalid JSON",
+            "generated_at": _now(),
+        }
+    payload["action"] = action
+    return payload
+
+
+def cmd_hermes_manual_status() -> dict:
+    return _run_hermes_manual_bridge(["--status"], "hermes-manual-status", timeout=60)
+
+
+def cmd_hermes_wsl_guide() -> dict:
+    return _run_hermes_manual_bridge(["--wsl-explain"], "hermes-wsl-guide", timeout=30)
+
+
+def cmd_hermes_safe_commands() -> dict:
+    return _run_hermes_manual_bridge(["--safe-commands"], "hermes-safe-commands", timeout=30)
+
+
+def cmd_hermes_manual_write() -> dict:
+    return _run_hermes_manual_bridge(["--write-guide"], "hermes-manual-write", timeout=90)
+
+
 # ---------------------------------------------------------------------------
 # Human-readable rendering
 # ---------------------------------------------------------------------------
@@ -1070,6 +1164,16 @@ def _print_human(result: dict) -> None:
             print("  readiness: %s%%" % result["readiness_percent"])
         for filename, relpath in (result.get("paths") or result.get("output_paths") or {}).items():
             print("  %s -> %s" % (filename, relpath))
+    elif action in ("hermes-manual-status", "hermes-wsl-guide", "hermes-safe-commands", "hermes-manual-write"):
+        print("Hermes Manual Bridge / WSL Guide: %s" % ("PASS" if result.get("ok") else "FAIL"))
+        if result.get("status_line"):
+            print("  %s" % result["status_line"])
+        if result.get("readiness_percent") is not None:
+            print("  readiness: %s%%" % result["readiness_percent"])
+        if result.get("wsl_repo_path"):
+            print("  WSL path: %s" % result["wsl_repo_path"])
+        for filename, relpath in (result.get("paths") or result.get("output_paths") or {}).items():
+            print("  %s -> %s" % (filename, relpath))
 
 
 # ---------------------------------------------------------------------------
@@ -1099,8 +1203,11 @@ def main(argv=None) -> int:
             "  15. python 03_scripts/ghoti_product_launcher.py --repo-bundle next-milestone --json\n"
             "  16. python 03_scripts/ghoti_product_launcher.py --hermes-bridge-status --json\n"
             "  17. python 03_scripts/ghoti_product_launcher.py --hermes-bridge-write --json\n"
-            "  18. review reports under 14_context/\n"
-            "  19. python 03_scripts/ghoti_product_launcher.py --stop-dashboard\n"
+            "  18. python 03_scripts/ghoti_product_launcher.py --hermes-manual-status --json\n"
+            "  19. python 03_scripts/ghoti_product_launcher.py --hermes-wsl-guide --json\n"
+            "  20. python 03_scripts/ghoti_product_launcher.py --hermes-safe-commands --json\n"
+            "  21. review reports under 14_context/\n"
+            "  22. python 03_scripts/ghoti_product_launcher.py --stop-dashboard\n"
         ),
     )
     parser.add_argument("--status", action="store_true", help="show launcher + dashboard status")
@@ -1160,6 +1267,14 @@ def main(argv=None) -> int:
                         help="show Hermes Agent manual bridge readiness (safe WSL probes only)")
     parser.add_argument("--hermes-bridge-write", action="store_true",
                         help="write Hermes manual bridge readiness files (local only)")
+    parser.add_argument("--hermes-manual-status", action="store_true",
+                        help="show Hermes manual bridge + WSL guide status (safe probes only)")
+    parser.add_argument("--hermes-wsl-guide", action="store_true",
+                        help="explain WSL path mapping for Ghoti and Hermes")
+    parser.add_argument("--hermes-safe-commands", action="store_true",
+                        help="list safe Hermes/WSL probe commands")
+    parser.add_argument("--hermes-manual-write", action="store_true",
+                        help="write Hermes manual bridge + WSL guide files")
     parser.add_argument("--open-dashboard", action="store_true",
                         help="open the localhost dashboard in a browser (only when explicitly passed)")
     parser.add_argument("--run-demo-smoke", action="store_true",
@@ -1211,6 +1326,14 @@ def main(argv=None) -> int:
             result = cmd_hermes_bridge_status()
         elif args.hermes_bridge_write:
             result = cmd_hermes_bridge_write()
+        elif args.hermes_manual_status:
+            result = cmd_hermes_manual_status()
+        elif args.hermes_wsl_guide:
+            result = cmd_hermes_wsl_guide()
+        elif args.hermes_safe_commands:
+            result = cmd_hermes_safe_commands()
+        elif args.hermes_manual_write:
+            result = cmd_hermes_manual_write()
         else:
             # --status, bare --json, or no mode -> status.
             result = cmd_status()

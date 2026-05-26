@@ -7260,6 +7260,100 @@ refreshLocalOrchestrator();
 })();
 
 // ---------------------------------------------------------------------
+// N+6.2A Hermes Manual Bridge / WSL Guide (client-side handlers)
+// ---------------------------------------------------------------------
+(function attachHermesManualBridgeWslGuide() {
+  function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value || "none";
+  }
+  function setResult(text) {
+    const el = document.getElementById("hermes-manual-action-result");
+    if (!el) return;
+    el.innerHTML = "";
+    const p = document.createElement("p");
+    p.textContent = text;
+    el.appendChild(p);
+  }
+  async function callHermesManual(endpoint, method) {
+    const res = await fetch(endpoint, { method: method || "GET", headers: { "Content-Type": "application/json" } });
+    return await res.json();
+  }
+  function renderStatus(data) {
+    if (!data || !data.ok) {
+      setText("hermes-manual-status-line", (data && data.error) || "Hermes manual bridge status unavailable.");
+      setText("hermes-manual-readiness", "unknown");
+      return;
+    }
+    const wsl = data.wsl_explanation || {};
+    const paths = data.paths || {};
+    setText("hermes-manual-wsl-map", (wsl.windows_repo_path || "C:\\Users\\ai_sandbox\\Documents\\AI_Managed_Only") +
+      " -> " + (wsl.wsl_repo_path || "/mnt/c/Users/ai_sandbox/Documents/AI_Managed_Only"));
+    setText("hermes-manual-path", data.path || data.expected_path || "/home/ai_sandbox/.local/bin/hermes");
+    setText("hermes-manual-version", data.version || "unknown");
+    setText("hermes-manual-skills-count", String(data.skills_count || 0));
+    setText("hermes-manual-readiness", String(data.readiness_percent || 0) + "%");
+    setText("hermes-manual-guide-path", data.latest_wsl_usage_guide_path || paths["01_wsl_usage_guide.md"] ||
+      "14_context/hermes_manual_bridge/generated/01_wsl_usage_guide.md");
+    setText("hermes-manual-status-line", data.status_line || "Hermes manual bridge status loaded.");
+  }
+  async function refreshHermesManualStatus() {
+    try {
+      renderStatus(await callHermesManual("/api/hermes-manual-bridge/status", "GET"));
+    } catch (err) {
+      setText("hermes-manual-status-line", "Could not load Hermes manual bridge status.");
+    }
+  }
+  function bind(id, fn) {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("click", fn);
+  }
+  bind("hermes-manual-refresh-btn", async function () {
+    setResult("Refreshing Hermes manual bridge status...");
+    await refreshHermesManualStatus();
+    setResult("Hermes manual bridge status refreshed. Safe probes only.");
+  });
+  bind("hermes-manual-wsl-btn", async function () {
+    setResult("Loading WSL path guide...");
+    try {
+      const data = await callHermesManual("/api/hermes-manual-bridge/wsl-explain", "GET");
+      setResult(data && data.ok
+        ? "WSL path guide: " + data.windows_repo_path + " maps to " + data.wsl_repo_path + "."
+        : "WSL guide unavailable: " + ((data && data.error) || "unknown"));
+    } catch (err) {
+      setResult("WSL guide failed: " + (err && err.message));
+    }
+  });
+  bind("hermes-manual-safe-btn", async function () {
+    setResult("Loading Hermes safe command list...");
+    try {
+      const data = await callHermesManual("/api/hermes-manual-bridge/safe-commands", "GET");
+      const count = Array.isArray(data && data.safe_commands) ? data.safe_commands.length : 0;
+      setResult(data && data.ok
+        ? "Safe command list loaded: " + count + " read-only probes. No live provider setup."
+        : "Safe commands unavailable: " + ((data && data.error) || "unknown"));
+    } catch (err) {
+      setResult("Safe commands failed: " + (err && err.message));
+    }
+  });
+  bind("hermes-manual-write-btn", async function () {
+    setResult("Writing Hermes manual bridge guide files...");
+    try {
+      const data = await callHermesManual("/api/hermes-manual-bridge/write-guide", "POST");
+      renderStatus(data);
+      setResult(data && data.ok
+        ? "Hermes manual bridge guide files written under 14_context/hermes_manual_bridge/generated/."
+        : "Hermes manual bridge write unavailable: " + ((data && data.error) || "unknown"));
+    } catch (err) {
+      setResult("Hermes manual bridge write failed: " + (err && err.message));
+    }
+  });
+  if (document.getElementById("ghoti-hermes-manual-card")) {
+    refreshHermesManualStatus();
+  }
+})();
+
+// ---------------------------------------------------------------------
 // N+4.8A External Tool Sandbox Truth (client-side handler, read-only)
 // ---------------------------------------------------------------------
 (function attachExternalToolSandbox() {

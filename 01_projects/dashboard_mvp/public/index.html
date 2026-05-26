@@ -370,6 +370,40 @@
                   <p class="empty-state">No Hermes bridge action run yet.</p>
                 </div>
               </section>
+              <section class="console-card console-card-span-2" id="ghoti-hermes-manual-card">
+                <div class="console-card-header">
+                  <div>
+                    <h2>Hermes Manual Bridge / WSL Guide</h2>
+                    <p>WSL path mapping, safe commands, blocked commands, and future manual bridge guide. No live provider setup.</p>
+                  </div>
+                </div>
+                <ul class="card-list">
+                  <li><strong>Status command:</strong> <code>python 03_scripts/ghoti_product_launcher.py --hermes-manual-status --json</code></li>
+                  <li><strong>WSL guide command:</strong> <code>python 03_scripts/ghoti_product_launcher.py --hermes-wsl-guide --json</code></li>
+                  <li><strong>Safe commands:</strong> <code>python 03_scripts/ghoti_product_launcher.py --hermes-safe-commands --json</code></li>
+                  <li><strong>WSL path mapping:</strong> <code id="hermes-manual-wsl-map">C:\Users\ai_sandbox\Documents\AI_Managed_Only -> /mnt/c/Users/ai_sandbox/Documents/AI_Managed_Only</code></li>
+                  <li><strong>Hermes path:</strong> <code id="hermes-manual-path">/home/ai_sandbox/.local/bin/hermes</code></li>
+                  <li><strong>Version:</strong> <code id="hermes-manual-version">loading...</code></li>
+                  <li><strong>Skills count:</strong> <code id="hermes-manual-skills-count">loading...</code></li>
+                  <li><strong>Manual bridge readiness:</strong> <code id="hermes-manual-readiness">loading...</code></li>
+                  <li><strong>Codex provider:</strong> Codex provider pending/not proven.</li>
+                  <li><strong>Telegram:</strong> Telegram manual later/no token.</li>
+                  <li><strong>Browser:</strong> browser/Playwright degraded/not claimed.</li>
+                  <li><strong>VPS:</strong> No VPS.</li>
+                  <li><strong>Generated guide:</strong> <code id="hermes-manual-guide-path">14_context/hermes_manual_bridge/generated/01_wsl_usage_guide.md</code></li>
+                  <li><strong>Safety:</strong> safe probes only, no live provider setup, no provider config, no Telegram setup, no tokens, no browser automation, no computer-use click/type, no live APIs.</li>
+                  <li><strong>Status:</strong> <span id="hermes-manual-status-line">Loading Hermes manual bridge status...</span></li>
+                </ul>
+                <div class="card-actions">
+                  <button id="hermes-manual-refresh-btn" type="button">Refresh Manual Bridge</button>
+                  <button id="hermes-manual-wsl-btn" type="button">Show WSL Guide</button>
+                  <button id="hermes-manual-safe-btn" type="button">List Safe Commands</button>
+                  <button id="hermes-manual-write-btn" type="button">Write Guide Files</button>
+                </div>
+                <div id="hermes-manual-action-result" class="card-status">
+                  <p class="empty-state">No Hermes manual bridge action run yet.</p>
+                </div>
+              </section>
               <section class="console-card" id="ghoti-works-now-card">
                 <div class="console-card-header">
                   <div>
