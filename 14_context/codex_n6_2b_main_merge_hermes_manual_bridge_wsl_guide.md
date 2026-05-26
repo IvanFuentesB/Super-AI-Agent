@@ -4,9 +4,9 @@ Date: 2026-05-26
 
 ## Verdict
 
-N+6.2B merge gate in progress at this report commit.
+CLEAN PASS / N+6.2B MAIN MERGE HERMES MANUAL BRIDGE WSL GUIDE
 
-This report lands the already-audited N+6.2A Hermes manual bridge milestone onto main through a clean merge gate. The report commit also replaces the automatic merge commit as `HEAD` so the existing N+5 latest-commit attribution scanner can evaluate a normal project-authored commit subject.
+This report lands the already-audited N+6.2A Hermes manual bridge milestone onto main through a clean merge gate. The first report commit also replaced the automatic merge commit as `HEAD` so the existing N+5 latest-commit attribution scanner could evaluate a normal project-authored commit subject.
 
 ## Branches
 
@@ -18,15 +18,34 @@ This report lands the already-audited N+6.2A Hermes manual bridge milestone onto
 - Merge gate worktree: `.claude/worktrees/n6_2b_main_merge_gate`
 - Merge HEAD before this report: `e55485aa594a9fae3491695316f39f1cdc3610e3`
 
-## Validation Notes
+## Validation
 
 - `git diff --check`: PASS
 - `git show --check --stat HEAD`: PASS
 - N+4 tests with runtime `PYTHONPATH`: 329 OK
+- N+5 tests with runtime `PYTHONPATH`: 97 OK
 - N+6 tests with runtime `PYTHONPATH`: 18 OK
-- N+5 first run before this report commit: 96 OK / 1 attribution-scan failure caused by the automatic merge commit subject containing the source branch name. This is an expected merge-gate artifact; N+5 must be rerun after this report commit.
+- Runtime tests total: 444 OK
+- Launcher smoke: PASS
+- Context pack generation: PASS
+- Local worker routing status: PASS
+- Repo map status: PASS
+- Hermes bridge status: PASS
+- Hermes manual status/doctor/WSL explain/safe commands/blocked commands/skills summary/write guide: PASS
+- Local model routing status: PASS
+- Local model output guard self-test: PASS
+- Public audit: 150 checks / 0 blockers / 8 warnings requiring human review
+- Model council scan: PASS
+- UI-TARS dry-run: PASS, observation-only, no click/type/control
+- Adapter runner status: PASS, approval-gated/local-only
+- External sandbox status: PASS, static inspection only
+- Supervised content demo validation: PASS
+- Safe WSL probes: PASS for `command -v hermes`, `hermes --version`, and `hermes skills list | head -120`
+- Node syntax checks: PASS
+- Runtime PowerShell check: PASS
+- Dashboard PowerShell check: PASS with `-RuntimeLockSafe`
 
-Remaining product, public audit, WSL, dashboard, and PowerShell checks are run after this report commit and before main is pushed.
+Initial N+4 without `PYTHONPATH` failed to import `super_ai_agent`; rerunning with the repo runtime source path fixed the environment issue. Initial N+5 before the report commit had the expected attribution-scan failure caused by the automatic merge commit subject containing the source branch name; the report commit resolved it and N+5 passed.
 
 ## Product Truth
 
@@ -65,4 +84,4 @@ No Hermes setup, provider config, Telegram setup, token command, live API, brows
 
 ## Next
 
-If the post-report validation remains clean, push main as N+6.2B, create a final main audit branch, and then start N+6.3A Safe Computer-Use Observation Harness / Apple Comparison Dry-Run.
+Push main as N+6.2B, create a final main audit branch, and then start N+6.3A Safe Computer-Use Observation Harness / Apple Comparison Dry-Run.
