@@ -1,0 +1,48 @@
+{
+  "scenario_id": "apple-mac-compare-local-fixture",
+  "scenario_goal": "compare newest Mac laptop options with Mac mini for engineering, student, and productivity use",
+  "observation_source": "repo-local mock fixture; not a live website",
+  "local_fixture_only": true,
+  "comparison_axes": [
+    "portable laptop value",
+    "desktop value",
+    "display needs",
+    "ports",
+    "storage flexibility",
+    "engineering workload fit"
+  ],
+  "human_questions": [
+    "Does the final user need portability?",
+    "Is an external display already available?",
+    "Is the workload mostly coding, design, media, or general productivity?"
+  ],
+  "products": [
+    {
+      "name": "Mock MacBook Pro",
+      "category": "newest Mac laptop placeholder",
+      "price_placeholder": "higher laptop price placeholder",
+      "performance_notes": "mock high-performance laptop notes for coding, media, and multitasking",
+      "display_notes": "built-in laptop display placeholder",
+      "ports_notes": "laptop ports placeholder; may still need adapters",
+      "storage_notes": "fixed internal storage placeholder"
+    },
+    {
+      "name": "Mock MacBook Air",
+      "category": "portable Mac laptop placeholder",
+      "price_placeholder": "mid laptop price placeholder",
+      "performance_notes": "mock efficient laptop notes for student and productivity work",
+      "display_notes": "built-in lightweight display placeholder",
+      "ports_notes": "minimal laptop ports placeholder",
+      "storage_notes": "fixed internal storage placeholder"
+    },
+    {
+      "name": "Mock Mac mini",
+      "category": "desktop Mac placeholder",
+      "price_placeholder": "lower desktop price placeholder before peripherals",
+      "performance_notes": "mock desktop value notes for coding and always-desk use",
+      "display_notes": "requires external display placeholder",
+      "ports_notes": "desktop ports placeholder",
+      "storage_notes": "fixed internal storage plus external-drive option placeholder"
+    }
+  ]
+}
