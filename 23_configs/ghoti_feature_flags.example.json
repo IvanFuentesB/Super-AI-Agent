@@ -30,5 +30,11 @@
   "confined_browser_cdp_enabled": false,
   "confined_browser_dom_action_enabled": false,
   "live_browser_navigation_enabled": false,
-  "os_level_input_enabled": false
+  "os_level_input_enabled": false,
+  "local_worker_queue_enabled": false,
+  "local_status_brain_enabled": false,
+  "local_gemma_summary_enabled": false,
+  "auto_schedule_worker_enabled": false,
+  "telegram_status_bridge_enabled": false,
+  "hermes_memory_writer_enabled": false
 }

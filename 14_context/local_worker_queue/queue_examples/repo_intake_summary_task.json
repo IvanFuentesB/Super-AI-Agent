@@ -1,0 +1,14 @@
+{
+  "task_type": "repo_intake_summary",
+  "title": "Computer-use repo intake progress summary",
+  "description": "Summarize the statically inspected computer-use candidate repos and where each one stands. Read-only over the local tool-intake reports; no clone, no install, no execution.",
+  "include_candidates": [
+    "Ruflo",
+    "TryCUA / CUA",
+    "Browser Harness",
+    "Vercel agent-browser",
+    "UI-TARS"
+  ],
+  "local_only": true,
+  "never_allow_live": true
+}
