@@ -1,0 +1,2455 @@
+{
+  "schema_version": "1.0-proposal",
+  "milestone": "N+6.11A",
+  "status": "proposal_only_not_applied",
+  "do_not_overwrite_current_registry": true,
+  "origin_main": "fbd64d6ebe03527107ba8f5000d84770c6cc7753",
+  "missing_candidates_to_consider": [
+    {
+      "name": "Ruflo",
+      "aliases": [
+        "ruflo",
+        "Ruflo / Local Brain Bridge"
+      ],
+      "type": "repo",
+      "priority": "critical",
+      "category": "local_brain_bridge",
+      "why_it_matters": "Repeatedly appears in old Ghoti bridge work and was explicitly called out as a missed main priority.",
+      "user_priority_signal": "Critical user correction; old branches/logs/reports mention Ruflo heavily.",
+      "recommended_next_action": "clone_static_inspect",
+      "first_safe_test": "Recover prior Ruflo notes, verify source/status, then static README/license/file-tree inspection only.",
+      "risks": [
+        "external repo code",
+        "runtime wiring before audit",
+        "unclear source state"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "First implementation target.",
+      "evidence": [
+        {
+          "file": "01_projects/dashboard_mvp/public/app.js",
+          "line": 6338,
+          "snippet": "var rf = payload.ruflo || {};"
+        },
+        {
+          "file": "01_projects/dashboard_mvp/public/app.js",
+          "line": 6356,
+          "snippet": "var rufloChip = rf.exists ? 'chip--ok' : 'chip--warn';"
+        },
+        {
+          "file": "01_projects/dashboard_mvp/public/app.js",
+          "line": 6358,
+          "snippet": "'<div class=\"health-row\"><span class=\"health-label\">Ruflo dir</span>' + chip(rf.exists ? 'exists' : 'missing', rufloChip) + '<span class=\"health-detail mono\">' + e(rf.name) + ' v' + e(rf.version) + '</span></div>' +"
+        },
+        {
+          "file": "01_projects/dashboard_mvp/public/app.js",
+          "line": 6383,
+          "snippet": "'<p class=\"ghoti-active-label\" style=\"margin:0.5rem 0 0.25rem;\">Ruflo</p>' + rfHtml +"
+        },
+        {
+          "file": "git branch -a",
+          "line": 5,
+          "snippet": "audit/ghoti-agent-codex-n3-50-dashboard-ruflo-gemma-audit"
+        },
+        {
+          "file": "git branch -a",
+          "line": 117,
+          "snippet": "feat/ghoti-agent-claude-n3-49-local-orchestrator-ruflo-smoke"
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Computer-use stack",
+      "aliases": [
+        "computer-use",
+        "computer use",
+        "CUA",
+        "desktop control"
+      ],
+      "type": "workflow",
+      "priority": "critical",
+      "category": "safe_computer_use",
+      "why_it_matters": "Core path toward boring long task automation, but must remain observation/manual-approval first.",
+      "user_priority_signal": "Critical user correction; many N+3 to N+6 reports reference it.",
+      "recommended_next_action": "blocked_review",
+      "first_safe_test": "Inventory stack only; keep observation-only fixtures; no click/type/browser actions.",
+      "risks": [
+        "live browser",
+        "click/type",
+        "accounts",
+        "platform anti-abuse evasion"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "01_projects/dashboard_mvp/public/index.html",
+          "line": 394,
+          "snippet": "<li><strong>Safety:</strong> safe probes only, no live provider setup, no provider config, no Telegram setup, no tokens, no browser automation, no computer-use click/type, no live APIs.</li>"
+        },
+        {
+          "file": "01_projects/dashboard_mvp/public/index.html",
+          "line": 440,
+          "snippet": "<li>Future audited computer-use click/type requires a separate safety milestone.</li>"
+        },
+        {
+          "file": "01_projects/dashboard_mvp/server.js",
+          "line": 5600,
+          "snippet": "// GET /api/ghoti/computer-use/candidates ??? read-only CUA candidate status (N+3.4)"
+        },
+        {
+          "file": "01_projects/dashboard_mvp/server.js",
+          "line": 5601,
+          "snippet": "if (request.method === \"GET\" && requestUrl.pathname === \"/api/ghoti/computer-use/candidates\") {"
+        },
+        {
+          "file": "git branch -a",
+          "line": 97,
+          "snippet": "+ audit/ghoti-agent-codex-n6-5a-safe-computer-use-observation-harness"
+        },
+        {
+          "file": "git branch -a",
+          "line": 172,
+          "snippet": "+ feat/ghoti-agent-codex-n6-3a-safe-computer-use-observation-harness-apple-comparison-dry-run"
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Hermes Agent",
+      "aliases": [
+        "Hermes",
+        "Hermes Agent",
+        "Hermes router"
+      ],
+      "type": "tool",
+      "priority": "critical",
+      "category": "local_coordinator",
+      "why_it_matters": "Local coordinator/switchboard/memory writer lane for future supervised workflows.",
+      "user_priority_signal": "Current roadmap priority after local model lane.",
+      "recommended_next_action": "document_only",
+      "first_safe_test": "Use safe WSL/status probes and wrapper status scripts only.",
+      "risks": [
+        "provider setup",
+        "tokens",
+        "Telegram",
+        "live APIs"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "01_projects/dashboard_mvp/public/app.js",
+          "line": 7182,
+          "snippet": "// N+5.8A Hermes Agent / Manual Bridge (client-side handlers)"
+        },
+        {
+          "file": "01_projects/dashboard_mvp/public/app.js",
+          "line": 7229,
+          "snippet": "setResult(\"Refreshing Hermes Agent / Manual Bridge status...\");"
+        },
+        {
+          "file": "01_projects/dashboard_mvp/public/index.html",
+          "line": 171,
+          "snippet": "<li><strong>Hermes WSL:</strong> installed at <code>/home/ai_sandbox/.local/bin/hermes</code>; Hermes Agent v0.14.0.</li>"
+        },
+        {
+          "file": "01_projects/dashboard_mvp/public/index.html",
+          "line": 343,
+          "snippet": "<h2>Hermes Agent / Manual Bridge</h2>"
+        },
+        {
+          "file": "git branch -a",
+          "line": 72,
+          "snippet": "+ audit/ghoti-agent-codex-n5-2a-hermes-local-bootstrap-public-readiness-model-provider-real-audit"
+        },
+        {
+          "file": "git branch -a",
+          "line": 73,
+          "snippet": "+ audit/ghoti-agent-codex-n5-2b-hermes-stack-ui-tars-manifest-fix-real-audit"
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Obsidian",
+      "aliases": [
+        "Obsidian",
+        "obsidian vault",
+        "agent_handoff_vault"
+      ],
+      "type": "tool",
+      "priority": "critical",
+      "category": "durable_memory",
+      "why_it_matters": "Durable shared memory and handoff board for Ghoti agents.",
+      "user_priority_signal": "Explicit truth: Obsidian is durable shared memory.",
+      "recommended_next_action": "document_only",
+      "first_safe_test": "Keep repo-local vault and markdown handoff files; no plugin install.",
+      "risks": [
+        "private notes",
+        "secret leakage"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": ".gitignore",
+          "line": 90,
+          "snippet": "14_context/obsidian_vault/N4_2A_Memory_Bridge_*.md"
+        },
+        {
+          "file": "01_projects/dashboard_mvp/public/app.js",
+          "line": 1436,
+          "snippet": "setText(\"ghoti-memory-markdown-ready\", memory.obsidianMarkdownReady ? \"yes\" : \"no\");"
+        },
+        {
+          "file": "01_projects/dashboard_mvp/public/app.js",
+          "line": 6336,
+          "snippet": "var ov = payload.obsidian_vault || {};"
+        },
+        {
+          "file": "01_projects/dashboard_mvp/public/app.js",
+          "line": 6353,
+          "snippet": "'<div class=\"health-row\"><span class=\"health-label\">Obsidian vault</span>' + chip(ov.exists ? 'exists' : 'missing', ov.exists ? 'chip--ok' : 'chip--warn') + '<span class=\"health-detail mono\">' + e(ov.file_count) + ' .md "
+        },
+        {
+          "file": "git branch -a",
+          "line": 15,
+          "snippet": "+ audit/ghoti-agent-codex-n3-59-n3-58-fix-obsidian-dashboard-whitespace-audit"
+        },
+        {
+          "file": "git branch -a",
+          "line": 79,
+          "snippet": "+ audit/ghoti-agent-codex-n5-5a-local-memory-obsidian-context-pack-brain-upgrade"
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Gemma/Ollama",
+      "aliases": [
+        "Gemma",
+        "gemma3:4b",
+        "Ollama"
+      ],
+      "type": "tool",
+      "priority": "critical",
+      "category": "local_model",
+      "why_it_matters": "Cheap local summaries/compression/classification and guarded worker routing.",
+      "user_priority_signal": "Installed local model lane and token-saving priority.",
+      "recommended_next_action": "document_only",
+      "first_safe_test": "Keep using guarded local tasks only; no extra pulls unless approved.",
+      "risks": [
+        "hallucinated repo claims",
+        "unapproved model downloads"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "01_projects/dashboard_mvp/public/index.html",
+          "line": 1634,
+          "snippet": "<p class=\"section-sub\">Read-only status: Prompt Bus, Agent Lanes, Obsidian, Compact Memory, Ruflo, Gemma/Ollama. No live actions. No approve/execute/install buttons.</p>"
+        },
+        {
+          "file": "01_projects/runtime_mvp/src/super_ai_agent/cli.py",
+          "line": 1282,
+          "snippet": "print(\"- run brain-status to verify whether Ghoti is using Gemma/Ollama or only local rules\")"
+        },
+        {
+          "file": "01_projects/runtime_mvp/src/super_ai_agent/wait_resume_supervisor.py",
+          "line": 464,
+          "snippet": "title='Gemma/Ollama local brain smoke pending - model pull approval required (N+3.11)',"
+        },
+        {
+          "file": "01_projects/runtime_mvp/tests/test_n5_2a_hermes_local_bootstrap_public_readiness_model_provider.py",
+          "line": 85,
+          "snippet": "\"gemma/ollama\","
+        },
+        {
+          "file": "git branch -a",
+          "line": 5,
+          "snippet": "audit/ghoti-agent-codex-n3-50-dashboard-ruflo-gemma-audit"
+        },
+        {
+          "file": "git branch -a",
+          "line": 41,
+          "snippet": "+ audit/ghoti-agent-codex-n4-2a-local-memory-gemma-repo-skill-intake"
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Llama Hermes coordinator",
+      "aliases": [
+        "llama3.1:8b",
+        "Llama",
+        "local coordinator brain"
+      ],
+      "type": "tool",
+      "priority": "high",
+      "category": "local_coordinator_model",
+      "why_it_matters": "Planned local coordinator brain for Hermes switchboard behavior.",
+      "user_priority_signal": "N+6.4 truth says Llama is Hermes local coordinator brain.",
+      "recommended_next_action": "document_only",
+      "first_safe_test": "Record model availability and intended coordinator role; no daemon/live routing.",
+      "risks": [
+        "overclaiming coordination",
+        "unapproved worker runtime"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "01_projects/runtime_mvp/tests/test_n6_10a_hermes_full_integration_setup.py",
+          "line": 172,
+          "snippet": "\"llama3.1:8b\","
+        },
+        {
+          "file": "01_projects/runtime_mvp/tests/test_n6_10a_hermes_full_integration_setup.py",
+          "line": 276,
+          "snippet": "self.assertEqual(data[\"hermes_model\"], \"llama3.1:8b\")"
+        },
+        {
+          "file": "01_projects/runtime_mvp/tests/test_n6_4a_ghoti_skills_karpathy_hermes_truth.py",
+          "line": 78,
+          "snippet": "\"llama3.1:8b\","
+        },
+        {
+          "file": "01_projects/runtime_mvp/tests/test_n6_4a_ghoti_skills_karpathy_hermes_truth.py",
+          "line": 118,
+          "snippet": "\"llama3.1:8b\","
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "TryCUA / CUA Driver",
+      "aliases": [
+        "TryCUA",
+        "CUA Driver",
+        "trycua/cua",
+        "CUA"
+      ],
+      "type": "repo",
+      "priority": "high",
+      "category": "computer_use_driver",
+      "why_it_matters": "Canonical CUA reference and existing Ghoti CUA research target.",
+      "user_priority_signal": "Explicit critical computer-use stack item.",
+      "recommended_next_action": "clone_static_inspect",
+      "first_safe_test": "Static source and platform-fit review; no desktop control.",
+      "risks": [
+        "platform mismatch",
+        "desktop control",
+        "Docker/VM requirements"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "14_context/compact_memory/repo_and_tool_index.md",
+          "line": 43,
+          "snippet": "| TryCUA / CUA Driver | `cloned_read_only` `not_wired` | Approval phrase required for smoke |"
+        },
+        {
+          "file": "14_context/computer_use_candidate_ranking_n3_2_codex.md",
+          "line": 11,
+          "snippet": "| 1 | TryCUA / CUA Driver | research only now; strongest long-term sandbox candidate | Best aligned with full computer-use direction if sandbox-first and approval-bound. Exact source/version still needs verification befo"
+        },
+        {
+          "file": "14_context/computer_use_candidate_ranking_n3_2_codex.md",
+          "line": 18,
+          "snippet": "## 1. TryCUA / CUA Driver"
+        },
+        {
+          "file": "14_context/computer_use_strategy_note.md",
+          "line": 87,
+          "snippet": "### TryCUA / CUA Driver"
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Odysseus",
+      "aliases": [
+        "Odysseus",
+        "pewdiepie-archdaemon/odysseus"
+      ],
+      "type": "repo",
+      "priority": "high",
+      "category": "ai_workspace_patterns",
+      "why_it_matters": "Maps directly to AI council, model cookbook, deep research, docs editor, email/chat drafts.",
+      "user_priority_signal": "N+6.7B target and explicit user-corrected item.",
+      "recommended_next_action": "document_only",
+      "first_safe_test": "Keep idea extraction docs; no clone/install/run.",
+      "risks": [
+        "admin console exposure",
+        "secrets",
+        "account integrations"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "01_projects/runtime_mvp/tests/test_n6_7b_odysseus_personal_comms_intake.py",
+          "line": 1,
+          "snippet": "\"\"\"Tests for N+6.7B - Odysseus Feature Intake + Personal Communications Roadmap."
+        },
+        {
+          "file": "01_projects/runtime_mvp/tests/test_n6_7b_odysseus_personal_comms_intake.py",
+          "line": 3,
+          "snippet": "These tests lock the safety + contract behavior of the Odysseus / personal-comms"
+        },
+        {
+          "file": "01_projects/runtime_mvp/tests/test_n6_7b_odysseus_personal_comms_intake.py",
+          "line": 5,
+          "snippet": "exist and the additions JSON is valid, (2) Odysseus and the other required modules"
+        },
+        {
+          "file": "01_projects/runtime_mvp/tests/test_n6_7b_odysseus_personal_comms_intake.py",
+          "line": 25,
+          "snippet": "ODYSSEUS = TOOL_INTAKE / \"odysseus_feature_intake.md\""
+        },
+        {
+          "file": "git branch -a",
+          "line": 154,
+          "snippet": "+ feat/ghoti-agent-claude-n6-7b-odysseus-personal-comms-intake"
+        },
+        {
+          "file": "git branch -a",
+          "line": 221,
+          "snippet": "+ merge/ghoti-n6-7d-odysseus-audit-merge-gate"
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "multica-ai/andrej-karpathy-skills",
+      "aliases": [
+        "multica-ai/andrej-karpathy-skills",
+        "andrej-karpathy-skills",
+        "Karpathy skills"
+      ],
+      "type": "repo",
+      "priority": "high",
+      "category": "agent_skills",
+      "why_it_matters": "Skill/rules source tied to Karpathy guidelines and coding workflow.",
+      "user_priority_signal": "Explicit user-corrected item; N+6.4 skills docs mention Karpathy.",
+      "recommended_next_action": "clone_static_inspect",
+      "first_safe_test": "Static README/license review; compare against local skills policy.",
+      "risks": [
+        "skill install side effects",
+        "license"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "user_prompt:N+6.11A",
+          "line": 0,
+          "snippet": "Critical user correction explicitly named multica-ai/andrej-karpathy-skills for complete backlog recovery."
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Karpathy CLAUDE.md",
+      "aliases": [
+        "Karpathy CLAUDE.md",
+        "Karpathy",
+        "CLAUDE.md"
+      ],
+      "type": "skill",
+      "priority": "high",
+      "category": "coding_guidelines",
+      "why_it_matters": "Guidelines intake for agent working rules and skill workflow.",
+      "user_priority_signal": "Explicit user-corrected item; N+6.4 docs exist.",
+      "recommended_next_action": "document_only",
+      "first_safe_test": "Keep as policy/guideline intake; no blind skill install.",
+      "risks": [
+        "unreviewed rules overriding safety"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "01_projects/runtime_mvp/tests/test_n6_4a_ghoti_skills_karpathy_hermes_truth.py",
+          "line": 13,
+          "snippet": "KARPATHY_INTAKE = REPO_ROOT / \"14_context\" / \"skills\" / \"karpathy_guidelines_intake.md\""
+        },
+        {
+          "file": "01_projects/runtime_mvp/tests/test_n6_4a_ghoti_skills_karpathy_hermes_truth.py",
+          "line": 36,
+          "snippet": "KARPATHY_INTAKE,"
+        },
+        {
+          "file": "01_projects/runtime_mvp/tests/test_n6_4a_ghoti_skills_karpathy_hermes_truth.py",
+          "line": 105,
+          "snippet": "KARPATHY_INTAKE,"
+        },
+        {
+          "file": "01_projects/runtime_mvp/tests/test_n6_4a_ghoti_skills_karpathy_hermes_truth.py",
+          "line": 137,
+          "snippet": "for skill in [\"goal\", \"ultraplan\", \"ghoti-status\", \"prompt-bus\", \"karpathy-guidelines\"]:"
+        },
+        {
+          "file": "git branch -a",
+          "line": 96,
+          "snippet": "+ audit/ghoti-agent-codex-n6-4a-ghoti-skills-karpathy-hermes-truth"
+        },
+        {
+          "file": "git branch -a",
+          "line": 150,
+          "snippet": "+ feat/ghoti-agent-claude-n6-4a-ghoti-skills-karpathy-hermes-truth"
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Content clipping / AI video workflows",
+      "aliases": [
+        "content clipping",
+        "clipping",
+        "AI video workflows",
+        "MoneyPrinter",
+        "OpenFang"
+      ],
+      "type": "workflow",
+      "priority": "high",
+      "category": "content_business",
+      "why_it_matters": "Directly supports boring content-production tasks and money/business goals.",
+      "user_priority_signal": "Explicit user-corrected content/money idea plus old MoneyPrinter/OpenFang notes.",
+      "recommended_next_action": "clone_static_inspect",
+      "first_safe_test": "Static inspect OpenFang/MoneyPrinter/content tools; fixture-only; no posting.",
+      "risks": [
+        "copyright",
+        "auto-posting",
+        "affiliate disclosure"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "01_projects/dashboard_mvp/public/index.html",
+          "line": 1695,
+          "snippet": "<li><strong>Whop clipping workflow:</strong> high-priority early income research ??? not automated</li>"
+        },
+        {
+          "file": "14_context/codex_n3_15_digital_product_and_whop_plan.md",
+          "line": 21,
+          "snippet": "| Content Workflow Template Pack | Supports creator workflows without automating posting. | Creators, clipping teams, faceless channel operators. | Draft calendars, hook banks, script templates. | Build reusable template"
+        },
+        {
+          "file": "14_context/codex_n3_15_money_workflow_backlog.md",
+          "line": 29,
+          "snippet": "| Whop clipping workflow | Clipping and creator-growth systems can pay through affiliate, rev-share, or service deals. | Creator brief, approved source videos, clip criteria, manual editor/tools. | Summarize long videos,"
+        },
+        {
+          "file": "14_context/codex_n3_15_money_workflow_backlog.md",
+          "line": 44,
+          "snippet": "4. Whop clipping workflow, manual and rights-safe first."
+        },
+        {
+          "file": "git branch -a",
+          "line": 18,
+          "snippet": "+ audit/ghoti-agent-codex-n3-64-openfang-moneyprinter-content-runway-audit"
+        },
+        {
+          "file": "git branch -a",
+          "line": 125,
+          "snippet": "+ feat/ghoti-agent-claude-n3-63-openfang-moneyprinter-content-runway"
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "OpenFang / MoneyPrinter",
+      "aliases": [
+        "OpenFang",
+        "MoneyPrinter",
+        "MoneyPrinterV2"
+      ],
+      "type": "repo",
+      "priority": "high",
+      "category": "content_business",
+      "why_it_matters": "Older content runway branches and docs used it as content automation reference.",
+      "user_priority_signal": "Branch/report history shows OpenFang/MoneyPrinter content runway.",
+      "recommended_next_action": "clone_static_inspect",
+      "first_safe_test": "Static inspect and keep draft-only/local outputs; no posting.",
+      "risks": [
+        "social posting",
+        "affiliate",
+        "copyright"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "14_context/claude_n4_1d_dashboard_control_center_reliability_check_fix.md",
+          "line": 121,
+          "snippet": "- OpenFang / MoneyPrinter candidates ??? intake/planning only"
+        },
+        {
+          "file": "14_context/claude_n4_1f_dashboard_runtime_checker_final_fix.md",
+          "line": 200,
+          "snippet": "- **OpenFang / MoneyPrinter** ??? intake/planning only"
+        },
+        {
+          "file": "14_context/claude_n4_1h_runtime_task_store_null_hardening.md",
+          "line": 191,
+          "snippet": "- **OpenFang / MoneyPrinter** ??? intake/planning only"
+        },
+        {
+          "file": "14_context/claude_n4_1i_runtime_task_store_truth_polish.md",
+          "line": 127,
+          "snippet": "- `OpenFang/MoneyPrinter` ??? changed from `OpenFang / MoneyPrinter` to match exact audit phrase"
+        },
+        {
+          "file": "git branch -a",
+          "line": 18,
+          "snippet": "+ audit/ghoti-agent-codex-n3-64-openfang-moneyprinter-content-runway-audit"
+        },
+        {
+          "file": "git branch -a",
+          "line": 125,
+          "snippet": "+ feat/ghoti-agent-claude-n3-63-openfang-moneyprinter-content-runway"
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Claude Design",
+      "aliases": [
+        "Claude Design",
+        "claude design"
+      ],
+      "type": "skill",
+      "priority": "medium",
+      "category": "dashboard_design",
+      "why_it_matters": "Potential design workflow/style guidance for dashboard polish.",
+      "user_priority_signal": "Explicit user-corrected design item.",
+      "recommended_next_action": "document_only",
+      "first_safe_test": "Record as guidance-only until source/license is identified.",
+      "risks": [
+        "unclear source",
+        "attribution/license"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "14_context/codex_n3_37_tool_intake_addendum.md",
+          "line": 51,
+          "snippet": "| Claude creative connectors: Fusion 360, Blender, Adobe, Claude Design | Creative/engineering workflows, asset drafts, 3D/CAD review, video/image editing | Human-driven creative assist with local/exported assets | Live "
+        },
+        {
+          "file": "14_context/codex_n3_38_user_idea_dump_preserved.md",
+          "line": 90,
+          "snippet": "- Claude creative connectors such as Fusion 360, Blender, Adobe, and Claude Design remain future research from N+3.37, not connected now."
+        },
+        {
+          "file": "14_context/codex_n3_39_tool_backlog_expansion.md",
+          "line": 23,
+          "snippet": "| Claude Design | AI design/prototype workflow | source found via news and related pages | later | medium paid/cloud | Compare with local Open CoDesign | Paid/tool approval |"
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "UI/UX Pro Max Skill",
+      "aliases": [
+        "UI/UX Pro Max",
+        "UI/UX Pro Max Skill",
+        "UX Pro Max"
+      ],
+      "type": "skill",
+      "priority": "medium",
+      "category": "dashboard_design",
+      "why_it_matters": "Potential high-quality UI workflow skill for dashboard/product polish.",
+      "user_priority_signal": "Explicit user-corrected design item.",
+      "recommended_next_action": "document_only",
+      "first_safe_test": "Identify source and license; no install.",
+      "risks": [
+        "unclear source",
+        "license"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "user_prompt:N+6.11A",
+          "line": 0,
+          "snippet": "Critical user correction explicitly named UI/UX Pro Max Skill for complete backlog recovery."
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Rowboat",
+      "aliases": [
+        "Rowboat",
+        "rowboat"
+      ],
+      "type": "repo",
+      "priority": "medium",
+      "category": "agent_orchestration",
+      "why_it_matters": "Potential agent/workflow candidate; source needs identification.",
+      "user_priority_signal": "Explicit user-corrected missing item.",
+      "recommended_next_action": "clone_static_inspect",
+      "first_safe_test": "Identify exact repo, then static README/license review only.",
+      "risks": [
+        "unclear source",
+        "runtime orchestration"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "user_prompt:N+6.11A",
+          "line": 0,
+          "snippet": "Critical user correction explicitly named Rowboat for complete backlog recovery."
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "FreeDomain",
+      "aliases": [
+        "FreeDomain",
+        "free-domain",
+        "free domain",
+        "free-domain websites"
+      ],
+      "type": "business_idea",
+      "priority": "medium",
+      "category": "business_websites",
+      "why_it_matters": "Free-domain website experiments can support low-cost business validation.",
+      "user_priority_signal": "Explicit user-corrected business item.",
+      "recommended_next_action": "document_only",
+      "first_safe_test": "Document workflow; no DNS/account changes.",
+      "risks": [
+        "domain/account actions",
+        "terms"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "user_prompt:N+6.11A",
+          "line": 0,
+          "snippet": "Critical user correction explicitly named FreeDomain for complete backlog recovery."
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Agentic OS",
+      "aliases": [
+        "Agentic OS",
+        "agentic os"
+      ],
+      "type": "workflow",
+      "priority": "medium",
+      "category": "agent_os",
+      "why_it_matters": "Possible architecture concept for command-center/agent workflows.",
+      "user_priority_signal": "Explicit user-corrected missing item.",
+      "recommended_next_action": "document_only",
+      "first_safe_test": "Recover exact concept and map to Ghoti architecture docs.",
+      "risks": [
+        "overclaiming",
+        "runtime sprawl"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "14_context/future_concepts_registry.md",
+          "line": 30,
+          "snippet": "## Priority 1 ??? Agentic OS / Multi-Agent Operator"
+        },
+        {
+          "file": "14_context/future_concepts_registry.md",
+          "line": 36,
+          "snippet": "| Agentic OS concept | future research direction |"
+        },
+        {
+          "file": "14_context/ghoti_finish_line_log.md",
+          "line": 1,
+          "snippet": "???# Ghoti Finish Line Log\\n\\n---\\n\\n## Milestone Run: N+3.9 re-run (Claude lane) ??? Re-verify Docker Daemon State\\n\\nDate: 2026-04-27\\nBranch: feat/ghoti-visible-operator-stack\\nStarting HEAD: 9850c46 (docs/ghoti N+3.9"
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "CodexBar",
+      "aliases": [
+        "CodexBar",
+        "codexbar"
+      ],
+      "type": "tool",
+      "priority": "medium",
+      "category": "codex_ui",
+      "why_it_matters": "Potential Codex/agent UI utility; exact source needs recovery.",
+      "user_priority_signal": "Explicit user-corrected missing item.",
+      "recommended_next_action": "clone_static_inspect",
+      "first_safe_test": "Identify source, static inspect only.",
+      "risks": [
+        "unknown source",
+        "editor integration"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "user_prompt:N+6.11A",
+          "line": 0,
+          "snippet": "Critical user correction explicitly named CodexBar for complete backlog recovery."
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Nvidia Locate-Anything",
+      "aliases": [
+        "Nvidia Locate-Anything",
+        "Locate-Anything",
+        "locate anything"
+      ],
+      "type": "repo",
+      "priority": "medium",
+      "category": "vision",
+      "why_it_matters": "Vision localization candidate for future observation/computer-use assistance.",
+      "user_priority_signal": "Explicit user-corrected item.",
+      "recommended_next_action": "clone_static_inspect",
+      "first_safe_test": "Static inspect only; no model download.",
+      "risks": [
+        "heavy model",
+        "license"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "user_prompt:N+6.11A",
+          "line": 0,
+          "snippet": "Critical user correction explicitly named Nvidia Locate-Anything for complete backlog recovery."
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Dexter",
+      "aliases": [
+        "Dexter",
+        "dexter"
+      ],
+      "type": "repo",
+      "priority": "medium",
+      "category": "robotics_or_agent",
+      "why_it_matters": "Named candidate; exact source/purpose needs recovery.",
+      "user_priority_signal": "Explicit user-corrected missing item.",
+      "recommended_next_action": "document_only",
+      "first_safe_test": "Recover exact source before static inspection.",
+      "risks": [
+        "ambiguous source"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "01_projects/dashboard_mvp/server.js",
+          "line": 7687,
+          "snippet": "function readExternalToolSandboxStatus() {"
+        },
+        {
+          "file": "01_projects/dashboard_mvp/server.js",
+          "line": 7712,
+          "snippet": "sendJson(response, 200, Object.assign({ ok: true }, readExternalToolSandboxStatus()));"
+        },
+        {
+          "file": "01_projects/dashboard_mvp/server.js",
+          "line": 7718,
+          "snippet": "sendJson(response, 200, { ok: true, latest: readExternalToolSandboxStatus() });"
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Speckit",
+      "aliases": [
+        "Speckit",
+        "spec-kit",
+        "speckit"
+      ],
+      "type": "tool",
+      "priority": "medium",
+      "category": "spec_workflow",
+      "why_it_matters": "Possible spec/implementation helper; exact source needs recovery.",
+      "user_priority_signal": "Explicit user-corrected missing item.",
+      "recommended_next_action": "clone_static_inspect",
+      "first_safe_test": "Identify source and static inspect.",
+      "risks": [
+        "unknown source",
+        "install scripts"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "03_scripts/repo_skill_plugin_intake.py",
+          "line": 172,
+          "snippet": "\"speckit\": {"
+        },
+        {
+          "file": "03_scripts/repo_skill_plugin_intake.py",
+          "line": 173,
+          "snippet": "\"name\": \"Speckit\","
+        },
+        {
+          "file": "14_context/claude_n4_1h_runtime_task_store_null_hardening.md",
+          "line": 195,
+          "snippet": "- **Speckit** ??? intake/planning only"
+        },
+        {
+          "file": "14_context/claude_n4_2a_local_memory_gemma_repo_skill_intake.md",
+          "line": 135,
+          "snippet": "| Speckit | product_documentation | intake_only | low |"
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Paperweight",
+      "aliases": [
+        "Paperweight",
+        "paperweight",
+        "paperclip"
+      ],
+      "type": "repo",
+      "priority": "medium",
+      "category": "agent_or_workflow",
+      "why_it_matters": "Older notes mention paperclip/paperweight-style architecture comparisons.",
+      "user_priority_signal": "Explicit user-corrected missing item.",
+      "recommended_next_action": "clone_static_inspect",
+      "first_safe_test": "Recover exact repo and static inspect only.",
+      "risks": [
+        "unknown source",
+        "runtime behavior"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "01_projects/runtime_mvp/src/super_ai_agent/wait_resume_supervisor.py",
+          "line": 600,
+          "snippet": "'CLAUDECODE-IMPLEMENT-001, PAPERCLIP-CONTROL-PLANE-CANDIDATE, '"
+        },
+        {
+          "file": "01_projects/runtime_mvp/src/super_ai_agent/wait_resume_supervisor.py",
+          "line": 605,
+          "snippet": "title='Paperclip/OpenClaw/n8n architecture remains planning only ??? no install/run (N+3.14)',"
+        },
+        {
+          "file": "01_projects/runtime_mvp/src/super_ai_agent/wait_resume_supervisor.py",
+          "line": 610,
+          "snippet": "'APPROVE PAPERCLIP INSTALL, APPROVE OPENCLAW RUNTIME WIRING, or APPROVE N8N INSTALL '"
+        },
+        {
+          "file": "01_projects/runtime_mvp/src/super_ai_agent/wait_resume_supervisor.py",
+          "line": 616,
+          "snippet": "'N+3.14: Paperclip, OpenClaw, n8n all remain planning_only. '"
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Phodal Routa",
+      "aliases": [
+        "Phodal Routa",
+        "Routa",
+        "phodal/routa"
+      ],
+      "type": "repo",
+      "priority": "medium",
+      "category": "repo_understanding",
+      "why_it_matters": "Potential code/repo navigation or routing tool candidate.",
+      "user_priority_signal": "Explicit user-corrected missing item.",
+      "recommended_next_action": "clone_static_inspect",
+      "first_safe_test": "Identify source and static inspect README/license.",
+      "risks": [
+        "unknown source",
+        "runtime behavior"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "user_prompt:N+6.11A",
+          "line": 0,
+          "snippet": "Critical user correction explicitly named Phodal Routa for complete backlog recovery."
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "AIEngineer Coach",
+      "aliases": [
+        "AIEngineer",
+        "AIEngineer Coach",
+        "AI Engineer Coach"
+      ],
+      "type": "workflow",
+      "priority": "medium",
+      "category": "learning_or_coaching",
+      "why_it_matters": "Could support career/productivity coaching workflows.",
+      "user_priority_signal": "Explicit user-corrected missing item.",
+      "recommended_next_action": "document_only",
+      "first_safe_test": "Clarify source and intended local-first workflow.",
+      "risks": [
+        "personal data",
+        "advice quality"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "user_prompt:N+6.11A",
+          "line": 0,
+          "snippet": "Critical user correction explicitly named AIEngineer Coach for complete backlog recovery."
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "AI Factory",
+      "aliases": [
+        "AI Factory",
+        "ai-factory",
+        "ai factory"
+      ],
+      "type": "repo",
+      "priority": "medium",
+      "category": "agent_factory",
+      "why_it_matters": "Earlier model/provider council notes mention AI factory/insforge-style infrastructure.",
+      "user_priority_signal": "Explicit user-corrected item.",
+      "recommended_next_action": "clone_static_inspect",
+      "first_safe_test": "Static inspect source and deployment posture.",
+      "risks": [
+        "infrastructure",
+        "secrets",
+        "external services"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "03_scripts/model_council_tool_intake.py",
+          "line": 66,
+          "snippet": "{\"slug\": \"ai-factory repo\", \"status\": \"repo_pattern_reference\", \"runtime_wiring\": False, \"notes\": \"Architecture pattern intake only.\"},"
+        },
+        {
+          "file": "14_context/codex_n5_2a_hermes_local_bootstrap_public_readiness_model_provider.md",
+          "line": 82,
+          "snippet": "- Registry includes Hermes Agent, Graphify, Claude skills, missing skills recovery, agent-browser, browser-harness, Gemma/Ollama, ChatGPT/OpenAI, Claude Code, Codex, Postgres, Supabase, Vercel, Stripe, GitHub, Resend, Cl"
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Insforge",
+      "aliases": [
+        "Insforge",
+        "insforge"
+      ],
+      "type": "repo",
+      "priority": "medium",
+      "category": "backend_infra",
+      "why_it_matters": "Potential self-hosted/backend infrastructure candidate.",
+      "user_priority_signal": "Explicit user-corrected item and old provider list.",
+      "recommended_next_action": "clone_static_inspect",
+      "first_safe_test": "Static inspect only; no deploy/install.",
+      "risks": [
+        "infrastructure",
+        "secrets",
+        "deploy cost"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "03_scripts/model_council_tool_intake.py",
+          "line": 67,
+          "snippet": "{\"slug\": \"insforge\", \"status\": \"backend_reference\", \"runtime_wiring\": False, \"notes\": \"Backend/infrastructure reference only.\"},"
+        },
+        {
+          "file": "14_context/codex_n5_2a_hermes_local_bootstrap_public_readiness_model_provider.md",
+          "line": 82,
+          "snippet": "- Registry includes Hermes Agent, Graphify, Claude skills, missing skills recovery, agent-browser, browser-harness, Gemma/Ollama, ChatGPT/OpenAI, Claude Code, Codex, Postgres, Supabase, Vercel, Stripe, GitHub, Resend, Cl"
+        },
+        {
+          "file": "14_context/codex_n5_2b_hermes_bootstrap_stack_ui_tars_manifest_fix.md",
+          "line": 122,
+          "snippet": "- Registry entries verified: Hermes Agent, Codex, Gemma/Ollama, Graphify, agent-browser, browser-harness, Claude skills, ChatGPT/OpenAI, Claude Code, Supabase, Vercel, Stripe, Postgres, OpenWA, Insforge, Picoclaw, roboti"
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "NotebookLM",
+      "aliases": [
+        "NotebookLM",
+        "notebook lm"
+      ],
+      "type": "tool",
+      "priority": "medium",
+      "category": "research_memory",
+      "why_it_matters": "Research/document summarization reference that may guide local memory workflows.",
+      "user_priority_signal": "Explicit user-corrected item.",
+      "recommended_next_action": "document_only",
+      "first_safe_test": "Use as workflow reference only; no account/data upload.",
+      "risks": [
+        "cloud upload",
+        "private data"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "14_context/agent_handoff_vault/HERMES_ROUTER_POLICY.md",
+          "line": 16,
+          "snippet": "| Large docs ??? Markdown | **NotebookLM / MarkItDown** (later, after intake) | gated |"
+        },
+        {
+          "file": "14_context/codex_n3_39_tool_backlog_expansion.md",
+          "line": 22,
+          "snippet": "| notebooklm-py | Programmatic NotebookLM client | source found: GitHub/reddit mentions | research-only | high unofficial API/account | Source audit only | Google account/API approval |"
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Weavy",
+      "aliases": [
+        "Weavy",
+        "weavy"
+      ],
+      "type": "tool",
+      "priority": "medium",
+      "category": "collaboration",
+      "why_it_matters": "Collaboration/embed candidate from older dashboard/content notes.",
+      "user_priority_signal": "Explicit user-corrected item and old reports.",
+      "recommended_next_action": "clone_static_inspect",
+      "first_safe_test": "Static inspect only; no account/API setup.",
+      "risks": [
+        "external service",
+        "account integration"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "01_projects/dashboard_mvp/public/index.html",
+          "line": 1135,
+          "snippet": "<li>Weavy ??? intake/planning only</li>"
+        },
+        {
+          "file": "01_projects/dashboard_mvp/public/index.html",
+          "line": 1179,
+          "snippet": "<li>external tools: planning-only (UI-TARS, The Agency, Weavy, Manychat, Vouch, AEX, AirLLM, OpenFang/MoneyPrinter)</li>"
+        },
+        {
+          "file": "03_scripts/desktop_operator_control_plane.py",
+          "line": 266,
+          "snippet": "\"weavy_runtime_wired\": False,"
+        },
+        {
+          "file": "03_scripts/desktop_operator_control_plane.py",
+          "line": 346,
+          "snippet": "\"ui_tars_runtime_wired\", \"the_agency_runtime_wired\", \"weavy_runtime_wired\","
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Automatic AI editing repos",
+      "aliases": [
+        "automatic AI editing",
+        "AI video self-editing",
+        "self-editing",
+        "video editing"
+      ],
+      "type": "workflow",
+      "priority": "medium",
+      "category": "content_video",
+      "why_it_matters": "Supports user's own video editing and clipping workflows.",
+      "user_priority_signal": "Explicit business/content priority.",
+      "recommended_next_action": "clone_static_inspect",
+      "first_safe_test": "Identify repos, static inspect; local fixture assets only.",
+      "risks": [
+        "copyright",
+        "auto-posting",
+        "large models"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "14_context/claude_n6_7b_odysseus_personal_comms_intake.md",
+          "line": 55,
+          "snippet": "| 10 | AI Video Self-Editing Pipeline | medium | 3 - manual upload |"
+        },
+        {
+          "file": "14_context/codex_n6_7d_odysseus_personal_comms_audit_merge_gate.md",
+          "line": 52,
+          "snippet": "- AI Video Self-Editing is local-first, draft/manual-upload first."
+        },
+        {
+          "file": "14_context/tool_intake/personal_comms_agent_roadmap.md",
+          "line": 72,
+          "snippet": "## AI Video Self-Editing Pipeline"
+        },
+        {
+          "file": "14_context/tool_intake/tool_candidate_registry_additions_n6_7b.json",
+          "line": 194,
+          "snippet": "\"name\": \"AI Video Self-Editing Pipeline\","
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "PDF contact solver",
+      "aliases": [
+        "PDF contact solver",
+        "contact solver",
+        "PDF"
+      ],
+      "type": "workflow",
+      "priority": "medium",
+      "category": "document_extraction",
+      "why_it_matters": "Potential lead/contact extraction workflow from PDFs, useful for business outreach if privacy-safe.",
+      "user_priority_signal": "Explicit user-corrected idea.",
+      "recommended_next_action": "document_only",
+      "first_safe_test": "Define fixture-only extraction; no live outreach.",
+      "risks": [
+        "personal data",
+        "privacy",
+        "spam/outreach"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "03_scripts/course_certificate_assistant.py",
+          "line": 270,
+          "snippet": "\"- [ ] PDF copy saved locally if available\","
+        },
+        {
+          "file": "03_scripts/supervised_content_mvp_runner.py",
+          "line": 354,
+          "snippet": "**[SCREEN RECORDING]:** Show a long PDF open in browser (own document, no copyrighted content)"
+        },
+        {
+          "file": "03_scripts/supervised_content_mvp_runner.py",
+          "line": 424,
+          "snippet": "| 3 | 3???8s | Screen recording | Long PDF in browser | Own study document | Owned |"
+        },
+        {
+          "file": "03_scripts/supervised_content_mvp_runner.py",
+          "line": 436,
+          "snippet": "- [ ] Own study document (PDF or text) ??? no copyrighted material visible"
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Free-domain websites",
+      "aliases": [
+        "free-domain websites",
+        "free domain websites",
+        "FreeDomain"
+      ],
+      "type": "business_idea",
+      "priority": "medium",
+      "category": "business_websites",
+      "why_it_matters": "Low-cost web experiments for business funnels/portfolio ideas.",
+      "user_priority_signal": "Explicit user-corrected money/business idea.",
+      "recommended_next_action": "document_only",
+      "first_safe_test": "Document candidate workflows and safe manual steps; no DNS/account changes.",
+      "risks": [
+        "domain terms",
+        "account setup"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "user_prompt:N+6.11A",
+          "line": 0,
+          "snippet": "Critical user correction explicitly named Free-domain websites for complete backlog recovery."
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Screenpipe",
+      "aliases": [
+        "Screenpipe",
+        "screenpipe"
+      ],
+      "type": "tool",
+      "priority": "medium",
+      "category": "local_capture",
+      "why_it_matters": "Local capture/memory concept in older token-saving notes.",
+      "user_priority_signal": "Old reports mention Screenpipe and Obsidian token saving.",
+      "recommended_next_action": "blocked_review",
+      "first_safe_test": "Document only; no capture unless approved.",
+      "risks": [
+        "privacy",
+        "screen capture"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "01_projects/dashboard_mvp/server.js",
+          "line": 5615,
+          "snippet": "screenpipe: {"
+        },
+        {
+          "file": "01_projects/dashboard_mvp/server.js",
+          "line": 5619,
+          "snippet": "notes: \"3-day retention policy defined. Cleanup script at 03_scripts/screenpipe_retention_cleanup.ps1. No capture started.\","
+        },
+        {
+          "file": "01_projects/dashboard_mvp/server.js",
+          "line": 5620,
+          "snippet": "plan_doc: \"14_context/screenpipe_local_capture_plan.md\","
+        },
+        {
+          "file": "01_projects/dashboard_mvp/server.js",
+          "line": 5875,
+          "snippet": "// GET /api/ghoti/screenpipe/status ??? read-only policy existence check (N+3.7)"
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Playwright",
+      "aliases": [
+        "Playwright",
+        "microsoft/playwright"
+      ],
+      "type": "tool",
+      "priority": "medium",
+      "category": "browser_testing",
+      "why_it_matters": "Useful for local dashboard/browser tests, but live external browser automation is safety-gated.",
+      "user_priority_signal": "External clone registry and local dashboard checks reference Playwright.",
+      "recommended_next_action": "document_only",
+      "first_safe_test": "Use only local dashboard checks/fixture tests; no live account browsing.",
+      "risks": [
+        "browser automation",
+        "network"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": ".gitignore",
+          "line": 52,
+          "snippet": "playwright-report/"
+        },
+        {
+          "file": "01_projects/browser_playground/README.md",
+          "line": 3,
+          "snippet": "Small local Playwright playground for deterministic browser-control smoke checks."
+        },
+        {
+          "file": "01_projects/browser_playground/demo_site/index.html",
+          "line": 56,
+          "snippet": "<p>This page exists only for a deterministic local Playwright smoke test.</p>"
+        },
+        {
+          "file": "01_projects/browser_playground/package.json",
+          "line": 5,
+          "snippet": "\"description\": \"Local deterministic Playwright browser playground for Super-AI-Agent.\","
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Claw-code / OpenClaw",
+      "aliases": [
+        "claw-code",
+        "openclaw",
+        "OpenClaw"
+      ],
+      "type": "repo",
+      "priority": "medium",
+      "category": "coding_agent_reference",
+      "why_it_matters": "Older external repo clone registry and multi-agent architecture references.",
+      "user_priority_signal": "External clone registry has claw-code/openclaw.",
+      "recommended_next_action": "clone_static_inspect",
+      "first_safe_test": "Static inspect as architecture reference only.",
+      "risks": [
+        "external code",
+        "agent runtime"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "04_docs/audits/repo-classification-summary.md",
+          "line": 21,
+          "snippet": "- `C:\\Users\\ai_sandbox\\AI_Workspace\\21_repos\\core\\claw-code` (temporary location outside the permanent workspace root)"
+        },
+        {
+          "file": "04_docs/audits/sandbox-audit-summary.md",
+          "line": 62,
+          "snippet": "- `C:\\Users\\ai_sandbox\\AI_Workspace\\21_repos\\core\\claw-code`"
+        },
+        {
+          "file": "04_docs/plans/prioritized-next-actions.md",
+          "line": 21,
+          "snippet": "2. Re-home or re-clone `claw-code` under `AI_Managed_Only\\21_repos\\core` only in a later approved cleanup phase."
+        },
+        {
+          "file": "04_docs/repo_evaluations/claw-code.md",
+          "line": 7,
+          "snippet": "- Local: `C:\\Users\\ai_sandbox\\AI_Workspace\\21_repos\\core\\claw-code`"
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Aider",
+      "aliases": [
+        "Aider",
+        "aider"
+      ],
+      "type": "tool",
+      "priority": "medium",
+      "category": "coding_agent_reference",
+      "why_it_matters": "Coding assistant reference in external clone registry.",
+      "user_priority_signal": "External clone registry lists Aider.",
+      "recommended_next_action": "clone_static_inspect",
+      "first_safe_test": "Static inspect architecture; do not wire.",
+      "risks": [
+        "code editing automation",
+        "model/API keys"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "04_docs/audits/extension-audit-summary.md",
+          "line": 52,
+          "snippet": "- Overlapping AI assistants that duplicate Codex/Continue/Aider roles"
+        },
+        {
+          "file": "04_docs/audits/toolchain-status-summary.md",
+          "line": 39,
+          "snippet": "- Aider"
+        },
+        {
+          "file": "04_docs/plans/assistant-stack-options.md",
+          "line": 78,
+          "snippet": "- Aider"
+        },
+        {
+          "file": "04_docs/plans/assistant-stack-options.md",
+          "line": 90,
+          "snippet": "- then Aider"
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Whisper/Vosk offline speech",
+      "aliases": [
+        "Whisper",
+        "Vosk",
+        "speech-to-text",
+        "vosk-api"
+      ],
+      "type": "tool",
+      "priority": "medium",
+      "category": "offline_speech",
+      "why_it_matters": "Offline transcription could help local memory and content workflows.",
+      "user_priority_signal": "External clone registry lists whisper/vosk.",
+      "recommended_next_action": "clone_static_inspect",
+      "first_safe_test": "Static inspect, later local fixture audio only.",
+      "risks": [
+        "private audio",
+        "model downloads"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "14_context/external_repo_clone_registry.json",
+          "line": 107,
+          "snippet": "\"name\":  \"whisper\","
+        },
+        {
+          "file": "14_context/external_repo_clone_registry.json",
+          "line": 108,
+          "snippet": "\"url\":  \"https://github.com/openai/whisper.git\","
+        },
+        {
+          "file": "14_context/external_repo_clone_registry.json",
+          "line": 109,
+          "snippet": "\"path\":  \"C:\\\\Users\\\\ai_sandbox\\\\Documents\\\\AI_Managed_Only\\\\21_repos\\\\third_party\\\\whisper\","
+        },
+        {
+          "file": "14_context/external_repo_clone_registry.md",
+          "line": 23,
+          "snippet": "| whisper | https://github.com/openai/whisper.git | 21_repos/third_party/whisper | cloned | 04f449b | speech-to-text reference | No ??? reference only | Evaluate for STT integration |"
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Soap2Soap",
+      "aliases": [
+        "Soap2Soap",
+        "soap2soap"
+      ],
+      "type": "unknown",
+      "priority": "later",
+      "category": "unknown_candidate",
+      "why_it_matters": "Named by user; exact source/purpose needs recovery.",
+      "user_priority_signal": "Explicit user-corrected missing item.",
+      "recommended_next_action": "document_only",
+      "first_safe_test": "Recover source URL and intended use from old notes before any clone.",
+      "risks": [
+        "unknown source"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "user_prompt:N+6.11A",
+          "line": 0,
+          "snippet": "Critical user correction explicitly named Soap2Soap for complete backlog recovery."
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Cadom",
+      "aliases": [
+        "Cadom",
+        "cadom"
+      ],
+      "type": "unknown",
+      "priority": "later",
+      "category": "unknown_candidate",
+      "why_it_matters": "Named by user; exact source/purpose needs recovery.",
+      "user_priority_signal": "Explicit user-corrected missing item.",
+      "recommended_next_action": "document_only",
+      "first_safe_test": "Recover source URL and intended use from old notes before any clone.",
+      "risks": [
+        "unknown source"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "user_prompt:N+6.11A",
+          "line": 0,
+          "snippet": "Critical user correction explicitly named Cadom for complete backlog recovery."
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "University of Michigan ROB 311",
+      "aliases": [
+        "University of Michigan ROB 311",
+        "ROB 311",
+        "Michigan ROB"
+      ],
+      "type": "course",
+      "priority": "later",
+      "category": "robotics_learning",
+      "why_it_matters": "Robotics learning path/reference for future physical-agent thinking.",
+      "user_priority_signal": "Explicit user-corrected item.",
+      "recommended_next_action": "document_only",
+      "first_safe_test": "Record as learning reference, no code run.",
+      "risks": [
+        "course copyright",
+        "scope creep"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "user_prompt:N+6.11A",
+          "line": 0,
+          "snippet": "Critical user correction explicitly named University of Michigan ROB 311 for complete backlog recovery."
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "HEADRON",
+      "aliases": [
+        "HEADRON",
+        "headron"
+      ],
+      "type": "repo",
+      "priority": "later",
+      "category": "unknown_candidate",
+      "why_it_matters": "Named by user; source/purpose needs recovery.",
+      "user_priority_signal": "Explicit user-corrected missing item.",
+      "recommended_next_action": "document_only",
+      "first_safe_test": "Recover exact source before any clone.",
+      "risks": [
+        "unknown source"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "user_prompt:N+6.11A",
+          "line": 0,
+          "snippet": "Critical user correction explicitly named HEADRON for complete backlog recovery."
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "RuView",
+      "aliases": [
+        "RuView",
+        "ruview"
+      ],
+      "type": "repo",
+      "priority": "later",
+      "category": "unknown_candidate",
+      "why_it_matters": "Named by user; exact purpose needs recovery.",
+      "user_priority_signal": "Explicit user-corrected missing item.",
+      "recommended_next_action": "document_only",
+      "first_safe_test": "Recover source and intended use.",
+      "risks": [
+        "unknown source"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "04_docs/audits/repo-classification-summary.md",
+          "line": 15,
+          "snippet": "| RuView | WiFi sensing / pose / vitals platform | unrelated to core assistant stack | unrelated | side project only |"
+        },
+        {
+          "file": "04_docs/audits/repo-classification-summary.md",
+          "line": 141,
+          "snippet": "## RuView"
+        },
+        {
+          "file": "04_docs/audits/repo-classification-summary.md",
+          "line": 145,
+          "snippet": "- https://github.com/ruvnet/RuView"
+        },
+        {
+          "file": "14_context/00_main_memory/repo-classifications.md",
+          "line": 37,
+          "snippet": "## RuView"
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "RMUX",
+      "aliases": [
+        "RMUX",
+        "rmux"
+      ],
+      "type": "tool",
+      "priority": "later",
+      "category": "terminal_or_mux",
+      "why_it_matters": "Potential terminal/multiplexer or agent coordination candidate; exact source needs recovery.",
+      "user_priority_signal": "Explicit user-corrected missing item.",
+      "recommended_next_action": "document_only",
+      "first_safe_test": "Recover source and intended use.",
+      "risks": [
+        "unknown source",
+        "shell control"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "user_prompt:N+6.11A",
+          "line": 0,
+          "snippet": "Critical user correction explicitly named RMUX for complete backlog recovery."
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Polsia AI",
+      "aliases": [
+        "Polsia",
+        "Polsia AI",
+        "polsia"
+      ],
+      "type": "unknown",
+      "priority": "later",
+      "category": "unknown_candidate",
+      "why_it_matters": "Named by user; exact source/purpose needs recovery.",
+      "user_priority_signal": "Explicit user-corrected missing item.",
+      "recommended_next_action": "document_only",
+      "first_safe_test": "Recover source and intended use.",
+      "risks": [
+        "unknown source"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "user_prompt:N+6.11A",
+          "line": 0,
+          "snippet": "Critical user correction explicitly named Polsia AI for complete backlog recovery."
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Pascal Editor",
+      "aliases": [
+        "Pascal Editor",
+        "pascal"
+      ],
+      "type": "tool",
+      "priority": "later",
+      "category": "editor",
+      "why_it_matters": "Named editor candidate; exact source/purpose needs recovery.",
+      "user_priority_signal": "Explicit user-corrected missing item.",
+      "recommended_next_action": "document_only",
+      "first_safe_test": "Recover source and license.",
+      "risks": [
+        "unknown source"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "user_prompt:N+6.11A",
+          "line": 0,
+          "snippet": "Critical user correction explicitly named Pascal Editor for complete backlog recovery."
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Google Omni",
+      "aliases": [
+        "Google Omni",
+        "Omni",
+        "google omni"
+      ],
+      "type": "tool",
+      "priority": "later",
+      "category": "unknown_or_model",
+      "why_it_matters": "Named by user; exact Google product/source needs clarification.",
+      "user_priority_signal": "Explicit user-corrected missing item.",
+      "recommended_next_action": "document_only",
+      "first_safe_test": "Clarify source and local/privacy implications before any use.",
+      "risks": [
+        "unclear source",
+        "cloud data"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "user_prompt:N+6.11A",
+          "line": 0,
+          "snippet": "Critical user correction explicitly named Google Omni for complete backlog recovery."
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Zozo physics engine",
+      "aliases": [
+        "Zozo",
+        "physics engine",
+        "Zozo physics"
+      ],
+      "type": "repo",
+      "priority": "later",
+      "category": "simulation",
+      "why_it_matters": "Named by user; possible simulation/game/physics tool.",
+      "user_priority_signal": "Explicit user-corrected missing item.",
+      "recommended_next_action": "document_only",
+      "first_safe_test": "Recover source and intended use before clone.",
+      "risks": [
+        "unknown source"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "user_prompt:N+6.11A",
+          "line": 0,
+          "snippet": "Critical user correction explicitly named Zozo physics engine for complete backlog recovery."
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Electronic Monk drone building",
+      "aliases": [
+        "Electronic Monk",
+        "drone",
+        "drone building"
+      ],
+      "type": "workflow",
+      "priority": "later",
+      "category": "hardware_learning",
+      "why_it_matters": "Hardware/drone learning idea; not part of current software runtime.",
+      "user_priority_signal": "Explicit user-corrected idea.",
+      "recommended_next_action": "document_only",
+      "first_safe_test": "Record as learning/hardware backlog, no hardware action.",
+      "risks": [
+        "physical safety",
+        "regulatory"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "user_prompt:N+6.11A",
+          "line": 0,
+          "snippet": "Critical user correction explicitly named Electronic Monk drone building for complete backlog recovery."
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Dora / robotics middleware",
+      "aliases": [
+        "Dora",
+        "dora-rs",
+        "dora-hub"
+      ],
+      "type": "repo",
+      "priority": "later",
+      "category": "robotics",
+      "why_it_matters": "Robotics/dataflow reference for longer-term physical agent ideas.",
+      "user_priority_signal": "External clone registry lists Dora and Dora Hub.",
+      "recommended_next_action": "clone_static_inspect",
+      "first_safe_test": "Static inspect only; no robot/hardware runtime.",
+      "risks": [
+        "hardware control",
+        "runtime complexity"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "14_context/external_repo_clone_registry.json",
+          "line": 67,
+          "snippet": "\"name\":  \"dora\","
+        },
+        {
+          "file": "14_context/external_repo_clone_registry.json",
+          "line": 68,
+          "snippet": "\"url\":  \"https://github.com/dora-rs/dora.git\","
+        },
+        {
+          "file": "14_context/external_repo_clone_registry.json",
+          "line": 69,
+          "snippet": "\"path\":  \"C:\\\\Users\\\\ai_sandbox\\\\Documents\\\\AI_Managed_Only\\\\21_repos\\\\third_party\\\\dora\","
+        },
+        {
+          "file": "14_context/external_repo_clone_registry.json",
+          "line": 75,
+          "snippet": "\"name\":  \"dora-hub\","
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Unsloth",
+      "aliases": [
+        "Unsloth",
+        "unsloth"
+      ],
+      "type": "repo",
+      "priority": "later",
+      "category": "model_training",
+      "why_it_matters": "Local model training/fine-tuning reference, lower priority than routing/use.",
+      "user_priority_signal": "External clone registry lists unsloth.",
+      "recommended_next_action": "clone_static_inspect",
+      "first_safe_test": "Static inspect only; no training/download.",
+      "risks": [
+        "GPU load",
+        "model downloads",
+        "license"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "14_context/external_repo_clone_registry.json",
+          "line": 123,
+          "snippet": "\"name\":  \"unsloth\","
+        },
+        {
+          "file": "14_context/external_repo_clone_registry.json",
+          "line": 124,
+          "snippet": "\"url\":  \"https://github.com/unslothai/unsloth.git\","
+        },
+        {
+          "file": "14_context/external_repo_clone_registry.json",
+          "line": 125,
+          "snippet": "\"path\":  \"C:\\\\Users\\\\ai_sandbox\\\\Documents\\\\AI_Managed_Only\\\\21_repos\\\\third_party\\\\unsloth\","
+        },
+        {
+          "file": "14_context/external_repo_clone_registry.md",
+          "line": 25,
+          "snippet": "| unsloth | https://github.com/unslothai/unsloth.git | 21_repos/third_party/unsloth | cloned | ac2daf8 | local model training/GRPO reference | No ??? reference only | Review GRPO training patterns |"
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "MiroFish",
+      "aliases": [
+        "MiroFish",
+        "mirofish"
+      ],
+      "type": "repo",
+      "priority": "later",
+      "category": "simulation_or_prediction",
+      "why_it_matters": "Multi-agent prediction/simulation reference from external registry.",
+      "user_priority_signal": "External clone registry lists MiroFish.",
+      "recommended_next_action": "clone_static_inspect",
+      "first_safe_test": "Static inspect only.",
+      "risks": [
+        "unknown runtime",
+        "prediction claims"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "08_research/repo_integration_map.md",
+          "line": 64,
+          "snippet": "### MiroFish"
+        },
+        {
+          "file": "14_context/chat_handoff_latest.md",
+          "line": 154,
+          "snippet": "OpenHands or OpenHarness style systems, Claw Code, Kronos, MiroFish, and future local model routing and eval layers."
+        },
+        {
+          "file": "14_context/codex_n3_38_tool_priority_and_risk_matrix.md",
+          "line": 50,
+          "snippet": "| MiroFish/MiroThinker | AI/research | MiroThinker research-agent source found; MiroFish appears as swarm/prediction claims needing verification | partial source found | maybe | medium-high | no | Identify exact source a"
+        },
+        {
+          "file": "14_context/codex_n3_38_user_idea_dump_preserved.md",
+          "line": 107,
+          "snippet": "- MiroFish/MiroThinker: source unclear; research-only."
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Picoclaw / robotics references",
+      "aliases": [
+        "picoclaw",
+        "robotics references"
+      ],
+      "type": "repo",
+      "priority": "later",
+      "category": "robotics",
+      "why_it_matters": "Older model council notes mention robotics references.",
+      "user_priority_signal": "Old reports mention picoclaw/robotics references.",
+      "recommended_next_action": "document_only",
+      "first_safe_test": "Recover source; no hardware actions.",
+      "risks": [
+        "hardware control"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "03_scripts/model_council_tool_intake.py",
+          "line": 65,
+          "snippet": "{\"slug\": \"picoclaw\", \"status\": \"hardware_reference\", \"runtime_wiring\": False, \"notes\": \"Robotics/hardware reference only.\"},"
+        },
+        {
+          "file": "14_context/codex_n5_2a_hermes_local_bootstrap_public_readiness_model_provider.md",
+          "line": 82,
+          "snippet": "- Registry includes Hermes Agent, Graphify, Claude skills, missing skills recovery, agent-browser, browser-harness, Gemma/Ollama, ChatGPT/OpenAI, Claude Code, Codex, Postgres, Supabase, Vercel, Stripe, GitHub, Resend, Cl"
+        },
+        {
+          "file": "14_context/codex_n5_2b_hermes_bootstrap_stack_ui_tars_manifest_fix.md",
+          "line": 122,
+          "snippet": "- Registry entries verified: Hermes Agent, Codex, Gemma/Ollama, Graphify, agent-browser, browser-harness, Claude skills, ChatGPT/OpenAI, Claude Code, Supabase, Vercel, Stripe, Postgres, OpenWA, Insforge, Picoclaw, roboti"
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Blueprint.am",
+      "aliases": [
+        "blueprint.am",
+        "blueprint"
+      ],
+      "type": "tool",
+      "priority": "later",
+      "category": "unknown_or_infra",
+      "why_it_matters": "Older provider/model council notes mention blueprint.am.",
+      "user_priority_signal": "Old N+5 reports mention it.",
+      "recommended_next_action": "document_only",
+      "first_safe_test": "Clarify source and fit.",
+      "risks": [
+        "unknown source"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "03_scripts/model_council_tool_intake.py",
+          "line": 63,
+          "snippet": "{\"slug\": \"blueprint.am\", \"status\": \"planning_intake\", \"runtime_wiring\": False, \"notes\": \"Architecture blueprint inspiration only.\"},"
+        },
+        {
+          "file": "08_research/blueprint_feature_eval.md",
+          "line": 4,
+          "snippet": "- Blueprint.am / Blueprint is a reference pattern and optional external inspiration."
+        },
+        {
+          "file": "08_research/blueprint_feature_eval.md",
+          "line": 25,
+          "snippet": "- Keep Blueprint.am in research and integration-mapping only."
+        },
+        {
+          "file": "08_research/blueprint_feature_eval.md",
+          "line": 58,
+          "snippet": "- Treat Blueprint.am as inspiration for a later hardware-builder-assist module."
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Cloud infra stack",
+      "aliases": [
+        "Supabase",
+        "Postgres",
+        "Vercel",
+        "Stripe",
+        "Resend",
+        "Clerk",
+        "DNS provider",
+        "PostHog",
+        "Sentry",
+        "Upstash",
+        "Pinecone",
+        "Azure",
+        "Terraform",
+        "OpenTofu"
+      ],
+      "type": "infra",
+      "priority": "later",
+      "category": "cloud_infra",
+      "why_it_matters": "Useful product infra candidates but not part of local-first/no-spend core.",
+      "user_priority_signal": "Older model/provider council references list these.",
+      "recommended_next_action": "document_only",
+      "first_safe_test": "Keep as optional provider map; no keys/deploys.",
+      "risks": [
+        "secrets",
+        "cost",
+        "cloud lock-in"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": ".env.example",
+          "line": 5,
+          "snippet": "SUPABASE_URL="
+        },
+        {
+          "file": ".env.example",
+          "line": 6,
+          "snippet": "SUPABASE_ANON_KEY="
+        },
+        {
+          "file": "01_projects/runtime_mvp/tests/test_n5_2a_hermes_local_bootstrap_public_readiness_model_provider.py",
+          "line": 91,
+          "snippet": "\"supabase\","
+        },
+        {
+          "file": "03_scripts/model_council_tool_intake.py",
+          "line": 49,
+          "snippet": "{\"slug\": \"supabase\", \"status\": \"default_backend_candidate\", \"runtime_wiring\": False, \"notes\": \"Postgres/auth/storage where practical.\"},"
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Anus CLI",
+      "aliases": [
+        "Anus CLI",
+        "Anus",
+        "anus"
+      ],
+      "type": "tool",
+      "priority": "blocked",
+      "category": "unknown_cli",
+      "why_it_matters": "Named by user but potentially risky/unclear CLI; needs careful source review.",
+      "user_priority_signal": "Explicit user-corrected missing item.",
+      "recommended_next_action": "blocked_review",
+      "first_safe_test": "Identify exact source and do security review before clone/install.",
+      "risks": [
+        "unknown binary/CLI",
+        "untrusted install"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "14_context/codex_n3_18_gemma_money_runner_safety_audit.md",
+          "line": 31,
+          "snippet": "- No Paperclip/OpenClaw/n8n/Unity-MCP/Manus/Dolphin/CUDA runtime use."
+        },
+        {
+          "file": "14_context/codex_n3_18_money_workflow_safety_gate_review_v3.md",
+          "line": 36,
+          "snippet": "- Installing or wiring Paperclip, OpenClaw, n8n, Unity-MCP, Mythos, Dolphin, CUDA, Manus, or other external runtimes."
+        },
+        {
+          "file": "14_context/codex_n3_18_next_claude_implementation_prompt_review.md",
+          "line": 133,
+          "snippet": "- install Paperclip/OpenClaw/n8n/Unity-MCP/Mythos/Dolphin/CUDA/Manus"
+        },
+        {
+          "file": "14_context/codex_n3_18_next_claude_prompt_delta.md",
+          "line": 53,
+          "snippet": "- Do not install Mythos, Dolphin, CUDA, Manus, or any new external runtime."
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "OSINT/Kali",
+      "aliases": [
+        "OSINT",
+        "Kali",
+        "Kali Linux"
+      ],
+      "type": "workflow",
+      "priority": "blocked",
+      "category": "offensive_security",
+      "why_it_matters": "Security research category must stay blocked without authorized scope.",
+      "user_priority_signal": "Explicit user-corrected item and current registry blocked class.",
+      "recommended_next_action": "blocked_review",
+      "first_safe_test": "Document only unless there is an authorized, scoped engagement.",
+      "risks": [
+        "offensive security",
+        "legal/terms risk"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "01_projects/runtime_mvp/tests/test_n6_7a_tool_intake_static_registry.py",
+          "line": 12,
+          "snippet": "binary, OSINT/Kali), (6) the script itself contains no network/install/clone/exec"
+        },
+        {
+          "file": "14_context/claude_n6_7a_tool_intake_static_registry.md",
+          "line": 52,
+          "snippet": "| BLOCKED | 6 | social posting, live browser/desktop control, money/payment, account login, unknown binaries, OSINT/Kali |"
+        },
+        {
+          "file": "14_context/claude_n6_7a_tool_intake_static_registry.md",
+          "line": 108,
+          "snippet": "browser/desktop, money, account login, unknown binary, OSINT/Kali)."
+        },
+        {
+          "file": "14_context/codex_n6_7c_parallel_lanes_audit_merge_gate.md",
+          "line": 126,
+          "snippet": "- OSINT/Kali offensive tools"
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "HTTrack / webscraper",
+      "aliases": [
+        "HTTrack",
+        "webscraper",
+        "web scraper",
+        "webscraping"
+      ],
+      "type": "tool",
+      "priority": "blocked",
+      "category": "web_scraping",
+      "why_it_matters": "Website mirroring/scraping can help research but needs strict terms/legal review.",
+      "user_priority_signal": "Explicit user-corrected item.",
+      "recommended_next_action": "blocked_review",
+      "first_safe_test": "Document only; no live site requests or scraping.",
+      "risks": [
+        "terms/copyright",
+        "network scraping",
+        "rate limits"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "user_prompt:N+6.11A",
+          "line": 0,
+          "snippet": "Critical user correction explicitly named HTTrack / webscraper for complete backlog recovery."
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Manychat",
+      "aliases": [
+        "Manychat",
+        "manychat"
+      ],
+      "type": "tool",
+      "priority": "blocked",
+      "category": "messaging_automation",
+      "why_it_matters": "Messaging automation candidate from older money/content stack; blocked until dedicated review.",
+      "user_priority_signal": "Explicit user-corrected business item and old reports.",
+      "recommended_next_action": "blocked_review",
+      "first_safe_test": "Document only; no login/message send.",
+      "risks": [
+        "messaging automation",
+        "accounts",
+        "spam"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "01_projects/dashboard_mvp/public/index.html",
+          "line": 1136,
+          "snippet": "<li>Manychat ??? intake/planning only</li>"
+        },
+        {
+          "file": "01_projects/dashboard_mvp/public/index.html",
+          "line": 1179,
+          "snippet": "<li>external tools: planning-only (UI-TARS, The Agency, Weavy, Manychat, Vouch, AEX, AirLLM, OpenFang/MoneyPrinter)</li>"
+        },
+        {
+          "file": "03_scripts/desktop_operator_control_plane.py",
+          "line": 267,
+          "snippet": "\"manychat_runtime_wired\": False,"
+        },
+        {
+          "file": "03_scripts/desktop_operator_control_plane.py",
+          "line": 347,
+          "snippet": "\"manychat_runtime_wired\", \"vouch_runtime_wired\", \"aex_runtime_wired\","
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Telegram bot affiliate program",
+      "aliases": [
+        "Telegram bot affiliate",
+        "affiliate bot",
+        "Telegram affiliate"
+      ],
+      "type": "business_idea",
+      "priority": "blocked",
+      "category": "business_messaging",
+      "why_it_matters": "Business idea intersects Telegram, affiliate links, messaging; must remain blocked until dedicated review.",
+      "user_priority_signal": "Explicit user-corrected money idea.",
+      "recommended_next_action": "blocked_review",
+      "first_safe_test": "Document only; tokenless dry-run spec at most.",
+      "risks": [
+        "Telegram token",
+        "affiliate disclosure",
+        "spam"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "user_prompt:N+6.11A",
+          "line": 0,
+          "snippet": "Critical user correction explicitly named Telegram bot affiliate program for complete backlog recovery."
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "AI/agent dropshipping",
+      "aliases": [
+        "AI/agent dropshipping",
+        "dropshipping",
+        "agent dropshipping"
+      ],
+      "type": "business_idea",
+      "priority": "blocked",
+      "category": "business_commerce",
+      "why_it_matters": "Commerce automation idea; needs legal/platform review and no account actions.",
+      "user_priority_signal": "Explicit user-corrected money idea.",
+      "recommended_next_action": "blocked_review",
+      "first_safe_test": "Document business workflow only; no store/account/API actions.",
+      "risks": [
+        "money",
+        "platform ToS",
+        "consumer/legal"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "user_prompt:N+6.11A",
+          "line": 0,
+          "snippet": "Critical user correction explicitly named AI/agent dropshipping for complete backlog recovery."
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "TikTok Shop dropshipping",
+      "aliases": [
+        "TikTok Shop",
+        "TikTok Shop dropshipping",
+        "tiktok"
+      ],
+      "type": "business_idea",
+      "priority": "blocked",
+      "category": "business_commerce",
+      "why_it_matters": "Potential money/content channel but involves platform/account/commerce actions.",
+      "user_priority_signal": "Explicit user-corrected money idea.",
+      "recommended_next_action": "blocked_review",
+      "first_safe_test": "Document only; no login, shop setup, posting, or purchase.",
+      "risks": [
+        "platform account",
+        "commerce",
+        "posting"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "01_projects/dashboard_mvp/public/index.html",
+          "line": 1696,
+          "snippet": "<li><strong>Faceless channels (TikTok/IG/YT):</strong> income diversification direction ??? not automated</li>"
+        },
+        {
+          "file": "01_projects/runtime_mvp/src/super_ai_agent/local_brain_router.py",
+          "line": 401,
+          "snippet": "- platform_fit: <TikTok, YouTube, Twitter/X, email, etc.>"
+        },
+        {
+          "file": "01_projects/runtime_mvp/src/super_ai_agent/local_brain_router.py",
+          "line": 423,
+          "snippet": "- short_form_angle: <TikTok/Reels hook and angle>"
+        },
+        {
+          "file": "03_scripts/content_money_workflow.py",
+          "line": 42,
+          "snippet": "SUPPORTED_PLATFORMS = [\"youtube_shorts\", \"tiktok\", \"instagram_reels\"]"
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Browser-use",
+      "aliases": [
+        "browser-use",
+        "browser use"
+      ],
+      "type": "repo",
+      "priority": "blocked",
+      "category": "browser_agent",
+      "why_it_matters": "Known browser automation reference but live browser control is blocked until audited.",
+      "user_priority_signal": "External clone registry lists browser-use as reference.",
+      "recommended_next_action": "blocked_review",
+      "first_safe_test": "Static inspect only; no live browser.",
+      "risks": [
+        "live browser",
+        "accounts",
+        "platform anti-abuse evasion"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "01_projects/dashboard_mvp/public/app.js",
+          "line": 866,
+          "snippet": "{ label: \"Browser-use installed\", id: \"ghoti-browser-use-installed\" },"
+        },
+        {
+          "file": "01_projects/dashboard_mvp/public/app.js",
+          "line": 867,
+          "snippet": "{ label: \"Browser-use ready\", id: \"ghoti-browser-use-ready\" },"
+        },
+        {
+          "file": "01_projects/dashboard_mvp/public/app.js",
+          "line": 1404,
+          "snippet": "setText(\"ghoti-browser-use-installed\", browser.browserUseInstalled ? \"yes\" : \"no\");"
+        },
+        {
+          "file": "01_projects/dashboard_mvp/public/app.js",
+          "line": 1405,
+          "snippet": "setText(\"ghoti-browser-use-ready\", browser.browserUseReady ? \"yes\" : \"no\");"
+        }
+      ],
+      "already_in_current_registry": false
+    },
+    {
+      "name": "Kronos / market model",
+      "aliases": [
+        "Kronos",
+        "Kronos-demo"
+      ],
+      "type": "repo",
+      "priority": "blocked",
+      "category": "financial_model",
+      "why_it_matters": "Financial market model reference must stay analysis-only; no trading.",
+      "user_priority_signal": "External clone registry lists Kronos.",
+      "recommended_next_action": "blocked_review",
+      "first_safe_test": "Static inspect only; no trading or financial advice automation.",
+      "risks": [
+        "trading",
+        "financial risk"
+      ],
+      "license_or_terms_check_needed": true,
+      "notes": "",
+      "evidence": [
+        {
+          "file": "08_research/repo_integration_map.md",
+          "line": 59,
+          "snippet": "### Kronos"
+        },
+        {
+          "file": "14_context/chat_handoff_latest.md",
+          "line": 154,
+          "snippet": "OpenHands or OpenHarness style systems, Claw Code, Kronos, MiroFish, and future local model routing and eval layers."
+        },
+        {
+          "file": "14_context/external_repo_clone_registry.json",
+          "line": 131,
+          "snippet": "\"name\":  \"Kronos\","
+        },
+        {
+          "file": "14_context/external_repo_clone_registry.json",
+          "line": 132,
+          "snippet": "\"url\":  \"https://github.com/shiyu-coder/Kronos.git\","
+        }
+      ],
+      "already_in_current_registry": false
+    }
+  ]
+}
