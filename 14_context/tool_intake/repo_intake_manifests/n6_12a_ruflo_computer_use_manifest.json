@@ -1,0 +1,249 @@
+{
+  "milestone": "N+6.12A",
+  "title": "Ruflo + Computer-Use Repo Static Clone/Inspect/Extract",
+  "generated_label": "static_inspection_only / not_runtime_wired / no_execution / no_install",
+  "base_main": "0edba03",
+  "static_inspection_only": true,
+  "no_execution": true,
+  "no_install": true,
+  "no_live_browser_or_computer_use": true,
+  "clone_root": "21_repos/third_party_static",
+  "clone_policy": "Clones are git-ignored, never staged, never installed, never executed. Commit SHAs are recorded for reproducibility.",
+  "summary": {
+    "candidates_total": 7,
+    "cloned_and_inspected": 4,
+    "source_needed": 1,
+    "umbrella": 1,
+    "deferred_blocked_priority": 1
+  },
+  "candidates": [
+    {
+      "name": "Ruflo",
+      "aliases": ["ruflo", "claude-flow", "ruvnet/ruflo"],
+      "type": "multi_agent_orchestration",
+      "priority": "critical",
+      "user_priority_signal": "explicit top priority for N+6.12A",
+      "source_url": "https://github.com/ruvnet/ruflo.git",
+      "source_url_confidence": "high",
+      "source_evidence": "Recorded in committed repo: 14_context/ruflo_read_only_evaluation.md, 14_context/external_operator_candidates_audit.md, 14_context/codex_three_repo_clone_truth_crosscheck_n3_4.md.",
+      "local_path": "21_repos/third_party_static/ruflo",
+      "cloned": true,
+      "clone_depth": "shallow (--depth 1)",
+      "commit_sha": "f57b69876ba1c4e6bf4e317d0d1529a5481692c4",
+      "license_detected": "MIT",
+      "license_allows_reuse": true,
+      "static_inspected": true,
+      "safe_to_run": false,
+      "runtime_wired": false,
+      "extraction_status": "pattern_re_expressed_with_attribution",
+      "extraction_target": "03_scripts/external_adapters/ruflo_adapter_contract.py",
+      "useful_patterns": [
+        "Role-labeled single-purpose agents (each agent has one narrow job).",
+        "Shared local memory as the coordination substrate between agents.",
+        "Explicit coordinator/worker separation with task handoffs.",
+        "Plugin/skill registration so capabilities are declared, not implicit."
+      ],
+      "risks": [
+        "Documented obfuscated malicious npm preinstall script (v3.1.0-alpha.55 through v3.5.2) that deleted directories.",
+        "MCP prompt-injection (Issue #1375): tool descriptions covertly added the maintainer as a repo contributor.",
+        "SQL injection history (remediated v3.5.40).",
+        "Requires ANTHROPIC_API_KEY; not local-only; multiplies API spend across swarms.",
+        "Autonomous multi-agent swarms; broad MCP/action surface; documented Windows compatibility issues."
+      ],
+      "license_or_terms_check_needed": false,
+      "first_safe_next_test": "Read-only source/dependency audit of package.json lifecycle scripts and MCP tool-description strings. No npm install, no MCP server start, no API key use.",
+      "notes": "MIT permits reuse, but the supply-chain history means we re-express the architecture pattern from scratch (no code copied) rather than vendoring Ruflo source."
+    },
+    {
+      "name": "TryCUA / CUA Driver",
+      "aliases": ["trycua", "cua", "cua-driver", "trycua/cua"],
+      "type": "computer_use_agent",
+      "priority": "high",
+      "user_priority_signal": "named computer-use stack candidate",
+      "source_url": "https://github.com/trycua/cua.git",
+      "source_url_confidence": "high",
+      "source_evidence": "Recorded across many committed n3-era audits (e.g. 14_context/cua_trycua_exact_source_evaluation.md, 14_context/codex_cua_trycua_source_crosscheck_n3_4.md).",
+      "local_path": "21_repos/third_party_static/cua",
+      "cloned": true,
+      "clone_depth": "shallow (--depth 1), partial Windows checkout",
+      "commit_sha": "4c54f43ffd9a46cf9c96b06f477a986316d19260",
+      "license_detected": "MIT",
+      "license_allows_reuse": true,
+      "static_inspected": true,
+      "safe_to_run": false,
+      "runtime_wired": false,
+      "extraction_status": "patterns_documented_no_code_copied",
+      "useful_patterns": [
+        "Observation -> plan -> action computer-use loop for desktop agents.",
+        "Containerized desktop sandbox (Docker / QEMU / KASM / Lumier) to isolate control.",
+        "Background 'driver' separating capability from policy on macOS/Windows."
+      ],
+      "risks": [
+        "Live desktop control (click/type) once run.",
+        "Docker/QEMU/KASM container runtime; large monorepo.",
+        "Live model-provider APIs.",
+        "Partial checkout on Windows: some CI/workflow files with invalid-on-Windows names did not materialize; key files (README, LICENSE, package.json, pyproject.toml, Dockerfile) are present."
+      ],
+      "license_or_terms_check_needed": false,
+      "first_safe_next_test": "Read README + pyproject.toml + Dockerfile read-only to map the agent loop. No Docker build/run, no driver start, no desktop control.",
+      "notes": "Computer-use stays disabled by default behind a feature flag and global kill switch."
+    },
+    {
+      "name": "Browser Harness",
+      "aliases": ["browser-harness", "browser-use/browser-harness"],
+      "type": "browser_control_harness",
+      "priority": "high",
+      "user_priority_signal": "named computer-use stack candidate",
+      "source_url": "https://github.com/browser-use/browser-harness.git",
+      "source_url_confidence": "high",
+      "source_evidence": "Recorded in committed repo: 14_context/external_repo_clone_registry.json (status cloned, commit 4ec6255).",
+      "local_path": "21_repos/third_party_static/browser-harness",
+      "cloned": true,
+      "clone_depth": "shallow (--depth 1)",
+      "commit_sha": "6d20866664ea3d9691b27bbf64f42ae097437dc3",
+      "license_detected": "MIT",
+      "license_allows_reuse": true,
+      "static_inspected": true,
+      "safe_to_run": false,
+      "runtime_wired": false,
+      "extraction_status": "patterns_documented_no_code_copied",
+      "useful_patterns": [
+        "Thin CDP websocket-to-Chrome harness (one socket, minimal layers).",
+        "Editable agent-workspace helpers the agent extends during a task."
+      ],
+      "risks": [
+        "Direct live control of a real Chrome over CDP.",
+        "Self-modifying: the agent writes new helper code during execution.",
+        "Autonomy framing ('you will never use the browser again') conflicts with supervised gates."
+      ],
+      "license_or_terms_check_needed": false,
+      "first_safe_next_test": "Read install.md and harness source read-only. Do NOT connect to Chrome, do NOT run, do NOT let it self-write code.",
+      "notes": "Self-writing-code behavior must never be enabled inside Ghoti without strict approval gating."
+    },
+    {
+      "name": "Vercel agent-browser",
+      "aliases": ["agent-browser", "vercel-labs/agent-browser"],
+      "type": "browser_automation_cli",
+      "priority": "high",
+      "user_priority_signal": "named computer-use stack candidate",
+      "source_url": "https://github.com/vercel-labs/agent-browser.git",
+      "source_url_confidence": "high",
+      "source_evidence": "Resolved from N+6.11A inventory alias 'vercel-labs/agent-browser'; URL reachable and cloned this milestone.",
+      "local_path": "21_repos/third_party_static/agent-browser",
+      "cloned": true,
+      "clone_depth": "shallow (--depth 1)",
+      "commit_sha": "b4f2f37d7b4f954022bc77f8d6dce70e07072b00",
+      "license_detected": "Apache-2.0",
+      "license_allows_reuse": true,
+      "static_inspected": true,
+      "safe_to_run": false,
+      "runtime_wired": false,
+      "extraction_status": "patterns_documented_no_code_copied",
+      "useful_patterns": [
+        "Native Rust browser-automation CLI invoked as discrete commands.",
+        "Uses Chrome for Testing (pinned, downloaded) rather than the user's daily browser."
+      ],
+      "risks": [
+        "Global npm install of a native binary; downloads a Chrome build on first run.",
+        "Live browser automation; binary distribution trust."
+      ],
+      "license_or_terms_check_needed": false,
+      "first_safe_next_test": "Read the CLI command surface + Cargo.toml read-only. No global install, no Chrome download, no run.",
+      "notes": "Apache-2.0 requires preserving NOTICE/attribution if any code is ever reused."
+    },
+    {
+      "name": "UI-TARS",
+      "aliases": ["ui-tars", "ui_tars", "UI-TARS-desktop"],
+      "type": "vision_language_gui_agent",
+      "priority": "high",
+      "user_priority_signal": "named computer-use stack candidate",
+      "source_url": null,
+      "source_url_confidence": "ambiguous",
+      "source_evidence": "Committed repo references UI-TARS only as 'intake/planning only' (e.g. 14_context/claude_n4_1f_*, N+5.0A observation work). No exact clone URL is recorded, and there are multiple distinct upstream repos (model vs desktop app).",
+      "local_path": null,
+      "cloned": false,
+      "clone_depth": null,
+      "commit_sha": null,
+      "license_detected": null,
+      "license_allows_reuse": null,
+      "static_inspected": false,
+      "safe_to_run": false,
+      "runtime_wired": false,
+      "extraction_status": "source_needed",
+      "useful_patterns": [
+        "Vision-language GUI grounding (parse a screenshot into elements/actions).",
+        "Observation-only screen parsing (aligns with the N+5.0A observation adapter)."
+      ],
+      "risks": [
+        "Desktop control if run; large model weights; live API.",
+        "Ambiguous source: do not guess which upstream repo is intended."
+      ],
+      "license_or_terms_check_needed": true,
+      "first_safe_next_test": "Operator supplies the exact source URL. Then static clone + license/README inspection only, no runtime.",
+      "notes": "Per mission rule 'do not guess' - kept as a source-needed report rather than cloning a guessed URL."
+    },
+    {
+      "name": "Computer-use stack",
+      "aliases": ["computer-use", "computer use stack", "computer_use"],
+      "type": "umbrella",
+      "priority": "critical",
+      "user_priority_signal": "explicit second priority for N+6.12A",
+      "source_url": null,
+      "source_url_confidence": "n/a_umbrella",
+      "source_evidence": "Umbrella grouping; members tracked individually in this manifest.",
+      "local_path": null,
+      "cloned": false,
+      "clone_depth": null,
+      "commit_sha": null,
+      "license_detected": null,
+      "license_allows_reuse": null,
+      "static_inspected": false,
+      "safe_to_run": false,
+      "runtime_wired": false,
+      "extraction_status": "umbrella_members_tracked_separately",
+      "members": ["UI-TARS", "Browser Harness", "Vercel agent-browser", "TryCUA / CUA Driver", "Browser-use"],
+      "useful_patterns": [
+        "Observation-first screen parsing before any action.",
+        "Approval-gated action with a sandboxed desktop/browser.",
+        "Capability/policy separation so control is declared and gated."
+      ],
+      "risks": [
+        "Desktop control, live browser, and container runtimes - all kept disabled by default."
+      ],
+      "license_or_terms_check_needed": true,
+      "first_safe_next_test": "Treat each member separately under its own feature flag; keep computer-use disabled behind the global kill switch.",
+      "notes": "No member is runtime-wired. The computer_use_enabled flag stays false."
+    },
+    {
+      "name": "Browser-use",
+      "aliases": ["browser-use", "browser-use/browser-use"],
+      "type": "browser_agent_framework",
+      "priority": "blocked",
+      "user_priority_signal": "referenced; blocked priority in N+6.11A inventory",
+      "source_url": "https://github.com/browser-use/browser-use.git",
+      "source_url_confidence": "high",
+      "source_evidence": "Recorded in committed repo: 14_context/external_repo_clone_registry.json and 14_context/external_operator_candidates_audit.md (MIT).",
+      "local_path": null,
+      "cloned": false,
+      "clone_depth": null,
+      "commit_sha": null,
+      "license_detected": "MIT",
+      "license_allows_reuse": true,
+      "static_inspected": false,
+      "safe_to_run": false,
+      "runtime_wired": false,
+      "extraction_status": "deferred_blocked_priority",
+      "useful_patterns": [
+        "Python browser-agent framework with local and cloud modes.",
+        "Custom-tool registration; established browser-automation UX."
+      ],
+      "risks": [
+        "Cloud product emphasizes stealth / proxy / CAPTCHA-solving, which conflicts with Ghoti's no-bypass policy.",
+        "Consequential example flows (shopping, applications) need hard approval gates; external model API keys."
+      ],
+      "license_or_terms_check_needed": false,
+      "first_safe_next_test": "Defer. If needed later, static-clone only the local open-source parts read-only after approval; never use stealth/CAPTCHA/proxy features.",
+      "notes": "Not cloned this milestone (blocked priority). Documented for completeness."
+    }
+  ]
+}

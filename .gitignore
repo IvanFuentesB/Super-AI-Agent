@@ -129,6 +129,11 @@ gemma4/
 21_repos/third_party/*
 !21_repos/third_party/.gitkeep
 
+# External repo static intake clones (N+6.12A) - cloned for read-only static
+# inspection only; never staged, never installed, never executed.
+21_repos/third_party_static/*
+!21_repos/third_party_static/.gitkeep
+
 # External repo research clones
 00_external_repos/
 
