@@ -1,0 +1,47 @@
+{
+  "schema": "ghoti.sandbox.confined_browser.expected_result.v1",
+  "milestone": "N+6.14A",
+  "description": "Golden expected result for the confined local browser sandbox DOM action. The primary block describes a successful run on a host where a Chromium-family browser is available; the safe_unavailable_alternative block describes the equally-acceptable degraded result when no local browser/CDP endpoint is reachable. Machine-specific fields (resolved_target absolute path, cdp_browser version string) are intentionally omitted because they vary by host.",
+  "primary_success_result": {
+    "ok": true,
+    "mode": "local_browser_sandbox",
+    "target_is_local": true,
+    "target_under_sandbox_root": true,
+    "target_exists": true,
+    "target_has_external_resources": false,
+    "live_website": false,
+    "account_context": false,
+    "os_input_used": false,
+    "browser_executable_found": true,
+    "browser_launched": true,
+    "temporary_profile_used": true,
+    "temporary_profile_cleaned": true,
+    "dom_action_performed": true,
+    "note_value": "GHOTI_OK",
+    "status_output": "GHOTI_OK",
+    "goal_satisfied": true,
+    "requires_human_approval": true
+  },
+  "safe_unavailable_alternative": {
+    "ok": true,
+    "mode": "local_browser_sandbox",
+    "target_is_local": true,
+    "target_under_sandbox_root": true,
+    "live_website": false,
+    "account_context": false,
+    "os_input_used": false,
+    "browser_launched": false,
+    "dom_action_performed": false,
+    "goal_satisfied": false,
+    "requires_human_approval": true,
+    "blocked_or_unavailable_reason": "<one of: no local Chromium-family browser found in standard locations | local CDP endpoint did not become available | no local page target exposed by CDP | DOM action did not complete in the sandbox page>"
+  },
+  "invariants_true_in_both_results": {
+    "live_website": false,
+    "account_context": false,
+    "os_input_used": false,
+    "requires_human_approval": true,
+    "only_standard_library": true,
+    "network_used_beyond_loopback_cdp": false
+  }
+}

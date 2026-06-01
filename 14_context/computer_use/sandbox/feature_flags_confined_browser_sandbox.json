@@ -1,0 +1,10 @@
+{
+  "global_kill_switch_engaged": true,
+  "confined_browser_sandbox_enabled": false,
+  "confined_browser_sandbox_dry_run_enabled": true,
+  "confined_browser_cdp_enabled": false,
+  "confined_browser_dom_action_enabled": false,
+  "live_browser_navigation_enabled": false,
+  "os_level_input_enabled": false,
+  "strict_confinement_required": true
+}
