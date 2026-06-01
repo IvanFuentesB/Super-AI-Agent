@@ -1,0 +1,41 @@
+{
+  "schema": "ghoti_status_brain_packet",
+  "milestone": "N+6.15A",
+  "version": "1.0",
+  "description": "Contract for the local status packet emitted by ghoti_status_brain.py. Local, read-only, offline. No live autonomy, no external API, no account actions.",
+  "fields": {
+    "ok": "boolean - true when the packet was produced without a fatal error",
+    "repo_root": "string - absolute path to the Ghoti repo root the brain inspected",
+    "origin_main_short": "string|null - short sha of origin/main (git rev-parse, read-only)",
+    "current_branch": "string|null - current git branch (git branch --show-current)",
+    "latest_main_commits": "array<string> - up to 5 recent origin/main commit lines (short sha + subject)",
+    "n6_test_count_known_or_null": "integer|null - count of test_n6_*.py test methods found by static scan, or null",
+    "latest_codex_report": "object|null - {path, title, milestone} of the newest 14_context/codex_*.md report",
+    "latest_claude_report": "object|null - {path, title, milestone} of the newest 14_context/claude_n*.md report",
+    "latest_tool_intake_summary": "object|null - {path, title, candidate_count} from the tool/repo intake reports",
+    "computer_use_sandbox_status": "object - {available, mode, runner_exists, dry_run_ok, browser_launched, dom_action_performed, os_input_used, live_website}",
+    "telegram_runtime_status": "string - local posture string; the bot is inventory-only and not running",
+    "hermes_integration_status": "string - local posture string derived from the hermes manual-bridge status file",
+    "repo_visibility_unknown_or_public_private": "string - one of 'unknown'|'public'|'private'; unknown without network",
+    "next_recommended_action": "string - one concrete, useful next step derived from local state",
+    "handoff_written": "boolean - true when --write-handoff wrote the markdown handoff note",
+    "handoff_path": "string|null - repo-relative path of the handoff note when written",
+    "gemma_used": "boolean - true only when a local Ollama gemma model actually produced the summary",
+    "fallback_summary_used": "boolean - true when the deterministic local summary was used instead of gemma",
+    "safety": {
+      "live_browser_used": "boolean - always false",
+      "os_input_used": "boolean - always false",
+      "external_api_used": "boolean - always false",
+      "telegram_control_used": "boolean - always false",
+      "mcp_used": "boolean - always false",
+      "auto_send_used": "boolean - always false"
+    }
+  },
+  "guarantees": {
+    "local_only": true,
+    "network_required": false,
+    "git_read_only": true,
+    "subprocess_shell_used": false,
+    "gemma_optional_local_only": true
+  }
+}

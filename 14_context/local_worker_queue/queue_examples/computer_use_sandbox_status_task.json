@@ -1,0 +1,8 @@
+{
+  "task_type": "computer_use_sandbox_status",
+  "title": "Confined computer-use sandbox readiness (dry-run only)",
+  "description": "Report whether the N+6.14A confined browser sandbox runner is present and that its dry-run is safe. Never launches a real browser, never performs a DOM action, never uses OS input.",
+  "dry_run_only": true,
+  "never_allow_live": true,
+  "local_only": true
+}

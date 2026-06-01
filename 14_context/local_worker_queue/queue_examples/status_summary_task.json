@@ -1,0 +1,10 @@
+{
+  "task_type": "status_summary",
+  "title": "Daily Ghoti local status summary",
+  "description": "Build the local status packet: repo head, latest reports, computer-use sandbox readiness, repo-use progress, and the next recommended action.",
+  "write_handoff": false,
+  "use_gemma_if_available": false,
+  "include_computer_use_sandbox": false,
+  "local_only": true,
+  "never_allow_live": true
+}
