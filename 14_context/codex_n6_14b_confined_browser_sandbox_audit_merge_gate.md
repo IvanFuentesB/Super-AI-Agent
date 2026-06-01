@@ -180,4 +180,3 @@ PASS.
 If the report commit passes the final checks, push `HEAD:main`.
 
 Recommended next milestone: `N+6.15A - confined browser CDP utility expansion with screenshots/observations`, because the local confined DOM action worked cleanly and the safest next useful step is richer local observation capture before any non-sandbox target is considered.
-
