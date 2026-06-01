@@ -1,0 +1,33 @@
+{
+  "schema": "ghoti.sandbox.action_plan.v1",
+  "milestone": "N+6.13A",
+  "target": "sandbox_only",
+  "target_kind": "local_sandbox_html",
+  "target_ref": "14_context/computer_use/sandbox/sandbox_target.html",
+  "requested_goal": "Set note field to GHOTI_OK and click status button",
+  "live_website": false,
+  "local_only": true,
+  "account_context": false,
+  "requires_human_approval": true,
+  "dry_run_default": true,
+  "actions": [
+    {
+      "order": 1,
+      "action": "type_text",
+      "target_id": "note-input",
+      "value": "GHOTI_OK",
+      "requires_human_approval": true
+    },
+    {
+      "order": 2,
+      "action": "click",
+      "target_id": "status-button",
+      "requires_human_approval": true
+    }
+  ],
+  "expected_outcome": {
+    "element_id": "status-output",
+    "expected_text": "GHOTI_OK",
+    "derived_from": "note-input"
+  }
+}

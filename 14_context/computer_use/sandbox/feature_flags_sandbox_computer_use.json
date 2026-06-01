@@ -1,0 +1,13 @@
+{
+  "schema": "ghoti.sandbox.computer_use.flags.v1",
+  "milestone": "N+6.13A",
+  "global_kill_switch_engaged": true,
+  "sandbox_computer_use_enabled": false,
+  "sandbox_computer_use_dry_run_enabled": true,
+  "sandbox_computer_use_real_click_enabled": false,
+  "sandbox_computer_use_real_type_enabled": false,
+  "live_browser_computer_use_enabled": false,
+  "captcha_bypass_enabled": false,
+  "account_login_automation_enabled": false,
+  "strict_sandbox_confinement_guaranteed": false
+}

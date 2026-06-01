@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ghoti Sandbox Target</title>
+<style>
+  body { font-family: sans-serif; margin: 24px; color: #1a1a1a; }
+  #note-input { width: 240px; padding: 6px; }
+  #status-button { margin-top: 12px; padding: 8px 16px; }
+  #status-output { margin-top: 16px; font-weight: bold; min-height: 1.2em; }
+</style>
+</head>
+<body>
+<h1>Ghoti Sandbox Target</h1>
+<p>
+  Local, offline sandbox page for the N+6.13A computer-use action harness. It has
+  no external scripts, no external styles, no network calls, no login, and no
+  external resources. It exists only so a planner and a runner can be exercised
+  against a known local target.
+</p>
+<label for="note-input">Note</label>
+<input id="note-input" type="text" value="" autocomplete="off">
+<button id="status-button" type="button">Set status</button>
+<div id="status-output"></div>
+<script>
+  // Inline, offline behaviour only. Clicking the button copies the note field
+  // value into the status output. The Python runner mirrors this same wiring in
+  // an in-memory model; it never executes this script.
+  document.getElementById("status-button").addEventListener("click", function () {
+    var value = document.getElementById("note-input").value;
+    document.getElementById("status-output").textContent = value;
+  });
+</script>
+</body>
+</html>
