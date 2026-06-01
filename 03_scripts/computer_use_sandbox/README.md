@@ -52,3 +52,39 @@ the global kill switch overrides everything.
 Design inspiration only; no third-party code copied. Patterns adapted from repos
 statically inspected in N+6.12A: TryCUA/CUA (MIT), Browser Harness (MIT), Vercel
 agent-browser (Apache-2.0), and Ruflo/claude-flow (MIT).
+
+## N+6.14A confined local browser sandbox runner
+
+`confined_browser_sandbox_runner.py` goes one safe step past the N+6.13A
+simulation. Where N+6.13A only modelled the click in memory, N+6.14A performs a
+**real DOM action inside a real, fully confined local browser**: a headless
+Chromium-family browser launched with a throwaway temporary profile, pointed at a
+local `file://` sandbox page, and driven over a 127.0.0.1-only DevTools channel
+using a standard-library WebSocket client. It is still not live web automation,
+account control, or any OS-level input. See
+`14_context/computer_use/sandbox/CONFINED_BROWSER_SANDBOX_RULES.md`.
+
+```bash
+# Dry-run (default): no browser, no DOM action.
+python 03_scripts/computer_use_sandbox/confined_browser_sandbox_runner.py \
+  --target 14_context/computer_use/sandbox/sandbox_target.html --json
+
+# Confined action: launches a headless browser with a temporary profile and
+# performs the local sandbox DOM action only.
+python 03_scripts/computer_use_sandbox/confined_browser_sandbox_runner.py \
+  --target 14_context/computer_use/sandbox/sandbox_target.html \
+  --allow-local-browser-sandbox --json
+
+powershell -ExecutionPolicy Bypass -File \
+  03_scripts/computer_use_sandbox/check_confined_browser_sandbox.ps1
+```
+
+The confined action sets `#note-input` to `GHOTI_OK`, clicks `#status-button`
+via DOM `click()`, and verifies `#status-output` reads back `GHOTI_OK`. If no
+local browser or DevTools endpoint is reachable, the runner performs no action
+and returns a safe `blocked_or_unavailable_reason`. Targets that are URLs, sit
+outside the sandbox root, are missing, or reference external/network resources
+are rejected before any browser starts. All risky flags default `false`; the
+global kill switch overrides everything. Next step: `N+6.14B / N+6.15` hardens
+the confined DevTools utility under separate audit before any non-sandbox target
+is considered.
