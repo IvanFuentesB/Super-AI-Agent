@@ -1,0 +1,21 @@
+{
+  "global_kill_switch": false,
+  "telegram_status_bot_enabled": false,
+  "telegram_status_commands_enabled": true,
+  "telegram_run_commands_enabled": false,
+  "telegram_send_commands_enabled": false,
+  "mcp_enabled": false,
+  "mcp_filesystem_read_only_enabled": false,
+  "live_agent_launch_enabled": false,
+  "claude_launch_enabled": false,
+  "codex_launch_enabled": false,
+  "browser_computer_use_enabled": false,
+  "email_draft_agent_enabled": false,
+  "whatsapp_draft_agent_enabled": false,
+  "auto_send_enabled": false,
+  "external_repo_install_enabled": false,
+  "affiliate_program_enabled": false,
+  "dashboard_local_analytics_enabled": false,
+  "docker_runtime_enabled": false,
+  "vps_runtime_enabled": false
+}
