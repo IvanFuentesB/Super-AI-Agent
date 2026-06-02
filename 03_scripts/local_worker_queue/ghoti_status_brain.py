@@ -271,7 +271,30 @@ def _next_recommended_action(origin_main_short, branch, commits_ahead, latest_cl
     )
 
 
-def _try_gemma(prompt, timeout=60):
+def _run_ollama_once(args, timeout):
+    """Run one local Ollama command with a hard timeout and no stdin."""
+    try:
+        proc = subprocess.Popen(
+            args,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        try:
+            stdout, _stderr = proc.communicate(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.communicate(timeout=5)
+            return None
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if proc.returncode != 0:
+        return None
+    return stdout
+
+
+def _try_gemma(prompt, timeout=45):
     """Run a local Ollama Gemma model. Return summary text or None. Local only."""
     exe = shutil.which("ollama")
     if not exe:
@@ -284,16 +307,8 @@ def _try_gemma(prompt, timeout=60):
         return None
     if listed.returncode != 0 or GEMMA_MODEL not in (listed.stdout or ""):
         return None
-    try:
-        run = subprocess.run(
-            [exe, "run", GEMMA_MODEL, prompt],
-            capture_output=True, text=True, timeout=timeout,
-        )
-    except (OSError, subprocess.TimeoutExpired):
-        return None
-    if run.returncode != 0:
-        return None
-    text = _sanitize_text(run.stdout or "")
+    stdout = _run_ollama_once([exe, "run", GEMMA_MODEL, prompt], timeout=timeout)
+    text = _sanitize_text(stdout or "")
     return text or None
 
 

@@ -5,5 +5,9 @@
   "feature_flags_file": "C:/Users/ai_sandbox/.ghoti_runtime/ghoti_feature_flags.json",
   "poll_timeout_seconds": 25,
   "message_preview_limit": 3500,
-  "status_only": true
+  "status_only": true,
+  "status_bridge_enabled": false,
+  "status_bridge_script_path": "03_scripts/status_bridge/ghoti_status_bridge.py",
+  "status_bridge_timeout_seconds": 20,
+  "use_status_bridge_for_telegram_status": false
 }

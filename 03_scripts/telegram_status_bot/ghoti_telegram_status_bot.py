@@ -37,6 +37,12 @@ DEFAULT_ALLOWED_CHAT_ID_FILE = HOME / ".ghoti_secrets" / "telegram_allowed_chat_
 DEFAULT_FEATURE_FLAGS_FILE = HOME / ".ghoti_runtime" / "ghoti_feature_flags.json"
 DEFAULT_POLL_TIMEOUT = 25
 DEFAULT_PREVIEW_LIMIT = 3500
+# Optional, off by default: the local read-only status bridge (N+6.16A). When the
+# runtime config explicitly opts in, /status can read a sanitized status summary from
+# this local module. It is imported lazily only when enabled and never adds a new
+# subprocess here, so the bot's only subprocess remains the read-only git lookup.
+DEFAULT_STATUS_BRIDGE_TIMEOUT = 20
+DEFAULT_STATUS_BRIDGE_REL = "03_scripts/status_bridge/ghoti_status_bridge.py"
 
 TELEGRAM_API_BASE = "https://api.telegram.org/bot{token}/{method}"
 
@@ -157,6 +163,10 @@ def load_config(config_path):
         "poll_timeout_seconds": int(cfg.get("poll_timeout_seconds") or DEFAULT_POLL_TIMEOUT),
         "message_preview_limit": int(cfg.get("message_preview_limit") or DEFAULT_PREVIEW_LIMIT),
         "status_only": bool(cfg.get("status_only", True)),
+        "status_bridge_enabled": bool(cfg.get("status_bridge_enabled", False)),
+        "status_bridge_script_path": cfg.get("status_bridge_script_path") or DEFAULT_STATUS_BRIDGE_REL,
+        "status_bridge_timeout_seconds": int(cfg.get("status_bridge_timeout_seconds") or DEFAULT_STATUS_BRIDGE_TIMEOUT),
+        "use_status_bridge_for_telegram_status": bool(cfg.get("use_status_bridge_for_telegram_status", False)),
     }
 
 
@@ -268,6 +278,34 @@ def build_flags(flags):
     return "\n".join(lines)
 
 
+def _status_via_bridge(config):
+    """Return a sanitized status text from the local status bridge, or None.
+
+    This only does anything when the runtime config explicitly opts in with BOTH
+    ``status_bridge_enabled`` and ``use_status_bridge_for_telegram_status``. Both
+    default false, so the bot stays on the deterministic ``build_status`` unless the
+    operator turns the bridge on. The bridge is imported lazily as a local module
+    (never a new subprocess from this file), and any failure returns None so the
+    caller falls back to the deterministic status. No network or secret is touched
+    here; the bridge itself is local and read-only."""
+    if not (config.get("status_bridge_enabled")
+            and config.get("use_status_bridge_for_telegram_status")):
+        return None
+    repo_root = config.get("repo_root") or str(_default_repo_root())
+    rel = config.get("status_bridge_script_path") or DEFAULT_STATUS_BRIDGE_REL
+    try:
+        bridge_dir = str((Path(repo_root) / rel).resolve().parent)
+        if bridge_dir not in sys.path:
+            sys.path.insert(0, bridge_dir)
+        import ghoti_status_bridge  # local read-only status bridge module
+        timeout = int(config.get("status_bridge_timeout_seconds")
+                      or DEFAULT_STATUS_BRIDGE_TIMEOUT)
+        text = ghoti_status_bridge.telegram_safe_status_text(timeout=timeout)
+        return text or None
+    except Exception:
+        return None
+
+
 def parse_command(text):
     if not text:
         return ""
@@ -287,6 +325,9 @@ def handle_command(text, config, flags, token_loaded, allowed_chat_configured):
     if cmd == "/start":
         return build_status(config, flags, token_loaded, allowed_chat_configured) + "\n\n" + build_help()
     if cmd == "/status":
+        bridge_text = _status_via_bridge(config)
+        if bridge_text:
+            return bridge_text
         return build_status(config, flags, token_loaded, allowed_chat_configured)
     if cmd == "/help":
         return build_help()

@@ -1,0 +1,81 @@
+{
+  "ok": true,
+  "milestone": "N+6.16A",
+  "source": "status_brain",
+  "hermes_handoff_written": false,
+  "hermes_handoff_path": null,
+  "packet": {
+    "ok": true,
+    "milestone": "N+6.15A",
+    "repo_root": "C:\\Users\\ai_sandbox\\Documents\\AI_Managed_Only\\.claude\\worktrees\\n6_16a_status_bridge_telegram_hermes",
+    "origin_main_short": "de1cf84",
+    "current_branch": "feat/ghoti-agent-claude-n6-16a-status-bridge-telegram-hermes",
+    "commits_ahead_of_main": 0,
+    "latest_main_commits": [
+      "de1cf84 docs(ghoti): record n6.15b local worker queue merge gate",
+      "0484fa2 merge(ghoti): land useful local worker queue status brain",
+      "08d7cb2 feat(ghoti): add useful local worker queue status brain",
+      "67b5bc6 docs(ghoti): fix n6.14b report eof formatting",
+      "42d2f37 docs(ghoti): record n6.14b confined browser sandbox merge gate"
+    ],
+    "n6_test_count_known_or_null": 228,
+    "latest_codex_report": {
+      "path": "14_context/codex_n6_13b_sandbox_computer_use_audit_merge_gate.md",
+      "title": "N+6.13B Sandbox Computer-Use Action Harness Audit Merge Gate",
+      "milestone": "N+6.13B"
+    },
+    "latest_claude_report": {
+      "path": "14_context/claude_n6_15a_useful_local_worker_queue_status_brain.md",
+      "title": "Ghoti N+6.15A \u2014 Useful Local Worker Queue + Ghoti Status Brain (Report)",
+      "milestone": "N+6.15A"
+    },
+    "latest_tool_intake_summary": {
+      "path": "14_context/tool_intake/repo_intake_reports",
+      "title": "N+6.12A Repo Intake Overview - Ruflo + Computer-Use",
+      "candidate_count": 7
+    },
+    "computer_use_sandbox_status": {
+      "available": true,
+      "mode": "dry_run_only",
+      "runner_exists": true,
+      "dry_run_ok": null,
+      "browser_launched": false,
+      "dom_action_performed": false,
+      "os_input_used": false,
+      "live_website": false
+    },
+    "telegram_runtime_status": "inventory_only_not_running",
+    "hermes_integration_status": "manual_bridge_only_readiness_64pct",
+    "repo_visibility_unknown_or_public_private": "unknown",
+    "next_recommended_action": "branch 'feat/ghoti-agent-claude-n6-16a-status-bridge-telegram-hermes' is in sync with origin/main (de1cf84). Recommended: pick the next milestone from the handoff vault backlog.",
+    "handoff_written": false,
+    "handoff_path": null,
+    "gemma_used": false,
+    "fallback_summary_used": true,
+    "safety": {
+      "live_browser_used": false,
+      "os_input_used": false,
+      "external_api_used": false,
+      "telegram_control_used": false,
+      "mcp_used": false,
+      "auto_send_used": false,
+      "network_used": false,
+      "local_only": true,
+      "secrets_read": false
+    },
+    "summary_text": "Ghoti status: origin/main de1cf84, branch feat/ghoti-agent-claude-n6-16a-status-bridge-telegram-hermes.\nLatest milestone report: N+6.15A (Ghoti N+6.15A \u2014 Useful Local Worker Queue + Ghoti Status Brain (Report)).\nn6 test methods: 228.\nComputer-use sandbox: dry-run ready (no browser, no OS input).\nHermes: manual_bridge_only_readiness_64pct; Telegram: inventory_only_not_running.\nNext: branch 'feat/ghoti-agent-claude-n6-16a-status-bridge-telegram-hermes' is in sync with origin/main (de1cf84). Recommended: pick the next milestone from the handoff vault backlog.",
+    "source": "status_brain"
+  },
+  "safety": {
+    "live_browser_used": false,
+    "os_input_used": false,
+    "external_api_used": false,
+    "telegram_control_used": false,
+    "mcp_used": false,
+    "auto_send_used": false,
+    "agent_launch_used": false,
+    "network_used": false,
+    "secrets_read": false,
+    "local_only": true
+  }
+}
