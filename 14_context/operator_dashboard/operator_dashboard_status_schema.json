@@ -1,0 +1,100 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Ghoti Operator Dashboard Status (N+6.18A)",
+  "description": "Shape of the GET /api/status payload served by the status-only operator dashboard. The dashboard is local, read-only, and binds the loopback interface only. It has no POST routes, executes no commands, starts or stops no processes, mutates no runtime config, reads no secret values, and loads no external page assets.",
+  "type": "object",
+  "x_safety": {
+    "local_only": true,
+    "read_only": true,
+    "binds_loopback_only": true,
+    "has_post_routes": false,
+    "executes_commands": false,
+    "starts_or_stops_processes": false,
+    "mutates_runtime_config": false,
+    "reads_secret_values": false,
+    "uses_external_assets": false,
+    "uses_external_api": false,
+    "uses_shell_true": false,
+    "live_agent_launch": false,
+    "mcp": false,
+    "live_browser_computer_use": false,
+    "os_input": false,
+    "auto_send": false
+  },
+  "x_routes": [
+    "GET /",
+    "GET /api/status",
+    "GET /api/health",
+    "GET /api/disabled-capabilities",
+    "GET /static/app.js",
+    "GET /static/styles.css"
+  ],
+  "x_default_bind": {
+    "host": "127.0.0.1",
+    "port": 8765,
+    "non_loopback_requires_explicit_opt_in_flag": true,
+    "opt_in_flag_default_enabled": false
+  },
+  "required": [
+    "ok",
+    "milestone",
+    "runtime_health",
+    "python_resolver",
+    "status_bridge",
+    "telegram_status_readiness",
+    "hermes_session",
+    "ollama_gemma",
+    "computer_use_sandbox",
+    "disabled_capabilities",
+    "next_recommended_action",
+    "safety"
+  ],
+  "properties": {
+    "ok": {"type": "boolean", "description": "Always true; the dashboard degrades gracefully rather than failing hard."},
+    "milestone": {"type": "string"},
+    "service": {"type": "string", "const": "ghoti_operator_dashboard"},
+    "generated_utc": {"type": "string", "description": "UTC timestamp the status was built."},
+    "dashboard": {
+      "type": "object",
+      "description": "The dashboard's own posture: status_only and read_only true, binds loopback only."
+    },
+    "runtime_health": {
+      "type": "object",
+      "description": "Overall health derived from the local status bridge: source, origin/main short SHA, branch, commits ahead, n6 test count, status bridge and brain presence."
+    },
+    "python_resolver": {
+      "type": "object",
+      "description": "The working interpreter serving the dashboard, plus whether the full PATH-shim-skipping resolver script is present."
+    },
+    "status_brain": {"type": "object", "description": "Whether the local status brain script is available."},
+    "status_bridge": {"type": "object", "description": "Whether the local status bridge is available and which source produced the packet."},
+    "telegram_status_readiness": {
+      "type": "object",
+      "description": "Status-only Telegram readiness. run/send/live-control are always false; no token or chat id value is ever read."
+    },
+    "hermes_session": {
+      "type": "object",
+      "description": "WSL Hermes resume command PREVIEW for the same session. The dashboard launches nothing; run_from_dashboard is always false."
+    },
+    "ollama_gemma": {
+      "type": "object",
+      "description": "Best-effort local availability of ollama and a local gemma model. Unknown when not probed."
+    },
+    "origin_main_short": {"type": ["string", "null"], "description": "Current origin/main short SHA, or 'unavailable'."},
+    "latest_claude_report": {"type": ["object", "null"]},
+    "latest_codex_report": {"type": ["object", "null"]},
+    "computer_use_sandbox": {
+      "type": "object",
+      "description": "Confined sandbox readiness. Dry-run only: no browser launch, no DOM action, no OS input, no live website."
+    },
+    "disabled_capabilities": {
+      "type": "object",
+      "description": "The capabilities that stay disabled, plus the five operator_dashboard_* feature flags (all false) and the global invariant that only telegram_status_commands_enabled is true."
+    },
+    "next_recommended_action": {"type": "string"},
+    "safety": {
+      "type": "object",
+      "description": "The same fixed safety posture as x_safety, echoed in every payload."
+    }
+  }
+}

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Ghoti Operator Dashboard</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="title-wrap">
+      <h1>Ghoti Operator Dashboard</h1>
+      <p class="subtitle">Local operator view &middot; <span id="milestone">N+6.18A</span></p>
+    </div>
+    <div class="topbar-meta">
+      <span class="badge badge-safe">status-only</span>
+      <span class="badge badge-safe">read-only</span>
+      <span class="badge badge-safe">127.0.0.1 only</span>
+      <button id="refresh" type="button" class="refresh-btn">Refresh</button>
+    </div>
+  </header>
+
+  <p id="updated" class="updated">Loading status&hellip;</p>
+
+  <main id="cards" class="cards" aria-live="polite">
+    <!-- Cards are rendered by app.js from GET /api/status. -->
+  </main>
+
+  <footer class="footer">
+    <p>
+      This page is local and read-only. It runs no commands, starts or stops no
+      services, mutates no runtime config, and shows no secrets. A future public or
+      remote dashboard is a separate milestone and would require authentication and
+      HTTPS before any non-local access.
+    </p>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
