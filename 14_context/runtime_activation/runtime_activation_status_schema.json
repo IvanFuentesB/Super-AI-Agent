@@ -1,0 +1,39 @@
+{
+  "schema": "ghoti_runtime_activation_status",
+  "milestone": "N+6.17A",
+  "description": "Shape of the JSON emitted by 03_scripts/runtime_activation/check_ghoti_runtime.ps1. The check is local and read-only; it starts no agent, opens no network connection, and reads no secret values (only whether secret files are present).",
+  "fields": {
+    "ok": "bool - overall: a working Python was resolved and the status brain + status bridge scripts are present.",
+    "repo_root": "string - resolved repository root for this worktree.",
+    "origin_main_short": "string|null - short hash of origin/main (read-only git lookup), or null if unavailable.",
+    "python_ok": "bool - a working Python interpreter was resolved (broken PATH shim is skipped).",
+    "python_executable": "string|null - resolved interpreter path.",
+    "status_brain_ok": "bool - 03_scripts/local_worker_queue/ghoti_status_brain.py is present.",
+    "status_bridge_ok": "bool - 03_scripts/status_bridge/ghoti_status_bridge.py is present.",
+    "telegram_bot_scripts_present": "bool - the status-only Telegram bot scripts are present.",
+    "telegram_secret_files_present": "bool - both the token file and allowed-chat-id file exist OUTSIDE the repo (their contents are never read).",
+    "hermes_wsl_available": "bool - the wsl launcher is available on this host.",
+    "ollama_available": "bool - the local ollama CLI is available on this host.",
+    "gemma_available": "bool - a local gemma model is listed by ollama (best-effort, may be false if ollama is not running).",
+    "same_session_id": "string - the WSL Hermes session id this runtime resumes (20260601_081506_d35c70).",
+    "runtime_config_path": "string - the LOCAL (outside-repo) Telegram runtime config path the enable script writes.",
+    "local_only": "bool - always true.",
+    "live_browser_enabled": "bool - always false.",
+    "telegram_control_enabled": "bool - always false (status-only; no /run).",
+    "mcp_enabled": "bool - always false.",
+    "auto_send_enabled": "bool - always false."
+  },
+  "safety": {
+    "local_only": true,
+    "reads_secret_values": false,
+    "network_used": false,
+    "external_api_used": false,
+    "live_agent_launch": false,
+    "telegram_control": false,
+    "mcp": false,
+    "live_browser": false,
+    "os_input": false,
+    "auto_send": false,
+    "installs": false
+  }
+}

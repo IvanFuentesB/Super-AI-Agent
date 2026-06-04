@@ -284,8 +284,10 @@ def _run_ollama_once(args, timeout):
         try:
             stdout, _stderr = proc.communicate(timeout=timeout)
         except subprocess.TimeoutExpired:
-            proc.kill()
-            proc.communicate(timeout=5)
+            try:
+                proc.kill()
+            except OSError:
+                pass
             return None
     except (OSError, subprocess.SubprocessError):
         return None
