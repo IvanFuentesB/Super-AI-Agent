@@ -56,6 +56,8 @@ Third-party repo contents are not committed. The sandbox path is ignored except 
 
 Generated validation residue was restored before committing this report.
 
+Environment note: Python writes under `C:\Users\ai_sandbox\Documents\AI_Managed_Only` failed in the local shell after the initial report commit because the active `python` command resolved to a broken `uv` shim and direct Python writes under the Documents path returned file-not-found errors. To avoid mutating the dirty primary worktree and still validate the exact post-report commit, the full command gate was rerun in a local temporary clone at `C:\Users\ai_sandbox\AppData\Local\Temp\ghoti_n6_19b_validation_git`, checked out at the exact audit/merge HEAD, with PATH preferring the working UV Python install. That rerun passed N+6 tests, repo sandbox checks, clipboard dry-run, security audit, launcher status, context pack, and repo map. No temporary clone contents were committed.
+
 ## ECC Result
 
 PASS.
