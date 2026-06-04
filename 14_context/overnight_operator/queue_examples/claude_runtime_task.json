@@ -1,0 +1,32 @@
+{
+  "task_type": "build_prompt_packet",
+  "target_agent": "claude",
+  "milestone": "N+6.20A",
+  "title": "Approved-window copy/paste harness",
+  "branch": "feat/ghoti-agent-claude-n6-20a-approved-window-paste-harness",
+  "worktree": ".claude/worktrees/n6_20a_approved_window_paste_harness",
+  "mission": "Implement the approved-window copy/paste harness: detect a specific operator-approved target window, require an explicit per-run approval token, and only then paste a prompt packet that was already copied to the clipboard. Add a clipboard guard, a kill switch, and an auto-stop on errors. Do not press Enter or submit; the operator submits manually in this milestone.",
+  "files_allowed": [
+    "03_scripts/overnight_operator/",
+    "14_context/overnight_operator/",
+    "23_configs/overnight_operator.example.json",
+    "23_configs/ghoti_feature_flags.example.json",
+    "01_projects/runtime_mvp/tests/test_n6_20a_*.py",
+    "docs/GHOTI_N6_20A_*.md"
+  ],
+  "files_forbidden": [
+    "main branch (no push, no merge)",
+    "21_repos/third_party/** (read-only intake)",
+    "any real secret, token, or chat id",
+    "any file outside the repo root"
+  ],
+  "expected_output": "An IMPLEMENTED_AND_PUSHED packet with branch, commit, validation, and what remains disabled. The harness must default to dry-run and never auto-submit.",
+  "safety_rules": [
+    "Push the feature branch only; never push or merge main.",
+    "No AI attribution trailers in commits.",
+    "No shell-string subprocess and no PowerShell expression invocation.",
+    "No auto-submit, no Enter key, no window focus stealing without explicit approval.",
+    "No live agent launch, no MCP, no live browser/computer-use, no OS click/type without approval.",
+    "Restore generated validation residue."
+  ]
+}

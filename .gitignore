@@ -140,3 +140,17 @@ gemma4/
 # Ghoti Active Mode screenshots and runtime snapshots
 01_projects/dashboard_mvp/.tmp-screenshots/
 *.tmp-ghoti-*.png
+
+# N+6.19A overnight operator runtime sandbox - cloned third-party repos for
+# allowlisted sandbox execution; never staged, contents never committed.
+21_repos/third_party_runtime_sandbox/*
+!21_repos/third_party_runtime_sandbox/.gitkeep
+
+# N+6.19A overnight operator runtime artifacts (generated; never committed)
+14_context/overnight_operator/outbox/*
+!14_context/overnight_operator/outbox/.gitkeep
+14_context/overnight_operator/inbox/*
+!14_context/overnight_operator/inbox/.gitkeep
+14_context/overnight_operator/archive/*
+!14_context/overnight_operator/archive/.gitkeep
+14_context/overnight_operator/repo_execution_reports/generated/

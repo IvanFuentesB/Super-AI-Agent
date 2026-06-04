@@ -1,0 +1,30 @@
+{
+  "milestone": "N+6.19A",
+  "enabled": false,
+  "runtime_root": "14_context/overnight_operator",
+  "third_party_sandbox_root": "21_repos/third_party_runtime_sandbox",
+  "clipboard": {
+    "relay_enabled": false,
+    "copy_to_clipboard_requires_explicit_command": true,
+    "paste_into_apps_enabled": false,
+    "auto_submit_enabled": false
+  },
+  "repo_execution": {
+    "enabled": false,
+    "clone_allowlisted_repos_only": true,
+    "run_allowlisted_metadata_commands_only": true,
+    "install_packages_enabled": false,
+    "docker_enabled": false,
+    "live_browser_enabled": false
+  },
+  "safety": {
+    "local_only": true,
+    "no_secrets": true,
+    "no_live_agent_launch": true,
+    "no_mcp_setup": true,
+    "no_telegram_run": true,
+    "no_os_click_type": true,
+    "no_auto_send": true,
+    "feature_branch_only": true
+  }
+}

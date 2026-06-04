@@ -1,0 +1,10 @@
+{
+  "task_type": "repo_execution_sandbox",
+  "target_agent": "ghoti_local",
+  "title": "Inspect GBrain memory architecture",
+  "milestone": "N+6.19A",
+  "repo": "GBrain",
+  "actions": ["clone", "static_scan", "run_allowlisted_if_cloned"],
+  "mission": "Clone the allowlisted GBrain repo into the runtime sandbox, static-scan it, and extract memory/brain/handoff/skills patterns for Ghoti without running live services.",
+  "expected_output": "Repo execution report plus GBrain memory extraction plan."
+}
