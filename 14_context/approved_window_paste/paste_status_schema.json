@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Ghoti Approved-Window Paste status (N+6.20A)",
+  "description": "Shape of the status emitted by ghoti_paste_status.py and the approved-window paste harness. The harness can list visible windows, copy an outbox packet to the clipboard on explicit command, and validate a paste target against an allowlist. It does NOT paste into apps, press Enter, submit, click coordinates, or control chat/browser/agent windows. Live paste execution stays disabled behind approved_window_paste_enabled.",
+  "type": "object",
+  "x_safety": {
+    "local_only": true,
+    "clipboard_copy_on_explicit_command_only": true,
+    "live_paste_execution_enabled": false,
+    "presses_enter": false,
+    "submits": false,
+    "clicks_coordinates": false,
+    "controls_chat_or_browser_apps": false,
+    "auto_submit": false,
+    "account_login": false,
+    "reads_secret_values": false,
+    "rejects_secret_patterns_in_input": true,
+    "input_must_be_under_outbox": true
+  },
+  "x_modes": ["dry_run_default", "copy_only", "paste_approved_validate_then_defer"],
+  "properties": {
+    "ok": {"type": "boolean"},
+    "milestone": {"type": "string"},
+    "detector_exists": {"type": "boolean"},
+    "paste_wrapper_exists": {"type": "boolean"},
+    "check_exists": {"type": "boolean"},
+    "status_tool_exists": {"type": "boolean"},
+    "manual_output_summary_exists": {"type": "boolean"},
+    "approved_windows_allowlist_present": {"type": "boolean"},
+    "outbox_present": {"type": "boolean"},
+    "manual_output_drop_present": {"type": "boolean"},
+    "approved_window_paste_enabled": {"type": "boolean", "const": false},
+    "clipboard_paste_enabled": {"type": "boolean", "const": false},
+    "auto_submit_enabled": {"type": "boolean", "const": false},
+    "unattended_live_agent_loop_enabled": {"type": "boolean", "const": false},
+    "risky_flags_default_false": {"type": "boolean", "const": true},
+    "only_status_commands_flag_enabled": {"type": "boolean", "const": true},
+    "no_secrets": {"type": "boolean", "const": true},
+    "safety": {"type": "object"}
+  }
+}
