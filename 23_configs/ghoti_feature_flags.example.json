@@ -56,5 +56,11 @@
   "markitdown_sandbox_enabled": false,
   "documenso_overleaf_docs_lane_enabled": false,
   "unattended_mode_enabled": false,
-  "overnight_auto_merge_enabled": false
+  "overnight_auto_merge_enabled": false,
+  "approved_window_detection_enabled": false,
+  "manual_output_drop_enabled": false,
+  "ecc_agent_workflow_upgrade_enabled": false,
+  "gbrain_memory_upgrade_enabled": false,
+  "agent_arena_simulator_enabled": false,
+  "unattended_live_agent_loop_enabled": false
 }

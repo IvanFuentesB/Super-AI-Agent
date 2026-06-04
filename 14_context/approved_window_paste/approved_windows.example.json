@@ -1,0 +1,34 @@
+{
+  "milestone": "N+6.20A",
+  "description": "Example allowlist of windows the approved-window paste harness MAY target. This is a TEMPLATE with conservative placeholders and NO secrets. A window must match an entry here AND be currently visible before the harness treats it as an approved paste target. Even then, live paste execution stays disabled behind approved_window_paste_enabled; the operator pastes manually with Ctrl+V. Chat / browser / agent app windows are intentionally NOT approved by default.",
+  "match_policy": "A window matches when process_name matches case-insensitively AND title_contains (a case-insensitive substring) appears in the window title. An empty title_contains matches any title for that process.",
+  "approved_windows": [
+    {
+      "name": "Local text editor (Notepad scratch)",
+      "process_name": "notepad",
+      "title_contains": "",
+      "notes": "Safe scratch target to verify a packet pasted correctly. Never submits."
+    },
+    {
+      "name": "VS Code scratch file",
+      "process_name": "Code",
+      "title_contains": "ghoti_scratch",
+      "notes": "Only a scratch file whose title contains ghoti_scratch is approved, not arbitrary editor tabs."
+    }
+  ],
+  "never_approved_processes": [
+    "chrome", "msedge", "firefox", "brave", "arc",
+    "ChatGPT", "Claude", "Codex", "Cursor",
+    "Telegram", "WhatsApp", "Discord", "Slack",
+    "Outlook", "thunderbird", "powershell", "cmd", "WindowsTerminal"
+  ],
+  "safety": {
+    "live_paste_execution_enabled": false,
+    "requires_visible_window_match": true,
+    "requires_explicit_paste_approved_flag": true,
+    "never_presses_enter": true,
+    "never_submits": true,
+    "never_clicks_coordinates": true,
+    "never_pastes_into_unapproved_window": true
+  }
+}

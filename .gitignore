@@ -154,3 +154,7 @@ gemma4/
 14_context/overnight_operator/archive/*
 !14_context/overnight_operator/archive/.gitkeep
 14_context/overnight_operator/repo_execution_reports/generated/
+
+# N+6.20A approved-window paste runtime artifacts (generated; never committed)
+14_context/approved_window_paste/manual_output_drop/*
+!14_context/approved_window_paste/manual_output_drop/README.md
