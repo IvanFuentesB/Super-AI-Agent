@@ -39,5 +39,10 @@
   "hermes_memory_writer_enabled": false,
   "status_bridge_enabled": false,
   "hermes_status_bridge_enabled": false,
-  "status_bridge_auto_handoff_enabled": false
+  "status_bridge_auto_handoff_enabled": false,
+  "operator_dashboard_enabled": false,
+  "operator_dashboard_api_enabled": false,
+  "operator_dashboard_mutations_enabled": false,
+  "operator_dashboard_external_access_enabled": false,
+  "operator_dashboard_command_execution_enabled": false
 }
