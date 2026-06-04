@@ -1,0 +1,10 @@
+{
+  "task_type": "repo_execution_sandbox",
+  "target_agent": "ghoti_local",
+  "title": "Inspect ECC agentic coding setup",
+  "milestone": "N+6.19A",
+  "repo": "ECC",
+  "actions": ["clone", "static_scan", "run_allowlisted_if_cloned"],
+  "mission": "Clone the allowlisted ECC repo into the runtime sandbox, static-scan it, and extract agent/skill/command/hook/security patterns for Ghoti without installing or executing ECC code.",
+  "expected_output": "Repo execution report plus ECC extraction plan."
+}

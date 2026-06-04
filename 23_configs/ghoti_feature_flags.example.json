@@ -44,5 +44,17 @@
   "operator_dashboard_api_enabled": false,
   "operator_dashboard_mutations_enabled": false,
   "operator_dashboard_external_access_enabled": false,
-  "operator_dashboard_command_execution_enabled": false
+  "operator_dashboard_command_execution_enabled": false,
+  "overnight_operator_enabled": false,
+  "clipboard_relay_enabled": false,
+  "clipboard_paste_enabled": false,
+  "approved_window_paste_enabled": false,
+  "auto_submit_enabled": false,
+  "external_repo_execution_enabled": false,
+  "ecc_integration_enabled": false,
+  "gbrain_integration_enabled": false,
+  "markitdown_sandbox_enabled": false,
+  "documenso_overleaf_docs_lane_enabled": false,
+  "unattended_mode_enabled": false,
+  "overnight_auto_merge_enabled": false
 }

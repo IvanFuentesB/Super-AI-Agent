@@ -1,0 +1,20 @@
+{
+  "task_type": "repo_execution_sandbox",
+  "target_agent": "ghoti_local",
+  "milestone": "N+6.19A",
+  "title": "MarkItDown sandbox execution (first real external repo use)",
+  "repo": "MarkItDown",
+  "actions": ["static_scan", "clone", "run_allowlisted"],
+  "sandbox_only": true,
+  "sandbox_clone_path": "21_repos/third_party_runtime_sandbox/markitdown",
+  "install_into_system_python": false,
+  "expected_output": "A repo execution report capturing the clone HEAD, license/readme/pyproject detection, a static safety scan verdict, and the prepared (deferred) venv + --help command.",
+  "safety_rules": [
+    "Clone only the allowlisted official URL into 21_repos/third_party_runtime_sandbox/markitdown.",
+    "Run only allowlisted git/metadata commands as argument lists with timeouts.",
+    "Static-scan the code before any execution; no shell-string subprocess and no PowerShell expression invocation.",
+    "No install into system Python; any venv stays under the sandbox venv root.",
+    "Do not commit cloned repo contents.",
+    "No containers, no package install, no remote script piping, no secrets."
+  ]
+}

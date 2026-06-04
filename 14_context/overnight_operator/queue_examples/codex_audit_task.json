@@ -1,0 +1,24 @@
+{
+  "task_type": "build_prompt_packet",
+  "target_agent": "codex",
+  "milestone": "N+6.19A-audit",
+  "title": "Independent audit of the overnight operator MVP",
+  "branch": "audit/ghoti-agent-codex-n6-19a-overnight-operator-mvp",
+  "worktree": ".claude/worktrees/n6_19a_codex_audit",
+  "mission": "Independently audit the N+6.19A overnight operator MVP branch. Verify the clipboard relay never pastes or submits, the operator queue blocks every blocked task type, the repo execution sandbox only touches allowlisted repos and clones into the sandbox path, no cloned repo contents are committed, no secrets are present, feature flags default false, and the global example config keeps only telegram_status_commands_enabled true. Return a clear verdict.",
+  "files_allowed": [
+    "read-only: the entire feature branch diff and all committed N+6.19A files"
+  ],
+  "files_forbidden": [
+    "no /goal command",
+    "no writes to main",
+    "no edits to the implementation branch"
+  ],
+  "expected_output": "A CLEAN PASS or BLOCKED verdict with specific findings and line references.",
+  "safety_rules": [
+    "Use extra-high audit effort.",
+    "Do not use /goal.",
+    "Do not push or merge main.",
+    "Read-only review; make no functional code changes."
+  ]
+}

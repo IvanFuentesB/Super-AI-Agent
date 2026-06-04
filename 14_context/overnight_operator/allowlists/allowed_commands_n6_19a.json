@@ -1,0 +1,129 @@
+{
+  "milestone": "N+6.19A",
+  "title": "Overnight Operator - allowed command classes for the runtime sandbox",
+  "policy": "ghoti_repo_execution_sandbox.py may run ONLY the command classes below, always as an argument list, never as a shell string, always with a timeout, and only with a cwd under the sandbox clone root. Any command not matching a class here is refused. Clone destinations must be under 21_repos/third_party_runtime_sandbox/.",
+  "sandbox_clone_root": "21_repos/third_party_runtime_sandbox",
+  "venv_root": "21_repos/third_party_runtime_sandbox/_venvs",
+  "default_timeout_seconds": 120,
+  "allowed_command_classes": [
+    {
+      "id": "git_clone_shallow",
+      "description": "Shallow git clone of an allowlisted URL into the sandbox.",
+      "argv_template": ["git", "clone", "--depth", "1", "<allowlisted_url>", "<sandbox_dest>"],
+      "network": true,
+      "requires_allowlisted_url": true,
+      "dest_must_be_under_sandbox": true,
+      "timeout_seconds": 300
+    },
+    {
+      "id": "git_fetch_sandbox",
+      "description": "Fetch inside an already-cloned sandbox repo.",
+      "argv_template": ["git", "fetch", "--depth", "1"],
+      "network": true,
+      "cwd_must_be_sandbox_repo": true,
+      "timeout_seconds": 180
+    },
+    {
+      "id": "git_rev_parse_head",
+      "description": "Read the cloned repo HEAD commit.",
+      "argv_template": ["git", "rev-parse", "HEAD"],
+      "network": false,
+      "cwd_must_be_sandbox_repo": true,
+      "timeout_seconds": 30
+    },
+    {
+      "id": "git_log_oneline",
+      "description": "Read the latest commit summary.",
+      "argv_template": ["git", "log", "-1", "--oneline"],
+      "network": false,
+      "cwd_must_be_sandbox_repo": true,
+      "timeout_seconds": 30
+    },
+    {
+      "id": "list_files",
+      "description": "List top-level files of the cloned repo (read-only, done in-process).",
+      "argv_template": null,
+      "in_process_read_only": true,
+      "network": false,
+      "timeout_seconds": 30
+    },
+    {
+      "id": "read_metadata",
+      "description": "Read packaging/license/readme metadata (read-only, in-process).",
+      "files": ["LICENSE", "LICENSE.md", "LICENSE.txt", "README", "README.md", "pyproject.toml", "setup.py", "setup.cfg", "package.json"],
+      "in_process_read_only": true,
+      "network": false,
+      "timeout_seconds": 30
+    },
+    {
+      "id": "python_pytest_quiet",
+      "description": "Run simple repo tests only if they need no install and a venv is prepared.",
+      "argv_template": ["<venv_python>", "-m", "pytest", "-q"],
+      "network": false,
+      "preconditions": ["static_scan_passed", "venv_prepared", "no_install_required"],
+      "default_disabled": true,
+      "timeout_seconds": 180
+    },
+    {
+      "id": "venv_create",
+      "description": "Create an isolated venv under the sandbox venv root (never system Python).",
+      "argv_template": ["<resolved_python>", "-m", "venv", "<venv_root>/<slug>"],
+      "network": false,
+      "dest_must_be_under_sandbox": true,
+      "default_disabled": true,
+      "timeout_seconds": 120
+    },
+    {
+      "id": "pip_install_editable",
+      "description": "Editable install of an allowlisted repo into its isolated venv only.",
+      "argv_template": ["<venv_python>", "-m", "pip", "install", "-e", "<repo_path>"],
+      "network": true,
+      "preconditions": ["static_scan_passed", "license_detected", "pyproject_inspected", "no_suspicious_install_hooks", "no_secrets_passed", "feature_flag_enabled", "timeout_set"],
+      "default_disabled": true,
+      "timeout_seconds": 300
+    },
+    {
+      "id": "markitdown_help",
+      "description": "Run the MarkItDown CLI help from its isolated venv (proof the tool runs).",
+      "argv_template": ["<venv_python>", "-m", "markitdown", "--help"],
+      "network": false,
+      "preconditions": ["static_scan_passed", "venv_prepared", "markitdown_sandbox_enabled"],
+      "default_disabled": true,
+      "timeout_seconds": 60
+    }
+  ],
+  "strictly_blocked": [
+    "running unknown scripts",
+    "npm install",
+    "pnpm install",
+    "yarn install",
+    "curl piped to a shell",
+    "wget piped to a shell",
+    "remote shell",
+    "Docker container execution",
+    "Docker compose execution",
+    "browser automation",
+    "account login",
+    "passing API keys or secrets",
+    "privileged escalation commands",
+    "chmod +x on unknown scripts",
+    "PowerShell expression invocation",
+    "Python subprocess shell option enabled",
+    "Git remote push",
+    "Git main-branch merge",
+    "deleting files outside the sandbox",
+    "writing outside the sandbox except Ghoti reports and outbox"
+  ],
+  "static_scan_risk_patterns": [
+    {"id": "python_shell_string_subprocess", "regex": "shell\\s*=\\s*True", "severity": "review"},
+    {"id": "os_system_call", "regex": "os\\.system\\s*\\(", "severity": "review"},
+    {"id": "eval_or_exec_call", "regex": "\\b(?:eval|exec)\\s*\\(", "severity": "review"},
+    {"id": "npm_lifecycle_install_hook", "regex": "\"(?:pre|post)install\"\\s*:", "severity": "review"},
+    {"id": "pip_install_invocation", "regex": "pip\\s+install", "severity": "review"},
+    {"id": "privilege_escalation", "regex": "\\b(?:s)udo\\s+\\S", "severity": "review"},
+    {"id": "container_runtime_invocation", "regex": "\\bdocker\\s+(?:run|build|compose)\\b", "severity": "review"},
+    {"id": "make_executable", "regex": "chmod\\s+\\+x", "severity": "review"},
+    {"id": "remote_script_piped_to_shell", "regex": "(?:curl|wget)[^\\n|]*\\|\\s*(?:sh|bash)", "severity": "high"},
+    {"id": "base64_decoded_then_executed", "regex": "(?:b64decode|base64\\s+-d|base64\\.b64decode)", "severity": "high"}
+  ]
+}

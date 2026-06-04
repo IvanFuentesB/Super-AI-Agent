@@ -1,0 +1,57 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Ghoti Overnight Operator status (N+6.19A)",
+  "description": "Shape of the status emitted by check_overnight_operator.ps1 and the operator queue/sandbox tools. The overnight operator is local-only: it generates prompt packets, may copy text to the clipboard on explicit command, collects pasted outputs from a local inbox, and runs allowlisted repo-sandbox commands. It does NOT paste into apps, click/type the OS, submit to chat UIs, launch agents, or run unattended.",
+  "type": "object",
+  "x_safety": {
+    "local_only": true,
+    "clipboard_copy_only": true,
+    "clipboard_paste_enabled": false,
+    "approved_window_paste_enabled": false,
+    "auto_submit_enabled": false,
+    "app_window_control": false,
+    "os_click_type": false,
+    "live_agent_launch": false,
+    "mcp": false,
+    "live_browser_automation": false,
+    "account_login": false,
+    "email_or_whatsapp_send": false,
+    "external_repo_execution_default": false,
+    "system_python_install": false,
+    "docker_run": false,
+    "unattended_mode": false,
+    "overnight_auto_merge": false,
+    "reads_secret_values": false,
+    "git_push_or_merge_main": false,
+    "network_limited_to": ["git clone/fetch of allowlisted repos into the sandbox"]
+  },
+  "x_blocked_task_types": [
+    "live_app_paste", "auto_submit", "launch_claude", "launch_codex", "live_browser",
+    "account_login", "telegram_send", "email_send", "whatsapp_send", "mcp_write",
+    "shell_exec_unbounded", "docker_run", "git_push_main", "git_merge_main"
+  ],
+  "x_supported_task_types": [
+    "build_prompt_packet", "summarize_inbox_output", "repo_execution_sandbox", "hermes_status_prompt"
+  ],
+  "properties": {
+    "ok": {"type": "boolean"},
+    "milestone": {"type": "string"},
+    "prompt_builder_exists": {"type": "boolean"},
+    "clipboard_relay_exists": {"type": "boolean"},
+    "queue_exists": {"type": "boolean"},
+    "repo_sandbox_exists": {"type": "boolean"},
+    "outbox_exists": {"type": "boolean"},
+    "inbox_exists": {"type": "boolean"},
+    "reports_dir_exists": {"type": "boolean"},
+    "dry_run_works": {"type": "boolean"},
+    "clipboard_copy_supported": {"type": "boolean"},
+    "repo_sandbox_list_works": {"type": "boolean"},
+    "external_repo_execution_enabled": {"type": "boolean", "const": false},
+    "paste_enabled": {"type": "boolean", "const": false},
+    "auto_submit_enabled": {"type": "boolean", "const": false},
+    "unattended_mode_enabled": {"type": "boolean", "const": false},
+    "no_secrets": {"type": "boolean", "const": true},
+    "risky_flags_default_false": {"type": "boolean", "const": true},
+    "safety": {"type": "object"}
+  }
+}

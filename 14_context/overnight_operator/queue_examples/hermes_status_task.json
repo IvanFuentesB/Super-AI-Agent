@@ -1,0 +1,22 @@
+{
+  "task_type": "hermes_status_prompt",
+  "target_agent": "hermes",
+  "milestone": "N+6.19A",
+  "title": "WSL Hermes status summary prompt",
+  "session_id": "20260601_081506_d35c70",
+  "mission": "Produce a concise status summary of where Ghoti stands: current origin/main, the latest merged milestones, what the overnight operator MVP can do, and the single next recommended action. Read the status bridge and the handoff note as the memory source; do not invent facts.",
+  "files_allowed": [
+    "read-only: 14_context status bridge and handoff notes"
+  ],
+  "files_forbidden": [
+    "no live control",
+    "no command execution",
+    "no secret access"
+  ],
+  "expected_output": "A short status-summary markdown the operator can paste into the WSL Hermes session.",
+  "safety_rules": [
+    "Status-only: no /run and no live control.",
+    "Resume the same WSL Hermes session; do not start a new one.",
+    "No secrets, no external API, no auto-send."
+  ]
+}
