@@ -137,6 +137,44 @@ class SourceSafetyTests(unittest.TestCase):
         self.assertIn("ThreadingHTTPServer", self.src)
 
 
+class ExternalBindTests(unittest.TestCase):
+    """Prove the arena cannot bind a non-loopback address (Codex N+6.21A blocker fix)."""
+
+    def test_no_external_bind_capability_in_source(self):
+        src = read(ARENA)
+        self.assertNotIn("allow_nonlocal", src)
+        self.assertNotIn("--allow-nonlocal-host", src)
+
+    def test_normalize_loopback_rejects_external(self):
+        mod = load_module()
+        for bad in ["0.0.0.0", "::", "192.168.1.50", "10.0.0.1", "example.com", "8.8.8.8"]:
+            self.assertIsNone(mod._normalize_loopback(bad), msg=f"{bad} must be refused")
+        self.assertEqual(mod._normalize_loopback("127.0.0.1"), "127.0.0.1")
+        self.assertEqual(mod._normalize_loopback("localhost"), "127.0.0.1")
+        self.assertEqual(mod._normalize_loopback("LOCALHOST"), "127.0.0.1")
+        self.assertEqual(mod._normalize_loopback("::1"), "::1")
+
+    def test_serve_has_no_allow_nonlocal_param(self):
+        import inspect
+        mod = load_module()
+        self.assertNotIn("allow_nonlocal_host", inspect.signature(mod.serve).parameters)
+
+    def test_serve_cli_refuses_external_host(self):
+        proc = subprocess.run(
+            [sys.executable, str(ARENA), "--serve", "--host", "0.0.0.0", "--port", "8791"],
+            capture_output=True, text=True, timeout=30)
+        self.assertEqual(proc.returncode, 2)
+        data = json.loads(proc.stdout)
+        self.assertFalse(data["ok"])
+        self.assertFalse(data["external_bind_possible"])
+
+    def test_check_reports_loopback_only(self):
+        rc, data, err = run_py("--check", "--json")
+        self.assertEqual(rc, 0, msg=err)
+        self.assertTrue(data["no_external_bind_capability"])
+        self.assertTrue(data["loopback_only_enforced"])
+
+
 class StaticAssetTests(unittest.TestCase):
     def test_no_external_assets(self):
         for path in STATIC_PAGE_FILES:

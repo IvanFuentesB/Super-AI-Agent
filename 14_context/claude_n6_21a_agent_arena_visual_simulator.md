@@ -17,7 +17,25 @@ powershell -ExecutionPolicy Bypass -File 03_scripts/agent_arena/start_agent_aren
 
 ## Verdict
 
-IMPLEMENTED_AND_PUSHED.
+IMPLEMENTED_AND_PUSHED. (Amended to fix the Codex loopback-only blocker - see below.)
+
+## Loopback-only fix (Codex N+6.21A blocker)
+
+Codex BLOCKED the first cut because `ghoti_agent_arena.py` exposed an external-bind
+escape hatch (`--allow-nonlocal-host` / the `allow_nonlocal_host` parameter). It is
+removed entirely:
+
+- The `--allow-nonlocal-host` CLI flag and the `allow_nonlocal_host` parameter are
+  **deleted**; `serve()` takes only `host` and `port`.
+- Host handling is now `_normalize_loopback(host)`: it returns `127.0.0.1` for
+  `127.0.0.1`/`localhost`, `::1` for `::1`, and **None (refuse) for everything else** -
+  `0.0.0.0`, other `127.x.x.x`, hostnames, and public IPs. There is no opt-in.
+- `serve()` refuses any non-loopback host (`ok:false`, `external_bind_possible:false`,
+  exit code 2) **before** binding, and binds only the normalized loopback address.
+- `--check` now reports `no_external_bind_capability:true` and
+  `loopback_only_enforced:true`. New tests prove `0.0.0.0` (and other externals) are
+  refused, that `serve` has no `allow_nonlocal_host` parameter, and that the source
+  carries no `allow_nonlocal` token. The schema and doc truth claims were corrected.
 
 ## Branch / worktree / base / dependency
 
@@ -83,13 +101,14 @@ powershell -ExecutionPolicy Bypass -File 03_scripts/agent_arena/start_agent_aren
 
 ## Validation
 
-- `python ... test_n6_21a_...py` → **24 tests, 24 pass**.
-- Full n6 suite (`unittest discover -p "test_n6_*.py"`) → **360 tests, 1 failure + 1
-  error**, both pre-existing/environmental in files this lane did not touch: the known
-  `test_n6_14a` broken-PATH-`python`-shim check, and a `test_n6_15a`
-  `--use-gemma-if-available` status-brain call that ran real local gemma/ollama
-  inference and exceeded its 200s timeout. Neither is an N+6.21A regression; the
-  N+6.21A tests are 24/24.
+- `python ... test_n6_21a_...py` → **29 tests, 29 pass** (including 5 new tests that
+  prove external binds are impossible after the loopback-only fix).
+- Full n6 suite (`unittest discover -p "test_n6_*.py"`) → **365 tests**; the only
+  non-pass results are pre-existing/environmental in files this lane did not touch: the
+  known `test_n6_14a` broken-PATH-`python`-shim check, and a flaky `test_n6_15a`
+  `--use-gemma-if-available` status-brain timeout that only appears when the local
+  gemma/ollama model is loaded (it did not recur on the post-fix run). Neither is an
+  N+6.21A regression; the N+6.21A tests are 29/29.
 - `ghoti_agent_arena.py --check --json` → `ok: true`; `--simulation-json` →
   `live_execution: false`, six agents covering all five states. PowerShell
   `check_agent_arena.ps1` → `ok: true` (`only_status_commands_flag_enabled` true);

@@ -44,8 +44,8 @@ powershell -ExecutionPolicy Bypass -File 03_scripts/agent_arena/start_agent_aren
 | `GET /api/disabled-capabilities` | what stays disabled |
 
 There are **no POST routes** and no command-execution endpoints. The server binds
-`127.0.0.1` only; a non-loopback host is refused unless an explicit opt-in flag is
-passed, and that flag is left disabled.
+`127.0.0.1` only. Every host input is normalized and any non-loopback address is
+refused; there is no flag or option to bind an external address.
 
 ## Safety
 

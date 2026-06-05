@@ -24,7 +24,7 @@
     "GET /static/app.js",
     "GET /static/styles.css"
   ],
-  "x_default_bind": {"host": "127.0.0.1", "port": 8766, "non_loopback_requires_explicit_opt_in_flag": true},
+  "x_default_bind": {"host": "127.0.0.1", "port": 8766, "binds_loopback_only": true, "external_bind_possible": false},
   "x_task_states": ["idle", "queued", "running", "blocked", "done"],
   "required": [
     "milestone", "simulation", "live_execution", "agents", "task_states",

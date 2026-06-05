@@ -10,8 +10,8 @@ agent cards, a queue/timeline, token/cost estimates, handoffs, and a replay trac
 Simulation-first and safe by construction:
 
   * Python standard library only. No third-party packages, no installs, NO subprocess.
-  * The server binds 127.0.0.1 only; a non-loopback host is refused unless an explicit
-    opt-in flag is passed, and that flag is left disabled.
+  * The server is 127.0.0.1-only. Every host input is normalized and any non-loopback
+    address is refused; there is no flag or option to bind an external address.
   * Only GET routes exist. There is no do_POST handler, so every non-GET method is
     rejected by the standard library. No route launches an agent, runs a command,
     merges, pushes, or mutates anything.
@@ -41,7 +41,9 @@ FEATURE_FLAGS = REPO_ROOT / "23_configs" / "ghoti_feature_flags.example.json"
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8766
-LOOPBACK_HOSTS = {"127.0.0.1", "localhost", "::1"}
+# The only hosts the arena will ever bind. "localhost" normalizes to 127.0.0.1; every
+# other address is refused. There is no option to bind an external address.
+LOOPBACK_BIND = {"127.0.0.1": "127.0.0.1", "localhost": "127.0.0.1", "::1": "::1"}
 
 STATIC_FILES = ("index.html", "app.js", "styles.css")
 
@@ -226,8 +228,14 @@ def build_check():
         "no_post_routes": no_post,
         "no_command_execution": no_command_execution and no_post,
         "no_shell_true": no_command_execution,
-        "localhost_default": DEFAULT_HOST in LOOPBACK_HOSTS,
+        "localhost_default": DEFAULT_HOST in LOOPBACK_BIND,
         "binds_loopback_only": True,
+        "no_external_bind_capability": (
+            _normalize_loopback("0.0.0.0") is None
+            and _normalize_loopback("127.0.0.1") == "127.0.0.1"
+            and _normalize_loopback("localhost") == "127.0.0.1"
+        ),
+        "loopback_only_enforced": True,
         "no_external_assets": _scan_no_external_assets(),
         "no_eval_js": _scan_no_eval_js(),
         "no_secrets": True,
@@ -248,6 +256,7 @@ def build_check():
         checks["no_external_assets"],
         checks["no_eval_js"],
         checks["localhost_default"],
+        checks["no_external_bind_capability"],
         checks["risky_flags_default_false"],
         checks["only_status_commands_flag_enabled"],
     ])
@@ -315,18 +324,28 @@ class ArenaHandler(BaseHTTPRequestHandler):
         return
 
 
-def _is_loopback(host):
-    return host in LOOPBACK_HOSTS
+def _normalize_loopback(host):
+    """Return the loopback bind address for an allowed host, or None to refuse.
+
+    Only 127.0.0.1, ::1, and localhost (normalized to 127.0.0.1) are ever allowed.
+    Every other address - 0.0.0.0, other 127.x.x.x, hostnames, public IPs - is
+    refused. There is no option to bind an external address."""
+    if host is None:
+        return None
+    return LOOPBACK_BIND.get(str(host).strip().lower())
 
 
-def serve(host=DEFAULT_HOST, port=DEFAULT_PORT, allow_nonlocal_host=False):
-    if not _is_loopback(host) and not allow_nonlocal_host:
+def serve(host=DEFAULT_HOST, port=DEFAULT_PORT):
+    bind_host = _normalize_loopback(host)
+    if bind_host is None:
         print(json.dumps({
             "ok": False,
             "error": "refusing to bind a non-loopback host",
             "host": host,
-            "hint": "The arena binds 127.0.0.1 only. External serving is a separate, "
-                    "future, authenticated milestone.",
+            "binds_loopback_only": True,
+            "external_bind_possible": False,
+            "hint": "The arena is 127.0.0.1-only. Only 127.0.0.1, localhost, or ::1 are "
+                    "accepted; there is no option to bind an external address.",
         }, indent=2))
         return 2
 
@@ -336,10 +355,10 @@ def serve(host=DEFAULT_HOST, port=DEFAULT_PORT, allow_nonlocal_host=False):
         "milestone": MILESTONE,
         "service": "ghoti_agent_arena",
         "serving": True,
-        "url": "http://{0}:{1}/".format(host, port),
-        "host": host,
+        "url": "http://{0}:{1}/".format(bind_host, port),
+        "host": bind_host,
         "port": port,
-        "binds_loopback_only": _is_loopback(host),
+        "binds_loopback_only": True,
         "simulation_only": True,
         "live_execution": False,
         "has_post_routes": False,
@@ -348,7 +367,7 @@ def serve(host=DEFAULT_HOST, port=DEFAULT_PORT, allow_nonlocal_host=False):
         "stop": "Press Ctrl+C to stop.",
     }, indent=2))
 
-    httpd = ThreadingHTTPServer((host, port), ArenaHandler)
+    httpd = ThreadingHTTPServer((bind_host, port), ArenaHandler)
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
@@ -369,11 +388,10 @@ def _parse_args(argv):
     parser.add_argument("--serve", action="store_true",
                         help="Start the local-only arena server.")
     parser.add_argument("--host", default=DEFAULT_HOST,
-                        help="Host to bind (loopback only unless --allow-nonlocal-host).")
+                        help="Host to bind. Only 127.0.0.1, localhost, or ::1 are "
+                             "accepted; any other host is refused.")
     parser.add_argument("--port", type=int, default=DEFAULT_PORT,
                         help="Port to bind (default 8766).")
-    parser.add_argument("--allow-nonlocal-host", action="store_true",
-                        help="Explicit opt-in to bind a non-loopback host. Left disabled.")
     parser.add_argument("--json", action="store_true",
                         help="Force JSON output (check/simulation already emit JSON).")
     return parser.parse_args(argv)
@@ -382,7 +400,7 @@ def _parse_args(argv):
 def main(argv=None):
     args = _parse_args(argv if argv is not None else sys.argv[1:])
     if args.serve:
-        return serve(host=args.host, port=args.port, allow_nonlocal_host=args.allow_nonlocal_host)
+        return serve(host=args.host, port=args.port)
     if args.check:
         print(json.dumps(build_check(), indent=2))
         return 0
