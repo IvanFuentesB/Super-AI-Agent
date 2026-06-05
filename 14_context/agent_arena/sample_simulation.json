@@ -1,0 +1,123 @@
+{
+  "milestone": "N+6.21A",
+  "title": "Ghoti Agent Arena - sample simulation",
+  "simulation": true,
+  "live_execution": false,
+  "generated_label": "simulation-first; no live agents launched; all numbers are estimates",
+  "scenario": "One overnight milestone: ChatGPT plans, Claude builds, Codex audits, Hermes coordinates, Gemma summarizes, the human approves and merges.",
+  "agents": [
+    {
+      "id": "chatgpt_strategy",
+      "name": "ChatGPT strategy brain",
+      "role": "strategy",
+      "state": "done",
+      "branch": null,
+      "worktree": null,
+      "current_task": "Pick the next milestone and write the spec",
+      "token_estimate": 18000,
+      "cost_estimate_usd": 0.18,
+      "note": "Plans the milestone; never runs code."
+    },
+    {
+      "id": "claude_builder",
+      "name": "Claude builder",
+      "role": "implementer",
+      "state": "running",
+      "branch": "feat/ghoti-agent-claude-n6-21a-agent-arena-visual-simulator",
+      "worktree": ".claude/worktrees/n6_21a_agent_arena_visual_simulator",
+      "current_task": "Implement the agent arena visual simulator",
+      "token_estimate": 52000,
+      "cost_estimate_usd": 0.78,
+      "note": "One agent per task on its own branch and worktree."
+    },
+    {
+      "id": "codex_auditor",
+      "name": "Codex auditor",
+      "role": "auditor",
+      "state": "queued",
+      "branch": "audit/ghoti-agent-codex-n6-21a-agent-arena-visual-simulator",
+      "worktree": ".claude/worktrees/n6_21a_audit",
+      "current_task": "Independent audit of the pushed feature branch",
+      "token_estimate": 30000,
+      "cost_estimate_usd": 0.45,
+      "note": "Runs after Claude pushes; returns CLEAN PASS or BLOCKED."
+    },
+    {
+      "id": "hermes_coordinator",
+      "name": "Hermes coordinator",
+      "role": "coordinator",
+      "state": "idle",
+      "branch": null,
+      "worktree": null,
+      "current_task": "Track lane status and handoffs",
+      "token_estimate": 6000,
+      "cost_estimate_usd": 0.0,
+      "note": "Local WSL coordinator; status-only."
+    },
+    {
+      "id": "gemma_summarizer",
+      "name": "Gemma summarizer",
+      "role": "summarizer",
+      "state": "blocked",
+      "branch": null,
+      "worktree": null,
+      "current_task": "Summarize the run once outputs land",
+      "token_estimate": 0,
+      "cost_estimate_usd": 0.0,
+      "note": "Local Ollama model; blocked until the builder produces output. No external API."
+    },
+    {
+      "id": "human_approver",
+      "name": "Human approver",
+      "role": "approver",
+      "state": "idle",
+      "branch": null,
+      "worktree": null,
+      "current_task": "Approve the merge after a CLEAN audit",
+      "token_estimate": 0,
+      "cost_estimate_usd": 0.0,
+      "note": "Humans approve and merge; the simulator never merges."
+    }
+  ],
+  "task_states": ["idle", "queued", "running", "blocked", "done"],
+  "queue": [
+    {"task_id": "t1", "title": "Plan milestone", "assigned_agent": "chatgpt_strategy", "state": "done"},
+    {"task_id": "t2", "title": "Build agent arena", "assigned_agent": "claude_builder", "state": "running"},
+    {"task_id": "t3", "title": "Audit feature branch", "assigned_agent": "codex_auditor", "state": "queued"},
+    {"task_id": "t4", "title": "Summarize run", "assigned_agent": "gemma_summarizer", "state": "blocked"},
+    {"task_id": "t5", "title": "Approve and merge", "assigned_agent": "human_approver", "state": "idle"}
+  ],
+  "timeline": [
+    {"t": "2026-06-04T17:00:00Z", "task_id": "t1", "agent": "chatgpt_strategy", "from_state": "running", "to_state": "done", "note": "Spec written"},
+    {"t": "2026-06-04T17:05:00Z", "task_id": "t2", "agent": "claude_builder", "from_state": "queued", "to_state": "running", "note": "Worktree created"},
+    {"t": "2026-06-04T17:20:00Z", "task_id": "t3", "agent": "codex_auditor", "from_state": "idle", "to_state": "queued", "note": "Waiting for the push"},
+    {"t": "2026-06-04T17:21:00Z", "task_id": "t4", "agent": "gemma_summarizer", "from_state": "idle", "to_state": "blocked", "note": "Waiting for outputs"}
+  ],
+  "handoffs": [
+    {"file": "14_context/agent_handoff_vault/02_Agent_Handoffs/NEXT_APPROVED_WINDOW_PASTE_TASK.md", "from": "chatgpt_strategy", "to": "claude_builder", "kind": "seed_handoff"},
+    {"file": "14_context/claude_n6_21a_agent_arena_visual_simulator.md", "from": "claude_builder", "to": "codex_auditor", "kind": "report"}
+  ],
+  "traces": [
+    {"step": 1, "agent": "chatgpt_strategy", "action": "plan", "note": "Define the N+6.21A scope"},
+    {"step": 2, "agent": "claude_builder", "action": "implement", "note": "Write arena server + static UI + tests"},
+    {"step": 3, "agent": "claude_builder", "action": "validate", "note": "Run the suite + audit; restore residue"},
+    {"step": 4, "agent": "claude_builder", "action": "push", "note": "Push the feature branch only"},
+    {"step": 5, "agent": "codex_auditor", "action": "audit", "note": "Independent CLEAN PASS / BLOCKED"},
+    {"step": 6, "agent": "human_approver", "action": "approve", "note": "Merge after a CLEAN audit"}
+  ],
+  "totals": {
+    "agent_count": 6,
+    "token_estimate": 106000,
+    "cost_estimate_usd": 1.41,
+    "estimate_basis": "rough per-agent token guesses times sample rates; illustrative only"
+  },
+  "safety": {
+    "simulation": true,
+    "live_execution": false,
+    "launches_agents": false,
+    "runs_commands": false,
+    "merges_or_pushes": false,
+    "external_api": false,
+    "reads_secret_values": false
+  }
+}

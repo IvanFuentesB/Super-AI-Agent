@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Ghoti Agent Arena simulation (N+6.21A)",
+  "description": "Shape of the GET /api/simulation payload served by the agent arena visual simulator. The arena is simulation-only and local: it loads a sample simulation JSON and renders agent cards, a queue/timeline, token/cost estimates, handoffs, and a trace for replay. It launches no agent, runs no command, merges or pushes nothing, and binds the loopback interface only.",
+  "type": "object",
+  "x_safety": {
+    "simulation": true,
+    "live_execution": false,
+    "local_only": true,
+    "binds_loopback_only": true,
+    "has_post_routes": false,
+    "launches_agents": false,
+    "runs_commands": false,
+    "merges_or_pushes": false,
+    "uses_external_assets": false,
+    "uses_external_api": false,
+    "reads_secret_values": false
+  },
+  "x_routes": [
+    "GET /",
+    "GET /api/health",
+    "GET /api/simulation",
+    "GET /api/disabled-capabilities",
+    "GET /static/app.js",
+    "GET /static/styles.css"
+  ],
+  "x_default_bind": {"host": "127.0.0.1", "port": 8766, "binds_loopback_only": true, "external_bind_possible": false},
+  "x_task_states": ["idle", "queued", "running", "blocked", "done"],
+  "required": [
+    "milestone", "simulation", "live_execution", "agents", "task_states",
+    "queue", "timeline", "handoffs", "traces", "totals", "safety"
+  ],
+  "properties": {
+    "milestone": {"type": "string"},
+    "simulation": {"type": "boolean", "const": true},
+    "live_execution": {"type": "boolean", "const": false},
+    "scenario": {"type": "string"},
+    "agents": {
+      "type": "array",
+      "description": "Agent cards: id, name, role, state (one of task_states), branch, worktree, current_task, token_estimate, cost_estimate_usd.",
+      "items": {"type": "object"}
+    },
+    "task_states": {"type": "array", "items": {"type": "string"}},
+    "queue": {"type": "array", "description": "Tasks with their assigned agent and state."},
+    "timeline": {"type": "array", "description": "State-transition events over time."},
+    "handoffs": {"type": "array", "description": "Handoff files passed between agents."},
+    "traces": {"type": "array", "description": "Ordered steps for replay."},
+    "totals": {"type": "object", "description": "agent_count, token_estimate, cost_estimate_usd (estimates only)."},
+    "safety": {"type": "object", "description": "The simulation-only safe posture echoed in the payload."}
+  }
+}
