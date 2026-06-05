@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ghoti Agent Arena</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="title-wrap">
+      <h1>Ghoti Agent Arena <span class="muted" id="milestone"></span></h1>
+      <p class="subtitle">Simulation-first view of agents and swarms - before any live automation.</p>
+    </div>
+    <div class="topbar-meta">
+      <span class="badge badge-safe">simulation-only</span>
+      <span class="badge badge-safe">no live execution</span>
+      <span class="badge badge-safe">127.0.0.1 only</span>
+      <button id="refresh" class="refresh-btn" type="button">Refresh</button>
+    </div>
+  </header>
+
+  <p id="updated" class="updated">Loading simulation&hellip;</p>
+
+  <h2 class="section-title">Agents</h2>
+  <main id="agents" class="cards"></main>
+
+  <section id="panels" class="panels"></section>
+
+  <footer class="footer">
+    <p>Local, read-only simulation. No agent is launched, no command runs, nothing is
+    merged or pushed, and no secrets are shown.</p>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
