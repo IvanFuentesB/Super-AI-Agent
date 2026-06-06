@@ -1,0 +1,122 @@
+{
+  "milestone": "N+6.23A",
+  "title": "Ghoti Agent Arena - sample local trace",
+  "mode": "local_trace",
+  "source": "local report files (illustrative fallback)",
+  "simulation": false,
+  "live_execution": false,
+  "generated_label": "built read-only from local report files; no agent launched, no command run",
+  "scenario": "Illustrative fallback trace used only when no local reports are found. The live loader replaces this with the repo's real recent Claude/Codex reports.",
+  "status": {
+    "latest_main_commit_recorded": "0000000abcde",
+    "latest_main_commit_source": "recorded in the most recent local report (file-only, not a live git read)",
+    "latest_claude_branch": "feat/ghoti-agent-claude-n6-xxa-example",
+    "latest_claude_milestone": "N+6.XXA",
+    "latest_codex_audit": "audit/ghoti-agent-codex-n6-xxa-example",
+    "memory_vault_present": false,
+    "tool_intake_present": false,
+    "report_count": 2
+  },
+  "agents": [
+    {
+      "id": "claude_builder",
+      "name": "Claude builder",
+      "role": "implementer",
+      "state": "done",
+      "branch": "feat/ghoti-agent-claude-n6-xxa-example",
+      "worktree": null,
+      "current_task": "Example milestone implemented and pushed",
+      "token_estimate": null,
+      "cost_estimate_usd": null,
+      "note": "Derived from the latest committed Claude report."
+    },
+    {
+      "id": "codex_auditor",
+      "name": "Codex auditor",
+      "role": "auditor",
+      "state": "done",
+      "branch": "feat/ghoti-agent-claude-n6-xxa-example",
+      "worktree": null,
+      "current_task": "Independent audit of the pushed feature branch",
+      "token_estimate": null,
+      "cost_estimate_usd": null,
+      "note": "Derived from the latest committed Codex report (if any)."
+    },
+    {
+      "id": "hermes_coordinator",
+      "name": "Hermes coordinator",
+      "role": "coordinator",
+      "state": "idle",
+      "branch": null,
+      "worktree": null,
+      "current_task": "tracks lane status",
+      "token_estimate": null,
+      "cost_estimate_usd": null,
+      "note": "Status-only; no live control."
+    },
+    {
+      "id": "human_approver",
+      "name": "Human approver",
+      "role": "approver",
+      "state": "idle",
+      "branch": null,
+      "worktree": null,
+      "current_task": "approves merges after a CLEAN audit",
+      "token_estimate": null,
+      "cost_estimate_usd": null,
+      "note": "Humans approve and merge."
+    }
+  ],
+  "task_states": ["idle", "queued", "running", "blocked", "done"],
+  "queue": [],
+  "timeline": [
+    {"t": "N+6.XXA", "agent": "claude", "from_state": "running", "to_state": "done", "note": "Example milestone implemented and pushed"},
+    {"t": "N+6.XXA", "agent": "codex", "from_state": "running", "to_state": "done", "note": "Independent audit recorded"}
+  ],
+  "handoffs": [
+    {"from": "claude", "to": "next-lane", "kind": "seed_handoff", "file": "14_context/agent_handoff_vault/02_Agent_Handoffs/NEXT_EXAMPLE_TASK.md", "title": "Next example task"}
+  ],
+  "traces": [
+    {"step": 1, "agent": "claude", "action": "IMPLEMENTED_AND_PUSHED", "note": "N+6.XXA - Example milestone implemented and pushed"},
+    {"step": 2, "agent": "codex", "action": "recorded", "note": "N+6.XXA - Independent audit recorded"}
+  ],
+  "reports": [
+    {
+      "milestone": "N+6.XXA",
+      "title": "Example milestone implemented and pushed",
+      "verdict": "IMPLEMENTED_AND_PUSHED",
+      "branch": "feat/ghoti-agent-claude-n6-xxa-example",
+      "codex_audit_target": "audit/ghoti-agent-codex-n6-xxa-example",
+      "origin_main_short": "0000000abcde",
+      "agent": "claude",
+      "path": "14_context/claude_n6_xxa_example.md"
+    },
+    {
+      "milestone": "N+6.XXA",
+      "title": "Independent audit recorded",
+      "verdict": "recorded",
+      "branch": "feat/ghoti-agent-claude-n6-xxa-example",
+      "codex_audit_target": "audit/ghoti-agent-codex-n6-xxa-example",
+      "origin_main_short": "0000000abcde",
+      "agent": "codex",
+      "path": "14_context/codex_n6_xxa_example.md"
+    }
+  ],
+  "totals": {
+    "report_count": 2,
+    "agent_count": 4,
+    "estimate_basis": "real reports; tokens/cost not estimated for traces"
+  },
+  "safety": {
+    "milestone": "N+6.23A",
+    "local_only": true,
+    "read_only": true,
+    "reads_files_only": true,
+    "runs_commands": false,
+    "writes_files": false,
+    "reads_secret_values": false,
+    "live_execution": false,
+    "simulation": false,
+    "uses_external_assets": false
+  }
+}

@@ -20,7 +20,16 @@
     </div>
   </header>
 
+  <div class="viewbar">
+    <span class="viewbar-label">View</span>
+    <button id="view-sim" class="toggle-btn is-active" type="button">Sample simulation</button>
+    <button id="view-trace" class="toggle-btn" type="button">Local trace</button>
+    <span id="view-note" class="viewbar-note">Sample simulation - illustrative data.</span>
+  </div>
+
   <p id="updated" class="updated">Loading simulation&hellip;</p>
+
+  <section id="status-cards" class="status-cards" hidden></section>
 
   <h2 class="section-title">Agents</h2>
   <main id="agents" class="cards"></main>
@@ -28,8 +37,9 @@
   <section id="panels" class="panels"></section>
 
   <footer class="footer">
-    <p>Local, read-only simulation. No agent is launched, no command runs, nothing is
-    merged or pushed, and no secrets are shown.</p>
+    <p>Local and read-only. The sample simulation is illustrative; the local trace is
+    built read-only from existing report files. No agent is launched, no command runs,
+    nothing is merged or pushed, and no secrets are shown.</p>
   </footer>
 
   <script src="/static/app.js"></script>

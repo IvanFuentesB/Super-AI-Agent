@@ -1,0 +1,70 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Ghoti Agent Arena local trace (N+6.23A)",
+  "description": "Shape of the GET /api/trace payload served by the agent arena. Unlike the sample simulation, this trace is built from existing local Ghoti report files (committed Claude/Codex reports and the agent handoff vault) by a read-only, file-only loader. The loader runs no command, launches no agent, performs no install, writes nothing, opens no network connection, and surfaces no secret value or absolute local path. live_execution and simulation are always false.",
+  "type": "object",
+  "x_safety": {
+    "mode": "local_trace",
+    "simulation": false,
+    "live_execution": false,
+    "local_only": true,
+    "read_only": true,
+    "reads_files_only": true,
+    "runs_commands": false,
+    "writes_files": false,
+    "launches_agents": false,
+    "uses_external_assets": false,
+    "uses_external_api": false,
+    "reads_secret_values": false
+  },
+  "x_source": "local report files under 14_context (claude_n6_*.md, codex_n6_*.md) and the agent handoff vault; paths are repo-relative",
+  "x_routes_added": ["GET /api/trace", "GET /api/trace-status"],
+  "x_task_states": ["idle", "queued", "running", "blocked", "done"],
+  "required": [
+    "milestone", "mode", "simulation", "live_execution", "status",
+    "agents", "task_states", "timeline", "traces", "reports", "safety"
+  ],
+  "properties": {
+    "milestone": {"type": "string"},
+    "title": {"type": "string"},
+    "mode": {"type": "string", "const": "local_trace"},
+    "source": {"type": "string"},
+    "scenario": {"type": "string"},
+    "simulation": {"type": "boolean", "const": false},
+    "live_execution": {"type": "boolean", "const": false},
+    "status": {
+      "type": "object",
+      "description": "Status cards derived read-only from the most recent local reports.",
+      "required": [
+        "latest_main_commit_recorded", "latest_claude_branch", "latest_codex_audit",
+        "memory_vault_present", "tool_intake_present"
+      ],
+      "properties": {
+        "latest_main_commit_recorded": {"type": "string", "description": "Short commit recorded in the newest local report (file-only; not a live git read)."},
+        "latest_claude_branch": {"type": "string"},
+        "latest_claude_milestone": {"type": ["string", "null"]},
+        "latest_codex_audit": {"type": "string"},
+        "memory_vault_present": {"type": "boolean", "description": "True if 14_context/memory_vault/README.md exists (presence check only; never modified)."},
+        "tool_intake_present": {"type": "boolean", "description": "True if the tool intake inventory JSON exists (presence check only; never modified)."},
+        "report_count": {"type": "integer"}
+      }
+    },
+    "agents": {
+      "type": "array",
+      "description": "Derived roster: Claude builder, Codex auditor, Hermes coordinator, human approver.",
+      "items": {"type": "object"}
+    },
+    "task_states": {"type": "array", "items": {"type": "string"}},
+    "queue": {"type": "array"},
+    "timeline": {"type": "array", "description": "One state-transition event per parsed report (milestone -> verdict)."},
+    "handoffs": {"type": "array", "description": "Repo-relative handoff files from the agent handoff vault."},
+    "traces": {"type": "array", "description": "Ordered replay steps, newest report first."},
+    "reports": {
+      "type": "array",
+      "description": "Parsed report rows: milestone, title, verdict, branch, codex_audit_target, agent, repo-relative path.",
+      "items": {"type": "object"}
+    },
+    "totals": {"type": "object"},
+    "safety": {"type": "object", "description": "The read-only, file-only safe posture echoed in the payload."}
+  }
+}

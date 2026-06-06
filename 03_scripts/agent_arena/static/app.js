@@ -1,16 +1,22 @@
 "use strict";
 
 /*
- * Ghoti Agent Arena - front-end renderer (N+6.21A).
+ * Ghoti Agent Arena - front-end renderer (N+6.21A; trace view added N+6.23A).
  *
- * Fetches the read-only GET /api/simulation endpoint on the same local origin and
- * renders agent cards, a queue/timeline, totals, handoff files, and a replay trace
- * using DOM APIs only. It performs no external request, opens no websocket, uses no
- * dynamic code execution, and has no button that launches or controls anything - the
- * only control is Refresh, which re-reads the simulation.
+ * Fetches read-only GET JSON on the same local origin and renders agent cards, a
+ * queue/timeline, totals, handoff files, and a replay trace using DOM APIs only.
+ * Two views share the same renderer:
+ *   - "Sample simulation" reads /api/simulation (illustrative data).
+ *   - "Local trace" reads /api/trace, which a file-only loader builds from existing
+ *     local report files, and shows status cards for the recent project state.
+ * It performs no external request, opens no live socket, uses no dynamic code
+ * execution, and has no button that launches or controls anything - the controls only
+ * re-read JSON and switch which read-only endpoint is shown.
  */
 (function () {
   var SIM_URL = "/api/simulation";
+  var TRACE_URL = "/api/trace";
+  var currentView = "simulation";
 
   function el(tag, className, text) {
     var node = document.createElement(tag);
@@ -67,9 +73,41 @@
     return p;
   }
 
+  function statusCard(label, value, tone, sub) {
+    var c = el("div", "status-card" + (tone ? " " + tone : ""));
+    c.appendChild(el("div", "sc-label", label));
+    var v = el("div", "sc-value");
+    v.textContent = (value === null || value === undefined || value === "") ? "—" : String(value);
+    c.appendChild(v);
+    if (sub) { c.appendChild(el("div", "sc-sub", sub)); }
+    return c;
+  }
+
+  function renderStatus(status) {
+    var host = document.getElementById("status-cards");
+    if (!host) { return; }
+    host.textContent = "";
+    if (!status || currentView !== "trace") {
+      host.hidden = true;
+      return;
+    }
+    host.hidden = false;
+    host.appendChild(statusCard("Latest main commit (recorded)", status.latest_main_commit_recorded));
+    host.appendChild(statusCard("Latest Claude branch", status.latest_claude_branch, null,
+      status.latest_claude_milestone || ""));
+    host.appendChild(statusCard("Latest Codex audit", status.latest_codex_audit));
+    host.appendChild(statusCard("Memory vault", status.memory_vault_present ? "present" : "missing",
+      status.memory_vault_present ? "sc-ok" : "sc-warn"));
+    host.appendChild(statusCard("Tool intake", status.tool_intake_present ? "present" : "missing",
+      status.tool_intake_present ? "sc-ok" : "sc-warn"));
+    host.appendChild(statusCard("Reports parsed", status.report_count));
+  }
+
   function render(data) {
     var milestone = document.getElementById("milestone");
     if (milestone) { milestone.textContent = data.milestone || ""; }
+
+    renderStatus(data.status);
 
     var agents = document.getElementById("agents");
     agents.textContent = "";
@@ -81,6 +119,7 @@
     var totals = data.totals || {};
     panels.appendChild(panel("Totals (estimates)", function (p) {
       p.appendChild(row("agents", totals.agent_count));
+      if (totals.report_count !== undefined) { p.appendChild(row("reports", totals.report_count)); }
       p.appendChild(row("token estimate", totals.token_estimate));
       p.appendChild(row("cost estimate (USD)", totals.cost_estimate_usd));
       if (totals.estimate_basis) { p.appendChild(el("p", "muted-note", totals.estimate_basis)); }
@@ -115,25 +154,46 @@
       });
     }));
 
+    if (data.reports && data.reports.length) {
+      panels.appendChild(panel("Reports (local)", function (p) {
+        data.reports.forEach(function (r) {
+          p.appendChild(el("p", "trace", (r.milestone || "") + "  " + (r.agent || "") +
+            "  [" + (r.verdict || "") + "]  " + (r.title || "")));
+          if (r.branch) { p.appendChild(codeLine(r.branch)); }
+        });
+      }));
+    }
+
     var updated = document.getElementById("updated");
-    updated.textContent = "Simulation served " + (data.served_utc || "") +
-      " · live execution: " + (data.live_execution ? "on" : "off");
+    if (currentView === "trace") {
+      updated.textContent = "Local trace served " + (data.served_utc || "") +
+        " · source: " + (data.source || "local report files") +
+        " · live execution: " + (data.live_execution ? "on" : "off");
+    } else {
+      updated.textContent = "Simulation served " + (data.served_utc || "") +
+        " · live execution: " + (data.live_execution ? "on" : "off");
+    }
   }
 
   function showError(message) {
     var agents = document.getElementById("agents");
     agents.textContent = "";
     var c = el("section", "card");
-    c.appendChild(el("h2", null, "Simulation unavailable"));
+    c.appendChild(el("h2", null, currentView === "trace" ? "Local trace unavailable" : "Simulation unavailable"));
     c.appendChild(el("p", "muted-note", message));
     agents.appendChild(c);
     document.getElementById("panels").textContent = "";
-    document.getElementById("updated").textContent = "Could not load /api/simulation.";
+    var sc = document.getElementById("status-cards");
+    if (sc) { sc.textContent = ""; sc.hidden = true; }
+    document.getElementById("updated").textContent =
+      "Could not load " + (currentView === "trace" ? TRACE_URL : SIM_URL) + ".";
   }
 
   function load() {
-    document.getElementById("updated").textContent = "Loading simulation…";
-    fetch(SIM_URL, { headers: { "Accept": "application/json" }, cache: "no-store" })
+    var url = (currentView === "trace") ? TRACE_URL : SIM_URL;
+    document.getElementById("updated").textContent =
+      (currentView === "trace") ? "Loading local trace…" : "Loading simulation…";
+    fetch(url, { headers: { "Accept": "application/json" }, cache: "no-store" })
       .then(function (resp) {
         if (!resp.ok) { throw new Error("HTTP " + resp.status); }
         return resp.json();
@@ -142,9 +202,30 @@
       .catch(function (err) { showError(err && err.message ? err.message : "request failed"); });
   }
 
+  function setView(view) {
+    currentView = (view === "trace") ? "trace" : "simulation";
+    var simBtn = document.getElementById("view-sim");
+    var traceBtn = document.getElementById("view-trace");
+    if (simBtn) { simBtn.classList.toggle("is-active", currentView === "simulation"); }
+    if (traceBtn) { traceBtn.classList.toggle("is-active", currentView === "trace"); }
+    var note = document.getElementById("view-note");
+    if (note) {
+      note.textContent = (currentView === "trace")
+        ? "Local trace - built read-only from existing report files."
+        : "Sample simulation - illustrative data.";
+    }
+    var sc = document.getElementById("status-cards");
+    if (sc && currentView !== "trace") { sc.textContent = ""; sc.hidden = true; }
+    load();
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     var btn = document.getElementById("refresh");
     if (btn) { btn.addEventListener("click", load); }
+    var simBtn = document.getElementById("view-sim");
+    if (simBtn) { simBtn.addEventListener("click", function () { setView("simulation"); }); }
+    var traceBtn = document.getElementById("view-trace");
+    if (traceBtn) { traceBtn.addEventListener("click", function () { setView("trace"); }); }
     load();
   });
 })();
