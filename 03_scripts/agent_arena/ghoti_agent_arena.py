@@ -17,11 +17,15 @@ Simulation-first and safe by construction:
     merges, pushes, or mutates anything.
   * It reads no secret values and loads no external CSS/JS/fonts.
   * live_execution is forced false in every payload regardless of file contents.
+  * N+6.23A adds read-only GET /api/trace and /api/trace-status. A separate file-only
+    loader builds those from existing local report files; no command runs, nothing is
+    written, and simulation and live_execution stay false there too.
 """
 
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import re
 import sys
@@ -38,6 +42,10 @@ STATIC_DIR = SCRIPT_DIR / "static"
 SIMULATION_JSON = REPO_ROOT / "14_context" / "agent_arena" / "sample_simulation.json"
 SCHEMA_JSON = REPO_ROOT / "14_context" / "agent_arena" / "agent_arena_schema.json"
 FEATURE_FLAGS = REPO_ROOT / "23_configs" / "ghoti_feature_flags.example.json"
+# N+6.23A: read-only, file-only trace loader served at GET /api/trace.
+TRACE_LOADER = SCRIPT_DIR / "ghoti_agent_arena_trace_loader.py"
+TRACE_SCHEMA_JSON = REPO_ROOT / "14_context" / "agent_arena" / "trace_schema.json"
+TRACE_SAMPLE_JSON = REPO_ROOT / "14_context" / "agent_arena" / "sample_trace.json"
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8766
@@ -137,6 +145,59 @@ def build_simulation():
     return data
 
 
+_TRACE_MODULE = None
+
+
+def _trace_loader():
+    """Import the read-only trace loader from its file path (no sys.path reliance).
+
+    The loader only defines functions at import time; importing it runs nothing, opens
+    no connection, and writes nothing."""
+    global _TRACE_MODULE
+    if _TRACE_MODULE is None:
+        spec = importlib.util.spec_from_file_location(
+            "ghoti_agent_arena_trace_loader", str(TRACE_LOADER))
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        _TRACE_MODULE = module
+    return _TRACE_MODULE
+
+
+def build_trace():
+    """Return the real local trace built read-only from local report files. Any error
+    degrades to a safe empty trace; simulation and live_execution stay false either way."""
+    try:
+        data = _trace_loader().build_trace()
+        if not isinstance(data, dict):
+            raise ValueError("loader did not return an object")
+    except Exception as exc:  # loader missing/unreadable -> safe empty trace
+        data = {
+            "ok": False, "milestone": MILESTONE, "title": "Ghoti Agent Arena - local trace",
+            "mode": "local_trace", "error": "trace loader unavailable",
+            "detail": str(exc)[:200], "status": {}, "agents": [], "task_states": [],
+            "queue": [], "timeline": [], "handoffs": [], "traces": [], "reports": [],
+            "totals": {}, "safety": dict(SAFETY),
+        }
+    data["simulation"] = False
+    data["live_execution"] = False
+    return data
+
+
+def build_trace_status():
+    """Return only the status cards (read-only) for the trace view."""
+    try:
+        status = _trace_loader().build_status()
+        ok = isinstance(status, dict)
+    except Exception as exc:
+        status = {"error": "status unavailable", "detail": str(exc)[:200]}
+        ok = False
+    return {
+        "ok": bool(ok), "milestone": MILESTONE, "mode": "local_trace",
+        "simulation": False, "live_execution": False,
+        "status": status, "safety": dict(SAFETY),
+    }
+
+
 def build_health():
     static_ok = all((STATIC_DIR / name).is_file() for name in STATIC_FILES)
     sim = _read_json(SIMULATION_JSON)
@@ -210,6 +271,9 @@ def build_check():
     arena_flags = {name: bool(flags.get(name, False)) for name in ARENA_FLAGS}
     sim = _read_json(SIMULATION_JSON)
     sim_valid = isinstance(sim, dict) and isinstance(sim.get("agents"), list) and sim.get("live_execution") is False
+    trace_loader_present = TRACE_LOADER.is_file()
+    trace = build_trace()
+    trace_safe = trace.get("live_execution") is False and trace.get("simulation") is False
 
     checks = {
         "milestone": MILESTONE,
@@ -220,9 +284,17 @@ def build_check():
         "simulation_present": SIMULATION_JSON.is_file(),
         "simulation_valid": sim_valid,
         "schema_present": SCHEMA_JSON.is_file(),
+        "trace_loader_present": trace_loader_present,
+        "trace_schema_present": TRACE_SCHEMA_JSON.is_file(),
+        "trace_sample_present": TRACE_SAMPLE_JSON.is_file(),
+        "trace_simulation": False,
+        "trace_live_execution": False,
+        "trace_read_only": True,
+        "trace_safe": trace_safe,
         "routes": [
-            "GET /", "GET /api/health", "GET /api/simulation",
-            "GET /api/disabled-capabilities", "GET /static/app.js", "GET /static/styles.css",
+            "GET /", "GET /api/health", "GET /api/simulation", "GET /api/trace",
+            "GET /api/trace-status", "GET /api/disabled-capabilities",
+            "GET /static/app.js", "GET /static/styles.css",
         ],
         "get_only": True,
         "no_post_routes": no_post,
@@ -259,6 +331,8 @@ def build_check():
         checks["no_external_bind_capability"],
         checks["risky_flags_default_false"],
         checks["only_status_commands_flag_enabled"],
+        checks["trace_loader_present"],
+        checks["trace_safe"],
     ])
     return checks
 
@@ -309,6 +383,10 @@ class ArenaHandler(BaseHTTPRequestHandler):
             return self._send_json(200, build_health())
         if route == "/api/simulation":
             return self._send_json(200, build_simulation())
+        if route == "/api/trace":
+            return self._send_json(200, build_trace())
+        if route == "/api/trace-status":
+            return self._send_json(200, build_trace_status())
         if route == "/api/disabled-capabilities":
             payload = {"ok": True, "milestone": MILESTONE}
             payload.update(_disabled_capabilities())
@@ -363,7 +441,8 @@ def serve(host=DEFAULT_HOST, port=DEFAULT_PORT):
         "live_execution": False,
         "has_post_routes": False,
         "static_files_present": static_ok,
-        "routes": ["GET /", "GET /api/health", "GET /api/simulation", "GET /api/disabled-capabilities"],
+        "routes": ["GET /", "GET /api/health", "GET /api/simulation", "GET /api/trace",
+                   "GET /api/trace-status", "GET /api/disabled-capabilities"],
         "stop": "Press Ctrl+C to stop.",
     }, indent=2))
 

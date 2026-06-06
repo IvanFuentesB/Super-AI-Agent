@@ -160,3 +160,41 @@ html, body {
 
 .footer { border-top: 1px solid var(--border); padding: 16px 24px 28px; color: var(--muted); font-size: 12px; }
 .footer p { margin: 0; max-width: 72ch; }
+
+/* View toggle + status cards (N+6.23A trace view). */
+.viewbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 12px 24px 0; }
+.viewbar-label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+.viewbar-note { color: var(--muted); font-size: 12px; }
+
+.toggle-btn {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--muted);
+  padding: 5px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.toggle-btn:hover { border-color: var(--accent); color: var(--text); }
+.toggle-btn.is-active { border-color: var(--accent); color: var(--accent); background: rgba(106, 169, 255, 0.10); }
+
+.status-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+  padding: 12px 24px 0;
+}
+.status-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.status-card .sc-label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; }
+.status-card .sc-value { margin-top: 4px; font-size: 14px; word-break: break-word; }
+.status-card .sc-sub { margin-top: 3px; color: var(--muted); font-size: 12px; }
+.status-card.sc-ok { border-color: #2c4a3d; }
+.status-card.sc-ok .sc-value { color: var(--ok); }
+.status-card.sc-warn { border-color: #5a3e2c; }
+.status-card.sc-warn .sc-value { color: var(--blocked); }
