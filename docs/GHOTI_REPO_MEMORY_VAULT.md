@@ -25,7 +25,10 @@ Markdown that is durable, diff-able, and easy to read.
 
 No secrets, tokens, API keys, passwords, health/medical details, addresses, private
 account data, or other sensitive personal data may be committed to the vault. It holds
-only non-sensitive durable details. Sensitive data stays outside the repo.
+only non-sensitive durable details. Sensitive data stays outside the repo. Use
+placeholders (`<repo>`, `<user_home>`, `<worktree>`, `<private_path>`) for any path or
+image in committed docs; never commit a real local path, username, or private machine
+name. Repo docs are public-safe only.
 
 ## How it is used
 

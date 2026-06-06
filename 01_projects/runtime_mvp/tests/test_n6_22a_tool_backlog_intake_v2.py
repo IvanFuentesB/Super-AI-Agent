@@ -181,5 +181,28 @@ class SecretAndFlaggedTokenTests(unittest.TestCase):
             self.assertNotIn(phrase, body)
 
 
+class NoLocalPathLeakTests(unittest.TestCase):
+    """Regression: committed N+6.22A docs must carry no real local path / username.
+
+    The forbidden tokens are assembled at runtime so this test file never contains them
+    literally (and therefore never trips the leak scan itself).
+    """
+
+    def test_no_real_local_path_leak(self):
+        bslash = chr(92)
+        forbidden = [
+            "ai" + "_sandbox",
+            "Nav" + "if",
+            "C:" + bslash + "Users" + bslash,
+            "C:" + "/Users/",
+            "/mnt/" + "c/Users/",
+            "Documents" + bslash + "AI_Managed_Only",
+        ]
+        for path in TEXT_FILES:
+            text = read(path)
+            for token in forbidden:
+                self.assertNotIn(token, text, msg=f"local path/username leak in {path.name}")
+
+
 if __name__ == "__main__":
     unittest.main()

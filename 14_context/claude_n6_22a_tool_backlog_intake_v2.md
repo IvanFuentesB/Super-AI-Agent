@@ -15,7 +15,7 @@ IMPLEMENTED_AND_PUSHED.
 
 - Branch: `feat/ghoti-agent-claude-n6-22a-tool-backlog-intake-v2`
 - Commit message: `docs(ghoti): add tool backlog intake v2`
-- Worktree: `C:\Users\ai_sandbox\Documents\AI_Managed_Only\.claude\worktrees\n6_22a_tool_backlog_intake_v2`
+- Worktree: `<repo>/.claude/worktrees/n6_22a_tool_backlog_intake_v2`
 - Base `origin/main`: `e126fb2` (N+6.20B merge gate). **N+6.20B is on main.**
 - **Dependency:** N+6.21B (agent arena) is **not yet on main** (Codex auditing the
   loopback-only fix). This lane is independent and **touches no `agent_arena` files**,
@@ -90,6 +90,16 @@ No installs, no clones, no execution, no secrets/API keys, no Docker, no live
 money/trading, no messaging/send, no account login, no browser automation against real
 sites, no cloaking/anti-detection. Source-needed items are never guessed. Nothing here
 touches `agent_arena`.
+
+## Security note (repo docs are public-safe)
+
+Committed repo documentation must use **placeholders** for paths, images, and secrets -
+for example `<repo>`, `<runtime_repo>`, `<user_home>`, `<worktree>`, `<private_path>`. No
+real local paths, usernames, private machine names, private images, secrets, tokens,
+credentials, account data, or other sensitive personal data may be committed; these docs
+are **public-safe only**. (This amends the original report, which embedded a real
+worktree path; it now reads `<repo>/.claude/worktrees/...`. The N+6.22A test includes a
+regression check that fails if a real local path or username reappears.)
 
 ## Codex audit target branch
 
