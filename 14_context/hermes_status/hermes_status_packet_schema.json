@@ -1,0 +1,101 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Ghoti Hermes status packet (N+6.25A)",
+  "description": "Shape of the read-only coordinator packet produced by 03_scripts/hermes_status/ghoti_hermes_status_packet.py. Hermes reads this before answering so it stops giving shallow or incorrect summaries. The generator reads committed status sources and read-only git metadata only; it launches nothing, runs no command other than read-only git, uses no MCP/browser/computer-use, reads no secrets, and writes only when --write is passed (to a path inside the repo).",
+  "type": "object",
+  "x_safety": {
+    "local_only": true,
+    "read_only": true,
+    "reads_git_metadata_only": true,
+    "launches_agents": false,
+    "uses_mcp": false,
+    "uses_browser_or_computer_use": false,
+    "auto_submit": false,
+    "reads_secret_values": false,
+    "writes_only_when_write_flag": true
+  },
+  "required": [
+    "ok", "milestone", "status_plain_english", "sources", "progression",
+    "done", "blocked", "parallel_safe", "hermes_must_not_claim", "ecc",
+    "hermes_role", "safety"
+  ],
+  "properties": {
+    "ok": {"type": "boolean", "const": true},
+    "milestone": {"type": "string"},
+    "label_human_meaning": {"type": "string", "description": "The N+ label translated into plain English."},
+    "generated_utc": {"type": "string"},
+    "status_plain_english": {"type": "string", "description": "Plain-English status including percentages."},
+    "sources": {
+      "type": "object",
+      "description": "Read-only status sources.",
+      "required": ["main_commit", "agent_arena_trace", "memory_vault", "tool_intake",
+                   "latest_claude_report", "latest_codex_report", "feature_flags"],
+      "properties": {
+        "main_commit": {
+          "type": "object",
+          "description": "Latest main commit from read-only git metadata (origin/main preferred).",
+          "properties": {
+            "ref": {"type": ["string", "null"]},
+            "short": {"type": "string"},
+            "subject": {"type": "string"}
+          }
+        },
+        "agent_arena_trace": {"type": "object", "description": "Agent Arena trace capability presence + safe posture (read-only)."},
+        "memory_vault": {"type": "object", "description": "Memory Vault index presence."},
+        "tool_intake": {"type": "object", "description": "Tool Intake inventory presence + tool count."},
+        "latest_claude_report": {"type": ["object", "null"], "description": "Newest claude_n6_*.md (milestone-sorted): milestone, title, verdict, repo-relative path."},
+        "latest_codex_report": {"type": ["object", "null"], "description": "Newest codex_n6_*.md, same fields."},
+        "feature_flags": {"type": "object", "description": "Enabled flags from the *.example flags file (no secrets)."}
+      }
+    },
+    "progression": {
+      "type": "object",
+      "description": "The safe progression with per-stage status and percentages.",
+      "required": ["stages", "overall_percent", "live_automation_enabled_percent"],
+      "properties": {
+        "stages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["stage", "status", "percent"],
+            "properties": {
+              "stage": {"type": "string"},
+              "status": {"type": "string", "enum": ["done", "in_progress", "partial", "planned"]},
+              "percent": {"type": "integer"},
+              "note": {"type": "string"}
+            }
+          }
+        },
+        "stages_done": {"type": "integer"},
+        "stages_total": {"type": "integer"},
+        "overall_percent": {"type": "integer"},
+        "live_automation_enabled_percent": {"type": "integer", "const": 0}
+      }
+    },
+    "done": {"type": "array", "items": {"type": "string"}},
+    "blocked": {"type": "array", "items": {"type": "string"}},
+    "parallel_safe": {"type": "array", "items": {"type": "string"}},
+    "hermes_must_not_claim": {"type": "array", "items": {"type": "string"}},
+    "ecc": {
+      "type": "object",
+      "description": "ECC = Everything Claude Code (NOT elliptic curve cryptography).",
+      "required": ["meaning", "is_not"],
+      "properties": {
+        "abbreviation": {"type": "string"},
+        "meaning": {"type": "string", "const": "Everything Claude Code"},
+        "is_not": {"type": "string"},
+        "note": {"type": "string"}
+      }
+    },
+    "hermes_role": {
+      "type": "object",
+      "description": "Current = coordinator/status/memory only; future = automatic coordinator after launcher + approval gates.",
+      "required": ["current", "future"],
+      "properties": {
+        "current": {"type": "string"},
+        "future": {"type": "string"}
+      }
+    },
+    "safety": {"type": "object", "description": "The read-only safe posture echoed in the packet."}
+  }
+}
