@@ -1,0 +1,25 @@
+{
+  "milestone": "N+6.27A",
+  "title": "Basic two-agent task (build then audit)",
+  "scope": {
+    "allowed_paths": ["03_scripts/example/", "14_context/example/"],
+    "description": "Illustrative scope. Paths are example-only and are not created."
+  },
+  "constraints": {"max_parallel": 2},
+  "tasks": [
+    {
+      "id": "build_feature",
+      "role": "builder",
+      "description": "Implement the example feature.",
+      "files": ["03_scripts/example/feature.py"],
+      "depends_on": []
+    },
+    {
+      "id": "audit_feature",
+      "role": "auditor",
+      "description": "Audit the example feature on its own branch.",
+      "files": ["14_context/example/audit_build_feature.md"],
+      "depends_on": ["build_feature"]
+    }
+  ]
+}

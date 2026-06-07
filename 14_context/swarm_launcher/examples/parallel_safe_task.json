@@ -1,0 +1,46 @@
+{
+  "milestone": "N+6.27A",
+  "title": "Parallel-safe task (plan, two parallel builders, audit + summary)",
+  "scope": {
+    "allowed_paths": ["03_scripts/example/", "14_context/example/", "docs/"],
+    "description": "Illustrative scope. Distinct files per task, so the builders run in parallel safely."
+  },
+  "constraints": {"max_parallel": 2},
+  "tasks": [
+    {
+      "id": "plan_work",
+      "role": "planner",
+      "description": "Plan the work and declare dependencies.",
+      "files": ["14_context/example/plan.md"],
+      "depends_on": []
+    },
+    {
+      "id": "build_module_a",
+      "role": "builder",
+      "description": "Build module A (own file).",
+      "files": ["03_scripts/example/module_a.py"],
+      "depends_on": ["plan_work"]
+    },
+    {
+      "id": "build_module_b",
+      "role": "builder",
+      "description": "Build module B (own file).",
+      "files": ["03_scripts/example/module_b.py"],
+      "depends_on": ["plan_work"]
+    },
+    {
+      "id": "audit_modules",
+      "role": "auditor",
+      "description": "Audit both modules on a separate branch.",
+      "files": ["14_context/example/audit_modules.md"],
+      "depends_on": ["build_module_a", "build_module_b"]
+    },
+    {
+      "id": "summarize_run",
+      "role": "summarizer",
+      "description": "Summarize the run for the operator.",
+      "files": ["docs/example_parallel_feature.md"],
+      "depends_on": ["build_module_a", "build_module_b"]
+    }
+  ]
+}

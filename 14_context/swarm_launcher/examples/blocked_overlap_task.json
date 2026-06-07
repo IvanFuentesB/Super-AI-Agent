@@ -1,0 +1,25 @@
+{
+  "milestone": "N+6.27A",
+  "title": "Blocked task (two builders claim the same file)",
+  "scope": {
+    "allowed_paths": ["03_scripts/example/"],
+    "description": "Illustrative scope. Two tasks claim the same file, which must block (one owner per path)."
+  },
+  "constraints": {"max_parallel": 2},
+  "tasks": [
+    {
+      "id": "builder_one",
+      "role": "builder",
+      "description": "Edit the shared module.",
+      "files": ["03_scripts/example/shared.py"],
+      "depends_on": []
+    },
+    {
+      "id": "builder_two",
+      "role": "builder",
+      "description": "Also edits the same shared module - this overlap must block.",
+      "files": ["03_scripts/example/shared.py"],
+      "depends_on": []
+    }
+  ]
+}

@@ -1,0 +1,85 @@
+{
+  "milestone": "N+6.27A",
+  "title": "Repo inspiration / attribution manifest",
+  "policy": "Design patterns are adapted from inspected swarm repos. No third-party code is vendored or committed. The repos were shallow-cloned into the gitignored sandbox 21_repos/third_party_runtime_sandbox/ for read-only LICENSE/README inspection only - not installed, not executed, not committed.",
+  "no_third_party_code_committed": true,
+  "no_code_copied": true,
+  "clone_sandbox": "21_repos/third_party_runtime_sandbox/ (gitignored; contents never committed)",
+  "rust_toolchain": {
+    "required_by_inspected_repos": false,
+    "installed": false,
+    "note": "No Cargo.toml in any inspected repo. The Ghoti launcher is pure Python standard library; no Rust is introduced."
+  },
+  "repos": [
+    {
+      "repo": "am-will/swarms",
+      "url": "https://github.com/am-will/swarms",
+      "license": "no top-level LICENSE file found",
+      "license_verified": false,
+      "inspected": ["README.md", "skills/"],
+      "skills_seen": ["super-swarm", "swarm-planner", "parallel-task", "co-design"],
+      "patterns_adapted": [
+        "explicit per-task dependencies that drive parallel waves",
+        "the orchestrator that plans the work also coordinates execution (keeps context)",
+        "give each worker exactly which files it owns"
+      ],
+      "code_copied": false,
+      "status": "patterns only; license unverified -> no code reuse, no install, no execution"
+    },
+    {
+      "repo": "HKUDS/ClawTeam",
+      "url": "https://github.com/HKUDS/ClawTeam",
+      "license": "MIT",
+      "license_verified": true,
+      "copyright": "Copyright (c) 2025 HKUDS",
+      "inspected": ["LICENSE", "README.md", "top-level structure"],
+      "patterns_adapted": [
+        "one-command goal -> an orchestrated agent team",
+        "named roles and CLI-agent-agnostic membership (Claude / Codex as members)",
+        "local, file-based state (no server/cloud)"
+      ],
+      "code_copied": false,
+      "status": "patterns only; not installed, not executed"
+    },
+    {
+      "repo": "affaan-m/claude-swarm",
+      "url": "https://github.com/affaan-m/claude-swarm",
+      "license": "MIT",
+      "license_verified": true,
+      "copyright": "Copyright (c) 2026 Affaan Mustafa",
+      "inspected": ["LICENSE", "README.md"],
+      "patterns_adapted": [
+        "decompose a task into a dependency graph",
+        "file conflict detection so agents do not step on each other (overlap detection)",
+        "budget enforcement to stop runaway cost",
+        "a quality gate that reviews outputs (auditor role)",
+        "status + replay shaped for visualization (Agent Arena)"
+      ],
+      "code_copied": false,
+      "status": "patterns only; not installed, not executed"
+    },
+    {
+      "repo": "affaan-m/ecc",
+      "url": "https://github.com/affaan-m/ecc",
+      "license": "MIT",
+      "license_verified": true,
+      "copyright": "Copyright (c) 2026 Affaan Mustafa",
+      "inspected": ["LICENSE", "top-level structure"],
+      "patterns_adapted": [
+        "AGENTS.md / CLAUDE.md / RULES.md governance structure",
+        "security-scanner patterns (Ghoti already has equivalents in public_repo_security_audit.py)"
+      ],
+      "code_copied": false,
+      "status": "guidance only; ECC = Everything Claude Code; not installed, not executed"
+    }
+  ],
+  "attribution_note": "Ghoti's dry-run launcher is original code that re-expresses the public design patterns listed above. For the MIT-licensed repos, any future small permitted snippet reuse would carry the copyright notice; no snippet is reused in this milestone.",
+  "safety": {
+    "no_install": true,
+    "no_execution": true,
+    "no_run_third_party_code": true,
+    "no_dependencies_installed": true,
+    "no_repo_contents_committed": true,
+    "no_secrets": true
+  }
+}
