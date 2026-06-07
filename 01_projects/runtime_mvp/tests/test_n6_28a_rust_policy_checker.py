@@ -158,8 +158,35 @@ class SourceSafetyTests(unittest.TestCase):
         ]:
             self.assertNotIn(forbidden, source)
 
-    def test_no_swarm_launcher_files_added(self):
-        self.assertFalse((REPO_ROOT / "03_scripts" / "swarm_launcher").exists())
+    def test_rust_checker_does_not_reference_swarm_launcher(self):
+        # N+6.27B landed swarm_launcher on main; N+6.28A must not touch or
+        # depend on those files.  Verify the Rust source and manifest are
+        # completely independent of swarm_launcher.
+        for path in [MAIN, MANIFEST]:
+            content = path.read_text(encoding="utf-8").lower()
+            self.assertNotIn(
+                "swarm_launcher",
+                content,
+                msg=f"{path.name} must not reference swarm_launcher",
+            )
+
+        # No swarm_launcher file should appear in git changes introduced by
+        # this branch relative to its merge-base with origin/main.
+        import subprocess as _sp
+        result = _sp.run(
+            ["git", "diff", "--name-only", "origin/main...HEAD"],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        changed = result.stdout.splitlines()
+        swarm_touched = [f for f in changed if "swarm_launcher" in f]
+        self.assertEqual(
+            swarm_touched,
+            [],
+            msg=f"N+6.28A branch must not modify swarm_launcher files; found: {swarm_touched}",
+        )
 
 
 if __name__ == "__main__":
