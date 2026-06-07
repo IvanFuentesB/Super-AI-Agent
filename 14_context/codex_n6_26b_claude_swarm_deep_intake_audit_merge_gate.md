@@ -52,11 +52,11 @@ PASS / MERGED LOCALLY AND READY FOR THE FINAL PUSH GATE.
 - Context pack and repo map: passed; local-only, no network, and no external repo use.
 - Generated context-pack and repo-map validation residue was restored.
 - Explicit prohibited-trailer scan across target and merge commits: passed.
-- Initial public audit on the exact requested merge commit reported one attribution
-  false positive because its broad regex treats the ordinary word `claude` in the merge
-  subject as an AI attribution. The commit has no trailer. The neutral report commit is
-  followed by a fresh public audit before push; push remains blocked unless that final
-  run passes.
+- Public audits on both exact requested commit subjects reported one attribution false
+  positive because the broad regex treats the ordinary milestone word `claude` as an AI
+  attribution. Both commits have no prohibited trailer. This report is finalized in a
+  neutral follow-up commit, followed by a fresh public audit before push; push remains
+  blocked unless that final run passes.
 
 The repository `python` PATH shim remains environmentally broken, so validation used
 the installed explicit CPython 3.13.12 executable.
