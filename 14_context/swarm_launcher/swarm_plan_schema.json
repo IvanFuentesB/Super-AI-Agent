@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Ghoti swarm dry-run plan (N+6.27A)",
+  "description": "Output of ghoti_swarm_launcher.py --task <spec> --dry-run. A dry-run execution plan only: it lists role/agent assignments, dependency waves, file-ownership overlap, proposed (placeholder) worktree paths, the kill-switch/approval gates, and an Agent-Arena-shaped status block. It launches nothing. live_launch_enabled is always false; approval_required and kill_switch_required are always true.",
+  "type": "object",
+  "x_safety": {
+    "dry_run_only": true,
+    "live_launch_enabled": false,
+    "approval_required": true,
+    "kill_switch_required": true,
+    "spawns_processes": false,
+    "uses_subprocess": false,
+    "creates_worktrees": false,
+    "writes_files": false,
+    "reads_secret_values": false,
+    "uses_browser_or_computer_use": false,
+    "uses_mcp": false,
+    "auto_submit": false
+  },
+  "required": ["ok", "milestone", "mode", "status", "roles", "default_agents", "waves",
+               "overlap", "scope", "gates", "arena_status", "refused_live_actions",
+               "real_launch_note", "safety"],
+  "properties": {
+    "ok": {"type": "boolean"},
+    "milestone": {"type": "string"},
+    "mode": {"type": "string", "const": "dry_run"},
+    "status": {"type": "string", "enum": ["dry_run_ready", "blocked", "error"]},
+    "blocked_reasons": {"type": "array", "items": {"type": "string"}},
+    "roles": {"type": "array", "items": {"type": "string"}},
+    "default_agents": {"type": "array", "items": {"type": "object"}},
+    "max_parallel": {"type": "integer"},
+    "assignments": {
+      "type": "array",
+      "description": "Per-task: role, agent, owned files, proposed placeholder worktree, wave, and the would-run string (never executed).",
+      "items": {"type": "object"}
+    },
+    "waves": {"type": "array", "description": "Ordered waves of task ids (dependency + max_parallel)."},
+    "overlap": {
+      "type": "object",
+      "properties": {
+        "one_owner_per_path": {"type": "boolean"},
+        "conflicts": {"type": "array", "items": {"type": "object"}}
+      }
+    },
+    "scope": {"type": "object"},
+    "dependency_errors": {"type": "array", "items": {"type": "string"}},
+    "gates": {
+      "type": "object",
+      "description": "Kill-switch / approval gates. live_launch_enabled false; approval + kill switch required; main merge by Codex gate only.",
+      "properties": {
+        "live_launch_enabled": {"type": "boolean", "const": false},
+        "approval_required": {"type": "boolean", "const": true},
+        "kill_switch_required": {"type": "boolean", "const": true},
+        "main_merge": {"type": "string"}
+      }
+    },
+    "arena_status": {"type": "object", "description": "Safe-to-visualize status block for the Agent Arena (simulation true, live_execution false)."},
+    "refused_live_actions": {"type": "array", "items": {"type": "string"}},
+    "repo_inspiration": {"type": "object"},
+    "real_launch_note": {"type": "string"},
+    "safety": {"type": "object"}
+  }
+}
