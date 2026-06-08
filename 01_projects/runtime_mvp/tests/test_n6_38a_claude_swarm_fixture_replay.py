@@ -428,6 +428,23 @@ class TestAsciiSafe(unittest.TestCase):
     def test_test_file_is_ascii_only(self):
         self._check_ascii(Path(__file__).resolve())
 
+    def test_all_milestone_files_ascii_only(self):
+        # Sweep every committed N+6.38A milestone file so a stray non-ASCII
+        # byte in any of them is caught, not just the wrapper trio above.
+        milestone_files = [
+            _WRAPPER_DIR / "check_claude_swarm_fixture_replay.ps1",
+            _WRAPPER_DIR / "ghoti_claude_swarm_fixture_replay.py",
+            Path(__file__).resolve(),
+            _REPO_ROOT / "docs" / "GHOTI_N6_38A_CLAUDE_SWARM_FIXTURE_REPLAY.md",
+            _REPO_ROOT / "14_context" / "claude_n6_38a_claude_swarm_fixture_replay.md",
+            _REPO_ROOT / "14_context" / "claude_swarm_fixture" / "README.md",
+            _REPO_ROOT / "14_context" / "claude_swarm_fixture" / "claude_swarm_fixture_schema.json",
+            _REPO_ROOT / "14_context" / "claude_swarm_fixture" / "sample_claude_swarm_plan.json",
+        ]
+        for path in milestone_files:
+            if path.exists():
+                self._check_ascii(path)
+
 
 if __name__ == "__main__":
     unittest.main()
