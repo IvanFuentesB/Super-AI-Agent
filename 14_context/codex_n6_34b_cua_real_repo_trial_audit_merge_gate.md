@@ -97,9 +97,11 @@ The audit gate fixed two narrow issues before the merge commit:
 
 ## Next Milestone
 
-**N+6.35A - CUA Isolated VM Trial Readiness + Human Approval Gate**
+**N+6.35B - Plug-and-Play Agent Systems Trial Audit/Merge Gate**
 
-That milestone should review isolation, telemetry suppression, disposable test
-data, kill switch, and approval steps before any separately approved live VM
-trial. It must not grant CUA access to the Ghoti repo, real accounts, secrets, or
-external production systems.
+Remote truth now includes N+6.35A at
+`origin/feat/ghoti-agent-claude-n6-35a-plug-and-play-agent-systems-trial`.
+Audit that lane next. Any future CUA VM execution must remain a separate,
+explicitly approved readiness gate with isolation, telemetry suppression,
+disposable test data, and no access to the Ghoti repo, real accounts, secrets,
+or external production systems.
