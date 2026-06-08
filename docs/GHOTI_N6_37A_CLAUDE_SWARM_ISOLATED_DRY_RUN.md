@@ -1,14 +1,39 @@
-# GHOTI N+6.37A — Isolated claude-swarm dry-run execution trial
+# GHOTI N+6.37A — Isolated claude-swarm dry-run execution trial (STATIC-ONLY)
 
 ## Overview
 
-N+6.37A attempts the first real external tool execution for the claude_swarm
-candidate selected in N+6.36A. After source-code inspection of `cli.py`, the
-planned `--dry-run` execution is **BLOCKED**: it requires `ANTHROPIC_API_KEY`
-and makes Claude API calls before the dry-run skip applies. The wrapper is built,
-tests pass, and the honest status is documented.
+N+6.37A inspects the claude_swarm candidate selected in N+6.36A. After
+source-code inspection of `cli.py`, the planned `--dry-run` execution is
+**BLOCKED**: it requires `ANTHROPIC_API_KEY` and makes Claude API calls before
+the dry-run skip applies.
 
 **Builds on:** N+6.36A (adapter), N+6.35A (inventory), N+6.33A (dual gate).
+
+---
+
+## Static-only hardening (N+6.37A fix — unblocks Codex N+6.37B)
+
+The Codex audit gate **BLOCKED N+6.37B** because the earlier wrapper could
+execute the third-party `claude-swarm` CLI through a process-spawn call in its
+`--probe` and `--demo-mode` paths, and the PowerShell checker invoked `--probe`.
+
+This fix makes the wrapper **fully static-only**:
+
+- The `subprocess` module is no longer imported or used anywhere in the wrapper.
+- No process is spawned; no shell is opened; the external CLI is never executed.
+- `--probe` now performs static metadata / PATH inspection only and reports that
+  external CLI execution is blocked.
+- `--demo-mode` now emits a **hardcoded static simulated plan**; it never spawns
+  the external CLI.
+- `--check` runs a **source scan** over the wrapper and the PowerShell checker,
+  proving no process-spawn primitives (the subprocess module, `Popen`, os-level
+  system/exec helpers) and no dynamic-expression or process-launch cmdlets are
+  present.
+- The PowerShell checker only calls static-safe wrapper modes.
+- Every result carries explicit proof fields:
+  `external_cli_executed=false`, `subprocess_used=false`, `provider_called=false`,
+  `api_key_used=false`, `agents_launched=false`, `live_execution=false`,
+  `simulation=true`.
 
 ---
 
@@ -52,11 +77,16 @@ It is not a no-op. Running it without an API key exits with code 1.
 
 ## What the wrapper does
 
-`03_scripts/claude_swarm_dry_run/ghoti_claude_swarm_dry_run.py`:
+`03_scripts/claude_swarm_dry_run/ghoti_claude_swarm_dry_run.py` (static-only):
 
-1. **`--check`** — Safety status, tool detection, documents the dry-run block reason and start condition gap.
-2. **`--probe`** — Runs `claude-swarm --version` only (no API call). Reports tool availability without execution.
-3. **`--demo-mode`** — Runs `claude-swarm --demo --no-ui` in a temp scratch directory with `HOME` redirected; cleans up after. Requires no API key. Blocked if any API key env var is set.
+1. **`--check`** — Safety status, tool detection (PATH lookup + sandbox
+   metadata, no execution), source scan proving no process-spawn primitives,
+   documents the dry-run block reason. `ok` is true only when the source scan is
+   clean.
+2. **`--probe`** — Static metadata / PATH inspection only. Reports whether the
+   tool is present without ever executing it. `probe_result` is always `null`.
+3. **`--demo-mode`** — Emits a hardcoded static simulated plan. Never spawns the
+   external CLI. Blocked if any API key env var is set.
 
 Guards enforced by the wrapper:
 - Refuses any invocation with `ANTHROPIC_API_KEY` (or `CLAUDE_API_KEY`, `OPENAI_API_KEY`) set
@@ -64,25 +94,28 @@ Guards enforced by the wrapper:
 - Refuses any output path inside the repo root
 - Refuses blocked flags
 - Requires an explicit safe mode flag (`--version`, `--demo`, `--help`)
-- Emits Arena status: `simulation=true, live_execution=false, live_agent_launch=false`
+- Emits Arena status with explicit `external_cli_executed=false`,
+  `subprocess_used=false`, `provider_called=false`, `agents_launched=false`,
+  `simulation=true`, `live_execution=false`, `live_agent_launch=false`
 
 ---
 
-## Start condition gap
+## Start condition status
 
-N+6.35B and N+6.36B were not yet merged to main when this milestone ran.
-PRs #10 (N+6.35A) and #11 (N+6.36A) are in the audit queue.
-The wrapper documents this in its `start_conditions` field.
-**Note: PR #10 (N+6.35A) merged during this session.**
+N+6.35B and N+6.36B are now **merged to main**. This N+6.37A fix hardens the
+wrapper to static-only so the Codex **N+6.37B** audit can re-run before N+6.38B.
+The wrapper documents the current status in its `start_conditions` field.
 
 ---
 
 ## What was actually run
 
 - Source-code inspection of `claude_swarm/cli.py` (text read only)
-- `ghoti_claude_swarm_dry_run.py --check --json` — safety status, no external calls
-- `ghoti_claude_swarm_dry_run.py --probe --json` — tool detection (not installed → `not_installed`)
+- `ghoti_claude_swarm_dry_run.py --check --json` — safety status + source scan, no external calls
+- `ghoti_claude_swarm_dry_run.py --probe --json` — static tool detection (not installed → `not_installed`)
+- `ghoti_claude_swarm_dry_run.py --demo-mode --json` — static simulated plan, no execution
 - No claude_swarm code imported or executed
+- No subprocess spawned. No external CLI executed. No provider called.
 - No API calls. No API key used.
 - No agents launched.
 - No files written outside the Ghoti repo.
@@ -90,6 +123,7 @@ The wrapper documents this in its `start_conditions` field.
 ## What stayed disabled
 
 - `claude-swarm --dry-run` (BLOCKED: requires API key + API calls)
+- All external CLI execution / process spawn / subprocess use
 - Live agent launch
 - Hooks, MCP, Docker, browser, account actions, secrets
 - Any claude_swarm import

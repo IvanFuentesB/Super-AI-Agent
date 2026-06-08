@@ -1,5 +1,11 @@
-# check_claude_swarm_dry_run.ps1 — N+6.37A PowerShell status checker
+# check_claude_swarm_dry_run.ps1 — N+6.37A PowerShell status checker (STATIC-ONLY)
 # Usage: .\check_claude_swarm_dry_run.ps1 [--json]
+#
+# This checker only invokes static-safe wrapper modes (--check, --probe). The
+# wrapper never executes the third-party claude-swarm CLI. This checker itself
+# uses no dynamic expression invocation and no process-launch cmdlets, and never
+# launches the external CLI. It only runs `python` (to drive the static wrapper)
+# and `git` (to verify the sandbox is untracked).
 
 param([switch]$Json)
 
@@ -39,24 +45,39 @@ try {
     $findings += "GIT_CHECK_SKIPPED: $_"
 }
 
-# 6. Run wrapper --check
+# 6. Run wrapper --check (STATIC: source scan + safety status, no execution)
 $checkOk = $false
 $checkResult = $null
+$sourceScanClean = $false
+$externalCliExecuted = $null
+$subprocessUsed = $null
 try {
     $raw = & python $WrapperScript --check --json 2>&1
     $checkResult = $raw | ConvertFrom-Json
     if ($checkResult.ok) { $checkOk = $true }
     else { $findings += "WRAPPER_CHECK_FAILED"; $ok = $false }
+    $sourceScanClean = ($checkResult.source_scan_clean -eq $true)
+    $externalCliExecuted = $checkResult.external_cli_executed
+    $subprocessUsed = $checkResult.subprocess_used
+    if (-not $sourceScanClean) {
+        $findings += "SOURCE_SCAN_DIRTY: execution primitive found in wrapper/ps1"
+        $ok = $false
+    }
+    if ($externalCliExecuted -eq $true) { $findings += "EXTERNAL_CLI_EXECUTED"; $ok = $false }
+    if ($subprocessUsed -eq $true) { $findings += "SUBPROCESS_USED"; $ok = $false }
 } catch {
     $findings += "WRAPPER_CHECK_SKIPPED: $_"
 }
 
-# 7. Run wrapper --probe
+# 7. Run wrapper --probe (STATIC: metadata/PATH inspection only, no execution)
 $probeOk = $false
 try {
     $raw = & python $WrapperScript --probe --json 2>&1
     $probeResult = $raw | ConvertFrom-Json
     $probeOk = ($probeResult.ok -eq $true)
+    if ($probeResult.external_cli_executed -eq $true) {
+        $findings += "PROBE_EXECUTED_CLI"; $ok = $false
+    }
 } catch {
     $findings += "PROBE_SKIPPED: $_"
 }
@@ -64,12 +85,16 @@ try {
 $summary = [ordered]@{
     ok                    = $ok
     milestone             = "N+6.37A"
+    static_only           = $true
     wrapper_present       = (Test-Path $WrapperScript)
     schema_present        = (Test-Path $SchemaPath)
     api_key_present       = ($null -ne $env:ANTHROPIC_API_KEY)
     sandbox_present       = $sandboxPresent
     wrapper_check_ok      = $checkOk
     probe_ok              = $probeOk
+    source_scan_clean     = $sourceScanClean
+    external_cli_executed = $externalCliExecuted
+    subprocess_used       = $subprocessUsed
     dry_run_status        = if ($checkResult) { $checkResult.dry_run_flag_status } else { "unknown" }
     findings              = $findings
 }
@@ -77,10 +102,11 @@ $summary = [ordered]@{
 if ($Json) {
     $summary | ConvertTo-Json -Depth 3
 } else {
-    Write-Host "[N+6.37A] ok=$($summary.ok) milestone=N+6.37A"
+    Write-Host "[N+6.37A] ok=$($summary.ok) milestone=N+6.37A static_only=$($summary.static_only)"
     Write-Host "  wrapper_present=$($summary.wrapper_present)  schema_present=$($summary.schema_present)"
     Write-Host "  api_key_present=$($summary.api_key_present)  sandbox_present=$($summary.sandbox_present)"
     Write-Host "  wrapper_check_ok=$($summary.wrapper_check_ok)  probe_ok=$($summary.probe_ok)"
+    Write-Host "  source_scan_clean=$($summary.source_scan_clean)  external_cli_executed=$($summary.external_cli_executed)  subprocess_used=$($summary.subprocess_used)"
     Write-Host "  dry_run_status: $($summary.dry_run_status)"
     if ($findings.Count -gt 0) {
         Write-Host "  findings:"

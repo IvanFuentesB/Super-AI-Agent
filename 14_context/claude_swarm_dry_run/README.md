@@ -20,21 +20,35 @@ So `--dry-run` is NOT a true no-op — it makes Claude API calls.
 | `claude-swarm --dry-run "task"` | **BLOCKED** | Requires API key + makes Claude API calls |
 | `claude-swarm "task"` | **BLOCKED** | Launches real agents |
 
-## Wrapper modes
+## Wrapper modes (STATIC-ONLY)
 
-- `--check`: Safety status, documents dry-run block reason
-- `--probe`: `--version` check only (no API call)
-- `--demo-mode`: Runs `--demo --no-ui` in temp scratch dir (no API key)
+The wrapper is fully static-only: it never imports `subprocess`, never spawns a
+process, and never executes the external `claude-swarm` CLI.
 
-## Start condition gap
+- `--check`: Safety status + source scan (proves no process-spawn primitives in
+  the wrapper or the PowerShell checker); documents the dry-run block reason
+- `--probe`: Static metadata / PATH inspection only — reports tool presence
+  without executing it (`probe_result` is always `null`)
+- `--demo-mode`: Emits a hardcoded static simulated plan; never spawns the CLI
 
-N+6.35B and N+6.36B are not yet merged to main at the time of this milestone.
-PRs #10 and #11 are drafts awaiting Codex audit. This is documented in the
-wrapper's `start_conditions` field and should be resolved before any live run.
+Every result carries explicit proof fields: `external_cli_executed=false`,
+`subprocess_used=false`, `provider_called=false`, `api_key_used=false`,
+`agents_launched=false`, `live_execution=false`, `simulation=true`.
+
+## Static-only hardening (N+6.37A fix)
+
+Codex BLOCKED N+6.37B because the earlier wrapper could execute the third-party
+CLI through a process-spawn call in `--probe` / `--demo-mode`, and the checker
+invoked `--probe`. The wrapper is now static-only and the checker only calls
+static-safe modes. This unblocks the N+6.37B re-audit.
+
+## Start condition status
+
+N+6.35B and N+6.36B are merged to main. The wrapper documents the current status
+in its `start_conditions` field.
 
 ## Next step
 
-N+6.38A (proposed): After N+6.36B merges, run `claude-swarm --demo --no-ui`
-in a fully isolated scratch profile to prove the TUI runs safely without API keys.
-Then propose a gated path for eventually providing a real API key in an
-isolated environment for a true `--dry-run` trial.
+N+6.38A (provider-free fixture replay) is the safe path forward. An isolated
+`claude-swarm --demo --no-ui` run remains gated behind a separate audited
+milestone and is NOT performed by this wrapper.

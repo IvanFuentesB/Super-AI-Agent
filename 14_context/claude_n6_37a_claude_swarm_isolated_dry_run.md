@@ -1,10 +1,26 @@
 # Context Snapshot — N+6.37A Claude Swarm Isolated Dry Run
 
-**Milestone:** N+6.37A
+**Milestone:** N+6.37A (static-only hardening fix)
 **Date:** 2026-06-08
 **Branch:** `feat/ghoti-agent-claude-n6-37a-claude-swarm-isolated-dry-run`
-**Base:** `origin/main` (N+6.34B)
-**Status:** IMPLEMENTED_AND_PUSHED — awaiting Codex audit
+**Base:** `origin/main` (N+6.36B)
+**Status:** IMPLEMENTED_AND_PUSHED — awaiting Codex N+6.37B re-audit
+
+## N+6.37A fix (this update)
+
+Codex BLOCKED N+6.37B: the wrapper's `--probe` and `--demo-mode` could execute
+the third-party claude-swarm CLI via a process-spawn call, and the PowerShell
+checker invoked `--probe`. Fixed by making the wrapper fully static-only:
+
+- Removed all `subprocess` import/use; no process spawn; no shell.
+- `--probe` → static metadata / PATH inspection only; reports external CLI blocked.
+- `--demo-mode` → hardcoded static simulated plan; never spawns the CLI.
+- `--check` → source scan proving no process-spawn primitives in wrapper or PS1.
+- PowerShell checker calls only static-safe modes.
+- Explicit fields on every result: `external_cli_executed=false`,
+  `subprocess_used=false`, `provider_called=false`, `api_key_used=false`,
+  `agents_launched=false`, `live_execution=false`, `simulation=true`.
+- Added `TestStaticOnlyNoSubprocess` (subprocess-refusal tests). 48 tests pass.
 
 ---
 

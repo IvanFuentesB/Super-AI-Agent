@@ -249,7 +249,8 @@ class TestCheckMode(unittest.TestCase):
     def test_check_has_safe_command(self):
         result = _wrapper._run_check()
         self.assertIn("safe_command", result)
-        self.assertIn("--version", result["safe_command"])
+        # Static-only: safe path is metadata inspection, not CLI execution.
+        self.assertIn("static", result["safe_command"].lower())
 
 
 # ---------------------------------------------------------------------------
@@ -332,6 +333,144 @@ class TestDemoModeGraceful(unittest.TestCase):
             self.assertEqual(result["execution_status"], _wrapper._STATUS_BLOCKED)
         finally:
             del os.environ["ANTHROPIC_API_KEY"]
+
+    def test_demo_emits_static_plan_no_api_key(self):
+        for k in _wrapper._API_KEY_ENV_VARS:
+            os.environ.pop(k, None)
+        result = _wrapper._run_demo_mode()
+        self.assertEqual(result["execution_status"], _wrapper._STATUS_DEMO_OK)
+        self.assertIn("demo_plan", result)
+        self.assertEqual(result["demo_plan"]["source"], "static_simulation")
+
+
+# ---------------------------------------------------------------------------
+# 10. STATIC-ONLY enforcement — no subprocess, no external CLI execution
+#     (This is the N+6.37A hardening that unblocks the Codex N+6.37B gate.)
+# ---------------------------------------------------------------------------
+
+# Needles assembled from fragments so the contiguous literal never appears in
+# THIS test file either — the scan inspects the wrapper, not us, but we keep it
+# clean for symmetry.
+_EXEC_NEEDLES = [
+    "subprocess" + ".run",
+    "subprocess" + ".Popen",
+    "subprocess" + ".call",
+    "subprocess" + ".check_output",
+    "Popen" + "(",
+    "os" + ".system",
+    "os" + ".popen",
+    "os" + ".execv",
+    "os" + ".spawn",
+    "pty" + ".spawn",
+]
+_IMPORT_NEEDLES = [
+    "import " + "subprocess",
+    "import " + "pty",
+]
+
+
+class TestStaticOnlyNoSubprocess(unittest.TestCase):
+    def _wrapper_text(self) -> str:
+        return (_WRAPPER_DIR / "ghoti_claude_swarm_dry_run.py").read_text(
+            encoding="utf-8", errors="replace"
+        )
+
+    def _ps1_text(self) -> str:
+        return (_WRAPPER_DIR / "check_claude_swarm_dry_run.ps1").read_text(
+            encoding="utf-8", errors="replace"
+        )
+
+    def test_wrapper_source_has_no_subprocess_import(self):
+        src = inspect.getsource(_wrapper)
+        tree = ast.parse(src)
+        for node in ast.walk(tree):
+            if isinstance(node, (ast.Import, ast.ImportFrom)):
+                mod = getattr(node, "module", None) or ""
+                for alias in getattr(node, "names", []):
+                    name = alias.name or ""
+                    self.assertNotEqual(name, "subprocess",
+                                        "wrapper imports subprocess")
+                    self.assertNotEqual(name, "pty", "wrapper imports pty")
+                self.assertNotEqual(mod, "subprocess",
+                                    "wrapper imports from subprocess")
+
+    def test_wrapper_source_has_no_exec_primitives(self):
+        text = self._wrapper_text()
+        for needle in _EXEC_NEEDLES + _IMPORT_NEEDLES:
+            self.assertNotIn(
+                needle, text,
+                f"execution primitive {needle!r} present in wrapper",
+            )
+
+    def test_powershell_checker_no_invoke_expression(self):
+        text = self._ps1_text()
+        for needle in ["Invoke" + "-Expression", "Start" + "-Process"]:
+            self.assertNotIn(needle, text,
+                             f"{needle!r} present in PowerShell checker")
+        # The checker must not invoke the external claude-swarm CLI directly.
+        self.assertNotIn("& claude-swarm", text)
+        self.assertNotIn("&claude-swarm", text)
+
+    def test_check_source_scan_clean(self):
+        result = _wrapper._run_check()
+        self.assertIn("source_scan", result)
+        self.assertTrue(result["source_scan_clean"],
+                        f"source scan not clean: {result['source_scan']}")
+        self.assertEqual(result["source_scan"]["wrapper"], [])
+        self.assertEqual(result["source_scan"]["ps1"], [])
+
+    def test_check_does_not_execute_external_cli(self):
+        result = _wrapper._run_check()
+        self.assertFalse(result["external_cli_executed"])
+        self.assertFalse(result["subprocess_used"])
+        self.assertFalse(result["provider_called"])
+        self.assertFalse(result["agents_launched"])
+
+    def test_probe_does_not_execute_external_cli(self):
+        for k in _wrapper._API_KEY_ENV_VARS:
+            os.environ.pop(k, None)
+        result = _wrapper._run_probe()
+        self.assertFalse(result["external_cli_executed"])
+        self.assertFalse(result["subprocess_used"])
+        self.assertFalse(result["provider_called"])
+        self.assertFalse(result["agents_launched"])
+        self.assertIsNone(result.get("probe_result"))
+
+    def test_demo_does_not_execute_external_cli(self):
+        for k in _wrapper._API_KEY_ENV_VARS:
+            os.environ.pop(k, None)
+        result = _wrapper._run_demo_mode()
+        self.assertFalse(result["external_cli_executed"])
+        self.assertFalse(result["subprocess_used"])
+        self.assertFalse(result["provider_called"])
+        self.assertFalse(result["agents_launched"])
+
+    def test_all_modes_have_static_only_fields(self):
+        for k in _wrapper._API_KEY_ENV_VARS:
+            os.environ.pop(k, None)
+        for result in (_wrapper._run_check(), _wrapper._run_probe(),
+                       _wrapper._run_demo_mode()):
+            for field in ("external_cli_executed", "subprocess_used",
+                          "provider_called", "api_key_used",
+                          "agents_launched", "live_execution"):
+                self.assertIn(field, result, f"{field} missing in {result['mode']}")
+                self.assertFalse(result[field],
+                                 f"{field} should be False in {result['mode']}")
+            self.assertTrue(result["simulation"])
+
+    def test_safety_block_has_static_only_flags(self):
+        sb = _wrapper._SAFETY_BLOCK
+        self.assertFalse(sb["external_cli_executed"])
+        self.assertFalse(sb["subprocess_used"])
+        self.assertFalse(sb["provider_called"])
+        self.assertFalse(sb["agents_launched"])
+        self.assertFalse(sb["third_party_code_executed"])
+
+    def test_no_third_party_code_executed_in_demo(self):
+        for k in _wrapper._API_KEY_ENV_VARS:
+            os.environ.pop(k, None)
+        result = _wrapper._run_demo_mode()
+        self.assertFalse(result["safety_block"]["third_party_code_executed"])
 
 
 if __name__ == "__main__":

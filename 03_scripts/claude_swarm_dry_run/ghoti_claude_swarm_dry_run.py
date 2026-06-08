@@ -1,39 +1,50 @@
 """
-ghoti_claude_swarm_dry_run.py — N+6.37A Ghoti safety wrapper for claude-swarm dry-run.
+ghoti_claude_swarm_dry_run.py — N+6.37A Ghoti STATIC-ONLY wrapper for claude-swarm.
 
-Key findings from source-code inspection (claude_swarm/cli.py):
+HARDENED (N+6.37A fix): This wrapper is now fully static-only. It never executes
+the third-party claude-swarm CLI, never spawns a process, never imports the
+`subprocess` module, and never opens a shell. Every mode (--check, --probe,
+--demo-mode) only inspects static metadata/known file paths and produces a safe
+plan/report.
+
+Key findings from source-code inspection (claude_swarm/cli.py), text-read only:
   - --dry-run REQUIRES ANTHROPIC_API_KEY and calls the Claude API (decompose_task)
     before skipping execution. This is NOT a true no-op.
-    Status: BLOCKED — violates "no API keys, no account actions" hard rules.
-  - --demo runs a simulated TUI with NO API key required, but writes session
-    events to ~/.claude-swarm/sessions/ (home directory write).
-    Status: CONDITIONALLY SAFE in an isolated scratch profile only.
-  - --version and --help are fully safe.
+    Status: BLOCKED — violates "no API keys, no provider calls" hard rules.
+  - --demo runs a simulated TUI with NO API key required, but it still spawns the
+    real third-party CLI process. Executing it here would violate the static-only
+    audit gate, so demo output is SIMULATED STATICALLY in this wrapper instead.
+  - --version/--help do not call a provider, but invoking them still spawns the
+    external CLI, which this wrapper refuses. Tool presence is reported via a
+    non-executing PATH lookup only.
 
 This wrapper:
-  1. Verifies claude-swarm is available (--version probe)
-  2. Refuses to run if ANTHROPIC_API_KEY is set in env
-  3. Refuses live mode (missing --dry-run or --demo flag)
-  4. Refuses account/auth paths, non-scratch output paths, live launch flags
-  5. In PROBE mode: checks tool availability only (no execution)
-  6. In DEMO mode: runs --demo in a temp scratch dir (no API key path)
-  7. Emits Agent-Arena-shaped status: simulation=true, live_execution=false
+  1. Detects whether claude-swarm is present (PATH lookup + sandbox metadata) —
+     NO execution.
+  2. Refuses to run if any provider API key is set in env.
+  3. Refuses live mode (missing a safe flag), blocked flags, in-repo scratch, and
+     the --dry-run flag (documented as provider-gated).
+  4. PROBE mode: static metadata inspection only; reports external CLI is blocked.
+  5. DEMO mode: emits a STATIC simulated plan from hardcoded safe metadata.
+  6. CHECK mode: scans this wrapper's own source AND the PowerShell checker for
+     execution primitives and proves none are present.
+  7. Emits Agent-Arena-shaped status with explicit:
+       external_cli_executed=false, subprocess_used=false, provider_called=false,
+       api_key_used=false, agents_launched=false, live_execution=false,
+       simulation=true.
 
-Blocked command (requires API key + makes API calls):
-  claude-swarm --dry-run "task"
-
-Conditionally safe (no API key, writes only to scratch):
-  claude-swarm --demo
-
-Fully safe probe (version check only):
-  claude-swarm --version
+The honest truth (preserved):
+  claude-swarm --dry-run remains BLOCKED because source inspection showed a
+  provider key check + model decomposition (decompose_task) BEFORE the dry-run
+  skip. The safe next path is provider-free fixture replay (N+6.38A) and, only
+  after audit, an isolated --demo --no-ui run in a separate profile.
 
 CLI flags:
-  --probe               Probe tool availability (--version check only)
-  --demo-mode           Run --demo in a scratch directory (no API key)
-  --check               Safety status check (no execution)
+  --probe               Static probe (metadata/PATH inspection only, no execution)
+  --demo-mode           Emit a static simulated demo plan (no execution)
+  --check               Safety status + source scan (no execution)
   --sandbox <path>      Sandbox root for detection
-  --scratch <path>      Scratch directory for demo output
+  --scratch <path>      Advisory scratch path (validated, never written)
   --json                Machine-readable output
 """
 from __future__ import annotations
@@ -42,9 +53,7 @@ import argparse
 import json
 import os
 import shutil
-import subprocess
 import sys
-import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -58,19 +67,12 @@ _API_KEY_ENV_VARS = [
     "OPENAI_API_KEY",
 ]
 
-# Flags that indicate live mode (agents would actually launch)
-_LIVE_LAUNCH_FLAGS = [
-    # No --dry-run and no --demo = live mode
-    # We detect this by requiring one of the safe flags explicitly
-]
-
-# Flags that are safe
+# Flags that are safe (mode selectors only — never executed by this wrapper)
 _SAFE_FLAGS = {"--dry-run", "--demo", "--version", "--help", "-v", "--no-ui"}
 
 # Blocked flags that must never be passed
 _BLOCKED_FLAGS = {
     "--mcp", "--hooks", "--browser",
-    # No explicit flag needed; live mode is the DEFAULT
 }
 
 # Safety block present on every result
@@ -87,6 +89,10 @@ _SAFETY_BLOCK: dict[str, Any] = {
     "network_attempted": False,
     "files_written_outside_scratch": False,
     "third_party_code_executed": False,
+    "external_cli_executed": False,
+    "subprocess_used": False,
+    "provider_called": False,
+    "agents_launched": False,
     "secrets_committed": False,
 }
 
@@ -98,6 +104,62 @@ _STATUS_DEMO_OK = "demo_ok"
 _STATUS_DEMO_FAILED = "demo_failed"
 _STATUS_BLOCKED = "blocked"
 
+# Static simulated demo plan — hardcoded, provider-free, no execution.
+_STATIC_DEMO_PLAN: dict[str, Any] = {
+    "swarm": "ghoti-static-demo",
+    "source": "static_simulation",
+    "dry_run": True,
+    "simulation": True,
+    "live_execution": False,
+    "tasks": [
+        {
+            "id": "demo-1",
+            "agent_type": "coder",
+            "description": "Sample: scaffold a module (simulated, not executed)",
+            "dependencies": [],
+        },
+        {
+            "id": "demo-2",
+            "agent_type": "tester",
+            "description": "Sample: write unit tests (simulated, not executed)",
+            "dependencies": ["demo-1"],
+        },
+        {
+            "id": "demo-3",
+            "agent_type": "reviewer",
+            "description": "Sample: review output (simulated, not executed)",
+            "dependencies": ["demo-1", "demo-2"],
+        },
+    ],
+}
+
+# Execution-primitive needles, assembled from fragments so the contiguous
+# literal NEVER appears in this file (this lets the scan inspect this very file
+# without flagging its own pattern list).
+_PY_EXEC_NEEDLES = [
+    "subprocess" + ".run",
+    "subprocess" + ".Popen",
+    "subprocess" + ".call",
+    "subprocess" + ".check_output",
+    "subprocess" + ".check_call",
+    "Popen" + "(",
+    "os" + ".system",
+    "os" + ".popen",
+    "os" + ".execv",
+    "os" + ".execvp",
+    "os" + ".spawn",
+    "pty" + ".spawn",
+]
+_PY_IMPORT_NEEDLES = [
+    "import " + "subprocess",
+    "import " + "pty",
+]
+_PS_EXEC_NEEDLES = [
+    "Invoke" + "-Expression",
+    "Start" + "-Process",
+    "iex " + "(",
+]
+
 
 def _repo_root() -> Path:
     return Path(__file__).resolve().parent.parent.parent
@@ -107,11 +169,36 @@ def _default_sandbox(repo_root: Path) -> Path:
     return repo_root / SANDBOX_RELATIVE
 
 
+def _wrapper_source_path() -> Path:
+    return Path(__file__).resolve()
+
+
+def _ps1_checker_path() -> Path:
+    return _wrapper_source_path().parent / "check_claude_swarm_dry_run.ps1"
+
+
+def _static_only_fields() -> dict:
+    """Explicit machine-readable proof fields stamped on every result."""
+    return {
+        "external_cli_executed": False,
+        "subprocess_used": False,
+        "provider_called": False,
+        "api_key_used": False,
+        "agents_launched": False,
+        "live_execution": False,
+        "simulation": True,
+    }
+
+
 def _find_claude_swarm() -> dict:
+    """Detect claude-swarm via a NON-executing PATH lookup + sandbox metadata.
+
+    shutil.which only scans PATH directories for a matching filename; it does
+    not spawn or execute anything.
+    """
     cmd = shutil.which("claude-swarm")
     if cmd:
         return {"found": True, "path": cmd, "source": "PATH"}
-    # Not in PATH; check if installable from sandbox
     sandbox_pyproject = (
         _default_sandbox(_repo_root()) / "claude_swarm" / "pyproject.toml"
     )
@@ -133,71 +220,64 @@ def _check_api_keys_in_env() -> list[str]:
     return present
 
 
-def _probe_version(cmd: str) -> dict:
-    try:
-        result = subprocess.run(
-            [cmd, "--version"],
-            capture_output=True, text=True, timeout=10,
-            env={k: v for k, v in os.environ.items()
-                 if k not in _API_KEY_ENV_VARS},
-        )
-        return {
-            "exit_code": result.returncode,
-            "stdout": result.stdout.strip()[:200],
-            "stderr": result.stderr.strip()[:200],
-            "success": result.returncode == 0,
-        }
-    except FileNotFoundError:
-        return {"exit_code": -1, "stdout": "", "stderr": "command not found", "success": False}
-    except subprocess.TimeoutExpired:
-        return {"exit_code": -1, "stdout": "", "stderr": "timeout", "success": False}
-    except Exception as exc:
-        return {"exit_code": -1, "stdout": "", "stderr": str(exc), "success": False}
+def _extract_toml_value(text: str, key: str) -> str | None:
+    """Tiny text-only TOML scalar extractor (name/version). No execution."""
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith(f"{key} ") or stripped.startswith(f"{key}="):
+            if "=" in stripped:
+                val = stripped.split("=", 1)[1].strip()
+                return val.strip().strip('"').strip("'")
+    return None
 
 
-def _run_demo_in_scratch(cmd: str, scratch_dir: str) -> dict:
-    env = {k: v for k, v in os.environ.items() if k not in _API_KEY_ENV_VARS}
-    env["HOME"] = scratch_dir
-    env["USERPROFILE"] = scratch_dir
-    env["XDG_DATA_HOME"] = os.path.join(scratch_dir, ".local", "share")
+def _read_static_metadata() -> dict:
+    """Read claude-swarm package metadata as TEXT only (no import, no execution)."""
+    pyproject = _default_sandbox(_repo_root()) / "claude_swarm" / "pyproject.toml"
+    if not pyproject.exists():
+        return {"available": False, "source": "not_present"}
     try:
-        result = subprocess.run(
-            [cmd, "--demo", "--no-ui"],
-            capture_output=True, text=True, timeout=60,
-            cwd=scratch_dir,
-            env=env,
-        )
-        files_written = []
-        for dirpath, _, filenames in os.walk(scratch_dir):
-            for fn in filenames:
-                fp = os.path.join(dirpath, fn)
-                files_written.append(os.path.relpath(fp, scratch_dir))
-        return {
-            "exit_code": result.returncode,
-            "stdout": result.stdout.strip()[:2000],
-            "stderr": result.stderr.strip()[:500],
-            "success": result.returncode == 0,
-            "files_written": files_written[:20],
-            "network_attempted": False,
-            "agents_launched": False,
-            "api_key_used": False,
-        }
-    except subprocess.TimeoutExpired:
-        return {
-            "exit_code": -1, "stdout": "", "stderr": "timeout after 60s",
-            "success": False, "files_written": [], "network_attempted": False,
-            "agents_launched": False, "api_key_used": False,
-        }
-    except Exception as exc:
-        return {
-            "exit_code": -1, "stdout": "", "stderr": str(exc),
-            "success": False, "files_written": [], "network_attempted": False,
-            "agents_launched": False, "api_key_used": False,
-        }
+        text = pyproject.read_text(encoding="utf-8", errors="replace")
+    except Exception as exc:  # pragma: no cover - defensive
+        return {"available": False, "source": "read_error", "error": str(exc)[:120]}
+    return {
+        "available": True,
+        "source": "static_pyproject_text",
+        "name": _extract_toml_value(text, "name"),
+        "version": _extract_toml_value(text, "version"),
+    }
+
+
+def _scan_source_for_exec_patterns() -> dict:
+    """Scan THIS wrapper and the PowerShell checker for execution primitives.
+
+    Proves the wrapper contains no process-spawning calls (the subprocess
+    module, Popen, or os-level system/exec helpers) and the checker contains no
+    dynamic expression invocation or process-launch cmdlets. The needle list is
+    assembled from fragments so the contiguous literals never appear here.
+    """
+    findings: dict[str, Any] = {"wrapper": [], "ps1": [], "clean": True}
+
+    wp = _wrapper_source_path()
+    if wp.exists():
+        wtext = wp.read_text(encoding="utf-8", errors="replace")
+        for needle in _PY_EXEC_NEEDLES + _PY_IMPORT_NEEDLES:
+            if needle in wtext:
+                findings["wrapper"].append(needle)
+
+    ps = _ps1_checker_path()
+    if ps.exists():
+        ptext = ps.read_text(encoding="utf-8", errors="replace")
+        for needle in _PS_EXEC_NEEDLES:
+            if needle in ptext:
+                findings["ps1"].append(needle)
+
+    findings["clean"] = not findings["wrapper"] and not findings["ps1"]
+    return findings
 
 
 # ---------------------------------------------------------------------------
-# Validation guards
+# Validation guards (pure logic — never execute anything)
 # ---------------------------------------------------------------------------
 
 def _validate_invocation(flags: list[str], scratch: str | None = None) -> dict:
@@ -216,11 +296,10 @@ def _validate_invocation(flags: list[str], scratch: str | None = None) -> dict:
             blocked.append(f"blocked_flag: {flag}")
 
     if "--dry-run" in flags and not any(f in flags for f in ["--demo"]):
-        if api_keys or not os.environ.get("ANTHROPIC_API_KEY"):
-            blocked.append(
-                "dry_run_requires_api_key: claude-swarm --dry-run calls "
-                "decompose_task() via Claude API before skipping execution"
-            )
+        blocked.append(
+            "dry_run_requires_api_key: claude-swarm --dry-run calls "
+            "decompose_task() via Claude API before skipping execution"
+        )
 
     if scratch is not None:
         scratch_path = Path(scratch)
@@ -238,165 +317,165 @@ def _validate_invocation(flags: list[str], scratch: str | None = None) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Public entry points
+# Public entry points (all static-only)
 # ---------------------------------------------------------------------------
 
 def _run_check(sandbox: Path | None = None) -> dict:
     tool = _find_claude_swarm()
     api_keys = _check_api_keys_in_env()
+    source_scan = _scan_source_for_exec_patterns()
 
     dry_run_status = (
         "BLOCKED — requires ANTHROPIC_API_KEY and makes Claude API calls "
         "in decompose_task() before skipping execution"
     )
     demo_status = (
-        "SAFE (no API key required) but writes to home dir; "
-        "use --demo-mode with explicit --scratch in isolated environment only"
+        "SIMULATED STATICALLY — this wrapper emits a hardcoded demo plan and "
+        "never spawns the external claude-swarm CLI"
     )
 
-    return {
+    result = {
         "ok": True,
         "milestone": MILESTONE,
         "mode": "check",
+        "static_only": True,
         "tool_available": tool["found"],
         "tool_detection": tool,
+        "static_metadata": _read_static_metadata(),
         "api_keys_in_env": api_keys,
         "api_keys_blocked": len(api_keys) > 0,
         "dry_run_flag_status": dry_run_status,
         "demo_mode_status": demo_status,
-        "safe_command": "claude-swarm --version  (probe only)",
+        "source_scan": source_scan,
+        "source_scan_clean": source_scan["clean"],
+        "safe_command": "(static metadata inspection only — no CLI execution)",
         "blocked_command": "claude-swarm --dry-run \"task\"  (requires API key + makes API calls)",
         "conditionally_safe_command": (
-            "claude-swarm --demo --no-ui  (no API key, isolated scratch only)"
+            "claude-swarm --demo --no-ui  (NOT executed here; isolated audited profile only)"
+        ),
+        "next_safe_path": (
+            "Provider-free fixture replay (N+6.38A); isolated --demo --no-ui only "
+            "after a separate audited milestone."
         ),
         "start_conditions": {
-            "n6_35b_on_main": False,
-            "n6_36b_on_main": False,
-            "note": "N+6.35B and N+6.36B PRs (#10, #11) are drafts — not yet merged to main. "
-                    "Proceeding with wrapper and tests; actual execution deferred.",
+            "n6_35b_on_main": True,
+            "n6_36b_on_main": True,
+            "note": "N+6.35B and N+6.36B are merged to main. This N+6.37A fix "
+                    "hardens the wrapper to static-only before N+6.37B re-audit.",
         },
         "safety_block": _SAFETY_BLOCK,
     }
+    result.update(_static_only_fields())
+    # source_scan_clean must hold for ok to be true
+    result["ok"] = bool(source_scan["clean"])
+    return result
 
 
 def _run_probe(sandbox: Path | None = None) -> dict:
     api_keys = _check_api_keys_in_env()
     if api_keys:
-        return {
+        result = {
             "ok": False,
             "milestone": MILESTONE,
             "mode": "probe",
+            "static_only": True,
             "execution_status": _STATUS_BLOCKED,
             "tool_available": False,
             "api_keys_blocked": api_keys,
             "safety_block": _SAFETY_BLOCK,
         }
+        result.update(_static_only_fields())
+        return result
 
     tool = _find_claude_swarm()
+    metadata = _read_static_metadata()
 
+    status = _STATUS_PROBE_OK if tool["found"] else _STATUS_NOT_INSTALLED
+    note = (
+        "Static probe: tool presence determined via PATH lookup and sandbox "
+        "metadata only. The external claude-swarm CLI is NOT executed."
+    )
     if not tool["found"]:
-        return {
-            "ok": True,
-            "milestone": MILESTONE,
-            "mode": "probe",
-            "execution_status": _STATUS_NOT_INSTALLED,
-            "tool_available": False,
-            "tool_detection": tool,
-            "probe_result": None,
-            "note": (
-                "claude-swarm is not installed. In an isolated sandbox, "
-                "install with: pip install claude-swarm (then run --version probe)."
-            ),
-            "dry_run_blocked_reason": (
-                "--dry-run requires ANTHROPIC_API_KEY and makes Claude API calls "
-                "via decompose_task() before any dry-run behavior applies."
-            ),
-            "safety_block": _SAFETY_BLOCK,
-        }
+        note = (
+            "claude-swarm is not installed on PATH. Detection is static (PATH "
+            "lookup + sandbox metadata). The external CLI is never executed."
+        )
 
-    probe = _probe_version(tool["path"])
-    return {
-        "ok": probe["success"],
+    result = {
+        "ok": True,
         "milestone": MILESTONE,
         "mode": "probe",
-        "execution_status": _STATUS_PROBE_OK if probe["success"] else _STATUS_BLOCKED,
-        "tool_available": True,
-        "tool_path": tool["path"],
-        "probe_result": probe,
+        "static_only": True,
+        "execution_status": status,
+        "tool_available": tool["found"],
+        "tool_detection": tool,
+        "static_metadata": metadata,
+        "probe_result": None,
+        "note": note,
         "dry_run_blocked_reason": (
-            "--dry-run requires ANTHROPIC_API_KEY and makes Claude API calls. "
-            "Execution is BLOCKED. Only --version and --demo are safe."
+            "--dry-run requires ANTHROPIC_API_KEY and makes Claude API calls "
+            "via decompose_task() before any dry-run behavior applies. The "
+            "external CLI is never executed by this wrapper."
         ),
-        "network_attempted": False,
-        "agents_launched": False,
-        "api_key_used": False,
         "files_written": False,
         "safety_block": _SAFETY_BLOCK,
     }
+    result.update(_static_only_fields())
+    return result
 
 
 def _run_demo_mode(scratch: str | None = None, sandbox: Path | None = None) -> dict:
     api_keys = _check_api_keys_in_env()
     if api_keys:
-        return {
+        result = {
             "ok": False,
             "milestone": MILESTONE,
             "mode": "demo",
+            "static_only": True,
             "execution_status": _STATUS_BLOCKED,
             "blocked_reason": f"API key(s) present in env: {api_keys}",
             "safety_block": _SAFETY_BLOCK,
         }
+        result.update(_static_only_fields())
+        return result
 
-    tool = _find_claude_swarm()
-
-    if not tool["found"]:
-        return {
-            "ok": False,
-            "milestone": MILESTONE,
-            "mode": "demo",
-            "execution_status": _STATUS_NOT_INSTALLED,
-            "tool_available": False,
-            "safety_block": _SAFETY_BLOCK,
-        }
-
+    # Advisory validation: keep refusing in-repo scratch even though nothing
+    # is written (defense in depth). Demo output is entirely static.
     validation = _validate_invocation(["--demo", "--no-ui"], scratch=scratch)
     if not validation["allowed"]:
-        return {
+        result = {
             "ok": False,
             "milestone": MILESTONE,
             "mode": "demo",
+            "static_only": True,
             "execution_status": _STATUS_BLOCKED,
             "validation": validation,
             "safety_block": _SAFETY_BLOCK,
         }
+        result.update(_static_only_fields())
+        return result
 
-    use_tmp = scratch is None
-    tmp_dir = scratch or tempfile.mkdtemp(prefix="ghoti_swarm_demo_")
-    try:
-        demo_result = _run_demo_in_scratch(tool["path"], tmp_dir)
-        status = _STATUS_DEMO_OK if demo_result["success"] else _STATUS_DEMO_FAILED
-        return {
-            "ok": demo_result["success"],
-            "milestone": MILESTONE,
-            "mode": "demo",
-            "execution_status": status,
-            "tool_path": tool["path"],
-            "scratch_dir": tmp_dir if not use_tmp else "(temp, cleaned up)",
-            "demo_result": demo_result,
-            "network_attempted": demo_result.get("network_attempted", False),
-            "agents_launched": demo_result.get("agents_launched", False),
-            "api_key_used": demo_result.get("api_key_used", False),
-            "files_written_in_scratch": demo_result.get("files_written", []),
-            "safety_block": {**_SAFETY_BLOCK,
-                             "third_party_code_executed": True},
-        }
-    finally:
-        if use_tmp:
-            try:
-                import shutil as _shutil
-                _shutil.rmtree(tmp_dir, ignore_errors=True)
-            except Exception:
-                pass
+    tool = _find_claude_swarm()
+
+    result = {
+        "ok": True,
+        "milestone": MILESTONE,
+        "mode": "demo",
+        "static_only": True,
+        "execution_status": _STATUS_DEMO_OK,
+        "tool_available": tool["found"],
+        "tool_detection": tool,
+        "demo_plan": _STATIC_DEMO_PLAN,
+        "demo_source": "static_simulation",
+        "note": (
+            "Demo plan is a hardcoded static simulation. The external "
+            "claude-swarm CLI is NOT spawned or executed."
+        ),
+        "files_written_in_scratch": [],
+        "safety_block": _SAFETY_BLOCK,
+    }
+    result.update(_static_only_fields())
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -405,13 +484,13 @@ def _run_demo_mode(scratch: str | None = None, sandbox: Path | None = None) -> d
 
 def _main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
-        description="Ghoti N+6.37A claude-swarm safety wrapper"
+        description="Ghoti N+6.37A claude-swarm STATIC-ONLY wrapper"
     )
-    parser.add_argument("--check", action="store_true", help="Safety status check")
-    parser.add_argument("--probe", action="store_true", help="Probe tool availability (--version)")
-    parser.add_argument("--demo-mode", action="store_true", help="Run --demo in scratch (no API)")
+    parser.add_argument("--check", action="store_true", help="Safety status + source scan")
+    parser.add_argument("--probe", action="store_true", help="Static probe (no execution)")
+    parser.add_argument("--demo-mode", action="store_true", help="Static simulated demo plan")
     parser.add_argument("--sandbox", metavar="PATH", help="Override sandbox root")
-    parser.add_argument("--scratch", metavar="PATH", help="Scratch directory for demo output")
+    parser.add_argument("--scratch", metavar="PATH", help="Advisory scratch path (never written)")
     parser.add_argument("--json", action="store_true", dest="as_json")
     args = parser.parse_args(argv)
 
@@ -433,9 +512,12 @@ def _main(argv: list[str] | None = None) -> None:
         sb = result.get("safety_block", {})
         print(f"  simulation={sb.get('simulation')} "
               f"live_execution={sb.get('live_execution')} "
-              f"api_key_used={sb.get('api_key_used', False)}")
+              f"external_cli_executed={result.get('external_cli_executed')} "
+              f"subprocess_used={result.get('subprocess_used')}")
+        if "source_scan_clean" in result:
+            print(f"  source_scan_clean={result['source_scan_clean']}")
         if "dry_run_blocked_reason" in result:
-            print(f"  dry_run: BLOCKED — {result['dry_run_blocked_reason'][:80]}")
+            print(f"  dry_run: BLOCKED — {result['dry_run_blocked_reason'][:70]}")
         if "note" in result:
             print(f"  note: {result['note'][:80]}")
 
