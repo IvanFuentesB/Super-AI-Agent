@@ -99,6 +99,17 @@ def _file_authority_plan() -> dict:
     return plan
 
 
+def _unknown_capability_plan() -> dict:
+    # A capability the Python adapter does NOT block (it is not in
+    # BLOCKED_CAPABILITIES), so Gate 1 alone would let it through. The Rust
+    # policy gate marks it "unknown" and denies it — demonstrating the second
+    # gate catches what the adapter alone would miss (default-deny holds).
+    plan = _safe_local_plan()
+    plan["plan_id"] = "n6_33a_unknown_capability"
+    plan["capabilities_required"] = ["telemetry_upload"]
+    return plan
+
+
 def _write(plan: dict) -> str:
     fh = tempfile.NamedTemporaryFile(
         mode="w", suffix=".json", delete=False, encoding="utf-8"
@@ -161,6 +172,24 @@ class TestDualGateAcceptance(unittest.TestCase):
         self.assertFalse(result["accepted"])
         self.assertFalse(result["rust_allowed"])
         self.assertIn("browser", result["rust_policy_decision"]["blocked_capabilities"])
+
+    def test_unknown_capability_denied_by_rust_gate(self):
+        # Gate 1 (adapter) allows it; Gate 2 (Rust policy) denies it as unknown.
+        # The combined decision must be NOT accepted — the second gate adds value.
+        result = self._run(_unknown_capability_plan())
+        self.assertEqual(result["status"], "allowed")
+        self.assertTrue(result["adapter_allowed"])
+        self.assertFalse(result["rust_allowed"])
+        self.assertFalse(result["accepted"])
+        self.assertFalse(result["ok"])
+        self.assertIn(
+            "unknown_capability_requested",
+            result["rust_policy_decision"]["reasons"],
+        )
+        self.assertIn(
+            "telemetry_upload",
+            result["rust_policy_decision"]["unknown_capabilities"],
+        )
 
 
 # ------------------------------------------------------------------
@@ -313,7 +342,7 @@ class TestRustCargoCrossCheck(unittest.TestCase):
     def test_cargo_agrees_with_mirror_for_each_case(self):
         for builder in (
             _safe_local_plan, _live_launch_plan, _external_url_plan,
-            _secret_input_plan, _file_authority_plan,
+            _secret_input_plan, _file_authority_plan, _unknown_capability_plan,
         ):
             plan = builder()
             swarm_plan = adapter._plan_to_swarm_plan(plan)

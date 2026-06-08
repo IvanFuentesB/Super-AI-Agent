@@ -50,13 +50,15 @@ Everything stays dry-run; no live computer-use is enabled.
 | external URL | blocked | deny | false |
 | secret input | blocked | deny | false |
 | `file://` authority | blocked | deny | false |
+| unknown capability | allowed | deny | false |
 
 ## Validation results (this session)
 
 - `cargo test --manifest-path rust/Cargo.toml` → 4 + 15 pass.
 - `cargo test --manifest-path rust/ghoti_policy_checker/Cargo.toml` → 4 pass.
 - `cargo run ... -- --check` → `deny` (default-deny holds).
-- `test_n6_33a_*` → 21 pass (incl. real cargo cross-check).
+- `test_n6_33a_*` → 22 pass (incl. real cargo cross-check; unknown-capability case
+  shows the Rust gate denying what the adapter alone would allow).
 - `test_n6_29a_*` → 56 pass (baseline preserved).
 - `public_repo_security_audit.py --run --json` → `blocking_findings: []`, `ok: true`.
 - `ghoti_product_launcher.py --status --json` → `ok: true`.

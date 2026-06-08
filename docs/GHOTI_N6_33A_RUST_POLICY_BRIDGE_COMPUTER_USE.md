@@ -63,7 +63,7 @@ cross-check degrades to `available: false` and the mirror still stands.
 ## Proof cases (tests)
 
 `01_projects/runtime_mvp/tests/test_n6_33a_rust_policy_bridge_computer_use.py`
-(21 tests) proves, for dry-run plans:
+(22 tests) proves, for dry-run plans:
 
 | # | Plan | Gate 1 (adapter) | Gate 2 (policy) | `accepted` |
 |---|------|------------------|-----------------|------------|
@@ -72,6 +72,12 @@ cross-check degrades to `available: false` and the mirror still stands.
 | 3 | external URL | blocked | deny (`browser` blocked) | false |
 | 4 | secret input | blocked | deny (`secrets` blocked) | false |
 | 5 | `file://` authority | blocked | deny (`browser` blocked) | false |
+| 6 | unknown capability | **allowed** | deny (`unknown_capability_requested`) | false |
+
+Case 6 is the clearest demonstration of the bridge's value: the Python adapter
+alone would let an unrecognized capability through, but the Rust policy gate
+marks it `unknown` and denies it, so the combined decision is **not accepted**
+(default-deny holds).
 
 Additional tests cover: the bridge being opt-in (baseline preserved), the
 plan→swarm-plan mapping, mirror semantics + capability normalization, the dry-run
@@ -80,6 +86,24 @@ asserts the real binary agrees with the mirror for all five cases (skipped when
 Rust is absent).
 
 ---
+
+## Status & next step
+
+- **Rust is now in the policy path.** It is no longer just a crate that exists on
+  GitHub — `ghoti_policy_checker` (mirrored deterministically, optionally
+  cross-checked via `cargo`) validates every computer-use dry-run plan as a
+  second gate before it can be `accepted`.
+- **This is still dry-run only.** No real OS click/type, no live browser, no
+  account login, no Docker, no MCP, no hooks, no auto-submit. Acceptance means a
+  plan *would* be permitted to proceed to a future audited execution milestone —
+  not that anything executes now.
+- **CUA / UI-TARS / Ruflo / am-will/swarms / claude-swarm / ECC are not live
+  engines yet.** They are referenced by URL / prior static inspection only; no
+  third-party code is committed or executed.
+- **Next step:** an isolated plug-and-play engine trial (CUA first), run in a
+  separate profile / scratch repo, with the N+6.33A dual gate in front of it.
+  See `14_context/tool_intake/real_repo_trial_plan_n6_33a.md`. Each promotion
+  toward a real engine requires its own audited milestone and human approval.
 
 ## Files
 
