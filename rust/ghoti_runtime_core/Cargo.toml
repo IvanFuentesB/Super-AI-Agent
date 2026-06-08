@@ -1,0 +1,10 @@
+[package]
+name = "ghoti_runtime_core"
+version = "0.1.0"
+edition = "2024"
+description = "Core data structures for the Ghoti runtime — no I/O, no unsafe, no network"
+license = "MIT"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
