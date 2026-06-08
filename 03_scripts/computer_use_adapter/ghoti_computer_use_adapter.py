@@ -36,6 +36,7 @@ import json
 import re
 import sys
 from pathlib import Path
+from urllib.parse import urlparse
 
 MILESTONE = "N+6.29A"
 ADAPTER_VERSION = "0.1.0"
@@ -108,13 +109,7 @@ BLOCKED_CAPABILITIES = frozenset({
     "file_system_write_outside_sandbox",
 })
 
-ALLOWED_URL_PREFIXES = (
-    "file://",
-    "http://localhost",
-    "http://127.0.0.1",
-    "https://localhost",
-    "https://127.0.0.1",
-)
+ALLOWED_LOCAL_HOSTNAMES = frozenset({"localhost", "127.0.0.1", "::1"})
 
 REFUSED_LIVE_ACTIONS = [
     "real OS click or mouse move",
@@ -156,10 +151,27 @@ def _check_url(plan: dict) -> list[str]:
     url = plan.get("target_url", "")
     if not url:
         return reasons
-    if not any(url.startswith(pfx) for pfx in ALLOWED_URL_PREFIXES):
-        reasons.append(
-            f"target_url '{url}' is not a local file:// or localhost URL"
-        )
+
+    parsed = urlparse(url)
+    scheme = parsed.scheme.lower()
+
+    if scheme == "file":
+        # file:// is always local
+        return reasons
+
+    if scheme in ("http", "https"):
+        hostname = (parsed.hostname or "").lower()
+        if hostname not in ALLOWED_LOCAL_HOSTNAMES:
+            reasons.append(
+                f"target_url '{url}' hostname '{hostname}' is not a local hostname "
+                f"(allowed: {sorted(ALLOWED_LOCAL_HOSTNAMES)})"
+            )
+        return reasons
+
+    reasons.append(
+        f"target_url '{url}' scheme '{scheme}' is not allowed "
+        f"(allowed schemes: file, http/https with local hostname only)"
+    )
     return reasons
 
 
@@ -334,8 +346,8 @@ def _run_plan(plan_path: str) -> dict:
         "approval_token": None,
         "rust_policy_bridge_ready": False,
         "rust_policy_bridge_note": (
-            "N+6.28A Rust policy checker is not yet merged; "
-            "bridge to Rust policy checker deferred to post-merge milestone."
+            "N+6.28B Rust policy checker is merged; "
+            "bridge wiring deferred to next milestone."
         ),
         "arena_status": _build_arena_status(status, plan),
         "refused_live_actions": REFUSED_LIVE_ACTIONS,
@@ -345,7 +357,7 @@ def _run_plan(plan_path: str) -> dict:
             "explicit human approval."
         ),
         "safety": _build_safety_block(),
-        "timestamp_utc": datetime.datetime.utcnow().isoformat() + "Z",
+        "timestamp_utc": datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z"),
     }
 
 
@@ -365,11 +377,11 @@ def _run_check() -> dict:
         "secrets_access_enabled": False,
         "rust_policy_bridge_ready": False,
         "rust_policy_bridge_note": (
-            "N+6.28A Rust policy checker branch exists but is not yet merged. "
-            "Bridge will be wired post-merge."
+            "N+6.28B Rust policy checker is merged; "
+            "bridge wiring deferred to next milestone."
         ),
-        "n6_27a_dependency": "not merged — swarm_launcher files untouched",
-        "n6_28a_dependency": "not merged — rust/ghoti_policy_checker files untouched",
+        "n6_27a_dependency": "merged (N+6.27B on main) — swarm_launcher files untouched by this branch",
+        "n6_28b_dependency": "merged (N+6.28B on main) — rust/ghoti_policy_checker files untouched by this branch",
         "allowed_targets": sorted(ALLOWED_TARGETS),
         "allowed_action_types": sorted(ALLOWED_ACTION_TYPES),
         "blocked_action_types": sorted(BLOCKED_ACTION_TYPES),
@@ -377,7 +389,7 @@ def _run_check() -> dict:
         "refused_live_actions": REFUSED_LIVE_ACTIONS,
         "repo_inspiration": "14_context/computer_use_adapter/repo_inspiration_manifest_n6_29a.json",
         "safety": _build_safety_block(),
-        "timestamp_utc": datetime.datetime.utcnow().isoformat() + "Z",
+        "timestamp_utc": datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z"),
     }
 
 

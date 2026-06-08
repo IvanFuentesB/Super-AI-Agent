@@ -84,6 +84,42 @@ class TestCheckUrl(unittest.TestCase):
         reasons = adapter._check_url({})
         self.assertEqual(reasons, [])
 
+    # --- deceptive-hostname regression tests ---
+
+    def test_deceptive_localhost_prefix_blocked(self):
+        # "localhost.evil.example" starts with "localhost" but is not local
+        reasons = adapter._check_url({"target_url": "http://localhost.evil.example/account"})
+        self.assertEqual(len(reasons), 1)
+        self.assertIn("localhost.evil.example", reasons[0])
+
+    def test_deceptive_127_prefix_blocked(self):
+        # "127.0.0.1.evil.example" starts with "127.0.0.1" but is not local
+        reasons = adapter._check_url({"target_url": "http://127.0.0.1.evil.example/login"})
+        self.assertEqual(len(reasons), 1)
+        self.assertIn("127.0.0.1.evil.example", reasons[0])
+
+    def test_deceptive_localhost_https_blocked(self):
+        reasons = adapter._check_url({"target_url": "https://localhost.attacker.test/steal"})
+        self.assertEqual(len(reasons), 1)
+        self.assertIn("localhost.attacker.test", reasons[0])
+
+    def test_deceptive_127_https_blocked(self):
+        reasons = adapter._check_url({"target_url": "https://127.0.0.1.attacker.test/evil"})
+        self.assertEqual(len(reasons), 1)
+        self.assertIn("127.0.0.1.attacker.test", reasons[0])
+
+    def test_blocked_scheme_blocked(self):
+        reasons = adapter._check_url({"target_url": "ftp://localhost/something"})
+        self.assertEqual(len(reasons), 1)
+
+    def test_https_localhost_still_allowed(self):
+        reasons = adapter._check_url({"target_url": "https://localhost:8443/dashboard"})
+        self.assertEqual(reasons, [])
+
+    def test_ipv6_loopback_allowed(self):
+        reasons = adapter._check_url({"target_url": "http://[::1]:3210/"})
+        self.assertEqual(reasons, [])
+
 
 class TestCheckAutoSubmit(unittest.TestCase):
     def test_false_ok(self):
@@ -358,7 +394,8 @@ class TestRunCheck(unittest.TestCase):
         self.assertFalse(result["secrets_access_enabled"])
         self.assertFalse(result["rust_policy_bridge_ready"])
         self.assertIn("n6_27a_dependency", result)
-        self.assertIn("n6_28a_dependency", result)
+        self.assertIn("n6_28b_dependency", result)
+        self.assertIn("merged", result["n6_27a_dependency"])
         self.assertFalse(result["safety"]["real_action_performed"])
         self.assertTrue(result["safety"]["dry_run_only"])
 
