@@ -1,5 +1,5 @@
 """
-ghoti_claude_swarm_dry_run.py — N+6.37A Ghoti STATIC-ONLY wrapper for claude-swarm.
+ghoti_claude_swarm_dry_run.py  --  N+6.37A Ghoti STATIC-ONLY wrapper for claude-swarm.
 
 HARDENED (N+6.37A fix): This wrapper is now fully static-only. It never executes
 the third-party claude-swarm CLI, never spawns a process, never imports the
@@ -10,7 +10,7 @@ plan/report.
 Key findings from source-code inspection (claude_swarm/cli.py), text-read only:
   - --dry-run REQUIRES ANTHROPIC_API_KEY and calls the Claude API (decompose_task)
     before skipping execution. This is NOT a true no-op.
-    Status: BLOCKED — violates "no API keys, no provider calls" hard rules.
+    Status: BLOCKED  --  violates "no API keys, no provider calls" hard rules.
   - --demo runs a simulated TUI with NO API key required, but it still spawns the
     real third-party CLI process. Executing it here would violate the static-only
     audit gate, so demo output is SIMULATED STATICALLY in this wrapper instead.
@@ -19,7 +19,7 @@ Key findings from source-code inspection (claude_swarm/cli.py), text-read only:
     non-executing PATH lookup only.
 
 This wrapper:
-  1. Detects whether claude-swarm is present (PATH lookup + sandbox metadata) —
+  1. Detects whether claude-swarm is present (PATH lookup + sandbox metadata)  --
      NO execution.
   2. Refuses to run if any provider API key is set in env.
   3. Refuses live mode (missing a safe flag), blocked flags, in-repo scratch, and
@@ -60,14 +60,14 @@ from typing import Any
 MILESTONE = "N+6.37A"
 SANDBOX_RELATIVE = "21_repos/third_party_runtime_sandbox"
 
-# API key environment variables — if any are set, refuse execution
+# API key environment variables  --  if any are set, refuse execution
 _API_KEY_ENV_VARS = [
     "ANTHROPIC_API_KEY",
     "CLAUDE_API_KEY",
     "OPENAI_API_KEY",
 ]
 
-# Flags that are safe (mode selectors only — never executed by this wrapper)
+# Flags that are safe (mode selectors only  --  never executed by this wrapper)
 _SAFE_FLAGS = {"--dry-run", "--demo", "--version", "--help", "-v", "--no-ui"}
 
 # Blocked flags that must never be passed
@@ -104,7 +104,7 @@ _STATUS_DEMO_OK = "demo_ok"
 _STATUS_DEMO_FAILED = "demo_failed"
 _STATUS_BLOCKED = "blocked"
 
-# Static simulated demo plan — hardcoded, provider-free, no execution.
+# Static simulated demo plan  --  hardcoded, provider-free, no execution.
 _STATIC_DEMO_PLAN: dict[str, Any] = {
     "swarm": "ghoti-static-demo",
     "source": "static_simulation",
@@ -277,7 +277,7 @@ def _scan_source_for_exec_patterns() -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Validation guards (pure logic — never execute anything)
+# Validation guards (pure logic  --  never execute anything)
 # ---------------------------------------------------------------------------
 
 def _validate_invocation(flags: list[str], scratch: str | None = None) -> dict:
@@ -326,11 +326,11 @@ def _run_check(sandbox: Path | None = None) -> dict:
     source_scan = _scan_source_for_exec_patterns()
 
     dry_run_status = (
-        "BLOCKED — requires ANTHROPIC_API_KEY and makes Claude API calls "
+        "BLOCKED  --  requires ANTHROPIC_API_KEY and makes Claude API calls "
         "in decompose_task() before skipping execution"
     )
     demo_status = (
-        "SIMULATED STATICALLY — this wrapper emits a hardcoded demo plan and "
+        "SIMULATED STATICALLY  --  this wrapper emits a hardcoded demo plan and "
         "never spawns the external claude-swarm CLI"
     )
 
@@ -348,7 +348,7 @@ def _run_check(sandbox: Path | None = None) -> dict:
         "demo_mode_status": demo_status,
         "source_scan": source_scan,
         "source_scan_clean": source_scan["clean"],
-        "safe_command": "(static metadata inspection only — no CLI execution)",
+        "safe_command": "(static metadata inspection only  --  no CLI execution)",
         "blocked_command": "claude-swarm --dry-run \"task\"  (requires API key + makes API calls)",
         "conditionally_safe_command": (
             "claude-swarm --demo --no-ui  (NOT executed here; isolated audited profile only)"
@@ -517,7 +517,7 @@ def _main(argv: list[str] | None = None) -> None:
         if "source_scan_clean" in result:
             print(f"  source_scan_clean={result['source_scan_clean']}")
         if "dry_run_blocked_reason" in result:
-            print(f"  dry_run: BLOCKED — {result['dry_run_blocked_reason'][:70]}")
+            print(f"  dry_run: BLOCKED  --  {result['dry_run_blocked_reason'][:70]}")
         if "note" in result:
             print(f"  note: {result['note'][:80]}")
 

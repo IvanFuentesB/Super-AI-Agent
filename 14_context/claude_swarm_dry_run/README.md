@@ -5,11 +5,11 @@
 `claude-swarm --dry-run "task"` is **BLOCKED** in the Ghoti environment.
 
 Source-code inspection of `cli.py` reveals:
-1. The CLI checks for `ANTHROPIC_API_KEY` and exits if not set (line 79–83).
+1. The CLI checks for `ANTHROPIC_API_KEY` and exits if not set (line 79-83).
 2. `--dry-run` calls `decompose_task()` via the Claude API (Phase 1) BEFORE applying the dry-run skip.
 3. Only AFTER the API decomposition call does it check `if dry_run: return`.
 
-So `--dry-run` is NOT a true no-op — it makes Claude API calls.
+So `--dry-run` is NOT a true no-op  --  it makes Claude API calls.
 
 ## Safe alternatives
 
@@ -27,7 +27,7 @@ process, and never executes the external `claude-swarm` CLI.
 
 - `--check`: Safety status + source scan (proves no process-spawn primitives in
   the wrapper or the PowerShell checker); documents the dry-run block reason
-- `--probe`: Static metadata / PATH inspection only — reports tool presence
+- `--probe`: Static metadata / PATH inspection only  --  reports tool presence
   without executing it (`probe_result` is always `null`)
 - `--demo-mode`: Emits a hardcoded static simulated plan; never spawns the CLI
 

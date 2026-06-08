@@ -1,4 +1,4 @@
-# check_claude_swarm_dry_run.ps1 — N+6.37A PowerShell status checker (STATIC-ONLY)
+# check_claude_swarm_dry_run.ps1  --  N+6.37A PowerShell status checker (STATIC-ONLY)
 # Usage: .\check_claude_swarm_dry_run.ps1 [--json]
 #
 # This checker only invokes static-safe wrapper modes (--check, --probe). The
@@ -27,7 +27,7 @@ if (-not (Test-Path $SchemaPath)) { $findings += "MISSING: $SchemaPath"; $ok = $
 
 # 3. No API key in env
 if ($env:ANTHROPIC_API_KEY) {
-    $findings += "SECURITY: ANTHROPIC_API_KEY is set — remove before running"
+    $findings += "SECURITY: ANTHROPIC_API_KEY is set  --  remove before running"
     $ok = $false
 }
 

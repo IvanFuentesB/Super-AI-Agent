@@ -1,5 +1,5 @@
 """
-test_n6_37a_claude_swarm_isolated_dry_run.py — N+6.37A test suite.
+test_n6_37a_claude_swarm_isolated_dry_run.py  --  N+6.37A test suite.
 
 Tests:
 - wrapper refuses live mode (no safe flag)
@@ -313,7 +313,7 @@ class TestDryRunBlockedStatus(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# 9. Demo mode (not installed → graceful)
+# 9. Demo mode (not installed -> graceful)
 # ---------------------------------------------------------------------------
 
 class TestDemoModeGraceful(unittest.TestCase):
@@ -344,12 +344,12 @@ class TestDemoModeGraceful(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# 10. STATIC-ONLY enforcement — no subprocess, no external CLI execution
+# 10. STATIC-ONLY enforcement  --  no subprocess, no external CLI execution
 #     (This is the N+6.37A hardening that unblocks the Codex N+6.37B gate.)
 # ---------------------------------------------------------------------------
 
 # Needles assembled from fragments so the contiguous literal never appears in
-# THIS test file either — the scan inspects the wrapper, not us, but we keep it
+# THIS test file either  --  the scan inspects the wrapper, not us, but we keep it
 # clean for symmetry.
 _EXEC_NEEDLES = [
     "subprocess" + ".run",
@@ -471,6 +471,50 @@ class TestStaticOnlyNoSubprocess(unittest.TestCase):
             os.environ.pop(k, None)
         result = _wrapper._run_demo_mode()
         self.assertFalse(result["safety_block"]["third_party_code_executed"])
+
+
+# ---------------------------------------------------------------------------
+# 11. ASCII-safe regression -- PowerShell and Python files must be ASCII-only
+#     (N+6.37A PS1 parse fix: em-dash / en-dash caused Windows PS parse error)
+# ---------------------------------------------------------------------------
+
+_N6_37A_FILES = [
+    _WRAPPER_DIR / "check_claude_swarm_dry_run.ps1",
+    _WRAPPER_DIR / "ghoti_claude_swarm_dry_run.py",
+    _WRAPPER_DIR.parent.parent
+        / "01_projects" / "runtime_mvp" / "tests"
+        / "test_n6_37a_claude_swarm_isolated_dry_run.py",
+]
+
+
+class TestAsciiSafe(unittest.TestCase):
+    def _check_ascii(self, path: Path) -> None:
+        raw = path.read_bytes()
+        bad = [(i, raw[i]) for i in range(len(raw)) if raw[i] > 127]
+        if bad:
+            newline = b"\n"
+            samples = ", ".join(
+                "pos {} 0x{:02x} line {}".format(i, b, raw[:i].count(newline) + 1)
+                for i, b in bad[:5]
+            )
+            self.fail(
+                "{} contains {} non-ASCII byte(s): {}".format(
+                    path.name, len(bad), samples
+                )
+            )
+
+    def test_ps1_checker_is_ascii_only(self):
+        self._check_ascii(_WRAPPER_DIR / "check_claude_swarm_dry_run.ps1")
+
+    def test_python_wrapper_is_ascii_only(self):
+        self._check_ascii(_WRAPPER_DIR / "ghoti_claude_swarm_dry_run.py")
+
+    def test_test_file_is_ascii_only(self):
+        test_path = (
+            Path(__file__).resolve().parent
+            / "test_n6_37a_claude_swarm_isolated_dry_run.py"
+        )
+        self._check_ascii(test_path)
 
 
 if __name__ == "__main__":

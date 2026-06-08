@@ -1,4 +1,4 @@
-# GHOTI N+6.37A — Isolated claude-swarm dry-run execution trial (STATIC-ONLY)
+# GHOTI N+6.37A  --  Isolated claude-swarm dry-run execution trial (STATIC-ONLY)
 
 ## Overview
 
@@ -11,7 +11,7 @@ the dry-run skip applies.
 
 ---
 
-## Static-only hardening (N+6.37A fix — unblocks Codex N+6.37B)
+## Static-only hardening (N+6.37A fix  --  unblocks Codex N+6.37B)
 
 The Codex audit gate **BLOCKED N+6.37B** because the earlier wrapper could
 execute the third-party `claude-swarm` CLI through a process-spawn call in its
@@ -52,7 +52,7 @@ plan = await decompose_task(prompt=task, cwd=cwd, model=model)
 
 # ONLY THEN is the dry_run flag checked:
 if dry_run:
-    ui.console.print("[yellow]Dry run — not executing tasks[/yellow]")
+    ui.console.print("[yellow]Dry run  --  not executing tasks[/yellow]")
     return
 ```
 
@@ -79,13 +79,13 @@ It is not a no-op. Running it without an API key exits with code 1.
 
 `03_scripts/claude_swarm_dry_run/ghoti_claude_swarm_dry_run.py` (static-only):
 
-1. **`--check`** — Safety status, tool detection (PATH lookup + sandbox
+1. **`--check`**  --  Safety status, tool detection (PATH lookup + sandbox
    metadata, no execution), source scan proving no process-spawn primitives,
    documents the dry-run block reason. `ok` is true only when the source scan is
    clean.
-2. **`--probe`** — Static metadata / PATH inspection only. Reports whether the
+2. **`--probe`**  --  Static metadata / PATH inspection only. Reports whether the
    tool is present without ever executing it. `probe_result` is always `null`.
-3. **`--demo-mode`** — Emits a hardcoded static simulated plan. Never spawns the
+3. **`--demo-mode`**  --  Emits a hardcoded static simulated plan. Never spawns the
    external CLI. Blocked if any API key env var is set.
 
 Guards enforced by the wrapper:
@@ -111,9 +111,9 @@ The wrapper documents the current status in its `start_conditions` field.
 ## What was actually run
 
 - Source-code inspection of `claude_swarm/cli.py` (text read only)
-- `ghoti_claude_swarm_dry_run.py --check --json` — safety status + source scan, no external calls
-- `ghoti_claude_swarm_dry_run.py --probe --json` — static tool detection (not installed → `not_installed`)
-- `ghoti_claude_swarm_dry_run.py --demo-mode --json` — static simulated plan, no execution
+- `ghoti_claude_swarm_dry_run.py --check --json`  --  safety status + source scan, no external calls
+- `ghoti_claude_swarm_dry_run.py --probe --json`  --  static tool detection (not installed -> `not_installed`)
+- `ghoti_claude_swarm_dry_run.py --demo-mode --json`  --  static simulated plan, no execution
 - No claude_swarm code imported or executed
 - No subprocess spawned. No external CLI executed. No provider called.
 - No API calls. No API key used.
@@ -161,7 +161,7 @@ git diff --check
 
 ## Next recommended step
 
-**N+6.38A — claude-swarm --demo isolated trial:**
+**N+6.38A  --  claude-swarm --demo isolated trial:**
 
 In a separate isolated profile (not the Ghoti working profile):
 1. `pip install claude-swarm` in the isolated environment.
