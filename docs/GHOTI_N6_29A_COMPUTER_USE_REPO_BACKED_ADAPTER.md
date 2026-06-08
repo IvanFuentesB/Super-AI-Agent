@@ -21,10 +21,10 @@ real action. All `real_*_performed` fields in the result are always `false`.
 
 | Branch | Merged to main | Action |
 |--------|---------------|--------|
-| N+6.27A (swarm launcher) | No | `03_scripts/swarm_launcher/` and `14_context/swarm_launcher/` left untouched |
-| N+6.28A (Rust policy checker) | No | `rust/ghoti_policy_checker/` left untouched; `rust_policy_bridge_ready: false` in all results |
+| N+6.27B (swarm launcher) | **Yes — merged** | `03_scripts/swarm_launcher/` present on main; this branch leaves it untouched |
+| N+6.28B (Rust policy checker) | **Yes — merged** | `rust/ghoti_policy_checker/` present on main; `rust_policy_bridge_ready: false` until bridge is wired |
 
-Codex should audit/merge N+6.27B then N+6.28B before wiring the Rust bridge.
+N+6.27B and N+6.28B are both on main. The Rust bridge wiring is the next step post N+6.29B merge.
 
 ## Repo-Backed Design
 
@@ -107,7 +107,8 @@ Full attribution: `14_context/computer_use_adapter/repo_inspiration_manifest_n6_
 A plan is **blocked** if any of the following are true:
 
 - `target` is not `local_sandbox` or `approved_window`
-- `target_url` does not start with `file://`, `http://localhost`, or `http://127.0.0.1`
+- `target_url` has a non-empty authority (e.g. `file://hostname/...` — only `file:///` hostless local URLs are allowed)
+- `target_url` uses `http/https` with a non-local hostname (allowed: `localhost`, `127.0.0.1`, `::1`)
 - `auto_submit` is `true`
 - `requires_human_approval` is `false` or missing
 - Any `capabilities_required` entry is in the blocked set
@@ -150,17 +151,17 @@ python 03_scripts/computer_use_adapter/ghoti_computer_use_adapter.py \
 python -m unittest discover -s 01_projects/runtime_mvp/tests -p "test_n6_29a_*.py" -v
 ```
 
-## Rust Policy Bridge (Post-N+6.28A)
+## Rust Policy Bridge (Post-N+6.29B)
 
-Once N+6.28A (`rust/ghoti_policy_checker/`) is merged, the adapter should be
-extended to pipe validated plans to the Rust policy checker for a second-pass
-memory-safe denial layer:
+N+6.28B (`rust/ghoti_policy_checker/`) is merged on main. Once this branch
+(N+6.29B) is merged, the adapter should be extended to pipe validated plans to
+the Rust policy checker for a second-pass memory-safe denial layer:
 
 ```bash
 cargo run --manifest-path rust/ghoti_policy_checker/Cargo.toml -- <plan.json>
 ```
 
-Until then, `rust_policy_bridge_ready: false` is reported in every result.
+Until the bridge is wired, `rust_policy_bridge_ready: false` is reported in every result.
 
 ## Safety Invariants
 
@@ -175,7 +176,8 @@ Until then, `rust_policy_bridge_ready: false` is reported in every result.
 
 ## Next Steps for Codex
 
-1. Audit N+6.27B (swarm launcher) → merge
-2. Audit N+6.28B (Rust policy checker) → merge
+1. ~~Audit N+6.27B (swarm launcher) → merge~~ — **done**
+2. ~~Audit N+6.28B (Rust policy checker) → merge~~ — **done**
+3. Audit this branch (N+6.29B) → merge → wire Rust policy bridge
 3. Then wire N+6.29A's Rust bridge (post both merges)
 4. N+6.30A: Real confined DOM action in local browser (extending N+6.14A pattern)

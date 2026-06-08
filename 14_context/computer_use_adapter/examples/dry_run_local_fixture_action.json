@@ -2,7 +2,7 @@
   "plan_id": "dry_run_local_fixture_001",
   "milestone": "N+6.29A",
   "target": "local_sandbox",
-  "target_url": "file://14_context/computer_use/sandbox/sandbox_target.html",
+  "target_url": "file:///14_context/computer_use/sandbox/sandbox_target.html",
   "window_id": "ghoti_sandbox_page",
   "auto_submit": false,
   "requires_human_approval": true,

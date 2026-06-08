@@ -156,7 +156,14 @@ def _check_url(plan: dict) -> list[str]:
     scheme = parsed.scheme.lower()
 
     if scheme == "file":
-        # file:// is always local
+        # Only hostless local file URLs are allowed: file:///path/to/fixture
+        # file://hostname/path has a non-empty authority and must be blocked.
+        netloc = parsed.netloc
+        if netloc:
+            reasons.append(
+                f"target_url '{url}' uses file:// with a non-empty authority '{netloc}'; "
+                f"only hostless local file URLs are allowed (e.g. file:///path/to/fixture)"
+            )
         return reasons
 
     if scheme in ("http", "https"):

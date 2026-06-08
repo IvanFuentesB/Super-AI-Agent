@@ -64,9 +64,27 @@ class TestCheckTarget(unittest.TestCase):
 
 
 class TestCheckUrl(unittest.TestCase):
-    def test_file_url_allowed(self):
-        reasons = adapter._check_url({"target_url": "file://sandbox/page.html"})
+    def test_file_url_hostless_allowed(self):
+        # file:///path (empty authority) is a local fixture reference
+        reasons = adapter._check_url({"target_url": "file:///sandbox/page.html"})
         self.assertEqual(reasons, [])
+
+    def test_file_url_hostless_windows_allowed(self):
+        reasons = adapter._check_url({"target_url": "file:///C:/fixtures/test.html"})
+        self.assertEqual(reasons, [])
+
+    def test_file_authority_evil_blocked(self):
+        # file://evil.example/share has a non-empty authority
+        reasons = adapter._check_url({"target_url": "file://evil.example/share"})
+        self.assertEqual(len(reasons), 1)
+        self.assertIn("evil.example", reasons[0])
+
+    def test_file_authority_localhost_blocked(self):
+        # file://localhost/path has authority "localhost" and must be blocked;
+        # the adapter only allows hostless file:/// URLs
+        reasons = adapter._check_url({"target_url": "file://localhost/share"})
+        self.assertEqual(len(reasons), 1)
+        self.assertIn("localhost", reasons[0])
 
     def test_localhost_allowed(self):
         reasons = adapter._check_url({"target_url": "http://localhost:3210"})
@@ -259,7 +277,7 @@ class TestValidatePlan(unittest.TestCase):
             "plan_id": "test_001",
             "milestone": "N+6.29A",
             "target": "local_sandbox",
-            "target_url": "file://sandbox/page.html",
+            "target_url": "file:///sandbox/page.html",
             "auto_submit": False,
             "requires_human_approval": True,
             "capabilities_required": [],
@@ -318,7 +336,7 @@ class TestRunPlan(unittest.TestCase):
             "plan_id": "test_run_001",
             "milestone": "N+6.29A",
             "target": "local_sandbox",
-            "target_url": "file://sandbox/page.html",
+            "target_url": "file:///sandbox/page.html",
             "auto_submit": False,
             "requires_human_approval": True,
             "capabilities_required": [],
