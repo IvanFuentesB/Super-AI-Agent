@@ -1,0 +1,62 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GhotiAgentSystemAdapterStatus",
+  "description": "N+6.36A agent system adapter status output shape.",
+  "type": "object",
+  "required": ["ok", "milestone", "mode", "safety_block"],
+  "properties": {
+    "ok": {"type": "boolean"},
+    "milestone": {"type": "string", "const": "N+6.36A"},
+    "mode": {"type": "string", "enum": ["check", "smoke"]},
+    "selected_target": {"type": ["string", "null"]},
+    "accepted": {"type": "boolean"},
+    "metadata": {
+      "type": "object",
+      "required": ["target_id", "license", "third_party_code_imported", "third_party_code_executed"],
+      "properties": {
+        "target_id": {"type": "string"},
+        "package_name": {"type": "string"},
+        "version": {"type": "string"},
+        "license": {"type": "string"},
+        "entry_point": {"type": ["string", "null"]},
+        "dry_run_flag": {"type": ["string", "null"]},
+        "safe_command": {"type": ["string", "null"]},
+        "blocked_command": {"type": ["string", "null"]},
+        "third_party_code_imported": {"type": "boolean", "const": false},
+        "third_party_code_executed": {"type": "boolean", "const": false}
+      }
+    },
+    "noop_plan": {
+      "type": "object",
+      "required": ["dry_run", "live_launch", "live_agent_launch", "requires_human_approval"],
+      "properties": {
+        "dry_run": {"type": "boolean", "const": true},
+        "live_launch": {"type": "boolean", "const": false},
+        "live_agent_launch": {"type": "boolean", "const": false},
+        "requires_human_approval": {"type": "boolean", "const": true}
+      }
+    },
+    "safety_block": {
+      "type": "object",
+      "required": [
+        "live_execution", "live_computer_use_enabled", "hooks_enabled",
+        "docker_enabled", "mcp_enabled", "auto_submit", "simulation",
+        "live_agent_launch", "third_party_code_executed", "third_party_code_imported"
+      ],
+      "properties": {
+        "live_execution": {"type": "boolean", "const": false},
+        "live_computer_use_enabled": {"type": "boolean", "const": false},
+        "hooks_enabled": {"type": "boolean", "const": false},
+        "docker_enabled": {"type": "boolean", "const": false},
+        "mcp_enabled": {"type": "boolean", "const": false},
+        "auto_submit": {"type": "boolean", "const": false},
+        "simulation": {"type": "boolean", "const": true},
+        "live_agent_launch": {"type": "boolean", "const": false},
+        "third_party_code_executed": {"type": "boolean", "const": false},
+        "third_party_code_imported": {"type": "boolean", "const": false},
+        "secrets_committed": {"type": "boolean", "const": false},
+        "real_os_paths_committed": {"type": "boolean", "const": false}
+      }
+    }
+  }
+}
