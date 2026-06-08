@@ -34,12 +34,21 @@ import argparse
 import datetime
 import json
 import re
+import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from urllib.parse import urlparse
 
 MILESTONE = "N+6.29A"
 ADAPTER_VERSION = "0.1.0"
+
+# N+6.33A — Rust policy bridge. The bridge is OPT-IN (default off) so the
+# baseline N+6.29A dry-run contract is unchanged. When engaged, every dry-run
+# plan must clear a SECOND, independent gate: the ghoti_policy_checker decision
+# (mirrored deterministically in Python, optionally cross-checked via cargo).
+RUST_BRIDGE_MILESTONE = "N+6.33A"
+RUST_POLICY_MANIFEST = "rust/ghoti_policy_checker/Cargo.toml"
 
 # ------------------------------------------------------------------
 # Policy constants
@@ -278,6 +287,253 @@ def _validate_plan(plan: dict) -> tuple[str, list[str], list[dict]]:
 
 
 # ------------------------------------------------------------------
+# N+6.33A — Rust policy bridge (mirror + optional cargo cross-check)
+# ------------------------------------------------------------------
+#
+# The bridge is a SECOND gate. A dry-run plan is only "accepted" when BOTH the
+# Python adapter (above) AND the policy checker agree to allow it. The mirror
+# below reimplements rust/ghoti_policy_checker/src/main.rs `evaluate()` exactly,
+# so the decision is deterministic and needs no toolchain. Passing
+# rust_bridge=True with a manifest also cross-checks against the real cargo
+# binary; the mirror remains authoritative for the accept decision.
+
+# Must match ghoti_policy_checker ALLOWED_CAPABILITIES / BLOCKED_CAPABILITIES.
+_RUST_ALLOWED_CAPABILITIES = frozenset({
+    "fixture_read",
+    "local_policy_check",
+    "plan_render",
+    "repo_read",
+    "status_read",
+})
+
+_RUST_BLOCKED_CAPABILITIES = frozenset({
+    "account",
+    "browser",
+    "computer_use",
+    "mass_message",
+    "mcp",
+    "money",
+    "secrets",
+})
+
+# Computer-use capability vocabulary -> policy-checker vocabulary. Anything not
+# mapped (e.g. docker, shell, auto_submit) stays as-is and lands in the
+# checker's "unknown" bucket, which is also a deny — default-deny holds.
+_CU_CAPABILITY_TO_RUST = {
+    "live_browser": "browser",
+    "external_web": "browser",
+    "real_os_input": "computer_use",
+    "account_login": "account",
+    "mcp": "mcp",
+    "secrets": "secrets",
+    "purchase": "money",
+    "money_transfer": "money",
+    "mass_messaging": "mass_message",
+}
+
+# Blocked computer-use action types -> policy-checker capability they imply.
+_BLOCKED_ACTION_TO_RUST_CAP = {
+    "real_click": "computer_use",
+    "real_type": "computer_use",
+    "real_key_press": "computer_use",
+    "real_mouse_move": "computer_use",
+    "real_screenshot_upload": "computer_use",
+    "login": "account",
+    "purchase": "money",
+    "transfer_money": "money",
+    "open_browser": "browser",
+    "mcp_setup": "mcp",
+    "write_env_file": "secrets",
+    "access_keychain": "secrets",
+    "copy_token": "secrets",
+    "read_secret_file": "secrets",
+    "navigate_url": "browser",
+}
+
+
+def _normalize_capability(value: str) -> str:
+    """Mirror of normalize_capability() in the Rust checker."""
+    return value.strip().lower().replace(" ", "_").replace("-", "_")
+
+
+def _plan_to_swarm_plan(plan: dict) -> dict:
+    """Map a computer-use dry-run plan into the policy checker's plan shape.
+
+    Capabilities, blocked action types, an unsafe target_url, and secret-bearing
+    actions all surface as policy-checker capabilities / a live_launch request,
+    so the checker independently rejects the same plans the adapter rejects.
+    """
+    capabilities: set[str] = set()
+    live_launch = False
+
+    for cap in plan.get("capabilities_required", []):
+        capabilities.add(_CU_CAPABILITY_TO_RUST.get(cap, cap))
+        if cap in ("live_browser", "external_web", "real_os_input", "account_login"):
+            live_launch = True
+
+    # Tie the URL guard into the second gate: any URL the adapter would reject
+    # becomes a browser capability + live launch for the policy checker.
+    if _check_url(plan):
+        capabilities.add("browser")
+        live_launch = True
+
+    for action in plan.get("actions", []):
+        atype = action.get("type", "")
+        if atype in BLOCKED_ACTION_TYPES:
+            live_launch = True
+            mapped = _BLOCKED_ACTION_TO_RUST_CAP.get(atype)
+            if mapped:
+                capabilities.add(mapped)
+        value = action.get("value", "")
+        if isinstance(value, str) and SECRET_VALUE_PATTERN.search(value):
+            capabilities.add("secrets")
+        if any(k.lower() in SECRET_FIELD_NAMES for k in action):
+            capabilities.add("secrets")
+
+    return {
+        "plan_id": plan.get("plan_id", "unknown"),
+        "dry_run": True,  # this adapter is dry-run only
+        "live_launch": live_launch,
+        "requires_human_approval": bool(plan.get("requires_human_approval", False)),
+        "capabilities": sorted(capabilities),
+    }
+
+
+def _mirror_rust_policy_decision(swarm_plan: dict) -> dict:
+    """Deterministic Python mirror of ghoti_policy_checker `evaluate()`.
+
+    Returns the same shape the Rust binary emits (subset used by the bridge),
+    with source="python_mirror".
+    """
+    reasons: list[str] = []
+    blocked_caps: list[str] = []
+    unknown_caps: list[str] = []
+
+    dry_run = bool(swarm_plan.get("dry_run", False))
+    live_launch = bool(swarm_plan.get("live_launch", False))
+    requires_human_approval = bool(swarm_plan.get("requires_human_approval", False))
+
+    if not dry_run:
+        reasons.append("dry_run_required")
+    if live_launch:
+        reasons.append("live_launch_requested")
+    if not requires_human_approval:
+        reasons.append("human_approval_not_required_by_plan")
+
+    for capability in swarm_plan.get("capabilities", []):
+        normalized = _normalize_capability(capability)
+        if normalized in _RUST_BLOCKED_CAPABILITIES:
+            blocked_caps.append(normalized)
+        elif normalized not in _RUST_ALLOWED_CAPABILITIES:
+            unknown_caps.append(normalized)
+
+    blocked_caps = sorted(set(blocked_caps))
+    unknown_caps = sorted(set(unknown_caps))
+
+    if blocked_caps:
+        reasons.append("blocked_capability_requested")
+    if unknown_caps:
+        reasons.append("unknown_capability_requested")
+
+    allowed = not reasons
+    return {
+        "ok": True,
+        "checker": "ghoti_policy_checker",
+        "policy_version": "n6.28a-prototype-v1",
+        "source": "python_mirror",
+        "plan_id": swarm_plan.get("plan_id", "unknown"),
+        "allowed": allowed,
+        "decision": "allow" if allowed else "deny",
+        "dry_run": dry_run,
+        "live_launch": live_launch,
+        "requires_human_approval": requires_human_approval,
+        "reasons": reasons,
+        "blocked_capabilities": blocked_caps,
+        "unknown_capabilities": unknown_caps,
+    }
+
+
+def _invoke_rust_policy_checker(swarm_plan: dict, manifest: str) -> dict:
+    """Optionally cross-check via the real cargo binary (read-only, no network).
+
+    Writes the swarm plan to a temp file and runs
+    `cargo run --manifest-path <manifest> -- --input <tmp>`. Never raises:
+    on any failure (no toolchain, build error, timeout) returns an
+    available=False stub so the mirror stays authoritative.
+    """
+    tmp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False, encoding="utf-8"
+        ) as fh:
+            json.dump(swarm_plan, fh)
+            tmp_path = fh.name
+        proc = subprocess.run(
+            [
+                "cargo", "run", "--quiet",
+                "--manifest-path", manifest,
+                "--", "--input", tmp_path,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=180,
+            check=False,
+        )
+        if proc.returncode != 0 or not proc.stdout.strip():
+            return {
+                "available": False,
+                "source": "rust_cli",
+                "note": "cargo policy checker unavailable or returned no decision",
+                "returncode": proc.returncode,
+            }
+        decision = json.loads(proc.stdout)
+        decision["available"] = True
+        decision["source"] = "rust_cli"
+        return decision
+    except (OSError, ValueError, subprocess.SubprocessError) as exc:
+        return {
+            "available": False,
+            "source": "rust_cli",
+            "note": f"cargo policy checker not invoked: {exc}",
+        }
+    finally:
+        if tmp_path:
+            try:
+                Path(tmp_path).unlink()
+            except OSError:
+                pass
+
+
+def _bridge_fields(plan: dict, adapter_status: str, *, run_cargo: bool,
+                   manifest: str) -> dict:
+    """Build the N+6.33A bridge result fragment for a validated plan."""
+    swarm_plan = _plan_to_swarm_plan(plan)
+    mirror = _mirror_rust_policy_decision(swarm_plan)
+    adapter_allowed = adapter_status == "allowed"
+    accepted = adapter_allowed and mirror["allowed"]
+
+    fields = {
+        "rust_policy_bridge_ready": True,
+        "rust_bridge_milestone": RUST_BRIDGE_MILESTONE,
+        "rust_policy_bridge_note": (
+            "Dual-gate dry-run: a plan is accepted only when the Python adapter "
+            "AND the ghoti_policy_checker decision both allow it. Mirror is "
+            "authoritative; cargo cross-check is optional and read-only."
+        ),
+        "rust_swarm_plan_input": swarm_plan,
+        "rust_policy_decision": mirror,
+        "adapter_allowed": adapter_allowed,
+        "rust_allowed": mirror["allowed"],
+        "accepted": accepted,
+    }
+    if run_cargo:
+        fields["rust_policy_decision_cli"] = _invoke_rust_policy_checker(
+            swarm_plan, manifest
+        )
+    return fields
+
+
+# ------------------------------------------------------------------
 # Result builders
 # ------------------------------------------------------------------
 
@@ -316,7 +572,9 @@ def _build_safety_block() -> dict:
     }
 
 
-def _run_plan(plan_path: str) -> dict:
+def _run_plan(plan_path: str, *, rust_bridge: bool = False,
+              run_cargo: bool = False,
+              rust_manifest: str = RUST_POLICY_MANIFEST) -> dict:
     try:
         plan = json.loads(Path(plan_path).read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
@@ -331,7 +589,7 @@ def _run_plan(plan_path: str) -> dict:
 
     status, blocked_reasons, dry_run_actions = _validate_plan(plan)
 
-    return {
+    result = {
         "ok": status == "allowed",
         "milestone": MILESTONE,
         "adapter_version": ADAPTER_VERSION,
@@ -357,6 +615,7 @@ def _run_plan(plan_path: str) -> dict:
             "bridge wiring deferred to next milestone."
         ),
         "arena_status": _build_arena_status(status, plan),
+        # placeholder; replaced below when the N+6.33A bridge is engaged
         "refused_live_actions": REFUSED_LIVE_ACTIONS,
         "real_launch_note": (
             "This adapter is dry-run only. No real OS action is performed. "
@@ -367,9 +626,20 @@ def _run_plan(plan_path: str) -> dict:
         "timestamp_utc": datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z"),
     }
 
+    if rust_bridge:
+        bridge = _bridge_fields(
+            plan, status, run_cargo=run_cargo, manifest=rust_manifest
+        )
+        result.update(bridge)
+        # When the second gate is engaged, ok reflects the combined decision.
+        result["ok"] = bridge["accepted"]
 
-def _run_check() -> dict:
-    return {
+    return result
+
+
+def _run_check(*, rust_bridge: bool = False, run_cargo: bool = False,
+               rust_manifest: str = RUST_POLICY_MANIFEST) -> dict:
+    result = {
         "ok": True,
         "milestone": MILESTONE,
         "adapter_version": ADAPTER_VERSION,
@@ -398,6 +668,33 @@ def _run_check() -> dict:
         "safety": _build_safety_block(),
         "timestamp_utc": datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z"),
     }
+
+    if rust_bridge:
+        # Demonstrate the second gate on the built-in default-deny plan: an
+        # empty plan must be DENIED by the policy checker (default-deny holds).
+        default_swarm_plan = {
+            "plan_id": "built-in-default-deny-check",
+            "dry_run": False,
+            "live_launch": False,
+            "requires_human_approval": False,
+            "capabilities": [],
+        }
+        result["rust_policy_bridge_ready"] = True
+        result["rust_bridge_milestone"] = RUST_BRIDGE_MILESTONE
+        result["rust_policy_bridge_note"] = (
+            "Dual-gate bridge active: ghoti_policy_checker validates every "
+            "dry-run plan as a second gate (mirror authoritative; cargo "
+            "cross-check optional and read-only)."
+        )
+        result["rust_default_deny_decision"] = _mirror_rust_policy_decision(
+            default_swarm_plan
+        )
+        if run_cargo:
+            result["rust_default_deny_decision_cli"] = _invoke_rust_policy_checker(
+                default_swarm_plan, rust_manifest
+            )
+
+    return result
 
 
 # ------------------------------------------------------------------
@@ -430,13 +727,38 @@ def main() -> int:
         dest="json_output",
         help="Output JSON",
     )
+    parser.add_argument(
+        "--rust-bridge",
+        action="store_true",
+        help="Engage the N+6.33A second gate (ghoti_policy_checker decision)",
+    )
+    parser.add_argument(
+        "--rust-cargo",
+        action="store_true",
+        help="Also cross-check via the cargo binary (read-only; requires Rust)",
+    )
+    parser.add_argument(
+        "--rust-manifest",
+        metavar="PATH",
+        default=RUST_POLICY_MANIFEST,
+        help=f"Path to the policy checker Cargo.toml (default: {RUST_POLICY_MANIFEST})",
+    )
 
     args = parser.parse_args()
 
     if args.check:
-        result = _run_check()
+        result = _run_check(
+            rust_bridge=args.rust_bridge,
+            run_cargo=args.rust_cargo,
+            rust_manifest=args.rust_manifest,
+        )
     elif args.plan:
-        result = _run_plan(args.plan)
+        result = _run_plan(
+            args.plan,
+            rust_bridge=args.rust_bridge,
+            run_cargo=args.rust_cargo,
+            rust_manifest=args.rust_manifest,
+        )
     else:
         parser.print_help()
         return 1
@@ -452,6 +774,14 @@ def main() -> int:
                 print(f"  BLOCKED: {r}")
         if result.get("dry_run_actions"):
             print(f"  dry_run_actions: {len(result['dry_run_actions'])}")
+        if result.get("rust_policy_bridge_ready") and "rust_policy_decision" in result:
+            rd = result["rust_policy_decision"]
+            print(
+                f"  [{RUST_BRIDGE_MILESTONE}] rust gate: {rd['decision']} "
+                f"| accepted (both gates): {result.get('accepted')}"
+            )
+            for r in rd.get("reasons", []):
+                print(f"    RUST: {r}")
 
     return 0 if result.get("ok", False) else 1
 
