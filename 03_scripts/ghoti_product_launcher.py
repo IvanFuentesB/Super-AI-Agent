@@ -39,6 +39,12 @@ LAUNCHER_VERSION = "1.0.0"
 MILESTONE = "N+4.7A"
 DEFAULT_PORT = 3210
 DEFAULT_TIMEOUT_SECONDS = 25
+_WRITE_PROBE_CODE = (
+    "import pathlib,sys; "
+    "p=pathlib.Path(sys.argv[1]); "
+    "p.write_text('ok', encoding='utf-8'); "
+    "p.unlink()"
+)
 
 # The product smoke test exercises exactly these 4 product-control endpoints.
 SMOKE_ENDPOINTS = [
@@ -279,6 +285,74 @@ def _write_state(state: dict) -> None:
         raise ValueError("launcher state path is outside the repo root")
     STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
     STATE_FILE.write_text(json.dumps(state, indent=2), encoding="utf-8")
+
+
+def _repo_write_python_candidates():
+    """Yield local Python executables without installing or downloading."""
+    seen = set()
+
+    def add(value):
+        if not value:
+            return None
+        path = Path(value).resolve()
+        key = os.path.normcase(str(path))
+        if key in seen or not path.is_file():
+            return None
+        seen.add(key)
+        return path
+
+    for value in (sys.executable, getattr(sys, "_base_executable", None)):
+        candidate = add(value)
+        if candidate:
+            yield candidate
+
+    if os.name == "nt":
+        roots = [
+            Path(os.environ.get("USERPROFILE", "")) / ".local" / "share" / "uv" / "python",
+            Path(os.environ.get("APPDATA", "")) / "uv" / "python",
+            Path(os.environ.get("LOCALAPPDATA", "")) / "uv" / "python",
+            Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "Python",
+        ]
+        for root in roots:
+            if not root.is_dir():
+                continue
+            for executable in sorted(root.glob("*/python.exe"), reverse=True):
+                candidate = add(executable)
+                if candidate:
+                    yield candidate
+
+    for executable in (
+        REPO_ROOT / ".venv" / "Scripts" / "python.exe",
+        REPO_ROOT / "01_projects" / "runtime_mvp" / ".venv" / "Scripts" / "python.exe",
+    ):
+        candidate = add(executable)
+        if candidate:
+            yield candidate
+
+
+def _resolve_repo_write_python() -> str | None:
+    """Return a local Python proven able to create and remove a repo-local file."""
+    probe = REPO_ROOT / f".ghoti_python_write_probe_{os.getpid()}_{time.time_ns()}"
+    for executable in _repo_write_python_candidates():
+        try:
+            completed = subprocess.run(
+                [str(executable), "-c", _WRITE_PROBE_CODE, str(probe)],
+                cwd=str(REPO_ROOT),
+                text=True,
+                capture_output=True,
+                timeout=10,
+                shell=False,
+            )
+            if completed.returncode == 0 and not probe.exists():
+                return str(executable)
+        except Exception:
+            pass
+        finally:
+            try:
+                probe.unlink(missing_ok=True)
+            except OSError:
+                pass
+    return None
 
 
 def _pid_alive(pid) -> bool:
@@ -662,7 +736,17 @@ def cmd_context_pack() -> dict:
             "error": "ghoti_context_pack_builder.py not found",
             "generated_at": _now(),
         }
-    argv = [sys.executable, str(CONTEXT_PACK_SCRIPT), "--write", "--json"]
+    writer_python = _resolve_repo_write_python()
+    if not writer_python:
+        return {
+            "ok": False,
+            "action": "context-pack",
+            "local_only": True,
+            "external_api_used": False,
+            "error": "no local Python interpreter can write the repo-local context pack",
+            "generated_at": _now(),
+        }
+    argv = [writer_python, str(CONTEXT_PACK_SCRIPT), "--write", "--json"]
     try:
         completed = subprocess.run(
             argv,
@@ -877,7 +961,18 @@ def _run_repo_knowledge(argv_tail, action: str, timeout: int = 45) -> dict:
             "error": "ghoti_repo_knowledge_map.py not found",
             "generated_at": _now(),
         }
-    argv = [sys.executable, str(REPO_KNOWLEDGE_SCRIPT), *argv_tail, "--json"]
+    writer_python = _resolve_repo_write_python()
+    if not writer_python:
+        return {
+            "ok": False,
+            "action": action,
+            "local_only": True,
+            "external_api_used": False,
+            "network_used": False,
+            "error": "no local Python interpreter can write the repo-local knowledge map",
+            "generated_at": _now(),
+        }
+    argv = [writer_python, str(REPO_KNOWLEDGE_SCRIPT), *argv_tail, "--json"]
     try:
         completed = subprocess.run(
             argv,
