@@ -1,0 +1,26 @@
+{
+  "plan_id": "blocked_external_website_001",
+  "milestone": "N+6.29A",
+  "target": "approved_window",
+  "target_url": "https://example.com/account/dashboard",
+  "window_id": "external_browser",
+  "auto_submit": false,
+  "requires_human_approval": true,
+  "capabilities_required": ["live_browser", "external_web"],
+  "description": "BLOCKED: This plan targets an external website and requests live_browser capability. The adapter must reject it.",
+  "actions": [
+    {
+      "action_id": "b1_navigate",
+      "type": "navigate_url",
+      "target_element": null,
+      "value": "https://example.com/account/dashboard",
+      "description": "Would navigate to external URL — BLOCKED."
+    },
+    {
+      "action_id": "b2_click",
+      "type": "real_click",
+      "target_element": "#login-button",
+      "description": "Would perform a real OS click on login button — BLOCKED."
+    }
+  ]
+}

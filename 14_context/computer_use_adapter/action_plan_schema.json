@@ -1,0 +1,130 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Ghoti computer-use action plan (N+6.29A)",
+  "description": "Input plan for ghoti_computer_use_adapter.py --plan <file> --dry-run. Describes a proposed computer-use action sequence. The adapter validates the plan and returns a dry-run status payload; it does NOT perform any real OS action.",
+  "type": "object",
+  "x_safety": {
+    "dry_run_only": true,
+    "no_real_os_input": true,
+    "no_live_browser": true,
+    "no_external_url": true,
+    "no_account_login": true,
+    "no_secrets": true,
+    "no_auto_submit": true,
+    "no_docker": true,
+    "no_mcp": true,
+    "real_action_performed": false
+  },
+  "required": [
+    "plan_id",
+    "milestone",
+    "target",
+    "requires_human_approval",
+    "auto_submit",
+    "actions"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "plan_id": {
+      "type": "string",
+      "description": "Unique identifier for this action plan."
+    },
+    "milestone": {
+      "type": "string",
+      "description": "Ghoti milestone this plan belongs to (e.g. N+6.29A)."
+    },
+    "target": {
+      "type": "string",
+      "enum": ["local_sandbox", "approved_window"],
+      "description": "Target type. Must be local_sandbox or approved_window. External targets are blocked."
+    },
+    "window_id": {
+      "type": "string",
+      "description": "Optional: identifier of an approved local window (e.g. dashboard, sandbox HTML page)."
+    },
+    "target_url": {
+      "type": "string",
+      "description": "Optional: URL of the target. Must start with file://, http://localhost, or http://127.0.0.1. External URLs are blocked.",
+      "pattern": "^(file://|http://localhost|http://127\\.0\\.0\\.1|https://localhost|https://127\\.0\\.0\\.1)"
+    },
+    "auto_submit": {
+      "type": "boolean",
+      "const": false,
+      "description": "Must be false. Auto-submit is always blocked."
+    },
+    "requires_human_approval": {
+      "type": "boolean",
+      "const": true,
+      "description": "Must be true. All computer-use action plans require explicit human approval before any real execution."
+    },
+    "capabilities_required": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "not": {
+          "enum": [
+            "live_browser",
+            "real_os_input",
+            "account_login",
+            "external_web",
+            "docker",
+            "mcp",
+            "shell",
+            "secrets",
+            "auto_submit",
+            "purchase",
+            "money_transfer",
+            "mass_messaging",
+            "file_system_write_outside_sandbox"
+          ]
+        }
+      },
+      "description": "Optional: capabilities this plan requires. Blocked capabilities cause the plan to be rejected."
+    },
+    "actions": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Ordered list of proposed actions. Each action is validated; blocked types cause the plan to be rejected.",
+      "items": {
+        "type": "object",
+        "required": ["action_id", "type"],
+        "additionalProperties": false,
+        "properties": {
+          "action_id": {
+            "type": "string",
+            "description": "Unique identifier for this action within the plan."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "read_fixture",
+              "check_state",
+              "dry_run_inspect",
+              "dry_run_click",
+              "dry_run_type",
+              "generate_report",
+              "inspect_window"
+            ],
+            "description": "Action type. Only the listed dry-run types are allowed."
+          },
+          "target_element": {
+            "type": "string",
+            "description": "Optional: CSS selector, element ID, or named target in the local sandbox."
+          },
+          "value": {
+            "type": "string",
+            "description": "Optional: value to use in the action (e.g. text to type in dry-run mode). Must not contain secrets, tokens, or credentials."
+          },
+          "description": {
+            "type": "string",
+            "description": "Optional: human-readable description of this action's purpose."
+          }
+        }
+      }
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional: human-readable description of this plan's purpose."
+    }
+  }
+}
