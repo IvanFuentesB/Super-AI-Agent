@@ -1,0 +1,103 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GhotiCuaTrialStatus",
+  "description": "N+6.34A — status payload from the CUA isolated trial adapter (dry-run/observation only)",
+  "type": "object",
+  "required": ["ok", "milestone", "mode", "cua_sandbox_present", "accepted", "safety"],
+  "properties": {
+    "ok": {
+      "type": "boolean",
+      "description": "true only when sandbox is present AND dual gate accepted the trial plan"
+    },
+    "milestone": {"type": "string", "const": "N+6.34A"},
+    "adapter_version": {"type": "string"},
+    "mode": {"type": "string", "const": "dry_run"},
+    "trial_phase": {
+      "type": "string",
+      "enum": ["metadata_smoke"],
+      "description": "Current trial phase; metadata_smoke = read-only metadata inspection only"
+    },
+    "cua_sandbox_present": {
+      "type": "boolean",
+      "description": "Whether the CUA sandbox is cloned at the expected gitignored path"
+    },
+    "cua_sandbox_detection": {
+      "type": "object",
+      "properties": {
+        "present": {"type": "boolean"},
+        "path": {"type": "string"},
+        "git_present": {"type": "boolean"},
+        "commit_hash": {"type": ["string", "null"]}
+      }
+    },
+    "cua_metadata": {
+      "type": "object",
+      "properties": {
+        "license": {"type": "string"},
+        "license_file_present": {"type": "boolean"},
+        "package_name": {"type": "string"},
+        "package_version": {"type": "string"},
+        "shell_script_count": {"type": "integer"},
+        "cua_code_imported": {"type": "boolean", "const": false},
+        "cua_code_executed": {"type": "boolean", "const": false}
+      }
+    },
+    "cua_license_ok": {
+      "type": ["boolean", "null"],
+      "description": "true when LICENSE.md confirms MIT"
+    },
+    "cua_code_imported": {"type": "boolean", "const": false},
+    "cua_code_executed": {"type": "boolean", "const": false},
+    "trial_plan": {
+      "type": "object",
+      "description": "The dry-run observation plan submitted to the dual gate"
+    },
+    "gate_result": {
+      "type": "object",
+      "description": "N+6.33A dual-gate result for the trial plan"
+    },
+    "adapter_allowed": {"type": "boolean"},
+    "rust_allowed": {"type": "boolean"},
+    "accepted": {
+      "type": "boolean",
+      "description": "true only when both adapter AND Rust policy checker allow the plan"
+    },
+    "pending_human_approval": {"type": "boolean", "const": true},
+    "refused_live_actions": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "safety": {
+      "type": "object",
+      "required": [
+        "no_cua_code_imported",
+        "no_cua_code_executed",
+        "no_real_os_input",
+        "no_docker_vm",
+        "no_live_browser",
+        "no_mcp_server",
+        "no_account_login",
+        "no_secrets_accessed",
+        "no_auto_submit",
+        "no_telemetry_triggered",
+        "dry_run_only"
+      ],
+      "properties": {
+        "no_cua_code_imported":  {"type": "boolean", "const": true},
+        "no_cua_code_executed":  {"type": "boolean", "const": true},
+        "no_real_os_input":      {"type": "boolean", "const": true},
+        "no_docker_vm":          {"type": "boolean", "const": true},
+        "no_live_browser":       {"type": "boolean", "const": true},
+        "no_mcp_server":         {"type": "boolean", "const": true},
+        "no_account_login":      {"type": "boolean", "const": true},
+        "no_secrets_accessed":   {"type": "boolean", "const": true},
+        "no_auto_submit":        {"type": "boolean", "const": true},
+        "no_telemetry_triggered":{"type": "boolean", "const": true},
+        "no_shell_scripts_run":  {"type": "boolean", "const": true},
+        "sandbox_read_only":     {"type": "boolean", "const": true},
+        "dry_run_only":          {"type": "boolean", "const": true}
+      }
+    },
+    "timestamp_utc": {"type": "string"}
+  }
+}
