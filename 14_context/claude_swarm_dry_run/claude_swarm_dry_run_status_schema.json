@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GhotiClaudeSwarmDryRunStatus",
+  "description": "N+6.37A claude-swarm dry-run wrapper status output shape.",
+  "type": "object",
+  "required": ["ok", "milestone", "mode", "safety_block"],
+  "properties": {
+    "ok": {"type": "boolean"},
+    "milestone": {"type": "string", "const": "N+6.37A"},
+    "mode": {"type": "string", "enum": ["check", "probe", "demo"]},
+    "execution_status": {
+      "type": "string",
+      "enum": [
+        "not_installed",
+        "probe_ok",
+        "demo_ok",
+        "demo_failed",
+        "api_key_required_blocked",
+        "blocked"
+      ]
+    },
+    "tool_available": {"type": "boolean"},
+    "network_attempted": {"type": "boolean"},
+    "agents_launched": {"type": "boolean"},
+    "api_key_used": {"type": "boolean"},
+    "dry_run_blocked_reason": {"type": "string"},
+    "safety_block": {
+      "type": "object",
+      "required": [
+        "live_execution", "live_computer_use_enabled", "hooks_enabled",
+        "docker_enabled", "mcp_enabled", "auto_submit", "simulation",
+        "live_agent_launch", "api_key_used", "network_attempted",
+        "third_party_code_executed", "secrets_committed"
+      ],
+      "properties": {
+        "live_execution": {"type": "boolean", "const": false},
+        "live_computer_use_enabled": {"type": "boolean", "const": false},
+        "hooks_enabled": {"type": "boolean", "const": false},
+        "docker_enabled": {"type": "boolean", "const": false},
+        "mcp_enabled": {"type": "boolean", "const": false},
+        "auto_submit": {"type": "boolean", "const": false},
+        "simulation": {"type": "boolean", "const": true},
+        "live_agent_launch": {"type": "boolean", "const": false},
+        "api_key_used": {"type": "boolean"},
+        "network_attempted": {"type": "boolean"},
+        "files_written_outside_scratch": {"type": "boolean"},
+        "third_party_code_executed": {"type": "boolean"},
+        "secrets_committed": {"type": "boolean", "const": false}
+      }
+    }
+  }
+}
