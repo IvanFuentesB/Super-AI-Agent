@@ -4,7 +4,7 @@
 **Date:** 2026-06-07
 **Branch:** `feat/ghoti-agent-claude-n6-30a-plug-and-play-swarm-memory-intake`
 **Base:** `ca90fbd` (N+6.28B Rust policy checker merged)
-**Status:** IMPLEMENTED_AND_PUSHED — awaiting Codex audit
+**Status:** IMPLEMENTED_AND_PUSHED — N+6.30A patch applied (Dreams / memory consolidation lane)
 
 ---
 
@@ -113,3 +113,22 @@ N+6.28B) into a ranked playbook for plug-and-play swarm and memory tools.
 4. **Isolated profile trials:** follow `ecc_ruflo_swarm_trial_plan_n6_30a.md`
    (bring back notes only — never trial in Ghoti profile)
 5. **Codex audit target:** `audit/ghoti-agent-codex-n6-30a-plug-and-play-swarm-memory-intake`
+
+---
+
+## N+6.30A Patch — Dreams / Memory Consolidation Lane
+
+Added via patch commit on the same branch. Four source_needed candidates:
+
+| Candidate | ID in registry | Purpose |
+|-----------|---------------|---------|
+| OpenDream / opendreams | `open_dream` | Session consolidation; structured memory summary |
+| dream-skill | `dream_skill` | SKILL.md-style consolidation; Ghoti-native fallback |
+| dream-memory | `dream_memory` | Persistent reflective memory layer |
+| memory-lancedb-dreaming | `memory_lancedb_dreaming` | Vector memory with dream phases |
+
+All four: source_needed=true, source=null, can_launch_real_agents=false.
+No URL guessed for any. Operator must confirm exact repos before any intake.
+
+Key invariants: memory consolidation only; read-only first; no auto-write of AGENTS.md
+or CLAUDE.md; no sensitive data stored; PAO app (N+6.24A) is a separate product lane.

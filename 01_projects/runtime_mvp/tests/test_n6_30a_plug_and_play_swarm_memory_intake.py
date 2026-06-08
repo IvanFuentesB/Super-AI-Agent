@@ -195,6 +195,73 @@ class TestSafetyInvariants(unittest.TestCase):
                 msg=f"Expected source_needed tool '{expected_id}' not in registry"
             )
 
+    def test_dream_tools_present(self):
+        registry = json.loads((TOOL_INTAKE / "plug_and_play_swarm_tools_n6_30a.json").read_text(encoding="utf-8"))
+        tool_ids = {t["id"] for t in registry["tools"]}
+        for expected_id in ("open_dream", "dream_skill", "dream_memory", "memory_lancedb_dreaming"):
+            self.assertIn(
+                expected_id, tool_ids,
+                msg=f"Dream candidate '{expected_id}' not in registry"
+            )
+
+    def test_dream_tools_are_source_needed(self):
+        registry = json.loads((TOOL_INTAKE / "plug_and_play_swarm_tools_n6_30a.json").read_text(encoding="utf-8"))
+        dream_ids = ("open_dream", "dream_skill", "dream_memory", "memory_lancedb_dreaming")
+        for tool in registry["tools"]:
+            if tool["id"] in dream_ids:
+                self.assertTrue(
+                    tool.get("source_needed", False),
+                    msg=f"Dream tool '{tool['id']}' must have source_needed=true; no URL guessed"
+                )
+                self.assertIsNone(
+                    tool.get("source"),
+                    msg=f"Dream tool '{tool['id']}' must have source=null; no URL guessed"
+                )
+
+    def test_dream_tools_do_not_launch_agents(self):
+        registry = json.loads((TOOL_INTAKE / "plug_and_play_swarm_tools_n6_30a.json").read_text(encoding="utf-8"))
+        dream_ids = ("open_dream", "dream_skill", "dream_memory", "memory_lancedb_dreaming")
+        for tool in registry["tools"]:
+            if tool["id"] in dream_ids:
+                self.assertFalse(
+                    tool.get("can_launch_real_agents", True),
+                    msg=f"Dream tool '{tool['id']}' must not launch real agents"
+                )
+
+    def test_memory_intake_mentions_dreams(self):
+        mem_doc = (TOOL_INTAKE / "claude_mem_obsidian_mempalace_intake_n6_30a.md").read_text(encoding="utf-8").lower()
+        for keyword in ("dream", "consolidat", "read-only first", "approval gate",
+                        "pao app", "separate"):
+            self.assertIn(keyword, mem_doc,
+                          msg=f"Memory intake doc missing keyword '{keyword}'")
+
+    def test_memory_intake_no_auto_write_agents_md(self):
+        mem_doc = (TOOL_INTAKE / "claude_mem_obsidian_mempalace_intake_n6_30a.md").read_text(encoding="utf-8").lower()
+        self.assertIn("agents.md", mem_doc)
+        self.assertIn("never auto-write", mem_doc)
+
+    def test_tier_one_status_has_dreams_lane(self):
+        tier_doc = (TOOL_INTAKE / "tier_one_priority_status_n6_30a.md").read_text(encoding="utf-8").lower()
+        for keyword in ("dream", "consolidat", "opendream", "dream_memory_consolidation"):
+            self.assertIn(keyword, tier_doc,
+                          msg=f"Tier-one status missing dreams keyword '{keyword}'")
+
+    def test_main_doc_mentions_dream_candidates(self):
+        doc = (DOCS / "GHOTI_N6_30A_PLUG_AND_PLAY_SWARM_MEMORY_INTAKE.md").read_text(encoding="utf-8").lower()
+        for keyword in ("dream", "opendream", "dream-skill", "dream-memory",
+                        "memory-lancedb-dreaming"):
+            self.assertIn(keyword, doc,
+                          msg=f"Main doc missing dream candidate '{keyword}'")
+
+    def test_dream_tools_not_live_launchers(self):
+        mem_doc = (TOOL_INTAKE / "claude_mem_obsidian_mempalace_intake_n6_30a.md").read_text(encoding="utf-8").lower()
+        self.assertIn("not live agent launcher", mem_doc)
+
+    def test_pao_disambiguation_in_dreams_section(self):
+        mem_doc = (TOOL_INTAKE / "claude_mem_obsidian_mempalace_intake_n6_30a.md").read_text(encoding="utf-8").lower()
+        self.assertIn("pao app", mem_doc)
+        self.assertIn("separate", mem_doc)
+
     def test_main_doc_lists_all_files(self):
         doc = (DOCS / "GHOTI_N6_30A_PLUG_AND_PLAY_SWARM_MEMORY_INTAKE.md").read_text(encoding="utf-8")
         expected_files = [

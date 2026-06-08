@@ -116,6 +116,28 @@ Nothing here is installed, cloned, or run.
 
 ---
 
+## Dreams / Memory Consolidation Lane (N+6.30A patch)
+
+Four dream/memory-consolidation candidates are in scope. All are source_needed; no
+URL is guessed for any of them.
+
+| Candidate | Purpose | Status | Action |
+|-----------|---------|--------|--------|
+| OpenDream / opendreams | Session consolidation; synthesises compact memory summary | source_needed | Operator confirms exact repo |
+| dream-skill | SKILL.md-style consolidation; read-only walk + synthesis + approval gate | source_needed | Operator confirms; Ghoti-native fallback available |
+| dream-memory | Persistent reflective memory layer with consolidation loop | source_needed | Operator confirms; local/file-based only |
+| memory-lancedb-dreaming | Vector memory with dream phases; short-term → long-term promotion | source_needed | Operator confirms; evaluate local LanceDB mode |
+
+**Shared invariants:**
+- Memory consolidation only — not live agent launchers.
+- Read-only first; any write requires human preview and approval.
+- Never auto-write `AGENTS.md`, `CLAUDE.md`, or project-scope files.
+- No sensitive data stored (credentials, health info, private paths, account data).
+- Local and file-based until secret-management milestone.
+- PAO app (N+6.24A) is a **separate future product** — not this lane.
+
+---
+
 ## Six Classification Lane Summary
 
 | Lane | Current leader | Status |
@@ -126,3 +148,4 @@ Nothing here is installed, cloned, or run.
 | `documents_content` | MarkItDown, Stirling PDF | deferred; not on critical path |
 | `apps_products` | PAO memory palace app | Tier-1-last; build after agent stack proven |
 | `apis_model_routing` | DeepSeek + Rust policy checker | research + Rust active; no live keys |
+| `dream_memory_consolidation` | opendreams, dream-skill, dream-memory, lancedb-dreaming | source_needed — operator confirms repos |

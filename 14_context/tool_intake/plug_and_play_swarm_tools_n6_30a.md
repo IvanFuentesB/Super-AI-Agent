@@ -45,13 +45,30 @@ Do not add hooks, agent teams, or dynamic workflows until dedicated milestone.
 |------|--------|--------|
 | **Claude Mem** | source_needed | Operator confirms exact repo/tool |
 | **Obsidian-skills** | source_needed | Operator confirms exact source |
-| **MemPalace (agent memory)** | source_needed | Distinct from PAO app (N+6.24A) |
+| **MemPalace (agent memory)** | source_needed | Distinct from PAO app (N+6.24A); warn against impostor sites |
 | **UI-TARS** | source_needed | Operator confirms exact upstream (model vs app vs SDK) |
 | **ClawTeam** | needs sandbox trial | Read README fully; sandbox before any use |
 | **Paperclip** | source_needed (Tier-1) | Operator confirms exact repo |
 | **Understand-Anything** | source_needed (Tier-1) | Operator confirms exact repo |
 | **CodeGraph / Git Nexus** | source_needed (Tier-1) | Operator confirms exact repo |
 | **Stop / Stop skill** | source_needed (Tier-1) | Operator confirms exact repo |
+
+#### Tier C — Dreams / Memory Consolidation Lane (new N+6.30A patch)
+
+| Tool | Status | Purpose | Action |
+|------|--------|---------|--------|
+| **OpenDream / opendreams** | source_needed | Consolidates past sessions; synthesizes structured memory | Operator confirms exact repo; no URL guessed |
+| **dream-skill** | source_needed | Claude Code SKILL.md-style consolidation: read-only walk + synthesis + approval gate | Operator confirms; can be implemented natively |
+| **dream-memory** | source_needed | Persistent reflective memory layer with consolidation loop | Operator confirms; local/file-based only |
+| **memory-lancedb-dreaming** | source_needed | Vector memory with dream phases (short-term → long-term) | Operator confirms; evaluate local-only LanceDB mode |
+
+**Key invariants (all dream/consolidation tools):**
+- Memory consolidation only — not live agent launchers
+- Read-only first; no memory writes without human preview and approval
+- Never auto-write `AGENTS.md`, `CLAUDE.md`, or other project-scope files
+- No sensitive data, secrets, private paths, health details, or account data stored
+- Must remain local and file-based (no cloud services, no API keys)
+- PAO memory palace app (N+6.24A) is a **separate future product** — not conflated here
 
 ### Tier D — Defer
 

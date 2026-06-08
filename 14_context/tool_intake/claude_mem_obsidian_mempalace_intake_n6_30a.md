@@ -136,6 +136,109 @@ Fall back to extending Ghoti's existing memory stack:
 
 ---
 
+## Dreams / Memory Consolidation Lane (N+6.30A patch)
+
+### What is a "dream" in this context?
+
+A **dream** is a memory consolidation pass: the agent reads past session context,
+identifies key facts, decisions, and patterns, synthesizes a structured summary,
+and (with human approval) writes it back as a persistent memory entry.
+
+Dreams are **not** live agent launchers. They do not spawn agents or perform real
+OS actions. They are a read-heavy, write-gated memory maintenance operation.
+
+### Disambiguation: dreams vs PAO app
+
+| Concept | What it is | Status |
+|---------|-----------|--------|
+| **Dream / memory consolidation** | Agent reads past context, synthesises, writes compact memory — with human approval | This lane; source_needed |
+| **PAO app (N+6.24A)** | User-facing memory palace learning app (3D, LiDAR, PAO mnemonic system) | Separate future product; Tier-1-last; NOT this lane |
+
+The PAO app is a distinct product that must never be conflated with agent dream/memory
+consolidation infrastructure.
+
+### Candidates
+
+#### OpenDream / opendreams
+
+**Status:** source_needed — operator must confirm exact repo. No URL is guessed.
+Multiple unrelated projects use the name "opendreams".
+
+**Intended pattern:**
+- Walk committed context files / recent session logs.
+- Identify recurring decisions, key facts, tool intakes.
+- Generate a compact structured memory summary.
+- Write to `14_context/00_main_memory/` only after human preview and approval.
+
+**Evaluation criteria (once source confirmed):**
+1. Local/file-based or does it require an external service?
+2. Does it write to AGENTS.md or CLAUDE.md? If so, block that path.
+3. Does it store sensitive data (credentials, health info, private paths)?
+4. License compatibility with Ghoti MIT/source-visible approach?
+
+#### dream-skill
+
+**Status:** source_needed — operator must confirm exact skill source.
+
+**Intended pattern (SKILL.md style):**
+1. Read-only walk: scan `14_context/` for recent milestones and decisions.
+2. Synthesis pass: produce a compact consolidated memory entry.
+3. Approval gate: show the synthesised entry to the operator before any write.
+4. Write (if approved): append to `14_context/00_main_memory/` only.
+
+**Ghoti-native fallback:** if no external source is found, this pattern can be
+implemented natively as a Claude Code SKILL.md with zero third-party dependencies.
+
+**Hard constraint:** the skill must never auto-write `AGENTS.md` or `CLAUDE.md`.
+
+#### dream-memory
+
+**Status:** source_needed — operator must confirm exact repo.
+
+**Intended pattern:**
+- Persistent reflective memory layer with a consolidation loop.
+- Reads prior context, identifies key facts and decisions.
+- Writes a structured consolidated memory file.
+
+**Constraints:**
+- Must remain local and file-based.
+- No cloud storage, no API keys.
+- All writes previewed and human-approved.
+- No sensitive data, secrets, private paths, or health details stored.
+
+#### memory-lancedb-dreaming
+
+**Status:** source_needed — operator must confirm exact repo. LanceDB adds a
+vector-database dependency; evaluate whether local/file-only mode is available.
+
+**Intended pattern:**
+- Dream phases: consolidate short-term context into long-term structured memory.
+- Memory promotion: move important context from active session into persistent index.
+
+**Constraints:**
+- Do not connect to cloud LanceDB.
+- Evaluate local LanceDB mode before any intake.
+- source_needed; no clone until source confirmed and local-mode verified.
+
+### MemPalace impostor warning
+
+Multiple unrelated projects and websites use the "MemPalace" or "memory-palace"
+name. The operator should confirm the exact repo URL and cross-reference with the
+official source before any intake. Do not clone a MemPalace repo from an unverified
+site.
+
+### Safety invariants for all dream / consolidation tools
+
+- **Memory consolidation only** — not live agent launchers.
+- **Read-only first** — no memory writes without human preview and approval.
+- **Never auto-write** `AGENTS.md`, `CLAUDE.md`, or any other project-scope file.
+- **No sensitive data** stored: no credentials, no health details, no private paths,
+  no account data, no secrets of any kind.
+- **Local and file-based** until a secret-management milestone.
+- **PAO app (N+6.24A) is separate** — a future user-facing product, not agent memory.
+
+---
+
 ## Memory Stack Integration Plan
 
 ### Current (no new tools installed)

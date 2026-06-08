@@ -33,11 +33,16 @@ and creates Ghoti-native playbooks. Nothing is installed, run, or enabled.
 | UI-TARS | unknown (ambiguous) | Apache-2.0 (reported) | N+6.12A (source_needed) | source_needed |
 | Claude Mem | unknown | unknown | none | source_needed |
 | Obsidian-skills | unknown | unknown | none | source_needed |
-| MemPalace (agent) | unknown | unknown | N+6.24A (PAO only) | source_needed |
+| MemPalace (agent) | unknown (warn: impostor sites exist) | unknown | N+6.24A (PAO only) | source_needed |
 | Dynamic Workflows | Official | Anthropic TOS | N+6.26A | defer |
 | Agent Teams | Official | Anthropic TOS | N+6.26A | defer |
+| OpenDream / opendreams | unknown (source_needed) | unknown | none | source_needed (dream lane) |
+| dream-skill | unknown (source_needed) | unknown | none | source_needed (dream lane) |
+| dream-memory | unknown (source_needed) | unknown | none | source_needed (dream lane) |
+| memory-lancedb-dreaming | unknown (source_needed) | unknown | none | source_needed (dream lane) |
 
 No third-party code committed. No repos cloned in N+6.30A (prior inspection records used).
+Dream/memory-consolidation candidates added via N+6.30A patch; all are source_needed.
 
 ---
 
@@ -152,13 +157,25 @@ No Claude branch merges directly to main.
 ### Conditional Additions (pending source confirmation)
 - **Claude Mem** — if file-based/local: Ghoti-native adapter wrapping existing vault
 - **Obsidian bridge** — read-only path first; write path gated to dedicated folder
-- **MemPalace (agent)** — if file-based: structured index over 14_context/
+- **MemPalace (agent)** — if file-based: structured index over 14_context/ (warn: impostor sites exist; confirm official repo)
+
+### Dreams / Memory Consolidation Lane (N+6.30A patch)
+All four candidates are source_needed. Shared invariants:
+- **OpenDream / opendreams** — session consolidation; confirm repo; read-only first
+- **dream-skill** — SKILL.md-style consolidation; Ghoti-native fallback available
+- **dream-memory** — persistent reflective memory layer; local/file-based only
+- **memory-lancedb-dreaming** — vector memory with dream phases; confirm local LanceDB mode
+
+None of these auto-write `AGENTS.md` or `CLAUDE.md`. All writes require human preview and
+approval. No sensitive data, secrets, private paths, health details, or account data stored.
+These are memory consolidation tools — not live agent launchers.
 
 ### Hard Rules (all layers)
 - Local and file-based until secret-management milestone
 - No cloud service, no API key in any memory layer
 - Memory Vault is source of truth; nothing overwrites it without approval gate
-- PAO app (N+6.24A) is a separate product lane; Tier-1-last
+- PAO app (N+6.24A) is a separate product lane (future user-facing product); Tier-1-last
+- Dream/consolidation tools are distinct from the PAO app
 
 ---
 
@@ -178,7 +195,11 @@ No Claude branch merges directly to main.
 | Computer-use adapter | not merged (N+6.29B) | Codex audit → merge |
 | Claude Mem | source_needed | Operator confirms tool |
 | Obsidian-skills | source_needed | Operator confirms source |
-| MemPalace (agent) | source_needed | Operator confirms repo |
+| MemPalace (agent) | source_needed | Operator confirms repo (warn: impostor sites) |
+| OpenDream / opendreams | source_needed (dream lane) | Operator confirms exact repo |
+| dream-skill | source_needed (dream lane) | Operator confirms; Ghoti-native fallback available |
+| dream-memory | source_needed (dream lane) | Operator confirms; local/file-based |
+| memory-lancedb-dreaming | source_needed (dream lane) | Operator confirms; evaluate local LanceDB |
 
 ---
 
