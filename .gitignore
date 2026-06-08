@@ -40,6 +40,9 @@ temp/
 05_logs/tmp/
 05_logs/tmp_*
 
+# Rust build artifacts
+rust/target/
+
 # Model and binary artifacts
 *.gguf
 *.bin
