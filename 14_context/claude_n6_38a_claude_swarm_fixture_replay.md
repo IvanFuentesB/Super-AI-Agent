@@ -1,4 +1,4 @@
-# Compact Context — N+6.38A Claude-Swarm Fixture Replay
+# Compact Context  --  N+6.38A Claude-Swarm Fixture Replay
 
 **Milestone:** N+6.38A
 **Date:** 2026-06-08
@@ -50,9 +50,9 @@ _API_KEY_ENV_VARS = ["ANTHROPIC_API_KEY", "CLAUDE_API_KEY", "OPENAI_API_KEY"]
 
 ## Entry points
 
-- `--check` → `_run_check()` — documents external CLI block, start conditions gap
-- `--validate [--fixture PATH]` → `_run_validate(path)` — schema + safety validation
-- `--replay [--fixture PATH]` → `_run_replay(path)` — full fixture replay with plan summary
+- `--check` -> `_run_check()`  --  documents external CLI block, start conditions gap
+- `--validate [--fixture PATH]` -> `_run_validate(path)`  --  schema + safety validation
+- `--replay [--fixture PATH]` -> `_run_replay(path)`  --  full fixture replay with plan summary
 
 ## Known gaps
 

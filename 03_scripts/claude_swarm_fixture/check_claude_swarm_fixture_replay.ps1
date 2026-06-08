@@ -1,8 +1,8 @@
 # check_claude_swarm_fixture_replay.ps1
-# N+6.38A — Provider-free claude-swarm fixture replay checker (PowerShell)
+# N+6.38A  --  Provider-free claude-swarm fixture replay checker (PowerShell)
 #
 # Validates the fixture replay system without executing claude-swarm or calling any provider.
-# Safe to run on any machine — no API keys required, no network calls made.
+# Safe to run on any machine  --  no API keys required, no network calls made.
 #
 # Usage:
 #   .\check_claude_swarm_fixture_replay.ps1
@@ -115,7 +115,7 @@ if ($fixtureJson) {
 $apiKeyVars = @("ANTHROPIC_API_KEY", "CLAUDE_API_KEY", "OPENAI_API_KEY")
 $presentKeys = $apiKeyVars | Where-Object { [System.Environment]::GetEnvironmentVariable($_) }
 $noApiKeys = $presentKeys.Count -eq 0
-$keyDetail = if ($noApiKeys) { "none present" } else { "FOUND: $($presentKeys -join ', ') — replay blocked" }
+$keyDetail = if ($noApiKeys) { "none present" } else { "FOUND: $($presentKeys -join ', ')  --  replay blocked" }
 Add-Result "No provider API keys in env" $noApiKeys $keyDetail
 
 # 13. Wrapper script does not import claude_swarm
@@ -166,7 +166,7 @@ if ($wrapperExists -and $fixtureExists -and $noApiKeys) {
         Add-Result "Wrapper --replay exits 0" $false $_.Exception.Message
     }
 } elseif (-not $noApiKeys) {
-    Add-Result "Wrapper --replay exits 0" $false "SKIPPED: API key present — would be blocked"
+    Add-Result "Wrapper --replay exits 0" $false "SKIPPED: API key present  --  would be blocked"
 }
 
 # Summary

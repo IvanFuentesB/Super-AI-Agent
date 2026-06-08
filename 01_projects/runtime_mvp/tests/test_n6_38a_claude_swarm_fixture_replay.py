@@ -1,5 +1,5 @@
 """
-test_n6_38a_claude_swarm_fixture_replay.py — N+6.38A test suite.
+test_n6_38a_claude_swarm_fixture_replay.py  --  N+6.38A test suite.
 
 Tests:
 - no external CLI execution
@@ -236,7 +236,7 @@ class TestParallelGroups(unittest.TestCase):
         data = _load_fixture()
         groups = _replay._build_parallel_groups(data["tasks"])
         self.assertGreater(len(groups), 0)
-        # task-1 and task-2 have no dependencies — should be in first group
+        # task-1 and task-2 have no dependencies  --  should be in first group
         first = groups[0]
         self.assertIn("task-1", first)
         self.assertIn("task-2", first)
@@ -245,7 +245,7 @@ class TestParallelGroups(unittest.TestCase):
         data = _load_fixture()
         groups = _replay._build_parallel_groups(data["tasks"])
         flat = [tid for g in groups for tid in g]
-        # task-5 depends on task-1, task-2, task-3 — must come after all three
+        # task-5 depends on task-1, task-2, task-3  --  must come after all three
         if "task-5" in flat and "task-1" in flat:
             self.assertGreater(flat.index("task-5"), flat.index("task-1"))
 
@@ -392,13 +392,41 @@ class TestFullReplay(unittest.TestCase):
         result = _replay._run_replay()
         output_str = json.dumps(result)
         for path in ["/home/user/", "C:\\Users\\", "/root/"]:
-            # fixture_path itself may contain the repo path — check plan content only
+            # fixture_path itself may contain the repo path  --  check plan content only
             plan_str = json.dumps(result.get("plan_summary", {}))
             self.assertNotIn(path, plan_str, f"Machine path in plan_summary: {path}")
 
     def test_replay_has_next_step(self):
         result = _replay._run_replay()
         self.assertIn("next_step", result)
+
+
+class TestAsciiSafe(unittest.TestCase):
+    """Regression tests: no non-ASCII bytes in committed N+6.38A files."""
+
+    def _check_ascii(self, path: Path) -> None:
+        raw = path.read_bytes()
+        bad = [(i, raw[i]) for i in range(len(raw)) if raw[i] > 127]
+        if bad:
+            newline = b"\n"
+            samples = ", ".join(
+                "pos {} 0x{:02x} line {}".format(i, b, raw[:i].count(newline) + 1)
+                for i, b in bad[:5]
+            )
+            self.fail(
+                "{} contains {} non-ASCII byte(s): {}".format(
+                    path.name, len(bad), samples
+                )
+            )
+
+    def test_ps1_checker_is_ascii_only(self):
+        self._check_ascii(_WRAPPER_DIR / "check_claude_swarm_fixture_replay.ps1")
+
+    def test_python_wrapper_is_ascii_only(self):
+        self._check_ascii(_WRAPPER_DIR / "ghoti_claude_swarm_fixture_replay.py")
+
+    def test_test_file_is_ascii_only(self):
+        self._check_ascii(Path(__file__).resolve())
 
 
 if __name__ == "__main__":

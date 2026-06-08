@@ -1,5 +1,5 @@
 """
-ghoti_claude_swarm_fixture_replay.py — N+6.38A provider-free claude-swarm fixture replay.
+ghoti_claude_swarm_fixture_replay.py  --  N+6.38A provider-free claude-swarm fixture replay.
 
 Loads a static fixture shaped like claude-swarm output, validates its schema,
 detects file-ownership overlaps, surfaces roles/tasks/dependencies/approval gates,
@@ -206,8 +206,8 @@ def _run_check() -> dict:
         "schema_exists": schema_path.exists(),
         "api_keys_in_env": api_keys,
         "api_keys_blocked": len(api_keys) > 0,
-        "external_cli_execution": "BLOCKED — this wrapper never executes claude-swarm",
-        "provider_api_calls": "BLOCKED — no API keys accepted",
+        "external_cli_execution": "BLOCKED  --  this wrapper never executes claude-swarm",
+        "provider_api_calls": "BLOCKED  --  no API keys accepted",
         "start_conditions": {
             "n6_35b_on_main": True,
             "n6_36b_on_main": False,

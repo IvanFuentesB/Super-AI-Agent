@@ -1,4 +1,4 @@
-# claude_swarm_fixture — N+6.38A Provider-Free Fixture Replay
+# claude_swarm_fixture  --  N+6.38A Provider-Free Fixture Replay
 
 ## Purpose
 
@@ -21,13 +21,13 @@ This fixture system solves that by providing a static JSON fixture shaped like c
 ## Safety invariants
 
 All fixtures **must** satisfy:
-- `source == "static_fixture"` — prevents live execution payloads
-- `swarm.dry_run == true` — dry-run flag preserved
-- `swarm.live_execution == false` — hard block
-- `swarm.simulation == true` — simulation flag required
-- `safety.live_execution == false` — redundant safety check
-- `safety.live_agent_launch == false` — no agent launch allowed
-- `safety.api_key_used == false` — no provider API calls
+- `source == "static_fixture"`  --  prevents live execution payloads
+- `swarm.dry_run == true`  --  dry-run flag preserved
+- `swarm.live_execution == false`  --  hard block
+- `swarm.simulation == true`  --  simulation flag required
+- `safety.live_execution == false`  --  redundant safety check
+- `safety.live_agent_launch == false`  --  no agent launch allowed
+- `safety.api_key_used == false`  --  no provider API calls
 
 ## Usage
 
@@ -84,4 +84,4 @@ See `claude_swarm_fixture_schema.json` for the full schema. Minimum required fie
 
 ## Milestone
 
-N+6.38A — part of the Ghoti supervised agent systems trial sequence.
+N+6.38A  --  part of the Ghoti supervised agent systems trial sequence.

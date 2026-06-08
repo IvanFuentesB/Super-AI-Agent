@@ -1,4 +1,4 @@
-# GHOTI N+6.38A — Claude-Swarm Fixture Replay
+# GHOTI N+6.38A  --  Claude-Swarm Fixture Replay
 
 **Milestone:** N+6.38A
 **Branch:** `feat/ghoti-agent-claude-n6-38a-claude-swarm-fixture-replay`
@@ -10,7 +10,7 @@
 
 N+6.37A established that `claude-swarm --dry-run` is **not a true no-op**: the tool checks `ANTHROPIC_API_KEY` and calls `decompose_task()` via the Claude API _before_ the dry-run skip applies (see `cli.py:79-83`). This blocks safe use in Ghoti's provider-free simulation gate.
 
-N+6.38A solves this with a **fixture replay system**: a static JSON payload shaped like claude-swarm output that Ghoti can load, validate, and render locally — no `claude-swarm` binary required, no provider API called, no API key needed.
+N+6.38A solves this with a **fixture replay system**: a static JSON payload shaped like claude-swarm output that Ghoti can load, validate, and render locally  --  no `claude-swarm` binary required, no provider API called, no API key needed.
 
 ---
 
@@ -45,7 +45,7 @@ All fixtures **must** satisfy (enforced by `_validate_fixture_schema()`):
 | `safety.live_agent_launch` | `false` | Schema + code |
 | `safety.api_key_used` | `false` | Schema + code |
 
-Provider API keys in environment → replay blocked immediately (before fixture loading).
+Provider API keys in environment -> replay blocked immediately (before fixture loading).
 
 ---
 
@@ -88,9 +88,9 @@ Each entry point returns a JSON-serialisable dict with:
 The fixture is shaped like `claude-swarm` dry-run output with additional safety fields. See `claude_swarm_fixture_schema.json` for the full JSON Schema.
 
 Key additions over raw claude-swarm output:
-- `source: "static_fixture"` — identifies as a fixture, not live output
-- `safety` block — explicit per-field safety audit
-- `swarm.simulation: true` — explicit simulation flag
+- `source: "static_fixture"`  --  identifies as a fixture, not live output
+- `safety` block  --  explicit per-field safety audit
+- `swarm.simulation: true`  --  explicit simulation flag
 
 ---
 
@@ -121,16 +121,16 @@ python -m unittest discover -s 01_projects/runtime_mvp/tests -p "test_n6_38a_*.p
 ```
 
 Test classes:
-- `TestSourceSafety` — wrapper never imports or calls `claude_swarm`
-- `TestFixtureLoading` — valid/invalid fixtures handled correctly
-- `TestSchemaValidation` — each safety field enforced individually
-- `TestOverlapDetection` — files claimed by multiple tasks detected
-- `TestParallelGroups` — topological sort correct
-- `TestBlockedPaths` — sensitive paths rejected
-- `TestApiKeyRefusal` — provider API keys block replay
-- `TestArenaStatus` — arena status shape correct
-- `TestCheckMode` — `--check` output shape
-- `TestFullReplay` — end-to-end replay with sample fixture
+- `TestSourceSafety`  --  wrapper never imports or calls `claude_swarm`
+- `TestFixtureLoading`  --  valid/invalid fixtures handled correctly
+- `TestSchemaValidation`  --  each safety field enforced individually
+- `TestOverlapDetection`  --  files claimed by multiple tasks detected
+- `TestParallelGroups`  --  topological sort correct
+- `TestBlockedPaths`  --  sensitive paths rejected
+- `TestApiKeyRefusal`  --  provider API keys block replay
+- `TestArenaStatus`  --  arena status shape correct
+- `TestCheckMode`  --  `--check` output shape
+- `TestFullReplay`  --  end-to-end replay with sample fixture
 
 ---
 
