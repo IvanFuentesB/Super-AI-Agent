@@ -1,0 +1,39 @@
+{
+  "plan_id": "dry_run_local_fixture_001",
+  "milestone": "N+6.29A",
+  "target": "local_sandbox",
+  "target_url": "file:///14_context/computer_use/sandbox/sandbox_target.html",
+  "window_id": "ghoti_sandbox_page",
+  "auto_submit": false,
+  "requires_human_approval": true,
+  "capabilities_required": [],
+  "description": "Safe dry-run plan: inspect local sandbox page state and generate a local report. No real OS input.",
+  "actions": [
+    {
+      "action_id": "a1_read_fixture",
+      "type": "read_fixture",
+      "target_element": null,
+      "value": "14_context/computer_use/sandbox/sandbox_observation_fixture.json",
+      "description": "Read the local sandbox observation fixture."
+    },
+    {
+      "action_id": "a2_check_state",
+      "type": "check_state",
+      "target_element": "#status-output",
+      "description": "Check the current state of the status-output element in the sandbox page."
+    },
+    {
+      "action_id": "a3_dry_run_click",
+      "type": "dry_run_click",
+      "target_element": "#status-button",
+      "description": "Dry-run: would click the status button — not performed."
+    },
+    {
+      "action_id": "a4_generate_report",
+      "type": "generate_report",
+      "target_element": null,
+      "value": "14_context/computer_use_adapter/examples/dry_run_local_fixture_result.json",
+      "description": "Generate a local dry-run report file."
+    }
+  ]
+}

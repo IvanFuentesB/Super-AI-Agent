@@ -1,0 +1,185 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Ghoti computer-use adapter result (N+6.29A)",
+  "description": "Output of ghoti_computer_use_adapter.py --plan <file> --dry-run --json. Always dry-run; real_action_performed is always false.",
+  "type": "object",
+  "x_safety": {
+    "dry_run_only": true,
+    "real_action_performed": false,
+    "real_click_performed": false,
+    "real_type_performed": false,
+    "os_input_used": false,
+    "secrets_accessed": false,
+    "live_browser_used": false,
+    "auto_submit_performed": false
+  },
+  "required": [
+    "ok",
+    "milestone",
+    "adapter_version",
+    "mode",
+    "status",
+    "plan_id",
+    "target_verified",
+    "blocked_reasons",
+    "dry_run_actions",
+    "real_action_performed",
+    "real_click_performed",
+    "real_type_performed",
+    "os_input_used",
+    "secrets_accessed",
+    "auto_submit_performed",
+    "requires_human_approval",
+    "approval_token",
+    "rust_policy_bridge_ready",
+    "arena_status",
+    "refused_live_actions",
+    "real_launch_note",
+    "safety"
+  ],
+  "properties": {
+    "ok": {
+      "type": "boolean",
+      "description": "True if plan passed all validations (status: allowed); false if blocked or error."
+    },
+    "milestone": {
+      "type": "string",
+      "const": "N+6.29A"
+    },
+    "adapter_version": {
+      "type": "string"
+    },
+    "mode": {
+      "type": "string",
+      "const": "dry_run"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["allowed", "blocked", "error", "check"]
+    },
+    "plan_id": {
+      "type": "string"
+    },
+    "target": {
+      "type": ["string", "null"]
+    },
+    "target_url": {
+      "type": ["string", "null"]
+    },
+    "target_verified": {
+      "type": "boolean",
+      "description": "True if target passed all target/URL validations."
+    },
+    "blocked_reasons": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "List of reasons why the plan was blocked. Empty if allowed."
+    },
+    "dry_run_actions": {
+      "type": "array",
+      "description": "List of would-perform actions (never executed). Each item includes real_action_performed: false.",
+      "items": {
+        "type": "object",
+        "required": [
+          "action_id",
+          "type",
+          "would_perform",
+          "real_action_performed",
+          "real_click_performed",
+          "real_type_performed",
+          "os_input_used"
+        ],
+        "properties": {
+          "action_id": {"type": "string"},
+          "type": {"type": "string"},
+          "target_element": {"type": ["string", "null"]},
+          "would_perform": {"type": "string"},
+          "real_action_performed": {"type": "boolean", "const": false},
+          "real_click_performed": {"type": "boolean", "const": false},
+          "real_type_performed": {"type": "boolean", "const": false},
+          "os_input_used": {"type": "boolean", "const": false}
+        }
+      }
+    },
+    "real_action_performed": {"type": "boolean", "const": false},
+    "real_click_performed": {"type": "boolean", "const": false},
+    "real_type_performed": {"type": "boolean", "const": false},
+    "os_input_used": {"type": "boolean", "const": false},
+    "secrets_accessed": {"type": "boolean", "const": false},
+    "auto_submit_performed": {"type": "boolean", "const": false},
+    "requires_human_approval": {"type": "boolean"},
+    "approval_token": {
+      "type": "null",
+      "description": "Always null in dry-run mode."
+    },
+    "rust_policy_bridge_ready": {
+      "type": "boolean",
+      "description": "False until N+6.28A Rust policy checker is merged."
+    },
+    "rust_policy_bridge_note": {
+      "type": "string"
+    },
+    "arena_status": {
+      "type": "object",
+      "description": "Safe-to-visualize block for Agent Arena (simulation: true, live_execution: false).",
+      "required": ["simulation", "live_execution", "live_computer_use_enabled"],
+      "properties": {
+        "simulation": {"type": "boolean", "const": true},
+        "live_execution": {"type": "boolean", "const": false},
+        "live_computer_use_enabled": {"type": "boolean", "const": false},
+        "plan_id": {"type": "string"},
+        "target": {"type": "string"},
+        "status": {"type": "string"},
+        "real_action_performed": {"type": "boolean", "const": false},
+        "approved": {"type": "boolean"},
+        "approval_pending": {"type": "boolean"}
+      }
+    },
+    "refused_live_actions": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Canonical list of actions this adapter always refuses."
+    },
+    "real_launch_note": {"type": "string"},
+    "safety": {
+      "type": "object",
+      "required": [
+        "no_real_os_input",
+        "no_live_browser",
+        "no_external_url",
+        "no_account_login",
+        "no_secrets_accessed",
+        "no_auto_submit",
+        "no_docker",
+        "no_mcp",
+        "no_shell_commands",
+        "no_remote_api_calls",
+        "dry_run_only",
+        "real_action_performed",
+        "real_click_performed",
+        "real_type_performed",
+        "os_input_used",
+        "secrets_accessed"
+      ],
+      "properties": {
+        "no_real_os_input": {"type": "boolean", "const": true},
+        "no_live_browser": {"type": "boolean", "const": true},
+        "no_external_url": {"type": "boolean", "const": true},
+        "no_account_login": {"type": "boolean", "const": true},
+        "no_secrets_accessed": {"type": "boolean", "const": true},
+        "no_auto_submit": {"type": "boolean", "const": true},
+        "no_docker": {"type": "boolean", "const": true},
+        "no_mcp": {"type": "boolean", "const": true},
+        "no_shell_commands": {"type": "boolean", "const": true},
+        "no_remote_api_calls": {"type": "boolean", "const": true},
+        "dry_run_only": {"type": "boolean", "const": true},
+        "real_action_performed": {"type": "boolean", "const": false},
+        "real_click_performed": {"type": "boolean", "const": false},
+        "real_type_performed": {"type": "boolean", "const": false},
+        "os_input_used": {"type": "boolean", "const": false},
+        "secrets_accessed": {"type": "boolean", "const": false}
+      }
+    },
+    "timestamp_utc": {"type": "string"}
+  }
+}

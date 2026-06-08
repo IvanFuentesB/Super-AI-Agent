@@ -1,0 +1,162 @@
+{
+  "milestone": "N+6.29A",
+  "title": "Repo inspiration / attribution manifest — Computer-Use Repo-Backed Adapter",
+  "policy": "Design patterns are adapted from computer-use repos statically inspected in N+6.12A. No third-party code is vendored or committed. Repos were shallow-cloned in N+6.12A into 21_repos/third_party_static/ (gitignored). For N+6.29A no new clones are performed; the N+6.12A static inspection record is used as the authoritative source.",
+  "no_third_party_code_committed": true,
+  "no_code_copied": true,
+  "no_new_clones_performed": true,
+  "prior_inspection_milestone": "N+6.12A",
+  "prior_inspection_branch": "feat/ghoti-agent-claude-n6-12a-ruflo-computer-use-repo-intake",
+  "prior_inspection_record": "14_context/claude_n6_12a_ruflo_computer_use_repo_intake.md",
+  "repos": [
+    {
+      "repo": "trycua/cua",
+      "url": "https://github.com/trycua/cua",
+      "name": "TryCUA / CUA Driver",
+      "license": "MIT",
+      "license_verified": true,
+      "inspected_in": "N+6.12A",
+      "commit_sha_at_inspection": "4c54f43ffd9a46cf9c96b06f477a986316d19260",
+      "patterns_adapted": [
+        "structured action-intent payload: each proposed action carries a declared type, target, and value",
+        "sandbox isolation boundary: actions validated against an allowed-target list before execution",
+        "capability declaration: plan must declare required capabilities; blocked capabilities cause rejection",
+        "approval gate: human approval token required before any real execution",
+        "dry-run status payload: adapter emits a structured result with all real_*_performed fields false"
+      ],
+      "code_copied": false,
+      "risk_notes": [
+        "live desktop control via Docker/QEMU/KASM — not used",
+        "189 shell scripts — none inspected for execution",
+        "real OS input via OS-level APIs — hard-blocked in Ghoti adapter"
+      ],
+      "status": "patterns only; not installed, not executed; no code copied"
+    },
+    {
+      "repo": "UI-TARS (bytedance/UI-TARS or microsoft/UFO region)",
+      "url": "https://github.com/bytedance/UI-TARS",
+      "name": "UI-TARS",
+      "license": "Apache-2.0",
+      "license_verified": true,
+      "inspected_in": "N+6.12A (source-needed — no confirmed URL recorded; patterns from prior N+5.0A context)",
+      "commit_sha_at_inspection": "unknown — source-needed in N+6.12A",
+      "patterns_adapted": [
+        "observation-only mode: adapter can inspect/read state without performing real OS actions",
+        "structured action contract: each action is a typed record (click, type, read) with explicit field separation",
+        "blocked-action manifest: the adapter maintains a canonical list of refused action types",
+        "arena status block: result includes a simulation: true / live_execution: false block for visualization"
+      ],
+      "code_copied": false,
+      "risk_notes": [
+        "real GUI automation via OS-level APIs — not used",
+        "model inference — not used; adapter is stdlib-only"
+      ],
+      "status": "patterns from N+5.0A context and N+6.12A inspection record; no code copied; no execution"
+    },
+    {
+      "repo": "browser-use/browser-harness",
+      "url": "https://github.com/browser-use/browser-harness",
+      "name": "Browser Harness",
+      "license": "MIT",
+      "license_verified": true,
+      "inspected_in": "N+6.12A",
+      "commit_sha_at_inspection": "6d20866664ea3d9691b27bbf64f42ae097437dc3",
+      "patterns_adapted": [
+        "local fixture pattern: use a static JSON fixture as the action target instead of a live page",
+        "CDP isolation: browser actions confined to a local loopback channel (127.0.0.1)",
+        "blocked-URL guard: adapter checks target_url against allowed-prefix list before accepting plan"
+      ],
+      "code_copied": false,
+      "risk_notes": [
+        "self-writing-code risk — not used; adapter writes no code",
+        "CDP to real web pages — blocked; adapter only allows file:// and localhost URLs"
+      ],
+      "status": "patterns only; not installed, not executed; no code copied"
+    },
+    {
+      "repo": "vercel-labs/agent-browser",
+      "url": "https://github.com/vercel-labs/agent-browser",
+      "name": "Vercel agent-browser",
+      "license": "Apache-2.0",
+      "license_verified": true,
+      "inspected_in": "N+6.12A",
+      "commit_sha_at_inspection": "b4f2f37d7b4f954022bc77f8d6dce70e07072b00",
+      "patterns_adapted": [
+        "capability declaration contract: the plan declares capabilities_required; the adapter validates each against a blocked set",
+        "approval gate shape: approval_token field in result; null until human approves",
+        "refused_live_actions list: canonical list of refused actions surfaced in every result payload"
+      ],
+      "code_copied": false,
+      "license_note": "Apache-2.0 requires NOTICE file only if code is copied. No code is copied in this milestone.",
+      "status": "patterns only; not installed, not executed; no code copied; no NOTICE needed"
+    },
+    {
+      "repo": "ruvnet/ruflo",
+      "url": "https://github.com/ruvnet/ruflo",
+      "name": "Ruflo",
+      "license": "MIT",
+      "license_verified": true,
+      "inspected_in": "N+6.12A",
+      "commit_sha_at_inspection": "f57b69876ba1c4e6bf4e317d0d1529a5481692c4",
+      "patterns_adapted": [
+        "coordinator/worker + shared-local-memory hand-off pattern: adapter acts as coordinator; Rust policy checker (N+6.28A) acts as downstream worker",
+        "declared-skill pattern: adapter explicitly declares which action types it allows and which it refuses",
+        "dry-run-first invariant: no real execution without an explicit flag AND human approval"
+      ],
+      "code_copied": false,
+      "risk_notes": [
+        "supply-chain history: obfuscated malicious npm pre-install (v3.1.0-alpha.55..v3.5.2); MCP prompt-injection #1375; SQL-injection — not used; no Ruflo code vendored",
+        "install scripts: install.sh, postinstall hooks — not run"
+      ],
+      "status": "patterns only (re-expressed from scratch); not installed, not executed; no code copied"
+    }
+  ],
+  "prior_milestones_used_as_reference": [
+    {
+      "milestone": "N+6.12A",
+      "branch": "feat/ghoti-agent-claude-n6-12a-ruflo-computer-use-repo-intake",
+      "role": "Primary static inspection source for all five repos above"
+    },
+    {
+      "milestone": "N+6.13A",
+      "branch": "feat/ghoti-agent-claude-n6-13a-sandbox-computer-use-action-harness",
+      "role": "Sandbox action planner/runner pattern reference"
+    },
+    {
+      "milestone": "N+6.14A",
+      "branch": "feat/ghoti-agent-claude-n6-14a-confined-browser-sandbox-runner",
+      "role": "Confined browser sandbox + CDP isolation pattern reference"
+    },
+    {
+      "milestone": "N+5.0A",
+      "branch": "merged",
+      "role": "UI-TARS observation-only adapter pattern reference"
+    },
+    {
+      "milestone": "N+6.27A",
+      "branch": "feat/ghoti-agent-claude-n6-27a-repo-backed-controlled-swarm-launcher",
+      "role": "Repo-backed manifest + repo inspiration pattern (unmerged; no files from this branch modified)"
+    },
+    {
+      "milestone": "N+6.28A",
+      "branch": "feat/ghoti-agent-claude-n6-28a-rust-policy-checker",
+      "role": "Rust policy checker target for future bridge (unmerged; no files from this branch modified)"
+    }
+  ],
+  "rust_policy_bridge": {
+    "target_milestone": "post-N+6.28A-merge",
+    "target_branch": "feat/ghoti-agent-claude-n6-28a-rust-policy-checker",
+    "bridge_ready": false,
+    "bridge_note": "N+6.28A Rust policy checker is not yet merged. The adapter result includes rust_policy_bridge_ready: false. Post-merge, the adapter should pipe the validated plan to `cargo run --manifest-path rust/ghoti_policy_checker/Cargo.toml` for a second-pass policy check."
+  },
+  "attribution_note": "The Ghoti computer-use adapter is original code (stdlib-only Python) that re-expresses the public design patterns listed above. For MIT/Apache-2.0 repos, any future small permitted snippet reuse would carry the copyright notice; no snippet is reused in this milestone.",
+  "safety": {
+    "no_install": true,
+    "no_execution": true,
+    "no_run_third_party_code": true,
+    "no_dependencies_installed": true,
+    "no_repo_contents_committed": true,
+    "no_secrets": true,
+    "no_new_clones": true
+  }
+}
