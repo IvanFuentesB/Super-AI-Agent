@@ -115,6 +115,22 @@
               </div>
             </div>
 
+            <section class="console-card cap-card cap-hero" id="cap-hero">
+              <h2>What is Ghoti?</h2>
+              <p class="cap-muted">Ghoti is a local supervised operator system. It reads, checks, and reports on your repo. It does not act autonomously, connect to live accounts, or post anything anywhere without your approval.</p>
+              <ul class="cap-list">
+                <li><strong>Local only.</strong> All data stays on your machine. No cloud sync, no outbound provider calls without your go-ahead.</li>
+                <li><strong>Supervised.</strong> Every action that matters requires your confirmation. Nothing runs behind your back.</li>
+                <li><strong>Honest about limits.</strong> Dry-run means dry-run. Blocked means blocked. Not built means not built.</li>
+              </ul>
+              <div class="cap-badge-row cap-hero-chips">
+                <span class="cap-badge cap-badge--pass">Local-only</span>
+                <span class="cap-badge cap-badge--neutral">Supervised</span>
+                <span class="cap-badge cap-badge--dryrun">Dry-run-first</span>
+                <span class="cap-badge cap-badge--blocked">No live account actions</span>
+              </div>
+            </section>
+
             <section class="console-card cap-card">
               <h2>What can Ghoti do now?</h2>
               <p class="cap-muted">These are real, safe, local actions you can run today. No accounts, no live agents, no internet posting.</p>
@@ -141,6 +157,16 @@
               </section>
             </div>
 
+            <section class="console-card cap-card" id="cap-show-command">
+              <h2>Show me what command to run</h2>
+              <p class="cap-muted">The safest next command to try. Copy it and run it in your terminal.</p>
+              <div class="cap-cmd-area">
+                <code id="cap-show-cmd-text" class="cap-cmd-code">python 03_scripts/ghoti_product_launcher.py --status --json</code>
+                <button id="cap-show-cmd-copy" class="cap-btn cap-btn--primary" type="button">Copy command</button>
+              </div>
+              <p id="cap-show-cmd-result" class="cap-run-status" aria-live="polite"></p>
+            </section>
+
             <section class="console-card cap-card">
               <h2>What can I click?</h2>
               <p class="cap-muted">Each button runs only an existing safe local check. None of them launch agents, touch accounts, use the network for posting, or call a provider/API.</p>
@@ -165,31 +191,123 @@
               </div>
             </section>
 
-            <div class="cap-grid">
-              <section class="console-card cap-card cap-card--good">
-                <h2>Real use today</h2>
-                <ul class="cap-list">
-                  <li>Check repo safety</li>
-                  <li>Generate repo map / context pack</li>
-                  <li>Run local model status</li>
-                  <li>Run safe fixture replay</li>
-                  <li>Produce Claude / Codex handoff packets</li>
-                  <li>Inspect external tools safely</li>
+            <section class="console-card cap-card cap-card--good" id="cap-real-use-today">
+              <h2>Real Use Today - Demo Flow</h2>
+              <p class="cap-muted">Five actions you can run right now. Each is safe, local, and produces a real result.</p>
+              <div class="cap-demo-grid">
+                <div class="cap-demo-card">
+                  <h3>Run Safe Check</h3>
+                  <p>Live pass/warn/blocked status for all capabilities. Takes a few seconds. No network calls.</p>
+                  <button class="cap-btn cap-btn--primary" type="button" data-cap-action="safe-check">Run Safe Check</button>
+                </div>
+                <div class="cap-demo-card">
+                  <h3>Show Repo Map</h3>
+                  <p>Generate a full local repo map and context pack for handoff. Reads files only.</p>
+                  <button class="cap-btn" type="button" data-cap-action="repo-map">Show Repo Map</button>
+                </div>
+                <div class="cap-demo-card">
+                  <h3>Run Fixture Replay</h3>
+                  <p>Run the claude-swarm fixture replay check: 5 tasks, 3 groups, 0 overlaps. No provider or API key.</p>
+                  <button class="cap-btn" type="button" data-cap-action="fixture-replay">Run Fixture Replay</button>
+                </div>
+                <div class="cap-demo-card">
+                  <h3>Prepare Handoff Packet</h3>
+                  <p>Build a Hermes / Claude handoff packet for the current repo state. Local only.</p>
+                  <button class="cap-btn" type="button" data-cap-action="hermes">Prepare Handoff Packet</button>
+                </div>
+                <div class="cap-demo-card">
+                  <h3>Check Local Model Lane</h3>
+                  <p>Check Ollama / local model worker status. Reports truth - nothing faked.</p>
+                  <button class="cap-btn" type="button" data-cap-action="local-worker">Check Local Model Lane</button>
+                </div>
+              </div>
+            </section>
+
+            <section class="console-card cap-card cap-card--blocked" id="cap-cannot-do-yet">
+              <h2>What Ghoti cannot do yet</h2>
+              <p class="cap-muted">Not real yet - shown honestly so nothing is overclaimed.</p>
+              <ul class="cap-list">
+                <li>Live agents</li>
+                <li>Telegram commands - Telegram planned later (notification-only first)</li>
+                <li>Obsidian bridge - Obsidian not implemented yet</li>
+                <li>Real computer-use</li>
+                <li>Account actions</li>
+                <li>Auto-merge</li>
+              </ul>
+            </section>
+
+            <details class="cap-demo-mode-panel" id="cap-investor-demo-panel">
+              <summary>Investor Demo Mode - 30-second pitch and 90-second walkthrough</summary>
+
+              <div class="cap-demo-section">
+                <h3>30-second pitch</h3>
+                <p>Ghoti is a local AI operations assistant that helps developers manage their codebase safely. It runs entirely on your machine, requires your approval for every significant action, and tells you honestly what it can and cannot do today. No cloud sync. No autonomous execution. No overclaiming.</p>
+              </div>
+
+              <div class="cap-demo-section">
+                <h3>90-second demo flow</h3>
+                <ol>
+                  <li>Open the dashboard (already running at localhost:3210).</li>
+                  <li>Read the "What is Ghoti?" section - four honest status chips.</li>
+                  <li>Click "Run Safe Check" - watch live pass/warn/blocked results appear.</li>
+                  <li>Click "Show Repo Map" - see what the map produces.</li>
+                  <li>Look at "What Ghoti cannot do yet" - see what is not claimed.</li>
+                  <li>Notice "Blocked safely" on the claude-swarm card - blocking unsafe behavior is the feature.</li>
+                </ol>
+              </div>
+
+              <div class="cap-demo-section">
+                <h3>What is real today</h3>
+                <ul>
+                  <li>Repo safety audit (public audit, runs live).</li>
+                  <li>Repo map and context pack generation.</li>
+                  <li>Local model / Ollama worker status check.</li>
+                  <li>Claude-swarm fixture replay check (5 tasks, 3 groups, 0 overlaps).</li>
+                  <li>Claude and Codex handoff packet preparation.</li>
                 </ul>
-              </section>
-              <section class="console-card cap-card cap-card--blocked">
-                <h2>What Ghoti cannot do yet</h2>
-                <p class="cap-muted">Not real yet - shown honestly so nothing is overclaimed.</p>
-                <ul class="cap-list">
-                  <li>Live agents</li>
-                  <li>Telegram commands - Telegram planned later (notification-only first)</li>
-                  <li>Obsidian bridge - Obsidian not implemented yet</li>
-                  <li>Real computer-use</li>
-                  <li>Account actions</li>
-                  <li>Auto-merge</li>
+              </div>
+
+              <div class="cap-demo-section">
+                <h3>What is not live yet</h3>
+                <ul>
+                  <li>Live agents (planned; blocked safely until safe).</li>
+                  <li>Telegram integration (planned; notification-only first).</li>
+                  <li>Obsidian memory bridge (next milestone).</li>
+                  <li>Real computer-use (blocked safely).</li>
+                  <li>Account actions (blocked safely).</li>
                 </ul>
-              </section>
-            </div>
+              </div>
+
+              <div class="cap-demo-section">
+                <h3>Why it matters</h3>
+                <ul>
+                  <li><strong>Safe by design.</strong> Nothing executes without operator approval. Blocking unsafe behavior is a feature, not a gap.</li>
+                  <li><strong>Honest about state.</strong> Dry-run means dry-run. Blocked means blocked. Not built means not built. No overclaiming.</li>
+                  <li><strong>Local first.</strong> No data leaves your machine. No hidden cloud calls.</li>
+                </ul>
+              </div>
+            </details>
+
+            <section class="console-card cap-card" id="cap-why-blocked-section">
+              <h2>Why blocked is good</h2>
+              <div class="cap-why-blocked">
+                <p><strong>Blocked safely</strong> on the claude-swarm card is not a failure. It means Ghoti detected a potentially unsafe or live-agent operation and declined to run it automatically.</p>
+                <p>Showing "blocked safely" on the dashboard is the feature: you can see exactly what Ghoti declined to do, and why. This is the alternative to silent failure or undetected automation.</p>
+                <p>Dry-run results are available for most blocked operations - you can inspect the plan without executing it.</p>
+              </div>
+            </section>
+
+            <section class="console-card cap-card cap-roadmap" id="cap-roadmap">
+              <h2>Roadmap - what comes next</h2>
+              <p class="cap-muted">Planned milestones in order. None of these are connected yet.</p>
+              <ol class="cap-list">
+                <li><strong>Obsidian Memory Bridge</strong> - read and write compact notes to a local Obsidian vault. No live sync, no cloud.</li>
+                <li><strong>Telegram notification bridge</strong> - send notifications only (no bot commands, no inbound execution). Notification-only first.</li>
+                <li><strong>Live agent with approval gate</strong> - run a supervised agent task only after explicit operator approval. Every step logged.</li>
+                <li><strong>Real computer-use lane</strong> - observation-only first, then controlled single-step actions, then approval-gated sequences.</li>
+                <li><strong>Hermes Codex provider integration</strong> - connect the local Codex provider in Hermes after it is verified and approved.</li>
+              </ol>
+            </section>
 
             <div class="cap-grid">
               <section class="console-card cap-card">
@@ -649,6 +767,15 @@
                 <p>Approval inbox and manual queue. Nothing executes automatically.</p>
               </div>
             </div>
+            <section class="console-card cap-approvals-info" id="approvals-static-card">
+              <h2>Approval inbox</h2>
+              <p>The approval inbox shows pending requests that need your go-ahead before Ghoti will proceed. When nothing is running it will be empty - that is normal, not an error.</p>
+              <p>If the panel below shows an error, the inbox cannot be read right now. That is fine if you are not expecting any pending approvals. No action needed if you are not running any agents.</p>
+              <details class="cap-debug">
+                <summary>Debug details</summary>
+                <pre id="approvals-static-debug" class="cap-debug-pre">No debug data loaded yet.</pre>
+              </details>
+            </section>
             <div id="approvals-slot" class="stack-slot"></div>
           </section>
 
@@ -785,6 +912,21 @@
                 <p>Branch, auth, remote write truth, and recent commits.</p>
               </div>
             </div>
+            <section class="console-card cap-github-info" id="github-static-card">
+              <h2>Repository status</h2>
+              <p>This page reads local git state. It does not push, merge, or modify anything. All information here is read-only.</p>
+              <ul>
+                <li><strong>Branch:</strong> the current branch name.</li>
+                <li><strong>Auth:</strong> whether a git remote is reachable (read-only probe only).</li>
+                <li><strong>Working tree:</strong> clean or dirty - shows uncommitted local changes.</li>
+                <li><strong>Recent commits:</strong> the last few local commits.</li>
+              </ul>
+              <p>If the panel below shows an error, git may not be configured or this is not a git repo. That does not affect the rest of the dashboard.</p>
+              <details class="cap-debug">
+                <summary>Debug details</summary>
+                <pre id="github-static-debug" class="cap-debug-pre">No debug data loaded yet.</pre>
+              </details>
+            </section>
             <div id="github-slot" class="stack-slot"></div>
           </section>
 

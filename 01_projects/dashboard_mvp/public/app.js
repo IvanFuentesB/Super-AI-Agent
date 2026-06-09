@@ -6483,10 +6483,28 @@ async function capRunSingleAction(action) {
   }
 }
 
+function capShowCmdCopy() {
+  const resultEl = document.getElementById("cap-show-cmd-result");
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(CAP_NEXT_SAFE_COMMAND).then(function () {
+        if (resultEl) resultEl.textContent = "Copied to clipboard.";
+      }, function () {
+        if (resultEl) resultEl.textContent = "Clipboard unavailable - copy the command manually.";
+      });
+    } else {
+      if (resultEl) resultEl.textContent = "Clipboard unavailable - copy the command manually.";
+    }
+  } catch (_) {
+    if (resultEl) resultEl.textContent = "Clipboard unavailable - copy the command manually.";
+  }
+}
+
 function initCapabilityConsole() {
   document.getElementById("cap-run-safe-check")?.addEventListener("click", function () { capRunSafeCheck("fast"); });
   document.getElementById("cap-copy-next-cmd")?.addEventListener("click", capCopyNextCommand);
-  document.querySelectorAll("#cap-button-panel [data-cap-action]").forEach(function (btn) {
+  document.getElementById("cap-show-cmd-copy")?.addEventListener("click", capShowCmdCopy);
+  document.querySelectorAll("[data-cap-action]").forEach(function (btn) {
     btn.addEventListener("click", function () { capRunSingleAction(btn.dataset.capAction); });
   });
   refreshCapabilityRegistry();
@@ -6511,9 +6529,12 @@ function applyOverlayCollapsed(collapsed) {
 
 function initOverlayControls() {
   let hidden = false;
-  let collapsed = false;
+  let collapsed = true; // default: collapsed on first visit (idle is calm, not alarming)
   try { hidden = localStorage.getItem(CAP_OVERLAY_HIDE_KEY) === "1"; } catch (_) {}
-  try { collapsed = localStorage.getItem(CAP_OVERLAY_COLLAPSE_KEY) === "1"; } catch (_) {}
+  try {
+    const stored = localStorage.getItem(CAP_OVERLAY_COLLAPSE_KEY);
+    collapsed = stored === null ? true : stored === "1"; // default collapsed if no stored pref
+  } catch (_) { collapsed = true; }
   applyOverlayHidden(hidden);
   applyOverlayCollapsed(collapsed);
 
