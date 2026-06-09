@@ -106,16 +106,18 @@ if ($fixtureJson) {
 
 # 11. Fixture has tasks array with at least 1 task
 if ($fixtureJson) {
-    $taskCount = if ($fixtureJson.tasks) { $fixtureJson.tasks.Count } else { 0 }
+    # @() ensures Count is safe under StrictMode when output is null or scalar
+    $taskCount = if ($fixtureJson.tasks) { @($fixtureJson.tasks).Count } else { 0 }
     $tasksOk = $taskCount -gt 0
     Add-Result "Fixture has tasks" $tasksOk "task_count=$taskCount"
 }
 
 # 12. No API key env vars set
 $apiKeyVars = @("ANTHROPIC_API_KEY", "CLAUDE_API_KEY", "OPENAI_API_KEY")
-$presentKeys = $apiKeyVars | Where-Object { [System.Environment]::GetEnvironmentVariable($_) }
+# @() wraps pipeline output so .Count is safe under StrictMode (null or scalar)
+$presentKeys = @($apiKeyVars | Where-Object { [System.Environment]::GetEnvironmentVariable($_) })
 $noApiKeys = $presentKeys.Count -eq 0
-$keyDetail = if ($noApiKeys) { "none present" } else { "FOUND: $($presentKeys -join ', ')  --  replay blocked" }
+$keyDetail = if ($noApiKeys) { "none present" } else { "FOUND: $($presentKeys -join ', ') -- replay blocked" }
 Add-Result "No provider API keys in env" $noApiKeys $keyDetail
 
 # 13. Wrapper script does not import claude_swarm
@@ -146,7 +148,7 @@ if ($wrapperExists) {
 # 16. Run --validate via Python wrapper
 if ($wrapperExists -and $fixtureExists) {
     try {
-        $validateOutput = python $WrapperScript --validate --fixture $FullFixturePath 2>&1 | Out-String
+        $validateOutput = python $WrapperScript --validate "$FullFixturePath" 2>&1 | Out-String
         $validatePassed = $LASTEXITCODE -eq 0
         Add-Result "Wrapper --validate exits 0" $validatePassed "exit=$LASTEXITCODE"
         if ($Verbose) { Write-Host "  Output: $($validateOutput.Trim())" -ForegroundColor Gray }

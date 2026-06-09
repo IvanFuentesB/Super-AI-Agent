@@ -25,7 +25,7 @@ N+6.38A solves this with a **fixture replay system**: a static JSON payload shap
 | `14_context/claude_swarm_fixture/README.md` | Fixture directory documentation |
 | `03_scripts/claude_swarm_fixture/ghoti_claude_swarm_fixture_replay.py` | Python wrapper: validate + replay |
 | `03_scripts/claude_swarm_fixture/check_claude_swarm_fixture_replay.ps1` | PowerShell checker (Windows) |
-| `01_projects/runtime_mvp/tests/test_n6_38a_claude_swarm_fixture_replay.py` | Test suite (12+ items) |
+| `01_projects/runtime_mvp/tests/test_n6_38a_claude_swarm_fixture_replay.py` | Test suite (60+ tests) |
 | `14_context/claude_n6_38a_claude_swarm_fixture_replay.md` | Compact context snapshot |
 | `docs/GHOTI_N6_38A_CLAUDE_SWARM_FIXTURE_REPLAY.md` | This file |
 
@@ -105,12 +105,19 @@ Key additions over raw claude-swarm output:
 
 ---
 
-## Known gaps (start conditions)
+## Start conditions
 
-`_run_check()` documents the following gaps:
+`_run_check()` documents the following gate status:
 
-1. **External CLI blocked**: `claude-swarm --dry-run` requires `ANTHROPIC_API_KEY` before processing any flag. Status: `BLOCKED`.
-2. **No start conditions gap**: Fixture replay has no `start_conditions` field. Production fixtures should add gating criteria before replay is treated as approved plan input.
+| Milestone | Status |
+|-----------|--------|
+| N+6.35B | merged to main |
+| N+6.36B | merged to main |
+| N+6.37B | merged to main |
+| N+6.38B (this) | pending Codex audit gate |
+| N+6.39A Obsidian | blocked until N+6.38B merged |
+
+**External CLI still blocked**: `claude-swarm --dry-run` requires `ANTHROPIC_API_KEY` and calls the model decomposition path before the dry-run skip applies. This wrapper avoids that entirely by replaying a pre-authored static fixture.
 
 ---
 

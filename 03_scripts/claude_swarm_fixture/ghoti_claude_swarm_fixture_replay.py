@@ -34,11 +34,31 @@ SCHEMA_RELATIVE  = "14_context/claude_swarm_fixture/claude_swarm_fixture_schema.
 # API key env vars that must not be set
 _API_KEY_ENV_VARS = ["ANTHROPIC_API_KEY", "CLAUDE_API_KEY", "OPENAI_API_KEY"]
 
-# Paths that are never valid as fixture input
-_BLOCKED_PATH_PATTERNS = [
-    "/etc/", "/proc/", "/sys/", "/root/",
-    "C:\\Windows\\", "C:\\Program Files\\",
-    ".env", "credentials", "secrets",
+# Paths that are never valid as fixture input.
+# All patterns are matched against a forward-slash-normalised, lowercase copy of
+# the path string so that Unix-style dangerous paths (e.g. /etc/passwd.json) are
+# rejected on every platform including Windows, where Path() converts them to
+# backslash form.
+_BLOCKED_PATH_NORMS = [
+    "/etc/",
+    "/proc/",
+    "/sys/",
+    "/root/",
+    "/run/",
+    "/boot/",
+    "/dev/",
+    "c:/windows/",
+    "c:/program files/",
+    "c:/program files (x86)/",
+    ".ssh/",
+    "/.aws/",
+    "id_rsa",
+    "id_ed25519",
+    ".env",
+    "credentials",
+    "secrets",
+    "/passwd",
+    "/shadow",
 ]
 
 # Safety block present on every result
@@ -81,13 +101,32 @@ def _check_api_keys() -> list[str]:
 
 
 def _validate_fixture_path(path: Path) -> list[str]:
+    """Return a list of error strings if path is unsafe or not a fixture.
+
+    Normalises separators to forward slashes before pattern matching so that
+    Unix-style dangerous paths such as /etc/passwd.json are rejected on every
+    platform, including Windows where Path() converts them to backslash form.
+    """
     blocked = []
-    path_str = str(path)
-    for pattern in _BLOCKED_PATH_PATTERNS:
-        if pattern.lower() in path_str.lower():
-            blocked.append(f"blocked_path_pattern: {pattern!r} in {path_str!r}")
-    if not path_str.endswith(".json"):
+    raw = str(path)
+    # Normalise to forward slashes, lowercase for cross-platform comparison
+    norm = raw.replace("\\", "/").lower()
+
+    for pat in _BLOCKED_PATH_NORMS:
+        if pat in norm:
+            blocked.append("blocked_path_pattern: {!r} in {!r}".format(pat, raw))
+
+    # Reject UNC paths: \\server\share or //server/share (both map to // after norm)
+    if norm.startswith("//"):
+        blocked.append("blocked_unc_path: {!r}".format(raw))
+
+    # Reject parent traversal (.. in any path component)
+    if ".." in path.parts:
+        blocked.append("blocked_parent_traversal: {!r}".format(raw))
+
+    if not raw.endswith(".json"):
         blocked.append("fixture_must_be_json")
+
     return blocked
 
 
@@ -210,9 +249,13 @@ def _run_check() -> dict:
         "provider_api_calls": "BLOCKED  --  no API keys accepted",
         "start_conditions": {
             "n6_35b_on_main": True,
-            "n6_36b_on_main": False,
-            "n6_37b_on_main": False,
-            "note": "N+6.35B merged. N+6.36B and N+6.37B PRs (#11, #12) are drafts.",
+            "n6_36b_on_main": True,
+            "n6_37b_on_main": True,
+            "n6_38b_on_main": False,
+            "note": (
+                "N+6.35B, N+6.36B, N+6.37B merged to main. "
+                "N+6.38B (this milestone) pending Codex audit gate."
+            ),
         },
         "safety_block": _SAFETY_BLOCK,
     }
@@ -343,8 +386,9 @@ def _run_replay(fixture_path: Path | None = None) -> dict:
         "safety_block": _SAFETY_BLOCK,
         "next_step": (
             "N+6.38A fixture replay complete. "
-            "Next: run claude-swarm --demo --no-ui in isolated scratch "
-            "(N+6.39A, requires N+6.36B + N+6.37B merged + human approval)."
+            "N+6.35B, N+6.36B, N+6.37B are on main. "
+            "Next: N+6.39A Obsidian memory bridge "
+            "(requires N+6.38B merged to main + human approval)."
         ),
     }
 

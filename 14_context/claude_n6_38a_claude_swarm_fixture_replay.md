@@ -54,10 +54,17 @@ _API_KEY_ENV_VARS = ["ANTHROPIC_API_KEY", "CLAUDE_API_KEY", "OPENAI_API_KEY"]
 - `--validate [--fixture PATH]` -> `_run_validate(path)`  --  schema + safety validation
 - `--replay [--fixture PATH]` -> `_run_replay(path)`  --  full fixture replay with plan summary
 
-## Known gaps
+## Start conditions
 
-1. `claude-swarm --dry-run` BLOCKED (API key required before flag processing)
-2. No `start_conditions` field on fixture (production fixtures should add gating criteria)
+| Milestone | Status |
+|-----------|--------|
+| N+6.35B | merged to main |
+| N+6.36B | merged to main |
+| N+6.37B | merged to main |
+| N+6.38B (this) | pending Codex audit gate |
+| N+6.39A | blocked until N+6.38B merged |
+
+`claude-swarm --dry-run` BLOCKED: API key required before flag processing.
 
 ## Codex audit target
 
@@ -65,4 +72,4 @@ _API_KEY_ENV_VARS = ["ANTHROPIC_API_KEY", "CLAUDE_API_KEY", "OPENAI_API_KEY"]
 
 ## Next milestone
 
-N+6.39A (TBD)
+N+6.39A -- Obsidian memory bridge (requires N+6.38B merged + human approval)
