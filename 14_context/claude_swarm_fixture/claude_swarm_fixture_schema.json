@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ClaudeSwarmFixturePlan",
+  "description": "Schema for a provider-free claude-swarm-shaped fixture plan used in N+6.38A replay.",
+  "type": "object",
+  "required": ["fixture_id", "source", "swarm", "tasks", "safety"],
+  "properties": {
+    "fixture_id": {"type": "string"},
+    "source": {"type": "string", "const": "static_fixture"},
+    "milestone": {"type": "string"},
+    "swarm": {
+      "type": "object",
+      "required": ["name", "dry_run", "live_execution", "simulation"],
+      "properties": {
+        "name": {"type": "string"},
+        "model": {"type": "string"},
+        "max_concurrent": {"type": "integer", "minimum": 1},
+        "budget_usd": {"type": "number"},
+        "dry_run": {"type": "boolean", "const": true},
+        "live_execution": {"type": "boolean", "const": false},
+        "simulation": {"type": "boolean", "const": true}
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "description", "agent_type", "status", "dependencies", "files_to_modify"],
+        "properties": {
+          "id": {"type": "string"},
+          "description": {"type": "string"},
+          "agent_type": {"type": "string", "enum": ["coder", "reviewer", "tester", "refactorer", "documenter"]},
+          "status": {"type": "string"},
+          "dependencies": {"type": "array", "items": {"type": "string"}},
+          "files_to_modify": {"type": "array", "items": {"type": "string"}},
+          "tools": {"type": "array", "items": {"type": "string"}},
+          "prompt": {"type": "string"},
+          "cost_usd": {"type": "number"}
+        }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "required": ["live_execution", "simulation", "live_agent_launch", "api_key_used", "network_attempted"],
+      "properties": {
+        "live_execution": {"type": "boolean", "const": false},
+        "simulation": {"type": "boolean", "const": true},
+        "live_agent_launch": {"type": "boolean", "const": false},
+        "api_key_used": {"type": "boolean"},
+        "network_attempted": {"type": "boolean"},
+        "provider_called": {"type": "boolean"},
+        "requires_human_approval": {"type": "boolean"}
+      }
+    }
+  }
+}

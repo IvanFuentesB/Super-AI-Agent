@@ -1,0 +1,88 @@
+{
+  "fixture_id": "sample_claude_swarm_plan_n6_38a",
+  "source": "static_fixture",
+  "generated_by": "ghoti_fixture_author",
+  "milestone": "N+6.38A",
+  "description": "Provider-free sample plan shaped like claude-swarm output. Used for fixture replay without executing claude-swarm or calling any provider API.",
+  "swarm": {
+    "name": "ghoti-sample-auth-refactor",
+    "model": "opus",
+    "max_concurrent": 4,
+    "budget_usd": 0.0,
+    "dry_run": true,
+    "live_execution": false,
+    "simulation": true
+  },
+  "tasks": [
+    {
+      "id": "task-1",
+      "description": "Create Next.js API route handlers for login and logout",
+      "agent_type": "coder",
+      "status": "pending",
+      "dependencies": [],
+      "files_to_modify": [
+        "src/app/api/auth/login/route.ts",
+        "src/app/api/auth/logout/route.ts"
+      ],
+      "tools": ["Read", "Write", "Edit", "Grep"],
+      "prompt": "Create login and logout API routes using NextAuth.js conventions.",
+      "cost_usd": 0.0
+    },
+    {
+      "id": "task-2",
+      "description": "Migrate session management to NextAuth.js",
+      "agent_type": "coder",
+      "status": "pending",
+      "dependencies": [],
+      "files_to_modify": [
+        "src/lib/auth.ts",
+        "src/app/api/auth/[...nextauth]/route.ts"
+      ],
+      "tools": ["Read", "Write", "Edit"],
+      "prompt": "Migrate Express session handling to NextAuth.js.",
+      "cost_usd": 0.0
+    },
+    {
+      "id": "task-3",
+      "description": "Update middleware for Next.js edge runtime",
+      "agent_type": "coder",
+      "status": "pending",
+      "dependencies": ["task-1"],
+      "files_to_modify": ["src/middleware.ts"],
+      "tools": ["Read", "Write", "Edit"],
+      "prompt": "Update middleware.ts to work with Next.js edge runtime.",
+      "cost_usd": 0.0
+    },
+    {
+      "id": "task-4",
+      "description": "Write integration tests for auth endpoints",
+      "agent_type": "tester",
+      "status": "pending",
+      "dependencies": ["task-1", "task-2"],
+      "files_to_modify": ["tests/auth.test.ts"],
+      "tools": ["Read", "Write", "Edit", "Bash"],
+      "prompt": "Write integration tests for login, logout, and session management.",
+      "cost_usd": 0.0
+    },
+    {
+      "id": "task-5",
+      "description": "Security review of auth implementation",
+      "agent_type": "reviewer",
+      "status": "pending",
+      "dependencies": ["task-1", "task-2", "task-3"],
+      "files_to_modify": [],
+      "tools": ["Read", "Grep", "Glob"],
+      "prompt": "Review the auth implementation for OWASP top 10 vulnerabilities.",
+      "cost_usd": 0.0
+    }
+  ],
+  "safety": {
+    "live_execution": false,
+    "simulation": true,
+    "live_agent_launch": false,
+    "api_key_used": false,
+    "network_attempted": false,
+    "provider_called": false,
+    "requires_human_approval": true
+  }
+}
