@@ -426,6 +426,30 @@ def _wait_for_ready(port: int, timeout: int) -> bool:
     return False
 
 
+def _probe_ghoti_dashboard(port: int) -> dict:
+    """Probe /api/product-control/status to see if a Ghoti dashboard owns the port.
+
+    Localhost only. Reads a JSON status page; never executes anything and never
+    sends any payload. Returns a small dict the caller uses to decide whether a
+    busy port means "Ghoti is already running" (ok) versus "unknown occupant".
+    """
+    url = _dashboard_url(port) + "/api/product-control/status"
+    status, body = _http("GET", url, timeout=3)
+    result = {"is_ghoti": False, "http_status": status, "product": None}
+    if status == 200 and body:
+        try:
+            data = json.loads(body)
+        except Exception:
+            return result
+        product = data.get("product")
+        result["product"] = product
+        # Ghoti signature: product-control status JSON with ok=true and a Ghoti product name.
+        if data.get("ok") and isinstance(product, str) and "ghoti" in product.lower():
+            result["is_ghoti"] = True
+    return result
+
+
+
 def _start_node_dashboard(port: int):
     """Start `node server.js` with fixed argv and no shell. Returns the Popen."""
     env = dict(os.environ)
@@ -513,8 +537,33 @@ def cmd_start_dashboard(port: int, open_browser: bool, timeout: int) -> dict:
             "generated_at": _now(),
         }
 
-    # Truthfully detect a port already in use by something else.
+    # The port is busy but not by our recorded PID. Probe it before assuming the
+    # worst: if the Ghoti dashboard is answering on /api/product-control/status,
+    # this is "already running" (ok=true), not an error. Only an unknown
+    # occupant produces a clear, non-destructive warning.
     if _port_responds(port):
+        probe = _probe_ghoti_dashboard(port)
+        if probe.get("is_ghoti"):
+            opened = False
+            if open_browser and url.startswith("http://127.0.0.1:"):
+                try:
+                    webbrowser.open(url)
+                    opened = True
+                except Exception:
+                    opened = False
+            return {
+                "ok": True,
+                "action": "start-dashboard",
+                "already_running": True,
+                "pid": recorded_pid,
+                "port": port,
+                "dashboard_url": url,
+                "ready": True,
+                "opened_browser": opened,
+                "detected_via": "health_probe",
+                "note": "dashboard already running (detected via /api/product-control/status)",
+                "generated_at": _now(),
+            }
         return {
             "ok": False,
             "action": "start-dashboard",
@@ -522,7 +571,14 @@ def cmd_start_dashboard(port: int, open_browser: bool, timeout: int) -> dict:
             "port": port,
             "dashboard_url": url,
             "port_in_use": True,
-            "error": "port %d is already in use by another process" % port,
+            "port_occupied_by_non_ghoti": True,
+            "error": "port %d is occupied by a non-Ghoti process" % port,
+            "suggested_command": (
+                "Inspect the listener safely (do not auto-kill). "
+                "Windows PowerShell: Get-NetTCPConnection -LocalPort %d | Format-List ; "
+                "Linux/WSL: lsof -i :%d" % (port, port)
+            ),
+            "http_status": probe.get("http_status"),
             "generated_at": _now(),
         }
 
@@ -1175,32 +1231,45 @@ def cmd_hermes_manual_write() -> dict:
 # ---------------------------------------------------------------------------
 
 def _print_human(result: dict) -> None:
+    # Every field is read with .get() and a default so a result dict that is
+    # missing optional keys (e.g. launcher_version) can never raise KeyError.
     action = result.get("action", "status")
     if action == "status":
-        print("Ghoti Product Launcher %s (%s)" % (result["launcher_version"], result["milestone"]))
-        print("  dashboard_url: %s" % result["dashboard_url"])
-        print("  dashboard_running: %s" % result["dashboard_running"])
+        print("Ghoti Product Launcher %s (%s)"
+              % (result.get("launcher_version", LAUNCHER_VERSION),
+                 result.get("milestone", MILESTONE)))
+        print("  dashboard_url: %s" % result.get("dashboard_url", _dashboard_url(DEFAULT_PORT)))
+        print("  dashboard_running: %s" % result.get("dashboard_running", False))
         print("  localhost_only: %s | external_api: %s | live_account_actions: %s"
-              % (result["localhost_only"], result["external_api"], result["live_account_actions"]))
+              % (result.get("localhost_only", True), result.get("external_api", False),
+                 result.get("live_account_actions", False)))
         print("  smoke endpoints:")
-        for ep in result["smoke_endpoints"]:
+        for ep in (result.get("smoke_endpoints") or []):
             print("    - %s" % ep)
         print("  daily operator commands:")
-        for command in result["daily_operator_commands"]:
+        for command in (result.get("daily_operator_commands") or []):
             print("    - %s" % command)
         print("  what Ghoti can do now:")
-        for item in result["what_ghoti_can_do"]:
+        for item in (result.get("what_ghoti_can_do") or []):
             print("    - %s" % item)
         print("  sequence: Launch dashboard -> Check status truth -> Run smoke/demo -> Review report -> Stop dashboard")
     elif action == "start-dashboard":
         if result.get("ok"):
-            print("Dashboard URL: %s" % result["dashboard_url"])
+            print("Dashboard URL: %s" % result.get("dashboard_url", _dashboard_url(DEFAULT_PORT)))
             print("  pid: %s | port: %s | ready: %s | already_running: %s"
                   % (result.get("pid"), result.get("port"), result.get("ready"),
                      result.get("already_running")))
             print("  opened_browser: %s" % result.get("opened_browser"))
+            if result.get("detected_via"):
+                print("  detected_via: %s" % result.get("detected_via"))
+            if result.get("note"):
+                print("  note: %s" % result.get("note"))
         else:
             print("Start failed: %s" % result.get("error"))
+            if result.get("port_occupied_by_non_ghoti"):
+                print("  the port is held by a non-Ghoti process (nothing was killed)")
+            if result.get("suggested_command"):
+                print("  safe inspect: %s" % result.get("suggested_command"))
     elif action == "stop-dashboard":
         print("Stop dashboard: stopped=%s pid=%s — %s"
               % (result.get("stopped"), result.get("pid"), result.get("note")))
@@ -1269,6 +1338,13 @@ def _print_human(result: dict) -> None:
             print("  WSL path: %s" % result["wsl_repo_path"])
         for filename, relpath in (result.get("paths") or result.get("output_paths") or {}).items():
             print("  %s -> %s" % (filename, relpath))
+    else:
+        # Generic fallback so any result shape prints something safe (never KeyError).
+        print("%s: %s" % (action, "PASS" if result.get("ok") else "FAIL"))
+        if result.get("status_line"):
+            print("  %s" % result.get("status_line"))
+        if result.get("error"):
+            print("  error: %s" % result.get("error"))
 
 
 # ---------------------------------------------------------------------------

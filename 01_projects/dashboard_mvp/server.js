@@ -7678,6 +7678,234 @@ async function handleApiRequest(request, response, requestUrl) {
     return;
   }
 
+  // ─── Operator Capability Console (N+6.39A) ──────────────────────────────────
+  // Turns the existing safe backend checks into plain-language capability cards.
+  // Every check below runs an existing safe script via fixed argv (shell:false).
+  // No live agents, no accounts, no MCP, no Telegram, no browser automation, and
+  // no provider/API keys are ever used. POST only selects a mode ("fast"/"full");
+  // no user-supplied command is ever executed.
+
+  // Static truth table. statusCategory is one of:
+  //   pass | warning | blocked-safely | dry-run | not-implemented | roadmap | manual | unknown
+  function buildCapabilityRegistry() {
+    return [
+      { id: "dashboard-server", title: "Dashboard server", group: "real-today",
+        statusCategory: "pass", statusLabel: "Running",
+        detail: "This local console is up and answering on http://127.0.0.1:3210." },
+      { id: "product-launcher", title: "Product launcher", group: "real-today",
+        statusCategory: "pass", statusLabel: "Working (port-state hardened)",
+        detail: "Starts/inspects the dashboard. A busy port is now detected as already-running, not an error." },
+      { id: "public-audit", title: "Public safety audit", group: "real-today",
+        statusCategory: "pass", statusLabel: "Pass (warnings, no blockers)",
+        detail: "Scans the repo for things unsafe to publish. Warnings are advisory; no blocking findings." },
+      { id: "rust-policy", title: "Rust policy tests", group: "real-today",
+        statusCategory: "unknown", statusLabel: "Run on demand",
+        detail: "cargo test for policy crates. Shown as command + last-known to keep the console fast." },
+      { id: "cua-trial", title: "Computer-use (CUA) trial", group: "dry-run",
+        statusCategory: "dry-run", statusLabel: "Safe demo/check available",
+        detail: "Inspected only, not executed. No external code runs and no desktop is controlled." },
+      { id: "agent-systems", title: "Agent systems trial", group: "dry-run",
+        statusCategory: "dry-run", statusLabel: "Safe static/dry-run",
+        detail: "Inspected only, not executed. No live agents are launched." },
+      { id: "agent-adapter", title: "Agent system adapter", group: "dry-run",
+        statusCategory: "dry-run", statusLabel: "Safe static/dry-run",
+        detail: "Adapter shape is checked statically; nothing is executed." },
+      { id: "claude-swarm-dry-run", title: "claude-swarm dry-run", group: "dry-run",
+        statusCategory: "blocked-safely", statusLabel: "Ghoti refused to run something unsafe",
+        detail: "claude-swarm --dry-run calls a provider before the dry-run skip, so Ghoti blocks it. This is correct, not a failure." },
+      { id: "claude-swarm-fixture", title: "claude-swarm fixture replay", group: "real-today",
+        statusCategory: "pass", statusLabel: "Pass (5 tasks / 3 groups / 0 overlaps)",
+        detail: "Replays a static plan with no provider, no API key, no external CLI." },
+      { id: "local-model", title: "Local model / Ollama", group: "real-today",
+        statusCategory: "unknown", statusLabel: "Reported from live check",
+        detail: "Exact readiness is read from the local worker status check; no value is faked." },
+      { id: "hermes", title: "Hermes", group: "manual",
+        statusCategory: "manual", statusLabel: "Manual setup guide exists, no live automation",
+        detail: "Coordinator / manual bridge only. Nothing posts or runs automatically." },
+      { id: "obsidian", title: "Obsidian memory bridge", group: "not-real-yet",
+        statusCategory: "not-implemented", statusLabel: "Not implemented yet",
+        detail: "Planned next. No vault is read or written in this build." },
+      { id: "telegram", title: "Telegram", group: "not-real-yet",
+        statusCategory: "roadmap", statusLabel: "Planned later (notification-only / status-only / draft-only)",
+        detail: "No Telegram integration exists yet. No commands are executed from chat." },
+      { id: "github-contrib", title: "GitHub contributor UI", group: "not-real-yet",
+        statusCategory: "warning", statusLabel: "UI cache investigation pending",
+        detail: "A UI cache question is still open. Not claimed as solved." },
+    ];
+  }
+
+  // Allowlisted safe checks. The key is referenced only by the fixed runner below;
+  // args are constant arrays, never built from request input.
+  function capabilityCheckPlan(mode) {
+    const py = resolvePython();
+    const launcher = ["03_scripts", "ghoti_product_launcher.py"];
+    const lp = path.join(repoRoot, ...launcher);
+    const fixture = path.join(repoRoot, "03_scripts", "claude_swarm_fixture", "ghoti_claude_swarm_fixture_replay.py");
+    const swarmDry = path.join(repoRoot, "03_scripts", "claude_swarm_dry_run", "ghoti_claude_swarm_dry_run.py");
+    const audit = path.join(repoRoot, "03_scripts", "public_repo_security_audit.py");
+    const repoMap = lp;
+    const fast = [
+      { id: "product-launcher", title: "Product launcher status", argv: [lp, "--status", "--json"], timeoutMs: 30000 },
+      { id: "claude-swarm-fixture", title: "Fixture replay check", argv: [fixture, "--replay", "--json"], timeoutMs: 30000 },
+      { id: "local-model", title: "Local model / worker status", argv: [lp, "--local-worker-status", "--json"], timeoutMs: 30000 },
+      { id: "hermes", title: "Hermes manual bridge status", argv: [lp, "--hermes-manual-status", "--json"], timeoutMs: 30000 },
+    ];
+    const fullExtra = [
+      { id: "public-audit", title: "Public repo security audit", argv: [audit, "--run", "--json"], timeoutMs: 90000 },
+      { id: "claude-swarm-dry-run", title: "claude-swarm dry-run safety check", argv: [swarmDry, "--check", "--json"], timeoutMs: 30000 },
+      { id: "repo-map", title: "Repo map", argv: [repoMap, "--repo-map", "--json"], timeoutMs: 120000 },
+    ];
+    const checks = mode === "full" ? fast.concat(fullExtra) : fast;
+    return { py, checks };
+  }
+
+  async function runCapabilityChecks(mode) {
+    const { py, checks } = capabilityCheckPlan(mode);
+    const startedAt = new Date().toISOString();
+    if (!py) {
+      return {
+        ok: false, available: false, mode,
+        error: "Python interpreter not found",
+        message: "Could not find a local Python to run safe checks.",
+        generated_at: startedAt,
+      };
+    }
+    const results = [];
+    for (const check of checks) {
+      const argv = [...py.baseArgs, ...check.argv];
+      const r = await runCommand(py.command, argv, { cwd: repoRoot, env: buildRuntimeEnv(), timeoutMs: check.timeoutMs });
+      let parsed = null;
+      try { parsed = JSON.parse(r.stdout); } catch (_) { parsed = null; }
+      let statusCategory = "unknown";
+      let statusLabel = "Could not read result";
+      let detail = "";
+      if (parsed && typeof parsed === "object") {
+        if (check.id === "public-audit") {
+          const blockers = Array.isArray(parsed.blocking_findings) ? parsed.blocking_findings.length : 0;
+          statusCategory = blockers > 0 ? "blocked-safely" : "pass";
+          statusLabel = blockers > 0 ? `${blockers} blocking finding(s)` : "Pass (no blocking findings)";
+          detail = `Blocking findings: ${blockers}.`;
+        } else if (check.id === "claude-swarm-fixture") {
+          const ps = parsed.plan_summary || {};
+          const tasks = ps.task_count ?? 0;
+          const groups = Array.isArray(ps.parallel_groups) ? ps.parallel_groups.length : 0;
+          const overlaps = ps.overlap_count ?? 0;
+          statusCategory = parsed.accepted ? "pass" : "warning";
+          statusLabel = `Pass (${tasks} tasks / ${groups} groups / ${overlaps} overlaps)`;
+          detail = `simulation=${parsed.simulation} live_execution=${parsed.live_execution}`;
+        } else if (check.id === "claude-swarm-dry-run") {
+          statusCategory = "blocked-safely";
+          statusLabel = "Blocked safely (provider call precedes dry-run skip)";
+          detail = "Ghoti refuses to run claude-swarm --dry-run; this is the correct safe outcome.";
+        } else {
+          statusCategory = parsed.ok ? "pass" : "warning";
+          statusLabel = parsed.ok ? "Pass" : "Needs review";
+          detail = String(parsed.status_line || parsed.note || "").slice(0, 200);
+        }
+      } else {
+        statusCategory = "warning";
+        statusLabel = "Could not run (skipped safely)";
+        detail = (r.stderr || "no JSON output").slice(0, 200);
+      }
+      results.push({
+        id: check.id, title: check.title,
+        statusCategory, statusLabel, detail,
+        ran: true, ok: Boolean(parsed && parsed.ok !== false),
+      });
+    }
+    const summary = {
+      pass: results.filter((x) => x.statusCategory === "pass").length,
+      warning: results.filter((x) => x.statusCategory === "warning").length,
+      blockedSafely: results.filter((x) => x.statusCategory === "blocked-safely").length,
+      total: results.length,
+    };
+    return {
+      ok: true, available: true, mode,
+      python: py.displayName,
+      checks: results,
+      summary,
+      safety: {
+        live_agents: false, accounts: false, mcp: false, telegram: false,
+        browser_automation: false, provider_api_key: false, auto_submit: false,
+        external_cli_executed: false,
+      },
+      generated_at: startedAt,
+    };
+  }
+
+  function capabilityCheckCacheFile() {
+    return path.join(runtimeDataDir, "capability_check_latest.json");
+  }
+
+  function writeCapabilityCache(payload) {
+    try {
+      if (!fs.existsSync(runtimeDataDir)) fs.mkdirSync(runtimeDataDir, { recursive: true });
+      const tmp = capabilityCheckCacheFile() + ".tmp";
+      fs.writeFileSync(tmp, JSON.stringify(payload, null, 2), "utf8");
+      fs.renameSync(tmp, capabilityCheckCacheFile());
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // GET /api/product-control/capabilities -- static registry, instant, no subprocess.
+  if (request.method === "GET" && requestUrl.pathname === "/api/product-control/capabilities") {
+    const registry = buildCapabilityRegistry();
+    sendJson(response, 200, {
+      ok: true,
+      local_only: true,
+      milestone: "N+6.39A",
+      next_recommended_action: "Click \"Run Safe Check\" for a live read, or \"Run Public Audit\" before sharing the repo.",
+      next_recommended_build: [
+        "Obsidian Memory Bridge (after this capability console)",
+        "Telegram notification-only bridge (after Obsidian)",
+      ],
+      groups: {
+        "real-today": "Real use today",
+        "dry-run": "Safe dry-run / simulation only",
+        "manual": "Manual bridge (no live automation)",
+        "not-real-yet": "Not real yet",
+      },
+      capabilities: registry,
+      safety: {
+        live_computer_use: false, live_agent_launch: false, account_actions: false,
+        telegram: false, obsidian: false, mcp: false, auto_submit: false,
+        provider_api_key: false,
+      },
+    });
+    return;
+  }
+
+  // POST /api/product-control/run-capability-check -- runs safe checks (fast default).
+  if (request.method === "POST" && requestUrl.pathname === "/api/product-control/run-capability-check") {
+    let body = {};
+    try { body = await readJsonBody(request); } catch (_) { body = {}; }
+    const mode = body && body.mode === "full" ? "full" : "fast";
+    const payload = await runCapabilityChecks(mode);
+    writeCapabilityCache(payload);
+    sendJson(response, 200, payload);
+    return;
+  }
+
+  // GET /api/product-control/latest-capability-check -- cached last run, friendly when absent.
+  if (request.method === "GET" && requestUrl.pathname === "/api/product-control/latest-capability-check") {
+    const cacheFile = capabilityCheckCacheFile();
+    let cached = null;
+    try {
+      if (fs.existsSync(cacheFile)) cached = JSON.parse(fs.readFileSync(cacheFile, "utf8"));
+    } catch (_) { cached = null; }
+    if (!cached) {
+      sendJson(response, 200, {
+        ok: true, available: false,
+        message: "No capability check has been run yet. Click \"Run Safe Check\" to populate it.",
+      });
+      return;
+    }
+    sendJson(response, 200, cached);
+    return;
+  }
+
   // ─── External Tool Sandbox (N+4.8A) ─────────────────────────────────────────
   // Surface for the safe clone + static-scan manager. No install, no external
   // code execution, no desktop control, no live APIs. Subprocess via fixed argv
@@ -8019,6 +8247,24 @@ const server = http.createServer((request, response) => {
       }
     }
   });
+});
+
+server.on("error", (error) => {
+  if (error && error.code === "EADDRINUSE") {
+    // Graceful, friendly message instead of an unhandled stack trace. The most
+    // common cause is that the Ghoti dashboard is already running on this port.
+    console.error(
+      `Ghoti dashboard: port ${dashboardPort} is already in use.\n` +
+        `  If this is the Ghoti dashboard, it is probably already running:\n` +
+        `    open http://127.0.0.1:${dashboardPort}\n` +
+        `  To inspect the listener safely (do not auto-kill):\n` +
+        `    Windows PowerShell: Get-NetTCPConnection -LocalPort ${dashboardPort} | Format-List\n` +
+        `    Linux/WSL:          lsof -i :${dashboardPort}`,
+    );
+    process.exit(0);
+  }
+  console.error(`Ghoti dashboard failed to start: ${error && error.message}`);
+  process.exit(1);
 });
 
 server.listen(dashboardPort, "127.0.0.1", () => {

@@ -7,30 +7,38 @@
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <!-- Fixed overlays (position:fixed, always present) -->
+    <!-- Fixed overlays (position:fixed). Now collapsible + hideable for the session. -->
     <aside id="ghoti-state-indicator" class="ghoti-state-indicator is-neutral" aria-live="polite">
       <div class="ghoti-indicator-topline">
         <span>Ghoti</span>
         <strong id="ghoti-indicator-state">idle</strong>
+        <span class="ghoti-overlay-controls">
+          <button id="ghoti-overlay-collapse" class="ghoti-overlay-ctl" type="button" aria-label="Collapse Ghoti status" title="Collapse / expand">&#8211;</button>
+          <button id="ghoti-overlay-hide" class="ghoti-overlay-ctl" type="button" aria-label="Hide Ghoti status for this session" title="Hide for this session">&times;</button>
+        </span>
       </div>
-      <p id="ghoti-indicator-note">Waiting for local operator state.</p>
-      <div class="ghoti-indicator-watchdog">
-        <div class="ghoti-indicator-watchdog-topline">
-          <span id="ghoti-overlay-watchdog-pill" class="state-pill state-neutral">watching</span>
-          <strong id="ghoti-overlay-watchdog-count">0 alerts</strong>
+      <div class="ghoti-indicator-body">
+        <p id="ghoti-indicator-note">Waiting for local operator state.</p>
+        <div class="ghoti-indicator-watchdog">
+          <div class="ghoti-indicator-watchdog-topline">
+            <span id="ghoti-overlay-watchdog-pill" class="state-pill state-neutral">watching</span>
+            <strong id="ghoti-overlay-watchdog-count">0 alerts</strong>
+          </div>
+          <p id="ghoti-overlay-watchdog-summary">No operator watchdog alerts visible yet.</p>
+          <p id="ghoti-overlay-target-label" class="ghoti-overlay-target-label">No visible target</p>
+          <p id="ghoti-overlay-target-detail" class="ghoti-overlay-target-detail">Queue or inspect a narrow task to show Ghoti's next local target.</p>
+          <p id="ghoti-overlay-hotkey" class="ghoti-overlay-hotkey">Ctrl+8 stops the active desktop action immediately.</p>
         </div>
-        <p id="ghoti-overlay-watchdog-summary">No operator watchdog alerts visible yet.</p>
-        <p id="ghoti-overlay-target-label" class="ghoti-overlay-target-label">No visible target</p>
-        <p id="ghoti-overlay-target-detail" class="ghoti-overlay-target-detail">Queue or inspect a narrow task to show Ghoti's next local target.</p>
-        <p id="ghoti-overlay-hotkey" class="ghoti-overlay-hotkey">Ctrl+8 stops the active desktop action immediately.</p>
       </div>
     </aside>
+    <button id="ghoti-overlay-restore" class="ghoti-overlay-restore" type="button" hidden title="Show Ghoti status">Ghoti status</button>
     <div id="ghoti-target-marker" class="ghoti-target-marker is-neutral" aria-live="polite">
       <span class="ghoti-target-marker-dot" aria-hidden="true"></span>
       <div>
         <strong id="ghoti-target-marker-label">No visible target</strong>
         <p id="ghoti-target-marker-detail">Ghoti is idle until you queue or inspect a narrow local task.</p>
       </div>
+      <button id="ghoti-target-marker-hide" class="ghoti-overlay-ctl" type="button" aria-label="Hide target marker for this session" title="Hide for this session">&times;</button>
     </div>
     <div id="ghoti-active-mode-rail" class="ghoti-active-rail" aria-live="polite" title="Ghoti Active Mode status">
       <span class="ghoti-active-rail-dot" aria-hidden="true"></span>
@@ -57,7 +65,10 @@
       <div class="console-frame">
         <aside class="console-sidebar-shell" aria-label="Primary navigation">
           <nav class="console-nav">
-            <button class="console-nav-item is-active" type="button" data-console-view="overview">
+            <button class="console-nav-item is-active" type="button" data-console-view="capabilities">
+              <span>Home / Capabilities</span>
+            </button>
+            <button class="console-nav-item" type="button" data-console-view="overview">
               <span>Overview</span>
             </button>
             <button class="console-nav-item" type="button" data-console-view="active-mode">
@@ -92,7 +103,121 @@
         </aside>
 
         <main class="console-main-shell">
-          <section class="console-view is-active" data-console-view-panel="overview" aria-labelledby="console-view-overview-title">
+          <section class="console-view is-active" data-console-view-panel="capabilities" aria-labelledby="console-view-capabilities-title">
+            <div class="console-view-header">
+              <div>
+                <h1 id="console-view-capabilities-title">Home / Capabilities</h1>
+                <p>A plain-language view of what Ghoti can do right now, what is only a safe dry-run, and what is not built yet. Everything here is local and safe.</p>
+              </div>
+              <div class="cap-header-actions">
+                <button id="cap-run-safe-check" class="cap-btn cap-btn--primary" type="button">Run Safe Check</button>
+                <span id="cap-run-status" class="cap-run-status" aria-live="polite">Idle - waiting for you; nothing is running.</span>
+              </div>
+            </div>
+
+            <section class="console-card cap-card">
+              <h2>What can Ghoti do now?</h2>
+              <p class="cap-muted">These are real, safe, local actions you can run today. No accounts, no live agents, no internet posting.</p>
+              <ul id="cap-can-do-now" class="cap-list">
+                <li>Check repo safety (public audit) - flags anything unsafe to publish.</li>
+                <li>Generate a repo map / context pack for handoff.</li>
+                <li>Run local model / Ollama worker status.</li>
+                <li>Run a safe claude-swarm fixture replay (no provider, no API key).</li>
+                <li>Produce Claude / Codex handoff packets.</li>
+                <li>Inspect external tools safely (read-only static scan).</li>
+              </ul>
+            </section>
+
+            <div class="cap-grid">
+              <section class="console-card cap-card">
+                <h2>System health</h2>
+                <p id="cap-health-line" class="cap-health-line">Dashboard server: RUNNING. Click "Run Safe Check" for a live read.</p>
+                <div id="cap-health-summary" class="cap-badge-row"></div>
+              </section>
+              <section class="console-card cap-card">
+                <h2>Next recommended action</h2>
+                <p id="cap-next-action">Run a safe check, then run the public audit before sharing the repo.</p>
+                <button id="cap-copy-next-cmd" class="cap-btn" type="button">Copy next safe command</button>
+              </section>
+            </div>
+
+            <section class="console-card cap-card">
+              <h2>What can I click?</h2>
+              <p class="cap-muted">Each button runs only an existing safe local check. None of them launch agents, touch accounts, use the network for posting, or call a provider/API.</p>
+              <div class="cap-button-panel" id="cap-button-panel">
+                <button class="cap-btn" type="button" data-cap-action="refresh">Refresh status</button>
+                <button class="cap-btn cap-btn--primary" type="button" data-cap-action="safe-check">Run Safe Check</button>
+                <button class="cap-btn" type="button" data-cap-action="public-audit">Run Public Audit</button>
+                <button class="cap-btn" type="button" data-cap-action="repo-map">Run Repo Map</button>
+                <button class="cap-btn" type="button" data-cap-action="local-worker">Run Local Worker Status</button>
+                <button class="cap-btn" type="button" data-cap-action="fixture-replay">Run Fixture Replay Check</button>
+                <button class="cap-btn" type="button" data-cap-action="hermes">Show Hermes Packet Status</button>
+                <button class="cap-btn" type="button" data-cap-action="copy-next">Copy next safe command</button>
+              </div>
+              <div id="cap-action-result" class="cap-action-result" aria-live="polite"></div>
+            </section>
+
+            <section class="console-card cap-card">
+              <h2>Capability cards</h2>
+              <p class="cap-muted">Live truth per capability. Status is real - dry-run says dry-run, blocked says blocked, not built says not built.</p>
+              <div id="cap-cards" class="cap-cards">
+                <p class="cap-muted">Loading capabilities...</p>
+              </div>
+            </section>
+
+            <div class="cap-grid">
+              <section class="console-card cap-card cap-card--good">
+                <h2>Real use today</h2>
+                <ul class="cap-list">
+                  <li>Check repo safety</li>
+                  <li>Generate repo map / context pack</li>
+                  <li>Run local model status</li>
+                  <li>Run safe fixture replay</li>
+                  <li>Produce Claude / Codex handoff packets</li>
+                  <li>Inspect external tools safely</li>
+                </ul>
+              </section>
+              <section class="console-card cap-card cap-card--blocked">
+                <h2>What Ghoti cannot do yet</h2>
+                <p class="cap-muted">Not real yet - shown honestly so nothing is overclaimed.</p>
+                <ul class="cap-list">
+                  <li>Live agents</li>
+                  <li>Telegram commands - Telegram planned later (notification-only first)</li>
+                  <li>Obsidian bridge - Obsidian not implemented yet</li>
+                  <li>Real computer-use</li>
+                  <li>Account actions</li>
+                  <li>Auto-merge</li>
+                </ul>
+              </section>
+            </div>
+
+            <div class="cap-grid">
+              <section class="console-card cap-card">
+                <h2>Next recommended build</h2>
+                <ol class="cap-list">
+                  <li>Obsidian Memory Bridge (after this capability console)</li>
+                  <li>Telegram notification bridge (after Obsidian, notification-only)</li>
+                </ol>
+              </section>
+              <section class="console-card cap-card">
+                <h2>Why am I seeing warnings?</h2>
+                <p>Warnings are advisory, not failures. The public audit can flag things that are fine for a private local repo but worth a look before publishing. "Port already in use" usually just means the dashboard is already running. Idle is normal - it means Ghoti is waiting for you, nothing is wrong.</p>
+                <div id="cap-warnings" class="cap-warnings"></div>
+              </section>
+            </div>
+
+            <section class="console-card cap-card">
+              <h2>Warnings that need review</h2>
+              <div id="cap-warnings-review" class="cap-warnings">
+                <p class="cap-muted">No warnings loaded yet. Run a safe check to populate this.</p>
+              </div>
+              <details class="cap-debug">
+                <summary>Debug details (raw JSON)</summary>
+                <pre id="cap-debug-json" class="cap-debug-pre">Run a safe check to see raw output here.</pre>
+              </details>
+            </section>
+          </section>
+          <section class="console-view" data-console-view-panel="overview" aria-labelledby="console-view-overview-title" hidden>
             <div class="console-view-header">
               <div>
                 <h1 id="console-view-overview-title">Overview</h1>
