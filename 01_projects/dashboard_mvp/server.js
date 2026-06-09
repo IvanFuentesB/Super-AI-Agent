@@ -7906,6 +7906,133 @@ async function handleApiRequest(request, response, requestUrl) {
     return;
   }
 
+  // ─── Operator Recipes (N+6.40A) ─────────────────────────────────────────────
+  // Working recipes: safe local supervised workflows run via the repo-local
+  // recipes CLI with fixed argv (shell:false). Only allowlisted recipe ids can
+  // run; reports go to the repo-safe generated folder; latest run summaries
+  // are cached in repo-local gitignored runtime_data. No accounts, no agents,
+  // no provider/API keys, no network beyond localhost status probes.
+
+  const OPERATOR_RECIPES_SCRIPT = path.join(
+    repoRoot, "03_scripts", "operator_recipes", "ghoti_operator_recipes.py",
+  );
+  const OPERATOR_RECIPE_IDS = [
+    "project-health", "handoff-pack", "cleanup-preview",
+    "local-model-check", "fixture-replay-demo", "all-safe",
+  ];
+
+  function operatorRecipeRunsCacheFile() {
+    return path.join(runtimeDataDir, "operator_recipe_runs_latest.json");
+  }
+
+  function readOperatorRecipeRunsCache() {
+    try {
+      const cacheFile = operatorRecipeRunsCacheFile();
+      if (fs.existsSync(cacheFile)) {
+        return JSON.parse(fs.readFileSync(cacheFile, "utf8"));
+      }
+    } catch (_) { /* unreadable cache is the same as no cache */ }
+    return { ok: true, runs: {} };
+  }
+
+  function writeOperatorRecipeRunsCache(cache) {
+    try {
+      if (!fs.existsSync(runtimeDataDir)) fs.mkdirSync(runtimeDataDir, { recursive: true });
+      const tmp = operatorRecipeRunsCacheFile() + ".tmp";
+      fs.writeFileSync(tmp, JSON.stringify(cache, null, 2), "utf8");
+      fs.renameSync(tmp, operatorRecipeRunsCacheFile());
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // GET /api/product-control/operator-recipes -- list recipes via the CLI.
+  if (request.method === "GET" && requestUrl.pathname === "/api/product-control/operator-recipes") {
+    const py = resolvePython();
+    if (!py) {
+      sendJson(response, 200, { ok: false, available: false, error: "python unavailable" });
+      return;
+    }
+    const result = await runCommand(
+      py.command, [...py.baseArgs, OPERATOR_RECIPES_SCRIPT, "--list", "--json"],
+      { timeoutMs: 30000, env: buildRuntimeEnv() },
+    );
+    let parsed = null;
+    try { parsed = JSON.parse(result.stdout); } catch (_) { parsed = null; }
+    if (!parsed) {
+      sendJson(response, 200, {
+        ok: false, available: false,
+        error: "recipes CLI did not return JSON",
+        detail: (result.stderr || "").slice(0, 300),
+      });
+      return;
+    }
+    sendJson(response, 200, { ...parsed, available: true, milestone: "N+6.40A" });
+    return;
+  }
+
+  // POST /api/product-control/run-operator-recipe -- run one allowlisted recipe.
+  if (request.method === "POST" && requestUrl.pathname === "/api/product-control/run-operator-recipe") {
+    let body = {};
+    try { body = await readJsonBody(request); } catch (_) { body = {}; }
+    const recipeId = typeof body.recipe === "string" ? body.recipe : "";
+    if (!OPERATOR_RECIPE_IDS.includes(recipeId)) {
+      sendJson(response, 400, {
+        ok: false,
+        error: "unknown or non-allowlisted recipe id",
+        allowed: OPERATOR_RECIPE_IDS,
+      });
+      return;
+    }
+    const py = resolvePython();
+    if (!py) {
+      sendJson(response, 200, { ok: false, available: false, error: "python unavailable" });
+      return;
+    }
+    const result = await runCommand(
+      py.command, [...py.baseArgs, OPERATOR_RECIPES_SCRIPT, "--run", recipeId, "--json"],
+      { timeoutMs: 300000, env: buildRuntimeEnv() },
+    );
+    let parsed = null;
+    try { parsed = JSON.parse(result.stdout); } catch (_) { parsed = null; }
+    if (!parsed) {
+      sendJson(response, 200, {
+        ok: false, recipe_id: recipeId,
+        error: "recipe run produced no JSON",
+        detail: (result.stderr || "").slice(0, 300),
+      });
+      return;
+    }
+    const cache = readOperatorRecipeRunsCache();
+    cache.runs = cache.runs || {};
+    cache.runs[recipeId] = {
+      recipe_id: recipeId,
+      ok: Boolean(parsed.ok),
+      summary: parsed.summary || "",
+      report_path: parsed.report_path || null,
+      mode: parsed.mode || "unknown",
+      finished_at: new Date().toISOString(),
+    };
+    cache.updated_at = new Date().toISOString();
+    writeOperatorRecipeRunsCache(cache);
+    sendJson(response, 200, parsed);
+    return;
+  }
+
+  // GET /api/product-control/latest-operator-recipe-runs -- cached summaries.
+  if (request.method === "GET" && requestUrl.pathname === "/api/product-control/latest-operator-recipe-runs") {
+    const cache = readOperatorRecipeRunsCache();
+    sendJson(response, 200, {
+      ok: true,
+      available: Object.keys(cache.runs || {}).length > 0,
+      runs: cache.runs || {},
+      updated_at: cache.updated_at || null,
+      reports_folder: "14_context/operator_reports/generated/",
+    });
+    return;
+  }
+
   // ─── External Tool Sandbox (N+4.8A) ─────────────────────────────────────────
   // Surface for the safe clone + static-scan manager. No install, no external
   // code execution, no desktop control, no live APIs. Subprocess via fixed argv

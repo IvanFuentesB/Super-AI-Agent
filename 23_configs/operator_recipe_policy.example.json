@@ -1,0 +1,44 @@
+{
+  "policy_id": "operator-recipe-policy",
+  "policy_version": "n6.40a-recipes-v1",
+  "default_decision": "deny",
+  "description": "Deny-by-default capability policy for Ghoti operator recipes. Mirrors rust/ghoti_policy_checker. Any capability not in allowed_capabilities is denied. Recipes may inspect, summarize, validate, and write repo-local generated reports only.",
+  "allowed_capabilities": [
+    "fixture_read",
+    "local_model_status_read",
+    "local_policy_check",
+    "plan_render",
+    "repo_read",
+    "report_write_repo_local",
+    "status_read"
+  ],
+  "blocked_capabilities": [
+    "account",
+    "agent_launch",
+    "auto_submit",
+    "browser",
+    "computer_use",
+    "external_write",
+    "file_delete",
+    "file_move",
+    "mass_message",
+    "mcp",
+    "money",
+    "provider_api",
+    "secrets",
+    "telegram"
+  ],
+  "rules": {
+    "dry_run_required": true,
+    "live_launch_denied": true,
+    "human_approval_required": true,
+    "writes_repo_local_generated_only": true,
+    "outside_repo_requires_explicit_apply": true,
+    "destructive_operations": "never"
+  },
+  "rust_enforcement": {
+    "checker": "rust/ghoti_policy_checker",
+    "invocation": "ghoti_policy_checker --input <plan.json>",
+    "status": "invoked by ghoti_operator_recipes.py when a built binary is present; Python mirror enforces the same deny-by-default policy when the binary is absent"
+  }
+}

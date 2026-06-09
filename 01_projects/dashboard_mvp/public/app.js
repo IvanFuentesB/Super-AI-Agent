@@ -1197,7 +1197,12 @@ function renderGhotiState(summary = {}) {
 
   const indicator = document.getElementById("ghoti-state-indicator");
   if (indicator) {
-    indicator.className = `ghoti-state-indicator is-${normalized}`;
+    // Idle is normal, not degraded: never style idle/unknown as an error state.
+    // "Degraded" styling is reserved for real critical issues only.
+    const idleLike = ["idle", "", "unknown", "neutral", "degraded"].includes(String(stateValue).toLowerCase())
+      && !(summary.criticalIssue === true);
+    const indicatorState = idleLike ? "neutral" : normalized;
+    indicator.className = `ghoti-state-indicator is-${indicatorState}`;
   }
 
   const panel = document.getElementById("ghoti-state-panel");
@@ -6510,6 +6515,100 @@ function initCapabilityConsole() {
   refreshCapabilityRegistry();
 }
 
+// ─── Working Recipes (N+6.40A) ──────────────────────────────────────────────
+// Each button runs one allowlisted safe recipe through the local recipes CLI.
+// No accounts, no agents, no provider/API keys; reports are repo-local files.
+
+function recipeSetResult(recipeId, text, ok) {
+  const el = document.querySelector('[data-recipe-result="' + recipeId + '"]');
+  if (!el) return;
+  el.textContent = text;
+  el.className = "cap-recipe-result " + (ok ? "cap-recipe-result--ok" : "cap-recipe-result--warn");
+}
+
+function recipeSetStatus(text, kind) {
+  const el = document.getElementById("cap-recipe-status");
+  if (!el) return;
+  el.textContent = text;
+  el.className = "cap-run-status" + (kind ? " cap-run-status--" + kind : "");
+}
+
+async function runOperatorRecipe(recipeId) {
+  recipeSetStatus("Running " + recipeId + " (local, supervised)...", "running");
+  recipeSetResult(recipeId, "Running...", true);
+  let payload;
+  try {
+    payload = await requestJson("/api/product-control/run-operator-recipe", {
+      method: "POST",
+      body: JSON.stringify({ recipe: recipeId }),
+    });
+  } catch (err) {
+    recipeSetStatus("Recipe failed to start: " + err.message, "error");
+    recipeSetResult(recipeId, "Could not run: " + err.message, false);
+    return;
+  }
+  const summary = payload.summary || (payload.ok ? "done" : (payload.error || "no summary"));
+  recipeSetStatus(payload.ok ? "Done: " + recipeId : "Recipe reported a problem.", payload.ok ? "pass" : "warn");
+  recipeSetResult(
+    recipeId,
+    (payload.ok ? "Last run ok. " : "Last run had issues. ") + summary
+      + (payload.report_path ? " Report: " + payload.report_path : ""),
+    Boolean(payload.ok),
+  );
+  refreshLatestRecipeRuns();
+}
+
+async function refreshLatestRecipeRuns() {
+  let payload;
+  try {
+    payload = await requestJson("/api/product-control/latest-operator-recipe-runs");
+  } catch (_) {
+    return; // dashboard may not be running; cards keep their static text
+  }
+  const runs = payload.runs || {};
+  Object.keys(runs).forEach(function (recipeId) {
+    const run = runs[recipeId];
+    recipeSetResult(
+      recipeId,
+      (run.ok ? "Last run ok. " : "Last run had issues. ") + (run.summary || "")
+        + (run.report_path ? " Report: " + run.report_path : ""),
+      Boolean(run.ok),
+    );
+  });
+  const list = document.getElementById("artifacts-operator-report-list");
+  if (list) {
+    const entries = Object.values(runs).filter(function (run) { return run.report_path; });
+    list.innerHTML = entries.length
+      ? entries.map(function (run) {
+          return '<p><strong>' + escapeHtml(run.recipe_id) + '</strong>: <code>'
+            + escapeHtml(run.report_path) + '</code></p>';
+        }).join("")
+      : '<p class="cap-muted">No recipe runs recorded yet this session.</p>';
+  }
+  const dbg = document.getElementById("artifacts-operator-report-debug");
+  if (dbg) dbg.textContent = JSON.stringify(payload, null, 2);
+}
+
+async function refreshRecipeRegistry() {
+  // Confirm the recipes CLI is reachable and show how many recipes are live.
+  try {
+    const payload = await requestJson("/api/product-control/operator-recipes");
+    if (payload && payload.ok && payload.count) {
+      recipeSetStatus(payload.count + " working recipes available. Pick one above.", "pass");
+    } else if (payload && payload.available === false) {
+      recipeSetStatus("Recipes CLI unavailable: " + (payload.error || "unknown"), "warn");
+    }
+  } catch (_) { /* dashboard not running; static cards still explain everything */ }
+}
+
+function initWorkingRecipes() {
+  document.querySelectorAll("[data-recipe-run]").forEach(function (btn) {
+    btn.addEventListener("click", function () { runOperatorRecipe(btn.dataset.recipeRun); });
+  });
+  refreshRecipeRegistry();
+  refreshLatestRecipeRuns();
+}
+
 // ─── Overlay hide/collapse (N+6.39A) ─────────────────────────────────────────
 function applyOverlayHidden(hidden) {
   const indicator = document.getElementById("ghoti-state-indicator");
@@ -6563,6 +6662,7 @@ refreshWeeklyReview();
 refreshManualQueue();
 initCapabilityConsole();
 initOverlayControls();
+initWorkingRecipes();
 
 // ─── Local Orchestrator Card (N+3.50A) ────────────────────────────────────────
 

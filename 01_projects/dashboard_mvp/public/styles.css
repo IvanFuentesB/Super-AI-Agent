@@ -1284,4 +1284,46 @@ body { overflow-x: hidden; }
 /* Fix I: GitHub static card */
 .cap-github-info p { margin: 6px 0; font-size: 0.9rem; }
 .cap-github-info ul { margin: 6px 0; padding-left: 18px; font-size: 0.9rem; line-height: 1.6; }
+
+/* ===== N+6.40A Working Recipes ===== */
+.cap-recipes { border-left: 4px solid #1b7a3d; }
+.cap-recipe-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+.cap-recipe-card {
+  border: 1px solid var(--border, #d7d7e0);
+  border-radius: var(--radius, 10px);
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.75);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+.cap-recipe-card h3 { margin: 0; font-size: 0.92rem; }
+.cap-recipe-card p { margin: 0; font-size: 0.82rem; color: var(--muted, #667); }
+.cap-recipe-card .cap-btn { align-self: flex-start; margin-top: 4px; }
+.cap-recipe-card--all { background: #eef7f0; border-color: #bcd9c4; }
+.cap-recipe-result {
+  font-size: 0.78rem;
+  margin-top: auto;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+.cap-recipe-result--ok { color: #1b7a3d; }
+.cap-recipe-result--warn { color: #8a6d00; }
+
+/* No vertical title text: headings never wrap letter-by-letter in narrow
+   flex/grid tracks. min-width:0 lets the track shrink; keep-all + nowrap on
+   short brand text prevents one-character-per-line rendering. */
+.console-view-header { min-width: 0; }
+.console-view-header h1 { min-width: 0; overflow-wrap: normal; word-break: keep-all; }
+.console-card h2 { min-width: 0; overflow-wrap: normal; word-break: keep-all; }
+.console-wordmark { white-space: nowrap; writing-mode: horizontal-tb; }
+.console-nav-item span:first-child { white-space: nowrap; }
 #ghoti-target-marker-hide { position: absolute; top: 6px; right: 6px; }

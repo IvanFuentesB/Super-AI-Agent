@@ -115,6 +115,62 @@
               </div>
             </div>
 
+            <section class="console-card cap-card cap-recipes" id="cap-working-recipes">
+              <h2>Working Recipes</h2>
+              <p class="cap-muted"><strong>Start here: run a useful local recipe.</strong> Each recipe does real supervised work right now: it inspects, summarizes, and writes a Markdown report into <code>14_context/operator_reports/generated/</code>. Every run is checked against the deny-by-default safety policy first.</p>
+              <div class="cap-recipe-grid" id="cap-recipe-grid">
+                <div class="cap-recipe-card" data-recipe-card="project-health">
+                  <h3>Project Health Report</h3>
+                  <p><strong>What it does:</strong> full local snapshot - git truth, launcher status, security audit, Rust status, PR queue, dashboard reachability.</p>
+                  <p><strong>Why it matters:</strong> one honest answer to "where is the project right now?".</p>
+                  <p><strong>It will not:</strong> push, merge, or touch anything outside the repo.</p>
+                  <button class="cap-btn cap-btn--primary" type="button" data-recipe-run="project-health">Run Project Health</button>
+                  <p class="cap-recipe-result" data-recipe-result="project-health">Not run yet this session.</p>
+                </div>
+                <div class="cap-recipe-card" data-recipe-card="handoff-pack">
+                  <h3>Handoff Pack</h3>
+                  <p><strong>What it does:</strong> generates copy-paste packets for the implementation lane, the audit lane, and the local model lane.</p>
+                  <p><strong>Why it matters:</strong> hand work between lanes without retyping context.</p>
+                  <p><strong>It will not:</strong> call any provider - the packets are text you paste manually.</p>
+                  <button class="cap-btn cap-btn--primary" type="button" data-recipe-run="handoff-pack">Run Handoff Pack</button>
+                  <p class="cap-recipe-result" data-recipe-result="handoff-pack">Not run yet this session.</p>
+                </div>
+                <div class="cap-recipe-card" data-recipe-card="cleanup-preview">
+                  <h3>Cleanup Preview</h3>
+                  <p><strong>What it does:</strong> read-only inspection - untracked/modified files, large files, worktrees, caches, old logs.</p>
+                  <p><strong>Why it matters:</strong> see what could be cleaned without risking anything.</p>
+                  <p><strong>It will not:</strong> delete or move a single file - strictly a preview.</p>
+                  <button class="cap-btn cap-btn--primary" type="button" data-recipe-run="cleanup-preview">Run Cleanup Preview</button>
+                  <p class="cap-recipe-result" data-recipe-result="cleanup-preview">Not run yet this session.</p>
+                </div>
+                <div class="cap-recipe-card" data-recipe-card="local-model-check">
+                  <h3>Local Model Readiness</h3>
+                  <p><strong>What it does:</strong> checks the ollama command, the localhost endpoint, and the llama3.1:8b / gemma3:4b models.</p>
+                  <p><strong>Why it matters:</strong> know whether the cheap local model lane is ready.</p>
+                  <p><strong>It will not:</strong> pull models or call cloud providers - missing pieces get manual commands only.</p>
+                  <button class="cap-btn cap-btn--primary" type="button" data-recipe-run="local-model-check">Run Model Readiness</button>
+                  <p class="cap-recipe-result" data-recipe-result="local-model-check">Not run yet this session.</p>
+                </div>
+                <div class="cap-recipe-card" data-recipe-card="fixture-replay-demo">
+                  <h3>Fixture Replay Demo</h3>
+                  <p><strong>What it does:</strong> replays the claude-swarm fixture plan - 5 tasks, 3 parallel groups, 0 overlaps, simulation only.</p>
+                  <p><strong>Why it matters:</strong> proves supervised planning works without launching anything.</p>
+                  <p><strong>It will not:</strong> launch agents, use a provider, or run an external CLI.</p>
+                  <button class="cap-btn cap-btn--primary" type="button" data-recipe-run="fixture-replay-demo">Run Fixture Demo</button>
+                  <p class="cap-recipe-result" data-recipe-result="fixture-replay-demo">Not run yet this session.</p>
+                </div>
+                <div class="cap-recipe-card cap-recipe-card--all" data-recipe-card="all-safe">
+                  <h3>Run All Safe Recipes</h3>
+                  <p><strong>What it does:</strong> runs all five recipes in sequence and writes an aggregate summary report.</p>
+                  <p><strong>Why it matters:</strong> the full demo in one click.</p>
+                  <p><strong>It will not:</strong> perform any live action - everything stays local and supervised.</p>
+                  <button class="cap-btn cap-btn--primary" type="button" data-recipe-run="all-safe">Run All Safe Recipes</button>
+                  <p class="cap-recipe-result" data-recipe-result="all-safe">Not run yet this session.</p>
+                </div>
+              </div>
+              <p id="cap-recipe-status" class="cap-run-status" aria-live="polite"></p>
+            </section>
+
             <section class="console-card cap-card cap-hero" id="cap-hero">
               <h2>What is Ghoti?</h2>
               <p class="cap-muted">Ghoti is a local supervised operator system. It reads, checks, and reports on your repo. It does not act autonomously, connect to live accounts, or post anything anywhere without your approval.</p>
@@ -873,6 +929,17 @@
                 <p>Recent actions, artifacts, and previews. Raw output stays in debug blocks.</p>
               </div>
             </div>
+            <section class="console-card" id="artifacts-operator-reports">
+              <h2>Operator reports</h2>
+              <p class="cap-muted">Markdown reports generated by the Working Recipes live under <code>14_context/operator_reports/generated/</code>. Run a recipe from Home / Capabilities to create one.</p>
+              <div id="artifacts-operator-report-list" class="cap-warnings">
+                <p class="cap-muted">No recipe runs recorded yet this session.</p>
+              </div>
+              <details class="cap-debug">
+                <summary>Debug details</summary>
+                <pre id="artifacts-operator-report-debug" class="cap-debug-pre">No debug data loaded yet.</pre>
+              </details>
+            </section>
             <div class="console-grid">
               <section class="console-card">
                 <div class="console-card-header">

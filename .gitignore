@@ -161,3 +161,6 @@ gemma4/
 # N+6.20A approved-window paste runtime artifacts (generated; never committed)
 14_context/approved_window_paste/manual_output_drop/*
 !14_context/approved_window_paste/manual_output_drop/README.md
+
+# N+6.40A operator recipe reports (generated; never committed)
+14_context/operator_reports/generated/
