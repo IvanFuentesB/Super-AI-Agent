@@ -1,0 +1,20 @@
+{
+  "scenario_id": "code-maintenance-swarm",
+  "title": "Supervised code maintenance swarm",
+  "business_lane": "code_maintenance",
+  "objective": "Prepare an isolated build, audit, memory handoff, and human merge-decision plan.",
+  "revenue_hypothesis": "Faster safe maintenance can reduce operator time, but this simulation makes no income claim.",
+  "evidence_required": ["test-first contract", "isolated file ownership", "audit evidence", "human merge decision"],
+  "simulation": true,
+  "live_execution": false,
+  "repo_pattern_sources": ["affaan-m/claude-swarm", "am-will/swarms patterns only", "Ghoti controlled swarm launcher", "Ghoti shared memory"],
+  "approval_gates": ["human approval before any future agent process launch", "Codex audit and human approval before merge"],
+  "blocked_actions": ["live agent launch", "mouse click", "keyboard input", "account login", "purchase", "payment", "auto-submit", "live posting", "main push", "unreviewed merge"],
+  "tasks": [
+    {"id": "plan_change", "role": "planner", "description": "Define scope and acceptance criteria.", "files": ["14_context/agent_command_center/work_products/code_plan.md"], "depends_on": []},
+    {"id": "build_change", "role": "builder", "description": "Would implement in an isolated owned scope after approval.", "files": ["03_scripts/agent_command_center/example_future_component.py"], "depends_on": ["plan_change"]},
+    {"id": "audit_change", "role": "auditor", "description": "Would review tests, safety, and diff scope.", "files": ["14_context/agent_command_center/work_products/code_audit.md"], "depends_on": ["build_change"]},
+    {"id": "summarize_handoff", "role": "summarizer", "description": "Prepare a compact source-linked handoff.", "files": ["14_context/agent_command_center/work_products/code_handoff.md"], "depends_on": ["audit_change"]},
+    {"id": "approve_merge", "role": "human_approver", "description": "Human decides whether an audited merge should occur.", "files": ["14_context/agent_command_center/work_products/code_human_decision.md"], "depends_on": ["summarize_handoff"]}
+  ]
+}

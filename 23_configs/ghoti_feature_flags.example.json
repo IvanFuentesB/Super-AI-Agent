@@ -62,5 +62,9 @@
   "ecc_agent_workflow_upgrade_enabled": false,
   "gbrain_memory_upgrade_enabled": false,
   "agent_arena_simulator_enabled": false,
-  "unattended_live_agent_loop_enabled": false
+  "unattended_live_agent_loop_enabled": false,
+  "local_agent_command_center_enabled": false,
+  "local_agent_command_center_live_launch_enabled": false,
+  "paperclip_live_company_launch_enabled": false,
+  "supervised_business_scenarios_enabled": false
 }

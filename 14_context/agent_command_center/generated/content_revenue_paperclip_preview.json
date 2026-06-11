@@ -1,0 +1,11 @@
+{
+  "milestone": "N+6.44A",
+  "mode": "paperclip_compatible_planning_preview",
+  "scenario_id": "content-revenue-research",
+  "company_name": "Ghoti simulated content revenue research team",
+  "departments": ["planner", "summarizer", "builder", "auditor", "human_approver"],
+  "live_company_created": false,
+  "docker_used": false,
+  "external_repo_executed": false,
+  "human_approval_required": true
+}

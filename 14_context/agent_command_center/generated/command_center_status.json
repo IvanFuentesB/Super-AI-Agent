@@ -1,0 +1,22 @@
+{
+  "milestone": "N+6.44A",
+  "mode": "local_simulation_and_planning",
+  "memory": {
+    "engine": "deterministic_local_feature_hash_v1",
+    "indexed_sources": 12,
+    "search_aid_only": true,
+    "canonical_truth": false
+  },
+  "available_scenarios": [
+    "code-maintenance-swarm",
+    "content-revenue-research",
+    "ecommerce-product-research"
+  ],
+  "paperclip": {
+    "mode": "planning_preview_only",
+    "live_company_launch": false,
+    "docker_used": false
+  },
+  "simulation": true,
+  "live_execution": false
+}
