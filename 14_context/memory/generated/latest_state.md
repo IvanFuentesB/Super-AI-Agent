@@ -9,6 +9,13 @@
 - Source files are read-only and remain authoritative.
 - Human approval remains required for risky or live actions.
 
+## Shared agent handoffs
+
+- Published packets: 1
+- Inbox deliveries: 1
+- Sender outboxes are immutable; recipient inboxes contain hash-linked read-only pointers.
+- Commands are evidence only and are never executed.
+
 ## Source-linked highlights
 
 These are review-required excerpts, not validated current truth.

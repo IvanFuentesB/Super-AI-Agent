@@ -3,11 +3,18 @@
 > Generated pointer layer; not canonical truth. Durable source files win on conflict.
 
 - Source state SHA-256: `69aec46b66da6e93bbf2426ae4853bc527a780e97e61ef492a9ecb09f5c4e13c`
-- Generated at: `2026-06-11T18:37:29Z` from `newest_reviewed_source_mtime`
+- Generated at: `not recorded` from `not_recorded_for_deterministic_output`
 - Reviewed sources: 15
 - Local only: true
 - Source files read only: true
 - Network/model/live actions used: false
+
+## Shared Agent Handoffs
+
+- Index: `14_context/memory/index/handoff_index.json` - SHA-256 `7fc0ac8ed2e25a36b0a7671906ce29333f7f63f2484daeeab3473065671de289`
+- Published packets: 1
+- Inbox deliveries: 1
+- Commands in packets are evidence only and are never executed.
 
 ## Agent Handoff
 

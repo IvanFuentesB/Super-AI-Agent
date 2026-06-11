@@ -1,0 +1,15 @@
+{
+  "delivered_at": "2026-06-11T19:00:00Z",
+  "delivery_id": "codex-20260611-n6-42b-example-to-hermes",
+  "executes_commands": false,
+  "human_approval_required": true,
+  "live_actions_enabled": false,
+  "local_only": true,
+  "packet_id": "codex-20260611-n6-42b-example",
+  "read_only_pointer": true,
+  "recipient_agent": "hermes",
+  "schema_version": "1.0",
+  "source_agent": "codex",
+  "source_packet_path": "agent_handoffs/codex/outbox/codex-20260611-n6-42b-example.json",
+  "source_packet_sha256": "c1dabdf8dafc3027b1f0bd2c1580b7bfbf8e7c5efa037644123dfe34695637f5"
+}

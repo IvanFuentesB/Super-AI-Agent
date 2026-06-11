@@ -1,7 +1,7 @@
 {
   "canonical_truth": false,
-  "generated_at": "2026-06-11T18:37:29Z",
-  "generated_at_source": "newest_reviewed_source_mtime",
+  "generated_at": null,
+  "generated_at_source": "not_recorded_for_deterministic_output",
   "live_actions_enabled": false,
   "local_only": true,
   "memory_type": "source_linked_pointer_index",

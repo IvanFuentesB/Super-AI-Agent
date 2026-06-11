@@ -9,14 +9,12 @@ from __future__ import annotations
 
 import argparse
 import base64
-import datetime as dt
 import hashlib
 import json
 import re
 import subprocess
 import unicodedata
 from pathlib import Path
-from typing import Iterable
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -99,11 +97,6 @@ def _repo_relative_path(root: Path, raw_path: str) -> Path:
     return resolved
 
 
-def _generated_at_from_sources(paths: Iterable[Path]) -> str:
-    newest = max((path.stat().st_mtime for path in paths), default=0)
-    return dt.datetime.fromtimestamp(newest, tz=dt.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-
-
 def _title(text: str, fallback: str) -> str:
     for line in text.splitlines():
         stripped = line.strip()
@@ -137,7 +130,6 @@ def build_raw_index(repo_root: Path = REPO_ROOT, source_specs: list[dict] | None
     root = repo_root.resolve()
     specs = source_specs if source_specs is not None else SOURCE_SPECS
     sources: list[dict] = []
-    source_paths: list[Path] = []
     for spec in sorted(specs, key=lambda item: (item["priority"], item["category"], item["path"])):
         path = _repo_relative_path(root, spec["path"])
         if not path.is_file():
@@ -145,7 +137,6 @@ def build_raw_index(repo_root: Path = REPO_ROOT, source_specs: list[dict] | None
         text = path.read_text(encoding="utf-8", errors="replace")
         digest = sha256_file(path)
         summary_safe = is_summary_safe(text)
-        source_paths.append(path)
         sources.append(
             {
                 "path": Path(spec["path"]).as_posix(),
@@ -162,8 +153,8 @@ def build_raw_index(repo_root: Path = REPO_ROOT, source_specs: list[dict] | None
     return {
         "schema_version": "1.0",
         "memory_type": "source_linked_pointer_index",
-        "generated_at": _generated_at_from_sources(source_paths),
-        "generated_at_source": "newest_reviewed_source_mtime",
+        "generated_at": None,
+        "generated_at_source": "not_recorded_for_deterministic_output",
         "source_state_sha256": hashlib.sha256(state_material.encode("utf-8")).hexdigest(),
         "local_only": True,
         "read_only_sources": True,
@@ -177,17 +168,26 @@ def build_raw_index(repo_root: Path = REPO_ROOT, source_specs: list[dict] | None
 
 
 def _context_map(index: dict) -> str:
+    handoff_index_path = MEMORY_ROOT / "index" / "handoff_index.json"
+    handoff_index = json.loads(handoff_index_path.read_text(encoding="utf-8")) if handoff_index_path.is_file() else {}
     lines = [
         "# Ghoti Context Memory Map",
         "",
         "> Generated pointer layer; not canonical truth. Durable source files win on conflict.",
         "",
         f"- Source state SHA-256: `{index['source_state_sha256']}`",
-        f"- Generated at: `{index['generated_at']}` from `{index['generated_at_source']}`",
+        f"- Generated at: `{index['generated_at'] or 'not recorded'}` from `{index['generated_at_source']}`",
         f"- Reviewed sources: {index['source_count']}",
         "- Local only: true",
         "- Source files read only: true",
         "- Network/model/live actions used: false",
+        "",
+        "## Shared Agent Handoffs",
+        "",
+        f"- Index: `14_context/memory/index/handoff_index.json` - SHA-256 `{sha256_file(handoff_index_path) if handoff_index_path.is_file() else 'missing'}`",
+        f"- Published packets: {handoff_index.get('packet_count', 0)}",
+        f"- Inbox deliveries: {handoff_index.get('delivery_count', 0)}",
+        "- Commands in packets are evidence only and are never executed.",
         "",
     ]
     categories = sorted({source["category"] for source in index["sources"]})
@@ -219,6 +219,8 @@ def _context_map(index: dict) -> str:
 
 
 def _latest_state(index: dict) -> str:
+    handoff_index_path = MEMORY_ROOT / "index" / "handoff_index.json"
+    handoff_index = json.loads(handoff_index_path.read_text(encoding="utf-8")) if handoff_index_path.is_file() else {}
     lines = [
         "# Ghoti Latest State Pointer",
         "",
@@ -230,6 +232,13 @@ def _latest_state(index: dict) -> str:
         "- No network, provider, model, browser, account, money, posting, or live-agent action.",
         "- Source files are read-only and remain authoritative.",
         "- Human approval remains required for risky or live actions.",
+        "",
+        "## Shared agent handoffs",
+        "",
+        f"- Published packets: {handoff_index.get('packet_count', 0)}",
+        f"- Inbox deliveries: {handoff_index.get('delivery_count', 0)}",
+        "- Sender outboxes are immutable; recipient inboxes contain hash-linked read-only pointers.",
+        "- Commands are evidence only and are never executed.",
         "",
         "## Source-linked highlights",
         "",

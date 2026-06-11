@@ -1,0 +1,33 @@
+{
+  "deliveries": [
+    {
+      "delivery_id": "codex-20260611-n6-42b-example-to-hermes",
+      "packet_id": "codex-20260611-n6-42b-example",
+      "path": "agent_handoffs/hermes/inbox/codex-20260611-n6-42b-example.delivery.json",
+      "recipient_agent": "hermes",
+      "sha256": "5fe400dac4706af2b88325666abe605b67d75dd086cb6a84a78fe4b377b550fd",
+      "source_packet_path": "agent_handoffs/codex/outbox/codex-20260611-n6-42b-example.json",
+      "source_packet_sha256": "c1dabdf8dafc3027b1f0bd2c1580b7bfbf8e7c5efa037644123dfe34695637f5"
+    }
+  ],
+  "delivery_count": 1,
+  "executes_commands": false,
+  "generated_at": "2026-06-11T19:00:00Z",
+  "generated_at_source": "newest_packet_timestamp",
+  "handoff_state_sha256": "cfad26ce84e3d4291ba2cbabba4f5e541c63c143bf1d1ba2310d7307ba42aa6c",
+  "live_actions_enabled": false,
+  "local_only": true,
+  "memory_type": "shared_agent_handoff_index",
+  "packet_count": 1,
+  "packets": [
+    {
+      "agent_name": "codex",
+      "generated_at": "2026-06-11T19:00:00Z",
+      "packet_id": "codex-20260611-n6-42b-example",
+      "path": "agent_handoffs/codex/outbox/codex-20260611-n6-42b-example.json",
+      "sha256": "c1dabdf8dafc3027b1f0bd2c1580b7bfbf8e7c5efa037644123dfe34695637f5",
+      "valid": true
+    }
+  ],
+  "schema_version": "1.0"
+}

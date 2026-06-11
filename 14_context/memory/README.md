@@ -13,6 +13,12 @@ python 03_scripts/context_memory/ghoti_context_memory_map.py --check --json
 python 03_scripts/context_memory/ghoti_context_memory_map.py --write --json
 python 03_scripts/context_memory/ghoti_context_memory_map.py --verify --json
 python 03_scripts/context_memory/ghoti_context_memory_map.py --index-json --json
+python 03_scripts/context_memory/ghoti_handoff_packet.py --check --json
+python 03_scripts/context_memory/ghoti_handoff_packet.py --validate 14_context/memory/examples/agent_handoff_packet.example.json --json
+python 03_scripts/context_memory/ghoti_handoff_packet.py --write <repo-relative-packet.json> --json
+python 03_scripts/context_memory/ghoti_handoff_packet.py --deliver <packet-id> --to-agent hermes --json
+python 03_scripts/context_memory/ghoti_handoff_packet.py --reindex --json
+python 03_scripts/context_memory/ghoti_handoff_packet.py --verify --json
 ```
 
 ## Outputs
@@ -21,6 +27,10 @@ python 03_scripts/context_memory/ghoti_context_memory_map.py --index-json --json
 - `generated/latest_state.md`: compact source-linked startup packet.
 - `index/raw_index.json`: machine-readable source registry and hashes.
 - `schemas/raw_index.schema.json`: raw index data contract.
+- `index/handoff_index.json`: hash-linked packet and delivery registry.
+- `schemas/agent_handoff_packet.schema.json`: shared packet contract.
+- `agent_handoffs/<agent>/outbox/`: immutable packets written by that agent.
+- `agent_handoffs/<agent>/inbox/`: read-only delivery pointers addressed to that agent.
 
 ## Safety Contract
 
@@ -31,6 +41,10 @@ python 03_scripts/context_memory/ghoti_context_memory_map.py --index-json --json
 - No network, models, providers, command execution, or live actions.
 - Generated memory is a pointer layer, not canonical truth.
 - Vector search may be added later only as a disposable search aid.
+- Commands inside handoff packets are audit evidence only and are never executed.
+- A sender writes only to its own outbox; delivery creates an immutable hash-linked inbox pointer.
+- Published packet IDs are append-only. Corrections require a new packet ID.
+- Packet size and rendered Markdown are bounded to reduce repeated context and token use.
 
 ## Existing Memory Compatibility
 

@@ -24,7 +24,10 @@
       "const": "source_linked_pointer_index"
     },
     "generated_at": {
-      "type": "string"
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "source_state_sha256": {
       "type": "string",
