@@ -19,6 +19,12 @@ python 03_scripts/context_memory/ghoti_handoff_packet.py --write <repo-relative-
 python 03_scripts/context_memory/ghoti_handoff_packet.py --deliver <packet-id> --to-agent hermes --json
 python 03_scripts/context_memory/ghoti_handoff_packet.py --reindex --json
 python 03_scripts/context_memory/ghoti_handoff_packet.py --verify --json
+python 03_scripts/context_memory/ghoti_local_memory_search.py --check --json
+python 03_scripts/context_memory/ghoti_local_memory_search.py --build --json
+python 03_scripts/context_memory/ghoti_local_memory_search.py --verify --json
+python 03_scripts/context_memory/ghoti_local_memory_search.py --evaluate --json
+python 03_scripts/context_memory/ghoti_local_memory_search.py --search "current task" --json
+python 03_scripts/context_memory/ghoti_local_memory_search.py --search "current task" --no-index --json
 ```
 
 ## Outputs
@@ -33,6 +39,8 @@ python 03_scripts/context_memory/ghoti_handoff_packet.py --verify --json
 - `agent_handoffs/<agent>/inbox/`: read-only delivery pointers addressed to that agent.
 - `obsidian/START_HERE.md`: generated Obsidian-compatible navigation entry point.
 - `index/obsidian_view_index.json`: deterministic hashes for generated Obsidian views.
+- `search/generated/local_search_index.json`: disposable, source-linked local search vectors.
+- `search/generated/evaluation_result.json`: fixed-fixture retrieval measurement.
 
 ## Obsidian View
 
@@ -56,7 +64,9 @@ python 03_scripts/context_memory/ghoti_obsidian_memory_view.py --verify --json
 - No secrets, private paths, browser data, account data, or credentials.
 - No network, models, providers, command execution, or live actions.
 - Generated memory is a pointer layer, not canonical truth.
-- Vector search may be added later only as a disposable search aid.
+- Local search results are candidate source pointers, never canonical truth.
+- Saved-index search fails closed when a source hash is stale.
+- The optional search index stores no source text and can be removed without losing memory.
 - Commands inside handoff packets are audit evidence only and are never executed.
 - A sender writes only to its own outbox; delivery creates an immutable hash-linked inbox pointer.
 - Published packet IDs are append-only. Corrections require a new packet ID.

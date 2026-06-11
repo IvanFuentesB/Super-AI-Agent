@@ -1,0 +1,16 @@
+{
+  "automatic_truth_promotion": false,
+  "disposable_index": true,
+  "engine": "deterministic_local_feature_hash_v1",
+  "index_source": "14_context/memory/index/raw_index.json",
+  "live_actions_enabled": false,
+  "local_only": true,
+  "max_index_bytes": 100000,
+  "max_query_chars": 500,
+  "max_results": 5,
+  "provider_enabled": false,
+  "remote_embedding_enabled": false,
+  "result_hash_verification_required": true,
+  "schema_version": "1.0",
+  "vector_dimensions": 256
+}
