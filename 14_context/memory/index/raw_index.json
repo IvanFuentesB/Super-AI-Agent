@@ -1,0 +1,209 @@
+{
+  "canonical_truth": false,
+  "generated_at": "2026-06-11T18:37:29Z",
+  "generated_at_source": "newest_reviewed_source_mtime",
+  "live_actions_enabled": false,
+  "local_only": true,
+  "memory_type": "source_linked_pointer_index",
+  "model_used": false,
+  "network_used": false,
+  "read_only_sources": true,
+  "schema_version": "1.0",
+  "source_count": 15,
+  "source_state_sha256": "69aec46b66da6e93bbf2426ae4853bc527a780e97e61ef492a9ecb09f5c4e13c",
+  "sources": [
+    {
+      "bytes": 2348,
+      "category": "agent_handoff",
+      "highlights": [
+        "# Current Task",
+        "Status: ready-for-codex-or-claude",
+        "N+6.4A - Ghoti Skills System + Karpathy Guidelines + Current Hermes Truth Registration"
+      ],
+      "path": "14_context/agent_handoff_vault/02_Agent_Handoffs/CURRENT_TASK.md",
+      "priority": 1,
+      "sha256": "29b257e184a915ff28dc092c0b42e33d2b263e22c2aaae779ad5a3dd7908b101",
+      "summary_safe": true,
+      "title": "CURRENT_TASK.md"
+    },
+    {
+      "bytes": 958,
+      "category": "agent_handoff",
+      "highlights": [
+        "# Agent Rules",
+        "Hermes/Alfred: coordinator, planner, memory writer, handoff manager.",
+        "Claude Code: implementation only."
+      ],
+      "path": "14_context/agent_handoff_vault/AGENT_RULES.md",
+      "priority": 1,
+      "sha256": "fae84803cb36f9ad7ac3296c3fc97640d5582cf796ccaae1465f235194f86419",
+      "summary_safe": true,
+      "title": "AGENT_RULES.md"
+    },
+    {
+      "bytes": 113,
+      "category": "blockers",
+      "highlights": [
+        "blocked_reason: none",
+        "waiting_reason: none",
+        "dialog_note: none"
+      ],
+      "path": "14_context/compact_memory/blocker_state.md",
+      "priority": 1,
+      "sha256": "df39db0a0bc6d62173aab3ee181b7409bd43ac163e6fb91ba0dc53a3670ada16",
+      "summary_safe": true,
+      "title": "Blocker State"
+    },
+    {
+      "bytes": 2624,
+      "category": "compact_state",
+      "highlights": [
+        "Update after next pushed milestone commit.",
+        "Replace HEAD hash, update capabilities, update blocked section."
+      ],
+      "path": "14_context/compact_memory/project_state.md",
+      "priority": 1,
+      "sha256": "5f944987f9466cee6ff37ff24e687f126708b5ec497ff39709a0be40a914ee5b",
+      "summary_safe": true,
+      "title": "Compact: Project State"
+    },
+    {
+      "bytes": 246,
+      "category": "next_action",
+      "highlights": [
+        "Bind exact ChatGPT and Codex targets before trusting any relay paste or send path.",
+        "Keep the relay state honest even if the next step is still manual.",
+        "Store usage reset time only when it can be extracted confidently."
+      ],
+      "path": "14_context/compact_memory/next_exact_step.md",
+      "priority": 1,
+      "sha256": "de8a7b850cb8ab5a60d4eab4203c1bec17d9a853822861bb814710a27f4723d5",
+      "summary_safe": true,
+      "title": "Next Exact Step"
+    },
+    {
+      "bytes": 943,
+      "category": "safety",
+      "highlights": [
+        "browser profiles",
+        "raw session databases",
+        "raw Notion application data"
+      ],
+      "path": "14_context/00_main_memory/local-vs-sync-boundaries.md",
+      "priority": 1,
+      "sha256": "679b6512fedf6777dc67dc5007f3d6c3ae331c5e5d426f32c6209071b4ad5332",
+      "summary_safe": true,
+      "title": "Local vs Sync Boundaries"
+    },
+    {
+      "bytes": 3008,
+      "category": "safety",
+      "highlights": [],
+      "path": "14_context/compact_memory/safety_rules.md",
+      "priority": 1,
+      "sha256": "166eaa898744245b580e67f87880a17da37ef1d29364f3f6398f9d17cc961f6b",
+      "summary_safe": false,
+      "title": "safety_rules.md"
+    },
+    {
+      "bytes": 1162,
+      "category": "stable_truth",
+      "highlights": [],
+      "path": "14_context/00_main_memory/current-state.md",
+      "priority": 1,
+      "sha256": "38f72761a1e07bce603203b3c1992a2cbec6fd04d2307022fff340a866b9cfe4",
+      "summary_safe": false,
+      "title": "current-state.md"
+    },
+    {
+      "bytes": 400,
+      "category": "agent_handoff",
+      "highlights": [
+        "# Ghoti Agent Vault - Start Here",
+        "This vault is the shared memory and handoff board for Ghoti.",
+        "1. ChatGPT designs the plan."
+      ],
+      "path": "14_context/agent_handoff_vault/00_Inbox/START_HERE.md",
+      "priority": 2,
+      "sha256": "7d816e21e320b646f5dcb45b973109400c74e2885b071f61ce8ff7afd85c98c3",
+      "summary_safe": true,
+      "title": "START_HERE.md"
+    },
+    {
+      "bytes": 2166,
+      "category": "obsidian_view",
+      "highlights": [
+        "**Last updated:** 2026-04-27",
+        "**Milestone:** N+3.7",
+        "Full vault scaffold completed. New notes added:"
+      ],
+      "path": "14_context/obsidian_vault/00_Index.md",
+      "priority": 2,
+      "sha256": "b0071ac0312481834e0d78ff7fd0bb2192c08752357bdbaead0db38162d6b566",
+      "summary_safe": true,
+      "title": "Ghoti Vault - Index (MOC)"
+    },
+    {
+      "bytes": 3183,
+      "category": "obsidian_view",
+      "highlights": [
+        "**Updated:** 2026-04-27 - Milestone N+3.7"
+      ],
+      "path": "14_context/obsidian_vault/01_Current_State.md",
+      "priority": 2,
+      "sha256": "52b3318f65bf9c61ae5ca46ee1a457c77cbcef711049a2903f6da6d68b816af9",
+      "summary_safe": true,
+      "title": "Ghoti Current State (Compact)"
+    },
+    {
+      "bytes": 2364,
+      "category": "obsidian_view",
+      "highlights": [
+        "**Updated:** 2026-05-05 - Milestone N+3.34",
+        "**N+3.43 - Agent Lane Locks And Parallel Execution Scaffolding**",
+        "Await Codex audit of N+3.34 before implementing N+3.43."
+      ],
+      "path": "14_context/obsidian_vault/02_Next_Actions.md",
+      "priority": 2,
+      "sha256": "588022724d5d0090ac2c03be576b8029ba2fe36246e0390fd6c129d5d6f001ae",
+      "summary_safe": true,
+      "title": "Ghoti Next Actions (Compact)"
+    },
+    {
+      "bytes": 44,
+      "category": "run_record",
+      "highlights": [
+        "# Claude Last Run",
+        "No Claude run yet."
+      ],
+      "path": "14_context/agent_handoff_vault/04_Logs/CLAUDE_LAST_RUN.md",
+      "priority": 2,
+      "sha256": "bedea29a00bf569df52988a8165a0e3a055adc07eb587f69bae6406c3ebe3d00",
+      "summary_safe": true,
+      "title": "CLAUDE_LAST_RUN.md"
+    },
+    {
+      "bytes": 46,
+      "category": "run_record",
+      "highlights": [
+        "# Codex Last Audit",
+        "No Codex audit yet."
+      ],
+      "path": "14_context/agent_handoff_vault/04_Logs/CODEX_LAST_AUDIT.md",
+      "priority": 2,
+      "sha256": "dc68a86d1ba6daedeb1ba921543b1c3c1e71dbf2650b6afef7043f63293752a5",
+      "summary_safe": true,
+      "title": "CODEX_LAST_AUDIT.md"
+    },
+    {
+      "bytes": 3152,
+      "category": "safety",
+      "highlights": [],
+      "path": "14_context/obsidian_vault/06_Safety_Gates.md",
+      "priority": 2,
+      "sha256": "9dc74340b601369325eb414595074f63eb6d4fce3b8e70881114625dd1d54198",
+      "summary_safe": false,
+      "title": "06_Safety_Gates.md"
+    }
+  ]
+}
