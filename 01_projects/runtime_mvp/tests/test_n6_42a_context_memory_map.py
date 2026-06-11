@@ -25,7 +25,10 @@ def load_module():
 
 
 def sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    data = path.read_bytes()
+    if path.suffix.lower() in {".json", ".md", ".ps1", ".py", ".txt", ".yaml", ".yml"}:
+        data = data.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+    return hashlib.sha256(data).hexdigest()
 
 
 class TestContextMemoryMapContract(unittest.TestCase):
@@ -46,6 +49,7 @@ class TestContextMemoryMapContract(unittest.TestCase):
         self.assertTrue(index["local_only"])
         self.assertTrue(index["read_only_sources"])
         self.assertFalse(index["live_actions_enabled"])
+        self.assertEqual(index["hash_mode"], "sha256_canonical_text_lf_binary_raw")
         self.assertGreaterEqual(len(index["sources"]), 8)
         for source in index["sources"]:
             self.assertEqual(source["sha256"], sha256(REPO_ROOT / source["path"]))
@@ -82,6 +86,17 @@ class TestContextMemoryMapContract(unittest.TestCase):
             self.memory.word_count(first["latest_state.md"]),
             self.memory.LATEST_STATE_WORD_BUDGET,
         )
+
+    def test_index_is_stable_across_checkout_line_endings(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = root / "state.md"
+            specs = [{"path": "state.md", "category": "stable_truth", "priority": 1}]
+            source.write_bytes(b"# State\n\nStable reviewed truth.\n")
+            first = self.memory.build_raw_index(root, specs)
+            source.write_bytes(b"# State\r\n\r\nStable reviewed truth.\r\n")
+            second = self.memory.build_raw_index(root, specs)
+            self.assertEqual(first, second)
 
     def test_generated_markdown_links_to_sources_and_hashes(self):
         index = self.memory.build_raw_index(REPO_ROOT)

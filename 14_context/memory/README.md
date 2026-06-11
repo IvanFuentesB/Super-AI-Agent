@@ -31,6 +31,22 @@ python 03_scripts/context_memory/ghoti_handoff_packet.py --verify --json
 - `schemas/agent_handoff_packet.schema.json`: shared packet contract.
 - `agent_handoffs/<agent>/outbox/`: immutable packets written by that agent.
 - `agent_handoffs/<agent>/inbox/`: read-only delivery pointers addressed to that agent.
+- `obsidian/START_HERE.md`: generated Obsidian-compatible navigation entry point.
+- `index/obsidian_view_index.json`: deterministic hashes for generated Obsidian views.
+
+## Obsidian View
+
+Open `14_context/memory/` as a local Obsidian vault, then start at
+`obsidian/START_HERE.md`. The pages under `obsidian/` are generated pointers,
+not canonical truth. They link back to the source indexes, durable files, and
+handoff packets. Do not commit `.obsidian` workspace state, plugin caches, or
+machine-specific settings.
+
+```powershell
+python 03_scripts/context_memory/ghoti_obsidian_memory_view.py --check --json
+python 03_scripts/context_memory/ghoti_obsidian_memory_view.py --write --json
+python 03_scripts/context_memory/ghoti_obsidian_memory_view.py --verify --json
+```
 
 ## Safety Contract
 
@@ -45,6 +61,12 @@ python 03_scripts/context_memory/ghoti_handoff_packet.py --verify --json
 - A sender writes only to its own outbox; delivery creates an immutable hash-linked inbox pointer.
 - Published packet IDs are append-only. Corrections require a new packet ID.
 - Packet size and rendered Markdown are bounded to reduce repeated context and token use.
+
+## Hash Contract
+
+Indexes use `sha256_canonical_text_lf_binary_raw`. Text files are normalized to
+LF line endings before hashing so the same committed content verifies across
+Windows and Unix checkouts. Binary files are hashed as raw bytes.
 
 ## Existing Memory Compatibility
 

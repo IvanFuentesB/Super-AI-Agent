@@ -22,6 +22,10 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 MEMORY_ROOT = REPO_ROOT / "14_context" / "memory"
 INDEX_PATH = MEMORY_ROOT / "index" / "handoff_index.json"
 ALLOWED_AGENTS = ("claude", "codex", "hermes", "chatgpt", "local_models")
+HASH_MODE = "sha256_canonical_text_lf_binary_raw"
+TEXT_HASH_SUFFIXES = frozenset(
+    (".css", ".html", ".js", ".json", ".md", ".ps1", ".py", ".toml", ".txt", ".yaml", ".yml")
+)
 MAX_PACKET_BYTES = 65_536
 MAX_LIST_ITEMS = 100
 MAX_STRING_CHARS = 4_000
@@ -70,8 +74,15 @@ _NODE_WRITE_SCRIPT = (
 )
 
 
+def canonical_file_bytes(path: Path) -> bytes:
+    data = path.read_bytes()
+    if path.suffix.lower() in TEXT_HASH_SUFFIXES:
+        return data.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+    return data
+
+
 def sha256_file(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    return hashlib.sha256(canonical_file_bytes(path)).hexdigest()
 
 
 def word_count(text: str) -> int:
@@ -445,6 +456,7 @@ def build_handoff_index(memory_root: Path = MEMORY_ROOT) -> dict:
     return {
         "schema_version": "1.0",
         "memory_type": "shared_agent_handoff_index",
+        "hash_mode": HASH_MODE,
         "generated_at": max(generated_at_values) if generated_at_values else None,
         "generated_at_source": "newest_packet_timestamp",
         "handoff_state_sha256": hashlib.sha256("\n".join(state_lines).encode("utf-8")).hexdigest(),

@@ -5,6 +5,7 @@
   "required": [
     "schema_version",
     "memory_type",
+    "hash_mode",
     "generated_at",
     "source_state_sha256",
     "local_only",
@@ -22,6 +23,9 @@
     },
     "memory_type": {
       "const": "source_linked_pointer_index"
+    },
+    "hash_mode": {
+      "const": "sha256_canonical_text_lf_binary_raw"
     },
     "generated_at": {
       "type": [

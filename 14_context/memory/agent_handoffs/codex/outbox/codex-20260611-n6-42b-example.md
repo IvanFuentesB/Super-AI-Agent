@@ -41,6 +41,6 @@ Human reviews the packet before any merge or live action.
 
 ## Hash Evidence
 
-- Source: `14_context/memory/index/raw_index.json` - SHA-256 `070d5759e369a294121f602d5b9f250be362ab328cfb8f0a9c9194a53f9278a8`
-- Artifact: `01_projects/runtime_mvp/tests/test_n6_42b_shared_agent_handoffs.py` - SHA-256 `6f9bb1c7d8e311644506d4ba49f332adcf0244990e5dd5327e90c09b7961d7bf`
-- Artifact: `03_scripts/context_memory/ghoti_handoff_packet.py` - SHA-256 `f6af30115dc664a381a6a55349ef3ad66f915968206f00483c897d27e310f3b9`
+- Source: `14_context/memory/index/raw_index.json` - SHA-256 `07f027e2ade23651dfb6cb461c17e3a360b957d6aec6102bb1590aca85424123`
+- Artifact: `01_projects/runtime_mvp/tests/test_n6_42b_shared_agent_handoffs.py` - SHA-256 `ba3df656efa818447c9b697edca8f6f1bc557687820bd27771d5d6f796c973d8`
+- Artifact: `03_scripts/context_memory/ghoti_handoff_packet.py` - SHA-256 `ddaa2fa6d5c25d7cb9cf10e4e9a35f06d166c39f5a36d1f30ff5fc9cfe65a0a9`

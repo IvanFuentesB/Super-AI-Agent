@@ -21,6 +21,10 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 MEMORY_ROOT = REPO_ROOT / "14_context" / "memory"
 CONTEXT_MAP_WORD_BUDGET = 1200
 LATEST_STATE_WORD_BUDGET = 800
+HASH_MODE = "sha256_canonical_text_lf_binary_raw"
+TEXT_HASH_SUFFIXES = frozenset(
+    (".css", ".html", ".js", ".json", ".md", ".ps1", ".py", ".toml", ".txt", ".yaml", ".yml")
+)
 
 SOURCE_SPECS = [
     {"path": "14_context/00_main_memory/current-state.md", "category": "stable_truth", "priority": 1},
@@ -60,8 +64,15 @@ _NODE_WRITE_SCRIPT = (
 )
 
 
+def canonical_file_bytes(path: Path) -> bytes:
+    data = path.read_bytes()
+    if path.suffix.lower() in TEXT_HASH_SUFFIXES:
+        return data.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+    return data
+
+
 def sha256_file(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    return hashlib.sha256(canonical_file_bytes(path)).hexdigest()
 
 
 def word_count(text: str) -> int:
@@ -143,7 +154,7 @@ def build_raw_index(repo_root: Path = REPO_ROOT, source_specs: list[dict] | None
                 "category": spec["category"],
                 "priority": spec["priority"],
                 "sha256": digest,
-                "bytes": path.stat().st_size,
+                "bytes": len(canonical_file_bytes(path)),
                 "summary_safe": summary_safe,
                 "title": _title(text, Path(spec["path"]).name) if summary_safe else Path(spec["path"]).name,
                 "highlights": _highlights(text) if summary_safe else [],
@@ -153,6 +164,7 @@ def build_raw_index(repo_root: Path = REPO_ROOT, source_specs: list[dict] | None
     return {
         "schema_version": "1.0",
         "memory_type": "source_linked_pointer_index",
+        "hash_mode": HASH_MODE,
         "generated_at": None,
         "generated_at_source": "not_recorded_for_deterministic_output",
         "source_state_sha256": hashlib.sha256(state_material.encode("utf-8")).hexdigest(),
@@ -170,6 +182,8 @@ def build_raw_index(repo_root: Path = REPO_ROOT, source_specs: list[dict] | None
 def _context_map(index: dict) -> str:
     handoff_index_path = MEMORY_ROOT / "index" / "handoff_index.json"
     handoff_index = json.loads(handoff_index_path.read_text(encoding="utf-8")) if handoff_index_path.is_file() else {}
+    obsidian_index_path = MEMORY_ROOT / "index" / "obsidian_view_index.json"
+    obsidian_index = json.loads(obsidian_index_path.read_text(encoding="utf-8")) if obsidian_index_path.is_file() else {}
     lines = [
         "# Ghoti Context Memory Map",
         "",
@@ -188,6 +202,13 @@ def _context_map(index: dict) -> str:
         f"- Published packets: {handoff_index.get('packet_count', 0)}",
         f"- Inbox deliveries: {handoff_index.get('delivery_count', 0)}",
         "- Commands in packets are evidence only and are never executed.",
+        "",
+        "## Obsidian Memory View",
+        "",
+        "- Entry point: `14_context/memory/obsidian/START_HERE.md`",
+        f"- Index: `14_context/memory/index/obsidian_view_index.json` - SHA-256 `{sha256_file(obsidian_index_path) if obsidian_index_path.is_file() else 'missing'}`",
+        f"- Generated pointer views: {obsidian_index.get('view_count', 0)}",
+        "- Obsidian pages are navigation only and are not canonical truth.",
         "",
     ]
     categories = sorted({source["category"] for source in index["sources"]})
@@ -221,6 +242,8 @@ def _context_map(index: dict) -> str:
 def _latest_state(index: dict) -> str:
     handoff_index_path = MEMORY_ROOT / "index" / "handoff_index.json"
     handoff_index = json.loads(handoff_index_path.read_text(encoding="utf-8")) if handoff_index_path.is_file() else {}
+    obsidian_index_path = MEMORY_ROOT / "index" / "obsidian_view_index.json"
+    obsidian_index = json.loads(obsidian_index_path.read_text(encoding="utf-8")) if obsidian_index_path.is_file() else {}
     lines = [
         "# Ghoti Latest State Pointer",
         "",
@@ -239,6 +262,12 @@ def _latest_state(index: dict) -> str:
         f"- Inbox deliveries: {handoff_index.get('delivery_count', 0)}",
         "- Sender outboxes are immutable; recipient inboxes contain hash-linked read-only pointers.",
         "- Commands are evidence only and are never executed.",
+        "",
+        "## Obsidian memory view",
+        "",
+        "- Start at `14_context/memory/obsidian/START_HERE.md`.",
+        f"- Generated pointer views: {obsidian_index.get('view_count', 0)}",
+        "- Views are source-linked navigation, not canonical truth.",
         "",
         "## Source-linked highlights",
         "",
@@ -355,7 +384,7 @@ def check() -> dict:
         "network_used": False,
         "model_used": False,
         "live_actions_enabled": False,
-        "next_milestone": "N+6.42B Shared Agent Handoff Inbox/Outbox",
+        "next_milestone": "N+6.43A Optional Local Embedding/Search Trial",
     }
 
 

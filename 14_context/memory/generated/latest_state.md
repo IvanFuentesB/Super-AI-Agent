@@ -16,13 +16,19 @@
 - Sender outboxes are immutable; recipient inboxes contain hash-linked read-only pointers.
 - Commands are evidence only and are never executed.
 
+## Obsidian memory view
+
+- Start at `14_context/memory/obsidian/START_HERE.md`.
+- Generated pointer views: 5
+- Views are source-linked navigation, not canonical truth.
+
 ## Source-linked highlights
 
 These are review-required excerpts, not validated current truth.
 
 ### CURRENT_TASK.md
 
-Source: `14_context/agent_handoff_vault/02_Agent_Handoffs/CURRENT_TASK.md` - SHA-256 `29b257e184a915ff28dc092c0b42e33d2b263e22c2aaae779ad5a3dd7908b101`
+Source: `14_context/agent_handoff_vault/02_Agent_Handoffs/CURRENT_TASK.md` - SHA-256 `5b7889cee2b0a8e9d16692aa1a7069a6e5df03ad7eec0ec5e01ee69a47c20c2e`
 
 - # Current Task
 - Status: ready-for-codex-or-claude
@@ -30,7 +36,7 @@ Source: `14_context/agent_handoff_vault/02_Agent_Handoffs/CURRENT_TASK.md` - SHA
 
 ### AGENT_RULES.md
 
-Source: `14_context/agent_handoff_vault/AGENT_RULES.md` - SHA-256 `fae84803cb36f9ad7ac3296c3fc97640d5582cf796ccaae1465f235194f86419`
+Source: `14_context/agent_handoff_vault/AGENT_RULES.md` - SHA-256 `49318af18a327d4cec77516babba8f66604a34ed4972db1ac0934ca927154b5a`
 
 - # Agent Rules
 - Hermes/Alfred: coordinator, planner, memory writer, handoff manager.
@@ -38,7 +44,7 @@ Source: `14_context/agent_handoff_vault/AGENT_RULES.md` - SHA-256 `fae84803cb36f
 
 ### Blocker State
 
-Source: `14_context/compact_memory/blocker_state.md` - SHA-256 `df39db0a0bc6d62173aab3ee181b7409bd43ac163e6fb91ba0dc53a3670ada16`
+Source: `14_context/compact_memory/blocker_state.md` - SHA-256 `77586ff6e0f6d3adb9dcc243b6952a589357bd48aba61bd769a4f26c789d629c`
 
 - blocked_reason: none
 - waiting_reason: none
@@ -46,14 +52,14 @@ Source: `14_context/compact_memory/blocker_state.md` - SHA-256 `df39db0a0bc6d621
 
 ### Compact: Project State
 
-Source: `14_context/compact_memory/project_state.md` - SHA-256 `5f944987f9466cee6ff37ff24e687f126708b5ec497ff39709a0be40a914ee5b`
+Source: `14_context/compact_memory/project_state.md` - SHA-256 `4574a3bdb37e16aedf4b462aec7baf9d97b5f8a12a0b2011282e019da0858e3e`
 
 - Update after next pushed milestone commit.
 - Replace HEAD hash, update capabilities, update blocked section.
 
 ### Next Exact Step
 
-Source: `14_context/compact_memory/next_exact_step.md` - SHA-256 `de8a7b850cb8ab5a60d4eab4203c1bec17d9a853822861bb814710a27f4723d5`
+Source: `14_context/compact_memory/next_exact_step.md` - SHA-256 `72dd3f216c726683a250a0523475703e07e56465ead3c4a3c0fce5fc5b7a2967`
 
 - Bind exact ChatGPT and Codex targets before trusting any relay paste or send path.
 - Keep the relay state honest even if the next step is still manual.
@@ -61,7 +67,7 @@ Source: `14_context/compact_memory/next_exact_step.md` - SHA-256 `de8a7b850cb8ab
 
 ### Local vs Sync Boundaries
 
-Source: `14_context/00_main_memory/local-vs-sync-boundaries.md` - SHA-256 `679b6512fedf6777dc67dc5007f3d6c3ae331c5e5d426f32c6209071b4ad5332`
+Source: `14_context/00_main_memory/local-vs-sync-boundaries.md` - SHA-256 `982a5b94ee914adc7cd34e4862e9b5af519755d5852a60fd9dea14c8de6231bd`
 
 - browser profiles
 - raw session databases
@@ -69,7 +75,7 @@ Source: `14_context/00_main_memory/local-vs-sync-boundaries.md` - SHA-256 `679b6
 
 ### START_HERE.md
 
-Source: `14_context/agent_handoff_vault/00_Inbox/START_HERE.md` - SHA-256 `7d816e21e320b646f5dcb45b973109400c74e2885b071f61ce8ff7afd85c98c3`
+Source: `14_context/agent_handoff_vault/00_Inbox/START_HERE.md` - SHA-256 `eaae947bdf03d31bc140880aa403fcaa9c1a24f5eb56a07a098ba594bf6be708`
 
 - # Ghoti Agent Vault - Start Here
 - This vault is the shared memory and handoff board for Ghoti.
@@ -83,4 +89,4 @@ Source: `14_context/agent_handoff_vault/00_Inbox/START_HERE.md` - SHA-256 `7d816
 4. Record blockers and evidence in a reviewed handoff packet.
 5. Never execute model output directly.
 
-Source state SHA-256: `69aec46b66da6e93bbf2426ae4853bc527a780e97e61ef492a9ecb09f5c4e13c`
+Source state SHA-256: `36449b06094fed93208c0a639527082352c399b8d45c81b15edd856df21e29c1`

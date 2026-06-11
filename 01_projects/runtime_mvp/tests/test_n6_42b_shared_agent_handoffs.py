@@ -37,7 +37,10 @@ def load_memory_map_module():
 
 
 def sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    data = path.read_bytes()
+    if path.suffix.lower() in {".json", ".md", ".ps1", ".py", ".txt", ".yaml", ".yml"}:
+        data = data.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+    return hashlib.sha256(data).hexdigest()
 
 
 def valid_packet() -> dict:
@@ -216,6 +219,7 @@ class TestSharedAgentHandoffContract(unittest.TestCase):
             index = self.handoff.build_handoff_index(root)
             self.assertEqual(index["packet_count"], 1)
             self.assertEqual(index["delivery_count"], 1)
+            self.assertEqual(index["hash_mode"], "sha256_canonical_text_lf_binary_raw")
             self.assertTrue(self.handoff.verify_handoff_index(root, index)["ok"])
 
             packet_path = root / "agent_handoffs" / "codex" / "outbox" / f"{packet['packet_id']}.json"
@@ -223,6 +227,15 @@ class TestSharedAgentHandoffContract(unittest.TestCase):
             verify = self.handoff.verify_handoff_index(root, index)
             self.assertFalse(verify["ok"])
             self.assertTrue(verify["mismatches"])
+
+    def test_text_evidence_hash_is_stable_across_checkout_line_endings(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "evidence.md"
+            path.write_bytes(b"# Evidence\n\nReviewed truth.\n")
+            first = self.handoff.sha256_file(path)
+            path.write_bytes(b"# Evidence\r\n\r\nReviewed truth.\r\n")
+            second = self.handoff.sha256_file(path)
+            self.assertEqual(first, second)
 
     def test_expected_agent_folders_schema_index_and_example_exist(self):
         agents = ["claude", "codex", "hermes", "chatgpt", "local_models"]

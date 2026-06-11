@@ -11,5 +11,5 @@
   "schema_version": "1.0",
   "source_agent": "codex",
   "source_packet_path": "agent_handoffs/codex/outbox/codex-20260611-n6-42b-example.json",
-  "source_packet_sha256": "c1dabdf8dafc3027b1f0bd2c1580b7bfbf8e7c5efa037644123dfe34695637f5"
+  "source_packet_sha256": "ff4d247e2fe9bbce0abffee032ee5671d621dae459c4de44cabdb61bf67fd665"
 }

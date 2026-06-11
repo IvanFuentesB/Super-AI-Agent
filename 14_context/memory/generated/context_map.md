@@ -2,7 +2,7 @@
 
 > Generated pointer layer; not canonical truth. Durable source files win on conflict.
 
-- Source state SHA-256: `69aec46b66da6e93bbf2426ae4853bc527a780e97e61ef492a9ecb09f5c4e13c`
+- Source state SHA-256: `36449b06094fed93208c0a639527082352c399b8d45c81b15edd856df21e29c1`
 - Generated at: `not recorded` from `not_recorded_for_deterministic_output`
 - Reviewed sources: 15
 - Local only: true
@@ -11,49 +11,56 @@
 
 ## Shared Agent Handoffs
 
-- Index: `14_context/memory/index/handoff_index.json` - SHA-256 `7fc0ac8ed2e25a36b0a7671906ce29333f7f63f2484daeeab3473065671de289`
+- Index: `14_context/memory/index/handoff_index.json` - SHA-256 `703c2d99fe32135063ea8d3e2d4c3a842e0da49d4629c30fa760fcb87b90358e`
 - Published packets: 1
 - Inbox deliveries: 1
 - Commands in packets are evidence only and are never executed.
 
+## Obsidian Memory View
+
+- Entry point: `14_context/memory/obsidian/START_HERE.md`
+- Index: `14_context/memory/index/obsidian_view_index.json` - SHA-256 `0c6bc5f01d518f64ce1428f68d0a07694f00eeb595552e8277399846b1fd8670`
+- Generated pointer views: 5
+- Obsidian pages are navigation only and are not canonical truth.
+
 ## Agent Handoff
 
-- [`14_context/agent_handoff_vault/02_Agent_Handoffs/CURRENT_TASK.md`](../../agent_handoff_vault/02_Agent_Handoffs/CURRENT_TASK.md) - `summary-safe` - SHA-256 `29b257e184a915ff28dc092c0b42e33d2b263e22c2aaae779ad5a3dd7908b101`
-- [`14_context/agent_handoff_vault/AGENT_RULES.md`](../../agent_handoff_vault/AGENT_RULES.md) - `summary-safe` - SHA-256 `fae84803cb36f9ad7ac3296c3fc97640d5582cf796ccaae1465f235194f86419`
-- [`14_context/agent_handoff_vault/00_Inbox/START_HERE.md`](../../agent_handoff_vault/00_Inbox/START_HERE.md) - `summary-safe` - SHA-256 `7d816e21e320b646f5dcb45b973109400c74e2885b071f61ce8ff7afd85c98c3`
+- [`14_context/agent_handoff_vault/02_Agent_Handoffs/CURRENT_TASK.md`](../../agent_handoff_vault/02_Agent_Handoffs/CURRENT_TASK.md) - `summary-safe` - SHA-256 `5b7889cee2b0a8e9d16692aa1a7069a6e5df03ad7eec0ec5e01ee69a47c20c2e`
+- [`14_context/agent_handoff_vault/AGENT_RULES.md`](../../agent_handoff_vault/AGENT_RULES.md) - `summary-safe` - SHA-256 `49318af18a327d4cec77516babba8f66604a34ed4972db1ac0934ca927154b5a`
+- [`14_context/agent_handoff_vault/00_Inbox/START_HERE.md`](../../agent_handoff_vault/00_Inbox/START_HERE.md) - `summary-safe` - SHA-256 `eaae947bdf03d31bc140880aa403fcaa9c1a24f5eb56a07a098ba594bf6be708`
 
 ## Blockers
 
-- [`14_context/compact_memory/blocker_state.md`](../../compact_memory/blocker_state.md) - `summary-safe` - SHA-256 `df39db0a0bc6d62173aab3ee181b7409bd43ac163e6fb91ba0dc53a3670ada16`
+- [`14_context/compact_memory/blocker_state.md`](../../compact_memory/blocker_state.md) - `summary-safe` - SHA-256 `77586ff6e0f6d3adb9dcc243b6952a589357bd48aba61bd769a4f26c789d629c`
 
 ## Compact State
 
-- [`14_context/compact_memory/project_state.md`](../../compact_memory/project_state.md) - `summary-safe` - SHA-256 `5f944987f9466cee6ff37ff24e687f126708b5ec497ff39709a0be40a914ee5b`
+- [`14_context/compact_memory/project_state.md`](../../compact_memory/project_state.md) - `summary-safe` - SHA-256 `4574a3bdb37e16aedf4b462aec7baf9d97b5f8a12a0b2011282e019da0858e3e`
 
 ## Next Action
 
-- [`14_context/compact_memory/next_exact_step.md`](../../compact_memory/next_exact_step.md) - `summary-safe` - SHA-256 `de8a7b850cb8ab5a60d4eab4203c1bec17d9a853822861bb814710a27f4723d5`
+- [`14_context/compact_memory/next_exact_step.md`](../../compact_memory/next_exact_step.md) - `summary-safe` - SHA-256 `72dd3f216c726683a250a0523475703e07e56465ead3c4a3c0fce5fc5b7a2967`
 
 ## Obsidian View
 
-- [`14_context/obsidian_vault/00_Index.md`](../../obsidian_vault/00_Index.md) - `summary-safe` - SHA-256 `b0071ac0312481834e0d78ff7fd0bb2192c08752357bdbaead0db38162d6b566`
-- [`14_context/obsidian_vault/01_Current_State.md`](../../obsidian_vault/01_Current_State.md) - `summary-safe` - SHA-256 `52b3318f65bf9c61ae5ca46ee1a457c77cbcef711049a2903f6da6d68b816af9`
-- [`14_context/obsidian_vault/02_Next_Actions.md`](../../obsidian_vault/02_Next_Actions.md) - `summary-safe` - SHA-256 `588022724d5d0090ac2c03be576b8029ba2fe36246e0390fd6c129d5d6f001ae`
+- [`14_context/obsidian_vault/00_Index.md`](../../obsidian_vault/00_Index.md) - `summary-safe` - SHA-256 `f87836e79cd690ca06d503f61e1f3d53fb2662f698c63b4a4ebd4efa7106396d`
+- [`14_context/obsidian_vault/01_Current_State.md`](../../obsidian_vault/01_Current_State.md) - `summary-safe` - SHA-256 `06394661045ead1aa9d961c5e0f06b97d38f9ee2aae18883815466bb59c384e1`
+- [`14_context/obsidian_vault/02_Next_Actions.md`](../../obsidian_vault/02_Next_Actions.md) - `summary-safe` - SHA-256 `21dab51f6f47fe7ee8b1ee67007cb01599239edc24a8759267ec94dbbcbc00f0`
 
 ## Run Record
 
-- [`14_context/agent_handoff_vault/04_Logs/CLAUDE_LAST_RUN.md`](../../agent_handoff_vault/04_Logs/CLAUDE_LAST_RUN.md) - `summary-safe` - SHA-256 `bedea29a00bf569df52988a8165a0e3a055adc07eb587f69bae6406c3ebe3d00`
-- [`14_context/agent_handoff_vault/04_Logs/CODEX_LAST_AUDIT.md`](../../agent_handoff_vault/04_Logs/CODEX_LAST_AUDIT.md) - `summary-safe` - SHA-256 `dc68a86d1ba6daedeb1ba921543b1c3c1e71dbf2650b6afef7043f63293752a5`
+- [`14_context/agent_handoff_vault/04_Logs/CLAUDE_LAST_RUN.md`](../../agent_handoff_vault/04_Logs/CLAUDE_LAST_RUN.md) - `summary-safe` - SHA-256 `a08189444b68aac3edafc1bfe130904f9e8c80aaf1c092e429d0704283d060f0`
+- [`14_context/agent_handoff_vault/04_Logs/CODEX_LAST_AUDIT.md`](../../agent_handoff_vault/04_Logs/CODEX_LAST_AUDIT.md) - `summary-safe` - SHA-256 `858a35cdc32de8ce7f03ccda83e07e669f04fba566c61e6edb0df6d37db587aa`
 
 ## Safety
 
-- [`14_context/00_main_memory/local-vs-sync-boundaries.md`](../../00_main_memory/local-vs-sync-boundaries.md) - `summary-safe` - SHA-256 `679b6512fedf6777dc67dc5007f3d6c3ae331c5e5d426f32c6209071b4ad5332`
-- [`14_context/compact_memory/safety_rules.md`](../../compact_memory/safety_rules.md) - `metadata-only` - SHA-256 `166eaa898744245b580e67f87880a17da37ef1d29364f3f6398f9d17cc961f6b`
-- [`14_context/obsidian_vault/06_Safety_Gates.md`](../../obsidian_vault/06_Safety_Gates.md) - `metadata-only` - SHA-256 `9dc74340b601369325eb414595074f63eb6d4fce3b8e70881114625dd1d54198`
+- [`14_context/00_main_memory/local-vs-sync-boundaries.md`](../../00_main_memory/local-vs-sync-boundaries.md) - `summary-safe` - SHA-256 `982a5b94ee914adc7cd34e4862e9b5af519755d5852a60fd9dea14c8de6231bd`
+- [`14_context/compact_memory/safety_rules.md`](../../compact_memory/safety_rules.md) - `metadata-only` - SHA-256 `448c41fbf265734f8a094e8476feb4923b45e8ec161baa5d13e3ccb3bbf15b1e`
+- [`14_context/obsidian_vault/06_Safety_Gates.md`](../../obsidian_vault/06_Safety_Gates.md) - `metadata-only` - SHA-256 `5688d08f427da8eb9201a1eff584157304c083be3491fbbfe5c8cea39eee09d5`
 
 ## Stable Truth
 
-- [`14_context/00_main_memory/current-state.md`](../../00_main_memory/current-state.md) - `metadata-only` - SHA-256 `38f72761a1e07bce603203b3c1992a2cbec6fd04d2307022fff340a866b9cfe4`
+- [`14_context/00_main_memory/current-state.md`](../../00_main_memory/current-state.md) - `metadata-only` - SHA-256 `af37ed7dec4f3935f140eae1460eb32b4f7685a782437b14a2ae5062db1118ac`
 
 ## Rules
 
