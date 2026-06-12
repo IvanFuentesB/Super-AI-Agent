@@ -130,6 +130,91 @@ fn evaluate(plan: SwarmPlan) -> PolicyDecision {
     }
 }
 
+#[derive(Debug, Default, Deserialize)]
+struct OwnershipAssignment {
+    #[serde(default)]
+    agent: String,
+    #[serde(default)]
+    files: Vec<String>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+struct OwnershipWave {
+    #[serde(default)]
+    wave_id: String,
+    #[serde(default)]
+    assignments: Vec<OwnershipAssignment>,
+}
+
+#[derive(Debug, Serialize)]
+struct OwnershipOverlap {
+    file: String,
+    agents: Vec<String>,
+}
+
+#[derive(Debug, Serialize)]
+struct OwnershipDecision {
+    ok: bool,
+    checker: &'static str,
+    mode: &'static str,
+    wave_id: String,
+    overlap_count: usize,
+    overlaps: Vec<OwnershipOverlap>,
+    allowed: bool,
+    safety: Safety,
+}
+
+fn normalize_path(value: &str) -> String {
+    value.trim().to_ascii_lowercase().replace('\\', "/")
+}
+
+fn evaluate_ownership(wave: OwnershipWave) -> OwnershipDecision {
+    // Two agents conflict when one claimed path is a prefix of the other's
+    // (same rule as the Python mirror in ghoti_agent_os.py).
+    let mut seen: Vec<(String, String)> = Vec::new();
+    let mut merged: std::collections::BTreeMap<String, std::collections::BTreeSet<String>> =
+        std::collections::BTreeMap::new();
+    for assignment in &wave.assignments {
+        for raw in &assignment.files {
+            let normalized = normalize_path(raw);
+            for (other_agent, other_path) in &seen {
+                if other_agent != &assignment.agent
+                    && (normalized.starts_with(other_path.as_str())
+                        || other_path.starts_with(normalized.as_str()))
+                {
+                    let entry = merged.entry(normalized.clone()).or_default();
+                    entry.insert(assignment.agent.clone());
+                    entry.insert(other_agent.clone());
+                }
+            }
+            seen.push((assignment.agent.clone(), normalized));
+        }
+    }
+    let overlaps: Vec<OwnershipOverlap> = merged
+        .into_iter()
+        .map(|(file, agents)| OwnershipOverlap {
+            file,
+            agents: agents.into_iter().collect(),
+        })
+        .collect();
+    let overlap_count = overlaps.len();
+    OwnershipDecision {
+        ok: true,
+        checker: "ghoti_policy_checker",
+        mode: "ownership_check",
+        wave_id: wave.wave_id,
+        overlap_count,
+        overlaps,
+        allowed: overlap_count == 0,
+        safety: Safety {
+            default_deny: true,
+            launches_agents: false,
+            network_used: false,
+            writes_files: false,
+        },
+    }
+}
+
 fn print_json<T: Serialize>(value: &T) -> Result<(), String> {
     let rendered = serde_json::to_string_pretty(value).map_err(|error| error.to_string())?;
     println!("{rendered}");
@@ -157,6 +242,12 @@ fn load_plan(path: &Path) -> Result<SwarmPlan, String> {
     serde_json::from_str(&body).map_err(|error| format!("invalid plan JSON: {error}"))
 }
 
+fn load_ownership_wave(path: &Path) -> Result<OwnershipWave, String> {
+    let body = fs::read_to_string(path)
+        .map_err(|error| format!("cannot read input {}: {error}", path.display()))?;
+    serde_json::from_str(&body).map_err(|error| format!("invalid wave JSON: {error}"))
+}
+
 fn run(args: &[String]) -> i32 {
     match args {
         [flag] if flag == "--check" => {
@@ -170,7 +261,16 @@ fn run(args: &[String]) -> i32 {
             Ok(plan) => print_json(&evaluate(plan)).map_or_else(print_error, |_| 0),
             Err(error) => print_error(error),
         },
-        _ => print_error("usage: ghoti_policy_checker --check | --input <plan.json>"),
+        [flag, path] if flag == "--ownership-input" => {
+            match load_ownership_wave(Path::new(path)) {
+                Ok(wave) => print_json(&evaluate_ownership(wave)).map_or_else(print_error, |_| 0),
+                Err(error) => print_error(error),
+            }
+        }
+        _ => print_error(
+            "usage: ghoti_policy_checker --check | --input <plan.json> | \
+             --ownership-input <wave.json>",
+        ),
     }
 }
 
@@ -215,6 +315,49 @@ mod tests {
         assert!(!decision.allowed);
         assert_eq!(decision.blocked_capabilities, vec!["money"]);
         assert_eq!(decision.unknown_capabilities, vec!["future_magic"]);
+    }
+
+    #[test]
+    fn ownership_overlap_is_detected() {
+        // Two different agents claiming the same path (or a prefix of it)
+        // must be reported and the wave must not be allowed.
+        let wave = OwnershipWave {
+            wave_id: "test-wave".to_string(),
+            assignments: vec![
+                OwnershipAssignment {
+                    agent: "coder".to_string(),
+                    files: vec!["03_scripts/x.py".to_string()],
+                },
+                OwnershipAssignment {
+                    agent: "auditor".to_string(),
+                    files: vec!["03_scripts\\X.py".to_string()],
+                },
+            ],
+        };
+        let decision = evaluate_ownership(wave);
+        assert!(!decision.allowed);
+        assert_eq!(decision.overlap_count, 1);
+        assert_eq!(decision.overlaps[0].agents, vec!["auditor", "coder"]);
+    }
+
+    #[test]
+    fn ownership_clean_wave_is_allowed() {
+        let wave = OwnershipWave {
+            wave_id: "clean-wave".to_string(),
+            assignments: vec![
+                OwnershipAssignment {
+                    agent: "coder".to_string(),
+                    files: vec!["01_projects/".to_string()],
+                },
+                OwnershipAssignment {
+                    agent: "planner".to_string(),
+                    files: vec!["14_context/agent_os/runs/planner/".to_string()],
+                },
+            ],
+        };
+        let decision = evaluate_ownership(wave);
+        assert!(decision.allowed);
+        assert_eq!(decision.overlap_count, 0);
     }
 
     #[test]
