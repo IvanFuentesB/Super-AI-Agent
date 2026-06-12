@@ -17,6 +17,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import workflow_templates
+import data_only_writer
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 AGENT_OS_DIR = REPO_ROOT / "14_context" / "agent_os"
@@ -95,8 +96,7 @@ def _write_text(path: Path, content: str) -> dict:
     if not _is_allowed_write(path):
         return {"written": False, "path": _rel(path),
                 "refused": "path outside the worker's allowed output folders"}
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(_ascii(content), encoding="utf-8")
+    data_only_writer.write_text(path, _ascii(content))
     return {"written": True, "path": _rel(path), "refused": None}
 
 

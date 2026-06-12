@@ -1,0 +1,54 @@
+{
+  "canonical_truth": false,
+  "generated_at": null,
+  "generated_at_source": "not_recorded_for_deterministic_output",
+  "handoff_state_sha256": "376c2cd2e0a56ba2bd9cf63d7baa6b8674b7c5f926db9304f6f994485ebb3c17",
+  "hash_mode": "sha256_canonical_text_lf_binary_raw",
+  "live_actions_enabled": false,
+  "local_only": true,
+  "memory_type": "obsidian_generated_pointer_view_index",
+  "model_used": false,
+  "network_used": false,
+  "obsidian_view_state_sha256": "41e1ae188e707ec48e8c677f52a9d78359ca74abde3acd6cce8fa85fdb0988a2",
+  "private_workspace_state_committed": false,
+  "schema_version": "1.0",
+  "source_indexes": [
+    {
+      "path": "14_context/memory/index/raw_index.json",
+      "sha256": "07f027e2ade23651dfb6cb461c17e3a360b957d6aec6102bb1590aca85424123"
+    },
+    {
+      "path": "14_context/memory/index/handoff_index.json",
+      "sha256": "703c2d99fe32135063ea8d3e2d4c3a842e0da49d4629c30fa760fcb87b90358e"
+    }
+  ],
+  "source_state_sha256": "36449b06094fed93208c0a639527082352c399b8d45c81b15edd856df21e29c1",
+  "view_count": 5,
+  "views": [
+    {
+      "path": "obsidian/START_HERE.md",
+      "sha256": "2f86679ef4db836cb4d64f41130feb1c4e8f5c94ccf56bae8fb477161571c1b4",
+      "words": 111
+    },
+    {
+      "path": "obsidian/CURRENT_STATE.md",
+      "sha256": "5e8997bd830b5b4a6c29389b2690c25d1a419fc2bfaf63975412afeb245d9c0b",
+      "words": 66
+    },
+    {
+      "path": "obsidian/NEXT_ACTIONS.md",
+      "sha256": "42c85ef7cae867a26cb2d7d0a0d95c51747023d09952a9cf73291c671f81ef05",
+      "words": 68
+    },
+    {
+      "path": "obsidian/SAFETY_GATES.md",
+      "sha256": "959e060679145369bf8011418957deeaf938c34252e38ee04546a0e5ce77e7ff",
+      "words": 98
+    },
+    {
+      "path": "obsidian/AGENT_HANDOFFS.md",
+      "sha256": "df2db5dce6e72c962d5f27a069007bc44aba98d534a2dd524f9f2e3c963aa652",
+      "words": 57
+    }
+  ]
+}

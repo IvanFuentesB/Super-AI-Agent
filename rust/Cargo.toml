@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "agent_os_guard",
     "ghoti_policy_checker",
     "ghoti_runtime_core",
 ]

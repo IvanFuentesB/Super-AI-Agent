@@ -3,6 +3,14 @@
 version = 4
 
 [[package]]
+name = "agent_os_guard"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "ghoti_policy_checker"
 version = "0.1.0"
 dependencies = [

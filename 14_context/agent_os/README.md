@@ -1,19 +1,31 @@
-# Ghoti Agent OS - generated artifacts
+# Ghoti Agent OS - command center and guard artifacts
 
-This folder holds the command center's repo-local outputs. Everything in
-the subfolders is generated, suggestion-only, and safe to regenerate:
+This folder holds the integrated command center's repo-local outputs and the
+first Agent OS guard vertical slice. Everything remains local, supervised,
+suggestion-only, and deny-by-default.
+
+The Rust guard validates proposed local worker actions before the guarded
+Python harness may render a simulation or suggestion-only plan. The command
+center and guarded harness never execute `approved_local`, browser,
+computer-use, account, posting, purchase, or model-output-as-command actions.
 
 | Folder | Content |
 |--------|---------|
-| `workflows/` | Workflow plans written by `--plan-workflow` |
+| `workflows/` | Generated workflow plans written by `--plan-workflow` |
+| `requests/` | Public-safe example guard policy requests |
+| `trials/` | Harmless suggestion-only trial artifacts |
 | `handoffs/` | Worker suggestions and copy-paste handoff packets |
-| `runs/` | Self-check probes and ownership-check inputs (role-namespaced) |
-| `evidence/` | Full local demo evidence reports (`full_local_demo_*.md/.json`) |
+| `runs/` | Guard decisions, self-check probes, and local run records |
+| `evidence/` | Full local demo evidence reports |
 
-Generated files are gitignored; only the READMEs are tracked.
+Generated command-center artifacts are gitignored and safe to regenerate.
+Small deterministic guard examples may be tracked as public-safe evidence.
+On Windows, generated text may use the repo's fixed data-only Node writer
+fallback. Its destination is already allowlisted and its content is encoded
+data; it cannot accept or execute user/model-supplied commands.
 
-`APPROVED_ACTIONS.json` (not present by default) is the human-edited
-approval file. If it exists and lists `allow_output_dirs` (repo-local
-only), the suggestion-only worker may also write into those folders.
-Without it, the worker can write nowhere outside this tree, and it can
-never execute commands either way.
+`APPROVED_ACTIONS.json` is not present by default. If a human creates it and
+lists repo-local `allow_output_dirs`, the suggestion-only command-center
+worker may write suggestions into those folders. It still cannot execute
+commands. Raw approval values are never copied into guard decisions, run
+records, or handoffs.

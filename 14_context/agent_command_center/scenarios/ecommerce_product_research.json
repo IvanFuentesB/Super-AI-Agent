@@ -1,0 +1,20 @@
+{
+  "scenario_id": "ecommerce-product-research",
+  "title": "Supervised ecommerce product research",
+  "business_lane": "ecommerce_product_research",
+  "objective": "Prepare a local product, supplier-risk, margin, and compliance decision packet without opening a store or spending money.",
+  "revenue_hypothesis": "Careful local research can identify testable product ideas, but it does not guarantee demand, margin, or income.",
+  "evidence_required": ["source-linked product evidence", "supplier risk notes", "margin assumptions", "legal and platform review", "human go/no-go"],
+  "simulation": true,
+  "live_execution": false,
+  "repo_pattern_sources": ["paperclipai/paperclip planning shape", "Ghoti Agent Arena", "Ghoti shared memory"],
+  "approval_gates": ["human approval before supplier contact", "human approval before store, ads, purchase, payment, or account action"],
+  "blocked_actions": ["live agent launch", "mouse click", "keyboard input", "account login", "purchase", "payment", "auto-submit", "live posting", "store login", "supplier contact", "ad spend", "store creation"],
+  "tasks": [
+    {"id": "research_product_problem", "role": "planner", "description": "Define a customer problem and product evaluation criteria.", "files": ["14_context/agent_command_center/work_products/ecommerce_problem_research.md"], "depends_on": []},
+    {"id": "summarize_supplier_risks", "role": "summarizer", "description": "Prepare a local supplier-risk checklist from reviewed inputs.", "files": ["14_context/agent_command_center/work_products/ecommerce_supplier_risks.md"], "depends_on": ["research_product_problem"]},
+    {"id": "model_margin_assumptions", "role": "builder", "description": "Prepare a local margin worksheet specification with uncertainty.", "files": ["14_context/agent_command_center/work_products/ecommerce_margin_model.md"], "depends_on": ["research_product_problem"]},
+    {"id": "audit_compliance_and_claims", "role": "auditor", "description": "Audit claims, platform risks, costs, and missing evidence.", "files": ["14_context/agent_command_center/work_products/ecommerce_audit.md"], "depends_on": ["summarize_supplier_risks", "model_margin_assumptions"]},
+    {"id": "human_go_no_go", "role": "human_approver", "description": "Record a manual research-only decision.", "files": ["14_context/agent_command_center/work_products/ecommerce_human_decision.md"], "depends_on": ["audit_compliance_and_claims"]}
+  ]
+}

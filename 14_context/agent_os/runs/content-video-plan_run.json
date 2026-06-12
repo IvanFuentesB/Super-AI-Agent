@@ -1,0 +1,55 @@
+{
+  "artifacts": {
+    "handoff": "14_context/agent_os/handoffs/content-video-plan_handoff.md",
+    "plan": "14_context/agent_os/trials/content-video-plan.md",
+    "run": "14_context/agent_os/runs/content-video-plan_run.json"
+  },
+  "guard_decision": {
+    "allow": true,
+    "allowed_capabilities": [
+      "handoff_write",
+      "plan_render",
+      "repo_read",
+      "repo_write_trial",
+      "run_record_write"
+    ],
+    "approval_present": false,
+    "approval_required": false,
+    "decision": "allowed",
+    "denied_capabilities": [],
+    "guard_version": "agent_os_guard/0.1.0",
+    "max_runtime_seconds": 30,
+    "normalized_input_paths": [
+      "14_context/memory/obsidian/START_HERE.md"
+    ],
+    "normalized_output_paths": [
+      "14_context/agent_os/trials/content-video-plan.md",
+      "14_context/agent_os/runs/content-video-plan_run.json",
+      "14_context/agent_os/handoffs/content-video-plan_handoff.md"
+    ],
+    "reason": "policy_checks_passed",
+    "reasons": [],
+    "request_hash_fnv1a64": "4e45eae7a00ffbec",
+    "requested_capabilities": [
+      "handoff_write",
+      "plan_render",
+      "repo_read",
+      "repo_write_trial",
+      "run_record_write"
+    ],
+    "safety": {
+      "default_deny": true,
+      "launches_processes": false,
+      "live_execution": false,
+      "network_used": false,
+      "writes_files": false
+    }
+  },
+  "live_execution": false,
+  "mode": "suggestion",
+  "model_output_as_command": false,
+  "schema_version": "1.0",
+  "suggestion_only": true,
+  "worker_executed": true,
+  "workflow": "content-video-plan"
+}

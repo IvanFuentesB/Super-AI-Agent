@@ -38,6 +38,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR))
 
 import local_worker  # noqa: E402
+import agent_os_guard_bridge  # noqa: E402
 import workflow_templates  # noqa: E402
 
 REPO_ROOT = SCRIPT_DIR.parents[1]
@@ -226,6 +227,7 @@ def cmd_status() -> dict:
         },
         "local_model": _probe_ollama(),
         "worker": _worker_mode(),
+        "agent_os_guard": agent_os_guard_bridge.guard_status(),
         "workflows": {"count": len(workflow_templates.WORKFLOW_ORDER),
                       "ids": workflow_templates.WORKFLOW_ORDER},
         "rust_checker_built": any(c.is_file() for c in RUST_CHECKER_CANDIDATES),
@@ -239,6 +241,13 @@ def cmd_list_workflows() -> dict:
     payload = workflow_templates.list_templates()
     payload["action"] = "list-workflows"
     payload["generated_at"] = _now()
+    payload["safety_flags"] = _safety_flags()
+    return payload
+
+
+def cmd_guard_status() -> dict:
+    payload = dict(agent_os_guard_bridge.guard_status())
+    payload["action"] = "guard-status"
     payload["safety_flags"] = _safety_flags()
     return payload
 
@@ -454,6 +463,9 @@ def cmd_check() -> dict:
            not any(marker in worker_source for marker in execution_markers),
            "no execution primitive imported or called in local_worker.py")
 
+    for guard_check in agent_os_guard_bridge.guard_check_records():
+        record(guard_check["name"], guard_check["ok"], guard_check["details"])
+
     all_ok = all(c["ok"] for c in checks)
     return {"ok": all_ok, "action": "check", "checks": checks,
             "passed": sum(1 for c in checks if c["ok"]), "total": len(checks),
@@ -533,6 +545,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Ghoti Agent OS: integrated local supervised command center.")
     parser.add_argument("--status", action="store_true")
+    parser.add_argument("--guard-status", action="store_true")
     parser.add_argument("--check", action="store_true")
     parser.add_argument("--list-workflows", action="store_true")
     parser.add_argument("--plan-workflow", metavar="ID")
@@ -551,6 +564,8 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.status:
         payload = cmd_status()
+    elif args.guard_status:
+        payload = cmd_guard_status()
     elif args.check:
         payload = cmd_check()
     elif args.list_workflows:

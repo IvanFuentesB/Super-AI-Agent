@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ghoti Agent Command Center</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <header>
+    <div>
+      <p class="eyebrow">N+6.44A / LOCAL SIMULATION</p>
+      <h1>Ghoti Agent Command Center</h1>
+    </div>
+    <div class="safety"><span></span> Live execution disabled</div>
+  </header>
+  <nav aria-label="Scenario views">
+    <button data-scenario="content-revenue-research">Content research</button>
+    <button data-scenario="ecommerce-product-research">Ecommerce research</button>
+    <button data-scenario="code-maintenance-swarm">Code swarm</button>
+  </nav>
+  <main>
+    <section class="summary" id="summary"></section>
+    <section>
+      <div class="section-heading">
+        <h2>Scenario Queue</h2>
+        <span id="scenario-mode">simulation</span>
+      </div>
+      <div class="queue" id="queue"></div>
+    </section>
+    <section class="columns">
+      <div>
+        <h2>Agents</h2>
+        <div class="agents" id="agents"></div>
+      </div>
+      <div>
+        <h2>Safety Gates</h2>
+        <div class="gates" id="gates"></div>
+      </div>
+    </section>
+    <section>
+      <h2>Paperclip Planning Preview</h2>
+      <div class="paperclip" id="paperclip"></div>
+    </section>
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>

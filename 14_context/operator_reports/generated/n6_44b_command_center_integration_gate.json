@@ -1,0 +1,210 @@
+{
+  "agents": {
+    "expected_role_ids": [
+      "chatgpt_strategy",
+      "claude_builder",
+      "codex_auditor",
+      "hermes_coordinator",
+      "local_summarizer",
+      "human_approver"
+    ],
+    "ok": true,
+    "stable_role_ids": [
+      "chatgpt_strategy",
+      "claude_builder",
+      "codex_auditor",
+      "hermes_coordinator",
+      "local_summarizer",
+      "human_approver"
+    ],
+    "stable_role_ids_verified": true
+  },
+  "checks": {
+    "agent_role_ids_stable": true,
+    "command_center_contract_valid": true,
+    "health_observed_safely": true,
+    "memory_search_verified_and_bounded": true,
+    "obsidian_views_and_links_valid": true,
+    "ownership_overlap_fixture_blocked": true,
+    "paperclip_is_planning_preview_only": true,
+    "simulation_boundary_explicit": true,
+    "source_files_present_and_public_safe": true,
+    "workflow_ids_and_waves_deterministic": true
+  },
+  "evidence_paths": [
+    "14_context/operator_reports/generated/n6_44b_command_center_integration_gate.json",
+    "14_context/operator_reports/generated/n6_44b_command_center_integration_gate.md",
+    "docs/GHOTI_N6_44B_COMMAND_CENTER_INTEGRATION_GATE.md",
+    "14_context/memory/obsidian/START_HERE.md",
+    "14_context/memory/search/generated/local_search_index.json",
+    "14_context/agent_command_center/generated/command_center_status.json"
+  ],
+  "execution_boundary": "simulation_and_approval_packets_only",
+  "execution_boundary_checks": {
+    "human_approval_required": true,
+    "kill_switch_required": true,
+    "live_agent_launch_disabled": true,
+    "live_execution_disabled": true,
+    "simulation_only": true
+  },
+  "generated_at": null,
+  "generated_at_source": "not_recorded_for_deterministic_evidence",
+  "health": {
+    "health_url": "http://127.0.0.1:8770/api/health",
+    "loopback_only_probe": true,
+    "mismatches": {},
+    "ok": true,
+    "server_running": true,
+    "state": "healthy"
+  },
+  "live_execution": false,
+  "local_only": true,
+  "memory_search": {
+    "canonical_truth": false,
+    "engine": "deterministic_local_feature_hash_v1",
+    "index_bytes": 40911,
+    "index_within_budget": true,
+    "indexed_sources": 12,
+    "max_index_bytes": 100000,
+    "ok": true,
+    "search_aid_only": true,
+    "source_path": "14_context/memory/search/generated/local_search_index.json",
+    "stale_entries": [],
+    "verified_sources": 12
+  },
+  "milestone": "N+6.44B",
+  "n6_45a_implemented": false,
+  "next_milestone": "N+6.45A Approved Single Local Agent Process Trial",
+  "obsidian": {
+    "canonical_truth": false,
+    "checked_links": 21,
+    "drift": [],
+    "missing": [],
+    "ok": true,
+    "source_indexes_verified": true,
+    "start_view": "14_context/memory/obsidian/START_HERE.md",
+    "start_view_exists": true,
+    "view_count": 5
+  },
+  "ok": true,
+  "ownership": {
+    "committed_scenarios": {
+      "code-maintenance-swarm": {
+        "conflicts": [],
+        "one_owner_per_path": true
+      },
+      "content-revenue-research": {
+        "conflicts": [],
+        "one_owner_per_path": true
+      },
+      "ecommerce-product-research": {
+        "conflicts": [],
+        "one_owner_per_path": true
+      }
+    },
+    "committed_scenarios_have_no_overlap": true,
+    "ok": true,
+    "overlap_fixture": {
+      "blocked": true,
+      "conflicts": [
+        {
+          "path": "14_context/fixture/shared.md",
+          "task_ids": [
+            "fixture-builder",
+            "fixture-planner"
+          ]
+        }
+      ],
+      "one_owner_per_path": false
+    }
+  },
+  "paperclip": {
+    "external_repo_executed": false,
+    "live_company_created": false,
+    "ok": true,
+    "planning_preview_only": true,
+    "scenario_ids": [
+      "code-maintenance-swarm",
+      "content-revenue-research",
+      "ecommerce-product-research"
+    ]
+  },
+  "purpose": "local command-center audit and integration gate",
+  "ready_for_n6_45a": true,
+  "simulation_only": true,
+  "source_files": {
+    "missing": [],
+    "ok": true,
+    "private_path_hits": [],
+    "required_count": 14
+  },
+  "workflows": {
+    "deterministic": true,
+    "expected_ids": [
+      "code-maintenance-swarm",
+      "content-revenue-research",
+      "ecommerce-product-research"
+    ],
+    "ok": true,
+    "scenario_hashes": {
+      "code-maintenance-swarm": "ae3d293e4615ca133f8779445439244e016e21ae85361945323a4868e9cba8d2",
+      "content-revenue-research": "1b6008fd0031b0a8ffa615359aa1991a3b609cb249002dd4148e14c2c23099d8",
+      "ecommerce-product-research": "05249262ca901a731c3296af85277552dbcac858f4c97c1710e11498df349ed6"
+    },
+    "stable_ids": [
+      "code-maintenance-swarm",
+      "content-revenue-research",
+      "ecommerce-product-research"
+    ],
+    "stable_ids_verified": true,
+    "waves": {
+      "code-maintenance-swarm": [
+        [
+          "plan_change"
+        ],
+        [
+          "build_change"
+        ],
+        [
+          "audit_change"
+        ],
+        [
+          "summarize_handoff"
+        ],
+        [
+          "approve_merge"
+        ]
+      ],
+      "content-revenue-research": [
+        [
+          "research_niche"
+        ],
+        [
+          "draft_content_packet",
+          "retrieve_memory"
+        ],
+        [
+          "audit_content_packet"
+        ],
+        [
+          "approve_experiment"
+        ]
+      ],
+      "ecommerce-product-research": [
+        [
+          "research_product_problem"
+        ],
+        [
+          "model_margin_assumptions",
+          "summarize_supplier_risks"
+        ],
+        [
+          "audit_compliance_and_claims"
+        ],
+        [
+          "human_go_no_go"
+        ]
+      ]
+    }
+  }
+}

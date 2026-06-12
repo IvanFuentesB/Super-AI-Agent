@@ -1,0 +1,20 @@
+{
+  "scenario_id": "content-revenue-research",
+  "title": "Supervised content revenue research and draft pipeline",
+  "business_lane": "content_revenue_research",
+  "objective": "Research one content niche and prepare a reviewable local content experiment packet.",
+  "revenue_hypothesis": "Useful, original content may create audience and monetization opportunities after human review and manual publishing.",
+  "evidence_required": ["audience problem notes", "source-linked niche evidence", "draft quality review", "human release decision"],
+  "simulation": true,
+  "live_execution": false,
+  "repo_pattern_sources": ["paperclipai/paperclip planning shape", "affaan-m/claude-swarm coordinator/worker shape", "Ghoti shared memory"],
+  "approval_gates": ["human approval before choosing a niche", "human approval before any future publish or account action"],
+  "blocked_actions": ["live agent launch", "mouse click", "keyboard input", "account login", "purchase", "payment", "auto-submit", "live posting", "platform upload", "mass messaging", "ad spend"],
+  "tasks": [
+    {"id": "research_niche", "role": "planner", "description": "Prepare source-linked niche and audience-problem notes.", "files": ["14_context/agent_command_center/work_products/content_niche_research.md"], "depends_on": []},
+    {"id": "retrieve_memory", "role": "summarizer", "description": "Find relevant local Ghoti memory pointers.", "files": ["14_context/agent_command_center/work_products/content_memory_sources.md"], "depends_on": ["research_niche"]},
+    {"id": "draft_content_packet", "role": "builder", "description": "Prepare a local draft, hook options, and shot-list outline.", "files": ["14_context/agent_command_center/work_products/content_draft_packet.md"], "depends_on": ["research_niche"]},
+    {"id": "audit_content_packet", "role": "auditor", "description": "Review originality, evidence, safety, and quality.", "files": ["14_context/agent_command_center/work_products/content_draft_audit.md"], "depends_on": ["retrieve_memory", "draft_content_packet"]},
+    {"id": "approve_experiment", "role": "human_approver", "description": "Choose whether to continue manually; no publish occurs.", "files": ["14_context/agent_command_center/work_products/content_human_decision.md"], "depends_on": ["audit_content_packet"]}
+  ]
+}

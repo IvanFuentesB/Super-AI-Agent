@@ -1,0 +1,97 @@
+{
+  "automatic_truth_promotion": false,
+  "canonical_truth": false,
+  "content_search": {
+    "hits": 4,
+    "top_k_hit_rate": 1.0
+  },
+  "disposable": true,
+  "fixture_id": "n6-43a-sanitized-memory-discovery-v1",
+  "improvement": 0.75,
+  "live_actions_enabled": false,
+  "local_only": true,
+  "measurable_improvement": true,
+  "milestone": "N+6.43A",
+  "model_used": false,
+  "network_used": false,
+  "ok": true,
+  "path_only_baseline": {
+    "hits": 1,
+    "top_k_hit_rate": 0.25
+  },
+  "query_count": 4,
+  "read_only_sources": true,
+  "remote_embedding_used": false,
+  "results": [
+    {
+      "content_hit": true,
+      "content_paths": [
+        "14_context/agent_handoff_vault/AGENT_RULES.md",
+        "14_context/agent_handoff_vault/00_Inbox/START_HERE.md",
+        "14_context/obsidian_vault/00_Index.md"
+      ],
+      "expected_paths": [
+        "14_context/agent_handoff_vault/AGENT_RULES.md"
+      ],
+      "id": "agent-role-discovery",
+      "path_only_hit": false,
+      "path_only_paths": [
+        "14_context/00_main_memory/current-state.md",
+        "14_context/00_main_memory/local-vs-sync-boundaries.md",
+        "14_context/agent_handoff_vault/00_Inbox/START_HERE.md"
+      ],
+      "query": "coordinator planner memory writer handoff manager"
+    },
+    {
+      "content_hit": true,
+      "content_paths": [
+        "14_context/compact_memory/next_exact_step.md",
+        "14_context/obsidian_vault/01_Current_State.md",
+        "14_context/obsidian_vault/02_Next_Actions.md"
+      ],
+      "expected_paths": [
+        "14_context/compact_memory/next_exact_step.md"
+      ],
+      "id": "next-action-discovery",
+      "path_only_hit": true,
+      "path_only_paths": [
+        "14_context/compact_memory/next_exact_step.md"
+      ],
+      "query": "bind exact targets relay paste send"
+    },
+    {
+      "content_hit": true,
+      "content_paths": [
+        "14_context/compact_memory/blocker_state.md",
+        "14_context/obsidian_vault/00_Index.md",
+        "14_context/obsidian_vault/02_Next_Actions.md"
+      ],
+      "expected_paths": [
+        "14_context/compact_memory/blocker_state.md"
+      ],
+      "id": "blocker-discovery",
+      "path_only_hit": false,
+      "path_only_paths": [],
+      "query": "waiting reason dialog note"
+    },
+    {
+      "content_hit": true,
+      "content_paths": [
+        "14_context/agent_handoff_vault/00_Inbox/START_HERE.md",
+        "14_context/agent_handoff_vault/AGENT_RULES.md",
+        "14_context/agent_handoff_vault/02_Agent_Handoffs/CURRENT_TASK.md"
+      ],
+      "expected_paths": [
+        "14_context/agent_handoff_vault/00_Inbox/START_HERE.md"
+      ],
+      "id": "handoff-board-discovery",
+      "path_only_hit": false,
+      "path_only_paths": [
+        "14_context/agent_handoff_vault/04_Logs/CLAUDE_LAST_RUN.md"
+      ],
+      "query": "ChatGPT designs plan Claude implements"
+    }
+  ],
+  "semantic_embedding_claim": false,
+  "top_k": 3
+}

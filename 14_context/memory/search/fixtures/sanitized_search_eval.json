@@ -1,0 +1,37 @@
+{
+  "fixture_id": "n6-43a-sanitized-memory-discovery-v1",
+  "minimum_content_top_k_hit_rate": 1.0,
+  "queries": [
+    {
+      "expected_paths": [
+        "14_context/agent_handoff_vault/AGENT_RULES.md"
+      ],
+      "id": "agent-role-discovery",
+      "query": "coordinator planner memory writer handoff manager"
+    },
+    {
+      "expected_paths": [
+        "14_context/compact_memory/next_exact_step.md"
+      ],
+      "id": "next-action-discovery",
+      "query": "bind exact targets relay paste send"
+    },
+    {
+      "expected_paths": [
+        "14_context/compact_memory/blocker_state.md"
+      ],
+      "id": "blocker-discovery",
+      "query": "waiting reason dialog note"
+    },
+    {
+      "expected_paths": [
+        "14_context/agent_handoff_vault/00_Inbox/START_HERE.md"
+      ],
+      "id": "handoff-board-discovery",
+      "query": "ChatGPT designs plan Claude implements"
+    }
+  ],
+  "sanitized_fixture": true,
+  "schema_version": "1.0",
+  "top_k": 3
+}

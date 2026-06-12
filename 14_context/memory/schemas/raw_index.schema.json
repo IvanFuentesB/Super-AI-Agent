@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ghoti Source-Linked Raw Memory Index",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "memory_type",
+    "hash_mode",
+    "generated_at",
+    "source_state_sha256",
+    "local_only",
+    "read_only_sources",
+    "canonical_truth",
+    "live_actions_enabled",
+    "network_used",
+    "model_used",
+    "source_count",
+    "sources"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "memory_type": {
+      "const": "source_linked_pointer_index"
+    },
+    "hash_mode": {
+      "const": "sha256_canonical_text_lf_binary_raw"
+    },
+    "generated_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "source_state_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "local_only": {
+      "const": true
+    },
+    "read_only_sources": {
+      "const": true
+    },
+    "canonical_truth": {
+      "const": false
+    },
+    "live_actions_enabled": {
+      "const": false
+    },
+    "network_used": {
+      "const": false
+    },
+    "model_used": {
+      "const": false
+    },
+    "source_count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "path",
+          "category",
+          "priority",
+          "sha256",
+          "bytes",
+          "summary_safe",
+          "title",
+          "highlights"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "^(?![A-Za-z]:|/|.*\\.\\.).+$"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "summary_safe": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  }
+}

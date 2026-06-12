@@ -1,0 +1,10 @@
+{
+  "milestone": "N+6.44A",
+  "scenario": "content-revenue-research",
+  "simulation": true,
+  "live_execution": false,
+  "agent_count": 6,
+  "task_count": 5,
+  "states": ["queued", "coordinating", "approval_pending"],
+  "note": "Static reviewed preview; no agent or action was launched."
+}

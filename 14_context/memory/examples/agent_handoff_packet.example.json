@@ -1,0 +1,34 @@
+{
+  "agent_name": "codex",
+  "agent_role": "audit_review_verification",
+  "artifact_sha256": {
+    "01_projects/runtime_mvp/tests/test_n6_42b_shared_agent_handoffs.py": "ba3df656efa818447c9b697edca8f6f1bc557687820bd27771d5d6f796c973d8",
+    "03_scripts/context_memory/ghoti_handoff_packet.py": "ddaa2fa6d5c25d7cb9cf10e4e9a35f06d166c39f5a36d1f30ff5fc9cfe65a0a9"
+  },
+  "blockers": [],
+  "branch": "feat/ghoti-agent-codex-n6-42b-shared-agent-handoffs",
+  "commands_run": [
+    "python 03_scripts/context_memory/ghoti_handoff_packet.py --check --json"
+  ],
+  "files_touched": [
+    "03_scripts/context_memory/ghoti_handoff_packet.py",
+    "14_context/memory/schemas/agent_handoff_packet.schema.json"
+  ],
+  "generated_at": "2026-06-11T19:00:00Z",
+  "next_recommended_action": "Human reviews the packet before any merge or live action.",
+  "packet_id": "codex-20260611-n6-42b-example",
+  "safety": {
+    "contains_secrets": false,
+    "human_approval_required": true,
+    "live_actions_executed": false
+  },
+  "schema_version": "1.0",
+  "source_sha256": {
+    "14_context/memory/index/raw_index.json": "07f027e2ade23651dfb6cb461c17e3a360b957d6aec6102bb1590aca85424123"
+  },
+  "task": "Demonstrate the shared agent handoff packet contract.",
+  "tests_failed": [],
+  "tests_passed": [
+    "example packet validates"
+  ]
+}
