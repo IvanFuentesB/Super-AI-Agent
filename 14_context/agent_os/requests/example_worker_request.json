@@ -1,0 +1,23 @@
+{
+  "action_id": "content-video-plan",
+  "approval_token": null,
+  "input_paths": [
+    "14_context/memory/obsidian/START_HERE.md"
+  ],
+  "locked_paths": [],
+  "max_runtime_seconds": 30,
+  "mode": "suggestion",
+  "output_paths": [
+    "14_context/agent_os/trials/example_content_video_plan.md",
+    "14_context/agent_os/runs/example_content_video_plan_run.json",
+    "14_context/agent_os/handoffs/example_content_video_plan_handoff.md"
+  ],
+  "requested_capabilities": [
+    "repo_read",
+    "plan_render",
+    "repo_write_trial",
+    "run_record_write",
+    "handoff_write"
+  ],
+  "schema_version": "1.0"
+}
