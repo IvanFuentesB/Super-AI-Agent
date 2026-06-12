@@ -8033,6 +8033,159 @@ async function handleApiRequest(request, response, requestUrl) {
     return;
   }
 
+  // ─── Agent OS Command Center ────────────────────────────────────────────────
+  // Integrated command center: status, workflow plans, task waves, memory
+  // search, suggestion-only worker, copy-paste handoffs, full local demo.
+  // All routes shell to the repo-local agent OS CLI with fixed argv
+  // (shell:false); user input only ever selects from the workflow allowlist
+  // or passes a sanitized search term. The worker never executes commands.
+
+  const AGENT_OS_SCRIPT = path.join(repoRoot, "03_scripts", "agent_os", "ghoti_agent_os.py");
+  // Must stay in sync with WORKFLOW_ORDER in 03_scripts/agent_os/workflow_templates.py
+  // and the static cards in public/index.html.
+  const AGENT_OS_WORKFLOW_IDS = [
+    "coding-task", "repo-audit", "content-video", "business-research",
+    "email-draft", "automation-n8n", "computer-use-prep",
+  ];
+  const AGENT_OS_SEARCH_TERM_RE = /^[A-Za-z0-9 _.\-]{1,64}$/;
+
+  async function runAgentOsCli(cliArgs, timeoutMs) {
+    const py = resolvePython();
+    if (!py) {
+      return { ok: false, available: false, error: "python unavailable" };
+    }
+    const result = await runCommand(
+      py.command, [...py.baseArgs, AGENT_OS_SCRIPT, ...cliArgs, "--json"],
+      { timeoutMs: timeoutMs || 60000, env: buildRuntimeEnv() },
+    );
+    try {
+      return { ...JSON.parse(result.stdout), available: true };
+    } catch (_) {
+      return {
+        ok: false, available: false,
+        error: "agent OS CLI did not return JSON",
+        detail: (result.stderr || "").slice(0, 300),
+      };
+    }
+  }
+
+  // GET /api/product-control/agent-os-status -- integrated status snapshot.
+  if (request.method === "GET" && requestUrl.pathname === "/api/product-control/agent-os-status") {
+    sendJson(response, 200, await runAgentOsCli(["--status"], 60000));
+    return;
+  }
+
+  // GET /api/product-control/agent-os-workflows -- templates plus roster.
+  if (request.method === "GET" && requestUrl.pathname === "/api/product-control/agent-os-workflows") {
+    sendJson(response, 200, await runAgentOsCli(["--list-workflows"], 30000));
+    return;
+  }
+
+  // GET /api/product-control/agent-os-task-wave?workflow=ID -- wave preview.
+  if (request.method === "GET" && requestUrl.pathname === "/api/product-control/agent-os-task-wave") {
+    const workflowId = requestUrl.searchParams.get("workflow") || "coding-task";
+    if (!AGENT_OS_WORKFLOW_IDS.includes(workflowId)) {
+      sendJson(response, 400, { ok: false, error: "unknown workflow id", allowed: AGENT_OS_WORKFLOW_IDS });
+      return;
+    }
+    sendJson(response, 200, await runAgentOsCli(["--task-wave", workflowId], 30000));
+    return;
+  }
+
+  // GET /api/product-control/agent-os-search?term=... -- memory search pointers.
+  if (request.method === "GET" && requestUrl.pathname === "/api/product-control/agent-os-search") {
+    const term = requestUrl.searchParams.get("term") || "";
+    if (!AGENT_OS_SEARCH_TERM_RE.test(term)) {
+      sendJson(response, 400, {
+        ok: false, error: "term must be 1-64 chars of letters, digits, space, _ . -",
+      });
+      return;
+    }
+    sendJson(response, 200, await runAgentOsCli(["--search-memory", term], 30000));
+    return;
+  }
+
+  // POST /api/product-control/agent-os-plan -- write a workflow plan.
+  if (request.method === "POST" && requestUrl.pathname === "/api/product-control/agent-os-plan") {
+    let body = {};
+    try { body = await readJsonBody(request); } catch (_) { body = {}; }
+    const workflowId = typeof body.workflow === "string" ? body.workflow : "";
+    if (!AGENT_OS_WORKFLOW_IDS.includes(workflowId)) {
+      sendJson(response, 400, { ok: false, error: "unknown workflow id", allowed: AGENT_OS_WORKFLOW_IDS });
+      return;
+    }
+    sendJson(response, 200, await runAgentOsCli(["--plan-workflow", workflowId], 60000));
+    return;
+  }
+
+  // POST /api/product-control/agent-os-worker-suggest -- suggestion-only worker.
+  if (request.method === "POST" && requestUrl.pathname === "/api/product-control/agent-os-worker-suggest") {
+    let body = {};
+    try { body = await readJsonBody(request); } catch (_) { body = {}; }
+    const workflowId = typeof body.workflow === "string" ? body.workflow : "";
+    if (!AGENT_OS_WORKFLOW_IDS.includes(workflowId)) {
+      sendJson(response, 400, { ok: false, error: "unknown workflow id", allowed: AGENT_OS_WORKFLOW_IDS });
+      return;
+    }
+    sendJson(response, 200, await runAgentOsCli(["--worker-suggest", workflowId], 60000));
+    return;
+  }
+
+  // POST /api/product-control/agent-os-handoff -- copy-paste handoff packets.
+  if (request.method === "POST" && requestUrl.pathname === "/api/product-control/agent-os-handoff") {
+    let body = {};
+    try { body = await readJsonBody(request); } catch (_) { body = {}; }
+    const workflowId = typeof body.workflow === "string" ? body.workflow : "";
+    const cliArgs = ["--build-handoff"];
+    if (workflowId) {
+      if (!AGENT_OS_WORKFLOW_IDS.includes(workflowId)) {
+        sendJson(response, 400, { ok: false, error: "unknown workflow id", allowed: AGENT_OS_WORKFLOW_IDS });
+        return;
+      }
+      cliArgs.push("--workflow", workflowId);
+    }
+    sendJson(response, 200, await runAgentOsCli(cliArgs, 60000));
+    return;
+  }
+
+  // POST /api/product-control/agent-os-full-demo -- the end-to-end local demo.
+  if (request.method === "POST" && requestUrl.pathname === "/api/product-control/agent-os-full-demo") {
+    sendJson(response, 200, await runAgentOsCli(["--full-demo"], 300000));
+    return;
+  }
+
+  // GET /api/product-control/agent-os-latest -- newest generated artifacts.
+  if (request.method === "GET" && requestUrl.pathname === "/api/product-control/agent-os-latest") {
+    const folders = ["workflows", "handoffs", "runs", "evidence"];
+    const entries = [];
+    folders.forEach((folder) => {
+      const dir = path.join(repoRoot, "14_context", "agent_os", folder);
+      try {
+        fs.readdirSync(dir).forEach((name) => {
+          if (name === "README.md") return;
+          const full = path.join(dir, name);
+          const stat = fs.statSync(full);
+          if (!stat.isFile()) return;
+          entries.push({
+            kind: folder,
+            name,
+            path: `14_context/agent_os/${folder}/${name}`,
+            modified_unix: Math.floor(stat.mtimeMs / 1000),
+          });
+        });
+      } catch (_) { /* missing folder is the same as empty */ }
+    });
+    entries.sort((a, b) => b.modified_unix - a.modified_unix);
+    sendJson(response, 200, {
+      ok: true,
+      available: entries.length > 0,
+      count: entries.length,
+      artifacts: entries.slice(0, 12),
+      folder: "14_context/agent_os/",
+    });
+    return;
+  }
+
   // ─── External Tool Sandbox (N+4.8A) ─────────────────────────────────────────
   // Surface for the safe clone + static-scan manager. No install, no external
   // code execution, no desktop control, no live APIs. Subprocess via fixed argv
