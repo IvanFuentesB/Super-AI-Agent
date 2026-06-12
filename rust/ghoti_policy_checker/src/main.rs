@@ -3,9 +3,11 @@ use std::{env, fs, path::Path};
 
 const ALLOWED_CAPABILITIES: &[&str] = &[
     "fixture_read",
+    "local_model_status_read",
     "local_policy_check",
     "plan_render",
     "repo_read",
+    "report_write_repo_local",
     "status_read",
 ];
 
@@ -213,6 +215,35 @@ mod tests {
         assert!(!decision.allowed);
         assert_eq!(decision.blocked_capabilities, vec!["money"]);
         assert_eq!(decision.unknown_capabilities, vec!["future_magic"]);
+    }
+
+    #[test]
+    fn operator_recipe_plan_is_allowed() {
+        // The operator recipe capability set: read repo/status, render plans,
+        // and write reports only into the repo-local generated folder.
+        let mut plan = safe_plan();
+        plan.capabilities = vec![
+            "repo_read".to_string(),
+            "status_read".to_string(),
+            "fixture_read".to_string(),
+            "plan_render".to_string(),
+            "local_model_status_read".to_string(),
+            "report_write_repo_local".to_string(),
+        ];
+        let decision = evaluate(plan);
+        assert!(decision.allowed);
+        assert_eq!(decision.decision, "allow");
+    }
+
+    #[test]
+    fn recipe_external_write_is_denied_as_unknown() {
+        // Deny-by-default: a capability that is not explicitly allowed
+        // (e.g. writing outside the repo) is treated as unknown and denied.
+        let mut plan = safe_plan();
+        plan.capabilities = vec!["external_write".to_string()];
+        let decision = evaluate(plan);
+        assert!(!decision.allowed);
+        assert_eq!(decision.unknown_capabilities, vec!["external_write"]);
     }
 
     #[test]

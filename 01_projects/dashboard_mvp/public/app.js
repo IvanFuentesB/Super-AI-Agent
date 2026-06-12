@@ -22,6 +22,7 @@ const HANDOFF_TARGET_PREFERENCES_KEY = "ghoti.handoffTargetPreferences.v1";
 const CONSOLE_TAB_STORAGE_KEY = "ghoti.consoleActiveTab.v1";
 const CONSOLE_TABS = ["dashboard", "approvals", "pipeline", "control", "tools", "system", "active"];
 const CONSOLE_VIEWS = [
+  "capabilities",
   "overview",
   "active-mode",
   "approvals",
@@ -1196,7 +1197,12 @@ function renderGhotiState(summary = {}) {
 
   const indicator = document.getElementById("ghoti-state-indicator");
   if (indicator) {
-    indicator.className = `ghoti-state-indicator is-${normalized}`;
+    // Idle is normal, not degraded: never style idle/unknown as an error state.
+    // "Degraded" styling is reserved for real critical issues only.
+    const idleLike = ["idle", "", "unknown", "neutral", "degraded"].includes(String(stateValue).toLowerCase())
+      && !(summary.criticalIssue === true);
+    const indicatorState = idleLike ? "neutral" : normalized;
+    indicator.className = `ghoti-state-indicator is-${indicatorState}`;
   }
 
   const panel = document.getElementById("ghoti-state-panel");
@@ -2860,11 +2866,10 @@ async function refreshApprovalInbox() {
   try {
     payload = await requestJson("/api/ghoti/approval-inbox");
   } catch (err) {
-    const message = "Approval inbox unavailable: " + err.message;
-    setText("approval-inbox-summary", message);
+    setText("approval-inbox-summary", "Approval inbox unavailable - no action needed unless you expected approvals.");
     const container = document.getElementById("approval-inbox-list");
     if (container) {
-      container.innerHTML = renderInlineErrorCard("Approval inbox unavailable", message, { error: err.message });
+      container.innerHTML = renderApprovalUnavailableCard({ error: err.message });
     }
     return;
   }
@@ -2877,7 +2882,8 @@ async function refreshApprovalInbox() {
   const container = document.getElementById("approval-inbox-list");
   if (!container) return;
   if (!payload.ok) {
-    container.innerHTML = renderInlineErrorCard("Approval inbox unavailable", note, payload.detail || payload);
+    setText("approval-inbox-summary", "Approval inbox unavailable - no action needed unless you expected approvals.");
+    container.innerHTML = renderApprovalUnavailableCard(payload.detail || payload);
     return;
   }
   if (!items.length) {
@@ -3186,6 +3192,28 @@ function renderInlineErrorCard(title, message, debugPayload) {
         <span class="state-pill state-error">attention</span>
       </div>
       <p>${escapeHtml(message)}</p>
+      <details class="details-block">
+        <summary>Debug details</summary>
+        <pre>${escapeHtml(debugText)}</pre>
+      </details>
+    </article>
+  `;
+}
+
+// Friendly, non-scary card for when the approval inbox simply cannot be read
+// (e.g. Windows permission/path issue). Idle is normal, so we reassure rather
+// than alarm, and tuck the raw error into a collapsed "Debug details" block.
+function renderApprovalUnavailableCard(debugPayload) {
+  const debugText = typeof debugPayload === "string"
+    ? debugPayload
+    : JSON.stringify(debugPayload ?? {}, null, 2);
+  return `
+    <article class="inline-error-card inline-error-card--soft">
+      <div class="inline-error-topline">
+        <strong>Approval inbox unavailable</strong>
+        <span class="state-pill state-neutral">idle</span>
+      </div>
+      <p>No action needed unless you expected approvals. The dashboard works fine without the approval inbox.</p>
       <details class="details-block">
         <summary>Debug details</summary>
         <pre>${escapeHtml(debugText)}</pre>
@@ -6092,7 +6120,7 @@ async function refreshGlobalConsoleView() {
 
 function initDashboardUxRebuild() {
   mountDashboardUxShell();
-  setActiveConsoleView("overview", { focus: false });
+  setActiveConsoleView("capabilities", { focus: false });
 
   document.querySelectorAll(".console-nav-item[data-console-view]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -6314,9 +6342,327 @@ async function refreshManualQueue() {
   }
 }
 
+// ─── Operator Capability Console (N+6.39A) ──────────────────────────────────
+// Plain-language capability view. Buttons call only existing safe local endpoints.
+// No live agents, accounts, MCP, Telegram, browser automation, or provider/API keys.
+const CAP_OVERLAY_HIDE_KEY = "ghoti.overlay.hidden.v1";
+const CAP_OVERLAY_COLLAPSE_KEY = "ghoti.overlay.collapsed.v1";
+const CAP_NEXT_SAFE_COMMAND = "python 03_scripts/ghoti_product_launcher.py --status --json";
+
+function capHumanLabel(category) {
+  const map = {
+    "pass": "Pass",
+    "warning": "Warning - review",
+    "blocked-safely": "Ghoti refused to run something unsafe",
+    "dry-run": "Safe demo/check available",
+    "not-implemented": "Not implemented yet",
+    "roadmap": "Planned, not connected",
+    "manual": "Manual setup guide exists, no live automation",
+    "idle": "Waiting for you; nothing is running",
+    "unknown": "Run on demand",
+  };
+  return map[category] || category;
+}
+
+function capBadgeClass(category) {
+  if (category === "pass") return "cap-badge cap-badge--pass";
+  if (category === "warning") return "cap-badge cap-badge--warn";
+  if (category === "blocked-safely") return "cap-badge cap-badge--blocked";
+  if (category === "dry-run") return "cap-badge cap-badge--dryrun";
+  if (category === "not-implemented" || category === "roadmap") return "cap-badge cap-badge--roadmap";
+  if (category === "manual") return "cap-badge cap-badge--manual";
+  return "cap-badge cap-badge--neutral";
+}
+
+function renderCapabilityCards(items) {
+  const host = document.getElementById("cap-cards");
+  if (!host) return;
+  if (!items.length) {
+    host.innerHTML = '<p class="cap-muted">No capability data.</p>';
+    return;
+  }
+  host.innerHTML = items.map(function (it) {
+    return '<article class="cap-cardlet">' +
+      '<div class="cap-cardlet-top">' +
+        '<strong>' + escapeHtml(it.title || it.id) + '</strong>' +
+        '<span class="' + capBadgeClass(it.statusCategory) + '">' + escapeHtml(it.statusLabel || capHumanLabel(it.statusCategory)) + '</span>' +
+      '</div>' +
+      '<p class="cap-muted">' + escapeHtml(it.detail || "") + '</p>' +
+    '</article>';
+  }).join("");
+}
+
+async function refreshCapabilityRegistry() {
+  let payload;
+  try {
+    payload = await requestJson("/api/product-control/capabilities");
+  } catch (err) {
+    const host = document.getElementById("cap-cards");
+    if (host) host.innerHTML = '<p class="cap-muted">Capabilities unavailable: ' + escapeHtml(err.message) + '</p>';
+    return;
+  }
+  renderCapabilityCards(payload.capabilities || []);
+  setText("cap-next-action", payload.next_recommended_action || "Run a safe check.");
+}
+
+function capSetRunStatus(text, kind) {
+  const el = document.getElementById("cap-run-status");
+  if (!el) return;
+  el.textContent = text;
+  el.className = "cap-run-status" + (kind ? " cap-run-status--" + kind : "");
+}
+
+async function capRunSafeCheck(mode) {
+  const wantFull = mode === "full";
+  capSetRunStatus("Running safe " + (wantFull ? "full" : "fast") + " check...", "running");
+  let payload;
+  try {
+    payload = await requestJson("/api/product-control/run-capability-check", {
+      method: "POST",
+      body: JSON.stringify({ mode: wantFull ? "full" : "fast" }),
+    });
+  } catch (err) {
+    capSetRunStatus("Check failed: " + err.message, "error");
+    return;
+  }
+  const s = payload.summary || {};
+  capSetRunStatus(
+    "Done: " + (s.pass || 0) + " pass, " + (s.warning || 0) + " warning, " + (s.blockedSafely || 0) + " blocked-safely.",
+    (s.warning || 0) > 0 ? "warn" : "pass",
+  );
+  const health = document.getElementById("cap-health-summary");
+  if (health) {
+    health.innerHTML =
+      '<span class="cap-badge cap-badge--pass">' + (s.pass || 0) + ' pass</span>' +
+      '<span class="cap-badge cap-badge--warn">' + (s.warning || 0) + ' warning</span>' +
+      '<span class="cap-badge cap-badge--blocked">' + (s.blockedSafely || 0) + ' blocked-safely</span>';
+  }
+  if (Array.isArray(payload.checks)) {
+    const liveHost = document.getElementById("cap-cards");
+    if (liveHost) {
+      const merged = payload.checks.map(function (c) {
+        return '<article class="cap-cardlet">' +
+          '<div class="cap-cardlet-top"><strong>' + escapeHtml(c.title || c.id) + '</strong>' +
+          '<span class="' + capBadgeClass(c.statusCategory) + '">' + escapeHtml(c.statusLabel) + '</span></div>' +
+          '<p class="cap-muted">' + escapeHtml(c.detail || "") + '</p></article>';
+      }).join("");
+      await refreshCapabilityRegistry();
+      liveHost.insertAdjacentHTML("afterbegin", merged);
+    }
+  }
+  const warns = (payload.checks || []).filter(function (c) { return c.statusCategory === "warning"; });
+  const wr = document.getElementById("cap-warnings-review");
+  if (wr) {
+    wr.innerHTML = warns.length
+      ? warns.map(function (w) { return '<p>&#9888; ' + escapeHtml(w.title) + ': ' + escapeHtml(w.detail || w.statusLabel) + '</p>'; }).join("")
+      : '<p class="cap-muted">No warnings - all clear.</p>';
+  }
+  const dbg = document.getElementById("cap-debug-json");
+  if (dbg) dbg.textContent = JSON.stringify(payload, null, 2);
+}
+
+async function capCopyNextCommand() {
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(CAP_NEXT_SAFE_COMMAND);
+    }
+  } catch (_) { /* clipboard may be unavailable; non-fatal */ }
+}
+
+async function capRunSingleAction(action) {
+  const resultHost = document.getElementById("cap-action-result");
+  function show(text, kind) {
+    if (resultHost) {
+      resultHost.innerHTML = '<span class="cap-badge cap-badge--' + (kind || 'neutral') + '">' + escapeHtml(text) + '</span>';
+    }
+  }
+  try {
+    if (action === "refresh") { await refreshCapabilityRegistry(); show("Status refreshed", "pass"); return; }
+    if (action === "copy-next") { await capCopyNextCommand(); show("Command copied", "pass"); return; }
+    show("Running...", "warn");
+    const full = action === "public-audit" || action === "repo-map";
+    await capRunSafeCheck(full ? "full" : "fast");
+    show("Done - see cards + warnings", "pass");
+  } catch (err) {
+    show("Error: " + err.message, "blocked");
+  }
+}
+
+function capShowCmdCopy() {
+  const resultEl = document.getElementById("cap-show-cmd-result");
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(CAP_NEXT_SAFE_COMMAND).then(function () {
+        if (resultEl) resultEl.textContent = "Copied to clipboard.";
+      }, function () {
+        if (resultEl) resultEl.textContent = "Clipboard unavailable - copy the command manually.";
+      });
+    } else {
+      if (resultEl) resultEl.textContent = "Clipboard unavailable - copy the command manually.";
+    }
+  } catch (_) {
+    if (resultEl) resultEl.textContent = "Clipboard unavailable - copy the command manually.";
+  }
+}
+
+function initCapabilityConsole() {
+  document.getElementById("cap-run-safe-check")?.addEventListener("click", function () { capRunSafeCheck("fast"); });
+  document.getElementById("cap-copy-next-cmd")?.addEventListener("click", capCopyNextCommand);
+  document.getElementById("cap-show-cmd-copy")?.addEventListener("click", capShowCmdCopy);
+  document.querySelectorAll("[data-cap-action]").forEach(function (btn) {
+    btn.addEventListener("click", function () { capRunSingleAction(btn.dataset.capAction); });
+  });
+  refreshCapabilityRegistry();
+}
+
+// ─── Working Recipes (N+6.40A) ──────────────────────────────────────────────
+// Each button runs one allowlisted safe recipe through the local recipes CLI.
+// No accounts, no agents, no provider/API keys; reports are repo-local files.
+
+function recipeSetResult(recipeId, text, ok) {
+  const el = document.querySelector('[data-recipe-result="' + recipeId + '"]');
+  if (!el) return;
+  el.textContent = text;
+  el.className = "cap-recipe-result " + (ok ? "cap-recipe-result--ok" : "cap-recipe-result--warn");
+}
+
+function recipeSetStatus(text, kind) {
+  const el = document.getElementById("cap-recipe-status");
+  if (!el) return;
+  el.textContent = text;
+  el.className = "cap-run-status" + (kind ? " cap-run-status--" + kind : "");
+}
+
+async function runOperatorRecipe(recipeId) {
+  recipeSetStatus("Running " + recipeId + " (local, supervised)...", "running");
+  recipeSetResult(recipeId, "Running...", true);
+  let payload;
+  try {
+    payload = await requestJson("/api/product-control/run-operator-recipe", {
+      method: "POST",
+      body: JSON.stringify({ recipe: recipeId }),
+    });
+  } catch (err) {
+    recipeSetStatus("Recipe failed to start: " + err.message, "error");
+    recipeSetResult(recipeId, "Could not run: " + err.message, false);
+    return;
+  }
+  const summary = payload.summary || (payload.ok ? "done" : (payload.error || "no summary"));
+  recipeSetStatus(payload.ok ? "Done: " + recipeId : "Recipe reported a problem.", payload.ok ? "pass" : "warn");
+  recipeSetResult(
+    recipeId,
+    (payload.ok ? "Last run ok. " : "Last run had issues. ") + summary
+      + (payload.report_path ? " Report: " + payload.report_path : ""),
+    Boolean(payload.ok),
+  );
+  refreshLatestRecipeRuns();
+}
+
+async function refreshLatestRecipeRuns() {
+  let payload;
+  try {
+    payload = await requestJson("/api/product-control/latest-operator-recipe-runs");
+  } catch (_) {
+    return; // dashboard may not be running; cards keep their static text
+  }
+  const runs = payload.runs || {};
+  Object.keys(runs).forEach(function (recipeId) {
+    const run = runs[recipeId];
+    recipeSetResult(
+      recipeId,
+      (run.ok ? "Last run ok. " : "Last run had issues. ") + (run.summary || "")
+        + (run.report_path ? " Report: " + run.report_path : ""),
+      Boolean(run.ok),
+    );
+  });
+  const list = document.getElementById("artifacts-operator-report-list");
+  if (list) {
+    const entries = Object.values(runs).filter(function (run) { return run.report_path; });
+    list.innerHTML = entries.length
+      ? entries.map(function (run) {
+          return '<p><strong>' + escapeHtml(run.recipe_id) + '</strong>: <code>'
+            + escapeHtml(run.report_path) + '</code></p>';
+        }).join("")
+      : '<p class="cap-muted">No recipe runs recorded yet this session.</p>';
+  }
+  const dbg = document.getElementById("artifacts-operator-report-debug");
+  if (dbg) dbg.textContent = JSON.stringify(payload, null, 2);
+}
+
+async function refreshRecipeRegistry() {
+  // Confirm the recipes CLI is reachable and show how many recipes are live.
+  try {
+    const payload = await requestJson("/api/product-control/operator-recipes");
+    if (payload && payload.ok && payload.count) {
+      recipeSetStatus(payload.count + " working recipes available. Pick one above.", "pass");
+    } else if (payload && payload.available === false) {
+      recipeSetStatus("Recipes CLI unavailable: " + (payload.error || "unknown"), "warn");
+    }
+  } catch (_) { /* dashboard not running; static cards still explain everything */ }
+}
+
+function initWorkingRecipes() {
+  document.querySelectorAll("[data-recipe-run]").forEach(function (btn) {
+    btn.addEventListener("click", function () { runOperatorRecipe(btn.dataset.recipeRun); });
+  });
+  refreshRecipeRegistry();
+  refreshLatestRecipeRuns();
+}
+
+// ─── Overlay hide/collapse (N+6.39A) ─────────────────────────────────────────
+function applyOverlayHidden(hidden) {
+  const indicator = document.getElementById("ghoti-state-indicator");
+  const marker = document.getElementById("ghoti-target-marker");
+  const restore = document.getElementById("ghoti-overlay-restore");
+  if (indicator) indicator.hidden = hidden;
+  if (marker) marker.hidden = hidden;
+  if (restore) restore.hidden = !hidden;
+}
+
+function applyOverlayCollapsed(collapsed) {
+  const indicator = document.getElementById("ghoti-state-indicator");
+  if (indicator) indicator.classList.toggle("is-collapsed", collapsed);
+  const btn = document.getElementById("ghoti-overlay-collapse");
+  if (btn) btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+}
+
+function initOverlayControls() {
+  let hidden = false;
+  let collapsed = true; // default: collapsed on first visit (idle is calm, not alarming)
+  try { hidden = localStorage.getItem(CAP_OVERLAY_HIDE_KEY) === "1"; } catch (_) {}
+  try {
+    const stored = localStorage.getItem(CAP_OVERLAY_COLLAPSE_KEY);
+    collapsed = stored === null ? true : stored === "1"; // default collapsed if no stored pref
+  } catch (_) { collapsed = true; }
+  applyOverlayHidden(hidden);
+  applyOverlayCollapsed(collapsed);
+
+  document.getElementById("ghoti-overlay-hide")?.addEventListener("click", function () {
+    applyOverlayHidden(true);
+    try { localStorage.setItem(CAP_OVERLAY_HIDE_KEY, "1"); } catch (_) {}
+  });
+  document.getElementById("ghoti-target-marker-hide")?.addEventListener("click", function () {
+    const marker = document.getElementById("ghoti-target-marker");
+    if (marker) marker.hidden = true;
+  });
+  document.getElementById("ghoti-overlay-restore")?.addEventListener("click", function () {
+    applyOverlayHidden(false);
+    try { localStorage.removeItem(CAP_OVERLAY_HIDE_KEY); } catch (_) {}
+  });
+  document.getElementById("ghoti-overlay-collapse")?.addEventListener("click", function () {
+    const indicator = document.getElementById("ghoti-state-indicator");
+    const nowCollapsed = !(indicator && indicator.classList.contains("is-collapsed"));
+    applyOverlayCollapsed(nowCollapsed);
+    try { localStorage.setItem(CAP_OVERLAY_COLLAPSE_KEY, nowCollapsed ? "1" : "0"); } catch (_) {}
+  });
+}
+
 initDashboardUxRebuild();
 refreshWeeklyReview();
 refreshManualQueue();
+initCapabilityConsole();
+initOverlayControls();
+initWorkingRecipes();
 
 // ─── Local Orchestrator Card (N+3.50A) ────────────────────────────────────────
 

@@ -1064,3 +1064,266 @@ pre {
     width: 100vw;
   }
 }
+
+/* ===== Operator Capability Console (N+6.39A) ===== */
+.cap-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.cap-run-status {
+  font-size: 0.85rem;
+  color: var(--muted, #667);
+}
+.cap-run-status--running { color: #8a6d00; }
+.cap-run-status--pass { color: #1b7a3d; }
+.cap-run-status--warn { color: #8a6d00; }
+.cap-run-status--error { color: #b22; }
+.cap-card { margin-bottom: 14px; }
+.cap-card h2 { margin: 0 0 6px; font-size: 1.05rem; }
+.cap-muted { color: var(--muted, #667); font-size: 0.88rem; margin: 4px 0; }
+.cap-list { margin: 6px 0 0; padding-left: 18px; line-height: 1.6; }
+.cap-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+}
+.cap-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 10px;
+  margin-top: 8px;
+}
+.cap-cardlet {
+  border: 1px solid var(--border, #d7d7e0);
+  border-radius: var(--radius, 10px);
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.6);
+}
+.cap-cardlet-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.cap-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+.cap-badge--pass { background: #e3f6e9; color: #1b7a3d; }
+.cap-badge--warn { background: #fdf3da; color: #8a6d00; }
+.cap-badge--blocked { background: #fde4e4; color: #b22; }
+.cap-badge--dryrun { background: #e6effd; color: #2657a8; }
+.cap-badge--roadmap { background: #efe9fb; color: #5b3da8; }
+.cap-badge--manual { background: #eef0f2; color: #4a5560; }
+.cap-badge--neutral { background: #eef0f2; color: #4a5560; }
+.cap-badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.cap-button-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.cap-btn {
+  border: 1px solid var(--border, #d7d7e0);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text, #222);
+  padding: 7px 12px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.cap-btn:hover { background: #f4f5f8; }
+.cap-btn--primary { background: #2657a8; color: #fff; border-color: #2657a8; }
+.cap-btn--primary:hover { background: #1f4a92; }
+.cap-action-result { margin-top: 10px; min-height: 24px; }
+.cap-card--good { border-left: 4px solid #1b7a3d; }
+.cap-card--blocked { border-left: 4px solid #b22; }
+.cap-warnings p { margin: 4px 0; font-size: 0.88rem; }
+.cap-debug { margin-top: 10px; }
+.cap-debug-pre {
+  max-height: 240px;
+  overflow: auto;
+  background: #1d1f24;
+  color: #d6d9df;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+}
+
+/* ===== Overlay hide / collapse controls (N+6.39A) ===== */
+.ghoti-overlay-controls {
+  margin-left: auto;
+  display: inline-flex;
+  gap: 4px;
+}
+.ghoti-overlay-ctl {
+  border: 1px solid var(--border, #d7d7e0);
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 6px;
+  width: 22px;
+  height: 22px;
+  line-height: 1;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--text, #222);
+  padding: 0;
+}
+.ghoti-overlay-ctl:hover { background: #f0f1f4; }
+#ghoti-state-indicator.is-collapsed .ghoti-indicator-body { display: none; }
+.ghoti-overlay-restore {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 30;
+  border: 1px solid var(--border, #d7d7e0);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--text, #222);
+  box-shadow: var(--shadow, 0 4px 12px rgba(0,0,0,0.12));
+  padding: 8px 14px;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.ghoti-overlay-restore:hover { background: #f4f5f8; }
+.ghoti-indicator-topline { display: flex; align-items: center; gap: 8px; }
+#ghoti-target-marker { position: relative; }
+
+/* ===== N+6.39B Demo-Ready Operator Console ===== */
+
+/* Fix A: badge/card overflow */
+body { overflow-x: hidden; }
+.cap-badge { white-space: normal; word-break: break-word; overflow-wrap: break-word; }
+.cap-cardlet { word-break: break-word; overflow-wrap: break-word; }
+.cap-cardlet-top { flex-wrap: wrap; min-width: 0; }
+.cap-cardlet-top > strong { min-width: 0; flex: 1 1 0; }
+
+/* Fix C: hero section */
+.cap-hero { border-left: 4px solid #2657a8; }
+.cap-hero-chips { margin-top: 10px; }
+
+/* Fix D: Real Use Today demo flow */
+.cap-demo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+.cap-demo-card {
+  border: 1px solid var(--border, #d7d7e0);
+  border-radius: var(--radius, 10px);
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.7);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cap-demo-card h3 { margin: 0; font-size: 0.9rem; }
+.cap-demo-card p { margin: 0; font-size: 0.82rem; color: var(--muted, #667); }
+.cap-demo-card .cap-btn { align-self: flex-start; margin-top: auto; padding-top: 6px; }
+
+/* Fix E: Investor Demo Mode panel */
+.cap-demo-mode-panel {
+  background: #f0f4ff;
+  border: 1px solid #c0d0f0;
+  border-radius: var(--radius, 10px);
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+.cap-demo-mode-panel > summary {
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: #2657a8;
+  list-style: none;
+}
+.cap-demo-mode-panel > summary::before { content: "+ "; }
+.cap-demo-mode-panel[open] > summary::before { content: "- "; }
+.cap-demo-section { margin-top: 12px; }
+.cap-demo-section h3 { margin: 0 0 6px; font-size: 0.88rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #445; }
+.cap-demo-section ul,
+.cap-demo-section ol { margin: 0; padding-left: 18px; line-height: 1.7; font-size: 0.88rem; }
+.cap-demo-section p { margin: 4px 0; font-size: 0.88rem; }
+
+/* Fix F: Why blocked is good */
+.cap-why-blocked {
+  background: #e6effd;
+  border-left: 4px solid #2657a8;
+  padding: 12px 14px;
+  border-radius: 0 8px 8px 0;
+  margin-top: 10px;
+}
+.cap-why-blocked p { margin: 4px 0; font-size: 0.88rem; }
+
+/* Fix G: Roadmap */
+.cap-roadmap ol { margin: 6px 0 0; padding-left: 20px; line-height: 1.8; font-size: 0.9rem; }
+
+/* Fix J: Show me what command to run */
+.cap-cmd-area { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+.cap-cmd-code {
+  background: #1d1f24;
+  color: #d6d9df;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  word-break: break-all;
+  overflow-wrap: break-word;
+}
+
+/* Fix H: Approvals static card */
+.cap-approvals-info p { margin: 6px 0; font-size: 0.9rem; }
+
+/* Fix I: GitHub static card */
+.cap-github-info p { margin: 6px 0; font-size: 0.9rem; }
+.cap-github-info ul { margin: 6px 0; padding-left: 18px; font-size: 0.9rem; line-height: 1.6; }
+
+/* ===== N+6.40A Working Recipes ===== */
+.cap-recipes { border-left: 4px solid #1b7a3d; }
+.cap-recipe-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+.cap-recipe-card {
+  border: 1px solid var(--border, #d7d7e0);
+  border-radius: var(--radius, 10px);
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.75);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+.cap-recipe-card h3 { margin: 0; font-size: 0.92rem; }
+.cap-recipe-card p { margin: 0; font-size: 0.82rem; color: var(--muted, #667); }
+.cap-recipe-card .cap-btn { align-self: flex-start; margin-top: 4px; }
+.cap-recipe-card--all { background: #eef7f0; border-color: #bcd9c4; }
+.cap-recipe-result {
+  font-size: 0.78rem;
+  margin-top: auto;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+.cap-recipe-result--ok { color: #1b7a3d; }
+.cap-recipe-result--warn { color: #8a6d00; }
+
+/* No vertical title text: headings never wrap letter-by-letter in narrow
+   flex/grid tracks. min-width:0 lets the track shrink; keep-all + nowrap on
+   short brand text prevents one-character-per-line rendering. */
+.console-view-header { min-width: 0; }
+.console-view-header h1 { min-width: 0; overflow-wrap: normal; word-break: keep-all; }
+.console-card h2 { min-width: 0; overflow-wrap: normal; word-break: keep-all; }
+.console-wordmark { white-space: nowrap; writing-mode: horizontal-tb; }
+.console-nav-item span:first-child { white-space: nowrap; }
+#ghoti-target-marker-hide { position: absolute; top: 6px; right: 6px; }
