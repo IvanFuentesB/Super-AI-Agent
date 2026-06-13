@@ -23,6 +23,7 @@ const CONSOLE_TAB_STORAGE_KEY = "ghoti.consoleActiveTab.v1";
 const CONSOLE_TABS = ["dashboard", "approvals", "pipeline", "control", "tools", "system", "active"];
 const CONSOLE_VIEWS = [
   "capabilities",
+  "agent-os",
   "overview",
   "active-mode",
   "approvals",
@@ -6657,12 +6658,266 @@ function initOverlayControls() {
   });
 }
 
+// ─── Agent OS Command Center ─────────────────────────────────────────────────
+// One integrated panel over the agent OS CLI endpoints. Everything rendered
+// here is escaped; every action is suggestion-only and the backend allowlists
+// workflow ids, so the UI never sends free-form commands.
+
+function agentOsSetDemoStatus(text, tone) {
+  const el = document.getElementById("agentos-demo-status");
+  if (!el) return;
+  el.textContent = text;
+  el.dataset.tone = tone || "idle";
+}
+
+function agentOsRenderStatus(payload) {
+  const grid = document.getElementById("agentos-status-grid");
+  const dbg = document.getElementById("agentos-status-debug");
+  if (dbg) dbg.textContent = JSON.stringify(payload, null, 2);
+  if (!grid) return;
+  if (!payload || !payload.ok) {
+    grid.innerHTML = '<p class="cap-muted">Status unavailable: '
+      + escapeHtml((payload && payload.error) || "backend not running") + '</p>';
+    return;
+  }
+  const repo = payload.repo || {};
+  const memory = payload.memory || {};
+  const obsidian = memory.obsidian || {};
+  const model = payload.local_model || {};
+  const worker = payload.worker || {};
+  const handoffs = payload.handoffs || {};
+  const rows = [
+    ["Repo", escapeHtml(repo.branch || "?") + " @ " + escapeHtml(repo.head || "?")
+      + " (" + (repo.dirty_file_count || 0) + " dirty)"],
+    ["Recipes", (payload.recipes && payload.recipes.available)
+      ? (payload.recipes.count + " recipes ready") : "recipes CLI unavailable"],
+    ["Memory", (memory.canonical_file_count || 0) + " canonical files, "
+      + (memory.snapshot_count || 0) + " snapshots, context pack "
+      + ((memory.context_pack && memory.context_pack.exists) ? "present" : "missing")],
+    ["Obsidian", (obsidian.start_note_exists ? "vault ready" : "start note missing")
+      + " (" + (obsidian.note_count || 0) + " notes)"],
+    ["Local model", model.ollama_endpoint_up
+      ? ("ollama up, " + (model.models || []).length + " model(s)")
+      : (model.ollama_command_found ? "ollama installed, endpoint down" : "ollama not found")],
+    ["Lanes", (payload.lanes ? payload.lanes.active_lock_records : 0) + " lock records"],
+    ["Handoffs", (handoffs.agent_os_handoff_count || 0) + " agent OS packets, "
+      + (handoffs.relay_pair_count || 0) + " relay pairs"],
+    ["Worker mode", escapeHtml(worker.label || "suggestion_only")
+      + (payload.rust_checker_built ? " | rust checker built" : " | python mirror")],
+  ];
+  grid.innerHTML = rows.map(function (row) {
+    return '<p><strong>' + row[0] + ':</strong> ' + row[1] + '</p>';
+  }).join("");
+}
+
+async function refreshAgentOsStatus() {
+  try {
+    agentOsRenderStatus(await requestJson("/api/product-control/agent-os-status"));
+  } catch (_) { /* backend not running; static text already explains */ }
+}
+
+function agentOsRenderRegistry(payload) {
+  const roster = document.getElementById("agentos-roster-grid");
+  if (roster && Array.isArray(payload.roster)) {
+    roster.innerHTML = payload.roster.map(function (role) {
+      return '<p><strong>' + escapeHtml(role.title) + '</strong>'
+        + ' <span class="cap-badge cap-badge--dryrun">' + escapeHtml(role.mode) + '</span><br/>'
+        + escapeHtml(role.mission)
+        + ' <span class="cap-muted">(lane: ' + escapeHtml(role.lane_ref) + ')</span></p>';
+    }).join("");
+  }
+  const grid = document.getElementById("agentos-workflow-grid");
+  const select = document.getElementById("agentos-wave-select");
+  if (!grid || !Array.isArray(payload.workflows)) return;
+  grid.innerHTML = payload.workflows.map(function (wf) {
+    return '<div class="cap-recipe-card" data-agentos-card="' + escapeHtml(wf.id) + '">'
+      + '<h3>' + escapeHtml(wf.title) + '</h3>'
+      + '<p><strong>Goal:</strong> ' + escapeHtml(wf.goal) + '</p>'
+      + '<p><strong>It will not:</strong> ' + escapeHtml(wf.wont_do) + '</p>'
+      + '<button class="cap-btn cap-btn--primary" type="button" data-agentos-plan="'
+      + escapeHtml(wf.id) + '">Generate Plan</button> '
+      + '<button class="cap-btn" type="button" data-agentos-suggest="'
+      + escapeHtml(wf.id) + '">Worker Suggestion</button>'
+      + '<p class="cap-recipe-result" data-agentos-result="' + escapeHtml(wf.id)
+      + '">Not run yet this session.</p>'
+      + '</div>';
+  }).join("");
+  if (select) {
+    select.innerHTML = payload.workflows.map(function (wf) {
+      return '<option value="' + escapeHtml(wf.id) + '">' + escapeHtml(wf.title) + '</option>';
+    }).join("");
+  }
+  grid.querySelectorAll("[data-agentos-plan]").forEach(function (btn) {
+    btn.addEventListener("click", function () { agentOsPlan(btn.dataset.agentosPlan); });
+  });
+  grid.querySelectorAll("[data-agentos-suggest]").forEach(function (btn) {
+    btn.addEventListener("click", function () { agentOsSuggest(btn.dataset.agentosSuggest); });
+  });
+}
+
+function agentOsSetResult(workflowId, text) {
+  const el = document.querySelector('[data-agentos-result="' + workflowId + '"]');
+  if (el) el.textContent = text;
+}
+
+async function agentOsPlan(workflowId) {
+  agentOsSetResult(workflowId, "Generating plan...");
+  try {
+    const payload = await requestJson("/api/product-control/agent-os-plan", {
+      method: "POST", body: JSON.stringify({ workflow: workflowId }),
+    });
+    agentOsSetResult(workflowId, payload.ok
+      ? "Plan written: " + (payload.plan_path || "?")
+      : "Plan failed: " + (payload.error || payload.mode || "unknown"));
+  } catch (err) {
+    agentOsSetResult(workflowId, "Plan failed: " + err.message);
+  }
+  refreshAgentOsLatest();
+}
+
+async function agentOsSuggest(workflowId) {
+  agentOsSetResult(workflowId, "Worker drafting suggestion (no command runs)...");
+  const out = document.getElementById("agentos-worker-output");
+  try {
+    const payload = await requestJson("/api/product-control/agent-os-worker-suggest", {
+      method: "POST", body: JSON.stringify({ workflow: workflowId }),
+    });
+    agentOsSetResult(workflowId, payload.ok
+      ? "Suggestion written: " + (payload.suggestion_path || "?")
+      : "Suggestion failed: " + (payload.error || payload.mode || "unknown"));
+    if (out && payload.ok) {
+      const pointers = (payload.memory_pointers || []).map(function (p) {
+        return '<li><code>' + escapeHtml(p.path + ":" + p.line) + '</code> '
+          + escapeHtml(p.snippet) + '</li>';
+      }).join("");
+      out.innerHTML = '<p><strong>' + escapeHtml(workflowId) + '</strong> suggestion at <code>'
+        + escapeHtml(payload.suggestion_path || "?") + '</code> (mode: '
+        + escapeHtml(payload.mode || "suggestion_only")
+        + ', executed commands: ' + ((payload.executed_commands || []).length) + ')</p>'
+        + '<ul>' + pointers + '</ul>';
+    }
+  } catch (err) {
+    agentOsSetResult(workflowId, "Suggestion failed: " + err.message);
+  }
+  refreshAgentOsLatest();
+}
+
+async function agentOsWave() {
+  const select = document.getElementById("agentos-wave-select");
+  const out = document.getElementById("agentos-wave-output");
+  if (!select || !out) return;
+  out.innerHTML = '<p class="cap-muted">Previewing waves...</p>';
+  try {
+    const payload = await requestJson(
+      "/api/product-control/agent-os-task-wave?workflow=" + encodeURIComponent(select.value));
+    if (!payload.ok) {
+      out.innerHTML = '<p class="cap-muted">Preview failed: ' + escapeHtml(payload.error || "?") + '</p>';
+      return;
+    }
+    out.innerHTML = (payload.waves || []).map(function (wave) {
+      return '<p><strong>Wave ' + wave.wave + ':</strong></p><ul>'
+        + wave.tasks.map(function (t) {
+          return '<li>[' + escapeHtml(t.role) + '] ' + escapeHtml(t.action)
+            + ' <span class="cap-muted">owns ' + escapeHtml(t.owned_paths.join(", ")) + '</span></li>';
+        }).join("") + '</ul>';
+    }).join("") + '<p class="cap-muted">' + payload.task_count + ' task(s) in '
+      + payload.wave_count + ' wave(s); simulation only.</p>';
+  } catch (err) {
+    out.innerHTML = '<p class="cap-muted">Preview failed: ' + escapeHtml(err.message) + '</p>';
+  }
+}
+
+async function agentOsSearch() {
+  const input = document.getElementById("agentos-search-term");
+  const out = document.getElementById("agentos-search-results");
+  if (!input || !out) return;
+  const term = input.value.trim();
+  if (!term) { out.innerHTML = '<p class="cap-muted">Type a search term first.</p>'; return; }
+  out.innerHTML = '<p class="cap-muted">Searching local memory sources...</p>';
+  try {
+    const payload = await requestJson(
+      "/api/product-control/agent-os-search?term=" + encodeURIComponent(term));
+    if (!payload.ok) {
+      out.innerHTML = '<p class="cap-muted">Search failed: ' + escapeHtml(payload.error || "?") + '</p>';
+      return;
+    }
+    out.innerHTML = payload.hits.length
+      ? '<ul>' + payload.hits.map(function (hit) {
+          return '<li><code>' + escapeHtml(hit.path + ":" + hit.line) + '</code> '
+            + escapeHtml(hit.snippet) + '</li>';
+        }).join("") + '</ul>'
+      : '<p class="cap-muted">No hits in verified memory sources.</p>';
+  } catch (err) {
+    out.innerHTML = '<p class="cap-muted">Search failed: ' + escapeHtml(err.message) + '</p>';
+  }
+}
+
+async function agentOsBuildHandoff() {
+  const list = document.getElementById("agentos-latest-list");
+  if (list) list.innerHTML = '<p class="cap-muted">Writing copy-paste packets...</p>';
+  try {
+    await requestJson("/api/product-control/agent-os-handoff", {
+      method: "POST", body: JSON.stringify({}),
+    });
+  } catch (_) { /* surfaced by the latest list refresh below */ }
+  refreshAgentOsLatest();
+}
+
+async function refreshAgentOsLatest() {
+  const list = document.getElementById("agentos-latest-list");
+  if (!list) return;
+  try {
+    const payload = await requestJson("/api/product-control/agent-os-latest");
+    list.innerHTML = payload.available
+      ? '<ul>' + payload.artifacts.map(function (a) {
+          return '<li>[' + escapeHtml(a.kind) + '] <code>' + escapeHtml(a.path) + '</code></li>';
+        }).join("") + '</ul>'
+      : '<p class="cap-muted">No generated artifacts yet. Run a plan, suggestion, or the demo.</p>';
+  } catch (_) { /* backend not running */ }
+}
+
+async function agentOsFullDemo() {
+  agentOsSetDemoStatus("Running full local demo (status, check, search, plan, suggestion, handoffs)...", "running");
+  try {
+    const payload = await requestJson("/api/product-control/agent-os-full-demo", {
+      method: "POST", body: JSON.stringify({}),
+    });
+    agentOsSetDemoStatus(payload.ok
+      ? "Demo complete. Evidence: " + (payload.evidence_path || "?")
+      : "Demo reported a problem - see latest artifacts.", payload.ok ? "pass" : "warn");
+  } catch (err) {
+    agentOsSetDemoStatus("Demo failed to start: " + err.message, "error");
+  }
+  refreshAgentOsStatus();
+  refreshAgentOsLatest();
+}
+
+async function refreshAgentOsRegistry() {
+  try {
+    agentOsRenderRegistry(await requestJson("/api/product-control/agent-os-workflows"));
+  } catch (_) { /* backend not running; static text remains */ }
+}
+
+function initAgentOs() {
+  document.getElementById("agentos-full-demo")?.addEventListener("click", agentOsFullDemo);
+  document.getElementById("agentos-search-run")?.addEventListener("click", agentOsSearch);
+  document.getElementById("agentos-search-term")?.addEventListener("keydown", function (event) {
+    if (event.key === "Enter") agentOsSearch();
+  });
+  document.getElementById("agentos-wave-run")?.addEventListener("click", agentOsWave);
+  document.getElementById("agentos-handoff-build")?.addEventListener("click", agentOsBuildHandoff);
+  refreshAgentOsStatus();
+  refreshAgentOsRegistry();
+  refreshAgentOsLatest();
+}
+
 initDashboardUxRebuild();
 refreshWeeklyReview();
 refreshManualQueue();
 initCapabilityConsole();
 initOverlayControls();
 initWorkingRecipes();
+initAgentOs();
 
 // ─── Local Orchestrator Card (N+3.50A) ────────────────────────────────────────
 

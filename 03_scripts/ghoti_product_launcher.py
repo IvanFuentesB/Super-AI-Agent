@@ -55,6 +55,7 @@ SMOKE_ENDPOINTS = [
 ]
 
 WHAT_GHOTI_CAN_DO = [
+    "Agent OS Command Center — integrated status, memory search, workflow plans, and suggestion-only worker",
     "Local Content Studio — supervised dry-run content packets (no live posting)",
     "Desktop Operator Action Center — dry-run, approve, execute (approval-gated)",
     "Desktop Recipe Runner — allowlisted local recipes",
@@ -197,6 +198,13 @@ CONTROL_CENTER_LANES = [
         "truth": "No live posting, money/trading/legal action, provider token setup, or hidden autonomy is enabled.",
         "safe_next_step": "Keep all real-world effects behind explicit human approval.",
     },
+    {
+        "key": "agent_os_command_center",
+        "label": "Agent OS Command Center",
+        "status": "suggestion_only",
+        "truth": "Integrated command center composes status, memory search, workflow plans, task waves, ownership checks, and copy-paste handoffs; the local worker writes suggestions only and never executes commands.",
+        "safe_next_step": "Run agent_os/ghoti_agent_os.py --status --json or open the Agent OS dashboard panel.",
+    },
 ]
 
 DAILY_OPERATOR_COMMANDS = [
@@ -220,6 +228,8 @@ DAILY_OPERATOR_COMMANDS = [
     "python 03_scripts/ghoti_product_launcher.py --hermes-manual-status --json",
     "python 03_scripts/ghoti_product_launcher.py --hermes-wsl-guide --json",
     "python 03_scripts/ghoti_product_launcher.py --hermes-safe-commands --json",
+    "python 03_scripts/ghoti_product_launcher.py --agent-os-status --json",
+    "python 03_scripts/agent_os/ghoti_agent_os.py --full-demo --json",
     "python 03_scripts/ghoti_product_launcher.py --stop-dashboard",
 ]
 
@@ -1074,6 +1084,44 @@ def _run_repo_knowledge(argv_tail, action: str, timeout: int = 45) -> dict:
     return payload
 
 
+def cmd_agent_os_status() -> dict:
+    """Run the Agent OS command center status with fixed argv, never a shell."""
+    script = REPO_ROOT / "03_scripts" / "agent_os" / "ghoti_agent_os.py"
+    if not script.exists():
+        return {
+            "ok": False,
+            "action": "agent-os-status",
+            "local_only": True,
+            "external_api_used": False,
+            "network_used": False,
+            "error": "agent_os/ghoti_agent_os.py not found",
+            "generated_at": _now(),
+        }
+    argv = [sys.executable, str(script), "--status", "--json"]
+    try:
+        completed = subprocess.run(
+            argv,
+            cwd=str(REPO_ROOT),
+            text=True,
+            capture_output=True,
+            timeout=60,
+            shell=False,
+        )
+        payload = json.loads(completed.stdout)
+        payload["action"] = "agent-os-status"
+        return payload
+    except Exception as error:
+        return {
+            "ok": False,
+            "action": "agent-os-status",
+            "local_only": True,
+            "external_api_used": False,
+            "network_used": False,
+            "error": str(error),
+            "generated_at": _now(),
+        }
+
+
 def cmd_repo_map() -> dict:
     return _run_repo_knowledge(["--write"], "repo-map", timeout=60)
 
@@ -1419,6 +1467,8 @@ def main(argv=None) -> int:
                         help="show the first local model evaluation summary or controlled fallback")
     parser.add_argument("--gemma-write-readiness", action="store_true",
                         help="write Gemma readiness and quality-plan files")
+    parser.add_argument("--agent-os-status", action="store_true",
+                        help="show the integrated Agent OS command center status")
     parser.add_argument("--repo-map", action="store_true",
                         help="write the local repo knowledge map and task bundles")
     parser.add_argument("--repo-bundle",
@@ -1489,6 +1539,8 @@ def main(argv=None) -> int:
             result = cmd_local_model_eval()
         elif args.gemma_write_readiness:
             result = cmd_gemma_write_readiness()
+        elif args.agent_os_status:
+            result = cmd_agent_os_status()
         elif args.repo_map:
             result = cmd_repo_map()
         elif args.repo_bundle:

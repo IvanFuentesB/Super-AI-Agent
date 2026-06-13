@@ -164,3 +164,13 @@ gemma4/
 
 # N+6.40A operator recipe reports (generated; never committed)
 14_context/operator_reports/generated/
+
+# Agent OS command center generated artifacts (never committed)
+14_context/agent_os/workflows/*
+!14_context/agent_os/workflows/README.md
+14_context/agent_os/handoffs/*
+!14_context/agent_os/handoffs/README.md
+14_context/agent_os/runs/*
+!14_context/agent_os/runs/README.md
+14_context/agent_os/evidence/*
+!14_context/agent_os/evidence/README.md

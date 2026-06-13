@@ -68,6 +68,9 @@
             <button class="console-nav-item is-active" type="button" data-console-view="capabilities">
               <span>Home / Capabilities</span>
             </button>
+            <button class="console-nav-item" type="button" data-console-view="agent-os">
+              <span>Agent OS</span>
+            </button>
             <button class="console-nav-item" type="button" data-console-view="overview">
               <span>Overview</span>
             </button>
@@ -389,6 +392,76 @@
                 <summary>Debug details (raw JSON)</summary>
                 <pre id="cap-debug-json" class="cap-debug-pre">Run a safe check to see raw output here.</pre>
               </details>
+            </section>
+          </section>
+          <section class="console-view" data-console-view-panel="agent-os" aria-labelledby="console-view-agent-os-title" hidden>
+            <div class="console-view-header">
+              <div>
+                <h1 id="console-view-agent-os-title">Ghoti Agent OS</h1>
+                <p>One integrated command center: status, shared memory, agent roster, workflow launchpad, and the suggestion-only local worker. Labels are honest: <strong>simulation</strong> never runs anything, <strong>suggestion-only</strong> writes proposals a human reviews, and <strong>approved local action</strong> exists only behind an explicit approval file.</p>
+              </div>
+              <div class="cap-header-actions">
+                <button id="agentos-full-demo" class="cap-btn cap-btn--primary" type="button">Run Full Local Demo</button>
+                <span id="agentos-demo-status" class="cap-run-status" aria-live="polite">Idle - nothing is running.</span>
+              </div>
+            </div>
+
+            <section class="console-card cap-card" id="agentos-status-card">
+              <h2>Current Status <span class="cap-badge cap-badge--dryrun">suggestion-only</span></h2>
+              <p class="cap-muted">Live snapshot from <code>agent_os/ghoti_agent_os.py --status</code>: repo truth, recipes, memory, lanes, local model, and worker mode.</p>
+              <div class="cap-cardlet" id="agentos-status-grid"><p class="cap-muted">Start the dashboard backend to load status.</p></div>
+              <details class="cap-debug">
+                <summary>Debug details (raw JSON)</summary>
+                <pre id="agentos-status-debug" class="cap-debug-pre">Status has not loaded yet.</pre>
+              </details>
+            </section>
+
+            <section class="console-card cap-card" id="agentos-memory-card">
+              <h2>Shared Memory and Search</h2>
+              <p class="cap-muted">Search verified local sources (compact memory, Obsidian vault, repo knowledge, docs). Results are compact <code>path:line</code> pointers - never raw file bodies. Obsidian start note: <code>14_context/obsidian_vault/00_Index.md</code>. Handoff inbox/outbox: prompt bus, relay pairs, and <code>14_context/agent_os/handoffs/</code>.</p>
+              <div class="cap-cardlet">
+                <label for="agentos-search-term">Search memory</label>
+                <input id="agentos-search-term" type="text" maxlength="64" placeholder="e.g. obsidian, gemma, handoff" />
+                <button id="agentos-search-run" class="cap-btn" type="button">Search</button>
+              </div>
+              <div id="agentos-search-results"><p class="cap-muted">No search run yet this session.</p></div>
+            </section>
+
+            <section class="console-card cap-card" id="agentos-roster-card">
+              <h2>Agent Roster <span class="cap-badge cap-badge--dryrun">all suggestion-only</span></h2>
+              <p class="cap-muted">Six roles mapped onto the lane registry (<code>14_context/agent_lanes/agent_lane_registry.json</code>). No role can launch anything; packets are copy-paste only.</p>
+              <div class="cap-cardlet" id="agentos-roster-grid"><p class="cap-muted">Roster loads with the workflow registry.</p></div>
+            </section>
+
+            <section class="console-card cap-card" id="agentos-launchpad-card">
+              <h2>Workflow Launchpad</h2>
+              <p class="cap-muted">Each workflow generates a plan, a task-wave preview, and draft artifacts. None of them post, buy, send, or control a browser.</p>
+              <div class="cap-recipe-grid" id="agentos-workflow-grid"><p class="cap-muted">Workflow registry not loaded yet - start the dashboard backend.</p></div>
+              <p id="agentos-launchpad-status" class="cap-run-status" aria-live="polite"></p>
+            </section>
+
+            <section class="console-card cap-card" id="agentos-wave-card">
+              <h2>Task Wave Preview <span class="cap-badge cap-badge--dryrun">simulation</span></h2>
+              <p class="cap-muted">Deterministic wave grouping with the file-ownership no-overlap check (Rust checker when built, Python mirror otherwise).</p>
+              <div class="cap-cardlet">
+                <label for="agentos-wave-select">Workflow</label>
+                <select id="agentos-wave-select"></select>
+                <button id="agentos-wave-run" class="cap-btn" type="button">Preview Waves</button>
+              </div>
+              <div id="agentos-wave-output"><p class="cap-muted">No wave previewed yet.</p></div>
+            </section>
+
+            <section class="console-card cap-card" id="agentos-worker-card">
+              <h2>Local Worker <span class="cap-badge cap-badge--dryrun">suggestion-only</span></h2>
+              <p class="cap-muted">The worker reads memory and a template, then writes a proposed plan/handoff under <code>14_context/agent_os/handoffs/</code>. It never executes commands and never edits other repo files. Approval to extend its output folders lives only in <code>14_context/agent_os/APPROVED_ACTIONS.json</code> (human-edited, repo-local only).</p>
+              <div id="agentos-worker-output"><p class="cap-muted">No worker suggestion this session. Use a workflow card's "Worker Suggestion" button.</p></div>
+            </section>
+
+            <section class="console-card cap-card" id="agentos-handoffs-card">
+              <h2>Latest Handoffs and Artifacts</h2>
+              <p class="cap-muted">Newest generated plans, suggestions, packets, and evidence under <code>14_context/agent_os/</code>. Every packet says <strong>Human copy-paste required: YES</strong>.</p>
+              <button id="agentos-handoff-build" class="cap-btn" type="button">Build Handoff Packets (Claude / Codex / Hermes)</button>
+              <div id="agentos-latest-list"><p class="cap-muted">No artifacts listed yet.</p></div>
             </section>
           </section>
           <section class="console-view" data-console-view-panel="overview" aria-labelledby="console-view-overview-title" hidden>
