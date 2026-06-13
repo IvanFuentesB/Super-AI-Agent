@@ -109,6 +109,83 @@ def build_action_request(
     }
 
 
+def build_local_worker_request(
+    *,
+    workflow_id: str,
+    created_at: str | None = None,
+    task: str = "repo_status_summary",
+    wait_seconds: float = 0,
+    max_runtime_seconds: int = 15,
+) -> dict:
+    """Build one deterministic request for the single allowlisted local worker."""
+    created = created_at or _now()
+    seed = {
+        "workflow_id": workflow_id,
+        "action_id": "run_local_worker",
+        "worker_id": "repo-summary-worker",
+        "task": task,
+        "wait_seconds": wait_seconds,
+        "max_runtime_seconds": max_runtime_seconds,
+        "created_at": created,
+    }
+    request_id = _request_id(seed)
+    artifact = f"14_context/agent_os/workflows/worker_result_{request_id}.md"
+    run_record = f"14_context/agent_os/runs/worker_run_{request_id}.json"
+    evidence = f"14_context/agent_os/evidence/worker_run_{request_id}.md"
+    handoff = f"14_context/agent_os/handoffs/worker_run_{request_id}.md"
+    runner_state = f"14_context/agent_os/runner_control/state_{request_id}.json"
+    cancel_path = f"14_context/agent_os/runner_control/cancel_{request_id}.json"
+    active_lock = "14_context/agent_os/runner_control/active_worker.json"
+    outputs = [
+        artifact,
+        run_record,
+        evidence,
+        handoff,
+        runner_state,
+        cancel_path,
+        active_lock,
+    ]
+    return {
+        "schema": "ghoti_action_request/1",
+        "request_id": request_id,
+        "created_at": created,
+        "created_by": "agent-os-worker",
+        "workflow_id": workflow_id,
+        "action_id": "run_local_worker",
+        "mode": "suggestion",
+        "approval_state": "pending",
+        "requested_capabilities": [
+            "agent_os.read_memory",
+            "agent_os.spawn_allowlisted_worker",
+            "agent_os.write_repo_local",
+        ],
+        "input_paths": ["14_context/compact_memory/current_working_summary.md"],
+        "output_paths": outputs,
+        "owned_files": outputs,
+        "locked_paths": [],
+        "max_runtime_seconds": max_runtime_seconds,
+        "approval_token_hash": None,
+        "summary": f"Run one approved repo-summary worker for {workflow_id}.",
+        "risk_note": (
+            "One fixed local Python worker; stdin/stdout JSON only; no dynamic command, "
+            "network, browser, accounts, mouse/keyboard, or external writes."
+        ),
+        "payload": {
+            "kind": "run_allowlisted_worker",
+            "worker_id": "repo-summary-worker",
+            "task": task,
+            "wait_seconds": wait_seconds,
+            "artifact_path": artifact,
+            "run_record_path": run_record,
+            "evidence_path": evidence,
+            "handoff_path": handoff,
+            "runner_state_path": runner_state,
+            "cancel_path": cancel_path,
+            "active_lock_path": active_lock,
+        },
+    }
+
+
 class ApprovalQueue:
     def __init__(
         self,
@@ -299,6 +376,9 @@ class ApprovalQueue:
                             "request_fingerprint": guard.get("request_fingerprint"),
                         },
                         "artifact_path": execution.get("artifact_path"),
+                        "worker_id": execution.get("worker_id")
+                        or (request.get("payload") or {}).get("worker_id"),
+                        "exit_reason": execution.get("reason"),
                     }
                 )
         return {"ok": True, "action": "list-approvals", "count": len(items), "items": items}
@@ -370,7 +450,11 @@ class ApprovalQueue:
                 "approval_state": "denied",
                 "guard_decision": decision,
             }
-        result = execute_approved_request(request, self.repo_root)
+        result = execute_approved_request(
+            request,
+            self.repo_root,
+            guard_decision=decision,
+        )
         target_state = "executed" if result.get("ok") else "failed"
         request["approval_state"] = target_state
         record["guard_decision"] = decision

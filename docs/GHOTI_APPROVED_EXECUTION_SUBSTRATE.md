@@ -7,9 +7,10 @@ Ghoti can now create an action request, validate it with Rust, place it in an
 inspectible approval queue, record explicit approval, and write one bounded
 repo-local text/JSON artifact with evidence.
 
-It is intentionally not live autonomy. It cannot run a command, launch an
-agent, open a browser, click/type, touch an account, send/post anything, or
-make an external write.
+It is intentionally not live autonomy. The later sandboxed-runner extension
+may launch one fixed repo-summary worker after approval; arbitrary commands,
+other agents, browser actions, click/type, accounts, sending/posting, and
+external writes remain blocked.
 
 ## Architecture
 
@@ -105,7 +106,7 @@ and no user/model command surface.
 
 ## What Remains Blocked
 
-- Live local agent process launching
+- Any local agent process except the fixed approved `repo-summary-worker`
 - Swarm execution
 - Browser and computer-use
 - Mouse/keyboard input

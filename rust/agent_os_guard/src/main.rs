@@ -6,7 +6,7 @@ use std::fs;
 use std::path::Path;
 use std::process::ExitCode;
 
-const GUARD_VERSION: &str = "agent_os_guard/0.2.0";
+const GUARD_VERSION: &str = "agent_os_guard/0.3.0";
 const MODES: [&str; 3] = ["simulation", "suggestion", "approved_local"];
 const APPROVAL_STATES: [&str; 7] = [
     "draft", "pending", "approved", "rejected", "executed", "failed", "denied",
@@ -18,7 +18,8 @@ const LEGACY_ACTIONS: [&str; 5] = [
     "content-video-plan",
     "email-draft-plan",
 ];
-const APPROVED_ACTIONS: [&str; 4] = [
+const APPROVED_ACTIONS: [&str; 5] = [
+    "run_local_worker",
     "update_latest_state_note",
     "write_evidence_note",
     "write_handoff_file",
@@ -33,8 +34,23 @@ const LEGACY_CAPABILITIES: [&str; 7] = [
     "repo_write_trial",
     "run_record_write",
 ];
-const APPROVED_CAPABILITIES: [&str; 2] =
-    ["agent_os.read_memory", "agent_os.write_repo_local"];
+const APPROVED_CAPABILITIES: [&str; 3] = [
+    "agent_os.read_memory",
+    "agent_os.spawn_allowlisted_worker",
+    "agent_os.write_repo_local",
+];
+const ALLOWLISTED_WORKERS: [&str; 1] = ["repo-summary-worker"];
+const ALLOWLISTED_WORKER_TASKS: [&str; 2] = ["bounded_wait_probe", "repo_status_summary"];
+const DYNAMIC_PROCESS_FIELDS: [&str; 8] = [
+    "args",
+    "code",
+    "command",
+    "env",
+    "environment",
+    "executable",
+    "script",
+    "shell",
+];
 const BLOCKED_CAPABILITIES: [&str; 15] = [
     "account",
     "browser",
@@ -117,6 +133,7 @@ struct OwnershipInput {
 struct SafetyFlags {
     default_deny: bool,
     launches_processes: bool,
+    allowlisted_local_process: bool,
     network_used: bool,
     writes_files: bool,
     live_execution: bool,
@@ -230,6 +247,7 @@ fn evaluate(request: &ActionRequest) -> GuardDecision {
     let new_contract = is_new_contract(request);
     let mode = normalize_label(&request.mode);
     let action = request.action_id.trim().to_lowercase();
+    let is_worker_action = new_contract && action == "run_local_worker";
 
     if new_contract {
         if request
@@ -264,6 +282,31 @@ fn evaluate(request: &ActionRequest) -> GuardDecision {
     if !(1..=120).contains(&request.max_runtime_seconds) {
         reasons.insert("runtime_limit_invalid".to_string());
     }
+    if is_worker_action {
+        if request.max_runtime_seconds > 30 {
+            reasons.insert("worker_runtime_limit_invalid".to_string());
+        }
+        let payload = request.payload.as_object();
+        let kind = request.payload.get("kind").and_then(Value::as_str);
+        let worker_id = request.payload.get("worker_id").and_then(Value::as_str);
+        let task = request.payload.get("task").and_then(Value::as_str);
+        if kind != Some("run_allowlisted_worker") {
+            reasons.insert("worker_payload_kind_invalid".to_string());
+        }
+        if worker_id.is_none_or(|value| !ALLOWLISTED_WORKERS.contains(&value)) {
+            reasons.insert("worker_not_allowlisted".to_string());
+        }
+        if task.is_none_or(|value| !ALLOWLISTED_WORKER_TASKS.contains(&value)) {
+            reasons.insert("worker_task_not_allowlisted".to_string());
+        }
+        if payload.is_none_or(|object| {
+            DYNAMIC_PROCESS_FIELDS
+                .iter()
+                .any(|field| object.contains_key(*field))
+        }) {
+            reasons.insert("dynamic_process_surface_denied".to_string());
+        }
+    }
 
     let requested: BTreeSet<String> = request
         .requested_capabilities
@@ -296,6 +339,11 @@ fn evaluate(request: &ActionRequest) -> GuardDecision {
         .any(|capability| !BLOCKED_CAPABILITIES.contains(&capability.as_str()))
     {
         reasons.insert("unknown_capability".to_string());
+    }
+    if is_worker_action
+        && !requested.contains("agent_os.spawn_allowlisted_worker")
+    {
+        reasons.insert("worker_capability_required".to_string());
     }
 
     let mut normalized_inputs = Vec::new();
@@ -408,7 +456,13 @@ fn evaluate(request: &ActionRequest) -> GuardDecision {
         max_runtime_seconds: request.max_runtime_seconds,
         safety: SafetyFlags {
             default_deny: true,
-            launches_processes: false,
+            launches_processes: is_worker_action,
+            allowlisted_local_process: is_worker_action
+                && request
+                    .payload
+                    .get("worker_id")
+                    .and_then(Value::as_str)
+                    .is_some_and(|value| ALLOWLISTED_WORKERS.contains(&value)),
             network_used: false,
             writes_files: false,
             live_execution: false,
@@ -569,6 +623,22 @@ mod tests {
         }
     }
 
+    fn worker_request() -> ActionRequest {
+        let mut request = approved_request();
+        request.action_id = "run_local_worker".to_string();
+        request.requested_capabilities = vec![
+            "agent_os.read_memory".to_string(),
+            "agent_os.spawn_allowlisted_worker".to_string(),
+            "agent_os.write_repo_local".to_string(),
+        ];
+        request.payload = serde_json::json!({
+            "kind": "run_allowlisted_worker",
+            "worker_id": "repo-summary-worker",
+            "task": "repo_status_summary",
+        });
+        request
+    }
+
     #[test]
     fn legacy_suggestion_remains_allowed() {
         assert!(evaluate(&legacy_request()).allow);
@@ -626,5 +696,29 @@ mod tests {
     #[test]
     fn built_in_check_request_is_allowed() {
         assert!(evaluate(&check_request()).allow);
+    }
+
+    #[test]
+    fn fixed_local_worker_contract_is_allowed() {
+        let decision = evaluate(&worker_request());
+        assert!(decision.allow);
+        assert!(decision.safety.launches_processes);
+        assert!(decision.safety.allowlisted_local_process);
+        assert!(!decision.safety.live_execution);
+    }
+
+    #[test]
+    fn arbitrary_worker_and_dynamic_command_are_denied() {
+        let mut arbitrary = worker_request();
+        arbitrary.payload["worker_id"] = serde_json::json!("arbitrary-worker");
+        assert!(evaluate(&arbitrary)
+            .reasons
+            .contains(&"worker_not_allowlisted".to_string()));
+
+        let mut dynamic = worker_request();
+        dynamic.payload["command"] = serde_json::json!("whoami");
+        assert!(evaluate(&dynamic)
+            .reasons
+            .contains(&"dynamic_process_surface_denied".to_string()));
     }
 }

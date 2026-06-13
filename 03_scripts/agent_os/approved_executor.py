@@ -10,6 +10,7 @@ import data_only_writer
 
 
 ALLOWED_ACTIONS = {
+    "run_local_worker",
     "write_handoff_file",
     "write_workflow_plan",
     "write_evidence_note",
@@ -72,7 +73,12 @@ def _public_safe_text(content: str) -> bool:
     return "c:\\users\\" not in lowered and "c:/users/" not in lowered
 
 
-def execute_approved_request(request: dict, repo_root: Path) -> dict:
+def execute_approved_request(
+    request: dict,
+    repo_root: Path,
+    *,
+    guard_decision: dict | None = None,
+) -> dict:
     """Execute one allowlisted local artifact write and its evidence trail."""
     if request.get("schema") != "ghoti_action_request/1":
         return {"ok": False, "reason": "unsupported_schema"}
@@ -84,6 +90,14 @@ def execute_approved_request(request: dict, repo_root: Path) -> dict:
         return {"ok": False, "reason": "approval_hash_missing"}
 
     payload = request.get("payload") or {}
+    if request.get("action_id") == "run_local_worker":
+        from sandboxed_local_agent_runner import execute_allowlisted_worker_request
+
+        return execute_allowlisted_worker_request(
+            request,
+            repo_root,
+            guard_decision=guard_decision or {},
+        )
     if payload.get("kind") != "write_text_artifact":
         return {"ok": False, "reason": "unsupported_payload_kind"}
     content = str(payload.get("content", ""))

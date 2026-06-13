@@ -1,0 +1,54 @@
+{
+  "schema": "ghoti_action_request/1",
+  "request_id": "req-example-local-worker",
+  "created_at": "2026-06-13T14:00:00Z",
+  "created_by": "agent-os-worker",
+  "workflow_id": "coding-task",
+  "action_id": "run_local_worker",
+  "mode": "suggestion",
+  "approval_state": "pending",
+  "requested_capabilities": [
+    "agent_os.read_memory",
+    "agent_os.spawn_allowlisted_worker",
+    "agent_os.write_repo_local"
+  ],
+  "input_paths": [
+    "14_context/compact_memory/current_working_summary.md"
+  ],
+  "output_paths": [
+    "14_context/agent_os/workflows/worker_result_req-example-local-worker.md",
+    "14_context/agent_os/runs/worker_run_req-example-local-worker.json",
+    "14_context/agent_os/evidence/worker_run_req-example-local-worker.md",
+    "14_context/agent_os/handoffs/worker_run_req-example-local-worker.md",
+    "14_context/agent_os/runner_control/state_req-example-local-worker.json",
+    "14_context/agent_os/runner_control/cancel_req-example-local-worker.json",
+    "14_context/agent_os/runner_control/active_worker.json"
+  ],
+  "owned_files": [
+    "14_context/agent_os/workflows/worker_result_req-example-local-worker.md",
+    "14_context/agent_os/runs/worker_run_req-example-local-worker.json",
+    "14_context/agent_os/evidence/worker_run_req-example-local-worker.md",
+    "14_context/agent_os/handoffs/worker_run_req-example-local-worker.md",
+    "14_context/agent_os/runner_control/state_req-example-local-worker.json",
+    "14_context/agent_os/runner_control/cancel_req-example-local-worker.json",
+    "14_context/agent_os/runner_control/active_worker.json"
+  ],
+  "locked_paths": [],
+  "max_runtime_seconds": 15,
+  "approval_token_hash": null,
+  "summary": "Run one approved repo-summary worker.",
+  "risk_note": "Fixed worker and JSON protocol only; no dynamic command surface.",
+  "payload": {
+    "kind": "run_allowlisted_worker",
+    "worker_id": "repo-summary-worker",
+    "task": "repo_status_summary",
+    "wait_seconds": 0,
+    "artifact_path": "14_context/agent_os/workflows/worker_result_req-example-local-worker.md",
+    "run_record_path": "14_context/agent_os/runs/worker_run_req-example-local-worker.json",
+    "evidence_path": "14_context/agent_os/evidence/worker_run_req-example-local-worker.md",
+    "handoff_path": "14_context/agent_os/handoffs/worker_run_req-example-local-worker.md",
+    "runner_state_path": "14_context/agent_os/runner_control/state_req-example-local-worker.json",
+    "cancel_path": "14_context/agent_os/runner_control/cancel_req-example-local-worker.json",
+    "active_lock_path": "14_context/agent_os/runner_control/active_worker.json"
+  }
+}

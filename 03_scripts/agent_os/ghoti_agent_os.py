@@ -7,7 +7,8 @@ relay pairs, the local model probe, and the suggestion-only worker.
 
 Everything is local, supervised, and deny-by-default. The only writes
 are repo-local files under 14_context/agent_os/ (plans, suggestions,
-handoffs, evidence). No agent is launched; packets are copy-paste only.
+handoffs, evidence). One fixed local worker process may run only after
+explicit approval and a positive Rust guard verdict.
 
 Usage:
   python 03_scripts/agent_os/ghoti_agent_os.py --status --json
@@ -25,6 +26,10 @@ Usage:
   python 03_scripts/agent_os/ghoti_agent_os.py --approve-action <request_id> --json
   python 03_scripts/agent_os/ghoti_agent_os.py --execute-approved <request_id> --json
   python 03_scripts/agent_os/ghoti_agent_os.py --full-approved-demo --json
+  python 03_scripts/agent_os/ghoti_agent_os.py --propose-worker-run coding-task --json
+  python 03_scripts/agent_os/ghoti_agent_os.py --runner-status --json
+  python 03_scripts/agent_os/ghoti_agent_os.py --cancel-worker <request_id> --json
+  python 03_scripts/agent_os/ghoti_agent_os.py --full-worker-demo --json
 """
 
 from __future__ import annotations
@@ -45,6 +50,7 @@ sys.path.insert(0, str(SCRIPT_DIR))
 import local_worker  # noqa: E402
 import agent_os_guard_bridge  # noqa: E402
 import approval_queue  # noqa: E402
+import sandboxed_local_agent_runner  # noqa: E402
 import workflow_templates  # noqa: E402
 
 REPO_ROOT = SCRIPT_DIR.parents[1]
@@ -73,6 +79,7 @@ def _safety_flags() -> dict:
     return {
         "no_live_actions": True,
         "approved_repo_local_artifact_execution": True,
+        "allowlisted_local_agent_process_enabled": True,
         "external_live_execution": False,
         "provider_api_used": False,
         "agents_launched": False,
@@ -235,6 +242,7 @@ def cmd_status() -> dict:
         },
         "local_model": _probe_ollama(),
         "worker": _worker_mode(),
+        "sandboxed_runner": sandboxed_local_agent_runner.runner_status(),
         "agent_os_guard": agent_os_guard_bridge.guard_status(),
         "approval_queue": approval_queue.ApprovalQueue().status(),
         "workflows": {"count": len(workflow_templates.WORKFLOW_ORDER),
@@ -441,6 +449,33 @@ def cmd_propose_action(workflow_id: str) -> dict:
     return result
 
 
+def cmd_propose_worker_run(workflow_id: str) -> dict:
+    """Propose one fixed local worker process from a workflow suggestion."""
+    template = workflow_templates.get_template(workflow_id)
+    if template is None:
+        return {"ok": False, "action": "propose-worker-run", "error": "unknown workflow id"}
+    suggestion = cmd_worker_suggest(workflow_id)
+    if not suggestion.get("ok"):
+        return {
+            "ok": False,
+            "action": "propose-worker-run",
+            "error": "worker suggestion failed",
+            "suggestion": suggestion,
+        }
+    request = approval_queue.build_local_worker_request(
+        workflow_id=workflow_id,
+        created_at=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    )
+    if suggestion.get("suggestion_path"):
+        request["input_paths"].append(suggestion["suggestion_path"])
+    result = approval_queue.ApprovalQueue().propose(request)
+    result["action"] = "propose-worker-run"
+    result["worker_id"] = "repo-summary-worker"
+    result["suggestion_path"] = suggestion.get("suggestion_path")
+    result["safety_flags"] = _safety_flags()
+    return result
+
+
 def cmd_list_approvals() -> dict:
     payload = approval_queue.ApprovalQueue().list()
     payload["safety_flags"] = _safety_flags()
@@ -478,6 +513,58 @@ def cmd_execute_approved(request_id: str) -> dict:
         payload = {"ok": False, "action": "execute-approved", "reason": str(error)}
     payload["safety_flags"] = _safety_flags()
     return payload
+
+
+def cmd_runner_status() -> dict:
+    payload = sandboxed_local_agent_runner.runner_status()
+    payload["approval_queue"] = approval_queue.ApprovalQueue().status()["counts"]
+    payload["safety_flags"] = _safety_flags()
+    return payload
+
+
+def cmd_cancel_worker(request_id: str) -> dict:
+    payload = sandboxed_local_agent_runner.cancel_worker(request_id)
+    payload["safety_flags"] = _safety_flags()
+    return payload
+
+
+def cmd_full_worker_demo() -> dict:
+    """Run one explicitly approved, Rust-guarded local worker process."""
+    proposed = cmd_propose_worker_run("coding-task")
+    if not proposed.get("ok"):
+        return {
+            "ok": False,
+            "action": "full-worker-demo",
+            "failed_step": "propose",
+            "result": proposed,
+            "safety_flags": _safety_flags(),
+        }
+    request_id = proposed["request_id"]
+    approved = cmd_approve_action(request_id)
+    if not approved.get("ok"):
+        return {
+            "ok": False,
+            "action": "full-worker-demo",
+            "failed_step": "approve",
+            "result": approved,
+            "safety_flags": _safety_flags(),
+        }
+    executed = cmd_execute_approved(request_id)
+    return {
+        **executed,
+        "action": "full-worker-demo",
+        "steps": [
+            {"step": "propose", "ok": proposed["ok"]},
+            {"step": "approve", "ok": approved["ok"]},
+            {"step": "execute", "ok": executed["ok"]},
+        ],
+        "explicit_approval_recorded": True,
+        "rust_guard_validated": bool((executed.get("guard_decision") or {}).get("allow")),
+        "safety_flags": {
+            **_safety_flags(),
+            "agents_launched": bool(executed.get("local_agent_process_executed")),
+        },
+    }
 
 
 def cmd_full_approved_demo() -> dict:
@@ -602,6 +689,24 @@ def cmd_check() -> dict:
     for guard_check in agent_os_guard_bridge.guard_check_records():
         record(guard_check["name"], guard_check["ok"], guard_check["details"])
 
+    runner_status = sandboxed_local_agent_runner.runner_status()
+    record(
+        "sandboxed_runner_has_one_allowlisted_worker",
+        runner_status.get("worker_allowlist") == ["repo-summary-worker"],
+        ", ".join(runner_status.get("worker_allowlist") or []),
+    )
+    worker_source = (
+        SCRIPT_DIR / "repo_summary_worker.py"
+    ).read_text(encoding="utf-8").lower()
+    record(
+        "sandboxed_worker_has_no_execution_or_network_surface",
+        not any(
+            marker in worker_source
+            for marker in ("subprocess", "socket", "urllib", "requests", "os.system")
+        ),
+        "fixed worker reads repo-local inputs and returns JSON only",
+    )
+
     all_ok = all(c["ok"] for c in checks)
     return {"ok": all_ok, "action": "check", "checks": checks,
             "passed": sum(1 for c in checks if c["ok"]), "total": len(checks),
@@ -702,6 +807,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--execute-approved", metavar="REQUEST_ID")
     parser.add_argument("--approval-status", action="store_true")
     parser.add_argument("--full-approved-demo", action="store_true")
+    parser.add_argument("--propose-worker-run", metavar="WORKFLOW")
+    parser.add_argument("--runner-status", action="store_true")
+    parser.add_argument("--cancel-worker", metavar="REQUEST_ID")
+    parser.add_argument("--full-worker-demo", action="store_true")
     parser.add_argument("--json", action="store_true", dest="as_json")
     args = parser.parse_args(argv)
 
@@ -741,6 +850,14 @@ def main(argv: list[str] | None = None) -> int:
         payload = cmd_approval_status()
     elif args.full_approved_demo:
         payload = cmd_full_approved_demo()
+    elif args.propose_worker_run:
+        payload = cmd_propose_worker_run(args.propose_worker_run)
+    elif args.runner_status:
+        payload = cmd_runner_status()
+    elif args.cancel_worker:
+        payload = cmd_cancel_worker(args.cancel_worker)
+    elif args.full_worker_demo:
+        payload = cmd_full_worker_demo()
     else:
         parser.print_help()
         return 2

@@ -6909,6 +6909,96 @@ async function agentOsFullApprovedDemo() {
   refreshAgentOsLatest();
 }
 
+function agentOsRenderRunner(payload) {
+  const out = document.getElementById("agentos-runner-output");
+  if (!out) return;
+  if (!payload || !payload.ok) {
+    out.innerHTML = '<p class="cap-muted">Runner unavailable.</p>';
+    return;
+  }
+  const active = payload.active_worker;
+  const latest = payload.latest_state;
+  out.innerHTML = '<p><strong>Allowlist:</strong> '
+    + escapeHtml((payload.worker_allowlist || []).join(", ") || "none") + '</p>'
+    + '<p><strong>Active:</strong> '
+    + (active ? '<code>' + escapeHtml(active.request_id || "?") + '</code>' : 'none') + '</p>'
+    + '<p><strong>Latest state:</strong> '
+    + (latest ? '<code>' + escapeHtml(latest.status || "?") + '</code> '
+      + escapeHtml(latest.request_id || "") : 'none') + '</p>'
+    + '<p class="cap-muted">Human approval required: '
+    + String(payload.human_approval_required) + '; model-output-to-command: '
+    + String(payload.model_output_as_command) + '; external live execution: '
+    + String(payload.external_live_execution_enabled) + '.</p>';
+}
+
+async function refreshAgentOsRunner() {
+  try {
+    agentOsRenderRunner(await requestJson("/api/product-control/agent-os-runner-status"));
+  } catch (_) { /* backend not running */ }
+}
+
+async function agentOsProposeWorkerRun() {
+  const label = document.getElementById("agentos-runner-action-status");
+  if (label) label.textContent = "Proposing one fixed local worker run...";
+  try {
+    const payload = await requestJson("/api/product-control/agent-os-propose-worker-run", {
+      method: "POST", body: JSON.stringify({ workflow: "coding-task" }),
+    });
+    if (label) label.textContent = payload.ok
+      ? "Pending worker approval: " + (payload.request_id || "?")
+      : "Worker proposal denied: " + ((payload.guard_decision || {}).reason || payload.error || "?");
+  } catch (err) {
+    if (label) label.textContent = "Worker proposal failed: " + err.message;
+  }
+  refreshAgentOsApprovals();
+  refreshAgentOsRunner();
+}
+
+async function agentOsCancelWorker() {
+  const label = document.getElementById("agentos-runner-action-status");
+  let status;
+  try {
+    status = await requestJson("/api/product-control/agent-os-runner-status");
+  } catch (_) {
+    if (label) label.textContent = "Runner status unavailable.";
+    return;
+  }
+  const requestId = status.active_worker && status.active_worker.request_id;
+  if (!requestId) {
+    if (label) label.textContent = "No active worker to cancel.";
+    return;
+  }
+  try {
+    const payload = await requestJson("/api/product-control/agent-os-cancel-worker", {
+      method: "POST", body: JSON.stringify({ request_id: requestId }),
+    });
+    if (label) label.textContent = payload.ok
+      ? "Cancellation requested for " + requestId
+      : "Cancellation refused: " + (payload.reason || "?");
+  } catch (err) {
+    if (label) label.textContent = "Cancellation failed: " + err.message;
+  }
+  refreshAgentOsRunner();
+}
+
+async function agentOsFullWorkerDemo() {
+  const label = document.getElementById("agentos-runner-action-status");
+  if (label) label.textContent = "Running one approved sandboxed local worker...";
+  try {
+    const payload = await requestJson("/api/product-control/agent-os-full-worker-demo", {
+      method: "POST", body: JSON.stringify({}),
+    });
+    if (label) label.textContent = payload.ok
+      ? "Worker complete: " + (payload.artifact_path || "?")
+      : "Worker demo failed: " + (payload.reason || payload.failed_step || "?");
+  } catch (err) {
+    if (label) label.textContent = "Worker demo failed: " + err.message;
+  }
+  refreshAgentOsApprovals();
+  refreshAgentOsRunner();
+  refreshAgentOsLatest();
+}
+
 async function agentOsWave() {
   const select = document.getElementById("agentos-wave-select");
   const out = document.getElementById("agentos-wave-output");
@@ -7024,10 +7114,15 @@ function initAgentOs() {
     agentOsApprovalAction("execute");
   });
   document.getElementById("agentos-full-approved-demo")?.addEventListener("click", agentOsFullApprovedDemo);
+  document.getElementById("agentos-runner-refresh")?.addEventListener("click", refreshAgentOsRunner);
+  document.getElementById("agentos-runner-propose")?.addEventListener("click", agentOsProposeWorkerRun);
+  document.getElementById("agentos-runner-cancel")?.addEventListener("click", agentOsCancelWorker);
+  document.getElementById("agentos-full-worker-demo")?.addEventListener("click", agentOsFullWorkerDemo);
   refreshAgentOsStatus();
   refreshAgentOsRegistry();
   refreshAgentOsLatest();
   refreshAgentOsApprovals();
+  refreshAgentOsRunner();
 }
 
 initDashboardUxRebuild();
