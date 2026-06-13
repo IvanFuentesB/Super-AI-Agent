@@ -1,0 +1,10 @@
+[package]
+name = "agent_os_guard"
+version = "0.1.0"
+edition = "2024"
+description = "Default-deny policy guard for Ghoti local worker proposals"
+license = "MIT"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
