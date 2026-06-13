@@ -6686,6 +6686,7 @@ function agentOsRenderStatus(payload) {
   const model = payload.local_model || {};
   const worker = payload.worker || {};
   const handoffs = payload.handoffs || {};
+  const approvals = payload.approval_queue || {};
   const rows = [
     ["Repo", escapeHtml(repo.branch || "?") + " @ " + escapeHtml(repo.head || "?")
       + " (" + (repo.dirty_file_count || 0) + " dirty)"],
@@ -6704,6 +6705,7 @@ function agentOsRenderStatus(payload) {
       + (handoffs.relay_pair_count || 0) + " relay pairs"],
     ["Worker mode", escapeHtml(worker.label || "suggestion_only")
       + (payload.rust_checker_built ? " | rust checker built" : " | python mirror")],
+    ["Approved execution", (approvals.pending_count || 0) + " pending; repo-local artifacts only"],
   ];
   grid.innerHTML = rows.map(function (row) {
     return '<p><strong>' + row[0] + ':</strong> ' + row[1] + '</p>';
@@ -6737,7 +6739,9 @@ function agentOsRenderRegistry(payload) {
       + '<button class="cap-btn cap-btn--primary" type="button" data-agentos-plan="'
       + escapeHtml(wf.id) + '">Generate Plan</button> '
       + '<button class="cap-btn" type="button" data-agentos-suggest="'
-      + escapeHtml(wf.id) + '">Worker Suggestion</button>'
+      + escapeHtml(wf.id) + '">Worker Suggestion</button> '
+      + '<button class="cap-btn" type="button" data-agentos-propose="'
+      + escapeHtml(wf.id) + '">Propose Approved Action</button>'
       + '<p class="cap-recipe-result" data-agentos-result="' + escapeHtml(wf.id)
       + '">Not run yet this session.</p>'
       + '</div>';
@@ -6752,6 +6756,9 @@ function agentOsRenderRegistry(payload) {
   });
   grid.querySelectorAll("[data-agentos-suggest]").forEach(function (btn) {
     btn.addEventListener("click", function () { agentOsSuggest(btn.dataset.agentosSuggest); });
+  });
+  grid.querySelectorAll("[data-agentos-propose]").forEach(function (btn) {
+    btn.addEventListener("click", function () { agentOsPropose(btn.dataset.agentosPropose); });
   });
 }
 
@@ -6799,6 +6806,106 @@ async function agentOsSuggest(workflowId) {
   } catch (err) {
     agentOsSetResult(workflowId, "Suggestion failed: " + err.message);
   }
+  refreshAgentOsLatest();
+}
+
+async function agentOsPropose(workflowId) {
+  agentOsSetResult(workflowId, "Building guarded pending request...");
+  try {
+    const payload = await requestJson("/api/product-control/agent-os-propose-action", {
+      method: "POST", body: JSON.stringify({ workflow: workflowId }),
+    });
+    agentOsSetResult(workflowId, payload.ok
+      ? "Pending approval: " + (payload.request_id || "?")
+      : "Proposal denied: " + ((payload.guard_decision || {}).reason || payload.error || "?"));
+  } catch (err) {
+    agentOsSetResult(workflowId, "Proposal failed: " + err.message);
+  }
+  refreshAgentOsApprovals();
+  refreshAgentOsLatest();
+}
+
+function agentOsRenderApprovals(payload) {
+  const out = document.getElementById("agentos-approval-output");
+  if (!out) return;
+  if (!payload || !payload.ok) {
+    out.innerHTML = '<p class="cap-muted">Approval queue unavailable.</p>';
+    return;
+  }
+  const counts = payload.counts || {};
+  const pending = payload.latest_pending;
+  const approved = payload.latest_approved;
+  const executed = payload.latest_executed;
+  out.innerHTML = '<p><strong>Pending:</strong> ' + (counts.pending || 0)
+    + ' | <strong>Approved:</strong> ' + (counts.approved || 0)
+    + ' | <strong>Executed:</strong> ' + (counts.executed || 0)
+    + ' | <strong>Rejected:</strong> ' + (counts.rejected || 0)
+    + ' | <strong>Failed:</strong> ' + (counts.failed || 0) + '</p>'
+    + '<p><strong>Latest pending:</strong> '
+    + (pending ? '<code>' + escapeHtml(pending.request_id) + '</code> '
+      + escapeHtml(pending.summary || "") + '<br/><span class="cap-muted">Rust guard: '
+      + escapeHtml(((pending.guard || {}).decision || "?")) + ' / '
+      + escapeHtml(((pending.guard || {}).request_fingerprint || "?")) + '</span>' : 'none') + '</p>'
+    + '<p><strong>Latest approved:</strong> '
+    + (approved ? '<code>' + escapeHtml(approved.request_id) + '</code> '
+      + escapeHtml(approved.summary || "") : 'none') + '</p>'
+    + '<p><strong>Latest execution output:</strong> '
+    + (executed && executed.artifact_path
+      ? '<code>' + escapeHtml(executed.artifact_path) + '</code>' : 'none') + '</p>';
+}
+
+async function refreshAgentOsApprovals() {
+  try {
+    agentOsRenderApprovals(await requestJson("/api/product-control/agent-os-approvals"));
+  } catch (_) { /* backend not running */ }
+}
+
+async function agentOsApprovalAction(kind) {
+  let status;
+  try {
+    status = await requestJson("/api/product-control/agent-os-approvals");
+  } catch (_) {
+    return;
+  }
+  const item = kind === "execute" ? status.latest_approved : status.latest_pending;
+  const label = document.getElementById("agentos-approval-action-status");
+  if (!item) {
+    if (label) label.textContent = kind === "execute" ? "No approved request." : "No pending request.";
+    return;
+  }
+  const route = kind === "approve" ? "approve-action"
+    : (kind === "reject" ? "reject-action" : "execute-approved");
+  if (label) label.textContent = kind + " in progress for " + item.request_id + "...";
+  try {
+    const payload = await requestJson("/api/product-control/agent-os-" + route, {
+      method: "POST", body: JSON.stringify({ request_id: item.request_id }),
+    });
+    if (label) label.textContent = payload.ok
+      ? kind + " complete for " + item.request_id
+      : kind + " denied: " + ((payload.guard_decision || {}).reason || payload.reason || "?");
+  } catch (err) {
+    if (label) label.textContent = kind + " failed: " + err.message;
+  }
+  refreshAgentOsApprovals();
+  refreshAgentOsStatus();
+  refreshAgentOsLatest();
+}
+
+async function agentOsFullApprovedDemo() {
+  const label = document.getElementById("agentos-approval-action-status");
+  if (label) label.textContent = "Running one guarded approved local artifact demo...";
+  try {
+    const payload = await requestJson("/api/product-control/agent-os-full-approved-demo", {
+      method: "POST", body: JSON.stringify({}),
+    });
+    if (label) label.textContent = payload.ok
+      ? "Approved demo complete: " + (payload.artifact_path || "?")
+      : "Approved demo failed at " + (payload.failed_step || "?");
+  } catch (err) {
+    if (label) label.textContent = "Approved demo failed: " + err.message;
+  }
+  refreshAgentOsApprovals();
+  refreshAgentOsStatus();
   refreshAgentOsLatest();
 }
 
@@ -6906,9 +7013,21 @@ function initAgentOs() {
   });
   document.getElementById("agentos-wave-run")?.addEventListener("click", agentOsWave);
   document.getElementById("agentos-handoff-build")?.addEventListener("click", agentOsBuildHandoff);
+  document.getElementById("agentos-approvals-refresh")?.addEventListener("click", refreshAgentOsApprovals);
+  document.getElementById("agentos-approve-latest")?.addEventListener("click", function () {
+    agentOsApprovalAction("approve");
+  });
+  document.getElementById("agentos-reject-latest")?.addEventListener("click", function () {
+    agentOsApprovalAction("reject");
+  });
+  document.getElementById("agentos-execute-latest")?.addEventListener("click", function () {
+    agentOsApprovalAction("execute");
+  });
+  document.getElementById("agentos-full-approved-demo")?.addEventListener("click", agentOsFullApprovedDemo);
   refreshAgentOsStatus();
   refreshAgentOsRegistry();
   refreshAgentOsLatest();
+  refreshAgentOsApprovals();
 }
 
 initDashboardUxRebuild();

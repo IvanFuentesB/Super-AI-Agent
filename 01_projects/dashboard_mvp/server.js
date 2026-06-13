@@ -8035,7 +8035,7 @@ async function handleApiRequest(request, response, requestUrl) {
 
   // ─── Agent OS Command Center ────────────────────────────────────────────────
   // Integrated command center: status, workflow plans, task waves, memory
-  // search, suggestion-only worker, copy-paste handoffs, full local demo.
+  // search, suggestions, bounded approvals, handoffs, and local demos.
   // All routes shell to the repo-local agent OS CLI with fixed argv
   // (shell:false); user input only ever selects from the workflow allowlist
   // or passes a sanitized search term. The worker never executes commands.
@@ -8048,6 +8048,7 @@ async function handleApiRequest(request, response, requestUrl) {
     "email-draft", "automation-n8n", "computer-use-prep",
   ];
   const AGENT_OS_SEARCH_TERM_RE = /^[A-Za-z0-9 _.\-]{1,64}$/;
+  const AGENT_OS_REQUEST_ID_RE = /^req-[a-z0-9][a-z0-9-]{7,63}$/;
 
   async function runAgentOsCli(cliArgs, timeoutMs) {
     const py = resolvePython();
@@ -8072,6 +8073,12 @@ async function handleApiRequest(request, response, requestUrl) {
   // GET /api/product-control/agent-os-status -- integrated status snapshot.
   if (request.method === "GET" && requestUrl.pathname === "/api/product-control/agent-os-status") {
     sendJson(response, 200, await runAgentOsCli(["--status"], 60000));
+    return;
+  }
+
+  // GET /api/product-control/agent-os-approvals -- inspect bounded queue state.
+  if (request.method === "GET" && requestUrl.pathname === "/api/product-control/agent-os-approvals") {
+    sendJson(response, 200, await runAgentOsCli(["--approval-status"], 60000));
     return;
   }
 
@@ -8131,6 +8138,39 @@ async function handleApiRequest(request, response, requestUrl) {
     return;
   }
 
+  // POST /api/product-control/agent-os-propose-action -- workflow allowlist only.
+  if (request.method === "POST" && requestUrl.pathname === "/api/product-control/agent-os-propose-action") {
+    let body = {};
+    try { body = await readJsonBody(request); } catch (_) { body = {}; }
+    const workflowId = typeof body.workflow === "string" ? body.workflow : "";
+    if (!AGENT_OS_WORKFLOW_IDS.includes(workflowId)) {
+      sendJson(response, 400, { ok: false, error: "unknown workflow id", allowed: AGENT_OS_WORKFLOW_IDS });
+      return;
+    }
+    sendJson(response, 200, await runAgentOsCli(["--propose-action", workflowId], 180000));
+    return;
+  }
+
+  // Approval mutations accept only deterministic request ids; no path/action input.
+  const approvalRoutes = {
+    "/api/product-control/agent-os-approve-action": "--approve-action",
+    "/api/product-control/agent-os-reject-action": "--reject-action",
+    "/api/product-control/agent-os-execute-approved": "--execute-approved",
+  };
+  if (request.method === "POST" && approvalRoutes[requestUrl.pathname]) {
+    let body = {};
+    try { body = await readJsonBody(request); } catch (_) { body = {}; }
+    const requestId = typeof body.request_id === "string" ? body.request_id : "";
+    if (!AGENT_OS_REQUEST_ID_RE.test(requestId)) {
+      sendJson(response, 400, { ok: false, error: "invalid request id" });
+      return;
+    }
+    sendJson(response, 200, await runAgentOsCli(
+      [approvalRoutes[requestUrl.pathname], requestId], 180000,
+    ));
+    return;
+  }
+
   // POST /api/product-control/agent-os-handoff -- copy-paste handoff packets.
   if (request.method === "POST" && requestUrl.pathname === "/api/product-control/agent-os-handoff") {
     let body = {};
@@ -8151,6 +8191,12 @@ async function handleApiRequest(request, response, requestUrl) {
   // POST /api/product-control/agent-os-full-demo -- the end-to-end local demo.
   if (request.method === "POST" && requestUrl.pathname === "/api/product-control/agent-os-full-demo") {
     sendJson(response, 200, await runAgentOsCli(["--full-demo"], 300000));
+    return;
+  }
+
+  // POST /api/product-control/agent-os-full-approved-demo -- one bounded write.
+  if (request.method === "POST" && requestUrl.pathname === "/api/product-control/agent-os-full-approved-demo") {
+    sendJson(response, 200, await runAgentOsCli(["--full-approved-demo"], 300000));
     return;
   }
 
