@@ -12,7 +12,8 @@ import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
-from approved_executor import execute_approved_request
+from approved_executor import ALLOWED_ACTIONS, execute_approved_request
+import data_only_writer
 
 
 SOURCE_REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -69,7 +70,7 @@ def build_action_request(
     )
     run_record = f"14_context/agent_os/runs/approved_{request_id}.json"
     evidence = f"14_context/agent_os/evidence/approved_{request_id}.md"
-    handoff = f"14_context/memory/agent_handoffs/agent-os/{request_id}.md"
+    handoff = f"14_context/agent_os/handoffs/approved_{request_id}.md"
     outputs = [artifact, run_record, evidence, handoff]
     return {
         "schema": "ghoti_action_request/1",
@@ -121,7 +122,11 @@ class ApprovalQueue:
         self.guard_binary = guard_binary
         self.queue_root.relative_to(self.repo_root)
         for state in STATES:
-            (self.queue_root / state).mkdir(parents=True, exist_ok=True)
+            state_dir = self.queue_root / state
+            try:
+                state_dir.mkdir(parents=True, exist_ok=True)
+            except OSError:
+                data_only_writer.write_text(state_dir / ".queue-init", "")
 
     def _path(self, state: str, request_id: str) -> Path:
         if state not in STATES or not _ID_RE.match(request_id):
@@ -129,10 +134,13 @@ class ApprovalQueue:
         return self.queue_root / state / f"{request_id}.json"
 
     def _write(self, path: Path, record: dict) -> None:
-        path.parent.mkdir(parents=True, exist_ok=True)
+        text = json.dumps(record, indent=2, sort_keys=True) + "\n"
         temp = path.with_suffix(".json.tmp")
-        temp.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-        temp.replace(path)
+        data_only_writer.write_text(temp, text)
+        try:
+            temp.replace(path)
+        except OSError:
+            data_only_writer.write_text(path, text)
 
     def _read(self, state: str, request_id: str) -> dict:
         return json.loads(self._path(state, request_id).read_text(encoding="utf-8"))
@@ -141,7 +149,9 @@ class ApprovalQueue:
         for state in STATES:
             path = self._path(state, request_id)
             if path.is_file():
-                return state, json.loads(path.read_text(encoding="utf-8"))
+                record = json.loads(path.read_text(encoding="utf-8"))
+                if record["request"].get("approval_state") == state:
+                    return state, record
         raise FileNotFoundError(request_id)
 
     def _guard_command(self, request_path: Path) -> list[str] | None:
@@ -270,6 +280,10 @@ class ApprovalQueue:
             for path in sorted((self.queue_root / current).glob("*.json")):
                 record = json.loads(path.read_text(encoding="utf-8"))
                 request = record["request"]
+                if request.get("approval_state") != current:
+                    continue
+                guard = record.get("guard_decision") or {}
+                execution = record.get("execution_result") or {}
                 items.append(
                     {
                         "request_id": request["request_id"],
@@ -278,6 +292,13 @@ class ApprovalQueue:
                         "approval_state": current,
                         "summary": request.get("summary"),
                         "path": path.relative_to(self.repo_root).as_posix(),
+                        "guard": {
+                            "allow": bool(guard.get("allow")),
+                            "decision": guard.get("decision"),
+                            "reason": guard.get("reason"),
+                            "request_fingerprint": guard.get("request_fingerprint"),
+                        },
+                        "artifact_path": execution.get("artifact_path"),
                     }
                 )
         return {"ok": True, "action": "list-approvals", "count": len(items), "items": items}
@@ -285,6 +306,8 @@ class ApprovalQueue:
     def approve(self, request_id: str) -> dict:
         record = self._read("pending", request_id)
         request = record["request"]
+        if request.get("approval_state") != "pending":
+            return {"ok": False, "action": "approve-action", "reason": "request_not_pending"}
         seed = f"explicit-local-approval:{request_id}:{record['guard_decision']['request_fingerprint']}"
         request["mode"] = "approved_local"
         request["approval_state"] = "approved"
@@ -302,7 +325,7 @@ class ApprovalQueue:
         record["transitions"].append({"state": "approved", "at": _now(), "actor": "human-cli"})
         target = self._path("approved", request_id)
         self._write(target, record)
-        self._path("pending", request_id).unlink()
+        self._write(self._path("pending", request_id), record)
         return {
             "ok": True,
             "action": "approve-action",
@@ -324,7 +347,7 @@ class ApprovalQueue:
         )
         target = self._path("rejected", request_id)
         self._write(target, record)
-        self._path(state, request_id).unlink()
+        self._write(self._path(state, request_id), record)
         return {
             "ok": True,
             "action": "reject-action",
@@ -336,6 +359,8 @@ class ApprovalQueue:
     def execute(self, request_id: str) -> dict:
         record = self._read("approved", request_id)
         request = record["request"]
+        if request.get("approval_state") != "approved":
+            return {"ok": False, "action": "execute-approved", "reason": "request_not_approved"}
         decision = self.validate(request)
         if not decision.get("allow"):
             return {
@@ -355,7 +380,7 @@ class ApprovalQueue:
         )
         target = self._path(target_state, request_id)
         self._write(target, record)
-        self._path("approved", request_id).unlink()
+        self._write(self._path("approved", request_id), record)
         result.update(
             {
                 "action": "execute-approved",
@@ -367,19 +392,21 @@ class ApprovalQueue:
         return result
 
     def status(self) -> dict:
-        counts = {
-            state: len(list((self.queue_root / state).glob("*.json"))) for state in STATES
-        }
+        counts = {state: self.list(state)["count"] for state in STATES}
         pending = self.list("pending")["items"]
+        approved = self.list("approved")["items"]
+        executed = self.list("executed")["items"]
         return {
             "ok": True,
             "action": "approval-status",
             "counts": counts,
             "pending_count": counts["pending"],
             "latest_pending": pending[-1] if pending else None,
+            "latest_approved": approved[-1] if approved else None,
+            "latest_executed": executed[-1] if executed else None,
             "queue_root": self.queue_root.relative_to(self.repo_root).as_posix(),
             "approved_local_execution_enabled": True,
-            "allowed_actions": sorted(set(ACTION_BY_WORKFLOW.values())),
+            "allowed_actions": sorted(ALLOWED_ACTIONS),
             "live_external_execution_enabled": False,
             "human_approval_required": True,
         }

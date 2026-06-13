@@ -398,7 +398,7 @@
             <div class="console-view-header">
               <div>
                 <h1 id="console-view-agent-os-title">Ghoti Agent OS</h1>
-                <p>One integrated command center: status, shared memory, agent roster, workflow launchpad, and the suggestion-only local worker. Labels are honest: <strong>simulation</strong> never runs anything, <strong>suggestion-only</strong> writes proposals a human reviews, and <strong>approved local action</strong> exists only behind an explicit approval file.</p>
+                <p>One integrated command center: status, shared memory, agent roster, workflow launchpad, suggestions, and a bounded approved-execution queue. Labels are honest: <strong>simulation</strong> never runs anything, <strong>suggestion-only</strong> writes proposals a human reviews, and <strong>approved local action</strong> writes one guarded repo-local artifact.</p>
               </div>
               <div class="cap-header-actions">
                 <button id="agentos-full-demo" class="cap-btn cap-btn--primary" type="button">Run Full Local Demo</button>
@@ -455,6 +455,20 @@
               <h2>Local Worker <span class="cap-badge cap-badge--dryrun">suggestion-only</span></h2>
               <p class="cap-muted">The worker reads memory and a template, then writes a proposed plan/handoff under <code>14_context/agent_os/handoffs/</code>. It never executes commands and never edits other repo files. Approval to extend its output folders lives only in <code>14_context/agent_os/APPROVED_ACTIONS.json</code> (human-edited, repo-local only).</p>
               <div id="agentos-worker-output"><p class="cap-muted">No worker suggestion this session. Use a workflow card's "Worker Suggestion" button.</p></div>
+            </section>
+
+            <section class="console-card cap-card" id="agentos-approval-card">
+              <h2>Approved Execution Queue <span class="cap-badge cap-badge--dryrun">repo-local artifacts only</span></h2>
+              <p class="cap-muted"><strong>Human approval required.</strong> The Rust guard validates every transition. Execution can only write declared text/JSON artifacts inside approved repo-local folders. <strong>External/live execution remains blocked.</strong></p>
+              <div class="cap-cardlet">
+                <button id="agentos-approvals-refresh" class="cap-btn" type="button">Refresh</button>
+                <button id="agentos-approve-latest" class="cap-btn" type="button">Approve Latest Pending</button>
+                <button id="agentos-reject-latest" class="cap-btn" type="button">Reject Latest Pending</button>
+                <button id="agentos-execute-latest" class="cap-btn cap-btn--primary" type="button">Execute Latest Approved</button>
+                <button id="agentos-full-approved-demo" class="cap-btn" type="button">Run Full Approved Demo</button>
+              </div>
+              <p id="agentos-approval-action-status" class="cap-run-status" aria-live="polite"></p>
+              <div id="agentos-approval-output"><p class="cap-muted">Queue status has not loaded yet.</p></div>
             </section>
 
             <section class="console-card cap-card" id="agentos-handoffs-card">

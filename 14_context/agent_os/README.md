@@ -16,7 +16,9 @@ computer-use, account, posting, purchase, or model-output-as-command actions.
 | `trials/` | Harmless suggestion-only trial artifacts |
 | `handoffs/` | Worker suggestions and copy-paste handoff packets |
 | `runs/` | Guard decisions, self-check probes, and local run records |
-| `evidence/` | Full local demo evidence reports |
+| `evidence/` | Full local and approved-local demo evidence reports |
+| `contracts/` | Public-safe action request examples |
+| `approval_queue/` | Inspectible pending/approved/rejected/executed/failed state |
 
 Generated command-center artifacts are gitignored and safe to regenerate.
 Small deterministic guard examples may be tracked as public-safe evidence.
@@ -29,3 +31,11 @@ lists repo-local `allow_output_dirs`, the suggestion-only command-center
 worker may write suggestions into those folders. It still cannot execute
 commands. Raw approval values are never copied into guard decisions, run
 records, or handoffs.
+
+The approved-execution substrate adds one deliberately small real action:
+after explicit approval, the executor may write a declared repo-local
+text/JSON artifact plus its run record, evidence note, and handoff. The Rust
+guard validates the request before queueing, approval, and execution. This is
+not external or live automation: browser, computer-use, accounts, payments,
+posting, sending, command execution, and writes outside the approved roots
+remain denied.

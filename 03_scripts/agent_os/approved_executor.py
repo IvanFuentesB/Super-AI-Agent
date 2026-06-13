@@ -6,6 +6,8 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 
+import data_only_writer
+
 
 ALLOWED_ACTIONS = {
     "write_handoff_file",
@@ -59,8 +61,7 @@ def _destination(repo_root: Path, raw: str) -> tuple[Path, str]:
 
 def _write_text(repo_root: Path, raw_path: str, content: str) -> str:
     destination, relative = _destination(repo_root, raw_path)
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    destination.write_text(content, encoding="utf-8", newline="\n")
+    data_only_writer.write_text(destination, content)
     return relative
 
 

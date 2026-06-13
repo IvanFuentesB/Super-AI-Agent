@@ -44,6 +44,7 @@ def guard_status() -> dict[str, Any]:
         "default_deny": safe["default_deny"] and dangerous["default_deny"],
         "live_execution": safe["live_execution"] or dangerous["live_execution"],
         "approved_local_execution_enabled": False,
+        "approved_local_artifact_execution_enabled": True,
         "safe_decision": safe,
         "dangerous_decision": dangerous,
     }

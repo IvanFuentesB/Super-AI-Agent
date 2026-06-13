@@ -20,6 +20,11 @@ Usage:
   python 03_scripts/agent_os/ghoti_agent_os.py --ownership-check --json
   python 03_scripts/agent_os/ghoti_agent_os.py --check --json
   python 03_scripts/agent_os/ghoti_agent_os.py --full-demo --json
+  python 03_scripts/agent_os/ghoti_agent_os.py --propose-action coding-task --json
+  python 03_scripts/agent_os/ghoti_agent_os.py --list-approvals --json
+  python 03_scripts/agent_os/ghoti_agent_os.py --approve-action <request_id> --json
+  python 03_scripts/agent_os/ghoti_agent_os.py --execute-approved <request_id> --json
+  python 03_scripts/agent_os/ghoti_agent_os.py --full-approved-demo --json
 """
 
 from __future__ import annotations
@@ -39,6 +44,7 @@ sys.path.insert(0, str(SCRIPT_DIR))
 
 import local_worker  # noqa: E402
 import agent_os_guard_bridge  # noqa: E402
+import approval_queue  # noqa: E402
 import workflow_templates  # noqa: E402
 
 REPO_ROOT = SCRIPT_DIR.parents[1]
@@ -66,6 +72,8 @@ def _now() -> str:
 def _safety_flags() -> dict:
     return {
         "no_live_actions": True,
+        "approved_repo_local_artifact_execution": True,
+        "external_live_execution": False,
         "provider_api_used": False,
         "agents_launched": False,
         "accounts_touched": False,
@@ -228,6 +236,7 @@ def cmd_status() -> dict:
         "local_model": _probe_ollama(),
         "worker": _worker_mode(),
         "agent_os_guard": agent_os_guard_bridge.guard_status(),
+        "approval_queue": approval_queue.ApprovalQueue().status(),
         "workflows": {"count": len(workflow_templates.WORKFLOW_ORDER),
                       "ids": workflow_templates.WORKFLOW_ORDER},
         "rust_checker_built": any(c.is_file() for c in RUST_CHECKER_CANDIDATES),
@@ -405,6 +414,133 @@ def cmd_build_handoff(workflow_id: str | None) -> dict:
     return payload
 
 
+def cmd_propose_action(workflow_id: str) -> dict:
+    """Turn one worker suggestion into a guarded pending action request."""
+    template = workflow_templates.get_template(workflow_id)
+    if template is None:
+        return {"ok": False, "action": "propose-action", "error": "unknown workflow id"}
+    suggestion = cmd_worker_suggest(workflow_id)
+    if not suggestion.get("ok"):
+        return {"ok": False, "action": "propose-action", "error": "worker suggestion failed",
+                "suggestion": suggestion}
+    stamp = _now()
+    branch = _git(["branch", "--show-current"]) or "detached"
+    content = workflow_templates.render_plan_markdown(
+        workflow_id, stamp, branch, memory_pointers=local_worker.read_memory_pointers())
+    content += "\nSource suggestion: `%s`\n" % suggestion.get("suggestion_path", "unknown")
+    request = approval_queue.build_action_request(
+        workflow_id=workflow_id,
+        content=content,
+        created_at=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    )
+    if suggestion.get("suggestion_path"):
+        request["input_paths"].append(suggestion["suggestion_path"])
+    result = approval_queue.ApprovalQueue().propose(request)
+    result["suggestion_path"] = suggestion.get("suggestion_path")
+    result["safety_flags"] = _safety_flags()
+    return result
+
+
+def cmd_list_approvals() -> dict:
+    payload = approval_queue.ApprovalQueue().list()
+    payload["safety_flags"] = _safety_flags()
+    return payload
+
+
+def cmd_approval_status() -> dict:
+    payload = approval_queue.ApprovalQueue().status()
+    payload["safety_flags"] = _safety_flags()
+    return payload
+
+
+def cmd_approve_action(request_id: str) -> dict:
+    try:
+        payload = approval_queue.ApprovalQueue().approve(request_id)
+    except (FileNotFoundError, ValueError) as error:
+        payload = {"ok": False, "action": "approve-action", "reason": str(error)}
+    payload["safety_flags"] = _safety_flags()
+    return payload
+
+
+def cmd_reject_action(request_id: str) -> dict:
+    try:
+        payload = approval_queue.ApprovalQueue().reject(request_id)
+    except (FileNotFoundError, ValueError) as error:
+        payload = {"ok": False, "action": "reject-action", "reason": str(error)}
+    payload["safety_flags"] = _safety_flags()
+    return payload
+
+
+def cmd_execute_approved(request_id: str) -> dict:
+    try:
+        payload = approval_queue.ApprovalQueue().execute(request_id)
+    except (FileNotFoundError, ValueError) as error:
+        payload = {"ok": False, "action": "execute-approved", "reason": str(error)}
+    payload["safety_flags"] = _safety_flags()
+    return payload
+
+
+def cmd_full_approved_demo() -> dict:
+    """Prove one complete human-approved repo-local artifact write."""
+    stamp = _now()
+    proposed = cmd_propose_action("coding-task")
+    if not proposed.get("ok"):
+        return {"ok": False, "action": "full-approved-demo", "failed_step": "propose",
+                "result": proposed, "safety_flags": _safety_flags()}
+    request_id = proposed["request_id"]
+    approved = cmd_approve_action(request_id)
+    if not approved.get("ok"):
+        return {"ok": False, "action": "full-approved-demo", "failed_step": "approve",
+                "result": approved, "safety_flags": _safety_flags()}
+    executed = cmd_execute_approved(request_id)
+    if not executed.get("ok"):
+        return {"ok": False, "action": "full-approved-demo", "failed_step": "execute",
+                "result": executed, "safety_flags": _safety_flags()}
+
+    lines = [
+        "# Ghoti Agent OS - Full Approved Local Demo",
+        "",
+        "Generated: %s" % stamp,
+        "Request: `%s`" % request_id,
+        "",
+        "- Worker suggestion created: yes",
+        "- Rust guard validations: propose, approve, execute",
+        "- Human-equivalent explicit CLI approval recorded: yes",
+        "- Repo-local text artifact written: `%s`" % executed["artifact_path"],
+        "- Run record: `%s`" % executed["run_record_path"],
+        "- Handoff: `%s`" % executed["handoff_path"],
+        "- External/live execution: false",
+        "- Browser, computer-use, accounts, payments, posting, sending: blocked",
+        "",
+    ]
+    base = "full_approved_demo_%s" % stamp
+    evidence_md = local_worker._write_text(
+        local_worker.EVIDENCE_DIR / (base + ".md"), "\n".join(lines))
+    payload = {
+        "ok": evidence_md["written"],
+        "action": "full-approved-demo",
+        "request_id": request_id,
+        "steps": [
+            {"step": "propose", "ok": proposed["ok"]},
+            {"step": "approve", "ok": approved["ok"]},
+            {"step": "execute", "ok": executed["ok"]},
+        ],
+        "artifact_path": executed["artifact_path"],
+        "run_record_path": executed["run_record_path"],
+        "handoff_path": executed["handoff_path"],
+        "execution_evidence_path": executed["evidence_path"],
+        "evidence_path": evidence_md["path"] if evidence_md["written"] else None,
+        "approved_local_execution": True,
+        "live_execution": False,
+        "generated_at": stamp,
+        "safety_flags": _safety_flags(),
+    }
+    evidence_json = local_worker._write_text(
+        local_worker.EVIDENCE_DIR / (base + ".json"), json.dumps(payload, indent=2) + "\n")
+    payload["evidence_json_path"] = evidence_json["path"] if evidence_json["written"] else None
+    return payload
+
+
 def cmd_check() -> dict:
     checks: list[dict] = []
 
@@ -559,6 +695,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--workflow", metavar="ID",
                         help="Workflow context for --build-handoff")
     parser.add_argument("--full-demo", action="store_true")
+    parser.add_argument("--propose-action", metavar="WORKFLOW")
+    parser.add_argument("--list-approvals", action="store_true")
+    parser.add_argument("--approve-action", metavar="REQUEST_ID")
+    parser.add_argument("--reject-action", metavar="REQUEST_ID")
+    parser.add_argument("--execute-approved", metavar="REQUEST_ID")
+    parser.add_argument("--approval-status", action="store_true")
+    parser.add_argument("--full-approved-demo", action="store_true")
     parser.add_argument("--json", action="store_true", dest="as_json")
     args = parser.parse_args(argv)
 
@@ -584,6 +727,20 @@ def main(argv: list[str] | None = None) -> int:
         payload = cmd_build_handoff(args.workflow)
     elif args.full_demo:
         payload = cmd_full_demo()
+    elif args.propose_action:
+        payload = cmd_propose_action(args.propose_action)
+    elif args.list_approvals:
+        payload = cmd_list_approvals()
+    elif args.approve_action:
+        payload = cmd_approve_action(args.approve_action)
+    elif args.reject_action:
+        payload = cmd_reject_action(args.reject_action)
+    elif args.execute_approved:
+        payload = cmd_execute_approved(args.execute_approved)
+    elif args.approval_status:
+        payload = cmd_approval_status()
+    elif args.full_approved_demo:
+        payload = cmd_full_approved_demo()
     else:
         parser.print_help()
         return 2
