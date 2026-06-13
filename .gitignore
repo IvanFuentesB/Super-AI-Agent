@@ -174,3 +174,10 @@ gemma4/
 !14_context/agent_os/runs/README.md
 14_context/agent_os/evidence/*
 !14_context/agent_os/evidence/README.md
+!14_context/agent_os/evidence/approved_execution_substrate_summary.md
+14_context/agent_os/approval_queue/pending/*
+14_context/agent_os/approval_queue/approved/*
+14_context/agent_os/approval_queue/rejected/*
+14_context/agent_os/approval_queue/executed/*
+14_context/agent_os/approval_queue/failed/*
+!14_context/agent_os/approval_queue/README.md
