@@ -45,6 +45,7 @@ sys.path.insert(0, str(SCRIPT_DIR))
 import local_worker  # noqa: E402
 import agent_os_guard_bridge  # noqa: E402
 import approval_queue  # noqa: E402
+import swarm_coordinator  # noqa: E402
 import workflow_templates  # noqa: E402
 
 REPO_ROOT = SCRIPT_DIR.parents[1]
@@ -541,6 +542,42 @@ def cmd_full_approved_demo() -> dict:
     return payload
 
 
+# ---------------------------------------------------------------------------
+# Swarm coordinator (control plane): plans multiple workers, executes at most
+# one at a time through the existing approval queue. No parallel launch.
+# ---------------------------------------------------------------------------
+
+def cmd_plan_swarm(workflow: str) -> dict:
+    payload = swarm_coordinator.write_plan(workflow)
+    payload["action"] = "plan-swarm"
+    payload["safety_flags"] = _safety_flags()
+    return payload
+
+
+def cmd_list_swarm_plans() -> dict:
+    payload = swarm_coordinator.list_plans()
+    payload["safety_flags"] = _safety_flags()
+    return payload
+
+
+def cmd_queue_next_swarm_step(plan_id: str) -> dict:
+    payload = swarm_coordinator.queue_next_step(plan_id)
+    payload["safety_flags"] = _safety_flags()
+    return payload
+
+
+def cmd_swarm_status() -> dict:
+    payload = swarm_coordinator.swarm_status()
+    payload["safety_flags"] = _safety_flags()
+    return payload
+
+
+def cmd_full_swarm_planning_demo() -> dict:
+    payload = swarm_coordinator.full_swarm_planning_demo()
+    payload["safety_flags"] = _safety_flags()
+    return payload
+
+
 def cmd_check() -> dict:
     checks: list[dict] = []
 
@@ -702,6 +739,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--execute-approved", metavar="REQUEST_ID")
     parser.add_argument("--approval-status", action="store_true")
     parser.add_argument("--full-approved-demo", action="store_true")
+    parser.add_argument("--plan-swarm", metavar="WORKFLOW")
+    parser.add_argument("--list-swarm-plans", action="store_true")
+    parser.add_argument("--queue-next-swarm-step", metavar="PLAN_ID")
+    parser.add_argument("--swarm-status", action="store_true")
+    parser.add_argument("--full-swarm-planning-demo", action="store_true")
     parser.add_argument("--json", action="store_true", dest="as_json")
     args = parser.parse_args(argv)
 
@@ -741,6 +783,16 @@ def main(argv: list[str] | None = None) -> int:
         payload = cmd_approval_status()
     elif args.full_approved_demo:
         payload = cmd_full_approved_demo()
+    elif args.plan_swarm:
+        payload = cmd_plan_swarm(args.plan_swarm)
+    elif args.list_swarm_plans:
+        payload = cmd_list_swarm_plans()
+    elif args.queue_next_swarm_step:
+        payload = cmd_queue_next_swarm_step(args.queue_next_swarm_step)
+    elif args.swarm_status:
+        payload = cmd_swarm_status()
+    elif args.full_swarm_planning_demo:
+        payload = cmd_full_swarm_planning_demo()
     else:
         parser.print_help()
         return 2

@@ -30,8 +30,10 @@ live step is performed by a human.
 | Rust guard 2: approved-action validation | `rust/agent_os_guard` (`validate ... --json`, `guard_version agent_os_guard/0.2.0`) |
 | Approval queue (inspectable JSON state) | `03_scripts/agent_os/approval_queue.py`, `14_context/agent_os/approval_queue/{pending,approved,rejected,executed,failed}/` |
 | Approved bounded artifact writing | `03_scripts/agent_os/approved_executor.py` (text/JSON only, 4 allowlisted actions, 2 repo-local roots) |
+| Swarm coordinator (planning-only, one-worker-lock) | `03_scripts/agent_os/swarm_coordinator.py` (plans multiple workers; queues at most ONE step at a time through the approval queue; no parallel launch) |
 | Full local demo | `ghoti_agent_os.py --full-demo` |
 | Full approved demo | `ghoti_agent_os.py --full-approved-demo` |
+| Full swarm planning demo | `ghoti_agent_os.py --full-swarm-planning-demo` |
 | Run records and evidence | `14_context/agent_os/runs/`, `14_context/agent_os/evidence/` |
 
 The bounded executor writes only under `14_context/agent_os/` and
@@ -74,6 +76,16 @@ python 03_scripts/agent_os/ghoti_agent_os.py --full-demo --json
 python 03_scripts/agent_os/ghoti_agent_os.py --full-approved-demo --json
 ```
 
+Swarm coordinator (planning-only, one-worker-lock):
+
+```powershell
+python 03_scripts/agent_os/ghoti_agent_os.py --plan-swarm coding-task-swarm-plan --json
+python 03_scripts/agent_os/ghoti_agent_os.py --list-swarm-plans --json
+python 03_scripts/agent_os/ghoti_agent_os.py --queue-next-swarm-step <plan_id> --json
+python 03_scripts/agent_os/ghoti_agent_os.py --swarm-status --json
+python 03_scripts/agent_os/ghoti_agent_os.py --full-swarm-planning-demo --json
+```
+
 Approval flow:
 
 ```powershell
@@ -95,17 +107,21 @@ cargo run --release --bin ghoti_policy_checker -- --ownership-input <wave.json>
 
 ## Next real step
 
-The next milestone to build is the first sandboxed local agent process runner
-that uses the Rust guard plus approval queue to run exactly ONE allowlisted
-local worker process, with a timeout, a kill path, capped logs, repo-local IO,
-and a full trace. It is the first time Ghoti launches a process, it stays
-bounded to one approved allowlisted worker at a time, and it unlocks nothing
-in the blocked table above.
+The next big target is approved local model routing (cheap local drafts behind
+the output guard), then a browser/computer-use observation harness (observation
+only, zero control paths). Building on those, the first sandboxed local agent
+process runner uses the Rust guard plus approval queue to run exactly ONE
+allowlisted local worker process, with a timeout, a kill path, capped logs,
+repo-local IO, and a full trace. It is the first time Ghoti launches a process,
+it stays bounded to one approved allowlisted worker at a time, and it unlocks
+nothing in the blocked table above. The swarm coordinator is the planning-only
+control plane that will feed that runner one approved step at a time.
 
 ## Related docs
 
 - Overview: `docs/GHOTI_AGENT_OS_OVERVIEW.md`
 - Approved execution substrate: `docs/GHOTI_APPROVED_EXECUTION_SUBSTRATE.md`
+- Swarm coordinator: `docs/GHOTI_APPROVED_WORKER_SWARM_COORDINATOR.md`
 - Roadmap: `docs/GHOTI_ROADMAP_TO_FULL_COMPUTER_USE.md`
 
 ## Environment note

@@ -477,6 +477,23 @@
               <button id="agentos-handoff-build" class="cap-btn" type="button">Build Handoff Packets (Claude / Codex / Hermes)</button>
               <div id="agentos-latest-list"><p class="cap-muted">No artifacts listed yet.</p></div>
             </section>
+
+            <section class="console-card cap-card" id="agentos-swarm-card">
+              <h2>Swarm Coordinator <span class="cap-badge cap-badge--dryrun">planning-only</span></h2>
+              <p class="cap-muted">Plan a multi-worker swarm, but execute <strong>at most one worker at a time</strong> through the approval queue. No parallel launch; queueing a step creates an approval request, not an execution.</p>
+              <div class="cap-cardlet">
+                <label for="agentos-swarm-select">Swarm workflow</label>
+                <select id="agentos-swarm-select">
+                  <option value="coding-task-swarm-plan">Coding Task Swarm Plan</option>
+                  <option value="content-pipeline-swarm-plan">Content Pipeline Swarm Plan</option>
+                  <option value="business-research-swarm-plan">Business Research Swarm Plan</option>
+                </select>
+                <button id="agentos-swarm-plan" class="cap-btn cap-btn--primary" type="button">Build Plan</button>
+                <button id="agentos-swarm-demo" class="cap-btn" type="button">Run Full Swarm Planning Demo</button>
+              </div>
+              <p id="agentos-swarm-status-line" class="cap-run-status" aria-live="polite">No swarm plan built yet this session.</p>
+              <div id="agentos-swarm-output"><p class="cap-muted">Build a plan to see steps, dependencies, and runnable/blocked status.</p></div>
+            </section>
           </section>
           <section class="console-view" data-console-view-panel="overview" aria-labelledby="console-view-overview-title" hidden>
             <div class="console-view-header">

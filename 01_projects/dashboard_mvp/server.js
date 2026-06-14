@@ -8200,6 +8200,58 @@ async function handleApiRequest(request, response, requestUrl) {
     return;
   }
 
+  // ─── Swarm coordinator (control plane: plan many, run at most one) ──────────
+  // Plans are read-only previews; queue-next creates ONE approval request via
+  // the existing queue. No parallel launch, no new execution path.
+  const AGENT_OS_SWARM_IDS = [
+    "coding-task-swarm-plan", "content-pipeline-swarm-plan", "business-research-swarm-plan",
+  ];
+  const AGENT_OS_PLAN_ID_RE = /^swarm-[a-z0-9]{8,40}$/;
+
+  // GET /api/product-control/agent-os-swarm-status -- all plans + step states.
+  if (request.method === "GET" && requestUrl.pathname === "/api/product-control/agent-os-swarm-status") {
+    sendJson(response, 200, await runAgentOsCli(["--swarm-status"], 60000));
+    return;
+  }
+
+  // GET /api/product-control/agent-os-swarm-plans -- list plans.
+  if (request.method === "GET" && requestUrl.pathname === "/api/product-control/agent-os-swarm-plans") {
+    sendJson(response, 200, await runAgentOsCli(["--list-swarm-plans"], 30000));
+    return;
+  }
+
+  // POST /api/product-control/agent-os-plan-swarm -- build a plan (allowlist).
+  if (request.method === "POST" && requestUrl.pathname === "/api/product-control/agent-os-plan-swarm") {
+    let body = {};
+    try { body = await readJsonBody(request); } catch (_) { body = {}; }
+    const workflowId = typeof body.workflow === "string" ? body.workflow : "";
+    if (!AGENT_OS_SWARM_IDS.includes(workflowId)) {
+      sendJson(response, 400, { ok: false, error: "unknown swarm workflow", allowed: AGENT_OS_SWARM_IDS });
+      return;
+    }
+    sendJson(response, 200, await runAgentOsCli(["--plan-swarm", workflowId], 60000));
+    return;
+  }
+
+  // POST /api/product-control/agent-os-queue-next-swarm-step -- one approval request.
+  if (request.method === "POST" && requestUrl.pathname === "/api/product-control/agent-os-queue-next-swarm-step") {
+    let body = {};
+    try { body = await readJsonBody(request); } catch (_) { body = {}; }
+    const planId = typeof body.plan_id === "string" ? body.plan_id : "";
+    if (!AGENT_OS_PLAN_ID_RE.test(planId)) {
+      sendJson(response, 400, { ok: false, error: "invalid plan id" });
+      return;
+    }
+    sendJson(response, 200, await runAgentOsCli(["--queue-next-swarm-step", planId], 60000));
+    return;
+  }
+
+  // POST /api/product-control/agent-os-full-swarm-planning-demo -- planning demo.
+  if (request.method === "POST" && requestUrl.pathname === "/api/product-control/agent-os-full-swarm-planning-demo") {
+    sendJson(response, 200, await runAgentOsCli(["--full-swarm-planning-demo"], 120000));
+    return;
+  }
+
   // GET /api/product-control/agent-os-latest -- newest generated artifacts.
   if (request.method === "GET" && requestUrl.pathname === "/api/product-control/agent-os-latest") {
     const folders = ["workflows", "handoffs", "runs", "evidence"];
