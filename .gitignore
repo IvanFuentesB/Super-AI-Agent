@@ -177,6 +177,8 @@ gemma4/
 
 # Agent OS approved execution substrate: approval queue + trials runtime state
 # (generated; never committed). Contracts and READMEs stay tracked.
+!14_context/agent_os/evidence/approved_execution_substrate_summary.md
+!14_context/agent_os/evidence/sandboxed_local_agent_runner_summary.md
 14_context/agent_os/approval_queue/pending/*
 14_context/agent_os/approval_queue/approved/*
 14_context/agent_os/approval_queue/rejected/*
@@ -185,3 +187,4 @@ gemma4/
 !14_context/agent_os/approval_queue/README.md
 14_context/agent_os/trials/*
 !14_context/agent_os/trials/README.md
+14_context/agent_os/runner_control/*
