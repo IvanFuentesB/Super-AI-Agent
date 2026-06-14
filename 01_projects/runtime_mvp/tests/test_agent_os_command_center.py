@@ -16,6 +16,9 @@ import unittest
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(REPO_ROOT / "03_scripts" / "agent_os"))
+import data_only_writer  # noqa: E402
+
 AGENT_OS = REPO_ROOT / "03_scripts" / "agent_os" / "ghoti_agent_os.py"
 LOCAL_WORKER = REPO_ROOT / "03_scripts" / "agent_os" / "local_worker.py"
 CHECKER = REPO_ROOT / "03_scripts" / "agent_os" / "check_agent_os.py"
@@ -162,10 +165,13 @@ class TestOwnershipCheck(unittest.TestCase):
     def test_overlap_fixture_is_caught(self):
         RUNS_DIR.mkdir(parents=True, exist_ok=True)
         fixture = RUNS_DIR / "test_overlap_wave.json"
-        fixture.write_text(json.dumps({"assignments": [
-            {"agent": "coder", "files": ["03_scripts/x.py"]},
-            {"agent": "auditor", "files": ["03_scripts\\X.py"]},
-        ]}), encoding="utf-8")
+        data_only_writer.write_text(
+            fixture,
+            json.dumps({"assignments": [
+                {"agent": "coder", "files": ["03_scripts/x.py"]},
+                {"agent": "auditor", "files": ["03_scripts\\X.py"]},
+            ]}),
+        )
         code, payload = run_cli("--ownership-check", "--wave-input",
                                 str(fixture.relative_to(REPO_ROOT)))
         self.assertFalse(payload["allowed"])

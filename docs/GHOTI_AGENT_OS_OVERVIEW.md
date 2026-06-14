@@ -100,6 +100,60 @@ outside its allowed roots, and ASCII-sanitizes everything it writes.
   runs before any plan or suggestion is written. The gate fails closed: if
   the policy module cannot be imported, the decision is `deny`.
 
+## Approved execution substrate
+
+Beyond suggestion-only output, the Agent OS now has one bounded path from a
+suggestion to a single supervised repo-local write. It is the only place
+where Ghoti writes a declared artifact after explicit human approval, and it
+still launches nothing.
+
+- Approval queue (`03_scripts/agent_os/approval_queue.py`): persists
+  inspectable JSON state under
+  `14_context/agent_os/approval_queue/{pending,approved,rejected,executed,failed}/`.
+  A proposed request enters `pending/`; an explicit approval moves it to
+  `approved/`; execution records the final `executed/` or `failed/` state.
+  Transitions are append/copy based, so the audit trail never depends on a
+  destructive delete.
+- Bounded executor (`03_scripts/agent_os/approved_executor.py`): writes only
+  text/JSON, only under the two approved roots `14_context/agent_os/` and
+  `14_context/operator_reports/generated/`, and only the four allowlisted
+  actions `write_handoff_file`, `write_workflow_plan`, `write_evidence_note`,
+  and `update_latest_state_note`. It refuses content carrying secret markers
+  or absolute Windows paths, uses no subprocess or network of its own, and
+  every run record asserts `live_execution=false`, `network_used=false`,
+  `browser_used=false`, `account_action=false`, and
+  `shell_command_executed=false`.
+- Operator flow:
+
+  ```powershell
+  python 03_scripts/agent_os/ghoti_agent_os.py --propose-action coding-task --json
+  python 03_scripts/agent_os/ghoti_agent_os.py --list-approvals --json
+  python 03_scripts/agent_os/ghoti_agent_os.py --approval-status --json
+  python 03_scripts/agent_os/ghoti_agent_os.py --approve-action <request_id> --json
+  python 03_scripts/agent_os/ghoti_agent_os.py --reject-action <request_id> --json
+  python 03_scripts/agent_os/ghoti_agent_os.py --execute-approved <request_id> --json
+  python 03_scripts/agent_os/ghoti_agent_os.py --full-approved-demo --json
+  ```
+
+Full detail lives in `docs/GHOTI_APPROVED_EXECUTION_SUBSTRATE.md`.
+
+## Two Rust guards by role (not duplicates)
+
+The repo ships two Rust binaries with distinct, non-overlapping roles. Both
+are real, both are tested, and both are workspace members in
+`rust/Cargo.toml`. They are not duplicate subsystems.
+
+| Binary | Role | Invocation |
+|--------|------|------------|
+| `rust/ghoti_policy_checker` | Ownership and recipe-capability checks: deny-by-default capability verdicts and file-ownership overlap across agent assignments | `--check`, `--input <plan.json>`, `--ownership-input <wave.json>` |
+| `rust/agent_os_guard` | Approved-action validation: schema, capabilities, paths, ownership, runtime, approval state, and the deterministic request fingerprint for the approval queue (`guard_version agent_os_guard/0.2.0`) | `validate --request <file> --repo-root . --json` |
+
+In short: `ghoti_policy_checker` decides whether a workflow plan or wave is
+allowed at all, while `agent_os_guard` decides whether one specific approved
+action request may transition through the queue. The two roles are kept
+separate so a capability verdict and an approved-action verdict never collapse
+into a single trust decision.
+
 ## What the Agent OS will not do
 
 No posting, no purchases, no account access, no provider API calls, no
@@ -112,4 +166,6 @@ performs every live step manually.
 - Quickstart: `docs/GHOTI_COMMAND_CENTER_QUICKSTART.md`
 - Memory and handoffs: `docs/GHOTI_MEMORY_AND_HANDOFFS.md`
 - Workflow templates: `docs/GHOTI_WORKFLOW_LAUNCHPAD.md`
+- Approved execution substrate: `docs/GHOTI_APPROVED_EXECUTION_SUBSTRATE.md`
+- Current product status: `docs/GHOTI_CURRENT_PRODUCT_STATUS.md`
 - Roadmap: `docs/GHOTI_ROADMAP_TO_FULL_COMPUTER_USE.md`
