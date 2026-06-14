@@ -7005,8 +7005,88 @@ async function refreshAgentOsRegistry() {
   } catch (_) { /* backend not running; static text remains */ }
 }
 
+function agentOsRenderSwarm(payload) {
+  const out = document.getElementById("agentos-swarm-output");
+  const line = document.getElementById("agentos-swarm-status-line");
+  if (!out) return;
+  if (!payload || !payload.ok) {
+    out.innerHTML = '<p class="cap-muted">Plan unavailable: '
+      + escapeHtml((payload && (payload.error || (payload.errors || []).join("; "))) || "backend not running") + '</p>';
+    return;
+  }
+  if (line) line.textContent = "Plan " + (payload.plan_id || "?") + " ready ("
+    + (payload.steps ? payload.steps.length : 0) + " steps).";
+  const rows = (payload.steps || []).map(function (s) {
+    return '<li>[' + escapeHtml(s.status) + '] <strong>' + escapeHtml(s.worker_id) + '</strong> - '
+      + escapeHtml(s.purpose) + ' <span class="cap-muted">owns ' + escapeHtml((s.owned_files || []).join(", "))
+      + '; deps ' + (s.dependencies && s.dependencies.length ? s.dependencies.join(",") : "none") + '</span></li>';
+  }).join("");
+  out.innerHTML = '<p><code>' + escapeHtml(payload.plan_id || "") + '</code> (single-worker lock: '
+    + (payload.single_worker_lock ? "on" : "off") + ')</p><ul>' + rows + '</ul>'
+    + '<button id="agentos-swarm-queue-next" class="cap-btn cap-btn--primary" type="button" '
+    + 'data-plan-id="' + escapeHtml(payload.plan_id || "") + '">Queue Next Approved Step</button>'
+    + '<p id="agentos-swarm-queue-result" class="cap-recipe-result"></p>';
+  document.getElementById("agentos-swarm-queue-next")?.addEventListener("click", function (e) {
+    agentOsSwarmQueueNext(e.target.dataset.planId);
+  });
+}
+
+async function agentOsSwarmPlan() {
+  const select = document.getElementById("agentos-swarm-select");
+  if (!select) return;
+  const line = document.getElementById("agentos-swarm-status-line");
+  if (line) line.textContent = "Building plan...";
+  try {
+    agentOsRenderSwarm(await requestJson("/api/product-control/agent-os-plan-swarm", {
+      method: "POST", body: JSON.stringify({ workflow: select.value }),
+    }));
+  } catch (err) {
+    if (line) line.textContent = "Plan failed: " + err.message;
+  }
+}
+
+async function agentOsSwarmQueueNext(planId) {
+  const res = document.getElementById("agentos-swarm-queue-result");
+  if (res) res.textContent = "Queueing next step (approval request, not execution)...";
+  try {
+    const payload = await requestJson("/api/product-control/agent-os-queue-next-swarm-step", {
+      method: "POST", body: JSON.stringify({ plan_id: planId }),
+    });
+    if (res) {
+      res.textContent = payload.ok
+        ? (payload.queued_step
+            ? "Queued step " + payload.queued_step + " as approval request " + payload.request_id + " (not executed)."
+            : (payload.message || "Nothing runnable."))
+        : ((payload.reason === "one_worker_lock"
+            ? "Blocked: one worker already in flight (step " + payload.in_flight_step + ")."
+            : "Queue failed: " + (payload.reason || payload.error || "unknown")));
+    }
+  } catch (err) {
+    if (res) res.textContent = "Queue failed: " + err.message;
+  }
+  refreshAgentOsApprovals();
+}
+
+async function agentOsSwarmDemo() {
+  const line = document.getElementById("agentos-swarm-status-line");
+  if (line) line.textContent = "Running full swarm planning demo...";
+  try {
+    const payload = await requestJson("/api/product-control/agent-os-full-swarm-planning-demo", {
+      method: "POST", body: JSON.stringify({}),
+    });
+    if (line) line.textContent = payload.ok
+      ? "Swarm planning demo ok. Evidence: " + (payload.evidence_path || "?")
+      : "Swarm planning demo reported a problem.";
+  } catch (err) {
+    if (line) line.textContent = "Demo failed: " + err.message;
+  }
+  refreshAgentOsLatest();
+}
+
 function initAgentOs() {
   document.getElementById("agentos-full-demo")?.addEventListener("click", agentOsFullDemo);
+  document.getElementById("agentos-swarm-plan")?.addEventListener("click", agentOsSwarmPlan);
+  document.getElementById("agentos-swarm-demo")?.addEventListener("click", agentOsSwarmDemo);
   document.getElementById("agentos-search-run")?.addEventListener("click", agentOsSearch);
   document.getElementById("agentos-search-term")?.addEventListener("keydown", function (event) {
     if (event.key === "Enter") agentOsSearch();
