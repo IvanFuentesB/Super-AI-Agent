@@ -5,8 +5,10 @@ agent runner. Generated after PR #18 (approved execution substrate) landed.
 
 ## Current main
 
-- `origin/main` = `f23a8f9d96006dd5fce5e58a667c1a683cc5d4dc`
-  (merge commit of PR #18; previous main was `19450a1` = PR #17).
+- Approved execution substrate (PR #18) landed at merge commit
+  `f23a8f9d96006dd5fce5e58a667c1a683cc5d4dc`; previous main was `19450a1`
+  (PR #17). This report adds one docs commit on top, so the latest
+  `origin/main` is `167fa8142a83e2058af3a168f1ba2c7f0ca211e6`.
 - Main now contains the **integrated Agent OS MVP (PR #17)** plus the
   **approved execution substrate (PR #18)**: one dashboard, one memory/search,
   one workflow launchpad, one handoff path, one approval queue, two role-distinct
@@ -16,7 +18,8 @@ agent runner. Generated after PR #18 (approved execution substrate) landed.
 
 ## Rule for the next branch
 
-- The next branch MUST be created from this new main (`f23a8f9`).
+- The next branch MUST be created from the latest `origin/main`
+  (`167fa81` or later; any commit at/after the PR #18 merge `f23a8f9` is fine).
 - Expected clean branch name:
   `feat/ghoti-agent-os-sandboxed-local-agent-runner-clean`.
 
