@@ -24,6 +24,7 @@ execution stages advance.
 | 0 | Suggestion-only worker + copy-paste handoffs | working now (`suggestion_only`) | none - this is the floor |
 | 1 | Approved repo-local writes via `APPROVED_ACTIONS.json` | mechanism built, no approvals granted | human edits the approval file; repo-local dirs only |
 | 2 | Approval queue + bounded approved execution behind the Rust guard | DONE / landed (`approved_local_action`) | per-action human approval through the queue; Rust verdict per transition; evidence trail per run |
+| 2.5 | Swarm coordinator control plane (planning-only; single-worker execution via approval queue) | DONE / landed (`planning_only`) | one-worker lock; dependency order; ownership-overlap block; capability/worker deny; queue-next is approval, not execution |
 | 3 | Local model routing (Ollama/Gemma) for cheap drafts | deterministic local fallback worker implemented; provider/model call still disabled | separately audit any real model invocation; preserve source pointers and fallback |
 | 4 | Telegram status, read-only | runtime doc exists, not enabled | notification-only token setup; no inbound commands |
 | 5 | Observation-only computer-use | adapter exists, observation only | dry-run evidence from the adapter; zero control paths |
@@ -81,12 +82,41 @@ Gate held: per-action human approval through the queue; a Rust verdict on
 every transition; an evidence file per run under
 `14_context/agent_os/evidence/`. No batch approvals.
 
-### Next real step: supervised coordinator over approved workers
+### Stage 2.5 (DONE / landed): swarm coordinator control plane
 
-The next milestone should coordinate the existing approved workers one at a
-time through the same queue, Rust guard, ownership checks, timeout, kill path,
-capped logs, and evidence trail. It must not unlock concurrent workers,
-browser control, or account actions.
+What exists: `03_scripts/agent_os/swarm_coordinator.py`, a planner/coordinator
+layer above the existing approval queue. It builds a deterministic multi-worker
+plan for one of three allowlisted swarm workflows (`coding-task-swarm-plan`,
+`content-pipeline-swarm-plan`, `business-research-swarm-plan`, each mapped to a
+base Agent OS workflow), then queues at most ONE step at a time as a normal
+approval request validated by `rust/agent_os_guard`. It launches no process,
+runs nothing in parallel, and adds no new queue and no new executor - it reuses
+`03_scripts/agent_os/approval_queue.py`. Plans live under
+`14_context/agent_os/swarm_plans/` (runtime, gitignored); per-step lifecycle is
+`planned -> queued -> approved -> executed` (or `blocked`).
+
+Operator commands: `--plan-swarm`, `--list-swarm-plans`,
+`--queue-next-swarm-step`, `--swarm-status`, `--full-swarm-planning-demo` on
+`03_scripts/agent_os/ghoti_agent_os.py`. A "Swarm Coordinator" card in the
+dashboard Agent OS panel exposes the same bounded flow. Detail:
+`docs/GHOTI_APPROVED_WORKER_SWARM_COORDINATOR.md`.
+
+Gate held: one-worker lock (a second queue is refused while a step is in
+flight); dependency order (a step is runnable only when all dependency steps are
+executed); ownership-overlap block (independent steps sharing an owned-file
+prefix are auto-blocked); capability/worker deny at build; queue-next creates a
+pending approval request and executes nothing. Real swarm / parallel execution
+stays a future, separately gated stage (see Stage 7) and is in the blocked list
+below.
+
+### Next real step: local model routing for cheap drafts
+
+With the sandboxed local-agent runner (Stage 3 mechanism) and the swarm
+coordinator both landed, the next milestone is to route cheap drafting/summary
+work to a local model (Ollama/Gemma) through the same approval queue, Rust
+guard, run records, and evidence trail. Any real model invocation is audited
+separately; the deterministic local fallback stays the default. It must not
+unlock concurrent workers, browser control, or account actions.
 
 ### Stage 3: local model routing for cheap drafts
 
@@ -137,7 +167,10 @@ ownership enforced by the lane lock system
 checker (`ghoti_policy_checker --ownership-input`).
 
 Gate: ownership check green on the real wave before it starts; locks taken
-before any write; every agent individually subject to Stages 2-6 gates.
+before any write; every agent individually subject to Stages 2-6 gates. The
+Stage 2.5 swarm coordinator only plans and queues one step at a time; real
+swarm / parallel execution is this stage and remains blocked until its gate is
+met.
 
 ## Workflows that stay draft-only regardless
 
