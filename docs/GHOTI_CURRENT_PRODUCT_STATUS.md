@@ -1,6 +1,8 @@
 # Ghoti Current Product Status
 
 **Status:** Working local MVP (supervised, deny-by-default)
+**Landed on main:** PR #17 (Agent OS MVP) and PR #18 (approved execution
+substrate) are merged; `origin/main` is `f23a8f9`.
 **Entry points:** `03_scripts/agent_os/ghoti_agent_os.py`,
 `03_scripts/ghoti_product_launcher.py`
 
