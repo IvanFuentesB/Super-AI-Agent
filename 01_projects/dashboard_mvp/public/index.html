@@ -471,6 +471,21 @@
               <div id="agentos-approval-output"><p class="cap-muted">Queue status has not loaded yet.</p></div>
             </section>
 
+            <section class="console-card cap-card" id="agentos-runner-card">
+              <h2>Sandboxed Local Agent Runner <span class="cap-badge cap-badge--dryrun">one process at a time, approval-gated</span></h2>
+              <p class="cap-muted"><strong>One allowlisted local worker can be active at a time; two identities are registered:</strong> <code>repo-summary-worker</code> and <code>local-model-summary-classification-worker</code>. Each receives fixed JSON over stdin, reads declared repo-local files, and returns JSON over stdout. <strong>No model-output-to-command</strong>, browser, accounts, mouse/keyboard, network, or external writes.</p>
+              <div class="cap-cardlet">
+                <button id="agentos-runner-refresh" class="cap-btn" type="button">Refresh Runner</button>
+                <button id="agentos-runner-propose" class="cap-btn" type="button">Propose Worker Run</button>
+                <button id="agentos-runner-cancel" class="cap-btn" type="button">Cancel Active Worker</button>
+                <button id="agentos-full-worker-demo" class="cap-btn cap-btn--primary" type="button">Run Full Worker Demo</button>
+                <button id="agentos-full-local-model-worker-demo" class="cap-btn" type="button">Run Summary / Classification Demo</button>
+              </div>
+              <p><strong>Latest local-model summary/classification:</strong> <span id="agentos-latest-local-model-state">none</span></p>
+              <p id="agentos-runner-action-status" class="cap-run-status" aria-live="polite"></p>
+              <div id="agentos-runner-output"><p class="cap-muted">Runner status has not loaded yet.</p></div>
+            </section>
+
             <section class="console-card cap-card" id="agentos-handoffs-card">
               <h2>Latest Handoffs and Artifacts</h2>
               <p class="cap-muted">Newest generated plans, suggestions, packets, and evidence under <code>14_context/agent_os/</code>. Every packet says <strong>Human copy-paste required: YES</strong>.</p>

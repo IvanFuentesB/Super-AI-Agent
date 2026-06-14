@@ -1,8 +1,8 @@
 # Ghoti Current Product Status
 
 **Status:** Working local MVP (supervised, deny-by-default)
-**Landed on main:** PR #17 (Agent OS MVP) and PR #18 (approved execution
-substrate) are merged; `origin/main` is `f23a8f9`.
+**Base:** PR #17 (Agent OS MVP) and PR #18 (approved execution substrate) are
+merged. This feature branch clean-ports the sandboxed runner onto that base.
 **Entry points:** `03_scripts/agent_os/ghoti_agent_os.py`,
 `03_scripts/ghoti_product_launcher.py`
 
@@ -12,9 +12,10 @@ substrate) are merged; `origin/main` is `f23a8f9`.
 
 This is the one-screen honest snapshot of what Ghoti can actually do on this
 branch today. Everything real is local, repo-bound, and human-supervised:
-suggestions and bounded text/JSON writes only, behind two Rust guards and an
-explicit approval queue. Ghoti launches no agent and no process, and every
-live step is performed by a human.
+suggestions, bounded text/JSON writes, and one approved allowlisted local
+worker process at a time, behind two Rust guards and an explicit approval
+queue. Ghoti launches no external agent and every process run requires an
+explicit operator approval.
 
 ## What is real now
 
@@ -27,17 +28,20 @@ live step is performed by a human.
 | Handoff generation (copy-paste only) | `14_context/agent_os/handoffs/` |
 | Local worker suggestion outputs | `03_scripts/agent_os/local_worker.py` |
 | Rust guard 1: ownership/recipe checks | `rust/ghoti_policy_checker` (`--check`, `--input`, `--ownership-input`) |
-| Rust guard 2: approved-action validation | `rust/agent_os_guard` (`validate ... --json`, `guard_version agent_os_guard/0.2.0`) |
+| Rust guard 2: approved-action validation | `rust/agent_os_guard` (`validate ... --json`, `guard_version agent_os_guard/0.4.0`) |
 | Approval queue (inspectable JSON state) | `03_scripts/agent_os/approval_queue.py`, `14_context/agent_os/approval_queue/{pending,approved,rejected,executed,failed}/` |
 | Approved bounded artifact writing | `03_scripts/agent_os/approved_executor.py` (text/JSON only, 4 allowlisted actions, 2 repo-local roots) |
 | Full local demo | `ghoti_agent_os.py --full-demo` |
 | Full approved demo | `ghoti_agent_os.py --full-approved-demo` |
+| Sandboxed repo-summary worker | `ghoti_agent_os.py --full-worker-demo` |
+| Deterministic summary/classification worker | `ghoti_agent_os.py --full-local-model-worker-demo` |
 | Run records and evidence | `14_context/agent_os/runs/`, `14_context/agent_os/evidence/` |
 
 The bounded executor writes only under `14_context/agent_os/` and
 `14_context/operator_reports/generated/`, only the four allowlisted actions
 (`write_handoff_file`, `write_workflow_plan`, `write_evidence_note`,
-`update_latest_state_note`), refuses content with secret markers or absolute
+`update_latest_state_note`), plus the separately guarded `run_local_worker`
+action. It refuses content with secret markers or absolute
 Windows paths, and uses no subprocess or network of its own. Every run record
 asserts `live_execution=false`, `network_used=false`, `browser_used=false`,
 `account_action=false`, and `shell_command_executed=false`.
@@ -72,6 +76,8 @@ Full local demo and full approved demo:
 ```powershell
 python 03_scripts/agent_os/ghoti_agent_os.py --full-demo --json
 python 03_scripts/agent_os/ghoti_agent_os.py --full-approved-demo --json
+python 03_scripts/agent_os/ghoti_agent_os.py --full-worker-demo --json
+python 03_scripts/agent_os/ghoti_agent_os.py --full-local-model-worker-demo --json
 ```
 
 Approval flow:

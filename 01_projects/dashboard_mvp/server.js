@@ -8082,6 +8082,12 @@ async function handleApiRequest(request, response, requestUrl) {
     return;
   }
 
+  // GET /api/product-control/agent-os-runner-status -- one fixed local worker.
+  if (request.method === "GET" && requestUrl.pathname === "/api/product-control/agent-os-runner-status") {
+    sendJson(response, 200, await runAgentOsCli(["--runner-status"], 60000));
+    return;
+  }
+
   // GET /api/product-control/agent-os-workflows -- templates plus roster.
   if (request.method === "GET" && requestUrl.pathname === "/api/product-control/agent-os-workflows") {
     sendJson(response, 200, await runAgentOsCli(["--list-workflows"], 30000));
@@ -8151,6 +8157,32 @@ async function handleApiRequest(request, response, requestUrl) {
     return;
   }
 
+  // POST /api/product-control/agent-os-propose-worker-run -- fixed worker only.
+  if (request.method === "POST" && requestUrl.pathname === "/api/product-control/agent-os-propose-worker-run") {
+    let body = {};
+    try { body = await readJsonBody(request); } catch (_) { body = {}; }
+    const workflowId = typeof body.workflow === "string" ? body.workflow : "";
+    if (!AGENT_OS_WORKFLOW_IDS.includes(workflowId)) {
+      sendJson(response, 400, { ok: false, error: "unknown workflow id", allowed: AGENT_OS_WORKFLOW_IDS });
+      return;
+    }
+    sendJson(response, 200, await runAgentOsCli(["--propose-worker-run", workflowId], 180000));
+    return;
+  }
+
+  // POST /api/product-control/agent-os-cancel-worker -- request-id-only kill path.
+  if (request.method === "POST" && requestUrl.pathname === "/api/product-control/agent-os-cancel-worker") {
+    let body = {};
+    try { body = await readJsonBody(request); } catch (_) { body = {}; }
+    const requestId = typeof body.request_id === "string" ? body.request_id : "";
+    if (!AGENT_OS_REQUEST_ID_RE.test(requestId)) {
+      sendJson(response, 400, { ok: false, error: "invalid request id" });
+      return;
+    }
+    sendJson(response, 200, await runAgentOsCli(["--cancel-worker", requestId], 30000));
+    return;
+  }
+
   // Approval mutations accept only deterministic request ids; no path/action input.
   const approvalRoutes = {
     "/api/product-control/agent-os-approve-action": "--approve-action",
@@ -8197,6 +8229,18 @@ async function handleApiRequest(request, response, requestUrl) {
   // POST /api/product-control/agent-os-full-approved-demo -- one bounded write.
   if (request.method === "POST" && requestUrl.pathname === "/api/product-control/agent-os-full-approved-demo") {
     sendJson(response, 200, await runAgentOsCli(["--full-approved-demo"], 300000));
+    return;
+  }
+
+  // POST /api/product-control/agent-os-full-worker-demo -- one approved process.
+  if (request.method === "POST" && requestUrl.pathname === "/api/product-control/agent-os-full-worker-demo") {
+    sendJson(response, 200, await runAgentOsCli(["--full-worker-demo"], 300000));
+    return;
+  }
+
+  // POST /api/product-control/agent-os-full-local-model-worker-demo -- deterministic fallback.
+  if (request.method === "POST" && requestUrl.pathname === "/api/product-control/agent-os-full-local-model-worker-demo") {
+    sendJson(response, 200, await runAgentOsCli(["--full-local-model-worker-demo"], 300000));
     return;
   }
 

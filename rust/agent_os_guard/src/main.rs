@@ -6,7 +6,7 @@ use std::fs;
 use std::path::Path;
 use std::process::ExitCode;
 
-const GUARD_VERSION: &str = "agent_os_guard/0.2.0";
+const GUARD_VERSION: &str = "agent_os_guard/0.4.0";
 const MODES: [&str; 3] = ["simulation", "suggestion", "approved_local"];
 const APPROVAL_STATES: [&str; 7] = [
     "draft", "pending", "approved", "rejected", "executed", "failed", "denied",
@@ -18,7 +18,8 @@ const LEGACY_ACTIONS: [&str; 5] = [
     "content-video-plan",
     "email-draft-plan",
 ];
-const APPROVED_ACTIONS: [&str; 4] = [
+const APPROVED_ACTIONS: [&str; 5] = [
+    "run_local_worker",
     "update_latest_state_note",
     "write_evidence_note",
     "write_handoff_file",
@@ -33,8 +34,33 @@ const LEGACY_CAPABILITIES: [&str; 7] = [
     "repo_write_trial",
     "run_record_write",
 ];
-const APPROVED_CAPABILITIES: [&str; 2] =
-    ["agent_os.read_memory", "agent_os.write_repo_local"];
+const APPROVED_CAPABILITIES: [&str; 3] = [
+    "agent_os.read_memory",
+    "agent_os.spawn_allowlisted_worker",
+    "agent_os.write_repo_local",
+];
+const ALLOWLISTED_WORKERS: [&str; 2] = [
+    "local-model-summary-classification-worker",
+    "repo-summary-worker",
+];
+const ALLOWLISTED_WORKER_TASKS: [&str; 4] = [
+    "bounded_log_probe",
+    "bounded_wait_probe",
+    "repo_status_summary",
+    "summary_classification",
+];
+const WORKER_REGISTRY_FINGERPRINT: &str =
+    "13e24b9f2aa491b79517f612ae92f35766d548a2e3881685beeccbe245c09f3a";
+const DYNAMIC_PROCESS_FIELDS: [&str; 8] = [
+    "args",
+    "code",
+    "command",
+    "env",
+    "environment",
+    "executable",
+    "script",
+    "shell",
+];
 const BLOCKED_CAPABILITIES: [&str; 15] = [
     "account",
     "browser",
@@ -117,6 +143,7 @@ struct OwnershipInput {
 struct SafetyFlags {
     default_deny: bool,
     launches_processes: bool,
+    allowlisted_local_process: bool,
     network_used: bool,
     writes_files: bool,
     live_execution: bool,
@@ -213,6 +240,19 @@ fn is_new_contract(request: &ActionRequest) -> bool {
     request.schema.as_deref() == Some("ghoti_action_request/1")
 }
 
+fn worker_task_allowed(worker_id: &str, task: &str) -> bool {
+    matches!(
+        (worker_id, task),
+        (
+            "repo-summary-worker",
+            "repo_status_summary" | "bounded_wait_probe" | "bounded_log_probe"
+        ) | (
+            "local-model-summary-classification-worker",
+            "summary_classification"
+        )
+    )
+}
+
 fn normalized_conflicts(owned: &[String], locked: &[String]) -> Vec<String> {
     let mut conflicts = BTreeSet::new();
     for owned_path in owned {
@@ -230,6 +270,7 @@ fn evaluate(request: &ActionRequest) -> GuardDecision {
     let new_contract = is_new_contract(request);
     let mode = normalize_label(&request.mode);
     let action = request.action_id.trim().to_lowercase();
+    let is_worker_action = new_contract && action == "run_local_worker";
 
     if new_contract {
         if request
@@ -264,6 +305,65 @@ fn evaluate(request: &ActionRequest) -> GuardDecision {
     if !(1..=120).contains(&request.max_runtime_seconds) {
         reasons.insert("runtime_limit_invalid".to_string());
     }
+    if is_worker_action {
+        if request.max_runtime_seconds > 30 {
+            reasons.insert("worker_runtime_limit_invalid".to_string());
+        }
+        let payload = request.payload.as_object();
+        let kind = request.payload.get("kind").and_then(Value::as_str);
+        let worker_id = request.payload.get("worker_id").and_then(Value::as_str);
+        let task = request.payload.get("task").and_then(Value::as_str);
+        let registry_fingerprint = request
+            .payload
+            .get("worker_registry_fingerprint")
+            .and_then(Value::as_str);
+        if kind != Some("run_allowlisted_worker") {
+            reasons.insert("worker_payload_kind_invalid".to_string());
+        }
+        if worker_id.is_none_or(|value| !ALLOWLISTED_WORKERS.contains(&value)) {
+            reasons.insert("worker_not_allowlisted".to_string());
+        }
+        if task.is_none_or(|value| !ALLOWLISTED_WORKER_TASKS.contains(&value)) {
+            reasons.insert("worker_task_not_allowlisted".to_string());
+        }
+        if worker_id
+            .zip(task)
+            .is_none_or(|(worker, worker_task)| !worker_task_allowed(worker, worker_task))
+        {
+            reasons.insert("worker_task_pair_invalid".to_string());
+        }
+        if registry_fingerprint != Some(WORKER_REGISTRY_FINGERPRINT) {
+            reasons.insert("worker_registry_fingerprint_invalid".to_string());
+        }
+        if let Some(request_id) = request.request_id.as_deref() {
+            let expected_state =
+                format!("14_context/agent_os/runner_control/state_{request_id}.json");
+            let expected_cancel =
+                format!("14_context/agent_os/runner_control/cancel_{request_id}.json");
+            let fixed_controls = [
+                ("runner_state_path", expected_state.as_str()),
+                ("cancel_path", expected_cancel.as_str()),
+                (
+                    "active_lock_path",
+                    "14_context/agent_os/runner_control/active_worker.json",
+                ),
+            ];
+            if fixed_controls.iter().any(|(field, expected)| {
+                request.payload.get(*field).and_then(Value::as_str) != Some(*expected)
+                    || !request.output_paths.iter().any(|path| path == expected)
+                    || !request.owned_files.iter().any(|path| path == expected)
+            }) {
+                reasons.insert("worker_control_paths_invalid".to_string());
+            }
+        }
+        if payload.is_none_or(|object| {
+            DYNAMIC_PROCESS_FIELDS
+                .iter()
+                .any(|field| object.contains_key(*field))
+        }) {
+            reasons.insert("dynamic_process_surface_denied".to_string());
+        }
+    }
 
     let requested: BTreeSet<String> = request
         .requested_capabilities
@@ -296,6 +396,11 @@ fn evaluate(request: &ActionRequest) -> GuardDecision {
         .any(|capability| !BLOCKED_CAPABILITIES.contains(&capability.as_str()))
     {
         reasons.insert("unknown_capability".to_string());
+    }
+    if is_worker_action
+        && !requested.contains("agent_os.spawn_allowlisted_worker")
+    {
+        reasons.insert("worker_capability_required".to_string());
     }
 
     let mut normalized_inputs = Vec::new();
@@ -408,7 +513,13 @@ fn evaluate(request: &ActionRequest) -> GuardDecision {
         max_runtime_seconds: request.max_runtime_seconds,
         safety: SafetyFlags {
             default_deny: true,
-            launches_processes: false,
+            launches_processes: is_worker_action,
+            allowlisted_local_process: is_worker_action
+                && request
+                    .payload
+                    .get("worker_id")
+                    .and_then(Value::as_str)
+                    .is_some_and(|value| ALLOWLISTED_WORKERS.contains(&value)),
             network_used: false,
             writes_files: false,
             live_execution: false,
@@ -569,6 +680,37 @@ mod tests {
         }
     }
 
+    fn worker_request() -> ActionRequest {
+        let mut request = approved_request();
+        let request_id = request.request_id.clone().unwrap();
+        let state_path = format!("14_context/agent_os/runner_control/state_{request_id}.json");
+        let cancel_path = format!("14_context/agent_os/runner_control/cancel_{request_id}.json");
+        let active_path = "14_context/agent_os/runner_control/active_worker.json".to_string();
+        request.action_id = "run_local_worker".to_string();
+        request.requested_capabilities = vec![
+            "agent_os.read_memory".to_string(),
+            "agent_os.spawn_allowlisted_worker".to_string(),
+            "agent_os.write_repo_local".to_string(),
+        ];
+        request.payload = serde_json::json!({
+            "kind": "run_allowlisted_worker",
+            "worker_id": "repo-summary-worker",
+            "task": "repo_status_summary",
+            "worker_registry_fingerprint": WORKER_REGISTRY_FINGERPRINT,
+            "runner_state_path": state_path.clone(),
+            "cancel_path": cancel_path.clone(),
+            "active_lock_path": active_path.clone(),
+        });
+        request.output_paths = vec![
+            "14_context/agent_os/workflows/test.md".to_string(),
+            state_path,
+            cancel_path,
+            active_path,
+        ];
+        request.owned_files = request.output_paths.clone();
+        request
+    }
+
     #[test]
     fn legacy_suggestion_remains_allowed() {
         assert!(evaluate(&legacy_request()).allow);
@@ -626,5 +768,56 @@ mod tests {
     #[test]
     fn built_in_check_request_is_allowed() {
         assert!(evaluate(&check_request()).allow);
+    }
+
+    #[test]
+    fn fixed_local_worker_contract_is_allowed() {
+        let decision = evaluate(&worker_request());
+        assert!(decision.allow);
+        assert!(decision.safety.launches_processes);
+        assert!(decision.safety.allowlisted_local_process);
+        assert!(!decision.safety.live_execution);
+    }
+
+    #[test]
+    fn arbitrary_worker_and_dynamic_command_are_denied() {
+        let mut arbitrary = worker_request();
+        arbitrary.payload["worker_id"] = serde_json::json!("arbitrary-worker");
+        assert!(evaluate(&arbitrary)
+            .reasons
+            .contains(&"worker_not_allowlisted".to_string()));
+
+        let mut dynamic = worker_request();
+        dynamic.payload["command"] = serde_json::json!("whoami");
+        assert!(evaluate(&dynamic)
+            .reasons
+            .contains(&"dynamic_process_surface_denied".to_string()));
+    }
+
+    #[test]
+    fn registry_fingerprint_and_second_worker_are_enforced() {
+        let mut second = worker_request();
+        second.payload["worker_id"] =
+            serde_json::json!("local-model-summary-classification-worker");
+        second.payload["task"] = serde_json::json!("summary_classification");
+        assert!(evaluate(&second).allow);
+
+        second.payload["worker_registry_fingerprint"] = serde_json::json!("wrong");
+        assert!(evaluate(&second)
+            .reasons
+            .contains(&"worker_registry_fingerprint_invalid".to_string()));
+
+        let mut mismatched = worker_request();
+        mismatched.payload["task"] = serde_json::json!("summary_classification");
+        assert!(evaluate(&mismatched)
+            .reasons
+            .contains(&"worker_task_pair_invalid".to_string()));
+
+        let mut wrong_lock = worker_request();
+        wrong_lock.payload["active_lock_path"] =
+            serde_json::json!("14_context/agent_os/runner_control/other.json");
+        assert!(evaluate(&wrong_lock)
+            .reasons
+            .contains(&"worker_control_paths_invalid".to_string()));
     }
 }

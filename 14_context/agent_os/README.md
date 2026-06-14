@@ -1,18 +1,25 @@
 # Ghoti Agent OS - generated artifacts
 
-This folder holds the command center's repo-local outputs. Everything in
-the subfolders is generated, suggestion-only, and safe to regenerate:
+This folder holds the integrated command center's repo-local outputs and the
+Agent OS guard vertical slices. Everything remains local, supervised, and
+deny-by-default. One of two fixed worker processes can now run after explicit
+approval; all other worker/process identities remain denied.
+
+The Rust guard validates every approved artifact or local-worker request.
+Browser, computer-use, account, posting, purchase, and
+model-output-as-command actions remain denied.
 
 | Folder | Content |
 |--------|---------|
 | `workflows/` | Workflow plans written by `--plan-workflow` |
 | `handoffs/` | Worker suggestions and copy-paste handoff packets |
-| `runs/` | Self-check probes and ownership-check inputs (role-namespaced) |
-| `evidence/` | Full local demo evidence reports (`full_local_demo_*.md/.json`) |
+| `runs/` | Self-check probes, ownership-check inputs, and local run records |
+| `evidence/` | Full local, approved-local, and worker-run evidence reports |
 | `approval_queue/` | Inspectable approval state in `pending/`, `approved/`, `rejected/`, `executed/`, `failed/` (runtime state is gitignored) |
-| `contracts/` | Tracked action-request schema example (`action_request.schema.example.json`) |
+| `contracts/` | Tracked public-safe action-request examples |
 | `requests/` | Tracked example worker request (`example_worker_request.json`) |
 | `trials/` | Tracked trial inputs and notes for the approval substrate |
+| `runner_control/` | Generated active/cancel/state records for one local worker |
 
 Generated files are gitignored; only the READMEs and the tracked example
 files under `contracts/`, `requests/`, and `trials/` are committed.
@@ -31,3 +38,19 @@ approval file. If it exists and lists `allow_output_dirs` (repo-local
 only), the suggestion-only worker may also write into those folders.
 Without it, the worker can write nowhere outside this tree, and it can
 never execute commands either way.
+
+The approved-execution substrate adds one deliberately small real action:
+after explicit approval, the executor may write a declared repo-local
+text/JSON artifact plus its run record, evidence note, and handoff. The Rust
+guard validates the request before queueing, approval, and execution. This is
+not external or live automation: browser, computer-use, accounts, payments,
+posting, sending, command execution, and writes outside the approved roots
+remain denied.
+
+The sandboxed local agent runner recognizes `repo-summary-worker` and
+`local-model-summary-classification-worker`, with exactly one active at a
+time. Each receives a fixed JSON invocation over stdin and returns JSON over
+stdout. The existing approval queue and Rust guard must approve the request
+and worker-registry fingerprint before the runner starts it. Timeout,
+cancellation, and capped logs are supervised and recorded; arbitrary commands
+and model-output-to-command remain impossible by contract.

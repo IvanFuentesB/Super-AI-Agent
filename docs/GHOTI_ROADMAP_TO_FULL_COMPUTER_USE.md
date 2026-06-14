@@ -1,9 +1,8 @@
 # Ghoti Roadmap -- From Suggestion-Only to Supervised Computer-Use
 
-**Status:** Roadmap. Stages 0-2 are landed: the suggestion-only worker, the
-approved repo-local write mechanism, and the approval queue plus bounded
-approved execution behind the Rust guard. Everything from Stage 3 onward is
-not built or not wired, and is labeled accordingly.
+**Status:** Roadmap. Stages 0-2 are landed. The first supervised process
+runner and deterministic summary/classification worker are implemented on this
+feature branch. Browser and computer-use remain blocked.
 
 ---
 
@@ -25,7 +24,7 @@ execution stages advance.
 | 0 | Suggestion-only worker + copy-paste handoffs | working now (`suggestion_only`) | none - this is the floor |
 | 1 | Approved repo-local writes via `APPROVED_ACTIONS.json` | mechanism built, no approvals granted | human edits the approval file; repo-local dirs only |
 | 2 | Approval queue + bounded approved execution behind the Rust guard | DONE / landed (`approved_local_action`) | per-action human approval through the queue; Rust verdict per transition; evidence trail per run |
-| 3 | Local model routing (Ollama/Gemma) for cheap drafts | probe only today | model verified by `local-model-check`; output guard rules applied |
+| 3 | Local model routing (Ollama/Gemma) for cheap drafts | deterministic local fallback worker implemented; provider/model call still disabled | separately audit any real model invocation; preserve source pointers and fallback |
 | 4 | Telegram status, read-only | runtime doc exists, not enabled | notification-only token setup; no inbound commands |
 | 5 | Observation-only computer-use | adapter exists, observation only | dry-run evidence from the adapter; zero control paths |
 | 6 | Approved supervised computer-use behind kill-switch | not built | Rust runtime vocabulary live (`KillSwitchState`, `PolicyVerdict`); per-session approval; kill-switch tested |
@@ -82,19 +81,12 @@ Gate held: per-action human approval through the queue; a Rust verdict on
 every transition; an evidence file per run under
 `14_context/agent_os/evidence/`. No batch approvals.
 
-### Next real step: first sandboxed local agent process runner
+### Next real step: supervised coordinator over approved workers
 
-The next milestone to build is the first sandboxed local agent process
-runner that uses the Rust guard plus approval queue to run exactly ONE
-allowlisted local worker process, with a timeout, a kill path, capped logs,
-repo-local IO, and a full trace. It is the first time Ghoti launches a
-process, and it stays bounded to one approved, allowlisted worker at a time.
-
-Gate to unlock: every existing approval-queue and Rust-guard gate still
-holds; the runner refuses anything not on the process allowlist; the
-timeout and kill path are demonstrated to halt a run; logs are capped and
-repo-local; a complete trace is produced per run. Nothing in the blocked
-list below is touched.
+The next milestone should coordinate the existing approved workers one at a
+time through the same queue, Rust guard, ownership checks, timeout, kill path,
+capped logs, and evidence trail. It must not unlock concurrent workers,
+browser control, or account actions.
 
 ### Stage 3: local model routing for cheap drafts
 
