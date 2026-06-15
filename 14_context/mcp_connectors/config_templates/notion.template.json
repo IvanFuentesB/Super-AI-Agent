@@ -1,0 +1,21 @@
+{
+  "name": "Notion MCP",
+  "purpose": "Read/append notes and databases.",
+  "enabled": false,
+  "required_env_vars": [
+    "NOTION_API_KEY"
+  ],
+  "install_command_placeholder": "see provider docs",
+  "config_path_placeholder": "23_configs/mcp/notion.json (create from this template)",
+  "manual_setup_required": true,
+  "allowed_capabilities": [
+    "page_read",
+    "db_query"
+  ],
+  "blocked_capabilities": [
+    "page_delete",
+    "workspace_admin"
+  ],
+  "safety_notes": "Disabled by default. No secrets in repo - set env vars locally. Blocked capabilities must stay blocked until a separate safety gate.",
+  "test_command": "query a test database (read-only)"
+}

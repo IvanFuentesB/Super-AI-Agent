@@ -1,0 +1,21 @@
+{
+  "name": "Composio MCP",
+  "purpose": "Managed multi-SaaS connector hub.",
+  "enabled": false,
+  "required_env_vars": [
+    "COMPOSIO_API_KEY"
+  ],
+  "install_command_placeholder": "see provider docs",
+  "config_path_placeholder": "23_configs/mcp/composio.json (create from this template)",
+  "manual_setup_required": true,
+  "allowed_capabilities": [
+    "connector_list"
+  ],
+  "blocked_capabilities": [
+    "account_action",
+    "send",
+    "purchase"
+  ],
+  "safety_notes": "Disabled by default. No secrets in repo - set env vars locally. Blocked capabilities must stay blocked until a separate safety gate.",
+  "test_command": "list available connectors (read-only)"
+}

@@ -1,0 +1,19 @@
+{
+  "name": "Perplexity / code-context",
+  "purpose": "Search/context (verify canonical MCP first).",
+  "enabled": false,
+  "required_env_vars": [
+    "PERPLEXITY_API_KEY"
+  ],
+  "install_command_placeholder": "verify canonical source",
+  "config_path_placeholder": "23_configs/mcp/perplexity.json (create from this template)",
+  "manual_setup_required": true,
+  "allowed_capabilities": [
+    "search"
+  ],
+  "blocked_capabilities": [
+    "account_action"
+  ],
+  "safety_notes": "Disabled by default. No secrets in repo - set env vars locally. Blocked capabilities must stay blocked until a separate safety gate.",
+  "test_command": "one search query"
+}

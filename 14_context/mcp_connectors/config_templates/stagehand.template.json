@@ -1,0 +1,22 @@
+{
+  "name": "Stagehand",
+  "purpose": "Browser automation framework (observation first).",
+  "enabled": false,
+  "required_env_vars": [
+    "BROWSERBASE_API_KEY"
+  ],
+  "install_command_placeholder": "see provider docs",
+  "config_path_placeholder": "23_configs/mcp/stagehand.json (create from this template)",
+  "manual_setup_required": true,
+  "allowed_capabilities": [
+    "page_read"
+  ],
+  "blocked_capabilities": [
+    "act",
+    "click",
+    "type",
+    "navigate"
+  ],
+  "safety_notes": "Disabled by default. No secrets in repo - set env vars locally. Blocked capabilities must stay blocked until a separate safety gate.",
+  "test_command": "extract text from a public page (read-only)"
+}

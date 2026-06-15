@@ -1,0 +1,22 @@
+{
+  "name": "Chrome DevTools MCP",
+  "purpose": "Inspect page DOM/network for debugging.",
+  "enabled": false,
+  "required_env_vars": [],
+  "install_command_placeholder": "see provider docs",
+  "config_path_placeholder": "23_configs/mcp/chrome-devtools.json (create from this template)",
+  "manual_setup_required": true,
+  "allowed_capabilities": [
+    "dom_read",
+    "console_read"
+  ],
+  "blocked_capabilities": [
+    "navigate",
+    "click",
+    "type",
+    "form_submit",
+    "downloads"
+  ],
+  "safety_notes": "Disabled by default. No secrets in repo - set env vars locally. Blocked capabilities must stay blocked until a separate safety gate.",
+  "test_command": "read DOM of a local test page (no interaction)"
+}

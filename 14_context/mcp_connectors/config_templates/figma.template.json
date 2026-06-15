@@ -1,0 +1,21 @@
+{
+  "name": "Figma MCP",
+  "purpose": "Read designs for design-to-code.",
+  "enabled": false,
+  "required_env_vars": [
+    "FIGMA_ACCESS_TOKEN"
+  ],
+  "install_command_placeholder": "see provider docs",
+  "config_path_placeholder": "23_configs/mcp/figma.json (create from this template)",
+  "manual_setup_required": true,
+  "allowed_capabilities": [
+    "file_read",
+    "node_read"
+  ],
+  "blocked_capabilities": [
+    "file_write",
+    "team_admin"
+  ],
+  "safety_notes": "Disabled by default. No secrets in repo - set env vars locally. Blocked capabilities must stay blocked until a separate safety gate.",
+  "test_command": "read a test file's metadata (read-only)"
+}

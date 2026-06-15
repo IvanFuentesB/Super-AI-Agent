@@ -1,0 +1,23 @@
+{
+  "name": "GitHub MCP",
+  "purpose": "Read/manage issues, PRs, repo metadata.",
+  "enabled": false,
+  "required_env_vars": [
+    "GITHUB_TOKEN"
+  ],
+  "install_command_placeholder": "npx -y @modelcontextprotocol/server-github",
+  "config_path_placeholder": "23_configs/mcp/github.json (create from this template)",
+  "manual_setup_required": true,
+  "allowed_capabilities": [
+    "repo_read",
+    "issues_read",
+    "pr_read"
+  ],
+  "blocked_capabilities": [
+    "force_push",
+    "secrets_read",
+    "billing"
+  ],
+  "safety_notes": "Disabled by default. No secrets in repo - set env vars locally. Blocked capabilities must stay blocked until a separate safety gate.",
+  "test_command": "list open issues on a test repo"
+}
