@@ -188,3 +188,8 @@ gemma4/
 14_context/agent_os/trials/*
 !14_context/agent_os/trials/README.md
 14_context/agent_os/runner_control/*
+
+# Tool stack: cloned repo sandbox is never committed; intake reports are kept.
+14_context/tool_intake/repo_sandbox/*
+!14_context/tool_intake/repo_sandbox/.gitkeep
+.ghoti_tool_sandbox/

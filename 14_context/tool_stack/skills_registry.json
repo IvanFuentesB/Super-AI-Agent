@@ -1,0 +1,372 @@
+{
+  "ok": true,
+  "schema": "ghoti_skills_registry/1",
+  "agent_count": 4,
+  "skill_count": 44,
+  "agents": {
+    "claude_code": [
+      {
+        "id": "karpathy-guidelines",
+        "agent": "claude_code",
+        "manual_required": false,
+        "status": "available_in_repo_workflow",
+        "next_action": "Use directly in agent prompts/discipline.",
+        "enabled": false
+      },
+      {
+        "id": "context-engineering",
+        "agent": "claude_code",
+        "manual_required": false,
+        "status": "available_in_repo_workflow",
+        "next_action": "Use directly in agent prompts/discipline.",
+        "enabled": false
+      },
+      {
+        "id": "search-first/source-driven-development",
+        "agent": "claude_code",
+        "manual_required": false,
+        "status": "available_in_repo_workflow",
+        "next_action": "Use directly in agent prompts/discipline.",
+        "enabled": false
+      },
+      {
+        "id": "incremental-implementation",
+        "agent": "claude_code",
+        "manual_required": false,
+        "status": "available_in_repo_workflow",
+        "next_action": "Use directly in agent prompts/discipline.",
+        "enabled": false
+      },
+      {
+        "id": "verification-loop",
+        "agent": "claude_code",
+        "manual_required": false,
+        "status": "available_in_repo_workflow",
+        "next_action": "Use directly in agent prompts/discipline.",
+        "enabled": false
+      },
+      {
+        "id": "parallel-execution-optimizer",
+        "agent": "claude_code",
+        "manual_required": true,
+        "status": "manual_install_documented",
+        "next_action": "Confirm canonical source, then install per GHOTI_AGENT_SKILLS_SETUP.md.",
+        "enabled": false
+      },
+      {
+        "id": "frontend-design",
+        "agent": "claude_code",
+        "manual_required": true,
+        "status": "manual_install_documented",
+        "next_action": "Confirm canonical source, then install per GHOTI_AGENT_SKILLS_SETUP.md.",
+        "enabled": false
+      },
+      {
+        "id": "code-review-security",
+        "agent": "claude_code",
+        "manual_required": false,
+        "status": "available_in_repo_workflow",
+        "next_action": "Use directly in agent prompts/discipline.",
+        "enabled": false
+      },
+      {
+        "id": "mcp-builder",
+        "agent": "claude_code",
+        "manual_required": false,
+        "status": "available_in_repo_workflow",
+        "next_action": "Use directly in agent prompts/discipline.",
+        "enabled": false
+      },
+      {
+        "id": "skill-creator",
+        "agent": "claude_code",
+        "manual_required": false,
+        "status": "available_in_repo_workflow",
+        "next_action": "Use directly in agent prompts/discipline.",
+        "enabled": false
+      },
+      {
+        "id": "prompt-optimizer",
+        "agent": "claude_code",
+        "manual_required": true,
+        "status": "manual_install_documented",
+        "next_action": "Confirm canonical source, then install per GHOTI_AGENT_SKILLS_SETUP.md.",
+        "enabled": false
+      },
+      {
+        "id": "hooks-mastery",
+        "agent": "claude_code",
+        "manual_required": true,
+        "status": "manual_install_documented",
+        "next_action": "Confirm canonical source, then install per GHOTI_AGENT_SKILLS_SETUP.md.",
+        "enabled": false
+      },
+      {
+        "id": "ccstatusline",
+        "agent": "claude_code",
+        "manual_required": true,
+        "status": "manual_install_documented",
+        "next_action": "Confirm canonical source, then install per GHOTI_AGENT_SKILLS_SETUP.md.",
+        "enabled": false
+      },
+      {
+        "id": "claudekit",
+        "agent": "claude_code",
+        "manual_required": true,
+        "status": "manual_install_documented",
+        "next_action": "Confirm canonical source, then install per GHOTI_AGENT_SKILLS_SETUP.md.",
+        "enabled": false
+      },
+      {
+        "id": "claude-code-action",
+        "agent": "claude_code",
+        "manual_required": true,
+        "status": "manual_install_documented",
+        "next_action": "Confirm canonical source, then install per GHOTI_AGENT_SKILLS_SETUP.md.",
+        "enabled": false
+      },
+      {
+        "id": "claude-task-master",
+        "agent": "claude_code",
+        "manual_required": true,
+        "status": "manual_install_documented",
+        "next_action": "Confirm canonical source, then install per GHOTI_AGENT_SKILLS_SETUP.md.",
+        "enabled": false
+      },
+      {
+        "id": "claude-loop",
+        "agent": "claude_code",
+        "manual_required": true,
+        "status": "manual_install_documented",
+        "next_action": "Confirm canonical source, then install per GHOTI_AGENT_SKILLS_SETUP.md.",
+        "enabled": false
+      },
+      {
+        "id": "claude-squad",
+        "agent": "claude_code",
+        "manual_required": true,
+        "status": "manual_install_documented",
+        "next_action": "Confirm canonical source, then install per GHOTI_AGENT_SKILLS_SETUP.md.",
+        "enabled": false
+      },
+      {
+        "id": "claude-mem",
+        "agent": "claude_code",
+        "manual_required": true,
+        "status": "manual_install_documented",
+        "next_action": "Confirm canonical source, then install per GHOTI_AGENT_SKILLS_SETUP.md.",
+        "enabled": false
+      },
+      {
+        "id": "superclaude",
+        "agent": "claude_code",
+        "manual_required": true,
+        "status": "manual_install_documented",
+        "next_action": "Confirm canonical source, then install per GHOTI_AGENT_SKILLS_SETUP.md.",
+        "enabled": false
+      },
+      {
+        "id": "bmad",
+        "agent": "claude_code",
+        "manual_required": true,
+        "status": "manual_install_documented",
+        "next_action": "Confirm canonical source, then install per GHOTI_AGENT_SKILLS_SETUP.md.",
+        "enabled": false
+      },
+      {
+        "id": "archon",
+        "agent": "claude_code",
+        "manual_required": true,
+        "status": "manual_install_documented",
+        "next_action": "Confirm canonical source, then install per GHOTI_AGENT_SKILLS_SETUP.md.",
+        "enabled": false
+      },
+      {
+        "id": "official-anthropic-skills-repo",
+        "agent": "claude_code",
+        "manual_required": true,
+        "status": "manual_install_documented",
+        "next_action": "Confirm canonical source, then install per GHOTI_AGENT_SKILLS_SETUP.md.",
+        "enabled": false
+      }
+    ],
+    "codex": [
+      {
+        "id": "karpathy-guidelines",
+        "agent": "codex",
+        "manual_required": false,
+        "status": "available_in_repo_workflow",
+        "next_action": "Use directly in agent prompts/discipline.",
+        "enabled": false
+      },
+      {
+        "id": "context-engineering",
+        "agent": "codex",
+        "manual_required": false,
+        "status": "available_in_repo_workflow",
+        "next_action": "Use directly in agent prompts/discipline.",
+        "enabled": false
+      },
+      {
+        "id": "verification-loop",
+        "agent": "codex",
+        "manual_required": false,
+        "status": "available_in_repo_workflow",
+        "next_action": "Use directly in agent prompts/discipline.",
+        "enabled": false
+      },
+      {
+        "id": "parallel-execution-optimizer",
+        "agent": "codex",
+        "manual_required": true,
+        "status": "manual_install_documented",
+        "next_action": "Confirm canonical source, then install per GHOTI_AGENT_SKILLS_SETUP.md.",
+        "enabled": false
+      },
+      {
+        "id": "security-review",
+        "agent": "codex",
+        "manual_required": false,
+        "status": "available_in_repo_workflow",
+        "next_action": "Use directly in agent prompts/discipline.",
+        "enabled": false
+      },
+      {
+        "id": "rust-guard-audit",
+        "agent": "codex",
+        "manual_required": false,
+        "status": "available_in_repo_workflow",
+        "next_action": "Use directly in agent prompts/discipline.",
+        "enabled": false
+      },
+      {
+        "id": "merge-gate",
+        "agent": "codex",
+        "manual_required": false,
+        "status": "available_in_repo_workflow",
+        "next_action": "Use directly in agent prompts/discipline.",
+        "enabled": false
+      },
+      {
+        "id": "repo-intake-audit",
+        "agent": "codex",
+        "manual_required": false,
+        "status": "available_in_repo_workflow",
+        "next_action": "Use directly in agent prompts/discipline.",
+        "enabled": false
+      },
+      {
+        "id": "token-saving-audit",
+        "agent": "codex",
+        "manual_required": true,
+        "status": "manual_install_documented",
+        "next_action": "Confirm canonical source, then install per GHOTI_AGENT_SKILLS_SETUP.md.",
+        "enabled": false
+      }
+    ],
+    "hermes": [
+      {
+        "id": "local-coordinator",
+        "agent": "hermes",
+        "manual_required": true,
+        "status": "manual_install_documented",
+        "next_action": "Confirm canonical source, then install per GHOTI_AGENT_SKILLS_SETUP.md.",
+        "enabled": false
+      },
+      {
+        "id": "status-summarizer",
+        "agent": "hermes",
+        "manual_required": true,
+        "status": "manual_install_documented",
+        "next_action": "Confirm canonical source, then install per GHOTI_AGENT_SKILLS_SETUP.md.",
+        "enabled": false
+      },
+      {
+        "id": "memory-compressor",
+        "agent": "hermes",
+        "manual_required": true,
+        "status": "manual_install_documented",
+        "next_action": "Confirm canonical source, then install per GHOTI_AGENT_SKILLS_SETUP.md.",
+        "enabled": false
+      },
+      {
+        "id": "handoff-summarizer",
+        "agent": "hermes",
+        "manual_required": true,
+        "status": "manual_install_documented",
+        "next_action": "Confirm canonical source, then install per GHOTI_AGENT_SKILLS_SETUP.md.",
+        "enabled": false
+      },
+      {
+        "id": "top-5-next-actions-reporter",
+        "agent": "hermes",
+        "manual_required": true,
+        "status": "manual_install_documented",
+        "next_action": "Confirm canonical source, then install per GHOTI_AGENT_SKILLS_SETUP.md.",
+        "enabled": false
+      },
+      {
+        "id": "no-execution",
+        "agent": "hermes",
+        "manual_required": true,
+        "status": "manual_install_documented",
+        "next_action": "Confirm canonical source, then install per GHOTI_AGENT_SKILLS_SETUP.md.",
+        "enabled": false
+      },
+      {
+        "id": "reads-ghoti-obsidian-files",
+        "agent": "hermes",
+        "manual_required": true,
+        "status": "manual_install_documented",
+        "next_action": "Confirm canonical source, then install per GHOTI_AGENT_SKILLS_SETUP.md.",
+        "enabled": false
+      }
+    ],
+    "chatgpt_cowork": [
+      {
+        "id": "morning-dashboard-artifact",
+        "agent": "chatgpt_cowork",
+        "manual_required": true,
+        "status": "manual_install_documented",
+        "next_action": "Confirm canonical source, then install per GHOTI_AGENT_SKILLS_SETUP.md.",
+        "enabled": false
+      },
+      {
+        "id": "ghoti-command-dashboard-artifact",
+        "agent": "chatgpt_cowork",
+        "manual_required": true,
+        "status": "manual_install_documented",
+        "next_action": "Confirm canonical source, then install per GHOTI_AGENT_SKILLS_SETUP.md.",
+        "enabled": false
+      },
+      {
+        "id": "gmail-calendar-figma-connectors",
+        "agent": "chatgpt_cowork",
+        "manual_required": true,
+        "status": "manual_install_documented",
+        "next_action": "Confirm canonical source, then install per GHOTI_AGENT_SKILLS_SETUP.md.",
+        "enabled": false
+      },
+      {
+        "id": "github-notion-connector-view",
+        "agent": "chatgpt_cowork",
+        "manual_required": true,
+        "status": "manual_install_documented",
+        "next_action": "Confirm canonical source, then install per GHOTI_AGENT_SKILLS_SETUP.md.",
+        "enabled": false
+      },
+      {
+        "id": "prompt-memory-manager",
+        "agent": "chatgpt_cowork",
+        "manual_required": true,
+        "status": "manual_install_documented",
+        "next_action": "Confirm canonical source, then install per GHOTI_AGENT_SKILLS_SETUP.md.",
+        "enabled": false
+      }
+    ]
+  },
+  "safety": {
+    "writes_user_global_skills": false,
+    "secrets": false
+  }
+}

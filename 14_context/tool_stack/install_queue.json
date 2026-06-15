@@ -1,0 +1,7 @@
+{
+  "schema": "ghoti_install_queue/1",
+  "note": "Live source of truth is `python 03_scripts/tool_stack/ghoti_tool_stack.py --install-safe --dry-run --json`. This stack reports manual install hints and never auto-installs.",
+  "safe_basics": ["git", "gh", "node", "npm", "python", "cargo", "rustc"],
+  "check_only": ["docker", "ollama"],
+  "auto_install": false
+}
