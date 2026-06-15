@@ -4,6 +4,7 @@ members = [
     "ghoti_policy_checker",
     "ghoti_runtime_core",
     "tool_stack_guard",
+    "assistant_productivity_guard",
 ]
 resolver = "2"
 
