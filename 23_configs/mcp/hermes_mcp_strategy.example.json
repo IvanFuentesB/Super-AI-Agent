@@ -1,0 +1,21 @@
+{
+  "schema": "ghoti_hermes_mcp_strategy/1",
+  "agent": "hermes",
+  "enabled": false,
+  "live_actions": false,
+  "primary_strategy": "read_only_status_and_memory_digest",
+  "credentialed_connectors_enabled": false,
+  "allowed": [
+    "read_status",
+    "read_memory",
+    "read_handoffs",
+    "summarize"
+  ],
+  "blocked": [
+    "execute",
+    "account_action",
+    "message_send",
+    "provider_setup",
+    "browser_control"
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "schema": "ghoti_chatgpt_cowork_productivity/1",
+  "agent": "chatgpt_cowork",
+  "role": "strategy_dashboard_artifacts_and_human_facing_routines",
+  "enabled": false,
+  "live_actions": false,
+  "prompt_pack": "14_context/assistant_productivity/chatgpt_cowork_ready_prompts.md",
+  "current_operator_reported_connectors": [
+    {
+      "id": "gmail",
+      "credentialed": true,
+      "enabled": false,
+      "ghoti_runtime_enabled": false,
+      "allowed_mode": "read_or_draft_only"
+    },
+    {
+      "id": "google-calendar",
+      "credentialed": true,
+      "enabled": false,
+      "ghoti_runtime_enabled": false,
+      "allowed_mode": "read_or_propose_only"
+    },
+    {
+      "id": "figma",
+      "credentialed": true,
+      "enabled": false,
+      "ghoti_runtime_enabled": false,
+      "allowed_mode": "read_only"
+    }
+  ],
+  "desired_future_connectors": [
+    "github",
+    "notion",
+    "ghoti_status",
+    "tool_stack_status",
+    "pr_status"
+  ],
+  "artifacts": [
+    "morning_dashboard",
+    "ghoti_command_dashboard",
+    "prompt_memory_manager",
+    "daily_routine_brief"
+  ]
+}

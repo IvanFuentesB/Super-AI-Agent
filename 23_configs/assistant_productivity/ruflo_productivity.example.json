@@ -1,0 +1,29 @@
+{
+  "schema": "ghoti_ruflo_productivity/1",
+  "tool": "ruflo_claude_flow",
+  "enabled": false,
+  "live_actions": false,
+  "repo_relative_inspection_path": "21_repos/third_party/evals/ruflo",
+  "path_present_in_operator_primary_worktree": true,
+  "path_tracked_by_git": false,
+  "package_name": "claude-flow",
+  "package_version_seen": "3.5.80",
+  "binary_name_seen": "claude-flow",
+  "license": "MIT",
+  "syntax_uncertain": true,
+  "safe_use_now": [
+    "read documentation",
+    "inspect plans",
+    "draft task decomposition",
+    "review handoff proposals"
+  ],
+  "blocked_use": [
+    "open_ended_swarm",
+    "live_agent_launch",
+    "mcp_setup",
+    "hooks_enablement",
+    "account_actions",
+    "auto_submit"
+  ],
+  "prompt_pack": "14_context/assistant_productivity/ruflo_ready_prompts.md"
+}

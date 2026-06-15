@@ -1,0 +1,46 @@
+{
+  "schema": "ghoti_codex_productivity/1",
+  "agent": "codex",
+  "role": "audit_review_verification_and_safe_continuation",
+  "enabled": false,
+  "live_actions": false,
+  "prompt_pack": "14_context/assistant_productivity/codex_ready_prompts.md",
+  "available_skills": [
+    "karpathy-guidelines",
+    "context-engineering",
+    "verification-loop",
+    "parallel-execution-optimizer",
+    "codex-merge-gate",
+    "safe-repo-intake",
+    "token-saving-audit"
+  ],
+  "capability_aliases": [
+    {
+      "id": "security-review",
+      "mapped_to": "public_repo_security_audit plus focused diff review",
+      "availability": "repo_workflow"
+    },
+    {
+      "id": "rust-validator-audit",
+      "mapped_to": "cargo tests plus focused Rust review",
+      "availability": "repo_workflow"
+    },
+    {
+      "id": "merge-gate",
+      "mapped_to": "codex-merge-gate",
+      "availability": "available"
+    },
+    {
+      "id": "repo-intake-audit",
+      "mapped_to": "safe-repo-intake",
+      "availability": "available"
+    }
+  ],
+  "safety": {
+    "push_main": false,
+    "force_push": false,
+    "account_actions": false,
+    "secrets_in_repo": false,
+    "human_approval_required": true
+  }
+}
