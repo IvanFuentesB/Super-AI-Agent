@@ -43,6 +43,18 @@ remain manual future steps.
   from a disposable writable worktree on this machine because Windows protects
   the Documents directory from generated-file writes.
 
+Final reproduced results:
+
+- Rust workspace: 47 tests passed.
+- Productivity and intake tests: 23 tests passed.
+- Disposable writable snapshot: 37 combined productivity, intake, and
+  tool-stack tests passed.
+- Tool-stack status, check, and install-safe dry-run: passed; no installs,
+  network use, or services started.
+- Public repository security audit: 150 checks, zero blockers. Its attribution
+  rule may warn on ordinary role words in older descriptive commit subjects;
+  author, committer, and trailer inspection remains the source of truth.
+
 ## Integration order
 
 1. Merge the acceleration-stack PR first.
