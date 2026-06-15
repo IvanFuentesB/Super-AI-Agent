@@ -1,0 +1,44 @@
+{
+  "schema": "ghoti_claude_code_productivity/1",
+  "agent": "claude_code",
+  "role": "primary_implementation_builder",
+  "enabled": false,
+  "live_actions": false,
+  "skills_config": "23_configs/skills/claude_code_skills.example.json",
+  "statusline": {
+    "id": "ccstatusline",
+    "source_url": "https://github.com/sirmalloc/ccstatusline",
+    "source_revision_inspected": "2159379a3af4dedd700af8d999f4eaed1a055b5e",
+    "package": "ccstatusline",
+    "pinned_version": "2.2.21",
+    "license": "MIT",
+    "installed": false,
+    "manual_setup_required": true,
+    "backup_required": true,
+    "usage_api_enabled": false,
+    "claims_exact_credits": false,
+    "exact_credits_supported": false,
+    "supported_local_signals": [
+      "model",
+      "git_branch",
+      "git_status",
+      "context_usage",
+      "session_usage",
+      "weekly_usage",
+      "reset_timers",
+      "token_counts",
+      "thinking_effort"
+    ],
+    "optional_sensitive_signals_disabled": [
+      "claude_account_email",
+      "usage_api",
+      "extra_usage_remaining"
+    ]
+  },
+  "safety": {
+    "global_config_write_allowed": false,
+    "hooks_enabled": false,
+    "provider_calls_enabled": false,
+    "account_actions_enabled": false
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "schema": "ghoti_assistant_routines/1",
+  "scheduler_enabled": false,
+  "live_actions": false,
+  "routines": [
+    {
+      "id": "morning-dashboard-review",
+      "cadence": "daily_morning",
+      "enabled": false,
+      "mode": "prompt_only",
+      "live_actions": false,
+      "owner": "chatgpt_cowork",
+      "output": "local morning dashboard brief"
+    },
+    {
+      "id": "daily-branch-pr-status",
+      "cadence": "daily",
+      "enabled": false,
+      "mode": "prompt_only",
+      "live_actions": false,
+      "owner": "codex",
+      "output": "read-only branch and PR summary"
+    },
+    {
+      "id": "daily-agent-handoff-summary",
+      "cadence": "daily",
+      "enabled": false,
+      "mode": "prompt_only",
+      "live_actions": false,
+      "owner": "hermes",
+      "output": "Claude Codex Hermes handoff summary"
+    },
+    {
+      "id": "weekly-tool-intake-review",
+      "cadence": "weekly",
+      "enabled": false,
+      "mode": "prompt_only",
+      "live_actions": false,
+      "owner": "codex",
+      "output": "inspect-first tool queue review"
+    },
+    {
+      "id": "weekly-mcp-connector-review",
+      "cadence": "weekly",
+      "enabled": false,
+      "mode": "prompt_only",
+      "live_actions": false,
+      "owner": "codex",
+      "output": "disabled connector readiness review"
+    },
+    {
+      "id": "weekly-money-lane-review",
+      "cadence": "weekly",
+      "enabled": false,
+      "mode": "prompt_only",
+      "live_actions": false,
+      "owner": "chatgpt_cowork",
+      "output": "research-only opportunity and risk review"
+    },
+    {
+      "id": "pre-merge-test-audit-reminder",
+      "cadence": "before_merge",
+      "enabled": false,
+      "mode": "prompt_only",
+      "live_actions": false,
+      "owner": "codex",
+      "output": "verification checklist"
+    },
+    {
+      "id": "credits-statusline-review",
+      "cadence": "manual_or_daily",
+      "enabled": false,
+      "mode": "prompt_only",
+      "live_actions": false,
+      "owner": "human",
+      "output": "honest usage and reset-timer check"
+    }
+  ]
+}

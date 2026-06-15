@@ -1,0 +1,53 @@
+{
+  "schema": "ghoti_claude_code_skills_productivity/1",
+  "enabled": false,
+  "live_actions": false,
+  "skills": [
+    {
+      "id": "core-discipline",
+      "status": "available_in_repo_workflow",
+      "members": [
+        "karpathy-guidelines",
+        "context-engineering",
+        "incremental-implementation",
+        "verification-loop",
+        "parallel-execution-optimizer"
+      ]
+    },
+    {
+      "id": "review-and-security",
+      "status": "available_in_repo_workflow",
+      "members": [
+        "code-review-security",
+        "security-review",
+        "rust-validator-audit"
+      ]
+    },
+    {
+      "id": "builder-extensions",
+      "status": "inspect_first",
+      "members": [
+        "hooks-mastery",
+        "claudekit",
+        "claude-code-action",
+        "claude-task-master",
+        "claude-loop",
+        "claude-squad",
+        "claude-mem",
+        "superclaude",
+        "bmad",
+        "archon",
+        "official-anthropic-skills-repo",
+        "frontend-design",
+        "mcp-builder",
+        "skill-creator",
+        "prompt-optimizer"
+      ]
+    }
+  ],
+  "safety": {
+    "global_install_allowed": false,
+    "hooks_enabled": false,
+    "unknown_sources_executed": false
+  }
+}

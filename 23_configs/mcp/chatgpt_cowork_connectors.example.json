@@ -1,0 +1,38 @@
+{
+  "schema": "ghoti_chatgpt_cowork_connectors/1",
+  "agent": "chatgpt_cowork",
+  "enabled": false,
+  "live_actions": false,
+  "connectors": [
+    {
+      "id": "gmail",
+      "credentialed": true,
+      "enabled": false,
+      "mode": "read_or_draft_only"
+    },
+    {
+      "id": "google-calendar",
+      "credentialed": true,
+      "enabled": false,
+      "mode": "read_or_propose_only"
+    },
+    {
+      "id": "figma",
+      "credentialed": true,
+      "enabled": false,
+      "mode": "read_only"
+    },
+    {
+      "id": "github",
+      "credentialed": true,
+      "enabled": false,
+      "mode": "future_read_only"
+    },
+    {
+      "id": "notion",
+      "credentialed": true,
+      "enabled": false,
+      "mode": "future_read_only"
+    }
+  ]
+}

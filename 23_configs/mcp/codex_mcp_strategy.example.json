@@ -1,0 +1,22 @@
+{
+  "schema": "ghoti_codex_mcp_strategy/1",
+  "agent": "codex",
+  "enabled": false,
+  "live_actions": false,
+  "native_mcp_assumed": false,
+  "primary_strategy": "repo_local_handoff_and_read_only_connectors_when_available",
+  "credentialed_connectors_enabled": false,
+  "allowed": [
+    "read_repo_context",
+    "read_pr_metadata",
+    "read_test_results",
+    "write_repo_local_audit_report"
+  ],
+  "blocked": [
+    "account_action",
+    "message_send",
+    "payment",
+    "browser_control",
+    "computer_use"
+  ]
+}

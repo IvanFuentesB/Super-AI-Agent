@@ -1,0 +1,31 @@
+{
+  "schema": "ghoti_hermes_productivity/1",
+  "agent": "hermes",
+  "role": "cheap_status_memory_and_handoff_summarizer",
+  "enabled": false,
+  "live_actions": false,
+  "execution_enabled": false,
+  "prompt_pack": "14_context/assistant_productivity/hermes_ready_prompts.md",
+  "allowed_outputs": [
+    "status_summary",
+    "memory_compression_proposal",
+    "handoff_summary",
+    "tool_digest",
+    "next_action_report",
+    "conflict_report"
+  ],
+  "blocked_outputs": [
+    "command_execution",
+    "account_action",
+    "provider_setup",
+    "browser_control",
+    "computer_use",
+    "message_send"
+  ],
+  "sources": [
+    "14_context/compact_memory",
+    "14_context/obsidian_vault",
+    "14_context/agent_os",
+    "14_context/operator_reports/generated"
+  ]
+}
