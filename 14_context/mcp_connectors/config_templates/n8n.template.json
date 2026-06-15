@@ -1,0 +1,21 @@
+{
+  "name": "n8n MCP",
+  "purpose": "Self-hosted automation flows (design first).",
+  "enabled": false,
+  "required_env_vars": [
+    "N8N_BASE_URL",
+    "N8N_API_KEY"
+  ],
+  "install_command_placeholder": "self-host n8n; see docs",
+  "config_path_placeholder": "23_configs/mcp/n8n.json (create from this template)",
+  "manual_setup_required": true,
+  "allowed_capabilities": [
+    "workflow_read"
+  ],
+  "blocked_capabilities": [
+    "workflow_execute_live",
+    "credentials_read"
+  ],
+  "safety_notes": "Disabled by default. No secrets in repo - set env vars locally. Blocked capabilities must stay blocked until a separate safety gate.",
+  "test_command": "list workflows (read-only)"
+}

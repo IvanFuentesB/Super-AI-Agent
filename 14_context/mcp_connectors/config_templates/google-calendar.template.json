@@ -1,0 +1,23 @@
+{
+  "name": "Google Calendar MCP",
+  "purpose": "Read events, propose times.",
+  "enabled": false,
+  "required_env_vars": [
+    "GOOGLE_OAUTH_CLIENT_ID",
+    "GOOGLE_OAUTH_CLIENT_SECRET",
+    "GOOGLE_OAUTH_REFRESH_TOKEN"
+  ],
+  "install_command_placeholder": "see provider docs",
+  "config_path_placeholder": "23_configs/mcp/google-calendar.json (create from this template)",
+  "manual_setup_required": true,
+  "allowed_capabilities": [
+    "calendar_read",
+    "freebusy"
+  ],
+  "blocked_capabilities": [
+    "event_delete",
+    "invite_send"
+  ],
+  "safety_notes": "Disabled by default. No secrets in repo - set env vars locally. Blocked capabilities must stay blocked until a separate safety gate.",
+  "test_command": "list today's events (read-only)"
+}

@@ -1,0 +1,24 @@
+{
+  "name": "Browserbase MCP",
+  "purpose": "Hosted browser (observation design first).",
+  "enabled": false,
+  "required_env_vars": [
+    "BROWSERBASE_API_KEY",
+    "BROWSERBASE_PROJECT_ID"
+  ],
+  "install_command_placeholder": "see provider docs",
+  "config_path_placeholder": "23_configs/mcp/browserbase.json (create from this template)",
+  "manual_setup_required": true,
+  "allowed_capabilities": [
+    "page_read"
+  ],
+  "blocked_capabilities": [
+    "click",
+    "type",
+    "navigate",
+    "account_login",
+    "purchase"
+  ],
+  "safety_notes": "Disabled by default. No secrets in repo - set env vars locally. Blocked capabilities must stay blocked until a separate safety gate.",
+  "test_command": "fetch a public page's text (read-only)"
+}
