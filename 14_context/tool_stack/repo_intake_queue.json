@@ -1,0 +1,12 @@
+{
+  "schema": "ghoti_repo_intake_queue/1",
+  "note": "Repos to static-inspect via repo_intake.py before any adaptation. Dry-run never clones; --apply shallow-clones into the gitignored sandbox and only collects metadata.",
+  "queue": [
+    {"id": "repomix", "repo": "source_needed", "decision": "inspect_more"},
+    {"id": "gitingest", "repo": "source_needed", "decision": "inspect_more"},
+    {"id": "code-graph-comprehension", "repo": "source_needed", "decision": "inspect_more"},
+    {"id": "superclaude-bmad-archon", "repo": "source_needed", "decision": "inspect_more"},
+    {"id": "mem0-claudemem-obsidian", "repo": "source_needed", "decision": "inspect_more"},
+    {"id": "cad-text-to-cad", "repo": "source_needed", "decision": "inspect_more"}
+  ]
+}

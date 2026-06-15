@@ -1,0 +1,6 @@
+{
+  "schema": "ghoti_mcp_connectors/1",
+  "note": "Summary index. Per-connector detail lives in 14_context/mcp_connectors/config_templates/<id>.template.json, all enabled:false.",
+  "all_disabled": true,
+  "connectors": ["github", "gmail", "google-calendar", "google-drive", "notion", "figma", "chrome-devtools", "browserbase", "composio", "n8n", "stagehand", "firecrawl", "apify", "perplexity", "repomix", "browser-observation-harness"]
+}
