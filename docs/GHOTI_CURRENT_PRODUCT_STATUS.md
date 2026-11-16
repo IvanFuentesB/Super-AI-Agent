@@ -14,6 +14,7 @@ not permission to deploy, start a service or mutate a real account.
 | Corrected launcher source port | 13857ef7dbcf7be9d5a93b2da5bf90bf9d3edd25 plus one recorded interpreter-expression change | [PR #27](https://github.com/IvanFuentesB/Super-AI-Agent/pull/27), head cc862486d5a4d47b78de0023cbc75f1332acbc24 | Source-only draft contract accepted; runnable contract blocked on exact helpers/runtime | DRAFT; not a portable installer | Original corrected launcher retained; port not adopted | Existing scoped source evidence retained; no new execution in this update |
 | Narrow configuration save | d2d7647eca88575870e079e359948520ce50290b, combined tree 47f0df456dace03cb9918435f5f4424969b0e3a9 with b32 correction | [PR #31](https://github.com/IvanFuentesB/Super-AI-Agent/pull/31), IvanCX/paperclip-narrow-save | APPROVED affected combined compatibility and service/declaration build; original e04/d2 provenance retained | Accepted source included through this PR31 integration; merge identity is in its receipt | No production UI bundle, live save or host adoption performed | Real-handler/form fixture checks within combined63; no production UI/CLI distribution or installed save acceptance |
 | Redacted-refusal source and private distributable | e8ad1fd98142e6a4f53172f143381a4fa4100dd7, result tree bdab2ce706f3e682781ad0e93da935155b937867 | Source-only port00ab7dc through PR34; private built payload excluded | Source18/18 separately PASS; artifact14/14 separately PASS; target-bound overlay APPROVED | Source merged at636e626724e5e75a4570ca7e8468cb360c813e28; no public binary distribution | NOT installed; separate launcher and target-staging gates remain | Nine emitted-auth and five built-UI synthetic scenarios; no full CLI bootstrap, service restart or authenticated live save |
+| Overlay launcher pin | Owner1e788e6ea92fbd37a1309a338654bb4120c8a73d; original raw677ceb55 to LF eb39b400; targete8ad1fd/treebdab2ce | Source-only follow-up in draft PR27; original published snapshot preserved | APPROVED pin source;11 independent gate cases PASS | DRAFT; no runtime/transaction integration approval | NOT installed; actual deployment operation and rehearsal pending | Real Git/preflight gate with inert build markers; not real package staging, service start, rollback or replay proof |
 | Runtime Paperclip status overlay | Frozen three-file archive 8bf3fd4891383a737b6aabcfde52e75d0541a2fc6f24dbca654c6c5976bb5382 | Unpublished: private tenant binding and missing runtime modules | 14 independent synthetic checks PASS; not live-state acceptance | Not integrated | Not installed here | Existing scoped source evidence retained; no new execution in this update |
 | Checkpoint correction | Original owner; no new immutable accepted candidate delivered | Unpublished; existing native gate retained | Old fixture run had 6 setup errors and zero product assertions; no new grant/preflight | Not integrated | No migration, restart or canonical baseline publication | Zero new behavioral execution; original six setup errors and native permission gate retained |
 | Publication checkpoints | 52d575697b1588938738d202173ce02ffdc6caa6 | [PR #30](https://github.com/IvanFuentesB/Super-AI-Agent/pull/30) | Independent 13 static/docs checks PASS | Merged at 9f2d2a4530e48baa8ba794c880960d8593ff9908 | Instructions only; no monitoring service or global setting | 13 independent static/docs checks; policy is instructions, not a monitoring service |
@@ -64,6 +65,28 @@ screenshots, credentials, local transaction receipts and databases stay outside
 this repository. Checkpoint review and issue29 remain separate gates.
 
 
+### Revised observation-first UI contract
+
+The new conditional authorization is separate from the consumed rolled-back
+attempt. Its prerequisite is supported same-existing-profile read-only
+Chat-to-Memory-to-Computer-to-Chat observation on OLD running9613 before any new
+654 installation. No new navigation or stop/deploy/start has been demonstrated.
+
+Independent static contract review accepts this fail-closed boundary. Documented
+trusted-runtime existing-profile grants/authorization-host routes were identified,
+but the owning runtime currently exposes no scoped host-consent acquisition
+operation and no native prompt is pending. Ordinary action confirmation, prepare
+retries or session labels cannot create that permission. Do not switch profiles,
+interfaces or transports to bypass refusal, and do not grant whole-profile access
+under an origin-only read-only task. Fresh window/profile/origin/release binding,
+scope enforcement, lifetime and teardown are required after genuine authorization.
+
+Before installation, observation unavailability is BLOCKED, not an application
+defect. Real hash/health/protected-file failures retain rollback/recovery. Neither
+static contract review nor read-only navigation proves Chat Send, Computer
+approval/Stop or Paperclip execution. Old failed/blocked trial evidence is not
+rewritten or reused as a successful new acceptance.
+
 ### Independently reviewed operator distributable
 
 The exact private e8ad1fd overlay (treebdab2ce, parent accepted47f0df4) is bound to
@@ -96,6 +119,30 @@ the packaged owner browser runner references an omitted helper and must be
 completed or labelled incomplete with the independent fixture linked. Any owner
 package revision needs a new index/hash binding. Neither note invalidates the
 independently tested frozen payload or authorizes silently replacing it.
+
+### Overlay-pin review and missing transaction evidence
+
+Exact owner1e788e6 changes only the source revision literal in production launcher
+bytes, from e04 to accepted e8ad1fd. Both deployed raw/OID exception tuples,
+helper pins, environment guards, installation lock, finite controls and permission
+boundaries are unchanged. Trusted raw677ceb55 becomes exact LF eb39b400; the
+separately transformed public source snapshot is not that raw deployment preimage.
+
+Independent execution passed11 gate cases using real Git, installation_check and
+exact pinned helper copies with inert build-presence markers. Four zero-case
+runner setup failures are preserved separately. No candidate/assertion/pin was
+changed, and no full historical suite or222-member package recheck was repeated.
+These results approve the pin source only, not actual built-target preflight.
+
+The real overlay deployment operation and Claude's staging/rollback rehearsal
+have not been delivered for independent execution. The historical correction
+operation is pinned to its OLD afterimages and e04; it cannot be relabelled as
+the new overlay transaction. Remaining checks require the actual supported
+disposable operation: correct stage, wrong baseline/preimage/target/package
+refusal before writes, interruption recovery, renamed UI chunk handling/serving
+root, unrelated sentinels, exact source/output/pin rollback and replay semantics.
+No new service, database, browser credential or provider execution is necessary
+to demonstrate these fixture invariants. No installed adoption is approved.
 
 ### Actual review results and remaining gates
 
