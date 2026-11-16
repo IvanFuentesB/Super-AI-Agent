@@ -13,6 +13,7 @@ not permission to deploy, start a service or mutate a real account.
 | Worker repair/declaration recipe | Original f2b01139/e04e2ae plus accepted correction b32d26e53cb77b7d28f7f95bd95bfe35117eaa5f | [PR #26](https://github.com/IvanFuentesB/Super-AI-Agent/pull/26), public head c5e531bd8dffcab44817f6fcf1c66786fa9ef592 | C-P3-1 CLOSED for exact source; 38 standalone and 63 separately counted combined checks PASS; service/declaration build PASS | Merged at c751edd6a7dd6d49cd6a3b8b40572fe7e2e7ce1a | No new installation or native worker acceptance | 38 standalone and separately63 combined synthetic cases; 12-project service/declaration build; no new installed worker run |
 | Corrected launcher source port | 13857ef7dbcf7be9d5a93b2da5bf90bf9d3edd25 plus one recorded interpreter-expression change | [PR #27](https://github.com/IvanFuentesB/Super-AI-Agent/pull/27), head cc862486d5a4d47b78de0023cbc75f1332acbc24 | Source-only draft contract accepted; runnable contract blocked on exact helpers/runtime | DRAFT; not a portable installer | Original corrected launcher retained; port not adopted | Existing scoped source evidence retained; no new execution in this update |
 | Narrow configuration save | d2d7647eca88575870e079e359948520ce50290b, combined tree 47f0df456dace03cb9918435f5f4424969b0e3a9 with b32 correction | [PR #31](https://github.com/IvanFuentesB/Super-AI-Agent/pull/31), IvanCX/paperclip-narrow-save | APPROVED affected combined compatibility and service/declaration build; original e04/d2 provenance retained | Accepted source included through this PR31 integration; merge identity is in its receipt | No production UI bundle, live save or host adoption performed | Real-handler/form fixture checks within combined63; no production UI/CLI distribution or installed save acceptance |
+| Redacted-refusal source and private distributable | e8ad1fd98142e6a4f53172f143381a4fa4100dd7, result tree bdab2ce706f3e682781ad0e93da935155b937867 | Source-only port00ab7dc through PR34; private built payload excluded | Source18/18 separately PASS; artifact14/14 separately PASS; target-bound overlay APPROVED | Source merged at636e626724e5e75a4570ca7e8468cb360c813e28; no public binary distribution | NOT installed; separate launcher and target-staging gates remain | Nine emitted-auth and five built-UI synthetic scenarios; no full CLI bootstrap, service restart or authenticated live save |
 | Runtime Paperclip status overlay | Frozen three-file archive 8bf3fd4891383a737b6aabcfde52e75d0541a2fc6f24dbca654c6c5976bb5382 | Unpublished: private tenant binding and missing runtime modules | 14 independent synthetic checks PASS; not live-state acceptance | Not integrated | Not installed here | Existing scoped source evidence retained; no new execution in this update |
 | Checkpoint correction | Original owner; no new immutable accepted candidate delivered | Unpublished; existing native gate retained | Old fixture run had 6 setup errors and zero product assertions; no new grant/preflight | Not integrated | No migration, restart or canonical baseline publication | Zero new behavioral execution; original six setup errors and native permission gate retained |
 | Publication checkpoints | 52d575697b1588938738d202173ce02ffdc6caa6 | [PR #30](https://github.com/IvanFuentesB/Super-AI-Agent/pull/30) | Independent 13 static/docs checks PASS | Merged at 9f2d2a4530e48baa8ba794c880960d8593ff9908 | Instructions only; no monitoring service or global setting | 13 independent static/docs checks; policy is instructions, not a monitoring service |
@@ -52,13 +53,49 @@ The active release is **9613e877**, not6541093. Active.previous now points to
 is consumed, with no automatic retry. Another attempt needs supported scoped
 native page-observation capability and a separately authorized transaction.
 
-Paperclip source/combined acceptance and PR26/31 merges remain valid. The final
-operator-facing UI/CLI distributable is a separate review; server declarations
-alone do not establish it exists or is installed. A new launcher/pin delta must
-be independently reviewed against its actual preimage, never silently relabel
-old e04 pins. PR27 remains a source-only snapshot. Private configuration, memory,
+Paperclip source/combined acceptance and PR26/31 merges remain valid. The new
+two-file pre-send refusal correction at e8ad1fd is source-approved and published
+through PR34; its source-only port00ab7dc is a different Git identity. The private
+operator-facing UI/CLI overlay now has its own exact-artifact approval below.
+Neither approval establishes installation. A new launcher/pin delta must be
+independently reviewed against its actual preimage, never silently relabel old
+e04 pins. PR27 remains a source-only snapshot. Private configuration, memory,
 screenshots, credentials, local transaction receipts and databases stay outside
 this repository. Checkpoint review and issue29 remain separate gates.
+
+
+### Independently reviewed operator distributable
+
+The exact private e8ad1fd overlay (treebdab2ce, parent accepted47f0df4) is bound to
+package-index SHA256
+`20e991d6a0ee3d4aa1f959540b912b2430c5ec840a963ccf7106f7fc4efa7d63`.
+All222 package members matched before/copy/after. The187 emitted files,202
+source-map inputs after disclosed CRLF normalization,428 literal import edges
+and11 HTML/CSS/manifest references were checked. Built outputs are not source
+Git blobs; the private payload and source maps are not published here.
+
+Artifact checks independently executed nine cases against exact emitted CLI
+function substrings and five scenarios against the real built UI using only
+synthetic API responses. All14 passed. Full CLI bootstrap, a service start,
+installed UI, database persistence and native worker execution were not tested.
+Two zero-case browser-fixture setup failures remain recorded separately; only
+fixture executable/origin setup changed before behavior could execute. The new
+source correction's18 tests and historical service/combined counts are separate.
+
+Approval is for an existing eligible runtime overlay, not a standalone installer
+or host adoption. Required next gates: a separate immutable launcher-pin delta
+against actual raw677ceb55; staging/readback of inherited helpers/builds and both
+deployed raw exceptions (one CRLF, one LF); UI/CLI artifact hashes; confirmed
+actual serving root, since server/ui-dist can shadow ui/dist; exact rollback
+bytes and separately authorized owner installation/live acceptance. Fresh Git
+checkout transformations do not prove an in-place transition failed or succeeded.
+
+Nonblocking owner evidence notes: five new-file baseline blob cells should say
+absent rather than a revision:path expression (companion raw cells are correct);
+the packaged owner browser runner references an omitted helper and must be
+completed or labelled incomplete with the independent fixture linked. Any owner
+package revision needs a new index/hash binding. Neither note invalidates the
+independently tested frozen payload or authorizes silently replacing it.
 
 ### Actual review results and remaining gates
 
