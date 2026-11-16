@@ -1,0 +1,54 @@
+{
+  "schema": "paperclip_overlay_transaction_source/1",
+  "helper_commit": "bcff4f0fc2dfc3c63fcc6642802652b45e350185",
+  "driver_commit": "712d6e0d6e54c77823e9eae7c4c409f40b5f7ffa",
+  "driver_tree": "45c37293045a65da010c27bc68d749f4b29b4b4c",
+  "files": {
+    "paperclip_overlay.py": {
+      "sha256": "b700f0c5601bb531e38161a4d8ff3775185f3b1498a150521aeec93b0a3d5bad",
+      "git_blob": "72f3055c833aa57322f6f40c9f186c2c7ddd9794",
+      "bytes": 12426
+    },
+    "rehearse.py": {
+      "sha256": "1f57f7b5a666a835ef740521f1b39ffa46a8fc259c1d23358c2bc92be7bd3093",
+      "git_blob": "ebc13828fddfec815d5e2f1e9cb5480bdb384656",
+      "bytes": 9459
+    },
+    "stage_baseline.py": {
+      "sha256": "a512df48acfd9914b8b95f22d2688f1f79e2ca05f7740ed727a7a8fb58921a37",
+      "git_blob": "b99a41e567520e0cb7bb3af574a5182f73259767",
+      "bytes": 5339
+    },
+    "launcher_preflight.py": {
+      "sha256": "110cc78a8e4f84a80f038739224b108af9f611862191ff10e91e798ee23a8680",
+      "git_blob": "cd5fef98dfc0e654004ffddc6adc30aecd6aea5e",
+      "bytes": 3181
+    },
+    "run_preflights.py": {
+      "sha256": "f7e43df070f8ade91248b83a296af8f998048114188e025e20abfec06aceb8b8",
+      "git_blob": "a9f48e29d49fd81290ece9307a65e77d9237831c",
+      "bytes": 1315
+    }
+  },
+  "status": "DRAFT_CHANGES_REQUESTED_NOT_ADOPTION_APPROVED",
+  "working_tree_changes_excluded": [],
+  "supported_baseline": "e04e2ae1a0d47cdedf5380b5a0d94f280a82d5d1",
+  "overlay": "e8ad1fd98142e6a4f53172f143381a4fa4100dd7",
+  "overlay_tree": "bdab2ce706f3e682781ad0e93da935155b937867",
+  "approved_package_index_sha256": "20e991d6a0ee3d4aa1f959540b912b2430c5ec840a963ccf7106f7fc4efa7d63",
+  "installed_or_live_acceptance": false,
+  "excluded": [
+    "Private source histories",
+    "Built payloads and source maps",
+    "Owner rehearsal and run data",
+    "Credentials/configuration/databases",
+    "Uncommitted preflight wrapper"
+  ],
+  "snapshot_commit": "35658340a27419f3825cbb436baeaa8b6f702974",
+  "snapshot_tree": "a1f69c517b1662fc5bea45ce893b45b46c26842a",
+  "independent_static_review": {
+    "verdict": "CHANGES_REQUESTED",
+    "findings": "Rollback drift/recovery, physical path ownership, Git authority/journal/ref ownership and missing target lock; driver expectation accounting.",
+    "execution": "Static review only; actual independent execution reported separately."
+  }
+}
