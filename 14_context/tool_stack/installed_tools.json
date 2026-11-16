@@ -1,0 +1,74 @@
+{
+  "schema": "ghoti_installed_tools/1",
+  "tools": {
+    "git": {
+      "present": true,
+      "version": "git version 2.49.0.windows.1",
+      "check_only": false,
+      "on_path": true
+    },
+    "gh": {
+      "present": true,
+      "version": "gh version 2.89.0 (2026-03-26)",
+      "check_only": false,
+      "on_path": true
+    },
+    "node": {
+      "present": true,
+      "version": "v22.16.0",
+      "check_only": false,
+      "on_path": true
+    },
+    "npm": {
+      "present": true,
+      "version": "10.9.2",
+      "check_only": false,
+      "on_path": true
+    },
+    "python": {
+      "present": true,
+      "version": "Python 3.11.15",
+      "check_only": false,
+      "on_path": true
+    },
+    "cargo": {
+      "present": true,
+      "version": "cargo 1.95.0 (f2d3ce0bd 2026-03-21)",
+      "check_only": false,
+      "on_path": true
+    },
+    "rustc": {
+      "present": true,
+      "version": "rustc 1.95.0 (59807616e 2026-04-14)",
+      "check_only": false,
+      "on_path": true
+    },
+    "docker": {
+      "present": true,
+      "version": "Docker version 29.4.1, build 055a478",
+      "check_only": true,
+      "on_path": true
+    },
+    "ollama": {
+      "present": true,
+      "version": "ollama version is 0.24.0",
+      "check_only": true,
+      "on_path": true
+    }
+  },
+  "present": [
+    "cargo",
+    "docker",
+    "gh",
+    "git",
+    "node",
+    "npm",
+    "ollama",
+    "python",
+    "rustc"
+  ],
+  "missing": [],
+  "safety": {
+    "installs_performed": false
+  }
+}

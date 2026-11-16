@@ -1,0 +1,20 @@
+{
+  "name": "Apify",
+  "purpose": "Actor-based scraping (compliant use only).",
+  "enabled": false,
+  "required_env_vars": [
+    "APIFY_TOKEN"
+  ],
+  "install_command_placeholder": "see provider docs",
+  "config_path_placeholder": "23_configs/mcp/apify.json (create from this template)",
+  "manual_setup_required": true,
+  "allowed_capabilities": [
+    "actor_run_public"
+  ],
+  "blocked_capabilities": [
+    "bypass_paywall",
+    "personal_data_harvest"
+  ],
+  "safety_notes": "Disabled by default. No secrets in repo - set env vars locally. Blocked capabilities must stay blocked until a separate safety gate.",
+  "test_command": "run a hello-world actor"
+}

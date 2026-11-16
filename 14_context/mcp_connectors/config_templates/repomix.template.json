@@ -1,0 +1,17 @@
+{
+  "name": "Repomix / git ingest",
+  "purpose": "Pack a repo into one AI-friendly file.",
+  "enabled": false,
+  "required_env_vars": [],
+  "install_command_placeholder": "verify npm package; intake-first",
+  "config_path_placeholder": "23_configs/mcp/repomix.json (create from this template)",
+  "manual_setup_required": true,
+  "allowed_capabilities": [
+    "repo_read_local"
+  ],
+  "blocked_capabilities": [
+    "network_fetch_unknown"
+  ],
+  "safety_notes": "Disabled by default. No secrets in repo - set env vars locally. Blocked capabilities must stay blocked until a separate safety gate.",
+  "test_command": "pack this repo to a temp file (local only)"
+}

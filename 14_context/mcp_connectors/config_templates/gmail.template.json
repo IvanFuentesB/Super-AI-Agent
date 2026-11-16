@@ -1,0 +1,24 @@
+{
+  "name": "Gmail MCP",
+  "purpose": "Read/draft email (drafts only; no sending).",
+  "enabled": false,
+  "required_env_vars": [
+    "GOOGLE_OAUTH_CLIENT_ID",
+    "GOOGLE_OAUTH_CLIENT_SECRET",
+    "GOOGLE_OAUTH_REFRESH_TOKEN"
+  ],
+  "install_command_placeholder": "see provider docs",
+  "config_path_placeholder": "23_configs/mcp/gmail.json (create from this template)",
+  "manual_setup_required": true,
+  "allowed_capabilities": [
+    "email_read",
+    "draft_create"
+  ],
+  "blocked_capabilities": [
+    "email_send",
+    "delete",
+    "contacts_export"
+  ],
+  "safety_notes": "Disabled by default. No secrets in repo - set env vars locally. Blocked capabilities must stay blocked until a separate safety gate.",
+  "test_command": "list latest 5 subjects (read-only)"
+}

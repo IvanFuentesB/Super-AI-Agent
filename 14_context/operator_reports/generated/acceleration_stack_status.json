@@ -1,0 +1,41 @@
+{
+  "ok": true,
+  "action": "status",
+  "product": "Ghoti Acceleration Tool Stack",
+  "installed_safe_tools": [
+    "cargo",
+    "docker",
+    "gh",
+    "git",
+    "node",
+    "npm",
+    "ollama",
+    "python",
+    "rustc"
+  ],
+  "installed_count": 9,
+  "missing_tools": [],
+  "missing_count": 0,
+  "mcp_templates_ready": 16,
+  "skills_registered": 44,
+  "registry_total": 37,
+  "priority_counts": {
+    "P0": 14,
+    "P1": 11,
+    "P2": 6,
+    "defer": 0,
+    "reject": 6
+  },
+  "source_needed_count": 23,
+  "manual_setup_required_count": 23,
+  "blocked_rejected_count": 6,
+  "repo_intake_queue_count": 9,
+  "rust_tool_stack_guard": "available",
+  "safety": {
+    "secrets_in_repo": false,
+    "live_account_actions": false,
+    "all_mcp_templates_disabled": true,
+    "network_used": false
+  },
+  "generated_at": "20260615T090110Z"
+}

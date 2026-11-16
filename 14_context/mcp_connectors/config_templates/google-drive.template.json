@@ -1,0 +1,23 @@
+{
+  "name": "Google Drive MCP",
+  "purpose": "Read/search docs.",
+  "enabled": false,
+  "required_env_vars": [
+    "GOOGLE_OAUTH_CLIENT_ID",
+    "GOOGLE_OAUTH_CLIENT_SECRET",
+    "GOOGLE_OAUTH_REFRESH_TOKEN"
+  ],
+  "install_command_placeholder": "see provider docs",
+  "config_path_placeholder": "23_configs/mcp/google-drive.json (create from this template)",
+  "manual_setup_required": true,
+  "allowed_capabilities": [
+    "drive_read",
+    "drive_search"
+  ],
+  "blocked_capabilities": [
+    "drive_delete",
+    "share_external"
+  ],
+  "safety_notes": "Disabled by default. No secrets in repo - set env vars locally. Blocked capabilities must stay blocked until a separate safety gate.",
+  "test_command": "search a known filename (read-only)"
+}
