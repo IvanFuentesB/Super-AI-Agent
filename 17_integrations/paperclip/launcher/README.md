@@ -51,3 +51,10 @@ No installed state changes, so no host rollback is needed. Removing this source
 snapshot from a future branch must not delete or modify the installed service,
 state, company records or launcher. A main merge or deployment is not authorized
 by this draft publication.
+
+## Separate reviewed overlay-pin delta
+
+See overlay_pin/ for source-only owner1e788e6 targeting accepted e8ad1fd.
+The original published source snapshot and its transformation above are unchanged.
+Eleven independent pin-gate cases passed; real overlay transaction/rehearsal and
+installed adoption remain pending. This PR remains a source-only draft.
