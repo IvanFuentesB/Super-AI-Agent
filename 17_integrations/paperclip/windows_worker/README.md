@@ -80,3 +80,14 @@ Regenerate raw LF bytes with git --no-optional-locks diff and these options:
 --diff-algorithm=myers --full-index --binary --src-prefix=a/ --dst-prefix=b/
 --unified=3 --output=<patch-file> <parent> <commit>
 Do not reserialize through text pipelines.
+
+## Published raw bytes
+
+Final remote readback identified Git CRLF-to-LF conversion in documentation,
+series and JSON serialization, and in LICENSE.upstream. No raw .patch bytes
+changed; all eight patch hashes and reproduced trees remain exact. The public
+license pin in manifest.json now names the published LF Git blob, which matches
+the upstream LICENSE blob. Its original packager checkout hash is retained
+separately for provenance. Verify raw objects with `git show`, since a Windows
+working checkout may translate line endings. Metadata publication is not proof
+of a byte-identical local checkout. No global Git setting was changed.

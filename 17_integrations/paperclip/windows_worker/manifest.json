@@ -3,12 +3,13 @@
   "purpose": "Raw Git diff series for independent safety review; no new implementation or live adoption",
   "origin_url": "https://github.com/paperclipai/paperclip.git",
   "license": {
-    "sha256": "526e937d673d264af663f53d3be7118c59840810097d492e1550b363a5c91000",
+    "sha256": "7f8a27f0979bded50e240caa8c8c29f3088ddf87032cb83e5a9732bff91d18b4",
     "spdx": "MIT",
     "source_commit": "d0bdbe11a9624435b6dca3968389bd59c6a559a2",
     "file": "LICENSE.upstream",
     "source_path": "LICENSE",
-    "byte_provenance": "Copied from clean approved source working tree LICENSE; exact payload SHA256 pinned, checkout EOL may differ from Git blob bytes."
+    "byte_provenance": "Published LF Git blob, matching upstream LICENSE Git blob; original packager CRLF checkout hash retained separately. Verify raw Git bytes, since a Windows checkout may translate line endings.",
+    "packager_checkout_sha256": "526e937d673d264af663f53d3be7118c59840810097d492e1550b363a5c91000"
   },
   "source_clean_at_packaging": true,
   "retained_upstream": {
