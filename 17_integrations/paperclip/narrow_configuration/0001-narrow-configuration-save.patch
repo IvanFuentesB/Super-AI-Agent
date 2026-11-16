@@ -1,0 +1,802 @@
+diff --git a/server/src/__tests__/agent-config-narrow-save-routes.test.ts b/server/src/__tests__/agent-config-narrow-save-routes.test.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..617907bc9b0c8176d288a3ff1ce89a111d59f3e0
+--- /dev/null
++++ b/server/src/__tests__/agent-config-narrow-save-routes.test.ts
+@@ -0,0 +1,355 @@
++import type { Server } from "node:http";
++import express from "express";
++import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
++import type { Agent } from "@paperclipai/shared";
++import { agentsApi } from "../../../ui/src/api/agents.js";
++import {
++  assertNoRedactedValues,
++  buildAgentUpdatePatch,
++  isUncertainSaveFailure,
++  type AgentConfigOverlay,
++} from "../../../ui/src/lib/agent-config-patch.js";
++
++// The UI's Configuration Save (patch builder + API client) driven against the
++// real PATCH /api/agents/:id handler and board mutation guard. Synthetic data only.
++
++const mockAgentService = vi.hoisted(() => ({
++  getById: vi.fn(),
++  update: vi.fn(),
++  resolveByReference: vi.fn(),
++  getChainOfCommand: vi.fn(async () => []),
++}));
++const mockAccessService = vi.hoisted(() => ({
++  canUser: vi.fn(),
++  hasPermission: vi.fn(),
++  getMembership: vi.fn(async () => null),
++  listPrincipalGrants: vi.fn(async () => []),
++}));
++const mockSecretService = vi.hoisted(() => ({
++  resolveAdapterConfigForRuntime: vi.fn(),
++  normalizeAdapterConfigForPersistence: vi.fn(async (_companyId: string, config: Record<string, unknown>) => config),
++}));
++const mockLogActivity = vi.hoisted(() => vi.fn());
++const mockSyncInstructionsBundleConfigFromFilePath = vi.hoisted(() => vi.fn());
++
++function registerModuleMocks() {
++  vi.doMock("../services/index.js", () => ({
++    agentService: () => mockAgentService,
++    agentInstructionsService: () => ({}),
++    accessService: () => mockAccessService,
++    approvalService: () => ({}),
++    companySkillService: () => ({ listRuntimeSkillEntries: vi.fn() }),
++    budgetService: () => ({}),
++    environmentService: () => ({ getById: vi.fn() }),
++    heartbeatService: () => ({}),
++    issueApprovalService: () => ({}),
++    issueService: () => ({}),
++    logActivity: mockLogActivity,
++    secretService: () => mockSecretService,
++    syncInstructionsBundleConfigFromFilePath: mockSyncInstructionsBundleConfigFromFilePath,
++    workspaceOperationService: () => ({}),
++  }));
++  vi.doMock("../adapters/index.js", () => ({
++    findServerAdapter: (type: string) => ({ type }),
++    listAdapterModels: vi.fn(),
++  }));
++}
++
++const CEO_ID = "11111111-1111-4111-8111-111111111111";
++const OTHER_AGENT_ID = "22222222-2222-4222-8222-222222222222";
++const OLD_TOOLS = "Read,Glob,Grep,Bash(curl *http://127.0.0.1:41402/*)";
++const NEW_TOOLS = "Read,Glob,Grep,Bash(curl *$PAPERCLIP_API_URL/api/*)";
++const NEW_EXTRA_ARGS = ["--allowedTools", NEW_TOOLS];
++
++function makeStoredAgent() {
++  return {
++    id: CEO_ID,
++    companyId: "company-1",
++    name: "CEO",
++    role: "ceo",
++    title: "Chief Executive",
++    status: "active",
++    reportsTo: null,
++    capabilities: null,
++    adapterType: "claude_local",
++    adapterConfig: {
++      model: "claude-sonnet-4-6",
++      cwd: "C:/synthetic/workspace",
++      dangerouslySkipPermissions: false,
++      instructionsFilePath: "C:/synthetic/instructions/AGENTS.md",
++      env: {
++        SYNTHETIC_PLAIN: { type: "plain", value: "synthetic-secret-value" },
++        SYNTHETIC_REF: { type: "secret_ref", secretId: "33333333-3333-4333-8333-333333333333", version: "latest" },
++      },
++      extraArgs: ["--allowedTools", OLD_TOOLS],
++    } as Record<string, unknown>,
++    runtimeConfig: { heartbeat: { enabled: true, intervalSec: 300 } },
++    budgetMonthlyCents: 5000,
++    spentMonthlyCents: 120,
++    defaultEnvironmentId: null,
++    permissions: { canCreateAgents: true },
++    updatedAt: new Date("2026-01-01T00:00:00.000Z"),
++  };
++}
++
++type Actor = Record<string, unknown>;
++const boardSession = (extra: Actor = {}): Actor => ({
++  type: "board",
++  userId: "synthetic-user",
++  companyIds: ["company-1"],
++  source: "session",
++  isInstanceAdmin: false,
++  ...extra,
++});
++
++function overlay(adapterConfig: Record<string, unknown>): AgentConfigOverlay {
++  return { identity: {}, adapterConfig, heartbeat: {}, runtime: {} };
++}
++
++/** What the browser's copy of the agent looks like: a JSON read of the stored record. */
++function uiCopy(agent: unknown): Agent {
++  return JSON.parse(JSON.stringify(agent)) as Agent;
++}
++
++describe("narrow Configuration Save against PATCH /api/agents/:id", () => {
++  let stored: ReturnType<typeof makeStoredAgent>;
++  let actor: Actor;
++  let server: Server;
++  let sentBodies: Array<Record<string, unknown>>;
++  let browserHeaders: Record<string, string>;
++  let failFetch: Error | null;
++
++  beforeEach(async () => {
++    vi.resetModules();
++    vi.doUnmock("../routes/agents.js");
++    vi.doUnmock("../routes/authz.js");
++    vi.doUnmock("../middleware/index.js");
++    registerModuleMocks();
++    vi.clearAllMocks();
++
++    stored = makeStoredAgent();
++    actor = boardSession();
++    sentBodies = [];
++    failFetch = null;
++    mockSyncInstructionsBundleConfigFromFilePath.mockImplementation((_agent, config) => config);
++    mockAccessService.canUser.mockResolvedValue(true);
++    mockAccessService.hasPermission.mockResolvedValue(false);
++    mockAgentService.getById.mockImplementation(async (id: string) => {
++      if (id === CEO_ID) return stored;
++      if (id === OTHER_AGENT_ID) return { ...makeStoredAgent(), id, role: "engineer", permissions: null };
++      return null;
++    });
++    mockAgentService.update.mockImplementation(async (_id: string, patch: Record<string, unknown>) => {
++      stored = { ...stored, ...patch } as typeof stored;
++      return stored;
++    });
++
++    const [{ agentRoutes }, { errorHandler }, { boardMutationGuard }] = await Promise.all([
++      vi.importActual<typeof import("../routes/agents.js")>("../routes/agents.js"),
++      vi.importActual<typeof import("../middleware/index.js")>("../middleware/index.js"),
++      vi.importActual<typeof import("../middleware/board-mutation-guard.js")>("../middleware/board-mutation-guard.js"),
++    ]);
++    const app = express();
++    app.use(express.json());
++    app.use((req, _res, next) => {
++      (req as any).actor = actor;
++      next();
++    });
++    app.use(boardMutationGuard());
++    app.use("/api", agentRoutes({} as any));
++    app.use(errorHandler);
++
++    const { createServer } = await vi.importActual<typeof import("node:http")>("node:http");
++    server = createServer(app);
++    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
++    const address = server.address();
++    if (!address || typeof address === "string") throw new Error("Expected a TCP port");
++    const baseUrl = `http://127.0.0.1:${address.port}`;
++    browserHeaders = { Origin: baseUrl };
++
++    // The UI client calls fetch("/api/..."); resolve it against the fixture server
++    // the way a browser on that origin would, including the Origin header.
++    const realFetch = globalThis.fetch;
++    vi.stubGlobal("fetch", async (input: string, init?: RequestInit) => {
++      if (failFetch) throw failFetch;
++      if (typeof init?.body === "string") sentBodies.push(JSON.parse(init.body));
++      const headers = new Headers(init?.headers);
++      for (const [name, value] of Object.entries(browserHeaders)) headers.set(name, value);
++      return realFetch(`${baseUrl}${input}`, { ...init, headers, credentials: undefined });
++    });
++  });
++
++  afterEach(async () => {
++    vi.unstubAllGlobals();
++    await new Promise<void>((resolve) => server.close(() => resolve()));
++  });
++
++  /** The Configuration tab's save: guard, then the real API client. */
++  async function save(patch: Record<string, unknown>, agentId = CEO_ID) {
++    assertNoRedactedValues(patch);
++    return agentsApi.update(agentId, patch, "company-1");
++  }
++
++  it("changes only extraArgs and leaves every other stored field as it was", async () => {
++    const before = makeStoredAgent();
++    const patch = buildAgentUpdatePatch(uiCopy(stored), overlay({ extraArgs: NEW_EXTRA_ARGS }));
++
++    await save(patch);
++
++    expect(sentBodies).toEqual([{ adapterConfig: { extraArgs: NEW_EXTRA_ARGS }, replaceAdapterConfig: false }]);
++    expect(stored.adapterConfig).toEqual({ ...before.adapterConfig, extraArgs: NEW_EXTRA_ARGS });
++    expect(stored.adapterConfig.dangerouslySkipPermissions).toBe(false);
++    expect({ ...stored, adapterConfig: null }).toEqual({ ...before, adapterConfig: null });
++
++    // Only adapterConfig reaches the store, with the route's revision and audit records.
++    expect(mockAgentService.update).toHaveBeenCalledTimes(1);
++    const [id, storePatch, options] = mockAgentService.update.mock.calls[0]!;
++    expect(id).toBe(CEO_ID);
++    expect(Object.keys(storePatch)).toEqual(["adapterConfig"]);
++    expect(options).toEqual({
++      recordRevision: { createdByAgentId: null, createdByUserId: "synthetic-user", source: "patch" },
++    });
++    expect(mockLogActivity).toHaveBeenCalledWith(
++      expect.anything(),
++      expect.objectContaining({ action: "agent.updated", entityId: CEO_ID, actorType: "user", actorId: "synthetic-user" }),
++    );
++  });
++
++  it("does not write a stale browser copy over fields changed on the server meanwhile", async () => {
++    const staleCopy = uiCopy(stored);
++    stored.adapterConfig = {
++      ...stored.adapterConfig,
++      model: "claude-opus-4-6",
++      env: { SYNTHETIC_PLAIN: { type: "plain", value: "rotated-synthetic-value" } },
++    };
++
++    await save(buildAgentUpdatePatch(staleCopy, overlay({ extraArgs: NEW_EXTRA_ARGS })));
++
++    expect(stored.adapterConfig.model).toBe("claude-opus-4-6");
++    expect(stored.adapterConfig.env).toEqual({ SYNTHETIC_PLAIN: { type: "plain", value: "rotated-synthetic-value" } });
++    expect(stored.adapterConfig.extraArgs).toEqual(NEW_EXTRA_ARGS);
++  });
++
++  it("keeps stored secrets when the browser copy came from a redacted read", async () => {
++    const redactedCopy = uiCopy(stored);
++    (redactedCopy.adapterConfig as any).env.SYNTHETIC_PLAIN.value = "***REDACTED***";
++    const secretsBefore = makeStoredAgent().adapterConfig.env;
++
++    await save(buildAgentUpdatePatch(redactedCopy, overlay({ extraArgs: NEW_EXTRA_ARGS })));
++
++    expect(JSON.stringify(sentBodies)).not.toContain("REDACTED");
++    expect(stored.adapterConfig.env).toEqual(secretsBefore);
++  });
++
++  it("refuses to send a redacted placeholder as a value", async () => {
++    const redactedCopy = uiCopy(stored);
++    (redactedCopy.adapterConfig as any).env.SYNTHETIC_PLAIN.value = "***REDACTED***";
++    const before = makeStoredAgent();
++
++    // An edit of the env map itself, and a key removal (which still replaces the
++    // whole config from the browser copy), both carry the placeholder.
++    const envEdit = buildAgentUpdatePatch(redactedCopy, overlay({ env: (redactedCopy.adapterConfig as any).env }));
++    const keyRemoval = buildAgentUpdatePatch(redactedCopy, overlay({ extraArgs: undefined }));
++    expect(keyRemoval.replaceAdapterConfig).toBe(true);
++
++    await expect(save(envEdit)).rejects.toThrow("redacted placeholder");
++    await expect(save(keyRemoval)).rejects.toThrow("redacted placeholder");
++    expect(sentBodies).toEqual([]);
++    expect(mockAgentService.update).not.toHaveBeenCalled();
++    expect(stored).toEqual(before);
++  });
++
++  it("is rejected for a board user outside the company, and nothing is stored", async () => {
++    actor = boardSession({ companyIds: ["company-2"] });
++
++    const error = await save(buildAgentUpdatePatch(uiCopy(stored), overlay({ extraArgs: NEW_EXTRA_ARGS }))).catch((e) => e);
++
++    expect(error).toMatchObject({ status: 403, message: "User does not have access to this company" });
++    expect(isUncertainSaveFailure(error)).toBe(false);
++    expect(mockAgentService.update).not.toHaveBeenCalled();
++  });
++
++  it("is rejected for a board user without the agents:create permission, and for a viewer", async () => {
++    const patch = buildAgentUpdatePatch(uiCopy(stored), overlay({ extraArgs: NEW_EXTRA_ARGS }));
++
++    mockAccessService.canUser.mockResolvedValue(false);
++    await expect(save(patch)).rejects.toMatchObject({ status: 403, message: "Missing permission: agents:create" });
++
++    actor = boardSession({ memberships: [{ companyId: "company-1", status: "active", membershipRole: "viewer" }] });
++    await expect(save(patch)).rejects.toMatchObject({ status: 403, message: "Viewer access is read-only" });
++
++    expect(mockAgentService.update).not.toHaveBeenCalled();
++  });
++
++  it("is rejected without authentication", async () => {
++    actor = { type: "none", source: "none" };
++
++    const error = await save(buildAgentUpdatePatch(uiCopy(stored), overlay({ extraArgs: NEW_EXTRA_ARGS }))).catch((e) => e);
++
++    expect(error).toMatchObject({ status: 401 });
++    expect(isUncertainSaveFailure(error)).toBe(false);
++    expect(mockAgentService.update).not.toHaveBeenCalled();
++  });
++
++  it("is rejected for a session request that does not come from the board's own origin", async () => {
++    browserHeaders = { Origin: "http://attacker.invalid" };
++
++    const error = await save(buildAgentUpdatePatch(uiCopy(stored), overlay({ extraArgs: NEW_EXTRA_ARGS }))).catch((e) => e);
++
++    expect(error).toMatchObject({ status: 403, message: "Board mutation requires trusted browser origin" });
++    expect(mockAgentService.update).not.toHaveBeenCalled();
++  });
++
++  it("reports an unknown agent as not found", async () => {
++    const error = await save(
++      buildAgentUpdatePatch(uiCopy(stored), overlay({ extraArgs: NEW_EXTRA_ARGS })),
++      "99999999-9999-4999-8999-999999999999",
++    ).catch((e) => e);
++
++    expect(error).toMatchObject({ status: 404, message: "Agent not found" });
++    expect(mockAgentService.update).not.toHaveBeenCalled();
++  });
++
++  it("rejects permissions in the body and instruction-path changes from an agent key", async () => {
++    await expect(save({ adapterConfig: { extraArgs: NEW_EXTRA_ARGS }, permissions: { canCreateAgents: true } }))
++      .rejects.toMatchObject({ status: 400 });
++
++    actor = { type: "agent", agentId: CEO_ID, companyId: "company-1", source: "agent_key" };
++    await expect(save({ adapterConfig: { instructionsFilePath: "C:/synthetic/other.md" }, replaceAdapterConfig: false }))
++      .rejects.toMatchObject({ status: 403 });
++
++    actor = { type: "agent", agentId: OTHER_AGENT_ID, companyId: "company-1", source: "agent_key" };
++    await expect(save({ adapterConfig: { extraArgs: NEW_EXTRA_ARGS }, replaceAdapterConfig: false }))
++      .rejects.toMatchObject({ status: 403, message: "Only CEO or agent creators can modify other agents" });
++
++    expect(mockAgentService.update).not.toHaveBeenCalled();
++    expect(stored).toEqual(makeStoredAgent());
++  });
++
++  it("treats a lost connection as unconfirmed, and the readback decides whether to retry", async () => {
++    const patch = buildAgentUpdatePatch(uiCopy(stored), overlay({ extraArgs: NEW_EXTRA_ARGS }));
++
++    failFetch = new TypeError("Failed to fetch");
++    const error = await save(patch).catch((e) => e);
++    expect(isUncertainSaveFailure(error)).toBe(true);
++    expect(mockAgentService.update).not.toHaveBeenCalled();
++
++    // Readback shows the change is absent, so a single retry is correct.
++    failFetch = null;
++    expect((await agentsApi.get(CEO_ID, "company-1")).adapterConfig.extraArgs).toEqual(["--allowedTools", OLD_TOOLS]);
++    await save(patch);
++    expect((await agentsApi.get(CEO_ID, "company-1")).adapterConfig.extraArgs).toEqual(NEW_EXTRA_ARGS);
++    expect(mockAgentService.update).toHaveBeenCalledTimes(1);
++  });
++
++  it("treats a server error after the write as unconfirmed, and the readback shows it was applied", async () => {
++    mockLogActivity.mockRejectedValueOnce(new Error("synthetic audit failure"));
++
++    const error = await save(buildAgentUpdatePatch(uiCopy(stored), overlay({ extraArgs: NEW_EXTRA_ARGS }))).catch((e) => e);
++
++    expect(error).toMatchObject({ status: 500 });
++    expect(isUncertainSaveFailure(error)).toBe(true);
++    expect((await agentsApi.get(CEO_ID, "company-1")).adapterConfig.extraArgs).toEqual(NEW_EXTRA_ARGS);
++    expect(mockAgentService.update).toHaveBeenCalledTimes(1);
++  });
++});
+diff --git a/ui/src/components/AgentConfigForm.edit.test.tsx b/ui/src/components/AgentConfigForm.edit.test.tsx
+new file mode 100644
+index 0000000000000000000000000000000000000000..9c6e4db04fe1c5a5fc61e02145c841cb9989f283
+--- /dev/null
++++ b/ui/src/components/AgentConfigForm.edit.test.tsx
+@@ -0,0 +1,104 @@
++// @vitest-environment jsdom
++import { act } from "react";
++import { createRoot } from "react-dom/client";
++import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
++import type { Agent } from "@paperclipai/shared";
++import { expect, it, vi } from "vitest";
++import { AgentConfigForm } from "./AgentConfigForm";
++import { TooltipProvider } from "./ui/tooltip";
++
++vi.mock("../context/CompanyContext", () => ({ useCompany: () => ({ selectedCompanyId: null }) }));
++vi.mock("../adapters", () => ({ getUIAdapter: () => ({ buildAdapterConfig: () => ({}), ConfigFields: () => null }) }));
++vi.mock("../adapters/use-disabled-adapters", () => ({ useDisabledAdaptersSync: () => new Set() }));
++vi.mock("../adapters/use-adapter-capabilities", () => ({ useAdapterCapabilities: () => () => ({ supportsLocalAgentJwt: true }) }));
++vi.mock("../api/instanceSettings", () => ({ instanceSettingsApi: { getGeneral: async () => ({}) } }));
++vi.mock("./MarkdownEditor", () => ({ MarkdownEditor: () => null }));
++vi.mock("./PathInstructionsModal", () => ({ ChoosePathButton: () => null }));
++vi.mock("./EnvVarEditor", () => ({ EnvVarEditor: () => null }));
++(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
++
++const OLD_TOOLS = "Read,Glob,Grep,Bash(curl *http://127.0.0.1:41402/*)";
++const NEW_TOOLS = "Read,Glob,Grep,Bash(curl *$PAPERCLIP_API_URL/api/*)";
++
++function makeAgent(): Agent {
++  return {
++    id: "agent-ceo",
++    companyId: "company-1",
++    name: "CEO",
++    role: "ceo",
++    title: "CEO",
++    icon: null,
++    status: "active",
++    reportsTo: null,
++    capabilities: null,
++    adapterType: "claude_local",
++    adapterConfig: {
++      model: "claude-sonnet-4-6",
++      cwd: "C:/synthetic/workspace",
++      dangerouslySkipPermissions: false,
++      instructionsFilePath: "C:/synthetic/instructions/AGENTS.md",
++      env: { SYNTHETIC_TOKEN: { type: "plain", value: "synthetic-secret-value" } },
++      extraArgs: ["--allowedTools", OLD_TOOLS],
++    },
++    runtimeConfig: { heartbeat: { enabled: true, intervalSec: 300 } },
++    budgetMonthlyCents: 5000,
++    spentMonthlyCents: 0,
++    pauseReason: null,
++    pausedAt: null,
++    lastHeartbeatAt: null,
++    createdAt: new Date("2026-01-01T00:00:00.000Z"),
++    updatedAt: new Date("2026-01-01T00:00:00.000Z"),
++    urlKey: "ceo",
++    permissions: { canCreateAgents: false },
++    metadata: null,
++  };
++}
++
++it("saves an edited extra-args value as a merge patch holding only that field", async () => {
++  const onSave = vi.fn();
++  let save: (() => void) | null = null;
++  const onSaveActionChange = (action: (() => void) | null) => { save = action; };
++  const agent = makeAgent();
++  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
++  const node = document.createElement("div"); document.body.append(node);
++  const root = createRoot(node);
++  try {
++    await act(async () => root.render(
++      <QueryClientProvider client={client}><TooltipProvider>
++        <AgentConfigForm mode="edit" agent={agent} onSave={onSave} onSaveActionChange={onSaveActionChange} />
++      </TooltipProvider></QueryClientProvider>,
++    ));
++    const label = [...node.querySelectorAll("label")].find((el) => el.textContent === "Extra args (comma-separated)");
++    expect(label, "missing extra args field").toBeDefined();
++    const input = label!.parentElement!.parentElement!.querySelector("input")!;
++    async function type(value: string) {
++      await act(async () => {
++        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, value);
++        input.dispatchEvent(new Event("input", { bubbles: true }));
++      });
++    }
++
++    // The comma-containing argument is shown quoted, so it can be edited in place.
++    expect(input.value).toBe(`--allowedTools, "${OLD_TOOLS}"`);
++
++    // Nothing edited: the save action sends nothing.
++    await act(async () => save!());
++    expect(onSave).not.toHaveBeenCalled();
++
++    // Text typed into the field stays as typed, commas included.
++    await type('--allowedTools, "Read,Glob');
++    expect(input.value).toBe('--allowedTools, "Read,Glob');
++
++    await type(`--allowedTools, "${NEW_TOOLS}"`);
++    expect(input.value).toBe(`--allowedTools, "${NEW_TOOLS}"`);
++
++    await act(async () => save!());
++    expect(onSave).toHaveBeenCalledTimes(1);
++    expect(onSave.mock.calls[0]![0]).toEqual({
++      adapterConfig: { extraArgs: ["--allowedTools", NEW_TOOLS] },
++      replaceAdapterConfig: false,
++    });
++  } finally {
++    await act(async () => root.unmount()); node.remove(); client.clear();
++  }
++});
+diff --git a/ui/src/components/AgentConfigForm.tsx b/ui/src/components/AgentConfigForm.tsx
+index 946d9b391962849b5d2edb085e3d68ccc92d8bf6..4bc8ffa73fbb6024290da58d94934b1a86aa406d 100644
+--- a/ui/src/components/AgentConfigForm.tsx
++++ b/ui/src/components/AgentConfigForm.tsx
+@@ -54,6 +54,7 @@ import { listAdapterOptions, listVisibleAdapterTypes } from "../adapters/metadat
+ import { getAdapterLabel } from "../adapters/adapter-display-registry";
+ import { useDisabledAdaptersSync } from "../adapters/use-disabled-adapters";
+ import { buildAgentUpdatePatch, type AgentConfigOverlay } from "../lib/agent-config-patch";
++import { formatArgList, parseCommaArgs } from "../lib/arg-list";
+ import { useAdapterCapabilities } from "../adapters/use-adapter-capabilities";
+ 
+ /* ---- Create mode values ---- */
+@@ -119,22 +120,6 @@ function isOverlayDirty(o: AgentConfigOverlay): boolean {
+ const inputClass =
+   "w-full rounded-md border border-border px-2.5 py-1.5 bg-transparent outline-none text-sm font-mono placeholder:text-muted-foreground/40";
+ 
+-function parseCommaArgs(value: string): string[] {
+-  return value
+-    .split(",")
+-    .map((item) => item.trim())
+-    .filter(Boolean);
+-}
+-
+-function formatArgList(value: unknown): string {
+-  if (Array.isArray(value)) {
+-    return value
+-      .filter((item): item is string => typeof item === "string")
+-      .join(", ");
+-  }
+-  return typeof value === "string" ? value : "";
+-}
+-
+ const codexThinkingEffortOptions = [
+   { id: "", label: "Auto" },
+   { id: "minimal", label: "Minimal" },
+@@ -222,6 +207,8 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
+   // ---- Edit mode: overlay for dirty tracking ----
+   const [overlay, setOverlay] = useState<AgentConfigOverlay>(emptyOverlay);
+   const agentRef = useRef<Agent | null>(null);
++  // Text of the extra-args field while it is being edited; the overlay holds the parsed list.
++  const [extraArgsDraft, setExtraArgsDraft] = useState("");
+ 
+   // Clear overlay when agent data refreshes (after save)
+   useEffect(() => {
+@@ -886,16 +873,21 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
+                   value={
+                     isCreate
+                       ? val!.extraArgs
+-                      : eff("adapterConfig", "extraArgs", formatArgList(config.extraArgs))
+-                  }
+-                  onCommit={(v) =>
+-                    isCreate
+-                      ? set!({ extraArgs: v })
+-                      : mark("adapterConfig", "extraArgs", v?.trim() ? parseCommaArgs(v) : null)
++                      : "extraArgs" in overlay.adapterConfig
++                        ? extraArgsDraft
++                        : formatArgList(config.extraArgs)
+                   }
++                  onCommit={(v) => {
++                    if (isCreate) {
++                      set!({ extraArgs: v });
++                      return;
++                    }
++                    setExtraArgsDraft(v);
++                    mark("adapterConfig", "extraArgs", v?.trim() ? parseCommaArgs(v) : null);
++                  }}
+                   immediate
+                   className={inputClass}
+-                  placeholder="e.g. --verbose, --foo=bar"
++                  placeholder='e.g. --verbose, --foo=bar, "a,b"'
+                 />
+               </Field>
+ 
+diff --git a/ui/src/lib/agent-config-patch.test.ts b/ui/src/lib/agent-config-patch.test.ts
+index f655e8e502f1289edd35e9d5acba0556de673630..f8f5b3f9c1e37c9f38e6c30e3a7cdc402fe8d7b4 100644
+--- a/ui/src/lib/agent-config-patch.test.ts
++++ b/ui/src/lib/agent-config-patch.test.ts
+@@ -2,7 +2,13 @@
+ 
+ import { describe, expect, it } from "vitest";
+ import type { Agent } from "@paperclipai/shared";
+-import { buildAgentUpdatePatch, type AgentConfigOverlay } from "./agent-config-patch";
++import {
++  assertNoRedactedValues,
++  buildAgentUpdatePatch,
++  isUncertainSaveFailure,
++  type AgentConfigOverlay,
++} from "./agent-config-patch";
++import { ApiError } from "../api/client";
+ 
+ function makeAgent(): Agent {
+   return {
+@@ -106,3 +112,40 @@ describe("buildAgentUpdatePatch", () => {
+     });
+   });
+ });
++
++describe("narrow adapter config saves", () => {
++  it("sends only the edited adapter config keys for the server to merge", () => {
++    const patch = buildAgentUpdatePatch(
++      makeAgent(),
++      makeOverlay({
++        adapterConfig: { extraArgs: ["--allowedTools", "Read,Glob"] },
++      }),
++    );
++
++    expect(patch).toEqual({
++      adapterConfig: { extraArgs: ["--allowedTools", "Read,Glob"] },
++      replaceAdapterConfig: false,
++    });
++  });
++
++  it("sends no adapter config when only identity fields changed", () => {
++    expect(buildAgentUpdatePatch(makeAgent(), makeOverlay({ identity: { title: "Lead" } }))).toEqual({ title: "Lead" });
++  });
++
++  it("refuses a patch carrying a redacted placeholder anywhere", () => {
++    expect(() => assertNoRedactedValues({ adapterConfig: { env: { A: { type: "plain", value: "***REDACTED***" } } } }))
++      .toThrow("redacted placeholder");
++    expect(() => assertNoRedactedValues({ adapterConfig: { extraArgs: ["***REDACTED***"] } })).toThrow();
++    expect(() => assertNoRedactedValues({ adapterConfig: { extraArgs: ["--x"] }, replaceAdapterConfig: false })).not.toThrow();
++  });
++
++  it("treats only a 4xx response as a definite rejection", () => {
++    for (const status of [400, 401, 403, 404, 409, 422]) {
++      expect(isUncertainSaveFailure(new ApiError("rejected", status, null))).toBe(false);
++    }
++    expect(isUncertainSaveFailure(new ApiError("server", 500, null))).toBe(true);
++    expect(isUncertainSaveFailure(new ApiError("gateway", 502, null))).toBe(true);
++    expect(isUncertainSaveFailure(new TypeError("Failed to fetch"))).toBe(true);
++    expect(isUncertainSaveFailure(null)).toBe(true);
++  });
++});
+diff --git a/ui/src/lib/agent-config-patch.ts b/ui/src/lib/agent-config-patch.ts
+index 323f9bf59dbf73e3ba57258c0159d4749c19e31c..93a8ad3b8094cf1b662f9edb51944c20a15137c1 100644
+--- a/ui/src/lib/agent-config-patch.ts
++++ b/ui/src/lib/agent-config-patch.ts
+@@ -18,6 +18,31 @@ const ADAPTER_AGNOSTIC_KEYS = [
+   "bootstrapPromptTemplate",
+ ] as const;
+ 
++// Placeholder the server substitutes for secret values in redacted reads.
++const REDACTED_VALUE = "***REDACTED***";
++
++function containsRedactedValue(value: unknown): boolean {
++  if (value === REDACTED_VALUE) return true;
++  if (typeof value !== "object" || value === null) return false;
++  return Object.values(value).some(containsRedactedValue);
++}
++
++/** Throws rather than let a redacted read be saved back as real configuration. */
++export function assertNoRedactedValues(patch: Record<string, unknown>) {
++  if (containsRedactedValue(patch)) {
++    throw new Error("This change contains a redacted placeholder instead of a real value. Nothing was saved.");
++  }
++}
++
++/**
++ * True when a failed save may still have been applied (no response, or a
++ * server error). A 4xx response means the server rejected it and nothing changed.
++ */
++export function isUncertainSaveFailure(error: unknown): boolean {
++  const status = (error as { status?: unknown } | null)?.status;
++  return !(typeof status === "number" && status >= 400 && status < 500);
++}
++
+ function omitUndefinedEntries(value: Record<string, unknown>) {
+   return Object.fromEntries(
+     Object.entries(value).filter(([, entryValue]) => entryValue !== undefined),
+@@ -35,7 +60,16 @@ export function buildAgentUpdatePatch(agent: Agent, overlay: AgentConfigOverlay)
+     patch.adapterType = overlay.adapterType;
+   }
+ 
+-  if (overlay.adapterType !== undefined || Object.keys(overlay.adapterConfig).length > 0) {
++  const removesAdapterConfigKey = Object.values(overlay.adapterConfig).some((value) => value === undefined);
++  if (overlay.adapterType === undefined && !removesAdapterConfigKey) {
++    // Send only the edited keys; the server merges them into the stored config,
++    // so fields this form never touched are not written back from a stale read.
++    if (Object.keys(overlay.adapterConfig).length > 0) {
++      patch.adapterConfig = { ...overlay.adapterConfig };
++      patch.replaceAdapterConfig = false;
++    }
++  } else {
++    // The server merge cannot remove a key or switch adapters; those need a replacement.
+     const existing = (agent.adapterConfig ?? {}) as Record<string, unknown>;
+     const nextAdapterConfig =
+       overlay.adapterType !== undefined
+diff --git a/ui/src/lib/arg-list.test.ts b/ui/src/lib/arg-list.test.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..bd9b7cc75f9ab07a7739dadd2058cf0daff68568
+--- /dev/null
++++ b/ui/src/lib/arg-list.test.ts
+@@ -0,0 +1,39 @@
++// @vitest-environment node
++
++import { describe, expect, it } from "vitest";
++import { formatArgList, parseCommaArgs } from "./arg-list";
++
++describe("arg list", () => {
++  it("keeps plain comma-separated args as before", () => {
++    expect(parseCommaArgs("--verbose, --foo=bar")).toEqual(["--verbose", "--foo=bar"]);
++    expect(parseCommaArgs(" a ,, b ,")).toEqual(["a", "b"]);
++    expect(parseCommaArgs("")).toEqual([]);
++    expect(formatArgList(["--verbose", "--foo=bar"])).toBe("--verbose, --foo=bar");
++    expect(formatArgList("--verbose")).toBe("--verbose");
++    expect(formatArgList(undefined)).toBe("");
++  });
++
++  it("round-trips an argument that contains commas", () => {
++    const args = ["--allowedTools", "Read,Glob,Grep,Bash(curl *http://127.0.0.1:41402/*)"];
++    const text = formatArgList(args);
++
++    expect(text).toBe('--allowedTools, "Read,Glob,Grep,Bash(curl *http://127.0.0.1:41402/*)"');
++    expect(parseCommaArgs(text)).toEqual(args);
++  });
++
++  it("round-trips quotes, backslashes and surrounding whitespace", () => {
++    const args = ['"quoted"', "a\\b,c", " padded ", 'say "hi", twice'];
++
++    expect(parseCommaArgs(formatArgList(args))).toEqual(args);
++  });
++
++  it("leaves a quote inside an unquoted argument alone", () => {
++    expect(parseCommaArgs('--name="a b", --x')).toEqual(['--name="a b"', "--x"]);
++  });
++
++  it("falls back to plain splitting when a quoted argument is malformed", () => {
++    expect(parseCommaArgs('"unterminated, --x')).toEqual(['"unterminated', "--x"]);
++    expect(parseCommaArgs('"a" trailing, --x')).toEqual(['"a" trailing', "--x"]);
++    expect(parseCommaArgs('"bad \\q escape", --x')).toEqual(['"bad \\q escape"', "--x"]);
++  });
++});
+diff --git a/ui/src/lib/arg-list.ts b/ui/src/lib/arg-list.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..8d2bf1ea1cdb32d06acef6153ccd842f8f7c4c8b
+--- /dev/null
++++ b/ui/src/lib/arg-list.ts
+@@ -0,0 +1,50 @@
++/**
++ * Comma-separated argument lists as shown in agent config fields.
++ * An argument that itself contains a comma is written as a JSON string
++ * ("Read,Glob") so it survives a format/parse round trip.
++ */
++export function formatArgList(value: unknown): string {
++  if (Array.isArray(value)) {
++    return value
++      .filter((item): item is string => typeof item === "string")
++      .map((item) => (item.includes(",") || item.startsWith('"') || item !== item.trim() ? JSON.stringify(item) : item))
++      .join(", ");
++  }
++  return typeof value === "string" ? value : "";
++}
++
++function readQuotedArg(value: string, start: number): { arg: string; end: number } | null {
++  let end = start + 1;
++  while (end < value.length && value[end] !== '"') end += value[end] === "\\" ? 2 : 1;
++  if (end >= value.length) return null;
++  const rest = value.slice(end + 1);
++  const next = rest.search(/\S/);
++  if (next !== -1 && rest[next] !== ",") return null;
++  try {
++    const arg: unknown = JSON.parse(value.slice(start, end + 1));
++    return typeof arg === "string" ? { arg, end: end + 1 } : null;
++  } catch {
++    return null;
++  }
++}
++
++export function parseCommaArgs(value: string): string[] {
++  const args: string[] = [];
++  let index = 0;
++  while (index < value.length) {
++    while (index < value.length && /\s/.test(value[index]!)) index += 1;
++    const quoted = value[index] === '"' ? readQuotedArg(value, index) : null;
++    if (quoted) {
++      if (quoted.arg) args.push(quoted.arg);
++      index = quoted.end;
++    }
++    const comma = value.indexOf(",", index);
++    const end = comma === -1 ? value.length : comma;
++    if (!quoted) {
++      const arg = value.slice(index, end).trim();
++      if (arg) args.push(arg);
++    }
++    index = end + 1;
++  }
++  return args;
++}
+diff --git a/ui/src/pages/AgentDetail.tsx b/ui/src/pages/AgentDetail.tsx
+index daf293e3b5be0597e2a01821f50533f7dec195ae..1e31c0cec9bf9e78f94c36b6a1526ac3cf162afd 100644
+--- a/ui/src/pages/AgentDetail.tsx
++++ b/ui/src/pages/AgentDetail.tsx
+@@ -12,6 +12,7 @@ import { budgetsApi } from "../api/budgets";
+ import { heartbeatsApi } from "../api/heartbeats";
+ import { instanceSettingsApi } from "../api/instanceSettings";
+ import { ApiError } from "../api/client";
++import { assertNoRedactedValues, isUncertainSaveFailure } from "../lib/agent-config-patch";
+ import { ChartCard, RunActivityChart, PriorityChart, IssueStatusChart, SuccessRateChart } from "../components/ActivityCharts";
+ import { activityApi } from "../api/activity";
+ import { issuesApi } from "../api/issues";
+@@ -1562,7 +1563,10 @@ function ConfigurationTab({
+   });
+ 
+   const updateAgent = useMutation({
+-    mutationFn: (data: Record<string, unknown>) => agentsApi.update(agent.id, data, companyId),
++    mutationFn: async (data: Record<string, unknown>) => {
++      assertNoRedactedValues(data);
++      return agentsApi.update(agent.id, data, companyId);
++    },
+     onMutate: () => {
+       setAwaitingRefreshAfterSave(true);
+     },
+@@ -1580,6 +1584,18 @@ function ConfigurationTab({
+           : err instanceof Error
+             ? err.message
+             : "Could not save agent";
++      if (isUncertainSaveFailure(err)) {
++        // The change may have been applied; read the saved configuration back before any retry.
++        queryClient.invalidateQueries({ queryKey: queryKeys.agents.detail(agent.id) });
++        queryClient.invalidateQueries({ queryKey: queryKeys.agents.detail(agent.urlKey) });
++        queryClient.invalidateQueries({ queryKey: queryKeys.agents.configRevisions(agent.id) });
++        pushToast({
++          title: "Save not confirmed",
++          body: `${message}. The change may or may not have been applied. Check the reloaded configuration before saving again.`,
++          tone: "error",
++        });
++        return;
++      }
+       pushToast({ title: "Save failed", body: message, tone: "error" });
+     },
+   });
