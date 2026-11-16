@@ -1,0 +1,633 @@
+diff --git a/packages/adapter-utils/src/types.ts b/packages/adapter-utils/src/types.ts
+index 89df75853d9405697b4625d7d10e29dd3b36f3b2..5ab02e696496620a45a025eebe840c74df660fa3 100644
+--- a/packages/adapter-utils/src/types.ts
++++ b/packages/adapter-utils/src/types.ts
+@@ -443,6 +443,10 @@ export interface CreateConfigValues {
+   maxTurnsPerRun: number;
+   heartbeatEnabled: boolean;
+   intervalSec: number;
++  wakeOnDemand?: boolean;
++  maxConcurrentRuns?: number;
++  timeoutSec?: number;
++  graceSec?: number;
+   /** Arbitrary key-value pairs populated by schema-driven config fields. */
+   adapterSchemaValues?: Record<string, unknown>;
+ }
+diff --git a/packages/adapters/codex-local/src/ui/build-config.ts b/packages/adapters/codex-local/src/ui/build-config.ts
+index 8721ba768fb0336f0ec5b59d017c9e28433cc26a..e35bbb5f0fb2832e8e2643d9fc67ef3c01728e10 100644
+--- a/packages/adapters/codex-local/src/ui/build-config.ts
++++ b/packages/adapters/codex-local/src/ui/build-config.ts
+@@ -74,8 +74,13 @@ export function buildCodexLocalConfig(v: CreateConfigValues): Record<string, unk
+   if (v.bootstrapPrompt) ac.bootstrapPromptTemplate = v.bootstrapPrompt;
+   ac.model = v.model || DEFAULT_CODEX_LOCAL_MODEL;
+   if (v.thinkingEffort) ac.modelReasoningEffort = v.thinkingEffort;
+-  ac.timeoutSec = 0;
+-  ac.graceSec = 15;
++  ac.timeoutSec = v.timeoutSec ?? 0;
++  ac.graceSec = v.graceSec ?? 15;
++  for (const [label, seconds] of [["Timeout", ac.timeoutSec], ["Grace period", ac.graceSec]] as const) {
++    if (typeof seconds !== "number" || !Number.isInteger(seconds) || seconds < 0) {
++      throw new Error(`${label} must be a non-negative whole number of seconds.`);
++    }
++  }
+   const env = parseEnvBindings(v.envBindings);
+   const legacy = parseEnvVars(v.envVars);
+   for (const [key, value] of Object.entries(legacy)) {
+diff --git a/server/src/__tests__/agent-permissions-routes.test.ts b/server/src/__tests__/agent-permissions-routes.test.ts
+index 11f039af1db87b7322e9db84f8b07eeb597496ff..4ecd6fcaf1e01ebd92ae47601f9e0f94ab284e62 100644
+--- a/server/src/__tests__/agent-permissions-routes.test.ts
++++ b/server/src/__tests__/agent-permissions-routes.test.ts
+@@ -749,6 +749,32 @@ describe.sequential("agent permission routes", () => {
+     );
+   });
+ 
++  it("keeps a first engineer hire pending with the exact read-only configuration", async () => {
++    mockAgentService.list.mockResolvedValue([]);
++    mockAgentService.create.mockImplementation(async (_companyId, input) => ({ ...baseAgent, ...input }));
++    mockApprovalService.create.mockImplementation(async (_companyId, input) => ({ id: "approval-1", ...input }));
++    const app = await createApp({
++      type: "board", userId: "board-user", source: "session", isInstanceAdmin: true, companyIds: [companyId],
++    }, { requireBoardApprovalForNewAgents: true });
++    const adapterConfig = {
++      command: "fixture-codex", cwd: "/fixture", instructionsFilePath: "/fixture/review.md",
++      model: "fixture-model", modelReasoningEffort: "medium", timeoutSec: 180, graceSec: 5,
++      dangerouslyBypassApprovalsAndSandbox: false,
++      extraArgs: ["--sandbox", "read-only", "-c", 'approval_policy="on-request"'],
++      env: { CODEX_HOME: { type: "plain", value: "/fixture/codex" } },
++    };
++    const runtimeConfig = { heartbeat: { enabled: false, intervalSec: 0, wakeOnDemand: false, maxConcurrentRuns: 1 } };
++    const res = await requestApp(app, (baseUrl) => request(baseUrl)
++      .post(`/api/companies/${companyId}/agent-hires`)
++      .send({ name: "Ghoti Reviewer", role: "engineer", adapterType: "codex_local", adapterConfig, runtimeConfig,
++        permissions: { canCreateAgents: false } }));
++    expect(res.status).toBe(201);
++    expect(res.body.agent).toMatchObject({ companyId, role: "engineer", status: "pending_approval", adapterConfig, runtimeConfig });
++    expect(res.body.approval).toMatchObject({ id: "approval-1", status: "pending", decidedAt: null,
++      payload: { role: "engineer", adapterType: "codex_local", adapterConfig, runtimeConfig } });
++    expect(mockAgentService.activatePendingApproval).not.toHaveBeenCalled();
++  });
++
+   it("normalizes hire requests to disable timer heartbeats by default", async () => {
+     const app = await createApp({
+       type: "board",
+diff --git a/ui/src/components/AgentConfigForm.create.test.tsx b/ui/src/components/AgentConfigForm.create.test.tsx
+new file mode 100644
+index 0000000000000000000000000000000000000000..88801f54a6f11c0c7cc5619c1d3b468641bd69ee
+--- /dev/null
++++ b/ui/src/components/AgentConfigForm.create.test.tsx
+@@ -0,0 +1,59 @@
++// @vitest-environment jsdom
++import { act, useState } from "react";
++import { createRoot } from "react-dom/client";
++import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
++import { expect, it, vi } from "vitest";
++import { AgentConfigForm, type CreateConfigValues } from "./AgentConfigForm";
++import { defaultCreateValues } from "./agent-config-defaults";
++import { buildCodexLocalConfig } from "../../../packages/adapters/codex-local/src/ui/build-config";
++import { buildNewAgentHirePayload } from "../lib/new-agent-hire-payload";
++import { TooltipProvider } from "./ui/tooltip";
++
++vi.mock("../context/CompanyContext", () => ({ useCompany: () => ({ selectedCompanyId: null }) }));
++vi.mock("../adapters", () => ({ getUIAdapter: () => ({ buildAdapterConfig: buildCodexLocalConfig, ConfigFields: () => null }) }));
++vi.mock("../adapters/use-disabled-adapters", () => ({ useDisabledAdaptersSync: () => new Set() }));
++vi.mock("../adapters/use-adapter-capabilities", () => ({ useAdapterCapabilities: () => () => ({ supportsLocalAgentJwt: true }) }));
++vi.mock("../api/instanceSettings", () => ({ instanceSettingsApi: { getGeneral: async () => ({}) } }));
++vi.mock("./MarkdownEditor", () => ({ MarkdownEditor: () => null }));
++vi.mock("./PathInstructionsModal", () => ({ ChoosePathButton: () => null }));
++vi.mock("./EnvVarEditor", () => ({ EnvVarEditor: () => null }));
++(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
++
++it("exposes create-time Codex limits and serializes edits made through the real controls", async () => {
++  let saved: CreateConfigValues;
++  function Harness() {
++    const [values, setValues] = useState({ ...defaultCreateValues, adapterType: "codex_local" });
++    saved = values;
++    return <AgentConfigForm mode="create" values={values} onChange={(patch) => setValues((prev) => ({ ...prev, ...patch }))} />;
++  }
++  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
++  const node = document.createElement("div"); document.body.append(node);
++  const root = createRoot(node);
++  try {
++    await act(async () => root.render(<QueryClientProvider client={client}><TooltipProvider><Harness /></TooltipProvider></QueryClientProvider>));
++    function field(label: string) {
++      const el = [...node.querySelectorAll("label")].find((el) => el.textContent === label);
++      expect(el, `missing field ${label}`).toBeDefined();
++      return el!.parentElement!.parentElement!;
++    }
++    async function number(label: string, value: string) {
++      const input = field(label).querySelector("input")!;
++      await act(async () => {
++        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, value);
++        input.dispatchEvent(new Event("input", { bubbles: true }));
++      });
++    }
++    expect([...node.querySelectorAll("label")].some((l) => l.textContent?.startsWith("Working directory"))).toBe(true);
++        await number("Timeout (sec)", "180");
++    await number("Interrupt grace period (sec)", "5");
++    await number("Max concurrent runs", "1");
++    const wake = [...node.querySelectorAll('[role="switch"]')].find((el) => el.parentElement?.textContent?.includes("Wake on demand"));
++    expect(wake).toBeDefined();
++    await act(async () => (wake as HTMLButtonElement).click());
++    const payload = buildNewAgentHirePayload({ name: "Reviewer", effectiveRole: "engineer", configValues: saved!, adapterConfig: buildCodexLocalConfig(saved!) });
++    expect(payload.adapterConfig).toMatchObject({ timeoutSec: 180, graceSec: 5 });
++    expect(payload.runtimeConfig.heartbeat).toMatchObject({ enabled: false, wakeOnDemand: false, maxConcurrentRuns: 1 });
++  } finally {
++    await act(async () => root.unmount()); node.remove(); client.clear();
++  }
++});
+diff --git a/ui/src/components/AgentConfigForm.tsx b/ui/src/components/AgentConfigForm.tsx
+index b34eee103d6b682a97c72f0c2bc257ec38a171e9..946d9b391962849b5d2edb085e3d68ccc92d8bf6 100644
+--- a/ui/src/components/AgentConfigForm.tsx
++++ b/ui/src/components/AgentConfigForm.tsx
+@@ -290,7 +290,7 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
+   const isLocal = adapterCaps.supportsInstructionsBundle || adapterCaps.supportsSkills || adapterCaps.supportsLocalAgentJwt;
+   
+   const showLegacyWorkingDirectoryField =
+-    isLocal && shouldShowLegacyWorkingDirectoryField({ isCreate, adapterConfig: config });
++    isLocal && ((isCreate && adapterType === "codex_local") || shouldShowLegacyWorkingDirectoryField({ isCreate, adapterConfig: config }));
+   const uiAdapter = useMemo(() => getUIAdapter(adapterType), [adapterType]);
+   const supportedEnvironmentDrivers = useMemo(
+     () => new Set(supportedEnvironmentDriversForAdapter(adapterType)),
+@@ -920,29 +920,29 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
+                 />
+               </Field>
+ 
+-              {/* Edit-only: timeout + grace period */}
+-              {!isCreate && (
++              {/* The Codex create builder supports the same bounded run limits. */}
++              {(!isCreate || adapterType === "codex_local") && (
+                 <>
+                   <Field label="Timeout (sec)" hint={help.timeoutSec}>
+                     <DraftNumberInput
+-                      value={eff(
++                      value={isCreate ? val!.timeoutSec ?? 0 : eff(
+                         "adapterConfig",
+                         "timeoutSec",
+                         Number(config.timeoutSec ?? 0),
+                       )}
+-                      onCommit={(v) => mark("adapterConfig", "timeoutSec", v)}
++                      onCommit={(v) => isCreate ? set!({ timeoutSec: v }) : mark("adapterConfig", "timeoutSec", v)}
+                       immediate
+                       className={inputClass}
+                     />
+                   </Field>
+                   <Field label="Interrupt grace period (sec)" hint={help.graceSec}>
+                     <DraftNumberInput
+-                      value={eff(
++                      value={isCreate ? val!.graceSec ?? 15 : eff(
+                         "adapterConfig",
+                         "graceSec",
+                         Number(config.graceSec ?? 15),
+                       )}
+-                      onCommit={(v) => mark("adapterConfig", "graceSec", v)}
++                      onCommit={(v) => isCreate ? set!({ graceSec: v }) : mark("adapterConfig", "graceSec", v)}
+                       immediate
+                       className={inputClass}
+                     />
+@@ -973,6 +973,20 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
+               numberHint={help.intervalSec}
+               showNumber={val!.heartbeatEnabled}
+             />
++            <ToggleField
++              label="Wake on demand"
++              hint={help.wakeOnDemand}
++              checked={val!.wakeOnDemand ?? true}
++              onChange={(v) => set!({ wakeOnDemand: v })}
++            />
++            <Field label="Max concurrent runs" hint={help.maxConcurrentRuns}>
++              <DraftNumberInput
++                value={val!.maxConcurrentRuns ?? AGENT_DEFAULT_MAX_CONCURRENT_RUNS}
++                onCommit={(v) => set!({ maxConcurrentRuns: v })}
++                immediate
++                className={inputClass}
++              />
++            </Field>
+           </div>
+         </div>
+       ) : !isCreate ? (
+diff --git a/ui/src/components/agent-config-primitives.tsx b/ui/src/components/agent-config-primitives.tsx
+index d5c0f4cad06f6689fadf6df7e0e949733f00c856..318c2ca7c09a7dd7486ebc324895ebc671f820c3 100644
+--- a/ui/src/components/agent-config-primitives.tsx
++++ b/ui/src/components/agent-config-primitives.tsx
+@@ -115,6 +115,9 @@ export function ToggleField({
+       </div>
+       <button
+         data-slot="toggle"
++        role="switch"
++        aria-label={label}
++        aria-checked={checked}
+         data-testid={toggleTestId}
+         type="button"
+         className={cn(
+diff --git a/ui/src/lib/new-agent-hire-payload.ts b/ui/src/lib/new-agent-hire-payload.ts
+index ce699de03869d0979ceaa482c448e8e7a3e36dc2..a05d8c4b270299e692b615b225a56925cfcc3844 100644
+--- a/ui/src/lib/new-agent-hire-payload.ts
++++ b/ui/src/lib/new-agent-hire-payload.ts
+@@ -32,6 +32,8 @@ export function buildNewAgentHirePayload(input: {
+     runtimeConfig: buildNewAgentRuntimeConfig({
+       heartbeatEnabled: configValues.heartbeatEnabled,
+       intervalSec: configValues.intervalSec,
++      wakeOnDemand: configValues.wakeOnDemand,
++      maxConcurrentRuns: configValues.maxConcurrentRuns,
+     }),
+     budgetMonthlyCents: 0,
+   };
+diff --git a/ui/src/lib/new-agent-runtime-config.ts b/ui/src/lib/new-agent-runtime-config.ts
+index 2f2e452a55fd09f5813c5af9afcf51b92aee8266..163a6d30548403093cfb9026acf4698ef25fcd25 100644
+--- a/ui/src/lib/new-agent-runtime-config.ts
++++ b/ui/src/lib/new-agent-runtime-config.ts
+@@ -4,14 +4,16 @@ import { defaultCreateValues } from "../components/agent-config-defaults";
+ export function buildNewAgentRuntimeConfig(input?: {
+   heartbeatEnabled?: boolean;
+   intervalSec?: number;
++  wakeOnDemand?: boolean;
++  maxConcurrentRuns?: number;
+ }) {
+   return {
+     heartbeat: {
+       enabled: input?.heartbeatEnabled ?? defaultCreateValues.heartbeatEnabled,
+       intervalSec: input?.intervalSec ?? defaultCreateValues.intervalSec,
+-      wakeOnDemand: true,
++      wakeOnDemand: input?.wakeOnDemand ?? true,
+       cooldownSec: 10,
+-      maxConcurrentRuns: AGENT_DEFAULT_MAX_CONCURRENT_RUNS,
++      maxConcurrentRuns: input?.maxConcurrentRuns ?? AGENT_DEFAULT_MAX_CONCURRENT_RUNS,
+     },
+   };
+ }
+diff --git a/ui/src/lib/submit-new-agent-hire.test.ts b/ui/src/lib/submit-new-agent-hire.test.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..15ffa82786a13e6c15bc4f0f45bfb13dd2a597d2
+--- /dev/null
++++ b/ui/src/lib/submit-new-agent-hire.test.ts
+@@ -0,0 +1,63 @@
++// @vitest-environment jsdom
++import { beforeEach, afterEach, expect, it, vi } from "vitest";
++import { submitNewAgentHire } from "./submit-new-agent-hire";
++
++const payload = { name: "Ghoti Reviewer", role: "engineer", adapterType: "codex_local", adapterConfig: { dangerouslyBypassApprovalsAndSandbox: false, timeoutSec: 180, graceSec: 5 }, runtimeConfig: { heartbeat: { enabled: false, wakeOnDemand: false } } };
++let calls: ReturnType<typeof vi.fn>;
++beforeEach(() => {
++  localStorage.clear();
++  const held = new Set<string>();
++  vi.stubGlobal("navigator", { locks: { request: async (key: string, _options: unknown, callback: (lock: object | null) => Promise<unknown>) => {
++    if (held.has(key)) return callback(null);
++    held.add(key);
++    try { return await callback({ name: key }); } finally { held.delete(key); }
++  } } });
++  calls = vi.fn(async (_url: string, init: RequestInit) => new Response(JSON.stringify(init.method === "POST" ? { agent: { id: "fixture-agent", role: "engineer", status: "pending_approval" }, approval: { id: "fixture-approval", status: "pending" } } : []), { status: init.method === "POST" ? 201 : 200 }));
++  vi.stubGlobal("fetch", calls);
++});
++afterEach(() => { vi.unstubAllGlobals(); localStorage.clear(); });
++
++it("uses the existing credentialed same-origin client and only the hire endpoint", async () => {
++  const result = await submitNewAgentHire("fixture-company", payload);
++  expect(result.approval?.status).toBe("pending");
++  const posts = calls.mock.calls.filter(([, init]) => init.method === "POST");
++  expect(posts).toHaveLength(1);
++  expect(posts[0][0]).toBe("/api/companies/fixture-company/agent-hires");
++  expect(posts[0][1].credentials).toBe("include");
++  expect(JSON.parse(posts[0][1].body as string)).toMatchObject(payload);
++});
++
++it("blocks concurrent duplicate clicks before another POST", async () => {
++  let finish!: () => void;
++  calls.mockImplementationOnce(() => new Promise<Response>((resolve) => { finish = () => resolve(new Response("[]")); }));
++  const first = submitNewAgentHire("fixture-company", payload);
++  await expect(submitNewAgentHire("fixture-company", payload)).rejects.toThrow(/submitted/i);
++  finish(); await first;
++  expect(calls.mock.calls.filter(([, init]) => init.method === "POST")).toHaveLength(1);
++});
++
++it("does not resend an ambiguous failure, even from a newly mounted form", async () => {
++  calls.mockImplementationOnce(async () => new Response("[]"));
++  calls.mockImplementationOnce(async () => { throw new Error("fixture connection lost"); });
++  await expect(submitNewAgentHire("fixture-company", payload)).rejects.toThrow(/fixture connection lost/);
++  await expect(submitNewAgentHire("fixture-company", payload)).rejects.toThrow(/not.*resend|previous|outcome/i);
++  expect(calls.mock.calls.filter(([, init]) => init.method === "POST")).toHaveLength(1);
++});
++
++it("refuses a matching existing agent without creating or renaming one", async () => {
++  calls.mockImplementationOnce(async () => new Response(JSON.stringify([{ id: "existing", name: "  GHOTI REVIEWER  ", role: "engineer", status: "pending_approval" }])));
++  await expect(submitNewAgentHire("fixture-company", payload)).rejects.toThrow(/already exists/i);
++  expect(calls.mock.calls.filter(([, init]) => init.method === "POST")).toHaveLength(0);
++});
++
++it("validates the shared hire schema before requesting anything", async () => {
++  await expect(submitNewAgentHire("fixture-company", { ...payload, role: "not-a-role" })).rejects.toThrow();
++  expect(calls).not.toHaveBeenCalled();
++});
++
++it("keeps server validation errors visible and does not automatically retry", async () => {
++  calls.mockImplementationOnce(async () => new Response("[]"));
++  calls.mockImplementationOnce(async () => new Response(JSON.stringify({ error: "fixture hire rejected" }), { status: 422 }));
++  await expect(submitNewAgentHire("fixture-company", payload)).rejects.toThrow(/fixture hire rejected/);
++  expect(calls.mock.calls.filter(([, init]) => init.method === "POST")).toHaveLength(1);
++});
+diff --git a/ui/src/lib/submit-new-agent-hire.ts b/ui/src/lib/submit-new-agent-hire.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..e8148b1c9727d0103794f518fb906e5913b73a77
+--- /dev/null
++++ b/ui/src/lib/submit-new-agent-hire.ts
+@@ -0,0 +1,35 @@
++import { createAgentHireSchema } from "@paperclipai/shared";
++import { agentsApi } from "../api/agents";
++
++/** Guard this form's submissions, not an API-wide idempotency guarantee. */
++export async function submitNewAgentHire(companyId: string, input: Record<string, unknown>) {
++  const payload = createAgentHireSchema.parse(input);
++  const nameKey = payload.name.trim().toLowerCase();
++  const key = `paperclip.agent-hire:${companyId}:${nameKey}`;
++  if (!navigator.locks) {
++    throw new Error("Safe hire submission requires browser Web Locks. No request was sent.");
++  }
++  // Serialize same-name requests across tabs in this profile. The marker contains
++  // no configuration or credentials and survives a lost response or reload.
++  return navigator.locks.request(key, { ifAvailable: true }, async (lock) => {
++    if (!lock) throw new Error("This hire is already being submitted. Check Agents and Approvals.");
++    const existing = await agentsApi.list(companyId);
++    if (existing.some((agent) => agent.name.trim().toLowerCase() === nameKey)) {
++      throw new Error("An agent with this name already exists. Open Agents and Approvals instead of creating another.");
++    }
++    if (localStorage.getItem(key)) {
++      throw new Error("A previous hire request may have been saved. Check Agents and Approvals; automatic resubmission is blocked.");
++    }
++    localStorage.setItem(key, "submitted");
++    try {
++      const result = await agentsApi.hire(companyId, payload);
++      localStorage.removeItem(key);
++      return result;
++    } catch (error) {
++      // Even a server error can occur after the agent was inserted. Never infer
++      // rollback from HTTP status or an empty list while a request may be running.
++      const message = error instanceof Error ? error.message : "Hire request failed";
++      throw new Error(`${message}. Check Agents and Approvals before any retry; this form will not resend the uncertain request.`);
++    }
++  });
++}
+diff --git a/ui/src/pages/NewAgent.test.tsx b/ui/src/pages/NewAgent.test.tsx
+new file mode 100644
+index 0000000000000000000000000000000000000000..caed379465ec0ca20d623dfed0dce68133fef5f3
+--- /dev/null
++++ b/ui/src/pages/NewAgent.test.tsx
+@@ -0,0 +1,128 @@
++// @vitest-environment jsdom
++import { act } from "react";
++import type { ReactNode } from "react";
++import { createRoot, type Root } from "react-dom/client";
++import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
++import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
++import { NewAgent } from "./NewAgent";
++import { buildCodexLocalConfig } from "../../../packages/adapters/codex-local/src/ui/build-config";
++import { defaultCreateValues } from "../components/agent-config-defaults";
++
++const state = vi.hoisted(() => ({
++  companyId: "company-1", navigate: vi.fn(), breadcrumbs: vi.fn(),
++  list: vi.fn(), hire: vi.fn(),
++}));
++vi.mock("../context/CompanyContext", () => ({ useCompany: () => ({ selectedCompanyId: state.companyId }) }));
++vi.mock("../context/BreadcrumbContext", () => ({ useBreadcrumbs: () => ({ setBreadcrumbs: state.breadcrumbs }) }));
++vi.mock("@/lib/router", () => ({ useNavigate: () => state.navigate, useSearchParams: () => [new URLSearchParams("adapterType=codex_local")] }));
++vi.mock("../api/agents", () => ({ agentsApi: { list: state.list, hire: state.hire, adapterModels: async () => [] } }));
++vi.mock("../api/companySkills", () => ({ companySkillsApi: { list: async () => [] } }));
++vi.mock("../adapters", () => ({ getUIAdapter: () => ({ buildAdapterConfig: buildCodexLocalConfig }) }));
++vi.mock("../adapters/use-disabled-adapters", () => ({ useDisabledAdaptersSync: () => [] }));
++vi.mock("../components/ReportsToPicker", () => ({ ReportsToPicker: () => null }));
++vi.mock("@/components/ui/popover", () => ({
++  Popover: ({ children }: { children: ReactNode }) => <div>{children}</div>,
++  PopoverTrigger: ({ children }: { children: ReactNode }) => <>{children}</>,
++  PopoverContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
++}));
++// Isolate page orchestration; the production config controls have a separate test.
++vi.mock("../components/AgentConfigForm", () => ({ AgentConfigForm: ({ onChange }: { onChange: (v: object) => void }) =>
++  <button onClick={() => onChange({ ...defaultCreateValues, adapterType: "codex_local",
++    command: "fixture-codex", cwd: "fixture-workspace", model: "fixture-model", thinkingEffort: "medium",
++    extraArgs: '--sandbox, read-only, -c, approval_policy="on-request"',
++    dangerouslyBypassSandbox: false, heartbeatEnabled: false, intervalSec: 0, wakeOnDemand: false,
++    timeoutSec: 180, graceSec: 5, maxConcurrentRuns: 1,
++  })}>Fixture configuration</button> }));
++
++(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
++
++let root: Root;
++let container: HTMLDivElement;
++let client: QueryClient;
++async function flush() { await act(async () => { await new Promise((resolve) => setTimeout(resolve, 20)); }); }
++function button(text: string) {
++  const found = [...container.querySelectorAll("button")].find((el) => el.textContent === text);
++  if (!found) throw new Error(`Missing button: ${text}`);
++  return found;
++}
++async function click(text: string) { await act(async () => button(text).click()); await flush(); }
++async function render() {
++  await act(async () => root.render(<QueryClientProvider client={client}><NewAgent /></QueryClientProvider>));
++  await flush();
++}
++async function fill() {
++  const name = container.querySelector('input[placeholder="Agent name"]')! as HTMLInputElement;
++  await act(async () => {
++    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(name, "Ghoti Reviewer");
++    name.dispatchEvent(new Event("input", { bubbles: true }));
++  });
++  await click("Engineer");
++  await click("Fixture configuration");
++}
++
++beforeEach(() => {
++  vi.clearAllMocks();
++  state.companyId = "company-1";
++  localStorage.clear();
++  // Faithful nonblocking lock fixture; no real browser or application service.
++  const held = new Set<string>();
++  Object.defineProperty(navigator, "locks", { configurable: true, value: {
++    request: async (key: string, _options: unknown, callback: (lock: object | null) => Promise<unknown>) => {
++      if (held.has(key)) return callback(null);
++      held.add(key);
++      try { return await callback({}); } finally { held.delete(key); }
++    },
++  } });
++  state.list.mockResolvedValue([]);
++  state.hire.mockResolvedValue({ agent: { id: "agent-1", name: "Ghoti Reviewer", urlKey: "ghoti-reviewer", role: "engineer", status: "pending_approval" }, approval: { id: "approval-1", status: "pending" } });
++  container = document.createElement("div"); document.body.append(container);
++  root = createRoot(container);
++  client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
++});
++afterEach(async () => { await act(async () => root.unmount()); container.remove(); client.clear(); });
++
++describe("normal advanced engineer hire", () => {
++  it("allows an engineer as first agent and opens the real pending approval with bounded configuration", async () => {
++    await render();
++    expect(container.textContent).not.toContain("This will be the CEO");
++    await fill(); await click("Create agent");
++    expect(state.hire).toHaveBeenCalledWith("company-1", expect.objectContaining({
++      name: "Ghoti Reviewer", role: "engineer", adapterType: "codex_local", defaultEnvironmentId: null,
++      adapterConfig: expect.objectContaining({ command: "fixture-codex", cwd: "fixture-workspace", model: "fixture-model", modelReasoningEffort: "medium",
++        timeoutSec: 180, graceSec: 5, dangerouslyBypassApprovalsAndSandbox: false,
++        extraArgs: ["--sandbox", "read-only", "-c", 'approval_policy="on-request"'] }),
++      runtimeConfig: { heartbeat: { enabled: false, intervalSec: 0, wakeOnDemand: false, cooldownSec: 10, maxConcurrentRuns: 1 } },
++    }));
++    expect(state.navigate).toHaveBeenCalledWith("/approvals/approval-1");
++  });
++  it("does not repeat a hire for double clicks or after an uncertain response and remount", async () => {
++    state.hire.mockRejectedValue(new Error("Connection lost"));
++    await render(); await fill();
++    await act(async () => { button("Create agent").click(); button("Create agent").click(); });
++    await flush();
++    expect(state.hire).toHaveBeenCalledTimes(1);
++    expect(container.textContent).toContain("Connection lost");
++    await act(async () => root.render(<QueryClientProvider client={client}><NewAgent key="remount" /></QueryClientProvider>));
++    await flush(); await fill(); await click("Create agent");
++    expect(state.hire).toHaveBeenCalledTimes(1);
++    expect(container.textContent).toContain("Agents and Approvals");
++  });
++  it("checks existing company agents rather than creating a duplicate name", async () => {
++    state.list.mockResolvedValue([{ name: "  GHOTI REVIEWER  ", id: "existing" }]);
++    await render(); await fill(); await click("Create agent");
++    expect(state.hire).not.toHaveBeenCalled();
++    expect(container.textContent).toContain("already exists");
++  });
++  it("shows read/validation/server errors instead of claiming success", async () => {
++    await render(); await fill();
++    state.list.mockRejectedValue(new Error("Company access denied"));
++    await click("Create agent");
++    expect(state.hire).not.toHaveBeenCalled();
++    expect(container.textContent).toContain("Company access denied");
++    state.list.mockResolvedValue([]);
++    state.hire.mockRejectedValue(new Error("Invalid adapter configuration"));
++    await click("Create agent");
++    expect(container.textContent).toContain("Invalid adapter configuration");
++    expect(state.navigate).not.toHaveBeenCalled();
++  });
++});
+diff --git a/ui/src/pages/NewAgent.tsx b/ui/src/pages/NewAgent.tsx
+index 6822485c660b2107bd42949f9114de6873bc7cf9..e38b2e095f20a3d68c9aca846b47262eee900e63 100644
+--- a/ui/src/pages/NewAgent.tsx
++++ b/ui/src/pages/NewAgent.tsx
+@@ -1,4 +1,4 @@
+-import { useState, useEffect } from "react";
++import { useState, useEffect, useRef } from "react";
+ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+ import { useNavigate, useSearchParams } from "@/lib/router";
+ import { useCompany } from "../context/CompanyContext";
+@@ -24,6 +24,7 @@ import { useDisabledAdaptersSync } from "../adapters/use-disabled-adapters";
+ import { isValidAdapterType } from "../adapters/metadata";
+ import { ReportsToPicker } from "../components/ReportsToPicker";
+ import { buildNewAgentHirePayload } from "../lib/new-agent-hire-payload";
++import { submitNewAgentHire } from "../lib/submit-new-agent-hire";
+ import {
+   DEFAULT_CODEX_LOCAL_BYPASS_APPROVALS_AND_SANDBOX,
+   DEFAULT_CODEX_LOCAL_MODEL,
+@@ -93,7 +94,10 @@ export function NewAgent() {
+   });
+ 
+   const isFirstAgent = !agents || agents.length === 0;
+-  const effectiveRole = isFirstAgent ? "ceo" : role;
++  const effectiveRole = role;
++  const submitting = useRef(false);
++  const currentCompanyId = useRef(selectedCompanyId);
++  currentCompanyId.current = selectedCompanyId;
+ 
+   useEffect(() => {
+     setBreadcrumbs([
+@@ -103,13 +107,6 @@ export function NewAgent() {
+   }, [setBreadcrumbs]);
+ 
+   useEffect(() => {
+-    if (isFirstAgent) {
+-      if (!name) setName("CEO");
+-      if (!title) setTitle("CEO");
+-    }
+-  }, [isFirstAgent]); // eslint-disable-line react-hooks/exhaustive-deps
+-
+-  useEffect(() => {
+     const requested = presetAdapterType;
+     if (!requested) return;
+     if (!isValidAdapterType(requested)) return;
+@@ -120,16 +117,20 @@ export function NewAgent() {
+   }, [presetAdapterType]);
+ 
+   const createAgent = useMutation({
+-    mutationFn: (data: Record<string, unknown>) =>
+-      agentsApi.hire(selectedCompanyId!, data),
+-    onSuccess: (result) => {
+-      queryClient.invalidateQueries({ queryKey: queryKeys.agents.list(selectedCompanyId!) });
+-      queryClient.invalidateQueries({ queryKey: queryKeys.approvals.list(selectedCompanyId!) });
+-      navigate(agentUrl(result.agent));
++    retry: false,
++    mutationFn: ({ companyId, data }: { companyId: string; data: Record<string, unknown> }) =>
++      submitNewAgentHire(companyId, data),
++    onSuccess: (result, { companyId }) => {
++      queryClient.invalidateQueries({ queryKey: queryKeys.agents.list(companyId) });
++      queryClient.invalidateQueries({ queryKey: queryKeys.approvals.list(companyId) });
++      if (currentCompanyId.current === companyId) {
++        navigate(result.approval ? `/approvals/${result.approval.id}` : agentUrl(result.agent));
++      }
+     },
+     onError: (error) => {
+       setFormError(error instanceof Error ? error.message : "Failed to create agent");
+     },
++    onSettled: () => { submitting.current = false; },
+   });
+ 
+   function buildAdapterConfig() {
+@@ -138,7 +139,7 @@ export function NewAgent() {
+   }
+ 
+   function handleSubmit() {
+-    if (!selectedCompanyId || !name.trim()) return;
++    if (!selectedCompanyId || !name.trim() || submitting.current) return;
+     setFormError(null);
+     if (configValues.adapterType === "opencode_local") {
+       const selectedModel = configValues.model.trim();
+@@ -168,8 +169,8 @@ export function NewAgent() {
+         return;
+       }
+     }
+-    createAgent.mutate(
+-      buildNewAgentHirePayload({
++    try {
++      const data = buildNewAgentHirePayload({
+         name,
+         effectiveRole,
+         title,
+@@ -177,8 +178,12 @@ export function NewAgent() {
+         selectedSkillKeys,
+         configValues,
+         adapterConfig: buildAdapterConfig(),
+-      }),
+-    );
++      });
++      submitting.current = true;
++      createAgent.mutate({ companyId: selectedCompanyId, data });
++    } catch (error) {
++      setFormError(error instanceof Error ? error.message : "Invalid agent configuration");
++    }
+   }
+ 
+   const availableSkills = (companySkills ?? []).filter((skill) => !skill.key.startsWith("paperclipai/paperclip/"));
+@@ -229,10 +234,9 @@ export function NewAgent() {
+             <PopoverTrigger asChild>
+               <button
+                 className={cn(
+-                  "inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:bg-accent/50 transition-colors",
+-                  isFirstAgent && "opacity-60 cursor-not-allowed"
++                  "inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:bg-accent/50 transition-colors"
+                 )}
+-                disabled={isFirstAgent}
++                aria-label="Agent role"
+               >
+                 <Shield className="h-3 w-3 text-muted-foreground" />
+                 {roleLabels[effectiveRole] ?? effectiveRole}
+@@ -310,11 +314,8 @@ export function NewAgent() {
+ 
+         {/* Footer */}
+         <div className="border-t border-border px-4 py-3">
+-          {isFirstAgent && (
+-            <p className="text-xs text-muted-foreground mb-2">This will be the CEO</p>
+-          )}
+           {formError && (
+-            <p className="text-xs text-destructive mb-2">{formError}</p>
++            <p role="alert" className="text-xs text-destructive mb-2">{formError}</p>
+           )}
+           <div className="flex items-center justify-end gap-2">
+             <Button variant="outline" size="sm" onClick={() => navigate("/agents")}>

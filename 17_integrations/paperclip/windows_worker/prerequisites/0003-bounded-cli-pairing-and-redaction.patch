@@ -1,0 +1,564 @@
+diff --git a/cli/src/__tests__/board-auth-lifecycle.test.ts b/cli/src/__tests__/board-auth-lifecycle.test.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..3f716b8b1035695c6390399ff49b0e62c53e273a
+--- /dev/null
++++ b/cli/src/__tests__/board-auth-lifecycle.test.ts
+@@ -0,0 +1,168 @@
++// Inert fixtures only: no live challenge, browser, account or approval.
++import fs from "node:fs";
++import os from "node:os";
++import path from "node:path";
++import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
++vi.mock("node:child_process", () => ({ spawn: vi.fn(() => ({ unref() {} })) }));
++import { loginBoardCli, getStoredBoardCredential } from "../client/board-auth.js";
++
++const base = "http://fixture.invalid";
++const challengeId = "11111111-1111-4111-8111-111111111111";
++let dir: string;
++let events: any[];
++let pollCount: number;
++let status: "pending" | "approved" | "cancelled" | "expired";
++let interrupt: boolean;
++let expiry: string;
++let controller: AbortController;
++let request: ReturnType<typeof vi.fn>;
++const json = (data: unknown, code = 200) => new Response(JSON.stringify(data), { status: code });
++function login() {
++  return loginBoardCli({ apiBase: base, requestedAccess: "board", print: false,
++    storePath: path.join(dir, "auth.json"), signal: controller.signal,
++    onEvent: (e: any) => events.push(e), openBrowser: () => true });
++}
++beforeEach(() => {
++  vi.useFakeTimers(); vi.setSystemTime(new Date("2026-01-01T00:00:00Z"));
++  dir = fs.mkdtempSync(path.join(os.tmpdir(), "paperclip-fixture-lifecycle-"));
++  events = []; pollCount = 0; status = "pending"; interrupt = false;
++  expiry = new Date(Date.now() + 600_000).toISOString(); controller = new AbortController();
++  request = vi.fn(async (input: string, init: RequestInit) => {
++    if (input === base + "/api/cli-auth/challenges") return json({ id: challengeId,
++      token: "FIXTURE_PAIRING_SECRET", boardApiToken: "FIXTURE_BOARD_SECRET",
++      approvalUrl: base + "/cli-auth/" + challengeId + "?token=FIXTURE_PAIRING_SECRET",
++      pollPath: "/cli-auth/challenges/" + challengeId, expiresAt: expiry, suggestedPollIntervalMs: 1000 });
++    if (input.includes("?token=")) {
++      pollCount++;
++      if (interrupt) { interrupt = false; throw new TypeError("FIXTURE_PAIRING_SECRET fetch failure"); }
++      return json({ id: challengeId, status });
++    }
++    if (input === base + "/api/cli-auth/me") return json({ userId: "FIXTURE_PRIVATE_ID" });
++    throw new Error("unexpected fixture route");
++  });
++  vi.stubGlobal("fetch", request);
++});
++afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); fs.rmSync(dir, { recursive: true, force: true }); });
++
++describe("bounded native CLI authentication", () => {
++  it("waits through delayed human response, consumes one challenge, verifies identity then stores", async () => {
++    let settled = false;
++    const result = login().finally(() => { settled = true; });
++    await vi.advanceTimersByTimeAsync(180_000);
++    expect(settled).toBe(false); expect(pollCount).toBeGreaterThan(150);
++    status = "approved"; await vi.advanceTimersByTimeAsync(1000); await result;
++    expect(request.mock.calls.filter(([u]) => u === base + "/api/cli-auth/challenges")).toHaveLength(1);
++    expect(getStoredBoardCredential(base, path.join(dir, "auth.json"))?.token).toBe("FIXTURE_BOARD_SECRET");
++    const stages = events.map(e => e.stage);
++    expect(stages.indexOf("identity_verified")).toBeLessThan(stages.indexOf("credential_stored"));
++    expect(stages).toContain("challenge_created");
++    const text = JSON.stringify(events);
++    for (const secret of ["FIXTURE_PAIRING_SECRET", "FIXTURE_BOARD_SECRET", "FIXTURE_PRIVATE_ID", "?token="]) expect(text).not.toContain(secret);
++  });
++  it("retries an interrupted status GET without replacing or extending the challenge", async () => {
++    interrupt = true;
++    const result = login(); const caught = result.catch(e => e);
++    await vi.advanceTimersByTimeAsync(3000);
++    status = "approved"; await vi.advanceTimersByTimeAsync(1000);
++    expect(await caught).not.toBeInstanceOf(Error);
++    expect(events.some(e => e.stage === "poll_interrupted")).toBe(true);
++    expect(request.mock.calls.filter(([u]) => u === base + "/api/cli-auth/challenges")).toHaveLength(1);
++  });
++  it.each(["TypeError", "TimeoutError"])("retries interrupted response body %s on the same challenge", async kind => {
++    const original = request.getMockImplementation()!;
++    let interrupted = false;
++    request.mockImplementation(async (url: string, init: RequestInit) => {
++      const response = await original(url, init);
++      if (url.includes("?token=") && !interrupted) {
++        interrupted = true;
++        vi.spyOn(response, "json").mockRejectedValueOnce(kind === "TypeError"
++          ? new TypeError("FIXTURE_PAIRING_SECRET body interrupted")
++          : new DOMException("FIXTURE_PAIRING_SECRET body timed out", "TimeoutError"));
++      }
++      return response;
++    });
++    const result = login().catch(e => e);
++    await vi.advanceTimersByTimeAsync(1000);
++    status = "approved"; await vi.advanceTimersByTimeAsync(1000);
++    expect(await result).not.toBeInstanceOf(Error);
++    expect(events.some(e => e.stage === "poll_interrupted")).toBe(true);
++    expect(request.mock.calls.filter(([u]) => u === base + "/api/cli-auth/challenges")).toHaveLength(1);
++    expect(events.find(e => e.stage === "challenge_created")?.expiresAt).toBe(expiry);
++    expect(JSON.stringify(events)).not.toContain("FIXTURE_PAIRING_SECRET");
++  });
++  it("repeated response body interruption still ends at the original expiry", async () => {
++    expiry = new Date(Date.now() + 3000).toISOString();
++    const original = request.getMockImplementation()!;
++    request.mockImplementation(async (url: string, init: RequestInit) => {
++      const response = await original(url, init);
++      if (url.includes("?token=")) vi.spyOn(response, "json").mockRejectedValue(new TypeError("fixture body interruption"));
++      return response;
++    });
++    const result = login().catch(e => e);
++    await vi.advanceTimersByTimeAsync(3001);
++    expect(await result).toBeInstanceOf(Error);
++    expect(events.at(-1)?.stage).toBe("expired");
++    expect(request.mock.calls.filter(([u]) => u === base + "/api/cli-auth/challenges")).toHaveLength(1);
++    expect(getStoredBoardCredential(base, path.join(dir, "auth.json"))).toBeNull();
++  });
++  it("malformed JSON is terminal and never includes response contents", async () => {
++    const original = request.getMockImplementation()!;
++    request.mockImplementation(async (url: string, init: RequestInit) =>
++      url.includes("?token=") ? new Response("FIXTURE_PAIRING_SECRET invalid JSON") : original(url, init));
++    const result = await login().catch(e => e);
++    expect(result).toBeInstanceOf(Error);
++    expect(result.message).not.toContain("FIXTURE");
++    expect(events.some(e => e.stage === "poll_interrupted")).toBe(false);
++    expect(request.mock.calls.filter(([u]) => u.includes("?token="))).toHaveLength(1);
++  });
++  it.each(["cancelled", "expired"] as const)("exits on %s without a credential", async terminal => {
++    status = terminal;
++    const error = await login().catch(e => e);
++    expect(error).toBeInstanceOf(Error);
++    expect(getStoredBoardCredential(base, path.join(dir, "auth.json"))).toBeNull();
++    expect(events.at(-1)?.stage).toBe(terminal);
++  });
++  it("exits at challenge expiry even if the service lease is longer", async () => {
++    expiry = new Date(Date.now() + 5000).toISOString();
++    const result = login().catch(e => e);
++    await vi.advanceTimersByTimeAsync(5001);
++    expect(await result).toBeInstanceOf(Error);
++    expect(events.at(-1)?.stage).toBe("expired");
++    expect(request.mock.calls.filter(([u]) => u === base + "/api/cli-auth/challenges")).toHaveLength(1);
++  });
++  it("aborts on owner cancellation/service stop while the challenge is still valid", async () => {
++    let settled = false;
++    const result = login().catch(e => e).finally(() => { settled = true; });
++    await vi.advanceTimersByTimeAsync(1000); controller.abort();
++    await vi.advanceTimersByTimeAsync(1000);
++    expect(settled).toBe(true);
++    if (!settled) { status = "cancelled"; await vi.advanceTimersByTimeAsync(1000); }
++    await result;
++    expect(getStoredBoardCredential(base, path.join(dir, "auth.json"))).toBeNull();
++  });
++  it("rejects malformed expiry instead of starting an unbounded poll", async () => {
++    expiry = "not-a-date"; status = "cancelled";
++    const result = await login().catch(e => e);
++    expect(result.message).toMatch(/expiry|expiration/i);
++    expect(pollCount).toBe(0);
++  });
++  it.each([200, 500])("verifies specific revocation after identity failure and revoke status %s", async (revokeStatus) => {
++    status = "approved";
++    const original = request.getMockImplementation()!;
++    request.mockImplementation(async (url: string, init: RequestInit) => {
++      if (url === base + "/api/cli-auth/me") return json({ error: "fixture denied" }, 401);
++      if (url === base + "/api/cli-auth/revoke-current") return json({ revoked: true }, revokeStatus);
++      return original(url, init);
++    });
++    expect(await login().catch(e => e)).toBeInstanceOf(Error);
++    expect(request.mock.calls.filter(([url]) => url === base + "/api/cli-auth/revoke-current")).toHaveLength(1);
++    expect(events.some(e => e.stage === "failed_grant_revocation_verified")).toBe(true);
++    expect(getStoredBoardCredential(base, path.join(dir, "auth.json"))).toBeNull();
++  });
++  it("does not retry challenge creation after a network failure", async () => {
++    request.mockRejectedValueOnce(new TypeError("FIXTURE_BOARD_SECRET"));
++    const result = await login().catch(e => e);
++    expect(result).toBeInstanceOf(Error); expect(request).toHaveBeenCalledTimes(1);
++    expect(JSON.stringify(events)).not.toContain("FIXTURE_BOARD_SECRET");
++  });
++});
+diff --git a/cli/src/client/board-auth.ts b/cli/src/client/board-auth.ts
+index 7c1121ec8b28a71ed3f2702c4109e82da7809028..2c1434fdbaa0751216f10858315729405ad7eabe 100644
+--- a/cli/src/client/board-auth.ts
++++ b/cli/src/client/board-auth.ts
+@@ -1,4 +1,5 @@
+ import { spawn } from "node:child_process";
++import { randomUUID } from "node:crypto";
+ import fs from "node:fs";
+ import path from "node:path";
+ import pc from "picocolors";
+@@ -139,11 +140,25 @@ export function removeStoredBoardCredential(apiBase: string, storePath?: string)
+   return true;
+ }
+ 
+-function sleep(ms: number) {
+-  return new Promise((resolve) => setTimeout(resolve, ms));
++export interface CliAuthEvent {
++  stage: string;
++  at: string;
++  requestId?: string;
++  status?: number;
++  challengeId?: string;
++  expiresAt?: string;
++}
++type AuthTrace = (event: CliAuthEvent) => void;
++function sleep(ms: number, signal?: AbortSignal) {
++  signal?.throwIfAborted();
++  return new Promise<void>((resolve, reject) => {
++    const abort = () => { clearTimeout(timer); reject(new Error("CLI authentication cancelled.")); };
++    const timer = setTimeout(() => { signal?.removeEventListener("abort", abort); resolve(); }, ms);
++    signal?.addEventListener("abort", abort, { once: true });
++  });
+ }
+ 
+-async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
++async function requestJson<T>(url: string, init?: RequestInit, trace?: AuthTrace): Promise<T> {
+   const headers = new Headers(init?.headers ?? undefined);
+   if (init?.body !== undefined && !headers.has("content-type")) {
+     headers.set("content-type", "application/json");
+@@ -152,21 +167,32 @@ async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
+     headers.set("accept", "application/json");
+   }
+ 
+-  const response = await fetch(url, {
+-    ...init,
+-    headers,
+-  });
+-
++  const requestId = randomUUID();
++  headers.set("x-paperclip-auth-request-id", requestId);
++  trace?.({ stage: "http_request", at: new Date().toISOString(), requestId });
++  let response: Response;
++  try {
++    response = await fetch(url, { ...init, headers, redirect: "error",
++      signal: AbortSignal.any([AbortSignal.timeout(5000), ...(init?.signal ? [init.signal] : [])]) });
++  } catch {
++    trace?.({ stage: "http_failure", at: new Date().toISOString(), requestId });
++    throw Object.assign(new Error("CLI authentication network request failed."), { retryable: true });
++  }
++  trace?.({ stage: "http_response", at: new Date().toISOString(), requestId, status: response.status });
+   if (!response.ok) {
+-    const body = await response.json().catch(() => null);
+-    const message =
+-      body && typeof body === "object" && typeof (body as { error?: unknown }).error === "string"
+-        ? (body as { error: string }).error
+-        : `Request failed: ${response.status}`;
+-    throw new Error(message);
++    await response.body?.cancel();
++    throw Object.assign(new Error(`CLI authentication HTTP ${response.status}.`),
++      { retryable: [502, 503, 504].includes(response.status), status: response.status });
++  }
++  try {
++    return await response.json() as T;
++  } catch (error) {
++    // Headers can arrive before a timeout/disconnect interrupts body consumption.
++    // Invalid JSON remains terminal and must not echo secret-bearing response text.
++    if (error instanceof SyntaxError) throw new Error("CLI authentication JSON response is invalid.");
++    trace?.({ stage: "http_failure", at: new Date().toISOString(), requestId });
++    throw Object.assign(new Error("CLI authentication response body interrupted."), { retryable: true });
+   }
+-
+-  return response.json() as Promise<T>;
+ }
+ 
+ export function openUrl(url: string): boolean {
+@@ -198,73 +224,116 @@ export async function loginBoardCli(params: {
+   command?: string;
+   storePath?: string;
+   print?: boolean;
++  signal?: AbortSignal;
++  onEvent?: AuthTrace;
++  openBrowser?: (url: string) => boolean | Promise<boolean>;
+ }): Promise<{ token: string; approvalUrl: string; userId?: string | null }> {
+   const apiBase = normalizeApiBase(params.apiBase);
+-  const createUrl = `${apiBase}/api/cli-auth/challenges`;
+-  const command = params.command?.trim() || buildCliCommandLabel();
+-
+-  const challenge = await requestJson<CreateChallengeResponse>(createUrl, {
+-    method: "POST",
+-    body: JSON.stringify({
+-      command,
+-      clientName: params.clientName?.trim() || "paperclipai cli",
+-      requestedAccess: params.requestedAccess,
+-      requestedCompanyId: params.requestedCompanyId?.trim() || null,
+-    }),
+-  });
+-
++  const emit = (stage: string, details: Omit<CliAuthEvent, "stage" | "at"> = {}) =>
++    params.onEvent?.({ stage, at: new Date().toISOString(), ...details });
++  params.signal?.throwIfAborted();
++  // Creation is deliberately never retried: a lost response is an ambiguous request.
++  const challenge = await requestJson<CreateChallengeResponse>(`${apiBase}/api/cli-auth/challenges`, {
++    method: "POST", signal: params.signal,
++    body: JSON.stringify({ command: params.command?.trim() || buildCliCommandLabel(),
++      clientName: params.clientName?.trim() || "paperclipai cli", requestedAccess: params.requestedAccess,
++      requestedCompanyId: params.requestedCompanyId?.trim() || null }),
++  }, params.onEvent);
++  const expiresAtMs = Date.parse(challenge.expiresAt);
++  if (!Number.isFinite(expiresAtMs)) throw new Error("Invalid CLI challenge expiry.");
++  if (!/^[0-9a-f-]{36}$/i.test(challenge.id)) throw new Error("Invalid CLI challenge identifier.");
+   const approvalUrl = challenge.approvalUrl ?? `${apiBase}${challenge.approvalPath}`;
+-  if (params.print !== false) {
+-    console.error(pc.bold("Board authentication required"));
+-    console.error(`Open this URL in your browser to approve CLI access:\n${approvalUrl}`);
+-  }
+-
+-  const opened = openUrl(approvalUrl);
+-  if (params.print !== false && opened) {
+-    console.error(pc.dim("Opened the approval page in your browser."));
++  if (new URL(approvalUrl).origin !== new URL(apiBase).origin
++      || challenge.pollPath !== `/cli-auth/challenges/${challenge.id}`) {
++    throw new Error("CLI challenge origin/path mismatch.");
+   }
+-
+-  const expiresAtMs = Date.parse(challenge.expiresAt);
+-  const pollMs = Math.max(500, challenge.suggestedPollIntervalMs || 1000);
+-
+-  while (Number.isFinite(expiresAtMs) ? Date.now() < expiresAtMs : true) {
+-    const status = await requestJson<ChallengeStatusResponse>(
+-      `${apiBase}/api${challenge.pollPath}?token=${encodeURIComponent(challenge.token)}`,
+-    );
+-
+-    if (status.status === "approved") {
+-      const me = await requestJson<{ userId: string; user?: { id: string } | null }>(
+-        `${apiBase}/api/cli-auth/me`,
+-        {
++  emit("challenge_created", { challengeId: challenge.id, expiresAt: new Date(expiresAtMs).toISOString() });
++  // Pairing lifetime and caller's service lifetime are independent, non-renewable bounds.
++  const expired = new AbortController();
++  const deadline = performance.now() + Math.max(0, expiresAtMs - Date.now());
++  const expiryTimer = setTimeout(() => expired.abort(), Math.max(0, expiresAtMs - Date.now()));
++  const signal = AbortSignal.any([expired.signal, ...(params.signal ? [params.signal] : [])]);
++  let freshGrantApproved = false;
++  const pollMs = Math.min(5000, Math.max(500, Number.isFinite(challenge.suggestedPollIntervalMs)
++    ? challenge.suggestedPollIntervalMs : 1000));
++  try {
++    if (expiresAtMs <= Date.now()) { expired.abort(); signal.throwIfAborted(); }
++    if (params.print !== false) {
++      console.error(pc.bold("Board authentication required"));
++      console.error(`Open this URL in your browser to approve CLI access:\n${approvalUrl}`);
++    }
++    const opened = await (params.openBrowser ?? openUrl)(approvalUrl);
++    emit(opened ? "browser_open_requested" : "browser_open_failed");
++    if (params.print !== false && opened) console.error(pc.dim("Opened the approval page in your browser."));
++    while (!signal.aborted && performance.now() < deadline) {
++      let status: ChallengeStatusResponse;
++      try {
++        status = await requestJson<ChallengeStatusResponse>(
++          `${apiBase}/api${challenge.pollPath}?token=${encodeURIComponent(challenge.token)}`,
++          { signal }, params.onEvent);
++      } catch (error) {
++        if (signal.aborted || !(error as { retryable?: boolean }).retryable) throw error;
++        emit("poll_interrupted");
++        await sleep(Math.min(pollMs, Math.max(0, deadline - performance.now())), signal);
++        continue;
++      }
++      if (status.status === "approved") {
++        freshGrantApproved = true;
++        emit("approved");
++        clearTimeout(expiryTimer); // Approval consumed the challenge; identity is caller-deadline bounded.
++        const me = await requestJson<{ userId: string; user?: { id: string } | null }>(
++          `${apiBase}/api/cli-auth/me`, {
+           headers: {
+             authorization: `Bearer ${challenge.boardApiToken}`,
+-          },
+-        },
+-      );
+-      setStoredBoardCredential({
+-        apiBase,
+-        token: challenge.boardApiToken,
+-        userId: me.userId ?? me.user?.id ?? null,
+-        storePath: params.storePath,
+-      });
+-      return {
+-        token: challenge.boardApiToken,
+-        approvalUrl,
+-        userId: me.userId ?? me.user?.id ?? null,
+-      };
++          }, signal: params.signal }, params.onEvent);
++        params.signal?.throwIfAborted();
++        emit("identity_verified");
++        setStoredBoardCredential({ apiBase, token: challenge.boardApiToken,
++          userId: me.userId ?? me.user?.id ?? null, storePath: params.storePath });
++        emit("credential_stored");
++        return { token: challenge.boardApiToken, approvalUrl, userId: me.userId ?? me.user?.id ?? null };
++      }
++      if (status.status === "cancelled" || status.status === "expired") {
++        emit(status.status);
++        throw Object.assign(new Error(`CLI auth challenge ${status.status}.`), { code: `cli_${status.status}` });
++      }
++      if (status.status !== "pending") throw new Error("Invalid CLI challenge status.");
++      await sleep(Math.min(pollMs, Math.max(0, deadline - performance.now())), signal);
+     }
+-
+-    if (status.status === "cancelled") {
+-      throw new Error("CLI auth challenge was cancelled.");
++    expired.abort();
++    signal.throwIfAborted();
++    throw new Error("CLI challenge expired.");
++  } catch (error) {
++    // A failed identity/store boundary must not silently strand our newly issued key.
++    // This token belongs only to the challenge created in this invocation.
++    if (freshGrantApproved) {
++      try {
++        try { await revokeStoredBoardCredential({ apiBase, token: challenge.boardApiToken }); } catch {}
++        let revoked = false;
++        try {
++          await requestJson(`${apiBase}/api/cli-auth/me`, {
++            headers: new Headers([["authorization", ["Bearer", challenge.boardApiToken].join(" ")]]) }, params.onEvent);
++        } catch (checkError) {
++          revoked = [401, 403].includes((checkError as { status: number }).status);
++        }
++        if (!revoked) throw new Error("Revocation unverified.");
++        if (getStoredBoardCredential(apiBase, params.storePath)?.token === challenge.boardApiToken) {
++          removeStoredBoardCredential(apiBase, params.storePath);
++        }
++        emit("failed_grant_revocation_verified");
++      } catch {
++        emit("failed_grant_revocation_unverified");
++      }
+     }
+-    if (status.status === "expired") {
+-      throw new Error("CLI auth challenge expired before approval.");
++    if (params.signal?.aborted || expired.signal.aborted) {
++      const reason = params.signal?.aborted ? "cancelled" : "expired";
++      emit(reason);
++      throw Object.assign(new Error(`CLI authentication ${reason}.`), { code: `cli_${reason}` });
+     }
+-
+-    await sleep(pollMs);
++    throw error;
++  } finally {
++    clearTimeout(expiryTimer);
+   }
+-
+-  throw new Error("CLI auth challenge expired before approval.");
+ }
+ 
+ export async function revokeStoredBoardCredential(params: {
+diff --git a/server/src/__tests__/cli-auth-browser-privacy.test.ts b/server/src/__tests__/cli-auth-browser-privacy.test.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..7973c0c47317f1aa9a20e68332f6168539a2c0a4
+--- /dev/null
++++ b/server/src/__tests__/cli-auth-browser-privacy.test.ts
+@@ -0,0 +1,21 @@
++import { afterEach, expect, it, vi } from "vitest";
++import { api } from "../../../ui/src/api/client.js";
++afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
++it("attaches a safe correlation id without changing credentials or approval body", async () => {
++  const fetch = vi.fn(async () => new Response(JSON.stringify({ ok: true }), { status: 200 }));
++  vi.stubGlobal("fetch", fetch); const log = vi.spyOn(console, "info").mockImplementation(() => {});
++  await api.post("/cli-auth/challenges/11111111-1111-4111-8111-111111111111/approve", { token: "FIXTURE_PRIVATE" });
++  const options = fetch.mock.calls[0][1] as RequestInit;
++  expect(new Headers(options.headers).get("x-paperclip-auth-request-id")).toMatch(/^[0-9a-f-]{36}$/);
++  expect(options.credentials).toBe("include"); expect(options.body).toBe(JSON.stringify({ token: "FIXTURE_PRIVATE" }));
++  expect(log.mock.calls.length).toBe(2); expect(JSON.stringify(log.mock.calls)).not.toContain("FIXTURE_PRIVATE");
++});
++it("reports the failing request id and timestamp, never the secret URL or raw exception", async () => {
++  vi.stubGlobal("fetch", vi.fn(async () => { throw new TypeError("FIXTURE_PRIVATE"); }));
++  const log = vi.spyOn(console, "info").mockImplementation(() => {});
++  const error = await api.get("/cli-auth/challenges/11111111-1111-4111-8111-111111111111?token=FIXTURE_PRIVATE").catch(e => e);
++  expect(error.message).toMatch(/Failed to fetch.*request/i);
++  expect(error.message).not.toContain("FIXTURE_PRIVATE");
++  expect(JSON.stringify(log.mock.calls)).not.toContain("FIXTURE_PRIVATE");
++  expect(log.mock.calls.at(-1)?.[1]).toMatchObject({ phase: "network_failure" });
++});
+diff --git a/server/src/__tests__/http-log-privacy.test.ts b/server/src/__tests__/http-log-privacy.test.ts
+index c9b1987a0d2350812b29c0743b07038c1c947988..36c52d3ba7f1a9a50c5c1029e790654b3f5c88ef 100644
+--- a/server/src/__tests__/http-log-privacy.test.ts
++++ b/server/src/__tests__/http-log-privacy.test.ts
+@@ -51,6 +51,23 @@ afterAll(async () => {
+ });
+ 
+ describe("HTTP request logging privacy", () => {
++  it("correlates auth arrival and response without recording a private URL", async () => {
++    chunks.length = 0;
++    const id = "11111111-1111-4111-8111-111111111111";
++    const response = await fetch(`${base}/api/cli-auth/challenges/${id}/approve?token=fixture-query`, {
++      method: "POST", headers: { "X-Fixture-Status": "200", "x-paperclip-auth-request-id": id },
++      body: "fixture-password",
++    });
++    await response.text();
++    expect(response.headers.get("x-paperclip-auth-request-id")).toBe(id);
++    await vi.waitFor(() => expect(chunks.join("")).toContain("finished"));
++    const records = chunks.join("").trim().split("\n").map(line => JSON.parse(line));
++    const trace = records.filter(record => record.event === "cli_auth_http");
++    expect(trace.map(record => record.phase)).toEqual(["received", "finished"]);
++    expect(trace.every(record => record.requestId === id && record.operation === "approve")).toBe(true);
++    expect(trace[1].status).toBe(200);
++    for (const marker of markers) expect(JSON.stringify(records)).not.toContain(marker);
++  });
+   it.each([200, 400, 401, 500])("keeps request secrets out of logs for status %s", async (status) => {
+     chunks.length = 0;
+     const response = await fetch(`${base}/invite/${markers[4]}?code=${markers[5]}`, {
+diff --git a/server/src/middleware/logger.ts b/server/src/middleware/logger.ts
+index 73790d00a109e02304289a5637726ac0af1215a2..b3d7a49eff9f14b1eac0c22f7fae2c35f6783cdd 100644
+--- a/server/src/middleware/logger.ts
++++ b/server/src/middleware/logger.ts
+@@ -1,4 +1,6 @@
+ import path from "node:path";
++import { randomUUID } from "node:crypto";
++import type { IncomingMessage, ServerResponse } from "node:http";
+ import fs from "node:fs";
+ import pino from "pino";
+ import { pinoHttp } from "pino-http";
+@@ -47,7 +49,7 @@ export const logger = pino({
+   ],
+ }));
+ 
+-export const httpLogger = pinoHttp({
++const baseHttpLogger = pinoHttp({
+   logger,
+   customLogLevel(_req, res, err) {
+     if (shouldSilenceHttpSuccessLog(_req.method, _req.url, res.statusCode)) {
+@@ -93,3 +95,23 @@ export const httpLogger = pinoHttp({
+     return {};
+   },
+ });
++
++export function httpLogger(req: IncomingMessage, res: ServerResponse, next?: () => void) {
++  baseHttpLogger(req, res);
++  const pathname = (req.url ?? "").split("?", 1)[0];
++  const match = /^\/api\/cli-auth\/(challenges|me|revoke-current)(?:\/[0-9a-f-]{36}(?:\/(approve|cancel))?)?$/.exec(pathname);
++  if (match && (req.method === "GET" || req.method === "POST")) {
++    const supplied = req.headers["x-paperclip-auth-request-id"];
++    const requestId = typeof supplied === "string" && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(supplied)
++      ? supplied : randomUUID();
++    const operation = match[2] ?? (match[1] === "challenges" ? (req.method === "POST" ? "create" : "status") : match[1]);
++    res.setHeader("x-paperclip-auth-request-id", requestId);
++    const trace = (phase: string, status?: number) => logger.info({ event: "cli_auth_http", phase,
++      requestId, operation, method: req.method, at: new Date().toISOString(), ...(status === undefined ? {} : { status }) });
++    trace("received");
++    let finished = false;
++    res.once("finish", () => { finished = true; trace("finished", res.statusCode); });
++    res.once("close", () => { if (!finished) trace("connection_closed"); });
++  }
++  next?.();
++}
+diff --git a/ui/src/api/client.ts b/ui/src/api/client.ts
+index d3bf0a5eeae2c58d21d79e3c44097862fda2a4ae..69993695b5e4074674c4e3f125efa489fc602e69 100644
+--- a/ui/src/api/client.ts
++++ b/ui/src/api/client.ts
+@@ -19,11 +19,22 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
+     headers.set("Content-Type", "application/json");
+   }
+ 
+-  const res = await fetch(`${BASE}${path}`, {
+-    headers,
+-    credentials: "include",
+-    ...init,
+-  });
++  const requestId = path.startsWith("/cli-auth/") ? crypto.randomUUID() : null;
++  if (requestId) headers.set("x-paperclip-auth-request-id", requestId);
++  const trace = (phase: string, status?: number) => {
++    if (requestId) console.info("Paperclip CLI auth", { requestId, phase, at: new Date().toISOString(),
++      ...(status === undefined ? {} : { status }) });
++  };
++  trace("request");
++  let res: Response;
++  try {
++    res = await fetch(`${BASE}${path}`, { credentials: "include", ...init, headers });
++  } catch (error) {
++    trace("network_failure");
++    if (requestId) throw new ApiError(`Failed to fetch (request ${requestId}, ${new Date().toISOString()}).`, 0, { requestId });
++    throw error;
++  }
++  trace("response", res.status);
+   if (!res.ok) {
+     const errorBody = await res.json().catch(() => null);
+     throw new ApiError(

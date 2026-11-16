@@ -1,0 +1,96 @@
+diff --git a/packages/adapter-utils/src/service-declarations.test.ts b/packages/adapter-utils/src/service-declarations.test.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..1304a570ff8ae5f3921551a998ac191b483cfad2
+--- /dev/null
++++ b/packages/adapter-utils/src/service-declarations.test.ts
+@@ -0,0 +1,76 @@
++import { readFileSync } from "node:fs";
++import path from "node:path";
++import { fileURLToPath } from "node:url";
++import ts from "typescript";
++import { expect, it } from "vitest";
++
++it("emits and consumes the real service runningProcesses declaration through its barrel", () => {
++  const sourceRoot = path.dirname(fileURLToPath(import.meta.url));
++  const packageRoot = path.dirname(sourceRoot);
++  const serviceRoot = path.resolve(packageRoot, "../../server/src/adapters");
++  const shim = ts.createSourceFile("utils.ts", readFileSync(path.join(serviceRoot, "utils.ts"), "utf8"), ts.ScriptTarget.Latest, true);
++  const barrel = ts.createSourceFile("index.ts", readFileSync(path.join(serviceRoot, "index.ts"), "utf8"), ts.ScriptTarget.Latest, true);
++  const declaration = shim.statements.find((node) => ts.isVariableStatement(node)
++    && node.declarationList.declarations.some((item) => item.name.getText(shim) === "runningProcesses"));
++  const reexport = barrel.statements.find((node) => ts.isExportDeclaration(node)
++    && node.exportClause?.getText(barrel).includes("runningProcesses"));
++  expect(declaration).toBeDefined();
++  expect(reexport).toBeDefined();
++
++  // Only the actual boundary statements are isolated; their imported provider is real source.
++  // This avoids executing the service logger or importing database/runtime code.
++  const virtual = new Map<string, string>();
++  const key = (name: string) => path.resolve(name);
++  const fixtureRoot = path.join(sourceRoot, "__declaration_fixture__");
++  virtual.set(key(path.join(fixtureRoot, "utils.ts")),
++    `import * as serverUtils from "../server-utils.js";\n${declaration!.getText(shim)}\n`);
++  virtual.set(key(path.join(fixtureRoot, "index.ts")), reexport!.getText(barrel));
++  const outputRoot = path.join(packageRoot, ".declaration-regression-output");
++  const configPath = path.join(packageRoot, "tsconfig.json");
++  const config = ts.readConfigFile(configPath, ts.sys.readFile);
++  expect(config.error).toBeUndefined();
++  const parsed = ts.parseJsonConfigFileContent(config.config, ts.sys, packageRoot, {}, configPath);
++  expect(parsed.errors).toEqual([]);
++  const options = { ...parsed.options, outDir: outputRoot };
++  expect(options.strict).toBe(true);
++  expect(options.declaration).toBe(true);
++
++  function hostFor(compilerOptions: ts.CompilerOptions) {
++    const host = ts.createCompilerHost(compilerOptions);
++    const originalRead = host.readFile.bind(host);
++    const originalExists = host.fileExists.bind(host);
++    const originalDirectory = host.directoryExists!.bind(host);
++    const originalSource = host.getSourceFile.bind(host);
++    host.getCurrentDirectory = () => packageRoot;
++    host.readFile = (name) => virtual.get(key(name)) ?? originalRead(name);
++    host.fileExists = (name) => virtual.has(key(name)) || originalExists(name);
++    host.directoryExists = (name) => [...virtual.keys()].some((file) => file.startsWith(key(name) + path.sep)) || originalDirectory(name);
++    host.getSourceFile = (name, languageVersion, onError, fresh) => virtual.has(key(name))
++      ? ts.createSourceFile(name, virtual.get(key(name))!, languageVersion, true)
++      : originalSource(name, languageVersion, onError, fresh);
++    host.writeFile = (name, text) => { virtual.set(key(name), text); };
++    return host;
++  }
++
++  const program = ts.createProgram([path.join(fixtureRoot, "index.ts")], options, hostFor(options));
++  const emitted = program.emit();
++  const diagnostics = [...ts.getPreEmitDiagnostics(program), ...emitted.diagnostics];
++  expect(diagnostics.map((item) => `${item.code}: ${ts.flattenDiagnosticMessageText(item.messageText, "\n")}`)).toEqual([]);
++  expect(emitted.emitSkipped).toBe(false);
++  expect(virtual.has(key(path.join(outputRoot, "server-utils.d.ts")))).toBe(true);
++  expect(virtual.has(key(path.join(outputRoot, "__declaration_fixture__/utils.d.ts")))).toBe(true);
++
++  const consumer = path.join(outputRoot, "consumer.ts");
++  virtual.set(key(consumer), `
++    import type { ChildProcess } from "node:child_process";
++    import { runningProcesses } from "./__declaration_fixture__/index.js";
++    const owner = runningProcesses.get("owned-run");
++    export const child: ChildProcess | undefined = owner?.child;
++    export const group: number | null | undefined = owner?.processGroupId;
++    export const grace: number | undefined = owner?.graceSec;
++    export const stop: (() => Promise<void>) | undefined = owner?.stop;
++  `);
++  const consumerOptions = { ...options, rootDir: outputRoot, noEmit: true, skipLibCheck: false };
++  const consuming = ts.createProgram([consumer], consumerOptions, hostFor(consumerOptions));
++  expect(ts.getPreEmitDiagnostics(consuming).map((item) => `${item.code}: ${ts.flattenDiagnosticMessageText(item.messageText, "\n")}`)).toEqual([]);
++}, 60_000);
+diff --git a/server/src/adapters/utils.ts b/server/src/adapters/utils.ts
+index 711786b14e56d6f39bcc9e5f6a0d708677288e39..44e3614b027e8d4844f6036a5254ab1a73651b17 100644
+--- a/server/src/adapters/utils.ts
++++ b/server/src/adapters/utils.ts
+@@ -12,7 +12,8 @@ type BuildInvocationEnvForLogsOptions = {
+   resolvedCommandEnvKey?: string;
+ };
+ 
+-export const runningProcesses = serverUtils.runningProcesses;
++// Keep declaration emit anchored to the exported registry, not its private entry type.
++export const runningProcesses: typeof serverUtils.runningProcesses = serverUtils.runningProcesses;
+ export const MAX_CAPTURE_BYTES = serverUtils.MAX_CAPTURE_BYTES;
+ export const MAX_EXCERPT_BYTES = serverUtils.MAX_EXCERPT_BYTES;
+ export const parseObject = serverUtils.parseObject;

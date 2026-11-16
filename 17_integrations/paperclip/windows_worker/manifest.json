@@ -1,0 +1,221 @@
+{
+  "schema_version": 1,
+  "purpose": "Raw Git diff series for independent safety review; no new implementation or live adoption",
+  "origin_url": "https://github.com/paperclipai/paperclip.git",
+  "license": {
+    "sha256": "7f8a27f0979bded50e240caa8c8c29f3088ddf87032cb83e5a9732bff91d18b4",
+    "spdx": "MIT",
+    "source_commit": "d0bdbe11a9624435b6dca3968389bd59c6a559a2",
+    "file": "LICENSE.upstream",
+    "source_path": "LICENSE",
+    "byte_provenance": "Published LF Git blob, matching upstream LICENSE Git blob; original packager CRLF checkout hash retained separately. Verify raw Git bytes, since a Windows checkout may translate line endings.",
+    "packager_checkout_sha256": "526e937d673d264af663f53d3be7118c59840810097d492e1550b363a5c91000"
+  },
+  "source_clean_at_packaging": true,
+  "retained_upstream": {
+    "tree": "4f8f24f139dfb1d8aee62020a25e9935c3a0b8a0",
+    "shallow_boundary": true,
+    "exact_public_pin_reachability_not_rechecked": true,
+    "commit": "d0bdbe11a9624435b6dca3968389bd59c6a559a2"
+  },
+  "v031_remote_tag": {
+    "note": "No peeled companion advertised. Tag is not the fork base.",
+    "method": "git --no-optional-locks ls-remote origin refs/tags/v0.3.1 refs/tags/v0.3.1^{}",
+    "ref": "refs/tags/v0.3.1",
+    "object": "63c62e3ada077bac45292f3d2779bd48a8831cda"
+  },
+  "interval": {
+    "approval_basis": "User-designated approved worker head; previous harness handoff names f2b repair. Packaging performs no new independent source approval.",
+    "head_tree": "89e3964b370d6cd1474be03c04a3c3328521947f",
+    "base_tree": "97d0270efa7fc15b153022753fbbe67acc010ea6",
+    "head_parent": "f2b01139d79c71e4596c0e0aaab105e194b18c19",
+    "exclusive_base": "5e55510dbeb869bacfcd843f975632dc739519af",
+    "commit_count": 4,
+    "inclusive_head": "e04e2ae1a0d47cdedf5380b5a0d94f280a82d5d1"
+  },
+  "predecessor_gap": {
+    "separate_prerequisites": "prerequisites/series and prerequisites/manifest.json",
+    "full_apply_recipe": "FULL-APPLY.md and full-manifest.json",
+    "approval": "Four predecessor patches are now contentsafety-cleared for draft packaging but NOT independently approved; approval of original four repairs is unchanged",
+    "prerequisite": "Exact upstream d0bdbe11 pin must be independently verified publicly available by main. Full eight patches reproduce head tracked trees; original four alone still require exact 5e55510 fork base."
+  },
+  "patches": [
+    {
+      "subject": "fix(paperclip): contain Windows worker process trees",
+      "parent_tree": "97d0270efa7fc15b153022753fbbe67acc010ea6",
+      "bytes": 45111,
+      "tree": "7440c2134d4a305e687299a5895dbefcc2ccd894",
+      "paths": [
+        "doc/plans/2026-11-11-windows-worker-lifecycle.md",
+        "packages/adapter-utils/package.json",
+        "packages/adapter-utils/src/server-utils.ts",
+        "packages/adapter-utils/src/windows-worker-protocol.test.ts",
+        "packages/adapter-utils/src/windows-worker.py",
+        "packages/adapter-utils/src/windows-worker.test.ts",
+        "packages/adapter-utils/src/windows-worker.ts",
+        "packages/adapters/codex-local/src/server/codex-args.test.ts",
+        "server/src/services/heartbeat.ts"
+      ],
+      "commit": "fab6082dff9210bc06bd16869b3c2e2d2c20a240",
+      "sha256": "d6a1c4b9af9d1da30ae2e4ca6d69dd1bd9f001d14a0c12972ebd0c3c31c25259",
+      "parent": "5e55510dbeb869bacfcd843f975632dc739519af",
+      "file": "0001-windows-process-tree-boundary.patch"
+    },
+    {
+      "subject": "fix(paperclip): fence cancellation and uncertain cleanup",
+      "parent_tree": "7440c2134d4a305e687299a5895dbefcc2ccd894",
+      "bytes": 39325,
+      "tree": "cffee80852df31f2af62f64bdfeced3c51774ec2",
+      "paths": [
+        "doc/plans/2026-11-11-windows-worker-lifecycle.md",
+        "packages/adapter-utils/src/server-utils.ts",
+        "packages/adapter-utils/src/windows-worker-heartbeat.test.ts",
+        "packages/adapter-utils/src/windows-worker-protocol.test.ts",
+        "packages/adapter-utils/src/windows-worker.py",
+        "packages/adapter-utils/src/windows-worker.test.ts",
+        "packages/adapter-utils/src/windows-worker.ts",
+        "server/src/adapters/utils.ts",
+        "server/src/services/heartbeat.ts"
+      ],
+      "commit": "02b1c23dd736c0859a28c402ce6285544c4cf5e9",
+      "sha256": "50076f16b1f0f0887b4caab436261f677e18f32b2ff1d2ac62bb84a3ed36aca1",
+      "parent": "fab6082dff9210bc06bd16869b3c2e2d2c20a240",
+      "file": "0002-cancellation-and-uncertain-cleanup.patch"
+    },
+    {
+      "subject": "fix(paperclip): bound worker resolution and orphan recovery",
+      "parent_tree": "cffee80852df31f2af62f64bdfeced3c51774ec2",
+      "bytes": 12460,
+      "tree": "d967fe09c4939d97844f0880eeb3c77f02f06490",
+      "paths": [
+        "doc/plans/2026-11-11-windows-worker-lifecycle.md",
+        "packages/adapter-utils/src/server-utils.ts",
+        "packages/adapter-utils/src/windows-worker-heartbeat.test.ts",
+        "packages/adapter-utils/src/windows-worker-startup.test.ts",
+        "server/src/services/heartbeat.ts"
+      ],
+      "commit": "f2b01139d79c71e4596c0e0aaab105e194b18c19",
+      "sha256": "0e3d2dff72dbc809ef58641f207f47fc2d18ae0a33fdf8b7a83fb5dd9fd48867",
+      "parent": "02b1c23dd736c0859a28c402ce6285544c4cf5e9",
+      "file": "0003-resolution-and-orphan-recovery.patch"
+    },
+    {
+      "subject": "fix: keep worker registry declarations nameable",
+      "parent_tree": "d967fe09c4939d97844f0880eeb3c77f02f06490",
+      "bytes": 5938,
+      "tree": "89e3964b370d6cd1474be03c04a3c3328521947f",
+      "paths": [
+        "packages/adapter-utils/src/service-declarations.test.ts",
+        "server/src/adapters/utils.ts"
+      ],
+      "commit": "e04e2ae1a0d47cdedf5380b5a0d94f280a82d5d1",
+      "sha256": "904c6d7c73c006f4205b662d3e9fca4be0e885359dfa627b7402b164e2908669",
+      "parent": "f2b01139d79c71e4596c0e0aaab105e194b18c19",
+      "file": "0004-nameable-service-declarations.patch"
+    }
+  ],
+  "changed_paths": [
+    "doc/plans/2026-11-11-windows-worker-lifecycle.md",
+    "packages/adapter-utils/package.json",
+    "packages/adapter-utils/src/server-utils.ts",
+    "packages/adapter-utils/src/service-declarations.test.ts",
+    "packages/adapter-utils/src/windows-worker-heartbeat.test.ts",
+    "packages/adapter-utils/src/windows-worker-protocol.test.ts",
+    "packages/adapter-utils/src/windows-worker-startup.test.ts",
+    "packages/adapter-utils/src/windows-worker.py",
+    "packages/adapter-utils/src/windows-worker.test.ts",
+    "packages/adapter-utils/src/windows-worker.ts",
+    "packages/adapters/codex-local/src/server/codex-args.test.ts",
+    "server/src/adapters/utils.ts",
+    "server/src/services/heartbeat.ts"
+  ],
+  "static_inspection": {
+    "limits": "Pattern scanning is not a full security audit. Original plan version shorthand v0.3.1 is overridden by exact fork commit identity here.",
+    "diff_check_exit": 0,
+    "scan_results": [
+      {
+        "count": 0,
+        "pattern": "private_paths",
+        "patch": "0001-windows-process-tree-boundary.patch"
+      },
+      {
+        "count": 0,
+        "pattern": "key_shapes",
+        "patch": "0001-windows-process-tree-boundary.patch"
+      },
+      {
+        "count": 0,
+        "pattern": "authenticated_urls",
+        "patch": "0001-windows-process-tree-boundary.patch"
+      },
+      {
+        "count": 0,
+        "pattern": "account_values",
+        "patch": "0001-windows-process-tree-boundary.patch"
+      },
+      {
+        "count": 0,
+        "pattern": "private_paths",
+        "patch": "0002-cancellation-and-uncertain-cleanup.patch"
+      },
+      {
+        "count": 0,
+        "pattern": "key_shapes",
+        "patch": "0002-cancellation-and-uncertain-cleanup.patch"
+      },
+      {
+        "count": 0,
+        "pattern": "authenticated_urls",
+        "patch": "0002-cancellation-and-uncertain-cleanup.patch"
+      },
+      {
+        "count": 0,
+        "pattern": "account_values",
+        "patch": "0002-cancellation-and-uncertain-cleanup.patch"
+      },
+      {
+        "count": 0,
+        "pattern": "private_paths",
+        "patch": "0003-resolution-and-orphan-recovery.patch"
+      },
+      {
+        "count": 0,
+        "pattern": "key_shapes",
+        "patch": "0003-resolution-and-orphan-recovery.patch"
+      },
+      {
+        "count": 0,
+        "pattern": "authenticated_urls",
+        "patch": "0003-resolution-and-orphan-recovery.patch"
+      },
+      {
+        "count": 0,
+        "pattern": "account_values",
+        "patch": "0003-resolution-and-orphan-recovery.patch"
+      },
+      {
+        "count": 0,
+        "pattern": "private_paths",
+        "patch": "0004-nameable-service-declarations.patch"
+      },
+      {
+        "count": 0,
+        "pattern": "key_shapes",
+        "patch": "0004-nameable-service-declarations.patch"
+      },
+      {
+        "count": 0,
+        "pattern": "authenticated_urls",
+        "patch": "0004-nameable-service-declarations.patch"
+      },
+      {
+        "count": 0,
+        "pattern": "account_values",
+        "patch": "0004-nameable-service-declarations.patch"
+      }
+    ],
+    "scope": "Complete selected diff scanned; process-boundary, heartbeat/cancellation, declarations and tests statically read"
+  },
+  "format": "Raw git diff, full-index, binary, no renames, myers, no indent heuristic, unified3, a/b prefixes; no email author metadata or timestamps",
+  "executed_product_tests_or_builds": false
+}

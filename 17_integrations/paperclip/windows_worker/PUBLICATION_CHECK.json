@@ -1,0 +1,62 @@
+{
+  "upstream_base": "d0bdbe11a9624435b6dca3968389bd59c6a559a2",
+  "upstream_api_verified": true,
+  "upstream_url": "https://github.com/paperclipai/paperclip/commit/d0bdbe11a9624435b6dca3968389bd59c6a559a2",
+  "result_source_commit": "e04e2ae1a0d47cdedf5380b5a0d94f280a82d5d1",
+  "result_tree": "89e3964b370d6cd1474be03c04a3c3328521947f",
+  "patches_applied": [
+    {
+      "file": "prerequisites/0001-company-query-cache-arrays.patch",
+      "patch_sha256": "8045588d097f9fb323aa14c8cc7d9aac5b370835ff41ef76e2b070e978519bb8",
+      "tree": "4f1235b55c3fac56815b7e4c2dbd0e91ed0e3bd2",
+      "matches_expected": true
+    },
+    {
+      "file": "prerequisites/0002-http-and-bootstrap-log-privacy.patch",
+      "patch_sha256": "150ffa63eea2470986da8d8e45ed0711dcde0c2eb57cf553e1b3d11b42cc7093",
+      "tree": "203d99c00c0afb186ce7ad36abe065f3ffed03a6",
+      "matches_expected": true
+    },
+    {
+      "file": "prerequisites/0003-bounded-cli-pairing-and-redaction.patch",
+      "patch_sha256": "0f651c6927a378be093db40cbc9b45a9640a0130fb6d12fb1f55efe8cf8ec85b",
+      "tree": "73cb99bbc495088aabb0ecb579974734fa0a1087",
+      "matches_expected": true
+    },
+    {
+      "file": "prerequisites/0004-bounded-first-engineer-ui.patch",
+      "patch_sha256": "1a4e4a0675f029c006a9001cce97bdeebcb3ba47686e467288cfaa75b4f45781",
+      "tree": "97d0270efa7fc15b153022753fbbe67acc010ea6",
+      "matches_expected": true
+    },
+    {
+      "file": "0001-windows-process-tree-boundary.patch",
+      "patch_sha256": "d6a1c4b9af9d1da30ae2e4ca6d69dd1bd9f001d14a0c12972ebd0c3c31c25259",
+      "tree": "7440c2134d4a305e687299a5895dbefcc2ccd894",
+      "matches_expected": true
+    },
+    {
+      "file": "0002-cancellation-and-uncertain-cleanup.patch",
+      "patch_sha256": "50076f16b1f0f0887b4caab436261f677e18f32b2ff1d2ac62bb84a3ed36aca1",
+      "tree": "cffee80852df31f2af62f64bdfeced3c51774ec2",
+      "matches_expected": true
+    },
+    {
+      "file": "0003-resolution-and-orphan-recovery.patch",
+      "patch_sha256": "0e3d2dff72dbc809ef58641f207f47fc2d18ae0a33fdf8b7a83fb5dd9fd48867",
+      "tree": "d967fe09c4939d97844f0880eeb3c77f02f06490",
+      "matches_expected": true
+    },
+    {
+      "file": "0004-nameable-service-declarations.patch",
+      "patch_sha256": "904c6d7c73c006f4205b662d3e9fca4be0e885359dfa627b7402b164e2908669",
+      "tree": "89e3964b370d6cd1474be03c04a3c3328521947f",
+      "matches_expected": true
+    }
+  ],
+  "all_intermediate_trees_match": true,
+  "test_scope": "Real Git check/apply/index tree reproduction in disposable local clone; no product runtime executed",
+  "builds_rerun": false,
+  "production_install_or_service_changed": false,
+  "prerequisite_implementation_approved": false
+}

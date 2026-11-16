@@ -1,0 +1,266 @@
+diff --git a/cli/src/commands/auth-bootstrap-ceo-privacy.test.ts b/cli/src/commands/auth-bootstrap-ceo-privacy.test.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..e794fdc5e6bc6d45a85c11f8529d04097348df75
+--- /dev/null
++++ b/cli/src/commands/auth-bootstrap-ceo-privacy.test.ts
+@@ -0,0 +1,61 @@
++import { beforeEach, describe, expect, it, vi } from "vitest";
++
++const fixture = vi.hoisted(() => ({ messages: [] as string[], hasAdmin: false, inserts: 0, revocations: 0, failure: null as unknown }));
++vi.mock("@clack/prompts", () => ({ log: {
++  info: (text: string) => fixture.messages.push(text),
++  success: (text: string) => fixture.messages.push(text),
++  message: (text: string) => fixture.messages.push(text),
++  error: (text: string) => fixture.messages.push(text),
++} }));
++vi.mock("../config/env.js", () => ({ loadPaperclipEnvFile: () => {} }));
++vi.mock("../config/store.js", () => ({
++  resolveConfigPath: () => "fixture-config",
++  readConfig: () => ({ server: { deploymentMode: "authenticated" } }),
++}));
++// Query operators and storage are inert fixtures: this tests output, not ownership.
++vi.mock("drizzle-orm", () => ({ and: () => undefined, eq: () => undefined, gt: () => undefined, isNull: () => undefined }));
++vi.mock("@paperclipai/db", () => ({
++  instanceUserRoles: { role: "role" }, invites: { inviteType: "type", revokedAt: "revoked", acceptedAt: "accepted", expiresAt: "expires" },
++  createDb: () => ({
++    select: () => ({ from: () => ({ where: async () => { if (fixture.failure !== null) throw fixture.failure; return fixture.hasAdmin ? [{ role: "instance_admin" }] : []; } }) }),
++    update: () => ({ set: () => ({ where: async () => { fixture.revocations += 1; } }) }),
++    insert: () => ({ values: () => ({ returning: async () => { fixture.inserts += 1; return [{ expiresAt: new Date("2030-01-01T00:00:00Z") }]; } }) }),
++    $client: { end: async () => {} },
++  }),
++}));
++
++import { bootstrapCeoInvite } from "./auth-bootstrap-ceo.js";
++const fixtureOptions = { config: "fixture-config", dbUrl: "fixture-db", baseUrl: "http://127.0.0.1:1" };
++
++beforeEach(() => { fixture.messages.length = 0; fixture.hasAdmin = false; fixture.inserts = 0; fixture.revocations = 0; fixture.failure = null; });
++
++describe("bootstrap invitation output privacy", () => {
++  it.each([
++    ["Error", new Error("fixture-password fixture-private-url")],
++    ["non-Error", "fixture-password fixture-private-url"],
++  ])("keeps sensitive %s failure details out of automatic startup logs", async (_kind, failure) => {
++    fixture.failure = failure;
++    await bootstrapCeoInvite({ ...fixtureOptions, printUrl: false });
++    const output = fixture.messages.join("\n");
++    expect(output.includes("fixture-password") || output.includes("fixture-private-url")).toBe(false);
++    expect(output).toContain("Could not create bootstrap invite.");
++    expect(fixture.inserts).toBe(0);
++    expect(fixture.revocations).toBe(0);
++  });
++  it("keeps the existing explicit CLI output behavior", async () => {
++    await bootstrapCeoInvite(fixtureOptions);
++    expect(fixture.messages.some((message) => message.includes("/invite/"))).toBe(true);
++    expect(fixture.inserts).toBe(1);
++  });
++  it("does not put the private URL into startup logs when printing is disabled", async () => {
++    await bootstrapCeoInvite({ ...fixtureOptions, printUrl: false });
++    expect(fixture.messages.some((message) => message.includes("/invite/") || message.includes("pcp_bootstrap_"))).toBe(false);
++    expect(fixture.inserts).toBe(1);
++  });
++  it("preserves an existing administrator without generating or revoking an invitation", async () => {
++    fixture.hasAdmin = true;
++    await bootstrapCeoInvite({ ...fixtureOptions, printUrl: false });
++    expect(fixture.inserts).toBe(0);
++    expect(fixture.revocations).toBe(0);
++  });
++});
+diff --git a/cli/src/commands/auth-bootstrap-ceo.ts b/cli/src/commands/auth-bootstrap-ceo.ts
+index d07b9a703923d555cc6aa63d0c97d9a8ba4eb0ea..a351e7fcc8d404857f7fe6b80633a57b7af9906e 100644
+--- a/cli/src/commands/auth-bootstrap-ceo.ts
++++ b/cli/src/commands/auth-bootstrap-ceo.ts
+@@ -57,6 +57,8 @@ export async function bootstrapCeoInvite(opts: {
+   expiresHours?: number;
+   baseUrl?: string;
+   dbUrl?: string;
++  /** Automatic startup suppresses private URLs in captured service logs. */
++  printUrl?: boolean;
+ }) {
+   const configPath = resolveConfigPath(opts.config);
+   loadPaperclipEnvFile(configPath);
+@@ -127,10 +129,13 @@ export async function bootstrapCeoInvite(opts: {
+     const baseUrl = resolveBaseUrl(configPath, opts.baseUrl);
+     const inviteUrl = `${baseUrl}/invite/${token}`;
+     p.log.success("Created bootstrap CEO invite.");
+-    p.log.message(`Invite URL: ${pc.cyan(inviteUrl)}`);
++    if (opts.printUrl !== false) {
++      p.log.message(`Invite URL: ${pc.cyan(inviteUrl)}`);
++    }
+     p.log.message(`Expires: ${pc.dim(created.expiresAt.toISOString())}`);
+-  } catch (err) {
+-    p.log.error(`Could not create bootstrap invite: ${err instanceof Error ? err.message : String(err)}`);
++  } catch {
++    // Exceptions can contain connection credentials or private invitation URLs.
++    p.log.error("Could not create bootstrap invite.");
+     p.log.info("If using embedded-postgres, start the Paperclip server and run this command again.");
+   } finally {
+     await closableDb.$client?.end?.({ timeout: 5 }).catch(() => undefined);
+diff --git a/cli/src/commands/run-bootstrap-privacy.test.ts b/cli/src/commands/run-bootstrap-privacy.test.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..dd6911474adee96fa55c570dcfeb67c9b9447829
+--- /dev/null
++++ b/cli/src/commands/run-bootstrap-privacy.test.ts
+@@ -0,0 +1,42 @@
++import { afterEach, expect, it, vi } from "vitest";
++
++const bootstrap = vi.hoisted(() => vi.fn(async () => {}));
++// The server and I/O boundaries are inert: this tests startup wiring only.
++vi.mock("node:fs", () => ({ default: { mkdirSync: vi.fn(), existsSync: () => false } }));
++vi.mock("@clack/prompts", () => ({ intro: vi.fn(), log: { message: vi.fn(), step: vi.fn(), error: vi.fn() } }));
++vi.mock("./auth-bootstrap-ceo.js", () => ({ bootstrapCeoInvite: bootstrap }));
++vi.mock("./onboard.js", () => ({ onboard: () => { throw new Error("Must not onboard in this fixture"); } }));
++vi.mock("./doctor.js", () => ({ doctor: async () => ({ failed: 0 }) }));
++vi.mock("../config/env.js", () => ({ loadPaperclipEnvFile: vi.fn() }));
++vi.mock("../config/store.js", () => ({
++  configExists: () => true, resolveConfigPath: () => "fixture-config",
++  readConfig: () => ({ server: { deploymentMode: "authenticated" }, database: { mode: "embedded-postgres" }, auth: { baseUrlMode: "explicit", publicBaseUrl: "http://127.0.0.1:1" } }),
++}));
++vi.mock("../config/home.js", () => ({
++  resolvePaperclipInstanceId: () => "fixture-instance", resolvePaperclipHomeDir: () => "fixture-home",
++  describeLocalInstancePaths: () => ({ instanceRoot: "fixture-root", homeDir: "fixture-home", instanceId: "fixture-instance" }),
++}));
++vi.mock("@paperclipai/server", () => ({ startServer: async () => ({ apiUrl: "http://127.0.0.1:1/api", databaseUrl: "fixture-db", host: "127.0.0.1", listenPort: 1 }) }));
++
++import { runCommand } from "./run.js";
++afterEach(() => { vi.unstubAllEnvs(); bootstrap.mockReset(); bootstrap.mockResolvedValue(undefined); });
++it.each([
++  ["Error", new Error("fixture-sensitive-startup-detail")],
++  ["non-Error", "fixture-sensitive-startup-detail"],
++])("sanitizes unexpected bootstrap %s rejections without treating them as success", async (_kind, reason) => {
++  vi.stubEnv("PAPERCLIP_INSTANCE_ID", "fixture-instance");
++  vi.stubEnv("PAPERCLIP_CONFIG", "fixture-config");
++  bootstrap.mockRejectedValueOnce(reason);
++  let failure: unknown;
++  try { await runCommand({ config: "fixture-config", instance: "fixture-instance" }); }
++  catch (error) { failure = error; }
++  expect(failure).toBeInstanceOf(Error);
++  expect(String(failure).includes("fixture-sensitive-startup-detail")).toBe(false);
++  expect(String(failure)).toContain("Bootstrap invitation setup failed.");
++});
++it("suppresses the private bootstrap URL at the real runCommand call site", async () => {
++  vi.stubEnv("PAPERCLIP_INSTANCE_ID", "fixture-instance");
++  vi.stubEnv("PAPERCLIP_CONFIG", "fixture-config");
++  await runCommand({ config: "fixture-config", instance: "fixture-instance" });
++  expect(bootstrap).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ config: "fixture-config", dbUrl: "fixture-db", printUrl: false }));
++});
+diff --git a/cli/src/commands/run.ts b/cli/src/commands/run.ts
+index 9bc9655b4486ccd567b56ddd1c72f0b5cf32f389..e291feee2c2d84ab3dbaabd7955e4dea3f1a58c5 100644
+--- a/cli/src/commands/run.ts
++++ b/cli/src/commands/run.ts
+@@ -89,6 +89,10 @@ export async function runCommand(opts: RunOptions): Promise<void> {
+       config: configPath,
+       dbUrl: startedServer.databaseUrl,
+       baseUrl: resolveBootstrapInviteBaseUrl(config, startedServer),
++      printUrl: false,
++    }).catch(() => {
++      // Also protect failures before the bootstrap helper's own try/finally.
++      throw new Error("Bootstrap invitation setup failed.");
+     });
+   }
+ }
+diff --git a/server/src/__tests__/http-log-privacy.test.ts b/server/src/__tests__/http-log-privacy.test.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..c9b1987a0d2350812b29c0743b07038c1c947988
+--- /dev/null
++++ b/server/src/__tests__/http-log-privacy.test.ts
+@@ -0,0 +1,69 @@
++import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
++import { createServer, type Server } from "node:http";
++import { Writable } from "node:stream";
++import pino from "pino";
++
++vi.mock("../config-file.js", () => ({ readConfigFile: () => null }));
++vi.mock("../home-paths.js", async () => {
++  const { tmpdir } = await import("node:os");
++  return { resolveDefaultLogsDir: () => tmpdir(), resolveHomeAwarePath: (value: string) => value };
++});
++
++// Real Pino and pino-http; replace only the transport with a memory sink.
++// All sensitive-looking values below are inert test fixtures, not credentials.
++const chunks: string[] = [];
++const sink = new Writable({ write(chunk, _encoding, done) { chunks.push(String(chunk)); done(); } });
++let server: Server;
++let base: string;
++const markers = ["fixture-cookie", "fixture-set-cookie", "fixture-password", "fixture-email", "fixture-invite", "fixture-query", "fixture-error"];
++
++beforeAll(async () => {
++  vi.spyOn(pino, "transport").mockReturnValue(sink as ReturnType<typeof pino.transport>);
++  const { httpLogger } = await import("../middleware/logger.js");
++  server = createServer((req, res) => {
++    const fixtureReq = req as typeof req & { body: unknown; params: unknown; query: unknown };
++    fixtureReq.body = { password: markers[2], email: markers[3] };
++    fixtureReq.params = { token: markers[4] };
++    fixtureReq.query = { code: markers[5] };
++    const status = Number(req.headers["x-fixture-status"]);
++    const fixtureRes = res as typeof res & { err?: Error; __errorContext?: unknown };
++    if (status >= 500) {
++      fixtureRes.err = new Error(markers[6]);
++      fixtureRes.__errorContext = { error: { message: markers[6] }, reqBody: fixtureReq.body, reqParams: fixtureReq.params, reqQuery: fixtureReq.query };
++    }
++    httpLogger(req, res);
++    res.statusCode = status;
++    res.setHeader("Set-Cookie", markers[1]);
++    res.end("fixture response");
++  });
++  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
++  const address = server.address();
++  if (!address || typeof address === "string") throw new Error("No fixture listener");
++  base = `http://127.0.0.1:${address.port}`;
++});
++
++afterAll(async () => {
++  if (server) {
++    server.closeAllConnections();
++    await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
++  }
++  vi.restoreAllMocks();
++});
++
++describe("HTTP request logging privacy", () => {
++  it.each([200, 400, 401, 500])("keeps request secrets out of logs for status %s", async (status) => {
++    chunks.length = 0;
++    const response = await fetch(`${base}/invite/${markers[4]}?code=${markers[5]}`, {
++      method: "POST",
++      headers: { Cookie: markers[0], Referer: `${base}/invite/${markers[4]}`, "X-Fixture-Status": String(status) },
++      body: markers[2],
++    });
++    await response.text();
++    await vi.waitFor(() => expect(chunks.length).toBeGreaterThan(0));
++    const output = chunks.join("");
++    for (const marker of markers) expect(output).not.toContain(marker);
++    const record = JSON.parse(output.trim());
++    expect(record.req.method).toBe("POST");
++    expect(record.res.statusCode).toBe(status);
++  });
++});
+diff --git a/server/src/middleware/logger.ts b/server/src/middleware/logger.ts
+index 7eb5c2b43427560b1d38762149f64d660572d514..73790d00a109e02304289a5637726ac0af1215a2 100644
+--- a/server/src/middleware/logger.ts
++++ b/server/src/middleware/logger.ts
+@@ -29,7 +29,9 @@ const sharedOpts = {
+ 
+ export const logger = pino({
+   level: "debug",
+-  redact: ["req.headers.authorization"],
++  // Cookies, private URLs, error context and auth bodies must never enter transports.
++  redact: ["req.headers", "req.url", "req.body", "req.query", "req.params",
++    "res.headers", "err", "res.err", "reqBody", "reqParams", "reqQuery", "errorContext"],
+ }, pino.transport({
+   targets: [
+     {
+@@ -56,12 +58,10 @@ export const httpLogger = pinoHttp({
+     return "info";
+   },
+   customSuccessMessage(req, res) {
+-    return `${req.method} ${req.url} ${res.statusCode}`;
++    return `${req.method} HTTP ${res.statusCode}`;
+   },
+-  customErrorMessage(req, res, err) {
+-    const ctx = (res as any).__errorContext;
+-    const errMsg = ctx?.error?.message || err?.message || (res as any).err?.message || "unknown error";
+-    return `${req.method} ${req.url} ${res.statusCode} — ${errMsg}`;
++  customErrorMessage(req, res) {
++    return `${req.method} HTTP ${res.statusCode} — request failed`;
+   },
+   customProps(req, res) {
+     if (res.statusCode >= 400) {
