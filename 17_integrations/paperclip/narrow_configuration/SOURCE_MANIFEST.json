@@ -1,6 +1,6 @@
 {
   "schema": "paperclip_narrow_save_source/1",
-  "status": "SOURCE_APPROVED_DEPENDENCY_BLOCKED",
+  "status": "SOURCE_AND_COMBINED_COMPATIBILITY_ACCEPTED",
   "origin": "https://github.com/paperclipai/paperclip",
   "required_base": "e04e2ae1a0d47cdedf5380b5a0d94f280a82d5d1",
   "source_commit": "d2d7647eca88575870e079e359948520ce50290b",
@@ -101,8 +101,9 @@
   },
   "dependency": {
     "pr": 26,
-    "status": "BLOCKED_C_P3_1",
-    "reason": "Async browser callback does not observe caller cancellation until callback resolves."
+    "status": "ACCEPTED_CORRECTED_RECIPE_REQUIRED",
+    "correction": "b32d26e53cb77b7d28f7f95bd95bfe35117eaa5f",
+    "reason": "C-P3-1 independently corrected; apply and verify the complete accepted recipe before this unchanged narrow-save delta."
   },
   "historical_wip": {
     "commit": "accb52eaaabcf1e749d07aa2f0b18de55aef305d",
@@ -113,5 +114,15 @@
     "Key removal/type change retains whole-config replacement and its stale-copy limitations.",
     "No production secret-provider, DB, installed bundle, authenticated browser or live-save acceptance."
   ],
-  "installed_or_live_actions": false
+  "installed_or_live_actions": false,
+  "original_patch_base": "e04e2ae1a0d47cdedf5380b5a0d94f280a82d5d1",
+  "integration_required_repair_commit": "b32d26e53cb77b7d28f7f95bd95bfe35117eaa5f",
+  "combined_acceptance": {
+    "repair_tree": "df78771e6c9631a8d7edf6e9d0992570a6f3b432",
+    "result_tree": "47f0df456dace03cb9918435f5f4424969b0e3a9",
+    "full_service_declaration_build": "PASS",
+    "independent_review_sha256": "b7a61f5971dfb3fe3e1ee490fe51dd00f45d8403672d54d934523816df4d2cb0",
+    "original_narrow_result_tree_preserved": "239405e35499f698020db4e575ef6b74ebcf2457",
+    "installed_or_live_acceptance": false
+  }
 }

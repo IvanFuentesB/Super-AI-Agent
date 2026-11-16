@@ -1,4 +1,4 @@
-# Narrow Paperclip configuration save — accepted source, dependency blocked
+# Narrow Paperclip configuration save â€” accepted source and combined compatibility
 
 Source `d2d7647eca88575870e079e359948520ce50290b`, parent WIP `accb52eaaabcf1e749d07aa2f0b18de55aef305d`, required base `e04e2ae1a0d47cdedf5380b5a0d94f280a82d5d1`.
 This updates the SAME operation PR #31. Eight committed source/test files are
@@ -34,17 +34,11 @@ that field. This repair does not claim universal configuration synchronization.
 
 ## Dependency and source reproduction
 
-PR #26 reproduces the exact required e04 tree from pinned public upstream
-d0bdbe11. Its prerequisite 3 has a demonstrated asynchronous-browser-callback
-cancellation defect (C-P3-1); prerequisites 1, 2 and 4 are scoped source-approved.
-Keep THIS PR draft until the dependency is corrected and independently accepted.
-Do not substitute the distinct public v0.3.1 tag or weaken a guard to apply it.
+PR26 now includes the independently accepted C-P3-1 correction b32d26e53cb77b7d28f7f95bd95bfe35117eaa5f after the original e04 sequence. Its corrected tree is df78771e6c9631a8d7edf6e9d0992570a6f3b432. Applying this unchanged narrow-save patch produces combined tree 47f0df456dace03cb9918435f5f4424969b0e3a9.
 
-In an authorized disposable checkout of the exact base, inspect the manifest
-and raw patch hash, then `git apply --check --index` and `git apply --index` the
-patch. The original WIP application plus exact eleven-line fixture successor
-reproduced final tree `239405e35499f698020db4e575ef6b74ebcf2457`. The publisher also checks the full final patch
-against that exact base before publication. No product build/service was run.
+Original patch base e04 and original narrow-only result239405e35499f698020db4e575ef6b74ebcf2457 remain provenance, not the new combined build identity. All eight original source postimages and raw patch SHA remain unchanged. Verify original e04 context, corrected recipe preimage and combined result separately.
+
+The combined source passed the full service/declaration build and independent affected cancellation/control/routes/form checks, whose candidate-bound receipt hash is in SOURCE_MANIFEST.json. Initial offline pnpm manager provisioning failure is retained; only task-owned build config was corrected, with no dependency install or global setting change. Synthetic tests/build are not a live DB/save or host-install approval.
 
 ## Host adoption and rollback
 
