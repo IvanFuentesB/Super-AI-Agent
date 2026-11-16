@@ -1,5 +1,115 @@
 # Ghoti Current Product Status
 
+## Publication and installation snapshot — 2026-11-16
+
+Source publication, independent acceptance, main integration and installed-host
+adoption are separate gates. This snapshot supersedes the historical MVP claims
+below; neither a draft PR nor a successful patch apply is deployment approval.
+
+| Component | Source commit | Remote branch/PR | Review | Main integration | Installed version |
+| --- | --- | --- | --- | --- | --- |
+| NOVA static UI and retained regressions | `9ad5a3938d4762e28a8e684b2637d8eae2b6fb7f` (parent `e108378`) | [PR #24](https://github.com/IvanFuentesB/Super-AI-Agent/pull/24), `IvanCX/nova-ui-publication`, port `043aee997bd9f621885be26351a9081775d0ecaf` | DRAFT / CHANGES_REQUESTED; safe source publication, product not accepted | Not merged | Installed NOVA pointer names `9613e877bcc57475c8e168bd6778523a31d83ff9`; no live-process acceptance performed |
+| Optional native coding harness | `890b48c2380f5d43b3c89a7ecec3381ca6b2116d` | [PR #25](https://github.com/IvanFuentesB/Super-AI-Agent/pull/25), `IvanCX/native-harness-publication`, port `7c2e2a56cbbe3f8455f9e71d26f54e842876e38e` | Independently APPROVED for optional source integration; 70 offline tests PASS | Merged at `782b247cd22561cba26bbc248088fbff84d0e483`; all 14 blobs verified | Published component not host-adopted; live adapter remains disabled |
+| Paperclip Windows repair/declaration patch recipe | `f2b01139d79c71e4596c0e0aaab105e194b18c19` / `e04e2ae1a0d47cdedf5380b5a0d94f280a82d5d1` | [PR #26](https://github.com/IvanFuentesB/Super-AI-Agent/pull/26), `IvanCX/paperclip-worker-patches` | DRAFT; retained repair/declaration approvals; four earlier prerequisites NOT independently approved | Not merged; eight patches reproduce the exact approved final tree | Owner-confirmed installed declaration/preflight at `e04e2ae`; no new service start or runtime acceptance here |
+| Corrected Paperclip launcher source port | `13857ef7dbcf7be9d5a93b2da5bf90bf9d3edd25`, with ONE recorded interpreter-path transformation | [PR #27](https://github.com/IvanFuentesB/Super-AI-Agent/pull/27), `IvanCX/paperclip-launcher-source`, port `cc862486d5a4d47b78de0023cbc75f1332acbc24` | Independently safe for DRAFT publication; 5 focused checks PASS; original approval does not automatically cover this port | Not merged; exact host/helper dependencies remain required | Original corrected launcher owner-confirmed installed; published transformed port NOT adopted |
+| Narrow Paperclip configuration operation | Eight dirty source files at `e04e2ae` base | Unpublished; frozen owner commit requested | Existing control 2/2 PASS; same 12 candidate cases: 8 PASS, 4 FAIL; test-only snapshot, no approval | Not integrated | Not established; no production save attempted |
+| Runtime Paperclip status contract | Frozen three-file overlay delivered in archive `8bf3fd4891383a737b6aabcfde52e75d0541a2fc6f24dbca654c6c5976bb5382`, `e108378` base | Unpublished: private company binding and absent runtime dependencies require an owner-prepared privacy-safe candidate | Independent 14/14 synthetic tests PASS; not live-state acceptance or publication clearance | Not integrated | Not installed by this run |
+| Checkpoint/approval correction | Seven dirty source files at `e2d1c3992f0160414eb48c125b70057aec80aa39` base | Unpublished; immutable owner candidate and scoped review required | Independent acceptance remains gated; historical raw-byte requirements unchanged | Not integrated | No migration, restart or publication authorized by this source review |
+| Remaining personal toolchain delivery | `ed090282671fb9ba7fafda264c5d5a9cfb942be4` base, 131 source changes at inspection | Unpublished pending frozen first-party source slice; harness separated above | No approval of dirty working tree or upstream/vendor history | Not integrated | Existing host setup unchanged |
+
+### Executed checks and known defects
+
+- UI: 103 Node tests and 6 markup tests passed. Retained independent regression
+  suite: 1 PASS / 3 FAIL. Pending Stop and the running snapshot after failed Stop
+  can lose unresolved visibility; top-level free text can claim verification
+  without structured SUCCESS. Same-value Paperclip attribute mutation also remains.
+  The earlier `e108378` scoped review does not approve its successor.
+- Harness: 70 tests ran once in a separate clean current-main worktree; all
+  frozen hashes stayed unchanged. Default adapter is disabled; missing native
+  receipt returns PENDING. This publication does not prove custom-role selection
+  or execute an inference provider. Nested `.codex` roles do not replace root or
+  global model, sandbox, approval, trust, MCP or hook settings. OpenJarvis source
+  pin is `e97088f199cf86ea5f78de921772357d1f0d2cec`; no upstream tree is vendored.
+- Paperclip packaging: all eight raw patches applied in an isolated clone from
+  public upstream `d0bdbe11a9624435b6dca3968389bd59c6a559a2`. Each intermediate
+  tree matched; final tree is `89e3964b370d6cd1474be03c04a3c3328521947f`.
+  The public v0.3.1 tag is a different pin. This is apply/provenance evidence,
+  not another lifecycle test, prerequisite security approval or installation.
+- Configuration route: the baseline import cycle was resolved by inlining only
+  `drizzle-orm` in the disposable runner. Three candidate cases return HTTP 500;
+  the fourth reads old extraArgs after a simulated post-write error. Direct
+  secret-service import versus the fixture's barrel mock is a suspected fixture
+  gap, not a proven production defect. Assertions/mocks were not weakened, and
+  the eight owner files remained unchanged.
+- Frozen status overlay: an initial missing-psutil loader error executed zero
+  cases. Selecting an existing compatible environment then ran all 14 unchanged
+  tests once: 14 PASS, all three source hashes unchanged. No dependencies were
+  installed and no live processes or service observations were queried.
+- Launcher port: one absolute user-specific interpreter literal is replaced by
+  Path.home() plus the same relative tool location. Two tests remain exact source
+  blobs; source/published hashes and the transformation are recorded. Five
+  focused offline checks passed for the one-expression delta, current-host
+  environment equivalence, safe inheritance and override refusals. No unchanged
+  original launcher review or installed-artifact test was repeated. The original
+  unsanitized local publication candidate was NOT pushed; a new clean branch
+  avoids making its history public. Global Git settings were not changed.
+- Earlier current-main baseline separately passed 50 focused tests and four
+  dashboard checks. Counts above describe different scopes and are not combined.
+  UI, harness, worker-patch and sanitized-launcher public-repository audits each reported 150 checks, 142 PASS,
+  0 failed and 8 warnings; they are bounded scans, not comprehensive clearance
+  of unpublished local history.
+
+### Publication and adoption boundaries
+
+The UI publication contains only 32 explicit files on clean main ancestry; its
+99-commit historical branch and 855-path net history were not pushed. Harness
+publication contains 14 explicit files. The Paperclip package contains 20
+patch/license/recipe files, not a vendor installation or foreign Git history.
+The separate launcher draft contains five explicit source/test/metadata files.
+Raw remote readback found CRLF-to-LF normalization in fifteen text artifacts:
+the UI regression fixture/README, harness README, patch-package metadata/docs/
+series/license and launcher manifest serialization. All thirteen original
+harness source/test/config blobs and all eight raw patches were byte-identical
+to the inputs; all fourteen main harness blobs match its published port.
+Original raw-input records are retained separately from published Git-blob
+hashes. The patch-package license pin is corrected to its published upstream
+LF blob, retaining the original checkout hash. No source assertion or patch
+payload was changed to make readback pass. Review this explicit transformation
+record rather than assuming working-tree byte equality from Git content alone.
+Private receipts, user data, memory databases, transcripts, dependency trees,
+credentials and owner-live dirty changes remain excluded.
+
+[PR #21](https://github.com/IvanFuentesB/Super-AI-Agent/pull/21) and
+[PR #22](https://github.com/IvanFuentesB/Super-AI-Agent/pull/22) were not blindly
+merged. [PR #23](https://github.com/IvanFuentesB/Super-AI-Agent/pull/23) remains a
+stacked draft on #21; old tool/version claims are not current host acceptance.
+No required CI checks or branch rules were reported at merge inspection; normal
+PR merge with an expected-head guard was used after independent harness review.
+No protection or permission setting was bypassed or changed.
+
+The discovery map covers ten named active roots, not every historical worktree.
+Claude owns the UI/configuration corrections. Hermes owns checkpoint changes,
+installed runtime adoption and the running Paperclip service. Next: provide
+corrected immutable UI/configuration/checkpoint candidates, correct the four configuration-fixture failures and
+retain the UI regressions. Adopt accepted components only through the existing
+review/host procedure; source publication does not authorize a restart, live
+actions, cloud calls, hook/MCP enabling or deployment.
+
+Hermes delivered the frozen NOVA packet (`8bf3fd4891383a737b6aabcfde52e75d0541a2fc6f24dbca654c6c5976bb5382`)
+and the required corrected-launcher supplement
+(`3f4ce6ca6d642bb95725aaf6135c8e345e1a922d5476f4d56a9ea8a2ac70a9cb`).
+Both archive hashes and CRC checks matched. The obsolete launcher and rollback
+instructions remain excluded. Owner-reported health/static-byte matches coexist
+with blank-content screenshots; rendered/authenticated UI and a successful
+Paperclip task/run/result/cancellation have not been established by that delivery.
+
+---
+
+## Historical Agent OS MVP baseline (retained)
+
+The following material predates the publication snapshot above and documents
+that earlier branch's capabilities and limits.
+
 **Status:** Working local MVP (supervised, deny-by-default)
 **Base:** PR #17 (Agent OS MVP) and PR #18 (approved execution substrate) are
 merged. This feature branch clean-ports the sandboxed runner onto that base.
