@@ -1,55 +1,59 @@
-# Narrow Paperclip configuration save — owner WIP draft
+# Narrow Paperclip configuration save — accepted source, dependency blocked
 
-This is a source patch of exactly eight owner-committed files, not a vendor
-installation or upstream Git history. Source `accb52eaaabcf1e749d07aa2f0b18de55aef305d`, parent/base `e04e2ae1a0d47cdedf5380b5a0d94f280a82d5d1`.
-The owner explicitly permits draft publication and is preparing a separate
-corrected successor; this WIP commit is not final or review-approved.
+Source `d2d7647eca88575870e079e359948520ce50290b`, parent WIP `accb52eaaabcf1e749d07aa2f0b18de55aef305d`, required base `e04e2ae1a0d47cdedf5380b5a0d94f280a82d5d1`.
+This updates the SAME operation PR #31. Eight committed source/test files are
+represented by one full-index patch; hashes, Git blobs and result tree are in
+SOURCE_MANIFEST.json. No upstream repository history or installation is copied.
+MIT notice is retained. No owner live files were staged.
 
-The delta changes the existing Configuration Save UI to send edited fields,
-retain unrelated stored configuration/secrets, handle argument lists and use
-readback for uncertain writes. It adds tests for the existing real PATCH/GET
-routes; it adds no arbitrary HTTP proxy, provider or service-control interface.
-This paragraph describes intent, not product acceptance.
+## Independent acceptance
 
-## Dependencies and reproduction
+On raw frozen committed files, the existing route control passed 2/2, the same
+twelve final cases passed 12/12 and relevant UI tests passed 13/13. Each suite
+ran once, with zero setup/import errors, hook timeouts or assertion failures.
+The existing Vitest3.2.4/Node22.16 runner used source-root relocation only and
+drizzle-orm inlining; linked dependencies stayed read-only. These are independent
+synthetic tests, not owner totals or production service/secret-provider evidence.
 
-The required base is the exact e04e2ae Paperclip tree. It can be reproduced by
-the eight-patch recipe in PR #26 from public upstream d0bdbe11. That recipe's
-four earlier prerequisite implementations still require independent acceptance.
-Do not substitute the different v0.3.1 tag, install dependencies here or apply
-this patch to the installed service. Upstream MIT notice is retained.
+The successor adds a direct secret-service fixture mock at the module actually
+imported by the unchanged real route and adds three persistence assertions. It
+retains all twelve original cases and all 47 earlier expectations. PATCH/GET,
+authorization, origin guard and error handler stay real. Seven other source
+blobs are unchanged from WIP. Earlier 8-pass/4-fail results remain historical.
 
-In a separately authorized disposable source checkout of the exact required
-base, inspect SOURCE_MANIFEST.json and verify the raw patch hash, then use:
+The narrow extraArgs edit preserves untouched configuration, identity/budget,
+stored secret bindings and the false permission-bypass flag in the tested
+sequential stale-read flow. Redacted placeholders are refused before a request.
+Argument parsing round-trips quoted comma-containing values. Uncertain writes
+trigger readback and an explicit unconfirmed message, not an automatic retry.
 
-    git apply --check --index 0001-narrow-configuration-save.patch
-    git apply --index 0001-narrow-configuration-save.patch
-    git write-tree
+Same-field concurrency remains last-writer-wins; no CAS or atomic multi-writer
+guarantee is introduced. Removing a key/changing adapter type retains the
+existing whole-replacement path and its stale-copy limits. Editing env replaces
+that field. This repair does not claim universal configuration synchronization.
 
-The publisher's isolated apply check reproduced the exact committed result tree
-`8d7d7dd6f5abd8b138c0fe0b86f6eb328c6a9566`. This is source reproduction, not an application run.
+## Dependency and source reproduction
 
-## Executed tests and remaining failures
+PR #26 reproduces the exact required e04 tree from pinned public upstream
+d0bdbe11. Its prerequisite 3 has a demonstrated asynchronous-browser-callback
+cancellation defect (C-P3-1); prerequisites 1, 2 and 4 are scoped source-approved.
+Keep THIS PR draft until the dependency is corrected and independently accepted.
+Do not substitute the distinct public v0.3.1 tag or weaken a guard to apply it.
 
-The existing independent route runner previously executed a test-only raw
-snapshot: control 2/2 PASS, twelve candidate cases 8 PASS / 4 FAIL. Per-file raw
-equivalence to this commit is recorded in SOURCE_MANIFEST.json; no different
-snapshot is silently called verification of an owner's final commit.
-No old suite was rerun for this publication. Three cases returned HTTP 500;
-the fourth read old arguments after a simulated post-write error. Direct
-secret-service import versus the fixture's mocked barrel is a hypothesis about
-fixture wiring, not proof of a production defect. The owner retains the fix.
+In an authorized disposable checkout of the exact base, inspect the manifest
+and raw patch hash, then `git apply --check --index` and `git apply --index` the
+patch. The original WIP application plus exact eleven-line fixture successor
+reproduced final tree `239405e35499f698020db4e575ef6b74ebcf2457`. The publisher also checks the full final patch
+against that exact base before publication. No product build/service was run.
 
-The exact proven runner, versions, source hashes and failure traces were sent
-through the existing private shared-brain handoff. That packet's absolute local
-paths, logs and owner data are not uploaded here. A final successor requires the
-existing control plus all twelve assertions in the proven isolated environment,
-independent source review and dependency acceptance before merge/adoption.
+## Host adoption and rollback
 
-## Adoption and rollback
+Hermes owns any reviewed bundle build, installed service and board session.
+Record built UI byte hashes separately from source identity. Preserve the
+corrected original 13857ef launcher; an obsolete archive is not a rollback.
+An authorized future UI rollback uses the previous e04 UI build, with no DB
+migration or server change. There is no host change from this publication.
 
-Keep this PR draft until the corrected candidate is independently accepted.
-No company/agent records, database, service, credentials, accounts or installed
-configuration were changed. Hermes owns adoption. An eventual deployment must
-preserve the corrected 13857ef launcher; an obsolete archive is not a rollback.
-There is no host change to roll back from this publication.
+No live configuration save, credentials, account action, company/agent record,
+database, provider, installation, restart or global setting changed. Exact
+private test-runner paths/logs remain in the existing owner handoff, not here.

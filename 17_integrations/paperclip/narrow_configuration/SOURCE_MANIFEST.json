@@ -1,80 +1,63 @@
 {
   "schema": "paperclip_narrow_save_source/1",
-  "status": "OWNER_WIP_DRAFT_NOT_ACCEPTED",
+  "status": "SOURCE_APPROVED_DEPENDENCY_BLOCKED",
   "origin": "https://github.com/paperclipai/paperclip",
-  "upstream_dependency_pr": 26,
   "required_base": "e04e2ae1a0d47cdedf5380b5a0d94f280a82d5d1",
-  "source_commit": "accb52eaaabcf1e749d07aa2f0b18de55aef305d",
-  "source_parent": "e04e2ae1a0d47cdedf5380b5a0d94f280a82d5d1",
-  "result_tree": "8d7d7dd6f5abd8b138c0fe0b86f6eb328c6a9566",
+  "source_commit": "d2d7647eca88575870e079e359948520ce50290b",
+  "source_parent": "accb52eaaabcf1e749d07aa2f0b18de55aef305d",
+  "result_tree": "239405e35499f698020db4e575ef6b74ebcf2457",
   "patch": {
     "path": "0001-narrow-configuration-save.patch",
-    "sha256": "21582f655d7e1071e7b9151aa45993beda2c833b7e570aecac4a1b0ec3fe8151"
+    "sha256": "9a0040b4ebd87403084dcacd320885bf2b293079de1259c60b0c64f6c02920b6"
   },
   "source_files": [
     {
       "path": "server/src/__tests__/agent-config-narrow-save-routes.test.ts",
-      "git_blob": "617907bc9b0c8176d288a3ff1ce89a111d59f3e0",
-      "sha256": "b47b822be66a92f0b3eec911b1fd5e217549676b5797fcc28c56ec84e00a2375",
-      "bytes": 15668,
-      "historical_test_snapshot_sha256": "b47b822be66a92f0b3eec911b1fd5e217549676b5797fcc28c56ec84e00a2375",
-      "historical_snapshot_byte_exact": true
+      "sha256": "f592dc5189b19ba6afeacce31947cef546f0577b22a04c27274dcae4d547b1fd",
+      "bytes": 16396,
+      "git_blob": "cea252b8bc7523142993949a43518b52998a661e"
     },
     {
       "path": "ui/src/components/AgentConfigForm.edit.test.tsx",
-      "git_blob": "9c6e4db04fe1c5a5fc61e02145c841cb9989f283",
       "sha256": "9f5b6c9f7ffdddce4a6f765f4607b3a33f022eb0c6ada530469b21ea0db823a8",
       "bytes": 4527,
-      "historical_test_snapshot_sha256": "9f5b6c9f7ffdddce4a6f765f4607b3a33f022eb0c6ada530469b21ea0db823a8",
-      "historical_snapshot_byte_exact": true
+      "git_blob": "9c6e4db04fe1c5a5fc61e02145c841cb9989f283"
     },
     {
       "path": "ui/src/components/AgentConfigForm.tsx",
-      "git_blob": "4bc8ffa73fbb6024290da58d94934b1a86aa406d",
       "sha256": "8a1a4d0bf874b50583f7ec9e108a247e951b30d5e60862eefce6321e1fcd831f",
       "bytes": 62307,
-      "historical_test_snapshot_sha256": "2d14a47c05014b30bff6a88026fc2bf3c04346aef931dd5a2ccbe13a11cdc354",
-      "historical_snapshot_byte_exact": false
+      "git_blob": "4bc8ffa73fbb6024290da58d94934b1a86aa406d"
     },
     {
       "path": "ui/src/lib/agent-config-patch.test.ts",
-      "git_blob": "f8f5b3f9c1e37c9f38e6c30e3a7cdc402fe8d7b4",
       "sha256": "69775ad035c8385a0950e5e49c2cadd6b82196edc34e628f3151fa232f4b9bb1",
       "bytes": 4277,
-      "historical_test_snapshot_sha256": "d58b83d1bcf0738380918509bf22fc2783ca53e69e8a47d34b6ac29b14ba4b9c",
-      "historical_snapshot_byte_exact": false
+      "git_blob": "f8f5b3f9c1e37c9f38e6c30e3a7cdc402fe8d7b4"
     },
     {
       "path": "ui/src/lib/agent-config-patch.ts",
-      "git_blob": "93a8ad3b8094cf1b662f9edb51944c20a15137c1",
       "sha256": "be5ef9b23f9c57c0997b33af06f5b23d26d23a376351be650c19c96cb6563719",
       "bytes": 3614,
-      "historical_test_snapshot_sha256": "bce35efb391a36b0f2b3d6d481c4cc8cf87953628f414654baddaf60fccc7225",
-      "historical_snapshot_byte_exact": false
+      "git_blob": "93a8ad3b8094cf1b662f9edb51944c20a15137c1"
     },
     {
       "path": "ui/src/lib/arg-list.test.ts",
-      "git_blob": "bd9b7cc75f9ab07a7739dadd2058cf0daff68568",
       "sha256": "aaeb683a146283e3ee110a2738c6d458934a02d94f2774c7728ff52d8eeaae9d",
       "bytes": 1677,
-      "historical_test_snapshot_sha256": "aaeb683a146283e3ee110a2738c6d458934a02d94f2774c7728ff52d8eeaae9d",
-      "historical_snapshot_byte_exact": true
+      "git_blob": "bd9b7cc75f9ab07a7739dadd2058cf0daff68568"
     },
     {
       "path": "ui/src/lib/arg-list.ts",
-      "git_blob": "8d2bf1ea1cdb32d06acef6153ccd842f8f7c4c8b",
       "sha256": "42de8f8b8e19bed8f9d9343b845d6cd7daa3d130de441b7013dbd9edaac91040",
       "bytes": 1744,
-      "historical_test_snapshot_sha256": "42de8f8b8e19bed8f9d9343b845d6cd7daa3d130de441b7013dbd9edaac91040",
-      "historical_snapshot_byte_exact": true
+      "git_blob": "8d2bf1ea1cdb32d06acef6153ccd842f8f7c4c8b"
     },
     {
       "path": "ui/src/pages/AgentDetail.tsx",
-      "git_blob": "1e31c0cec9bf9e78f94c36b6a1526ac3cf162afd",
       "sha256": "d12b7ec6405b1fa1b330f1ede38ec0b0eb12e50c2f90c41734385aa3a6af9784",
       "bytes": 169515,
-      "historical_test_snapshot_sha256": "936e3999049ddfa5372f0adfad54763226f3d86b3e542b98e6aea069fb8cc32d",
-      "historical_snapshot_byte_exact": false
+      "git_blob": "1e31c0cec9bf9e78f94c36b6a1526ac3cf162afd"
     }
   ],
   "license": {
@@ -82,16 +65,53 @@
     "file": "LICENSE.upstream",
     "sha256": "7f8a27f0979bded50e240caa8c8c29f3088ddf87032cb83e5a9732bff91d18b4"
   },
+  "independent_review": {
+    "verdict": "APPROVED on required exact base; not merge/adoption approval",
+    "counts": {
+      "control": {
+        "passed": 2,
+        "failed": 0,
+        "setup_errors": 0,
+        "hook_timeouts": 0,
+        "invocations": 1
+      },
+      "same12_candidate": {
+        "passed": 12,
+        "failed": 0,
+        "setup_errors": 0,
+        "hook_timeouts": 0,
+        "invocations": 1
+      },
+      "UI": {
+        "passed": 13,
+        "failed": 0,
+        "setup_errors": 0,
+        "hook_timeouts": 0,
+        "invocations": 1
+      }
+    },
+    "node": "22.16.0",
+    "vitest": "3.2.4",
+    "assertions": "All 12 original cases and 47 original expectations retained; 3 persistence assertions added.",
+    "review_sha256": "7ebbc49031222031592edf7f51975596769c19345258b39b8d560807b923a9ea"
+  },
   "apply_check": {
-    "all_eight_files": true,
-    "exact_result_tree": "8d7d7dd6f5abd8b138c0fe0b86f6eb328c6a9566",
-    "scope": "apply only; no product execution"
+    "result_tree": "239405e35499f698020db4e575ef6b74ebcf2457",
+    "scope": "exact source reproduction only"
   },
-  "historical_tests": {
-    "control_passed": 2,
-    "candidate_passed": 8,
-    "candidate_failed": 4,
-    "scope": "earlier test-only raw snapshot; committed-byte equivalence recorded per file; not final candidate verification"
+  "dependency": {
+    "pr": 26,
+    "status": "BLOCKED_C_P3_1",
+    "reason": "Async browser callback does not observe caller cancellation until callback resolves."
   },
+  "historical_wip": {
+    "commit": "accb52eaaabcf1e749d07aa2f0b18de55aef305d",
+    "results": "Earlier raw snapshot control2PASS/candidate8PASS4FAIL, not final acceptance."
+  },
+  "limitations": [
+    "Same-field last-writer-wins; no CAS or simultaneous-writer transaction proof.",
+    "Key removal/type change retains whole-config replacement and its stale-copy limitations.",
+    "No production secret-provider, DB, installed bundle, authenticated browser or live-save acceptance."
+  ],
   "installed_or_live_actions": false
 }

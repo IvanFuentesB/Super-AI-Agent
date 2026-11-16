@@ -1,9 +1,9 @@
 diff --git a/server/src/__tests__/agent-config-narrow-save-routes.test.ts b/server/src/__tests__/agent-config-narrow-save-routes.test.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..617907bc9b0c8176d288a3ff1ce89a111d59f3e0
+index 0000000000000000000000000000000000000000..cea252b8bc7523142993949a43518b52998a661e
 --- /dev/null
 +++ b/server/src/__tests__/agent-config-narrow-save-routes.test.ts
-@@ -0,0 +1,355 @@
+@@ -0,0 +1,366 @@
 +import type { Server } from "node:http";
 +import express from "express";
 +import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -54,6 +54,13 @@ index 0000000000000000000000000000000000000000..617907bc9b0c8176d288a3ff1ce89a11
 +    secretService: () => mockSecretService,
 +    syncInstructionsBundleConfigFromFilePath: mockSyncInstructionsBundleConfigFromFilePath,
 +    workspaceOperationService: () => ({}),
++  }));
++  // routes/agents.ts imports secretService straight from this module, not from the
++  // services barrel, so the barrel mock above does not cover it. Without this the real
++  // env normalization runs db.select() against the empty db stub for any secret_ref.
++  vi.doMock("../services/secrets.js", async (importOriginal) => ({
++    ...(await importOriginal<typeof import("../services/secrets.js")>()),
++    secretService: () => mockSecretService,
 +  }));
 +  vi.doMock("../adapters/index.js", () => ({
 +    findServerAdapter: (type: string) => ({ type }),
@@ -355,6 +362,10 @@ index 0000000000000000000000000000000000000000..617907bc9b0c8176d288a3ff1ce89a11
 +
 +    expect(error).toMatchObject({ status: 500 });
 +    expect(isUncertainSaveFailure(error)).toBe(true);
++    // The write really happened before the audit failure, and the GET reads that same store.
++    expect(mockLogActivity).toHaveBeenCalledTimes(1);
++    expect(mockAgentService.update).toHaveBeenCalledTimes(1);
++    expect(stored.adapterConfig.extraArgs).toEqual(NEW_EXTRA_ARGS);
 +    expect((await agentsApi.get(CEO_ID, "company-1")).adapterConfig.extraArgs).toEqual(NEW_EXTRA_ARGS);
 +    expect(mockAgentService.update).toHaveBeenCalledTimes(1);
 +  });
