@@ -15,6 +15,7 @@ not permission to deploy, start a service or mutate a real account.
 | Narrow configuration save | d2d7647eca88575870e079e359948520ce50290b, combined tree 47f0df456dace03cb9918435f5f4424969b0e3a9 with b32 correction | [PR #31](https://github.com/IvanFuentesB/Super-AI-Agent/pull/31), IvanCX/paperclip-narrow-save | APPROVED affected combined compatibility and service/declaration build; original e04/d2 provenance retained | Accepted source included through this PR31 integration; merge identity is in its receipt | No production UI bundle, live save or host adoption performed | Real-handler/form fixture checks within combined63; no production UI/CLI distribution or installed save acceptance |
 | Redacted-refusal source and private distributable | e8ad1fd98142e6a4f53172f143381a4fa4100dd7, result tree bdab2ce706f3e682781ad0e93da935155b937867 | Source-only port00ab7dc through PR34; private built payload excluded | Source18/18 separately PASS; artifact14/14 separately PASS; target-bound overlay APPROVED | Source merged at636e626724e5e75a4570ca7e8468cb360c813e28; no public binary distribution | NOT installed; separate launcher and target-staging gates remain | Nine emitted-auth and five built-UI synthetic scenarios; no full CLI bootstrap, service restart or authenticated live save |
 | Overlay launcher pin | Owner1e788e6ea92fbd37a1309a338654bb4120c8a73d; original raw677ceb55 to LF eb39b400; targete8ad1fd/treebdab2ce | Source-only follow-up in draft PR27; original published snapshot preserved | APPROVED pin source;11 independent gate cases PASS | DRAFT; no runtime/transaction integration approval | NOT installed; actual deployment operation and rehearsal pending | Real Git/preflight gate with inert build markers; not real package staging, service start, rollback or replay proof |
+| Overlay deployment transaction | Helperbcff4f0fc2dfc3c63fcc6642802652b45e350185; driver712d6e0d6e54c77823e9eae7c4c409f40b5f7ffa; harness3565834 | Source-only DRAFT PR27 head55e550c; private payload/receipts excluded | CHANGES_REQUESTED; six independently executed scenarios:5 PASS,1 FAIL; static safety findings retained | NOT merged; no transaction-use/adoption approval | NOT installed; owner correction and independent reacceptance required | Real-output apply/preflight, rejection, replay/collision, rollback and apply-interruption recovery pass; interrupted rollback falsely reports recovery complete with one UI file |
 | Runtime Paperclip status overlay | Frozen three-file archive 8bf3fd4891383a737b6aabcfde52e75d0541a2fc6f24dbca654c6c5976bb5382 | Unpublished: private tenant binding and missing runtime modules | 14 independent synthetic checks PASS; not live-state acceptance | Not integrated | Not installed here | Existing scoped source evidence retained; no new execution in this update |
 | Checkpoint correction | Original owner; no new immutable accepted candidate delivered | Unpublished; existing native gate retained | Old fixture run had 6 setup errors and zero product assertions; no new grant/preflight | Not integrated | No migration, restart or canonical baseline publication | Zero new behavioral execution; original six setup errors and native permission gate retained |
 | Publication checkpoints | 52d575697b1588938738d202173ce02ffdc6caa6 | [PR #30](https://github.com/IvanFuentesB/Super-AI-Agent/pull/30) | Independent 13 static/docs checks PASS | Merged at 9f2d2a4530e48baa8ba794c880960d8593ff9908 | Instructions only; no monitoring service or global setting | 13 independent static/docs checks; policy is instructions, not a monitoring service |
@@ -143,6 +144,42 @@ refusal before writes, interruption recovery, renamed UI chunk handling/serving
 root, unrelated sentinels, exact source/output/pin rollback and replay semantics.
 No new service, database, browser credential or provider execution is necessary
 to demonstrate these fixture invariants. No installed adoption is approved.
+
+### Executed transaction acceptance: changes requested
+
+This later result supersedes only the earlier missing-rehearsal readiness snapshot
+above. Its original verdict/evidence remains retained. The owner delivered frozen
+harness3565834, unchanged core helperbcff4f0 and driver712d6e0, completed run3
+(fifteen reported owner scenarios) and separate one-boundary process-kill receipts.
+Owner serial happy-path/recovery results are not independent security acceptance.
+
+Independent parent execution used real accepted output files and genuine launcher
+installation_check in an owned disposable real Git target. Six scenarios ran:
+five PASS and one FAIL. Raw wrong-preimage/missing-package rejection before writes,
+valid apply/preflight, zero-write replay, exact rollback/collision refusal and
+recovery between output renames passed. No inert build markers were substituted.
+The execution worker's earlier source/baseline preparation ran zero cases and is
+not counted; one parent fixture HOME/Node setup failure is retained separately.
+
+The failing invariant is interrupted rollback recovery. After valid apply, a
+partial backup restore leaves ui/dist with only index.html while the journal
+still says complete. Actual recover returns NOTHING_TO_RECOVER/stage complete
+without restoring the baseline. The independent aggregate is FAIL, not a wholly
+green run. This fault injection exercised the real helper after actual filesystem
+changes; no product verifier, pin or assertion was relaxed. It is separate from
+the owner's real process-kill result and from the earlier apply interruption.
+
+Static findings also require bounded path/reparse ownership, Git environment and
+journal/ref binding, refusal of later output drift, and target-scoped exclusive
+locking. Seven source safety findings and driver-accounting limits remain held
+for owner correction. No reviewer implemented a product fix. A corrected frozen
+helper and independent reacceptance are required before transaction approval.
+The accepted overlay and source-only launcher1e788e6 approvals remain unchanged.
+
+The source-only review snapshot is published in DRAFT PR27, never merged or
+advertised as a portable installer. Live host startup, native actions, DB/auth/save
+and consent integration are not exercised here. No new first-party host-consent
+candidate was delivered; the previously recorded capability gap remains separate.
 
 ### Actual review results and remaining gates
 
