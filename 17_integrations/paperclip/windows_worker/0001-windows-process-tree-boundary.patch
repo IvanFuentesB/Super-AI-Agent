@@ -1,0 +1,911 @@
+diff --git a/doc/plans/2026-11-11-windows-worker-lifecycle.md b/doc/plans/2026-11-11-windows-worker-lifecycle.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..0eacb7d7e228d33f8830804eeac604e3bf8a96f3
+--- /dev/null
++++ b/doc/plans/2026-11-11-windows-worker-lifecycle.md
+@@ -0,0 +1,60 @@
++# Windows worker lifecycle repair
++
++Base: Paperclip 0.3.1, source revision 5e55510dbeb869bacfcd843f975632dc739519af.
++
++The Windows adapter previously signalled its immediate child only. Detached nested
++children could survive parent exit, timeout and cancellation, including holding
++the parent's output pipes open. A disposable Node 22.23.2 fixture reproduced all
++three cases. No real provider, desktop action or Paperclip database was involved.
++
++## Execution boundary
++
++The existing runChildProcess Windows branch now launches a small private Python
++bridge using the installed interpreter selected by an absolute, operator-owned
++PAPERCLIP_WINDOWS_PYTHON setting. Missing configuration fails closed. No download,
++PATH search, policy override or service lifecycle is part of this change.
++
++Each attempt has an independent UUID and unnamed kernel Job Object with
++KILL_ON_JOB_CLOSE and no breakaway permission. STARTUPINFOEX JOB_LIST assigns
++membership atomically at process creation; HANDLE_LIST limits inherited handles
++to worker stdio. The root remains suspended until onSpawn metadata is handled.
++The worker never receives the helper's control or protocol handles. Native argv,
++environment sanitization and adapter permission choices remain in the existing
++adapter path. Explicit native bypass=false remains effective.
++
++Cancellation, control EOF, deadline and natural root exit all terminate remaining
++job members and query ActiveProcesses until zero, with a five-second cleanup
++budget. The Node caller only confirms cleanup after the matching final receipt
++and successful helper exit. Missing receipts, malformed identity, query failure
++or helper crash report uncertainty. Closing the helper's sole job handle is the
++crash backstop. This is process lifetime containment, not a filesystem/network or
++desktop permission sandbox.
++
++Heartbeat cancellation uses the live attempt owner's stop operation on Windows.
++Persisted numeric PIDs do not authorize termination after owner loss. Agent-pause
++cancellation now waits for cleanup before updating cancelled status. There is no
++database schema change. Unix group signalling remains on its existing path.
++Retries of a run share the original deadline; cancelled/expired attempts cannot
++be relaunched under that run ID. Deadline zero retains existing unlimited-run
++semantics, while root-exit cleanup is always bounded.
++
++## Adoption owned by Hermes
++
++1. Obtain the independent review verdict for the exact fix commit and evidence.
++2. Cherry-pick the reviewed fix into the existing Paperclip source while preserving
++   Claude's onboarding changes and Hermes's MCP commit. Stop on overlapping edits.
++3. Set PAPERCLIP_WINDOWS_PYTHON in the existing service's owned launch environment
++   to the already-installed Python interpreter. Do not change worker permissions,
++   credentials, models, database, company or agents. No unrestricted mode.
++4. Build @paperclipai/adapter-utils with the existing Node/package environment;
++   retain src/windows-worker.py alongside dist (included in package files).
++   Typecheck/build the service using its existing workspace links before adoption.
++5. Hermes alone schedules any shared-service restart and real adapter acceptance.
++   Builder tests are inert worker fixtures; no provider/native desktop task was
++   dispatched and no installed service source/bundle was modified.
++
++Windows 10+ is required for PROC_THREAD_ATTRIBUTE_JOB_LIST. Unsupported native
++containment, interpreter failures and nested-job restrictions fail closed.
++
++References: https://learn.microsoft.com/en-us/windows/win32/procthread/job-objects
++and https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-updateprocthreadattribute.
+diff --git a/packages/adapter-utils/package.json b/packages/adapter-utils/package.json
+index 10bbecf90230c3f864b07ebdcf348904a983b747..beead1fae9edd223b339af7f5f50808ce27fb518 100644
+--- a/packages/adapter-utils/package.json
++++ b/packages/adapter-utils/package.json
+@@ -32,7 +32,8 @@
+     "types": "./dist/index.d.ts"
+   },
+   "files": [
+-    "dist"
++    "dist",
++    "src/windows-worker.py"
+   ],
+   "scripts": {
+     "build": "tsc",
+diff --git a/packages/adapter-utils/src/server-utils.ts b/packages/adapter-utils/src/server-utils.ts
+index 425a1f3f0fa35d811ba9c125f1c665c63e26932e..6ec4300be8f20e4bfc5666300793ab2e9667f330 100644
+--- a/packages/adapter-utils/src/server-utils.ts
++++ b/packages/adapter-utils/src/server-utils.ts
+@@ -1,6 +1,7 @@
+-import { spawn, type ChildProcess } from "node:child_process";
++import { spawn, ChildProcess } from "node:child_process";
+ import { constants as fsConstants, promises as fs, type Dirent } from "node:fs";
+ import path from "node:path";
++import { runWindowsWorker } from "./windows-worker.js";
+ import { buildSshSpawnTarget, type SshRemoteExecutionSpec } from "./ssh.js";
+ import type {
+   AdapterSkillEntry,
+@@ -15,6 +16,10 @@ export interface RunProcessResult {
+   stderr: string;
+   pid: number | null;
+   startedAt: string | null;
++  cleanupVerified?: boolean;
++  ownershipId?: string;
++  ownedPids?: number[];
++  executionStatus?: "completed" | "cancelled" | "failed";
+ }
+ 
+ export interface TerminalResultCleanupOptions {
+@@ -26,6 +31,7 @@ interface RunningProcess {
+   child: ChildProcess;
+   graceSec: number;
+   processGroupId: number | null;
++  stop?: () => Promise<void>;
+ }
+ 
+ interface SpawnTarget {
+@@ -1473,6 +1479,22 @@ export async function runChildProcess(
+   },
+ ): Promise<RunProcessResult> {
+   const onLogError = opts.onLogError ?? ((err, id, msg) => console.warn({ err, runId: id }, msg));
++  let cancelledBeforeSpawn = false;
++  let settled!: () => void;
++  const settlement = new Promise<void>((resolve) => { settled = resolve; });
++  const pending: RunningProcess = {
++    child: new ChildProcess(), graceSec: opts.graceSec, processGroupId: null,
++    stop: async () => {
++      cancelledBeforeSpawn = true;
++      const owner = runningProcesses.get(runId);
++      if (owner && owner !== pending) await owner.stop?.();
++      else await settlement;
++    },
++  };
++  if (process.platform === "win32") {
++    if (runningProcesses.has(runId)) throw new Error("Worker run already active");
++    runningProcesses.set(runId, pending);
++  }
+   return new Promise<RunProcessResult>((resolve, reject) => {
+     const rawMerged: NodeJS.ProcessEnv = {
+       ...sanitizeInheritedPaperclipEnv(process.env),
+@@ -1500,10 +1522,23 @@ export async function runChildProcess(
+       remoteEnv: opts.remoteExecution ? opts.env : null,
+     })
+       .then((target) => {
++        if (process.platform === "win32") {
++          if (runningProcesses.get(runId) === pending) runningProcesses.delete(runId);
++          if (cancelledBeforeSpawn) {
++            void target.cleanup?.();
++            resolve({ exitCode: null, signal: "SIGTERM", timedOut: false, stdout: "", stderr: "",
++              pid: null, startedAt: null, cleanupVerified: true, executionStatus: "cancelled" });
++            return;
++          }
++          void runWindowsWorker(runId, target.command, target.args, {
++            ...opts, cwd: target.cwd ?? opts.cwd, env: mergedEnv,
++          }, runningProcesses).finally(() => target.cleanup?.()).then(resolve, reject);
++          return;
++        }
+         const child = spawn(target.command, target.args, {
+           cwd: target.cwd ?? opts.cwd,
+           env: mergedEnv,
+-          detached: process.platform !== "win32",
++          detached: true,
+           shell: false,
+           stdio: [opts.stdin != null ? "pipe" : "ignore", "pipe", "pipe"],
+         }) as ChildProcessWithEvents;
+@@ -1665,5 +1700,8 @@ export async function runChildProcess(
+         });
+       })
+       .catch(reject);
++  }).finally(() => {
++    if (runningProcesses.get(runId) === pending) runningProcesses.delete(runId);
++    settled();
+   });
+ }
+diff --git a/packages/adapter-utils/src/windows-worker-protocol.test.ts b/packages/adapter-utils/src/windows-worker-protocol.test.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..890ebc330c86d60ab06c3a3299f9696ba2cc4943
+--- /dev/null
++++ b/packages/adapter-utils/src/windows-worker-protocol.test.ts
+@@ -0,0 +1,36 @@
++import { EventEmitter } from "node:events";
++import { PassThrough } from "node:stream";
++import { describe, expect, it, vi } from "vitest";
++
++let current: any;
++vi.mock("node:child_process", () => ({ spawn: () => current }));
++import { runWindowsWorker } from "./windows-worker.js";
++
++describe("Windows cleanup receipts", () => {
++  it.each(["missing", "unverified", "wrong_identity", "abnormal_exit"])("refuses %s cleanup evidence", async (mode) => {
++    current = Object.assign(new EventEmitter(), {
++      stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(),
++      kill() { queueMicrotask(() => current.emit("close", 125)); },
++    });
++    const saved = process.env.PAPERCLIP_WINDOWS_PYTHON;
++    process.env.PAPERCLIP_WINDOWS_PYTHON = process.execPath;
++    try {
++      let input = "";
++      current.stdin.on("data", (chunk: Buffer) => { input += chunk.toString(); });
++      const promise = runWindowsWorker(crypto.randomUUID(), process.execPath, [], {
++        cwd: process.cwd(), env: {}, timeoutSec: 1, graceSec: 1, onLog: async () => {},
++      }, new Map());
++      const rejected = expect(promise).rejects.toThrow(/uncertain|identity/);
++      const packet = JSON.parse(input.trim());
++      if (mode !== "missing") current.stdout.write(JSON.stringify({
++        type: "result", identity: mode === "wrong_identity" ? "old-attempt" : packet.identity,
++        cleanupVerified: mode !== "unverified", status: "completed", exitCode: 0, ownedPids: [],
++      }) + "\n");
++      current.emit("close", mode === "abnormal_exit" ? 1 : 0);
++      await rejected;
++    } finally {
++      if (saved === undefined) delete process.env.PAPERCLIP_WINDOWS_PYTHON;
++      else process.env.PAPERCLIP_WINDOWS_PYTHON = saved;
++    }
++  });
++});
+diff --git a/packages/adapter-utils/src/windows-worker.py b/packages/adapter-utils/src/windows-worker.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..35f04e84a398c8aed0622ea91230db8b6c5d8a04
+--- /dev/null
++++ b/packages/adapter-utils/src/windows-worker.py
+@@ -0,0 +1,250 @@
++"""Private Windows Job bridge for adapter-utils. JSON stdio is control, never worker stdio."""
++import base64
++import ctypes as c
++from ctypes import wintypes as w
++import json
++import msvcrt
++import os
++import queue
++import subprocess
++import sys
++import threading
++import time
++
++
++class Basic(c.Structure):
++    _fields_ = [("process_time", c.c_int64), ("job_time", c.c_int64),
++                ("flags", w.DWORD), ("min_working", c.c_size_t),
++                ("max_working", c.c_size_t), ("active", w.DWORD),
++                ("affinity", c.c_size_t), ("priority", w.DWORD), ("scheduling", w.DWORD)]
++
++
++class Limits(c.Structure):
++    _fields_ = [("basic", Basic), ("io", c.c_uint64 * 6),
++                ("process_memory", c.c_size_t), ("job_memory", c.c_size_t),
++                ("peak_process", c.c_size_t), ("peak_job", c.c_size_t)]
++
++
++class Startup(c.Structure):
++    _fields_ = [("cb", w.DWORD), ("reserved", w.LPWSTR), ("desktop", w.LPWSTR),
++                ("title", w.LPWSTR), ("x", w.DWORD), ("y", w.DWORD),
++                ("xs", w.DWORD), ("ys", w.DWORD), ("xc", w.DWORD), ("yc", w.DWORD),
++                ("fill", w.DWORD), ("flags", w.DWORD), ("show", w.WORD),
++                ("reserved_size", w.WORD), ("reserved_bytes", c.c_void_p),
++                ("stdin", w.HANDLE), ("stdout", w.HANDLE), ("stderr", w.HANDLE)]
++
++
++class StartupEx(c.Structure):
++    _fields_ = [("startup", Startup), ("attributes", c.c_void_p)]
++
++
++class ProcessInfo(c.Structure):
++    _fields_ = [("process", w.HANDLE), ("thread", w.HANDLE), ("pid", w.DWORD), ("tid", w.DWORD)]
++
++
++kernel = c.WinDLL("kernel32", use_last_error=True)
++for name, args, result in [
++    ("CreateJobObjectW", [c.c_void_p, w.LPCWSTR], w.HANDLE),
++    ("SetInformationJobObject", [w.HANDLE, c.c_int, c.c_void_p, w.DWORD], w.BOOL),
++    ("QueryInformationJobObject", [w.HANDLE, c.c_int, c.c_void_p, w.DWORD, c.c_void_p], w.BOOL),
++    ("TerminateJobObject", [w.HANDLE, w.UINT], w.BOOL),
++    ("CloseHandle", [w.HANDLE], w.BOOL),
++    ("InitializeProcThreadAttributeList", [c.c_void_p, w.DWORD, w.DWORD, c.POINTER(c.c_size_t)], w.BOOL),
++    ("UpdateProcThreadAttribute", [c.c_void_p, w.DWORD, c.c_size_t, c.c_void_p, c.c_size_t, c.c_void_p, c.c_void_p], w.BOOL),
++    ("DeleteProcThreadAttributeList", [c.c_void_p], None),
++    ("CreateProcessW", [w.LPCWSTR, w.LPWSTR, c.c_void_p, c.c_void_p, w.BOOL, w.DWORD,
++                        c.c_void_p, w.LPCWSTR, c.c_void_p, c.POINTER(ProcessInfo)], w.BOOL),
++    ("ResumeThread", [w.HANDLE], w.DWORD),
++    ("WaitForSingleObject", [w.HANDLE, w.DWORD], w.DWORD),
++    ("GetExitCodeProcess", [w.HANDLE, c.POINTER(w.DWORD)], w.BOOL),
++    ("GetProcessTimes", [w.HANDLE, c.c_void_p, c.c_void_p, c.c_void_p, c.c_void_p], w.BOOL),
++]:
++    fn = getattr(kernel, name)
++    fn.argtypes, fn.restype = args, result
++
++
++def checked(value):
++    if not value:
++        raise c.WinError(c.get_last_error())
++    return value
++
++
++def main():
++    packet = json.loads(sys.stdin.buffer.readline(8 * 1024 * 1024))
++    identity = packet["identity"]
++    events = queue.Queue(maxsize=128)
++    stopped = threading.Event()
++    reason = ["cancelled"]
++    written = threading.Event()
++    resume = threading.Event()
++
++    def emit(value):
++        value["identity"] = identity
++        try:
++            events.put_nowait(value)
++        except queue.Full:
++            reason[0] = "uncertain"
++            stopped.set()
++
++    def writer():
++        while True:
++            value = events.get()
++            data = (json.dumps(value) + "\n").encode()
++            try:
++                while data:
++                    data = data[os.write(sys.stdout.fileno(), data):]
++            except OSError:
++                stopped.set()
++                return
++            if value["type"] == "result":
++                written.set()
++                return
++
++    def control():
++        # EOF means the Node owner disappeared. No persisted PID can reopen this channel.
++        for line in sys.stdin.buffer:
++            try:
++                value = json.loads(line)
++                if value == {"identity": identity, "type": "cancel"}:
++                    stopped.set()
++                elif value == {"identity": identity, "type": "resume"}:
++                    resume.set()
++            except (ValueError, TypeError):
++                stopped.set()
++        stopped.set()
++
++    threading.Thread(target=writer, daemon=True).start()
++    threading.Thread(target=control, daemon=True).start()
++    job = checked(kernel.CreateJobObjectW(None, None))
++    pi = ProcessInfo()
++    attrs = None
++    fds = []
++    readers = []
++    owned = set()
++    status = "uncertain"
++    code = None
++    verified = False
++    native_error = None
++    try:
++        limits = Limits()
++        limits.basic.flags = 0x2000  # KILL_ON_JOB_CLOSE; never permit breakaway.
++        checked(kernel.SetInformationJobObject(job, 9, c.byref(limits), c.sizeof(limits)))
++        size = c.c_size_t()
++        kernel.InitializeProcThreadAttributeList(None, 2, 0, c.byref(size))
++        attrs = c.create_string_buffer(size.value)
++        checked(kernel.InitializeProcThreadAttributeList(attrs, 2, 0, c.byref(size)))
++        job_list = (w.HANDLE * 1)(job)
++        checked(kernel.UpdateProcThreadAttribute(attrs, 0, 0x2000D, job_list, c.sizeof(job_list), None, None))
++        in_r, in_w = os.pipe()
++        out_r, out_w = os.pipe()
++        err_r, err_w = os.pipe()
++        fds = [in_r, in_w, out_r, out_w, err_r, err_w]
++        inherited = (w.HANDLE * 3)(*[msvcrt.get_osfhandle(fd) for fd in (in_r, out_w, err_w)])
++        for fd in (in_r, out_w, err_w):
++            os.set_inheritable(fd, True)
++        checked(kernel.UpdateProcThreadAttribute(attrs, 0, 0x20002, inherited, c.sizeof(inherited), None, None))
++        si = StartupEx()
++        si.startup.cb = c.sizeof(si)
++        si.startup.flags = 0x100  # STARTF_USESTDHANDLES
++        si.startup.stdin, si.startup.stdout, si.startup.stderr = inherited
++        si.attributes = c.cast(attrs, c.c_void_p)
++        command = c.create_unicode_buffer(subprocess.list2cmdline([packet["command"], *packet["args"]]))
++        deadline = packet.get("deadline")
++        if stopped.is_set() or (deadline and time.time() >= deadline):
++            status = "cancelled" if stopped.is_set() else "timed_out"
++        else:
++            # Atomic job membership closes even the suspended-child startup crash gap.
++            checked(kernel.CreateProcessW(packet["command"], command, None, None, True,
++                                          0x80000 | 0x4 | 0x8000000, None, packet["cwd"], c.byref(si), c.byref(pi)))
++            owned.add(pi.pid)
++            times = [c.c_uint64() for _ in range(4)]
++            checked(kernel.GetProcessTimes(pi.process, *[c.byref(t) for t in times]))
++            emit({"type": "spawn", "pid": pi.pid, "creationTime": str(times[0].value)})
++            for fd in (in_r, out_w, err_w):
++                os.close(fd)
++                fds.remove(fd)
++
++            def relay(fd, stream):
++                try:
++                    while chunk := os.read(fd, 4096):
++                        emit({"type": "output", "stream": stream, "data": base64.b64encode(chunk).decode()})
++                except OSError:
++                    pass
++
++            for fd, stream in ((out_r, "stdout"), (err_r, "stderr")):
++                thread = threading.Thread(target=relay, args=(fd, stream), daemon=True)
++                thread.start()
++                readers.append(thread)
++
++            def feed():
++                try:
++                    data = packet.get("stdin", "").encode("utf-8")
++                    while data:
++                        data = data[os.write(in_w, data):]
++                except OSError:
++                    pass
++                finally:
++                    os.close(in_w)
++
++            fds.remove(in_w)
++            threading.Thread(target=feed, daemon=True).start()
++            while not resume.is_set() and not stopped.is_set() and not (deadline and time.time() >= deadline):
++                time.sleep(0.02)
++            if not stopped.is_set() and not (deadline and time.time() >= deadline):
++                if kernel.ResumeThread(pi.thread) == 0xFFFFFFFF:
++                    raise c.WinError(c.get_last_error())
++            while True:
++                pids = c.create_string_buffer(8 + 8 * 4096)
++                checked(kernel.QueryInformationJobObject(job, 3, pids, len(pids), None))
++                count = w.DWORD.from_buffer(pids, 4).value
++                owned.update(c.c_size_t.from_buffer(pids, 8 + i * c.sizeof(c.c_size_t)).value for i in range(count))
++                if stopped.is_set():
++                    status = reason[0]
++                    break
++                if deadline and time.time() >= deadline:
++                    status = "timed_out"
++                    break
++                if kernel.WaitForSingleObject(pi.process, 0) == 0:
++                    exit_code = w.DWORD()
++                    checked(kernel.GetExitCodeProcess(pi.process, c.byref(exit_code)))
++                    code = exit_code.value
++                    status = "completed" if code == 0 else "failed"
++                    break
++                time.sleep(0.02)
++    except Exception as error:
++        # Do not echo argv, env, prompt or native exception content into logs.
++        status = "uncertain"
++        native_error = getattr(error, "winerror", None)
++    finally:
++        try:
++            checked(kernel.TerminateJobObject(job, 1))
++            until = time.monotonic() + 5
++            while time.monotonic() < until:
++                accounting = c.create_string_buffer(48)
++                checked(kernel.QueryInformationJobObject(job, 1, accounting, 48, None))
++                if w.DWORD.from_buffer(accounting, 40).value == 0:
++                    verified = True
++                    break
++                time.sleep(0.02)
++        except Exception:
++            verified = False
++        for thread in readers:
++            thread.join(timeout=0.5)
++        for fd in fds:
++            os.close(fd)
++        if pi.thread:
++            kernel.CloseHandle(pi.thread)
++        if pi.process:
++            kernel.CloseHandle(pi.process)
++        if attrs:
++            kernel.DeleteProcThreadAttributeList(attrs)
++        kernel.CloseHandle(job)
++    emit({"type": "result", "status": status if verified else "uncertain",
++          "cleanupVerified": verified, "exitCode": code, "ownedPids": sorted(owned),
++          "nativeErrorCode": native_error})
++    written.wait(timeout=2)
++    os._exit(0 if written.is_set() and verified else 125)
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/packages/adapter-utils/src/windows-worker.test.ts b/packages/adapter-utils/src/windows-worker.test.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..a02ae68198f363a25c27c83f20c8df76b00466c0
+--- /dev/null
++++ b/packages/adapter-utils/src/windows-worker.test.ts
+@@ -0,0 +1,182 @@
++import { spawn } from "node:child_process";
++import { randomUUID } from "node:crypto";
++import { mkdir, writeFile } from "node:fs/promises";
++import os from "node:os";
++import path from "node:path";
++import { fileURLToPath } from "node:url";
++import { afterAll, describe, expect, it } from "vitest";
++import { runChildProcess, runningProcesses, type RunProcessResult } from "./server-utils.js";
++
++const evidence: unknown[] = [];
++const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
++const alive = (pid: number) => { try { process.kill(pid, 0); return true; } catch { return false; } };
++async function until(check: () => boolean, ms = 5000) {
++  const end = Date.now() + ms;
++  while (!check() && Date.now() < end) await sleep(20);
++  expect(check()).toBe(true);
++}
++const opts = () => ({ cwd: os.tmpdir(), env: {}, timeoutSec: 5, graceSec: 1, onLog: async () => {} });
++const tree = (rootExit = false) => {
++  const leaf = "console.log('leaf:'+process.pid);setInterval(()=>{},1000)";
++  const branch = `const{spawn}=require('node:child_process');spawn(process.execPath,['-e',${JSON.stringify(leaf)}],{detached:true,stdio:['ignore','inherit','inherit']});console.log('branch:'+process.pid);setInterval(()=>{},1000)`;
++  return `const{spawn}=require('node:child_process');spawn(process.execPath,['-e',${JSON.stringify(branch)}],{detached:true,stdio:['ignore','inherit','inherit']});console.log('root:'+process.pid);${rootExit ? "setTimeout(()=>process.exit(0),400)" : "setInterval(()=>{},1000)"}`;
++};
++function assertEmpty(result: RunProcessResult) {
++  expect(result.cleanupVerified).toBe(true);
++  expect(result.ownershipId).toMatch(/^[a-f0-9-]{36}$/);
++  const outputPids = [...result.stdout.matchAll(/(?:root|branch|leaf):(\d+)/g)].map((m) => Number(m[1]));
++  for (const pid of [...(result.ownedPids ?? []), ...outputPids]) expect(alive(pid)).toBe(false);
++  evidence.push({ ...result, node: process.version, outputPids, allObservedExited: true });
++}
++
++describe.skipIf(process.platform !== "win32")("Windows owned worker boundary", () => {
++  it("completes an actual bounded worker with exact UTF-8 stdin/stdout", async () => {
++    const result = await runChildProcess(randomUUID(), process.execPath,
++      ["-e", "process.stdin.pipe(process.stdout)"], { ...opts(), stdin: "supervised fixture 日本語 😀" });
++    expect(result.stdout).toBe("supervised fixture 日本語 😀");
++    expect(result.executionStatus).toBe("completed");
++    assertEmpty(result);
++  });
++  it("cleans nested detached descendants when their root exits normally", async () => {
++    const result = await runChildProcess(randomUUID(), process.execPath, ["-e", tree(true)], opts());
++    expect(result.stdout).toContain("leaf:");
++    expect(result.executionStatus).toBe("completed");
++    assertEmpty(result);
++  });
++  it("expires one deadline and verifies the whole detached tree exited", async () => {
++    const result = await runChildProcess(randomUUID(), process.execPath, ["-e", tree()], { ...opts(), timeoutSec: 1 });
++    expect(result.stdout).toContain("leaf:");
++    expect(result.timedOut).toBe(true);
++    expect(result.executionStatus).toBe("failed");
++    assertEmpty(result);
++  });
++  it("cancels nested workers while preserving a same-executable unrelated process", async () => {
++    const sentinel = spawn(process.execPath, ["-e", "setTimeout(()=>{},15000)"], { stdio: "ignore" });
++    try {
++      const id = randomUUID();
++      let output = "";
++      const promise = runChildProcess(id, process.execPath, ["-e", tree()], {
++        ...opts(), onLog: async (_s, chunk) => { output += chunk; },
++      });
++      await until(() => output.includes("leaf:"));
++      const owner = runningProcesses.get(id)!;
++      await owner.stop!();
++      const result = await promise;
++      expect(result.executionStatus).toBe("cancelled");
++      assertEmpty(result);
++      expect(alive(sentinel.pid!)).toBe(true);
++      // An old owner closure cannot affect a new task even after registry removal.
++      const secondId = randomUUID();
++      const second = runChildProcess(secondId, process.execPath, ["-e", "setTimeout(()=>{},700)"], opts());
++      await until(() => runningProcesses.has(secondId));
++      await owner.stop!();
++      expect((await second).executionStatus).toBe("completed");
++      evidence.push({ unrelatedPid: sentinel.pid, survivedCancellation: true, staleStopHarmless: true });
++    } finally { sentinel.kill(); await new Promise((resolve) => sentinel.on("close", resolve)); }
++  });
++  it("latches cancellation before spawn metadata completes and never resumes worker input", async () => {
++    const id = randomUUID();
++    let release!: () => void;
++    let spawned = false;
++    const gate = new Promise<void>((resolve) => { release = resolve; });
++    const promise = runChildProcess(id, process.execPath, ["-e", "console.log('SHOULD_NOT_RUN')"], {
++      ...opts(), onSpawn: async () => { spawned = true; await gate; },
++    });
++    await until(() => spawned);
++    await runningProcesses.get(id)!.stop!();
++    release();
++    const result = await promise;
++    expect(result.stdout).toBe("");
++    expect(result.executionStatus).toBe("cancelled");
++    assertEmpty(result);
++  });
++  it("handles immediate stop during asynchronous spawn resolution", async () => {
++    const id = randomUUID();
++    const promise = runChildProcess(id, process.execPath, ["-e", "console.log('SHOULD_NOT_RUN')"], opts());
++    await runningProcesses.get(id)!.stop!();
++    const result = await promise;
++    expect(result.cleanupVerified).toBe(true);
++    expect(result.pid).toBe(null);
++    expect(result.stdout).toBe("");
++  });
++  it("retains a single deadline across same-run retries", async () => {
++    const id = randomUUID();
++    const first = await runChildProcess(id, process.execPath, ["-e", "setTimeout(()=>process.exit(2),350)"], { ...opts(), timeoutSec: 1 });
++    expect(first.executionStatus).toBe("failed");
++    const second = await runChildProcess(id, process.execPath, ["-e", "setTimeout(()=>{},10000)"], { ...opts(), timeoutSec: 1 });
++    expect(second.timedOut).toBe(true);
++    assertEmpty(second);
++  });
++  it("closes the Job on unexpected helper death and reports uncertainty", async () => {
++    const id = randomUUID();
++    let output = "";
++    const promise = runChildProcess(id, process.execPath, ["-e", tree()], {
++      ...opts(), onLog: async (_s, text) => { output += text; },
++    });
++    const rejected = expect(promise).rejects.toThrow(/uncertain/);
++    await until(() => output.includes("leaf:"));
++    const pids = [...output.matchAll(/:(\d+)/g)].map((m) => Number(m[1]));
++    runningProcesses.get(id)!.child.kill();
++    await rejected;
++    await until(() => pids.every((pid) => !alive(pid)));
++    evidence.push({ helperCrashPids: pids, allObservedExited: true, outcome: "uncertain" });
++  });
++  it("fails closed without an installed explicitly configured helper interpreter", async () => {
++    const saved = process.env.PAPERCLIP_WINDOWS_PYTHON;
++    delete process.env.PAPERCLIP_WINDOWS_PYTHON;
++    try { await expect(runChildProcess(randomUUID(), process.execPath, ["-e", ""], opts())).rejects.toThrow(/PAPERCLIP_WINDOWS_PYTHON/); }
++    finally { process.env.PAPERCLIP_WINDOWS_PYTHON = saved; }
++  });
++  it("does not let a stuck logging callback prevent confirmed cancellation", async () => {
++    const id = randomUUID();
++    let output = false;
++    const promise = runChildProcess(id, process.execPath, ["-e", tree()], {
++      ...opts(), onLog: async () => { output = true; await new Promise(() => {}); },
++    });
++    await until(() => output);
++    await runningProcesses.get(id)!.stop!();
++    assertEmpty(await promise);
++  });
++  it("cleans the owned Job after unexpected Node owner exit", async () => {
++    const helper = fileURLToPath(new URL("./windows-worker.py", import.meta.url));
++    const packet = { identity: randomUUID(), command: process.execPath, args: ["-e", tree()], cwd: os.tmpdir(), deadline: Date.now() / 1000 + 10 };
++    const controllerCode = `const{spawn}=require('node:child_process');const p=spawn(${JSON.stringify(process.env.PAPERCLIP_WINDOWS_PYTHON)},['-I','-B',${JSON.stringify(helper)}],{stdio:['pipe','pipe','ignore']});console.log(JSON.stringify({helper:p.pid}));p.stdin.write(JSON.stringify(${JSON.stringify(packet)})+'\\n');p.stdin.write(JSON.stringify({identity:${JSON.stringify(packet.identity)},type:'resume'})+'\\n');p.stdout.pipe(process.stdout);setInterval(()=>{},1000);`;
++    const controller = spawn(process.execPath, ["-e", controllerCode], { stdio: ["ignore", "pipe", "ignore"] });
++    let output = "";
++    controller.stdout.on("data", (b) => { output += b.toString(); });
++    const observed = new Set<number>();
++    let leaf = false;
++    try {
++      await until(() => {
++        for (const line of output.trim().split("\n")) {
++          try {
++            const value = JSON.parse(line);
++            if (value.helper) observed.add(value.helper);
++            if (value.type === "spawn") observed.add(value.pid);
++            if (value.type === "output") {
++              const text = Buffer.from(value.data, "base64").toString();
++              for (const match of text.matchAll(/:(\d+)/g)) observed.add(Number(match[1]));
++              if (text.includes("leaf:")) leaf = true;
++            }
++          } catch { /* last transport frame may be partial */ }
++        }
++        return leaf;
++      });
++      controller.kill();
++      await until(() => [...observed].every((pid) => !alive(pid)));
++      evidence.push({ ownerCrashPids: [...observed], allObservedExited: true });
++    } finally { controller.kill(); }
++  });
++  it("passes explicit permission arguments and metacharacters unchanged without a shell", async () => {
++    const args = ["--permission-mode", "default", "spaces and 日本語", "& exit 99", 'quote"value'];
++    const result = await runChildProcess(randomUUID(), process.execPath,
++      ["-e", "process.stdout.write(JSON.stringify(process.argv.slice(1)))", "--", ...args], opts());
++    expect(JSON.parse(result.stdout)).toEqual(args);
++    assertEmpty(result);
++  });
++  afterAll(async () => {
++    const root = path.join(os.tmpdir(), "paperclip-worker-runtime-evidence");
++    await mkdir(root, { recursive: true });
++    await writeFile(path.join(root, `windows-${process.pid}.json`), JSON.stringify(evidence, null, 2));
++  });
++});
+diff --git a/packages/adapter-utils/src/windows-worker.ts b/packages/adapter-utils/src/windows-worker.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..4b7bf79b8be68a4cd4f4cdb8c7ae6ac4e604b10c
+--- /dev/null
++++ b/packages/adapter-utils/src/windows-worker.ts
+@@ -0,0 +1,146 @@
++import { spawn, type ChildProcess } from "node:child_process";
++import { randomUUID } from "node:crypto";
++import { fileURLToPath } from "node:url";
++import path from "node:path";
++import { StringDecoder } from "node:string_decoder";
++import type { RunProcessResult, TerminalResultCleanupOptions } from "./server-utils.js";
++
++export interface WindowsOwner {
++  child: ChildProcess;
++  graceSec: number;
++  processGroupId: null;
++  stop: () => Promise<void>;
++}
++
++// A run ID is immutable in Paperclip. Reject overlap even while spawn metadata is pending.
++const attempts = new Map<string, { deadline: number | null; stopped: boolean }>();
++export function runWindowsWorker(
++  runId: string, command: string, args: string[],
++  opts: {
++    cwd: string; env: NodeJS.ProcessEnv; timeoutSec: number; graceSec: number; stdin?: string;
++    onLog: (stream: "stdout" | "stderr", chunk: string) => Promise<void>;
++    onSpawn?: (meta: { pid: number; processGroupId: null; startedAt: string }) => Promise<void>;
++    terminalResultCleanup?: TerminalResultCleanupOptions;
++  },
++  registry: Map<string, { child: ChildProcess; graceSec: number; processGroupId: number | null; stop?: () => Promise<void> }>,
++): Promise<RunProcessResult> {
++  const python = process.env.PAPERCLIP_WINDOWS_PYTHON;
++  if (!python || !path.isAbsolute(python)) {
++    return Promise.reject(new Error("Windows worker requires an explicitly configured absolute PAPERCLIP_WINDOWS_PYTHON path"));
++  }
++  const previous = attempts.get(runId);
++  if (registry.has(runId) || previous?.stopped) return Promise.reject(new Error("Worker run ID already active or stopped"));
++  const identity = randomUUID();
++  const startedAt = new Date().toISOString();
++  const budget = previous ?? { deadline: opts.timeoutSec > 0 ? Date.now() / 1000 + opts.timeoutSec : null, stopped: false };
++  attempts.set(runId, budget);
++  const deadline = budget.deadline;
++  const child = spawn(python, ["-I", "-B", fileURLToPath(new URL("../src/windows-worker.py", import.meta.url))], {
++    cwd: opts.cwd, env: opts.env, shell: false, windowsHide: true, stdio: ["pipe", "pipe", "pipe"],
++  });
++  let cancelRequested = false;
++  let completed: RunProcessResult | undefined;
++  let failure: Error | undefined;
++  let pid: number | null = null;
++  let stdout = "";
++  let stderr = "";
++  let pending = "";
++  let logs = Promise.resolve();
++  let terminalTimer: NodeJS.Timeout | undefined;
++  let terminalSeen = false;
++  const decoders = { stdout: new StringDecoder("utf8"), stderr: new StringDecoder("utf8") };
++  const send = (type: string) => {
++    if (!child.stdin.destroyed) child.stdin.write(JSON.stringify({ identity, type }) + "\n");
++  };
++  let finish!: () => void;
++  const exited = new Promise<void>((resolve) => { finish = resolve; });
++  const owner: WindowsOwner = {
++    child, graceSec: opts.graceSec, processGroupId: null,
++    stop: async () => {
++      cancelRequested = true;
++      budget.stopped = true;
++      send("cancel");
++      await exited;
++      if (failure || !completed?.cleanupVerified) throw failure ?? new Error("Windows worker cleanup uncertain");
++    },
++  };
++  registry.set(runId, owner);
++  // The helper independently owns the deadline and notices owner EOF, even if JS is stuck.
++  child.stdin.on("error", () => {});
++  child.stdin.write(JSON.stringify({ identity, command, args, cwd: opts.cwd, stdin: opts.stdin, deadline }) + "\n");
++  const watchdog = setTimeout(() => {
++    failure = new Error("Windows worker cleanup uncertain: owner receipt deadline exceeded");
++    child.kill(); // Sole helper handle; its noninherited job handle closes with it.
++  }, (deadline ? Math.max(0, deadline * 1000 - Date.now()) : 0x7fffffff - 10000) + 8000);
++  const controlWatchdog = () => {
++    const timer = setTimeout(() => {
++      if (!completed) {
++        failure = new Error("Windows worker cleanup uncertain: cancellation receipt missing");
++        child.kill();
++      }
++    }, 8000);
++    timer.unref();
++  };
++  const originalStop = owner.stop;
++  owner.stop = () => { controlWatchdog(); return originalStop(); };
++  child.stdout.on("data", (chunk: Buffer) => {
++    pending += chunk.toString("utf8");
++    if (pending.length > 128 * 1024) { failure = new Error("Invalid Windows worker frame"); void owner.stop().catch(() => {}); return; }
++    let at: number;
++    while ((at = pending.indexOf("\n")) >= 0) {
++      const line = pending.slice(0, at); pending = pending.slice(at + 1);
++      try {
++        const event = JSON.parse(line);
++        if (event.identity !== identity || completed) throw new Error("Invalid Windows worker identity/order");
++        if (event.type === "spawn") {
++          if (pid !== null || !Number.isInteger(event.pid) || event.pid <= 0) throw new Error("Invalid worker PID");
++          pid = event.pid;
++          void Promise.resolve().then(() => opts.onSpawn?.({ pid: event.pid, processGroupId: null, startedAt }))
++            .then(() => send(cancelRequested ? "cancel" : "resume"))
++            .catch(() => { failure = new Error("Worker spawn metadata failed"); void owner.stop().catch(() => {}); });
++        } else if (event.type === "output" && (event.stream === "stdout" || event.stream === "stderr")) {
++          const stream = event.stream as "stdout" | "stderr";
++          const text = decoders[stream].write(Buffer.from(event.data, "base64"));
++          if (stream === "stdout") stdout = (stdout + text).slice(-4 * 1024 * 1024);
++          else stderr = (stderr + text).slice(-4 * 1024 * 1024);
++          logs = logs.then(() => opts.onLog(stream, text)).catch(() => {});
++          if (!terminalSeen && opts.terminalResultCleanup?.hasTerminalResult({ stdout, stderr })) {
++            terminalSeen = true;
++            terminalTimer = setTimeout(() => { void owner.stop().catch(() => {}); }, opts.terminalResultCleanup.graceMs ?? 5000);
++          }
++        } else if (event.type === "result") {
++          if (event.cleanupVerified !== true || !["completed", "failed", "cancelled", "timed_out"].includes(event.status)) {
++            const nativeCode = Number.isInteger(event.nativeErrorCode) ? ` (Win32 ${event.nativeErrorCode})` : "";
++            throw new Error(`Windows worker cleanup uncertain${nativeCode}`);
++          }
++          completed = {
++            exitCode: event.exitCode, signal: event.status === "cancelled" ? "SIGTERM" : null,
++            timedOut: event.status === "timed_out", stdout, stderr, pid, startedAt,
++            cleanupVerified: true, ownershipId: identity, ownedPids: event.ownedPids,
++            executionStatus: event.status === "timed_out" ? "failed" : event.status,
++          };
++          if (event.status === "timed_out" || event.status === "cancelled") budget.stopped = true;
++        } else throw new Error("Invalid Windows worker event");
++      } catch (err) {
++        failure = err instanceof Error ? err : new Error("Invalid Windows worker protocol");
++        void owner.stop().catch(() => {});
++      }
++    }
++  });
++  child.stderr.resume(); // Helper diagnostics never contain worker output or credentials.
++  child.on("error", () => { failure = new Error("Windows worker helper failed to start"); });
++  child.on("close", (code) => {
++    if (code !== 0) failure = new Error("Windows worker execution uncertain: helper exited abnormally");
++    clearTimeout(watchdog);
++    if (terminalTimer) clearTimeout(terminalTimer);
++    if (registry.get(runId) === owner) registry.delete(runId);
++    if (failure || !completed) budget.stopped = true;
++    finish();
++  });
++  return exited.then(async () => {
++    // Logging cannot delay OS cleanup/cancellation confirmation indefinitely.
++    await Promise.race([logs, new Promise((resolve) => { const t = setTimeout(resolve, 1000); t.unref(); })]);
++    if (failure || !completed) throw failure ?? new Error("Windows worker execution uncertain: missing cleanup receipt");
++    return completed;
++  });
++}
+diff --git a/packages/adapters/codex-local/src/server/codex-args.test.ts b/packages/adapters/codex-local/src/server/codex-args.test.ts
+index 7b4eaa0013d8d7f440eeba2f321f9e77163efa37..4f127cd6277970c3a9c31bd2f527d77e24432945 100644
+--- a/packages/adapters/codex-local/src/server/codex-args.test.ts
++++ b/packages/adapters/codex-local/src/server/codex-args.test.ts
+@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
+ import { buildCodexExecArgs } from "./codex-args.js";
+ 
+ describe("buildCodexExecArgs", () => {
++  it("keeps an explicit bypass opt-out effective against the legacy default", () => {
++    const result = buildCodexExecArgs({ dangerouslyBypassApprovalsAndSandbox: false, dangerouslyBypassSandbox: true });
++    expect(result.args).not.toContain("--dangerously-bypass-approvals-and-sandbox");
++    expect(buildCodexExecArgs({}).args).not.toContain("--dangerously-bypass-approvals-and-sandbox");
++  });
+   it("enables Codex fast mode overrides for GPT-5.4", () => {
+     const result = buildCodexExecArgs({
+       model: "gpt-5.4",
+diff --git a/server/src/services/heartbeat.ts b/server/src/services/heartbeat.ts
+index 653b03c247824d8c86c8f4364530dc4f7f39e4e6..8ec1af18db56c422932b4a0b8792287b1cc29521 100644
+--- a/server/src/services/heartbeat.ts
++++ b/server/src/services/heartbeat.ts
+@@ -1836,10 +1836,17 @@ function isProcessAlive(pid: number | null | undefined) {
+ }
+ 
+ async function terminateHeartbeatRunProcess(input: {
++  runId?: string;
+   pid: number | null | undefined;
+   processGroupId: number | null | undefined;
+   graceMs?: number;
+ }) {
++  if (process.platform === "win32") {
++    const owner = input.runId ? runningProcesses.get(input.runId) : undefined;
++    if (!owner?.stop) throw new Error("Windows worker cleanup uncertain: no live attempt owner; refusing a saved PID kill");
++    await owner.stop();
++    return;
++  }
+   const pid = input.pid ?? null;
+   const processGroupId = input.processGroupId ?? null;
+   if (typeof pid !== "number" && typeof processGroupId !== "number") return;
+@@ -7116,12 +7123,14 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {})
+     const running = runningProcesses.get(run.id);
+     if (running) {
+       await terminateHeartbeatRunProcess({
++        runId: run.id,
+         pid: running.child.pid ?? run.processPid,
+         processGroupId: running.processGroupId ?? run.processGroupId,
+         graceMs: Math.max(1, running.graceSec) * 1000,
+       });
+     } else if (run.processPid || run.processGroupId) {
+       await terminateHeartbeatRunProcess({
++        runId: run.id,
+         pid: run.processPid,
+         processGroupId: run.processGroupId,
+       });
+@@ -7169,27 +7178,10 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {})
+       .where(and(eq(heartbeatRuns.agentId, agentId), inArray(heartbeatRuns.status, [...CANCELLABLE_HEARTBEAT_RUN_STATUSES])));
+ 
+     for (const run of runs) {
+-      await setRunStatus(run.id, "cancelled", {
+-        finishedAt: new Date(),
+-        error: reason,
+-        errorCode: "cancelled",
+-        ...(agent ? {
+-          resultJson: mergeRunStopMetadataForAgent(agent, "cancelled", {
+-            resultJson: parseObject(run.resultJson),
+-            errorCode: "cancelled",
+-            errorMessage: reason,
+-          }),
+-        } : {}),
+-      });
+-
+-      await setWakeupStatus(run.wakeupRequestId, "cancelled", {
+-        finishedAt: new Date(),
+-        error: reason,
+-      });
+-
+       const running = runningProcesses.get(run.id);
+       if (running) {
+         await terminateHeartbeatRunProcess({
++          runId: run.id,
+           pid: running.child.pid ?? run.processPid,
+           processGroupId: running.processGroupId ?? run.processGroupId,
+           graceMs: Math.max(1, running.graceSec) * 1000,
+@@ -7197,10 +7189,21 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {})
+         runningProcesses.delete(run.id);
+       } else if (run.processPid || run.processGroupId) {
+         await terminateHeartbeatRunProcess({
++          runId: run.id,
+           pid: run.processPid,
+           processGroupId: run.processGroupId,
+         });
+       }
++      // Confirm owned-process cleanup before reporting cancellation to the board.
++      await setRunStatus(run.id, "cancelled", {
++        finishedAt: new Date(), error: reason, errorCode: "cancelled",
++        ...(agent ? {
++          resultJson: mergeRunStopMetadataForAgent(agent, "cancelled", {
++            resultJson: parseObject(run.resultJson), errorCode: "cancelled", errorMessage: reason,
++          }),
++        } : {}),
++      });
++      await setWakeupStatus(run.wakeupRequestId, "cancelled", { finishedAt: new Date(), error: reason });
+       await releaseIssueExecutionAndPromote(run);
+     }
+ 

@@ -1,0 +1,673 @@
+diff --git a/doc/plans/2026-11-11-windows-worker-lifecycle.md b/doc/plans/2026-11-11-windows-worker-lifecycle.md
+index 0eacb7d7e228d33f8830804eeac604e3bf8a96f3..f3d956026056cf97a3d25bf610359e9a658753a2 100644
+--- a/doc/plans/2026-11-11-windows-worker-lifecycle.md
++++ b/doc/plans/2026-11-11-windows-worker-lifecycle.md
+@@ -34,9 +34,14 @@ Heartbeat cancellation uses the live attempt owner's stop operation on Windows.
+ Persisted numeric PIDs do not authorize termination after owner loss. Agent-pause
+ cancellation now waits for cleanup before updating cancelled status. There is no
+ database schema change. Unix group signalling remains on its existing path.
++Cleanup uncertainty records worker_cleanup_uncertain, retains execution/environment
++leases, and prevents queued/direct replacement dispatch for the affected agent.
++No service or live database is modified by building or testing this change.
+ Retries of a run share the original deadline; cancelled/expired attempts cannot
+ be relaunched under that run ID. Deadline zero retains existing unlimited-run
+ semantics, while root-exit cleanup is always bounded.
++Startup acknowledgement has a separate 30-second bound even with deadline zero.
++The helper uses a monotonic deadline after receiving the owner's remaining budget.
+ 
+ ## Adoption owned by Hermes
+ 
+diff --git a/packages/adapter-utils/src/server-utils.ts b/packages/adapter-utils/src/server-utils.ts
+index 6ec4300be8f20e4bfc5666300793ab2e9667f330..0bce8658b392d8af3f5bc13b790fc4df500c919a 100644
+--- a/packages/adapter-utils/src/server-utils.ts
++++ b/packages/adapter-utils/src/server-utils.ts
+@@ -1,7 +1,8 @@
+ import { spawn, ChildProcess } from "node:child_process";
+ import { constants as fsConstants, promises as fs, type Dirent } from "node:fs";
+ import path from "node:path";
+-import { runWindowsWorker } from "./windows-worker.js";
++import { cancelWindowsRunBeforeSpawn, runWindowsWorker } from "./windows-worker.js";
++export { cancelWindowsRunBeforeSpawn, cancelWindowsRunBetweenAttempts, isWindowsWorkerCleanupUncertain } from "./windows-worker.js";
+ import { buildSshSpawnTarget, type SshRemoteExecutionSpec } from "./ssh.js";
+ import type {
+   AdapterSkillEntry,
+@@ -1479,16 +1480,17 @@ export async function runChildProcess(
+   },
+ ): Promise<RunProcessResult> {
+   const onLogError = opts.onLogError ?? ((err, id, msg) => console.warn({ err, runId: id }, msg));
++  const deadline = opts.timeoutSec > 0 ? performance.now() + opts.timeoutSec * 1000 : null;
+   let cancelledBeforeSpawn = false;
+-  let settled!: () => void;
+-  const settlement = new Promise<void>((resolve) => { settled = resolve; });
++  let pendingClosed = false;
++  let adoptedOwner: RunningProcess | undefined;
+   const pending: RunningProcess = {
+     child: new ChildProcess(), graceSec: opts.graceSec, processGroupId: null,
+     stop: async () => {
++      if (pendingClosed) return;
+       cancelledBeforeSpawn = true;
+-      const owner = runningProcesses.get(runId);
+-      if (owner && owner !== pending) await owner.stop?.();
+-      else await settlement;
++      if (adoptedOwner) await adoptedOwner.stop?.();
++      else cancelWindowsRunBeforeSpawn(runId);
+     },
+   };
+   if (process.platform === "win32") {
+@@ -1530,9 +1532,11 @@ export async function runChildProcess(
+               pid: null, startedAt: null, cleanupVerified: true, executionStatus: "cancelled" });
+             return;
+           }
+-          void runWindowsWorker(runId, target.command, target.args, {
+-            ...opts, cwd: target.cwd ?? opts.cwd, env: mergedEnv,
+-          }, runningProcesses).finally(() => target.cleanup?.()).then(resolve, reject);
++          const result = runWindowsWorker(runId, target.command, target.args, {
++            ...opts, deadline, cwd: target.cwd ?? opts.cwd, env: mergedEnv,
++          }, runningProcesses);
++          adoptedOwner = runningProcesses.get(runId);
++          void result.finally(() => target.cleanup?.()).then(resolve, reject);
+           return;
+         }
+         const child = spawn(target.command, target.args, {
+@@ -1702,6 +1706,6 @@ export async function runChildProcess(
+       .catch(reject);
+   }).finally(() => {
+     if (runningProcesses.get(runId) === pending) runningProcesses.delete(runId);
+-    settled();
++    pendingClosed = true;
+   });
+ }
+diff --git a/packages/adapter-utils/src/windows-worker-heartbeat.test.ts b/packages/adapter-utils/src/windows-worker-heartbeat.test.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..185945ee1c0e4978bae86cd7b55c2ff11b7f04b8
+--- /dev/null
++++ b/packages/adapter-utils/src/windows-worker-heartbeat.test.ts
+@@ -0,0 +1,61 @@
++// Exercise the actual heartbeat function bodies in memory, without loading DB/services.
++import { readFileSync } from "node:fs";
++import vm from "node:vm";
++import ts from "typescript";
++import { describe, expect, it, vi } from "vitest";
++
++const source = readFileSync(new URL("../../../server/src/services/heartbeat.ts", import.meta.url), "utf8");
++const ast = ts.createSourceFile("heartbeat.ts", source, ts.ScriptTarget.Latest, true);
++function load(name: string, globals: Record<string, unknown>) {
++  let match: ts.FunctionDeclaration | undefined;
++  function visit(node: ts.Node) {
++    if (ts.isFunctionDeclaration(node) && node.name?.text === name) match = node;
++    ts.forEachChild(node, visit);
++  }
++  visit(ast);
++  if (!match) throw new Error(`Missing actual heartbeat function ${name}`);
++  const code = ts.transpileModule(match.getText(ast), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
++  return vm.runInNewContext(`${code};${name}`, globals);
++}
++
++describe("Windows heartbeat ownership policy", () => {
++  it("refuses an unknown persisted PID and does not call legacy termination", async () => {
++    const terminate = vi.fn();
++    const stop = load("terminateHeartbeatRunProcess", { process: { platform: "win32" }, runningProcesses: new Map(),
++      cancelWindowsRunBetweenAttempts: () => false, terminateLocalService: terminate });
++    await expect(stop({ runId: "old", pid: 1234, processGroupId: null })).rejects.toThrow(/uncertain/);
++    expect(terminate).not.toHaveBeenCalled();
++  });
++  it("waits for the live owner to verify cleanup before resolving stop", async () => {
++    let release!: () => void;
++    const gate = new Promise<void>((resolve) => { release = resolve; });
++    const stop = load("terminateHeartbeatRunProcess", { process: { platform: "win32" },
++      runningProcesses: new Map([["owned", { stop: () => gate }]]) });
++    let finished = false;
++    const pending = stop({ runId: "owned", pid: 1234 }).then(() => { finished = true; });
++    await Promise.resolve();
++    expect(finished).toBe(false);
++    release(); await pending;
++    expect(finished).toBe(true);
++  });
++  it("keeps an uncertain run's issue execution lock and suppresses promotion", async () => {
++    const getAgent = vi.fn(() => { throw new Error("must not release/promote"); });
++    const release = load("releaseIssueExecutionAndPromote", { isWindowsWorkerCleanupUncertain: () => false, getAgent });
++    await release({ id: "uncertain", errorCode: "worker_cleanup_uncertain" });
++    expect(getAgent).not.toHaveBeenCalled();
++  });
++  it("does not start queued replacement work while cleanup is unverified", async () => {
++    const getAgent = vi.fn(() => { throw new Error("must not start work"); });
++    const start = load("startNextQueuedRunForAgent", { withAgentStartLock: (_id: string, fn: () => unknown) => fn(),
++      hasUnverifiedWorkerCleanup: async () => true, getAgent });
++    expect(await start("agent")).toEqual([]);
++    expect(getAgent).not.toHaveBeenCalled();
++  });
++  it("keeps direct execution behind the same cleanup gate", async () => {
++    const claim = vi.fn();
++    const execute = load("executeRun", { getRun: async () => ({ id: "new", status: "queued", agentId: "agent" }),
++      hasUnverifiedWorkerCleanup: async () => true, claimQueuedRun: claim });
++    await execute("new");
++    expect(claim).not.toHaveBeenCalled();
++  });
++});
+diff --git a/packages/adapter-utils/src/windows-worker-protocol.test.ts b/packages/adapter-utils/src/windows-worker-protocol.test.ts
+index 890ebc330c86d60ab06c3a3299f9696ba2cc4943..c9a7670d205093e663bf99b4b5a4023d23979707 100644
+--- a/packages/adapter-utils/src/windows-worker-protocol.test.ts
++++ b/packages/adapter-utils/src/windows-worker-protocol.test.ts
+@@ -7,10 +7,10 @@ vi.mock("node:child_process", () => ({ spawn: () => current }));
+ import { runWindowsWorker } from "./windows-worker.js";
+ 
+ describe("Windows cleanup receipts", () => {
+-  it.each(["missing", "unverified", "wrong_identity", "abnormal_exit"])("refuses %s cleanup evidence", async (mode) => {
++  it.each(["missing", "unverified", "wrong_identity", "abnormal_exit", "malformed_result", "truncated_frame", "invalid_output", "log_overflow"])("refuses %s cleanup evidence", async (mode) => {
+     current = Object.assign(new EventEmitter(), {
+       stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(),
+-      kill() { queueMicrotask(() => current.emit("close", 125)); },
++      kill(this: EventEmitter) { queueMicrotask(() => this.emit("close", 125)); },
+     });
+     const saved = process.env.PAPERCLIP_WINDOWS_PYTHON;
+     process.env.PAPERCLIP_WINDOWS_PYTHON = process.execPath;
+@@ -18,14 +18,19 @@ describe("Windows cleanup receipts", () => {
+       let input = "";
+       current.stdin.on("data", (chunk: Buffer) => { input += chunk.toString(); });
+       const promise = runWindowsWorker(crypto.randomUUID(), process.execPath, [], {
+-        cwd: process.cwd(), env: {}, timeoutSec: 1, graceSec: 1, onLog: async () => {},
++        cwd: process.cwd(), env: {}, timeoutSec: 1, graceSec: 1,
++        onLog: async () => { if (mode === "log_overflow") await new Promise(() => {}); },
+       }, new Map());
+       const rejected = expect(promise).rejects.toThrow(/uncertain|identity/);
+       const packet = JSON.parse(input.trim());
++      if (mode !== "missing") current.stdout.write(JSON.stringify({ type: "spawn", identity: packet.identity, pid: 777, creationTime: "123" }) + "\n");
++      if (mode === "invalid_output") current.stdout.write(JSON.stringify({ type: "output", identity: packet.identity, stream: "stdout", data: "invalid!" }) + "\n");
++      if (mode === "log_overflow") for (let n = 0; n < 300; n++) current.stdout.write(JSON.stringify({ type: "output", identity: packet.identity, stream: "stdout", data: Buffer.alloc(4096, 65).toString("base64") }) + "\n");
+       if (mode !== "missing") current.stdout.write(JSON.stringify({
+         type: "result", identity: mode === "wrong_identity" ? "old-attempt" : packet.identity,
+-        cleanupVerified: mode !== "unverified", status: "completed", exitCode: 0, ownedPids: [],
++        cleanupVerified: mode !== "unverified", status: "completed", exitCode: mode === "malformed_result" ? "zero" : 0, ownedPids: [777],
+       }) + "\n");
++      if (mode === "truncated_frame") current.stdout.write('{"type":');
+       current.emit("close", mode === "abnormal_exit" ? 1 : 0);
+       await rejected;
+     } finally {
+diff --git a/packages/adapter-utils/src/windows-worker.py b/packages/adapter-utils/src/windows-worker.py
+index 35f04e84a398c8aed0622ea91230db8b6c5d8a04..371d22c591feac49924010f221a051af4ce2d28a 100644
+--- a/packages/adapter-utils/src/windows-worker.py
++++ b/packages/adapter-utils/src/windows-worker.py
+@@ -109,6 +109,9 @@ def main():
+                     stopped.set()
+                 elif value == {"identity": identity, "type": "resume"}:
+                     resume.set()
++                elif value == {"identity": identity, "type": "timeout"}:
++                    reason[0] = "timed_out"
++                    stopped.set()
+             except (ValueError, TypeError):
+                 stopped.set()
+         stopped.set()
+@@ -150,8 +153,9 @@ def main():
+         si.attributes = c.cast(attrs, c.c_void_p)
+         command = c.create_unicode_buffer(subprocess.list2cmdline([packet["command"], *packet["args"]]))
+         deadline = packet.get("deadline")
+-        if stopped.is_set() or (deadline and time.time() >= deadline):
+-            status = "cancelled" if stopped.is_set() else "timed_out"
++        expires = time.monotonic() + max(0, deadline - time.time()) if deadline else None
++        if stopped.is_set() or (expires and time.monotonic() >= expires):
++            status = reason[0] if stopped.is_set() else "timed_out"
+         else:
+             # Atomic job membership closes even the suspended-child startup crash gap.
+             checked(kernel.CreateProcessW(packet["command"], command, None, None, True,
+@@ -188,9 +192,12 @@ def main():
+ 
+             fds.remove(in_w)
+             threading.Thread(target=feed, daemon=True).start()
+-            while not resume.is_set() and not stopped.is_set() and not (deadline and time.time() >= deadline):
++            startup_until = time.monotonic() + 30
++            while not resume.is_set() and not stopped.is_set() and not (expires and time.monotonic() >= expires):
++                if time.monotonic() >= startup_until:
++                    raise RuntimeError("spawn acknowledgement deadline exceeded")
+                 time.sleep(0.02)
+-            if not stopped.is_set() and not (deadline and time.time() >= deadline):
++            if not stopped.is_set() and not (expires and time.monotonic() >= expires):
+                 if kernel.ResumeThread(pi.thread) == 0xFFFFFFFF:
+                     raise c.WinError(c.get_last_error())
+             while True:
+@@ -198,10 +205,12 @@ def main():
+                 checked(kernel.QueryInformationJobObject(job, 3, pids, len(pids), None))
+                 count = w.DWORD.from_buffer(pids, 4).value
+                 owned.update(c.c_size_t.from_buffer(pids, 8 + i * c.sizeof(c.c_size_t)).value for i in range(count))
++                if len(owned) > 4096:
++                    raise RuntimeError("process evidence budget exceeded")
+                 if stopped.is_set():
+                     status = reason[0]
+                     break
+-                if deadline and time.time() >= deadline:
++                if expires and time.monotonic() >= expires:
+                     status = "timed_out"
+                     break
+                 if kernel.WaitForSingleObject(pi.process, 0) == 0:
+diff --git a/packages/adapter-utils/src/windows-worker.test.ts b/packages/adapter-utils/src/windows-worker.test.ts
+index a02ae68198f363a25c27c83f20c8df76b00466c0..baad01409cbe58aab196e780846e3fa606599533 100644
+--- a/packages/adapter-utils/src/windows-worker.test.ts
++++ b/packages/adapter-utils/src/windows-worker.test.ts
+@@ -6,6 +6,7 @@ import path from "node:path";
+ import { fileURLToPath } from "node:url";
+ import { afterAll, describe, expect, it } from "vitest";
+ import { runChildProcess, runningProcesses, type RunProcessResult } from "./server-utils.js";
++import { cancelWindowsRunBetweenAttempts, isWindowsWorkerCleanupUncertain } from "./windows-worker.js";
+ 
+ const evidence: unknown[] = [];
+ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+@@ -98,6 +99,22 @@ describe.skipIf(process.platform !== "win32")("Windows owned worker boundary", (
+     expect(result.cleanupVerified).toBe(true);
+     expect(result.pid).toBe(null);
+     expect(result.stdout).toBe("");
++    await expect(runChildProcess(id, process.execPath, ["-e", "console.log('SHOULD_NOT_RUN')"], opts())).rejects.toThrow(/stopped/);
++  });
++  it("never forwards a stale startup-owner stop into a later retry", async () => {
++    const id = randomUUID();
++    const first = runChildProcess(id, process.execPath, ["-e", "process.exit(2)"], opts());
++    const staleStartupOwner = runningProcesses.get(id)!;
++    expect((await first).executionStatus).toBe("failed");
++    let ready = false;
++    const second = runChildProcess(id, process.execPath, ["-e", "console.log('ready');setTimeout(()=>{},400)"], {
++      ...opts(), onLog: async () => { ready = true; },
++    });
++    await until(() => ready);
++    await staleStartupOwner.stop!();
++    const result = await second;
++    expect(result.executionStatus).toBe("completed");
++    assertEmpty(result);
+   });
+   it("retains a single deadline across same-run retries", async () => {
+     const id = randomUUID();
+@@ -107,6 +124,14 @@ describe.skipIf(process.platform !== "win32")("Windows owned worker boundary", (
+     expect(second.timedOut).toBe(true);
+     assertEmpty(second);
+   });
++  it("retains cancellation between retries without killing any saved PID", async () => {
++    const id = randomUUID();
++    const first = await runChildProcess(id, process.execPath, ["-e", "process.exit(2)"], opts());
++    expect(first.cleanupVerified).toBe(true);
++    expect(cancelWindowsRunBetweenAttempts(id)).toBe(true);
++    await expect(runChildProcess(id, process.execPath, ["-e", "console.log('SHOULD_NOT_RUN')"], opts())).rejects.toThrow(/stopped/);
++    expect(cancelWindowsRunBetweenAttempts(randomUUID())).toBe(false);
++  });
+   it("closes the Job on unexpected helper death and reports uncertainty", async () => {
+     const id = randomUUID();
+     let output = "";
+@@ -118,6 +143,7 @@ describe.skipIf(process.platform !== "win32")("Windows owned worker boundary", (
+     const pids = [...output.matchAll(/:(\d+)/g)].map((m) => Number(m[1]));
+     runningProcesses.get(id)!.child.kill();
+     await rejected;
++    expect(isWindowsWorkerCleanupUncertain(id)).toBe(true);
+     await until(() => pids.every((pid) => !alive(pid)));
+     evidence.push({ helperCrashPids: pids, allObservedExited: true, outcome: "uncertain" });
+   });
+diff --git a/packages/adapter-utils/src/windows-worker.ts b/packages/adapter-utils/src/windows-worker.ts
+index 4b7bf79b8be68a4cd4f4cdb8c7ae6ac4e604b10c..97df10ff04a773a72be09c9356560657d1a64e8f 100644
+--- a/packages/adapter-utils/src/windows-worker.ts
++++ b/packages/adapter-utils/src/windows-worker.ts
+@@ -5,6 +5,10 @@ import path from "node:path";
+ import { StringDecoder } from "node:string_decoder";
+ import type { RunProcessResult, TerminalResultCleanupOptions } from "./server-utils.js";
+ 
++class WorkerProtocolError extends Error {
++  constructor(reason: string) { super(`Windows worker execution uncertain: ${reason}`); }
++}
++
+ export interface WindowsOwner {
+   child: ChildProcess;
+   graceSec: number;
+@@ -13,11 +17,24 @@ export interface WindowsOwner {
+ }
+ 
+ // A run ID is immutable in Paperclip. Reject overlap even while spawn metadata is pending.
+-const attempts = new Map<string, { deadline: number | null; stopped: boolean }>();
++const attempts = new Map<string, { deadline: number | null; stopped: boolean; cleanupVerified: boolean }>();
++const uncertainRuns = new Set<string>();
++export const isWindowsWorkerCleanupUncertain = (runId: string) => uncertainRuns.has(runId);
++export function cancelWindowsRunBetweenAttempts(runId: string): boolean {
++  const state = attempts.get(runId) ?? { deadline: null, stopped: true, cleanupVerified: false };
++  state.stopped = true;
++  attempts.set(runId, state);
++  return state.cleanupVerified;
++}
++export function cancelWindowsRunBeforeSpawn(runId: string) {
++  const state = attempts.get(runId) ?? { deadline: null, stopped: true, cleanupVerified: true };
++  state.stopped = true;
++  attempts.set(runId, state);
++}
+ export function runWindowsWorker(
+   runId: string, command: string, args: string[],
+   opts: {
+-    cwd: string; env: NodeJS.ProcessEnv; timeoutSec: number; graceSec: number; stdin?: string;
++    cwd: string; env: NodeJS.ProcessEnv; timeoutSec: number; graceSec: number; stdin?: string; deadline?: number | null;
+     onLog: (stream: "stdout" | "stderr", chunk: string) => Promise<void>;
+     onSpawn?: (meta: { pid: number; processGroupId: null; startedAt: string }) => Promise<void>;
+     terminalResultCleanup?: TerminalResultCleanupOptions;
+@@ -32,7 +49,8 @@ export function runWindowsWorker(
+   if (registry.has(runId) || previous?.stopped) return Promise.reject(new Error("Worker run ID already active or stopped"));
+   const identity = randomUUID();
+   const startedAt = new Date().toISOString();
+-  const budget = previous ?? { deadline: opts.timeoutSec > 0 ? Date.now() / 1000 + opts.timeoutSec : null, stopped: false };
++  const budget = previous ?? { deadline: opts.deadline ?? (opts.timeoutSec > 0 ? performance.now() + opts.timeoutSec * 1000 : null), stopped: false, cleanupVerified: false };
++  budget.cleanupVerified = false;
+   attempts.set(runId, budget);
+   const deadline = budget.deadline;
+   const child = spawn(python, ["-I", "-B", fileURLToPath(new URL("../src/windows-worker.py", import.meta.url))], {
+@@ -48,6 +66,9 @@ export function runWindowsWorker(
+   let logs = Promise.resolve();
+   let terminalTimer: NodeJS.Timeout | undefined;
+   let terminalSeen = false;
++  let closed = false;
++  let queuedLogBytes = 0;
++  let cancelWatchdog: NodeJS.Timeout | undefined;
+   const decoders = { stdout: new StringDecoder("utf8"), stderr: new StringDecoder("utf8") };
+   const send = (type: string) => {
+     if (!child.stdin.destroyed) child.stdin.write(JSON.stringify({ identity, type }) + "\n");
+@@ -57,6 +78,10 @@ export function runWindowsWorker(
+   const owner: WindowsOwner = {
+     child, graceSec: opts.graceSec, processGroupId: null,
+     stop: async () => {
++      if (closed) {
++        if (failure || !completed?.cleanupVerified) throw failure ?? new Error("Windows worker cleanup uncertain");
++        return;
++      }
+       cancelRequested = true;
+       budget.stopped = true;
+       send("cancel");
+@@ -67,51 +92,77 @@ export function runWindowsWorker(
+   registry.set(runId, owner);
+   // The helper independently owns the deadline and notices owner EOF, even if JS is stuck.
+   child.stdin.on("error", () => {});
+-  child.stdin.write(JSON.stringify({ identity, command, args, cwd: opts.cwd, stdin: opts.stdin, deadline }) + "\n");
++  const remainingMs = deadline !== null ? Math.max(0, deadline - performance.now()) : null;
++  const helperDeadline = remainingMs !== null ? Date.now() / 1000 + remainingMs / 1000 : null;
++  child.stdin.write(JSON.stringify({ identity, command, args, cwd: opts.cwd, stdin: opts.stdin, deadline: helperDeadline }) + "\n");
++  const timeoutTimer = remainingMs !== null ? setTimeout(() => send("timeout"), remainingMs) : undefined;
+   const watchdog = setTimeout(() => {
+     failure = new Error("Windows worker cleanup uncertain: owner receipt deadline exceeded");
+     child.kill(); // Sole helper handle; its noninherited job handle closes with it.
+-  }, (deadline ? Math.max(0, deadline * 1000 - Date.now()) : 0x7fffffff - 10000) + 8000);
++  }, (remainingMs ?? 0x7fffffff - 10000) + 8000);
+   const controlWatchdog = () => {
+-    const timer = setTimeout(() => {
++    if (cancelWatchdog) return;
++    cancelWatchdog = setTimeout(() => {
+       if (!completed) {
+         failure = new Error("Windows worker cleanup uncertain: cancellation receipt missing");
+         child.kill();
+       }
+     }, 8000);
+-    timer.unref();
++    cancelWatchdog.unref();
+   };
+   const originalStop = owner.stop;
+-  owner.stop = () => { controlWatchdog(); return originalStop(); };
++  owner.stop = () => { if (!closed) controlWatchdog(); return originalStop(); };
++  const startupWatchdog = setTimeout(() => {
++    failure = new Error("Windows worker execution uncertain: startup deadline exceeded");
++    void owner.stop().catch(() => {});
++  }, 30000);
+   child.stdout.on("data", (chunk: Buffer) => {
+     pending += chunk.toString("utf8");
+-    if (pending.length > 128 * 1024) { failure = new Error("Invalid Windows worker frame"); void owner.stop().catch(() => {}); return; }
++    if (pending.length > 128 * 1024) {
++      pending = "";
++      if (!failure) { failure = new WorkerProtocolError("oversized protocol frame"); void owner.stop().catch(() => {}); }
++      return;
++    }
+     let at: number;
+     while ((at = pending.indexOf("\n")) >= 0) {
+       const line = pending.slice(0, at); pending = pending.slice(at + 1);
+       try {
+         const event = JSON.parse(line);
+-        if (event.identity !== identity || completed) throw new Error("Invalid Windows worker identity/order");
++        if (failure && event.type !== "result") continue;
++        if (event.identity !== identity || completed) throw new WorkerProtocolError("invalid identity/order");
+         if (event.type === "spawn") {
+-          if (pid !== null || !Number.isInteger(event.pid) || event.pid <= 0) throw new Error("Invalid worker PID");
++          if (pid !== null || !Number.isInteger(event.pid) || event.pid <= 0 || !/^\d+$/.test(event.creationTime)) throw new WorkerProtocolError("invalid worker PID");
+           pid = event.pid;
++          clearTimeout(startupWatchdog);
+           void Promise.resolve().then(() => opts.onSpawn?.({ pid: event.pid, processGroupId: null, startedAt }))
+-            .then(() => send(cancelRequested ? "cancel" : "resume"))
++            .then(() => send(cancelRequested ? "cancel" : deadline !== null && performance.now() >= deadline ? "timeout" : "resume"))
+             .catch(() => { failure = new Error("Worker spawn metadata failed"); void owner.stop().catch(() => {}); });
+         } else if (event.type === "output" && (event.stream === "stdout" || event.stream === "stderr")) {
++          if (typeof event.data !== "string" || event.data.length > 8192 || Buffer.from(event.data, "base64").toString("base64") !== event.data) throw new WorkerProtocolError("invalid output frame");
+           const stream = event.stream as "stdout" | "stderr";
+           const text = decoders[stream].write(Buffer.from(event.data, "base64"));
+           if (stream === "stdout") stdout = (stdout + text).slice(-4 * 1024 * 1024);
+           else stderr = (stderr + text).slice(-4 * 1024 * 1024);
+-          logs = logs.then(() => opts.onLog(stream, text)).catch(() => {});
++          const bytes = Buffer.byteLength(text);
++          if (queuedLogBytes + bytes > 1024 * 1024) throw new WorkerProtocolError("log backlog limit exceeded");
++          queuedLogBytes += bytes;
++          logs = logs.then(() => opts.onLog(stream, text)).catch(() => {})
++            .finally(() => { queuedLogBytes -= bytes; });
+           if (!terminalSeen && opts.terminalResultCleanup?.hasTerminalResult({ stdout, stderr })) {
+             terminalSeen = true;
+             terminalTimer = setTimeout(() => { void owner.stop().catch(() => {}); }, opts.terminalResultCleanup.graceMs ?? 5000);
+           }
+         } else if (event.type === "result") {
+-          if (event.cleanupVerified !== true || !["completed", "failed", "cancelled", "timed_out"].includes(event.status)) {
++          const pidsValid = Array.isArray(event.ownedPids) && event.ownedPids.length <= 4096
++            && event.ownedPids.every((value: unknown) => Number.isInteger(value) && (value as number) > 0)
++            && new Set(event.ownedPids).size === event.ownedPids.length
++            && (pid === null || event.ownedPids.includes(pid));
++          const codeValid = event.status === "completed" ? pid !== null && event.exitCode === 0
++            : event.status === "failed" ? pid !== null && Number.isInteger(event.exitCode) && event.exitCode > 0 && event.exitCode <= 0xffffffff
++            : event.exitCode === null;
++          if (event.cleanupVerified !== true || !pidsValid || !codeValid || !["completed", "failed", "cancelled", "timed_out"].includes(event.status)) {
+             const nativeCode = Number.isInteger(event.nativeErrorCode) ? ` (Win32 ${event.nativeErrorCode})` : "";
+-            throw new Error(`Windows worker cleanup uncertain${nativeCode}`);
++            throw new WorkerProtocolError(`cleanup receipt rejected${nativeCode}`);
+           }
+           completed = {
+             exitCode: event.exitCode, signal: event.status === "cancelled" ? "SIGTERM" : null,
+@@ -120,21 +171,30 @@ export function runWindowsWorker(
+             executionStatus: event.status === "timed_out" ? "failed" : event.status,
+           };
+           if (event.status === "timed_out" || event.status === "cancelled") budget.stopped = true;
+-        } else throw new Error("Invalid Windows worker event");
++        } else throw new WorkerProtocolError("invalid event");
+       } catch (err) {
+-        failure = err instanceof Error ? err : new Error("Invalid Windows worker protocol");
+-        void owner.stop().catch(() => {});
++        if (!failure) {
++          failure = err instanceof WorkerProtocolError ? err : new WorkerProtocolError("malformed protocol or output inspector failure");
++          void owner.stop().catch(() => {});
++        }
+       }
+     }
+   });
+   child.stderr.resume(); // Helper diagnostics never contain worker output or credentials.
+   child.on("error", () => { failure = new Error("Windows worker helper failed to start"); });
+   child.on("close", (code) => {
++    closed = true;
++    if (pending.length !== 0) failure = new Error("Windows worker execution uncertain: truncated protocol frame");
+     if (code !== 0) failure = new Error("Windows worker execution uncertain: helper exited abnormally");
+     clearTimeout(watchdog);
++    if (timeoutTimer) clearTimeout(timeoutTimer);
++    clearTimeout(startupWatchdog);
++    if (cancelWatchdog) clearTimeout(cancelWatchdog);
+     if (terminalTimer) clearTimeout(terminalTimer);
+     if (registry.get(runId) === owner) registry.delete(runId);
+     if (failure || !completed) budget.stopped = true;
++    budget.cleanupVerified = !failure && completed?.cleanupVerified === true;
++    if (!budget.cleanupVerified) uncertainRuns.add(runId);
+     finish();
+   });
+   return exited.then(async () => {
+diff --git a/server/src/adapters/utils.ts b/server/src/adapters/utils.ts
+index da3767dd270ee08624d46a97001526cc661d0376..711786b14e56d6f39bcc9e5f6a0d708677288e39 100644
+--- a/server/src/adapters/utils.ts
++++ b/server/src/adapters/utils.ts
+@@ -1,7 +1,6 @@
+ // Re-export everything from the shared adapter-utils/server-utils package.
+ // This file is kept as a convenience shim so existing in-tree
+ // imports (process/, http/, heartbeat.ts) don't need rewriting.
+-import type { ChildProcess } from "node:child_process";
+ import { logger } from "../middleware/logger.js";
+ import * as serverUtils from "@paperclipai/adapter-utils/server-utils";
+ export type { RunProcessResult } from "@paperclipai/adapter-utils/server-utils";
+@@ -13,8 +12,7 @@ type BuildInvocationEnvForLogsOptions = {
+   resolvedCommandEnvKey?: string;
+ };
+ 
+-export const runningProcesses: Map<string, { child: ChildProcess; graceSec: number; processGroupId: number | null }> =
+-  serverUtils.runningProcesses;
++export const runningProcesses = serverUtils.runningProcesses;
+ export const MAX_CAPTURE_BYTES = serverUtils.MAX_CAPTURE_BYTES;
+ export const MAX_EXCERPT_BYTES = serverUtils.MAX_EXCERPT_BYTES;
+ export const parseObject = serverUtils.parseObject;
+diff --git a/server/src/services/heartbeat.ts b/server/src/services/heartbeat.ts
+index 8ec1af18db56c422932b4a0b8792287b1cc29521..f22ab2b6d8e78317dd62c35faa18916bf663fc24 100644
+--- a/server/src/services/heartbeat.ts
++++ b/server/src/services/heartbeat.ts
+@@ -39,6 +39,7 @@ import { logger } from "../middleware/logger.js";
+ import { publishLiveEvent } from "./live-events.js";
+ import { getRunLogStore, type RunLogHandle } from "./run-log-store.js";
+ import { getServerAdapter, runningProcesses } from "../adapters/index.js";
++import { cancelWindowsRunBeforeSpawn, cancelWindowsRunBetweenAttempts, isWindowsWorkerCleanupUncertain } from "@paperclipai/adapter-utils/server-utils";
+ import type { AdapterExecutionResult, AdapterInvocationMeta, AdapterSessionCodec, UsageSummary } from "../adapters/index.js";
+ import { createLocalAgentJwt } from "../agent-auth-jwt.js";
+ import { parseObject, asBoolean, asNumber, appendWithByteCap, MAX_EXCERPT_BYTES } from "../adapters/utils.js";
+@@ -1843,7 +1844,10 @@ async function terminateHeartbeatRunProcess(input: {
+ }) {
+   if (process.platform === "win32") {
+     const owner = input.runId ? runningProcesses.get(input.runId) : undefined;
+-    if (!owner?.stop) throw new Error("Windows worker cleanup uncertain: no live attempt owner; refusing a saved PID kill");
++    if (!owner?.stop) {
++      if (input.runId && cancelWindowsRunBetweenAttempts(input.runId)) return;
++      throw new Error("Windows worker cleanup uncertain: no live attempt owner; refusing a saved PID kill");
++    }
+     await owner.stop();
+     return;
+   }
+@@ -4578,8 +4582,16 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {})
+     }
+   }
+ 
++  async function hasUnverifiedWorkerCleanup(agentId: string) {
++    const rows = await db.select({ id: heartbeatRuns.id }).from(heartbeatRuns)
++      .where(and(eq(heartbeatRuns.agentId, agentId), eq(heartbeatRuns.errorCode, "worker_cleanup_uncertain")))
++      .limit(1);
++    return rows.length > 0;
++  }
++
+   async function startNextQueuedRunForAgent(agentId: string) {
+     return withAgentStartLock(agentId, async () => {
++      if (await hasUnverifiedWorkerCleanup(agentId)) return [];
+       const agent = await getAgent(agentId);
+       if (!agent) return [];
+       if (agent.status === "paused" || agent.status === "terminated" || agent.status === "pending_approval") {
+@@ -4655,6 +4667,7 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {})
+     let run = await getRun(runId);
+     if (!run) return;
+     if (run.status !== "queued" && run.status !== "running") return;
++    if (await hasUnverifiedWorkerCleanup(run.agentId)) return;
+ 
+     if (run.status === "queued") {
+       const claimed = await claimQueuedRun(run);
+@@ -5755,6 +5768,8 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {})
+         await getCurrentUserRedactionOptions(),
+       );
+       logger.error({ err, runId }, "heartbeat execution failed");
++      const cleanupUncertain = isWindowsWorkerCleanupUncertain(runId);
++      const failureCode = cleanupUncertain ? "worker_cleanup_uncertain" : "adapter_failed";
+ 
+       let logSummary: { bytes: number; sha256?: string; compressed: boolean } | null = null;
+       if (handle) {
+@@ -5774,11 +5789,12 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {})
+ 
+       const failedRun = await setRunStatus(run.id, "failed", {
+         error: message,
+-        errorCode: "adapter_failed",
++        errorCode: failureCode,
+         finishedAt: new Date(),
+         resultJson: mergeRunStopMetadataForAgent(agent, "failed", {
+-          errorCode: "adapter_failed",
++          errorCode: failureCode,
+           errorMessage: message,
++          ...(cleanupUncertain ? { executionStatus: "uncertain", cleanupVerified: false } : {}),
+         }),
+         stdoutExcerpt,
+         stderrExcerpt,
+@@ -5834,13 +5850,14 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {})
+           const message = outerErr instanceof Error ? outerErr.message : "Unknown setup failure";
+           logger.error({ err: outerErr, runId }, "heartbeat execution setup failed");
+           const setupFailureAgent = await getAgent(run.agentId).catch(() => null);
++          const failureCode = isWindowsWorkerCleanupUncertain(runId) ? "worker_cleanup_uncertain" : "adapter_failed";
+           await setRunStatus(runId, "failed", {
+             error: message,
+-            errorCode: "adapter_failed",
++            errorCode: failureCode,
+             finishedAt: new Date(),
+             ...(setupFailureAgent ? {
+               resultJson: mergeRunStopMetadataForAgent(setupFailureAgent, "failed", {
+-                errorCode: "adapter_failed",
++                errorCode: failureCode,
+                 errorMessage: message,
+               }),
+             } : {}),
+@@ -5872,23 +5889,25 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {})
+           await finalizeAgentStatus(run.agentId, "failed").catch(() => undefined);
+         } finally {
+           const latestRun = await getRun(run.id).catch(() => null);
+-          const releaseResult = await envOrchestrator.releaseForRun({
+-            heartbeatRunId: run.id,
+-            companyId: run.companyId,
+-            agentId: run.agentId,
+-            status: leaseReleaseStatusForRunStatus(latestRun?.status),
+-            failureReason: latestRun?.error ?? undefined,
+-          }).catch((err) => {
+-            logger.warn({ err, runId: run.id }, "failed to release environment leases for heartbeat run");
+-            return null;
+-          });
+-          for (const releaseError of releaseResult?.errors ?? []) {
+-            logger.warn(
+-              { err: releaseError.error, leaseId: releaseError.leaseId, runId: run.id },
+-              "failed to release environment lease for heartbeat run",
+-            );
++          if (!isWindowsWorkerCleanupUncertain(run.id) && latestRun?.errorCode !== "worker_cleanup_uncertain") {
++            const releaseResult = await envOrchestrator.releaseForRun({
++              heartbeatRunId: run.id,
++              companyId: run.companyId,
++              agentId: run.agentId,
++              status: leaseReleaseStatusForRunStatus(latestRun?.status),
++              failureReason: latestRun?.error ?? undefined,
++            }).catch((err) => {
++              logger.warn({ err, runId: run.id }, "failed to release environment leases for heartbeat run");
++              return null;
++            });
++            for (const releaseError of releaseResult?.errors ?? []) {
++              logger.warn(
++                { err: releaseError.error, leaseId: releaseError.leaseId, runId: run.id },
++                "failed to release environment lease for heartbeat run",
++              );
++            }
++            await releaseRuntimeServicesForRun(run.id).catch(() => undefined);
+           }
+-          await releaseRuntimeServicesForRun(run.id).catch(() => undefined);
+           activeRunExecutions.delete(run.id);
+           await startNextQueuedRunForAgent(run.agentId);
+         }
+@@ -5915,6 +5934,7 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {})
+   }
+ 
+   async function releaseIssueExecutionAndPromote(run: typeof heartbeatRuns.$inferSelect) {
++    if (run.errorCode === "worker_cleanup_uncertain" || isWindowsWorkerCleanupUncertain(run.id)) return;
+     const runContext = parseObject(run.contextSnapshot);
+     const contextIssueId = readNonEmptyString(runContext.issueId);
+     const taskKey = deriveTaskKeyWithHeartbeatFallback(runContext, null);
+@@ -7121,6 +7141,7 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {})
+     const agent = await getAgent(run.agentId);
+ 
+     const running = runningProcesses.get(run.id);
++    if (process.platform === "win32" && !running && !run.processPid && !run.processGroupId) cancelWindowsRunBeforeSpawn(run.id);
+     if (running) {
+       await terminateHeartbeatRunProcess({
+         runId: run.id,
+@@ -7179,6 +7200,7 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {})
+ 
+     for (const run of runs) {
+       const running = runningProcesses.get(run.id);
++      if (process.platform === "win32" && !running && !run.processPid && !run.processGroupId) cancelWindowsRunBeforeSpawn(run.id);
+       if (running) {
+         await terminateHeartbeatRunProcess({
+           runId: run.id,

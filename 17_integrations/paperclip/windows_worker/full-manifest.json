@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "publication": "PUBLIC_DRAFT_RECIPE_ONLY",
+  "origin_url": "https://github.com/paperclipai/paperclip.git",
+  "base": "d0bdbe11a9624435b6dca3968389bd59c6a559a2",
+  "base_tree": "4f8f24f139dfb1d8aee62020a25e9935c3a0b8a0",
+  "head": "e04e2ae1a0d47cdedf5380b5a0d94f280a82d5d1",
+  "head_tree": "89e3964b370d6cd1474be03c04a3c3328521947f",
+  "v031_tag_object": "63c62e3ada077bac45292f3d2779bd48a8831cda",
+  "upstream_availability": "Main must verify GitHub availability of exact d0bdbe11 pin before publishing a public reproducibility claim",
+  "approval": "Prerequisite patches 1-4 NOT independently approved. Prior repair 4 approval scope unchanged. Contentsafety clearance permits draft artifact publication only; no merge/install/adoption.",
+  "patches": [
+    {
+      "parent_tree": "4f8f24f139dfb1d8aee62020a25e9935c3a0b8a0",
+      "sha256": "8045588d097f9fb323aa14c8cc7d9aac5b370835ff41ef76e2b070e978519bb8",
+      "commit": "5c8b9e4114c657e9c7268e4cc82e63e2b5238a99",
+      "parent": "d0bdbe11a9624435b6dca3968389bd59c6a559a2",
+      "bytes": 6654,
+      "tree": "4f1235b55c3fac56815b7e4c2dbd0e91ed0e3bd2",
+      "file": "prerequisites/0001-company-query-cache-arrays.patch",
+      "status": "NOT_INDEPENDENTLY_APPROVED"
+    },
+    {
+      "parent_tree": "4f1235b55c3fac56815b7e4c2dbd0e91ed0e3bd2",
+      "sha256": "150ffa63eea2470986da8d8e45ed0711dcde0c2eb57cf553e1b3d11b42cc7093",
+      "commit": "f8e301c1b8e94c0c80fba47c47c664a04148bf36",
+      "parent": "5c8b9e4114c657e9c7268e4cc82e63e2b5238a99",
+      "bytes": 14084,
+      "tree": "203d99c00c0afb186ce7ad36abe065f3ffed03a6",
+      "file": "prerequisites/0002-http-and-bootstrap-log-privacy.patch",
+      "status": "NOT_INDEPENDENTLY_APPROVED"
+    },
+    {
+      "parent_tree": "203d99c00c0afb186ce7ad36abe065f3ffed03a6",
+      "sha256": "0f651c6927a378be093db40cbc9b45a9640a0130fb6d12fb1f55efe8cf8ec85b",
+      "commit": "fc03825cd15629b6c0c8dcab9937997e3923f4f7",
+      "parent": "f8e301c1b8e94c0c80fba47c47c664a04148bf36",
+      "bytes": 29221,
+      "tree": "73cb99bbc495088aabb0ecb579974734fa0a1087",
+      "file": "prerequisites/0003-bounded-cli-pairing-and-redaction.patch",
+      "status": "NOT_INDEPENDENTLY_APPROVED"
+    },
+    {
+      "parent_tree": "73cb99bbc495088aabb0ecb579974734fa0a1087",
+      "sha256": "1a4e4a0675f029c006a9001cce97bdeebcb3ba47686e467288cfaa75b4f45781",
+      "commit": "5e55510dbeb869bacfcd843f975632dc739519af",
+      "parent": "fc03825cd15629b6c0c8dcab9937997e3923f4f7",
+      "bytes": 34233,
+      "tree": "97d0270efa7fc15b153022753fbbe67acc010ea6",
+      "file": "prerequisites/0004-bounded-first-engineer-ui.patch",
+      "status": "NOT_INDEPENDENTLY_APPROVED"
+    },
+    {
+      "parent_tree": "97d0270efa7fc15b153022753fbbe67acc010ea6",
+      "sha256": "d6a1c4b9af9d1da30ae2e4ca6d69dd1bd9f001d14a0c12972ebd0c3c31c25259",
+      "commit": "fab6082dff9210bc06bd16869b3c2e2d2c20a240",
+      "parent": "5e55510dbeb869bacfcd843f975632dc739519af",
+      "bytes": 45111,
+      "tree": "7440c2134d4a305e687299a5895dbefcc2ccd894",
+      "file": "0001-windows-process-tree-boundary.patch",
+      "status": "PREVIOUS_APPROVAL_SCOPE_UNCHANGED"
+    },
+    {
+      "parent_tree": "7440c2134d4a305e687299a5895dbefcc2ccd894",
+      "sha256": "50076f16b1f0f0887b4caab436261f677e18f32b2ff1d2ac62bb84a3ed36aca1",
+      "commit": "02b1c23dd736c0859a28c402ce6285544c4cf5e9",
+      "parent": "fab6082dff9210bc06bd16869b3c2e2d2c20a240",
+      "bytes": 39325,
+      "tree": "cffee80852df31f2af62f64bdfeced3c51774ec2",
+      "file": "0002-cancellation-and-uncertain-cleanup.patch",
+      "status": "PREVIOUS_APPROVAL_SCOPE_UNCHANGED"
+    },
+    {
+      "parent_tree": "cffee80852df31f2af62f64bdfeced3c51774ec2",
+      "sha256": "0e3d2dff72dbc809ef58641f207f47fc2d18ae0a33fdf8b7a83fb5dd9fd48867",
+      "commit": "f2b01139d79c71e4596c0e0aaab105e194b18c19",
+      "parent": "02b1c23dd736c0859a28c402ce6285544c4cf5e9",
+      "bytes": 12460,
+      "tree": "d967fe09c4939d97844f0880eeb3c77f02f06490",
+      "file": "0003-resolution-and-orphan-recovery.patch",
+      "status": "PREVIOUS_APPROVAL_SCOPE_UNCHANGED"
+    },
+    {
+      "parent_tree": "d967fe09c4939d97844f0880eeb3c77f02f06490",
+      "sha256": "904c6d7c73c006f4205b662d3e9fca4be0e885359dfa627b7402b164e2908669",
+      "commit": "e04e2ae1a0d47cdedf5380b5a0d94f280a82d5d1",
+      "parent": "f2b01139d79c71e4596c0e0aaab105e194b18c19",
+      "bytes": 5938,
+      "tree": "89e3964b370d6cd1474be03c04a3c3328521947f",
+      "file": "0004-nameable-service-declarations.patch",
+      "status": "PREVIOUS_APPROVAL_SCOPE_UNCHANGED"
+    }
+  ],
+  "source_apply_tests_builds_install_service_executed": false
+}
