@@ -51,3 +51,9 @@ migration or server change. There is no host change from this publication.
 No live configuration save, credentials, account action, company/agent record,
 database, provider, installation, restart or global setting changed. Exact
 private test-runner paths/logs remain in the existing owner handoff, not here.
+
+## Reviewed source follow-up
+
+See REDACTED_REFUSAL_FOLLOWUP.md and its manifest for the separately reviewed
+e8ad1fd definite pre-send refusal correction. The original patch and historical
+approvals above remain unchanged. Distribution and launcher adoption are separate.

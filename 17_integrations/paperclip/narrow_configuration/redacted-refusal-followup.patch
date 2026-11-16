@@ -1,0 +1,55 @@
+diff --git a/ui/src/lib/agent-config-patch.test.ts b/ui/src/lib/agent-config-patch.test.ts
+index f8f5b3f9c1e37c9f38e6c30e3a7cdc402fe8d7b4..1f283fd42a1e9cfc2cce914b7ea762b306a335cd 100644
+--- a/ui/src/lib/agent-config-patch.test.ts
++++ b/ui/src/lib/agent-config-patch.test.ts
+@@ -148,4 +148,15 @@ describe("narrow adapter config saves", () => {
+     expect(isUncertainSaveFailure(new TypeError("Failed to fetch"))).toBe(true);
+     expect(isUncertainSaveFailure(null)).toBe(true);
+   });
++
++  it("treats a redacted-placeholder refusal as definite: nothing was sent", () => {
++    let refusal: unknown;
++    try {
++      assertNoRedactedValues({ adapterConfig: { env: { A: { type: "plain", value: "***REDACTED***" } } } });
++    } catch (error) {
++      refusal = error;
++    }
++    expect(refusal).toBeInstanceOf(Error);
++    expect(isUncertainSaveFailure(refusal)).toBe(false);
++  });
+ });
+diff --git a/ui/src/lib/agent-config-patch.ts b/ui/src/lib/agent-config-patch.ts
+index 93a8ad3b8094cf1b662f9edb51944c20a15137c1..63c28e3125851a4f91d84ea6b1ac48f4ff1e0c9d 100644
+--- a/ui/src/lib/agent-config-patch.ts
++++ b/ui/src/lib/agent-config-patch.ts
+@@ -27,18 +27,26 @@ function containsRedactedValue(value: unknown): boolean {
+   return Object.values(value).some(containsRedactedValue);
+ }
+ 
++/** Refused before any request was sent, so nothing can have been applied. */
++export class RedactedValueError extends Error {
++  constructor() {
++    super("This change contains a redacted placeholder instead of a real value. Nothing was saved.");
++    this.name = "RedactedValueError";
++  }
++}
++
+ /** Throws rather than let a redacted read be saved back as real configuration. */
+ export function assertNoRedactedValues(patch: Record<string, unknown>) {
+-  if (containsRedactedValue(patch)) {
+-    throw new Error("This change contains a redacted placeholder instead of a real value. Nothing was saved.");
+-  }
++  if (containsRedactedValue(patch)) throw new RedactedValueError();
+ }
+ 
+ /**
+  * True when a failed save may still have been applied (no response, or a
+- * server error). A 4xx response means the server rejected it and nothing changed.
++ * server error). A 4xx response means the server rejected it and nothing changed,
++ * and a refusal before sending means nothing was sent.
+  */
+ export function isUncertainSaveFailure(error: unknown): boolean {
++  if (error instanceof RedactedValueError) return false;
+   const status = (error as { status?: unknown } | null)?.status;
+   return !(typeof status === "number" && status >= 400 && status < 500);
+ }
