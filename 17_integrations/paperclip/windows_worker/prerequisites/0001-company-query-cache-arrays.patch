@@ -1,0 +1,145 @@
+diff --git a/ui/src/context/CompanyContext.test.tsx b/ui/src/context/CompanyContext.test.tsx
+index d31b6e33d2e10005cbf5d74a041d46011b692610..c69e32680e2537473aa84831202e9924bbe5d030 100644
+--- a/ui/src/context/CompanyContext.test.tsx
++++ b/ui/src/context/CompanyContext.test.tsx
+@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+ import type { Company } from "@paperclipai/shared";
+ import { queryKeys } from "../lib/queryKeys";
++import { ApiError } from "../api/client";
+ import {
+   CompanyProvider,
+   resolveBootstrapCompanySelection,
+@@ -169,12 +170,86 @@ describe("CompanyProvider", () => {
+     expect(seen).toEqual([null]);
+   });
+ 
++  it("keeps the provider mounted after an invite refresh writes a company array", async () => {
++    mockCompaniesApi.list.mockResolvedValue([]);
++    await act(async () => {
++      root.render(
++        <QueryClientProvider client={queryClient}>
++          <CompanyProvider>
++            <Probe onSelectedCompanyId={() => {}} />
++          </CompanyProvider>
++        </QueryClientProvider>,
++      );
++    });
++    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
++
++    // InviteLanding refreshes this same key with the API's Company[] response.
++    await act(async () => {
++      await queryClient.fetchQuery({
++        queryKey: queryKeys.companies.all,
++        queryFn: () => mockCompaniesApi.list(),
++        staleTime: 0,
++      });
++      await new Promise((resolve) => setTimeout(resolve, 0));
++    });
++
++    expect(container.querySelector("[data-selected-company-id]")).not.toBeNull();
++    expect(queryClient.getQueryData(queryKeys.companies.all)).toEqual([]);
++  });
++
++  it("preserves stored selection after an unauthorized response without caching a wrapper", async () => {
++    localStorage.setItem("paperclip.selectedCompanyId", "remembered-company");
++    mockCompaniesApi.list.mockRejectedValue(new ApiError("Sign in required", 401, null));
++    await act(async () => {
++      root.render(
++        <QueryClientProvider client={queryClient}>
++          <CompanyProvider>
++            <Probe onSelectedCompanyId={() => {}} />
++          </CompanyProvider>
++        </QueryClientProvider>,
++      );
++    });
++    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 10)); });
++    expect(localStorage.getItem("paperclip.selectedCompanyId")).toBe("remembered-company");
++    expect(container.querySelector("[data-selected-company-id]")).not.toBeNull();
++    expect(queryClient.getQueryData(queryKeys.companies.all)).toBeUndefined();
++  });
++
++  it("keeps shared cache entries as arrays after the provider fetches", async () => {
++    const company = makeCompany("company-1");
++    mockCompaniesApi.list.mockResolvedValue([company]);
++    await act(async () => {
++      root.render(
++        <QueryClientProvider client={queryClient}>
++          <CompanyProvider>
++            <Probe onSelectedCompanyId={() => {}} />
++          </CompanyProvider>
++        </QueryClientProvider>,
++      );
++    });
++    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 10)); });
++    expect(queryClient.getQueryData(queryKeys.companies.all)).toEqual([company]);
++  });
++
++  it("reads company arrays already cached by another observer", async () => {
++    queryClient.setQueryData(queryKeys.companies.all, [makeCompany("company-2")]);
++    mockCompaniesApi.list.mockImplementation(() => new Promise(() => {}));
++    const seen: Array<string | null> = [];
++    await act(async () => {
++      root.render(
++        <QueryClientProvider client={queryClient}>
++          <CompanyProvider>
++            <Probe onSelectedCompanyId={(companyId) => seen.push(companyId)} />
++          </CompanyProvider>
++        </QueryClientProvider>,
++      );
++    });
++    expect(seen).toEqual([null, "company-2"]);
++  });
++
+   it("replaces a stale stored company id with the first loaded company", async () => {
+     localStorage.setItem("paperclip.selectedCompanyId", "stale-company");
+-    queryClient.setQueryData(queryKeys.companies.all, {
+-      companies: [makeCompany("company-1")],
+-      unauthorized: false,
+-    });
++    queryClient.setQueryData(queryKeys.companies.all, [makeCompany("company-1")]);
+     mockCompaniesApi.list.mockImplementation(() => new Promise(() => {}));
+     const seen: Array<string | null> = [];
+ 
+diff --git a/ui/src/context/CompanyContext.tsx b/ui/src/context/CompanyContext.tsx
+index 18a043f0c357ba21b48a85b9d7d93a344bc911b9..970bee7e48b26fa8b8bcbfad52a6d3014b63dbda 100644
+--- a/ui/src/context/CompanyContext.tsx
++++ b/ui/src/context/CompanyContext.tsx
+@@ -14,7 +14,7 @@ import { ApiError } from "../api/client";
+ import { queryKeys } from "../lib/queryKeys";
+ import type { CompanySelectionSource } from "../lib/company-selection";
+ type CompanySelectionOptions = { source?: CompanySelectionSource };
+-type CompanyListResult = { companies: Company[]; unauthorized: boolean };
++const EMPTY_COMPANIES: Company[] = [];
+ 
+ interface CompanyContextValue {
+   companies: Company[];
+@@ -69,22 +69,15 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
+   const [selectionSource, setSelectionSource] = useState<CompanySelectionSource>("bootstrap");
+   const [selectedCompanyId, setSelectedCompanyIdState] = useState<string | null>(null);
+ 
+-  const { data: companiesResult = { companies: [], unauthorized: false }, isLoading, error } = useQuery<CompanyListResult>({
++  // This key is shared with invite/auth flows: its cached value must stay Company[].
++  const { data: companyList = EMPTY_COMPANIES, isLoading, error: companyListError } = useQuery<Company[]>({
+     queryKey: queryKeys.companies.all,
+-    queryFn: async () => {
+-      try {
+-        return { companies: await companiesApi.list(), unauthorized: false };
+-      } catch (err) {
+-        if (err instanceof ApiError && err.status === 401) {
+-          return { companies: [], unauthorized: true };
+-        }
+-        throw err;
+-      }
+-    },
++    queryFn: () => companiesApi.list(),
+     retry: false,
+   });
+-  const companies = companiesResult.companies;
+-  const companyListUnauthorized = companiesResult.unauthorized;
++  const companyListUnauthorized = companyListError instanceof ApiError && companyListError.status === 401;
++  const companies = companyListUnauthorized ? EMPTY_COMPANIES : companyList;
++  const error = companyListUnauthorized ? null : companyListError;
+   const sidebarCompanies = useMemo(
+     () => companies.filter((company) => company.status !== "archived"),
+     [companies],

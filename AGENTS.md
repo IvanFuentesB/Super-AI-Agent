@@ -26,6 +26,29 @@ This file is loaded automatically, so it stays concise.
 - No push or merge to `main` without an explicit, separate merge-gate step after a
   CLEAN independent audit. Implementation lanes never push main.
 
+## GitHub publication checkpoints
+
+- Canonical remote: `IvanFuentesB/Super-AI-Agent`. At task start, verify the actual
+  remote, branch, current instructions and publication owner; do not overwrite a
+  dirty worktree to synchronize it.
+- For source-changing tasks, commit scoped source/tests at meaningful milestones.
+  Before session closeout, publish the safe feature branch and create or update
+  its draft PR within the authorized scope. Record failing or unrun tests in the
+  draft; do not wait for every product gate before publishing reviewable work.
+- In parallel work, use one remote publisher. Builders hand over immutable commits
+  or snapshots and obtain a remote-publication acknowledgment, not merely a local
+  handoff receipt.
+- Scan all newly reachable history before publishing. Exclude credentials, private
+  memory, transcripts, databases and dependency installations. Port only the safe
+  source delta with provenance when its original history is unsuitable.
+- Read the remote back and verify the expected published commit and PR. Every
+  source-changing closeout reports the remote link and separately states local,
+  published, merged and installed status. If publication is blocked, name the exact
+  blocker and owner; say LOCAL ONLY, not delivered.
+- A merge, deployment or live-execution hold is not a feature-branch publication
+  hold. Respect explicit task-scoped publication restrictions and native controls;
+  do not silently carry an old task's no-push instruction into unrelated work.
+
 ## Secrets & safety
 
 - No secrets in the repo: no tokens, no chat ids, no API keys. Secrets live outside

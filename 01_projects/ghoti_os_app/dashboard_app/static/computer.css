@@ -1,0 +1,4 @@
+/* Local operator assets are excluded from the public export. */
+.computer-observation { display: block; max-width: 100%; height: auto; border: 1px solid var(--line); border-radius: 12px; }
+.computer-observation[hidden] { display: none; }
+#computer-scope, #computer-result, #computer-accessibility, #daily-chat-timings { overflow-wrap: anywhere; white-space: pre-wrap; }
