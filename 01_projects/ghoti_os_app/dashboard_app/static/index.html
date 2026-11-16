@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f8f9f7">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Ghoti">
+  <title>Ghoti · Your workspace</title>
+  <link rel="manifest" href="/manifest.webmanifest?v=2026.08.01.4">
+  <link rel="icon" href="/icons/icon-192.png?v=2026.08.01.4" type="image/png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png?v=2026.08.01.4">
+  <link rel="stylesheet" href="/static/daily.css">
+  <link rel="stylesheet" href="/static/computer.css">
+  <script src="/static/local-session.js" defer></script>
+  <script src="/static/chat.js" defer></script>
+  <script src="/static/daily.js" defer></script>
+  <script src="/static/computer.js" defer></script>
+</head>
+<body>
+  <svg class="icon-definitions" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 1-8 8H5l-3 3V11a9 9 0 0 1 18 0Z"/><path d="M7 9h8M7 13h5"/></symbol>
+    <symbol id="i-computer" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="13" rx="2"/><path d="M8 21h8m-4-5v5"/></symbol>
+    <symbol id="i-projects" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></symbol>
+    <symbol id="i-agents" viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 4a3 3 0 0 1 0 6m2 4a5 5 0 0 1 3 5v2"/></symbol>
+    <symbol id="i-memory" viewBox="0 0 24 24"><path d="M12 5C9 3 5 3 2 4v15c4-1 7-1 10 1 3-2 6-2 10-1V4c-3-1-7-1-10 1Zm0 0v15"/></symbol>
+    <symbol id="i-tools" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 17h7m-3.5-3.5v7"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="10" cy="18" r="2"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M12 19V5m-6 6 6-6 6 6"/></symbol>
+  </defs></svg>
+  <div id="daily-shell" class="daily">
+    <a class="skip-link" href="#daily-main">Skip to content</a>
+    <aside id="daily-sidebar" class="daily-sidebar">
+      <a id="daily-brand" class="daily-brand" href="#chat" aria-label="Ghoti home"><span class="brand-mark" aria-hidden="true">g.</span><span>Ghoti<small>Your workspace</small></span></a>
+      <button id="daily-menu" class="d-button menu-button" type="button" aria-expanded="false" aria-controls="daily-navigation">Menu</button>
+      <button id="daily-new" class="d-button new-chat" type="button" disabled><svg aria-hidden="true"><use href="#i-plus"/></svg>New chat</button>
+      <nav id="daily-navigation" class="daily-nav" aria-label="Workspace">
+        <button type="button" data-daily-view="chat" aria-current="page" aria-controls="daily-panel-chat"><svg aria-hidden="true"><use href="#i-chat"/></svg>Chat<span id="daily-nav-chat-state" class="nav-state"></span></button>
+        <button type="button" data-daily-view="computer" aria-controls="daily-panel-computer"><svg aria-hidden="true"><use href="#i-computer"/></svg>Computer<span id="daily-nav-computer-state" class="nav-state"></span></button>
+        <button type="button" data-daily-view="projects" aria-controls="daily-panel-projects"><svg aria-hidden="true"><use href="#i-projects"/></svg>Projects<span id="daily-nav-projects-state" class="nav-state"></span></button>
+        <button type="button" data-daily-view="agents" aria-controls="daily-panel-agents"><svg aria-hidden="true"><use href="#i-agents"/></svg>Agents</button>
+        <button type="button" data-daily-view="memory" aria-controls="daily-panel-memory"><svg aria-hidden="true"><use href="#i-memory"/></svg>Memory<span id="daily-nav-memory-state" class="nav-state"></span></button>
+        <button type="button" data-daily-view="tools" aria-controls="daily-panel-tools"><svg aria-hidden="true"><use href="#i-tools"/></svg>Tools</button>
+        <button type="button" data-daily-view="settings" aria-controls="daily-panel-settings"><svg aria-hidden="true"><use href="#i-settings"/></svg>Settings</button>
+      </nav>
+      <div class="daily-sidebar-note"><span class="local-dot" aria-hidden="true"></span><span>On your device<small>You decide what runs.</small></span></div>
+    </aside>
+    <main id="daily-main" class="daily-main" tabindex="-1">
+      <header class="daily-topbar"><h1 id="daily-title" tabindex="-1">Chat</h1><div class="daily-top-actions"><span id="daily-connection" class="connection-label">Connecting…</span><button id="daily-refresh" class="d-button quiet" type="button">Refresh</button></div></header>
+      <noscript><p class="d-notice">JavaScript is required for local chat. No task has been submitted.</p></noscript>
+      <div class="daily-content">
+        <section id="daily-panel-chat" data-daily-panel="chat" aria-labelledby="daily-chat-heading">
+          <div id="daily-welcome" class="chat-heading"><h2 id="daily-chat-heading">What would you like to work on?</h2><p>Think it through, make a plan, or start something useful.</p></div>
+          <div id="daily-conversation" class="daily-conversation" role="log" aria-label="Conversation" aria-live="off" tabindex="0" hidden></div>
+          <p id="daily-chat-state" class="chat-status" role="status">Connecting to chat…</p>
+          <section id="daily-permissions" class="daily-permissions" aria-label="Pending permissions" tabindex="-1" hidden></section>
+          <form id="daily-chat-form" class="daily-composer">
+            <label for="daily-prompt">Message Ghoti</label>
+            <textarea id="daily-prompt" placeholder="Ask a question or describe a task…" rows="3" maxlength="12000" aria-describedby="daily-send-help daily-input-error" required></textarea>
+            <p id="daily-input-error" class="field-error" role="alert" hidden></p>
+            <div class="composer-footer"><span id="daily-model" class="model-label">Checking model…</span><div class="d-actions"><button id="daily-cancel" class="d-button danger" type="button" disabled hidden>Stop</button><button id="daily-send" class="d-button primary" type="submit" disabled>Send<svg aria-hidden="true"><use href="#i-arrow"/></svg></button></div></div>
+          </form>
+          <p id="daily-send-help" class="fine-print">Ctrl+Enter sends. Enter adds a new line. Tool actions need your approval.</p>
+          <div id="daily-suggestions" class="draft-suggestions" aria-label="Ideas to start a draft">
+            <button type="button" data-draft="Help me turn a project idea into three practical next steps. Ask me what I want to build first."><strong>Plan a project</strong><span>Find a practical next step</span></button>
+            <button type="button" data-draft="Help me make a concise summary. Ask me for the text, then identify the main ideas and any open questions."><strong>Make sense of a topic</strong><span>Get a clear explanation</span></button>
+            <button type="button" data-draft="Help me prepare a coding task. Ask what I want to change, then outline the scope and checks before making any changes."><strong>Work through code</strong><span>Start with a focused brief</span></button>
+          </div>
+          <details class="d-details"><summary>Chat options</summary><label for="daily-chat-mode">Reasoning for this conversation</label><select id="daily-chat-mode" class="d-input" disabled><option value="auto">Auto · medium</option><option value="fast">Fast · low</option><option value="deep">Deep · max</option></select><p>Auto is a balanced setting, not automatic model routing. This preference applies to the next message; effective settings are verified on the execution path. No global configuration changes.</p><p>Text messages only. Messages go to your configured provider; controls remain local.</p><details class="d-details"><summary>Observed turn timings</summary><pre id="daily-chat-timings" class="d-output" tabindex="0" role="group" aria-label="Observed turn timings">No measured turn yet.</pre></details></details>
+          <details id="daily-history" class="d-details"><summary>Earlier conversations</summary><p>Saved assistant replies only; this runtime does not retain user prompts for this view. Opening history never resumes work or restores permissions.</p><button id="daily-history-refresh" type="button" class="d-button quiet">Refresh conversations</button><div id="daily-history-list" class="d-list">No conversation list loaded.</div><div id="daily-history-output" class="history-output" aria-label="Saved replies" hidden></div></details>
+          <details class="d-details"><summary>This conversation’s activity</summary><div id="daily-tool-events" class="d-list">No tools used in this conversation.</div></details>
+        </section>
+        <section id="daily-panel-agents" data-daily-panel="agents" aria-labelledby="daily-agents-heading" hidden>
+          <div class="section-intro"><h2 id="daily-agents-heading">Workers and conversations</h2><p>Local workers and chat sessions reported by your runtime.</p></div>
+          <p id="daily-workers" class="d-notice">Worker state unavailable.</p>
+          <div id="daily-sessions" class="d-list">No session list loaded.</div>
+          <div class="availability-note"><h3>Development team board</h3><p id="daily-paperclip" class="d-notice" role="status">Checking the Paperclip board…</p><p>The Ghoti Development team, its tasks and hire approvals live on the Paperclip board, a separate local service that runs on request. Nothing from the board is copied or simulated here.</p><a id="daily-paperclip-link" class="d-button" href="http://127.0.0.1:41402/" target="_blank" rel="noopener noreferrer">Open Paperclip board</a></div>
+        </section>
+        <section id="daily-panel-computer" data-daily-panel="computer" aria-labelledby="daily-computer-heading" hidden>
+          <div class="section-intro"><h2 id="daily-computer-heading">Run one approved task on this computer</h2><p>Computer actions need a connected control service and your explicit permission.</p></div>
+          <p id="computer-status" class="d-notice" role="status">Checking authenticated local control…</p>
+          <form id="computer-form" class="local-task-form" novalidate><label for="computer-input-mode">Input type</label><select id="computer-input-mode"><option value="task">Task instruction</option><option value="text">Literal note text</option></select><label id="computer-text-label" for="computer-text">What should Ghoti do?</label><input id="computer-text" class="d-input" type="text" maxlength="650" required autocomplete="off" aria-describedby="computer-task-help computer-input-error" placeholder="Create a note saying &quot;Call Sam&quot;"><p id="computer-task-help" class="fine-print">Supported now: create, write or make one temporary note. Use “Create a note saying …” or “Write a note: …”. Everything after the delimiter is note content, not another action. Other computer tasks are not supported here. Review the exact scope before approving.</p><p id="computer-input-error" class="field-error" role="alert" hidden></p><label for="computer-wait">Before typing</label><select id="computer-wait" aria-describedby="computer-wait-help"><option value="0">Start right after approval</option><option value="30">Wait 30 seconds first</option></select><p id="computer-wait-help" class="fine-print">During a 30-second wait, Stop control revokes the queued input before anything is typed.</p><p id="computer-control-help" class="fine-print">Supported scope: a new owned Notepad file only, exact text readback and memory receipt. Existing documents, arbitrary commands and other windows are excluded. Start creates a proposal, not consent.</p><div class="d-actions"><button id="computer-start" class="d-button primary" type="submit" disabled aria-describedby="computer-control-help">Start computer task</button><button id="computer-stop" class="d-button danger" type="button" disabled>Stop control</button></div></form>
+          <h3>Requested scope</h3><pre id="computer-scope" class="d-output" tabindex="0" role="group" aria-label="Requested scope">No task proposed.</pre>
+          <section id="computer-approval" class="daily-permissions permission-card" aria-label="Computer task permission" aria-describedby="computer-scope" tabindex="-1" hidden><span class="d-status" data-state="permission">Permission required</span><p>Approve this bounded task once, or reject it. Required native Cua permission prompts remain separate and must be handled by you or the trusted host; this page never dismisses them. Expired or refused requests are not replayed.</p><div class="d-actions"><button id="computer-approve" class="d-button primary" type="button" disabled>Approve this scope</button><button id="computer-deny" class="d-button" type="button" disabled>Reject</button></div></section>
+          <ol id="computer-steps" class="d-steps" aria-label="Task progress"></ol><p id="computer-progress" class="d-notice" role="status" tabindex="-1">No task created.</p>
+          <p id="computer-observation-status" class="fine-print">No live screen connected.</p><img id="computer-image" class="computer-observation" alt="Fresh observation of the authorized temporary-note window" hidden>
+          <details class="d-details"><summary>Authorized accessibility observation</summary><pre id="computer-accessibility" class="d-output" tabindex="0" role="group" aria-label="Authorized accessibility observation">No authorized observation.</pre></details>
+          <details class="d-details"><summary>Verified result or partial failure</summary><pre id="computer-result" class="d-output" tabindex="0" role="group" aria-label="Verified result or partial failure">No verified result yet.</pre></details>
+          <h3>Latest recorded work</h3><p id="daily-computer" class="d-notice">Checking recorded observations…</p><details class="d-details"><summary>Recorded task details</summary><pre id="daily-computer-evidence" class="d-output" tabindex="0" role="group" aria-label="Recorded task details">No observation loaded.</pre></details>
+        </section>
+        <section id="daily-panel-tools" data-daily-panel="tools" aria-labelledby="daily-tools-heading" hidden>
+          <div class="section-intro"><h2 id="daily-tools-heading">Recently used tools</h2><p>Recently observed use, not a catalog of everything installed. A past invocation does not grant permission or prove a tool is available now.</p></div>
+          <p id="daily-learning" class="d-notice">Checking learned skills…</p><div id="daily-capabilities" class="d-list">Checking tool observations…</div><div class="availability-note"><h3>Looking for a capability?</h3><p>Search the real local registry with a capability lookup in Projects. Installing or invoking arbitrary tools from this view is not supported.</p><button class="d-button" type="button" data-go="projects">Open local tasks</button></div>
+        </section>
+        <section id="daily-panel-memory" data-daily-panel="memory" aria-labelledby="daily-memory-heading" hidden>
+          <div class="section-intro"><h2 id="daily-memory-heading">References and memory status</h2><p>References loaded from Obsidian and the memory status reported by the runtime. Loading references is not proof of synchronization.</p></div>
+          <p id="daily-memory" class="d-notice">Checking memory…</p><label class="field-label" for="daily-memory-search">Filter loaded references</label><input id="daily-memory-search" class="d-input" type="search" placeholder="Search these references…" maxlength="200" aria-describedby="daily-memory-help" disabled><p id="daily-memory-help" class="fine-print">This filters the startup references below, not your entire vault. Full knowledge search is not connected.</p><p id="daily-memory-count" class="fine-print" role="status">No references loaded.</p><div id="daily-memory-list" class="d-list">No references loaded.</div>
+        </section>
+        <section id="daily-panel-projects" data-daily-panel="projects" aria-labelledby="daily-projects-heading" hidden>
+          <div class="section-intro"><h2 id="daily-projects-heading">Run a local task</h2><p>Run a focused local task and return to its saved result.</p></div>
+          <p class="availability-note">Project folders aren’t connected yet. Local tasks work independently; no projects are inferred from your messages.</p>
+          <form id="daily-task-form" class="local-task-form"><label for="daily-operation">What would you like to do?</label><select id="daily-operation" disabled><option value="">Waiting for runtime</option></select><label for="daily-task-text">Task input</label><textarea id="daily-task-text" placeholder="Describe what you need. Don’t include secrets." maxlength="4000" rows="3" aria-describedby="daily-task-help" required></textarea><p id="daily-task-help" class="fine-print">Bounded local operations only. This does not execute your code or control the computer.</p><button id="daily-run" class="d-button primary" type="submit" disabled>Run local task</button></form>
+          <div id="daily-task-result" class="task-result" role="status">No task submitted in this view.</div>
+          <h3>Recent local work</h3><p id="daily-jobs-summary" class="fine-print" role="status"></p><div id="daily-jobs" class="d-list">Checking saved results…</div><button id="daily-more-jobs" type="button" class="d-button quiet" hidden>Show older results</button>
+        </section>
+        <section id="daily-panel-settings" data-daily-panel="settings" aria-labelledby="daily-settings-heading" hidden>
+          <div class="section-intro"><h2 id="daily-settings-heading">Current setup and boundaries</h2><p>Current configuration and privacy. These facts are read-only; this page cannot change permission policy.</p></div>
+          <dl class="d-facts"><div><dt>Chat model</dt><dd>Astra · session-local Auto, Fast or Deep. The effective effort is verified per turn.</dd></div><div><dt>Permissions</dt><dd>Chat tools: Allow once or Deny. Computer: one bounded task scope, with mandatory native gates preserved.</dd></div><div><dt>Messages</dt><dd>Text goes to the configured provider. No attachment uploads.</dd></div><div><dt>History</dt><dd>Runtime-saved assistant replies. No automatic task recovery or resend.</dd></div><div><dt>Connection</dt><dd>Local controls only. Optional integrations can be unavailable without interrupting Chat.</dd></div></dl>
+          <details id="daily-developer" class="d-details developer-view"><summary>Developer view</summary><p>Technical records for troubleshooting. These can contain local paths and task details; don’t share them publicly.</p><h3>Chat connection</h3><p id="daily-settings-model">Not verified</p><p id="daily-chat-reason">Checking local chat.</p><p id="daily-session">No session created.</p><h3>Deployment</h3><pre id="daily-deployment" class="d-output" tabindex="0" role="group" aria-label="Deployment">Runtime unavailable.</pre><h3>Memory references</h3><pre id="daily-memory-evidence" class="d-output" tabindex="0" role="group" aria-label="Memory references">No references loaded.</pre><h3>Native receipts</h3><p id="daily-observations">Observation scope unavailable.</p><div id="daily-receipts" class="d-list">No receipts loaded.</div></details>
+        </section>
+        <footer class="daily-footer"><span>One step at a time.</span><span id="daily-updated">Connecting to your workspace…</span></footer>
+      </div>
+    </main>
+  </div>
+  <!-- Retain unrelated legacy panels as inert markup; never boot their controls here. -->
+  <div id="legacy-dashboard" hidden inert>
+  <div id="app-loading" class="app-loading" role="status" aria-live="polite">
+    <img src="/assets/ghoti_fish_original.png?v=2026.08.01.4" alt="Ghoti cyber fish">
+    <strong>Waking Ghoti</strong>
+    <span>Reading local status and safety gates...</span>
+  </div>
+  <aside class="sidebar">
+    <div class="brand"><span class="brand-mark"><img src="/assets/ghoti_fish_original.png?v=2026.08.01.4" alt="Ghoti cyber fish"></span><div><strong>Ghoti</strong><small>Computer Use OS</small></div></div>
+    <button id="new-agent-session" class="new-session-button" type="button"><span aria-hidden="true">+</span> New session</button>
+    <div class="sidebar-context" aria-label="Session and project context">
+      <span class="sidebar-label">SESSION</span>
+      <button class="sidebar-context-item active" type="button" data-view-target="home"><span class="context-dot"></span><span><strong>Local session</strong><small>Browser memory only</small></span></button>
+      <span class="sidebar-label">PROJECTS</span>
+      <div id="os-sidebar-projects" class="sidebar-project-list"><p>No project status loaded.</p></div>
+    </div>
+    <nav class="tabs" aria-label="Dashboard sections">
+      <button class="tab active" data-view="home">Ghoti</button>
+      <button class="tab" data-view="projects">Projects</button>
+      <button class="tab" data-view="memory">Memory</button>
+      <button class="tab" data-view="clipper">Clips</button>
+      <button class="tab" data-view="routines">Routines</button>
+      <button class="tab" data-view="tools">Tools</button>
+      <details id="advanced-navigation" class="advanced-navigation">
+        <summary>Advanced</summary>
+        <div class="advanced-navigation-items">
+          <button class="tab advanced-tab" data-view="actions">Action Center</button>
+          <button class="tab advanced-tab" data-view="evolve">Self-Evolve</button>
+          <button class="tab advanced-tab" data-view="computer">Full Computer Use</button>
+          <button class="tab advanced-tab" data-view="command">Command Center</button>
+          <button class="tab advanced-tab" data-view="paperclip">Paperclip</button>
+          <button class="tab advanced-tab" data-view="ruflo">Ruflo</button>
+          <button class="tab advanced-tab" data-view="system-map">System Map</button>
+          <button class="tab advanced-tab" data-view="sites">Sites</button>
+          <button class="tab advanced-tab" data-view="automation">Automation</button>
+          <button class="tab advanced-tab" data-view="obsidian">Obsidian</button>
+          <button class="tab advanced-tab" data-view="ai">Local AI</button>
+          <button class="tab advanced-tab" data-view="routing">Model Routing</button>
+          <button class="tab advanced-tab" data-view="safety">Safety</button>
+          <button class="tab advanced-tab" data-view="proofs">Proof Videos</button>
+          <button class="tab advanced-tab" data-view="queue">Post Queue</button>
+        </div>
+      </details>
+    </nav>
+    <div class="sidebar-foot"><span class="dot safe"></span><span id="connection-mode">Checking connection...</span></div>
+  </aside>
+
+  <main>
+    <header class="topbar">
+      <div class="header-identity"><img class="header-fish" src="/assets/ghoti_fish_original.png?v=2026.08.01.4" alt=""><div><h1 id="page-title">Ghoti</h1><p id="last-updated">Loading local OS status...</p></div></div>
+      <div class="button-row"><button id="install-app" class="button secondary" hidden>Install app</button>
+      <span class="emergency-stop-hint">Ctrl+8 = Emergency Stop</span>
+      <span id="global-agent-state" class="agent-state-pill" data-state="idle">IDLE</span>
+      <button id="agent-stop-top" class="button danger-button" type="button">STOP</button>
+      <button class="button secondary update-app" type="button">Update App</button>
+      <button id="refresh" class="button secondary">Refresh</button></div>
+    </header>
+
+    <div id="notice" class="notice" hidden></div>
+
+    <section class="view active assistant-view" data-panel="home">
+      <div id="agent-shell" class="assistant-shell" data-agent-state="idle">
+        <header class="assistant-header">
+          <div class="assistant-identity">
+            <span class="assistant-avatar-wrap"><span class="agent-glow"></span><img id="agent-fish" src="/assets/ghoti_fish_original.png?v=2026.08.01.4" alt="Ghoti cyber fish"></span>
+            <div><h2>Ghoti</h2><p id="agent-fish-bubble">One local assistant for projects, memory, tools, and supervised computer use.</p></div>
+          </div>
+          <div class="assistant-statuses"><span id="agent-state-pill" class="agent-state-pill" data-state="idle">IDLE</span><span id="agent-safety-badge" class="tool-status ready">LOCAL ONLY</span></div>
+        </header>
+        <div class="os-mode-strip" aria-label="Ghoti OS operating mode">
+          <span><strong id="os-mode-model">LOCAL MODEL</strong><small>No paid cloud call</small></span>
+          <span><strong id="os-mode-approval">CONFIRM ONCE</strong><small>Mouse and keyboard only</small></span>
+          <span><strong id="os-mode-live" class="blocked-text">LIVE EXTERNAL BLOCKED</strong><small>Accounts, posting, and payments</small></span>
+        </div>
+
+        <div id="computer-use-control-banner" class="computer-use-control-banner" role="status" aria-live="assertive" hidden>
+          <strong id="computer-use-control-banner-title">Ghoti is controlling your PC</strong>
+          <span id="computer-use-control-banner-copy">One confirmed local action is active. Press Ctrl+8 anytime to stop Ghoti.</span>
+        </div>
+
+        <aside id="computer-use-panel" class="computer-use-panel" aria-live="polite" hidden>
+          <header class="computer-use-panel-header">
+            <div><span class="tool-kicker">SUPERVISED DESKTOP</span><h3>Computer Use</h3></div>
+            <div class="button-row"><span id="computer-use-panel-state" class="tool-status needs-ivan">BACKEND PENDING</span><button id="computer-use-panel-close" class="button tiny secondary" type="button" aria-label="Hide Computer Use panel">Hide</button></div>
+          </header>
+          <p id="computer-use-panel-copy">Computer-use session endpoint pending. Basic supervised Confirm/Cancel still available.</p>
+          <dl class="computer-use-facts">
+            <div><dt>Session</dt><dd id="computer-use-session-id">Not started</dd></div>
+            <div><dt>Active window</dt><dd id="computer-use-active-window">Not reported</dd></div>
+            <div><dt>Mouse</dt><dd id="computer-use-mouse">Not reported</dd></div>
+            <div><dt>Last action</dt><dd id="computer-use-last-action">None this session</dd></div>
+            <div><dt>Evidence</dt><dd><code id="computer-use-evidence">none reported</code></dd></div>
+            <div><dt>Active control</dt><dd id="computer-use-active-control">NO</dd></div>
+            <div><dt>Stopped by Ctrl+8</dt><dd id="computer-use-stopped-by-ctrl8">NO</dd></div>
+          </dl>
+          <div id="computer-use-screenshot-frame" class="computer-use-screenshot-frame">
+              <span id="computer-use-screenshot-empty">No safe browser-renderable screenshot available.</span>
+            <img id="computer-use-screenshot" alt="Latest local computer-use observation" hidden>
+          </div>
+          <div class="computer-use-controls" aria-label="Fixed computer-use controls">
+            <button id="computer-use-observe" class="button secondary" type="button" data-computer-use-command="computer_use_observe">Observe screen</button>
+            <button id="computer-use-demo" class="button secondary" type="button" data-computer-use-command="computer_use_demo_safe">Computer use demo</button>
+            <button id="computer-use-stop" class="button danger-button" type="button" data-computer-use-command="computer_use_stop">STOP</button>
+            <button id="computer-use-reset" class="button secondary" type="button" data-computer-use-command="computer_use_reset_stop">Reset stop</button>
+          </div>
+          <p id="computer-use-backend-note" class="computer-use-backend-note">Feature detection is waiting for a fixed computer_use_status command ID.</p>
+          <p class="computer-use-stop-reminder"><strong>Press Ctrl+8 anytime to stop Ghoti.</strong></p>
+        </aside>
+
+        <div id="agent-conversation" class="conversation-stream" aria-live="polite">
+          <article class="conversation-message assistant-message welcome-message">
+            <img class="message-avatar" src="/assets/ghoti_fish_original.png?v=2026.08.01.4" alt="">
+            <div class="message-body"><div class="message-heading"><strong>Ghoti</strong><span class="message-badge">LOCAL OS</span></div><p>Tell me what you want to accomplish. I can answer normally, coordinate local projects and memory, plan rights-cleared clips, and prepare one supervised desktop action for your confirmation.</p></div>
+          </article>
+          <article id="agent-activity" class="conversation-message assistant-message agent-activity" hidden>
+            <img class="message-avatar" src="/assets/ghoti_fish_original.png?v=2026.08.01.4" alt="">
+            <div class="message-column">
+              <div class="message-body">
+                <div class="message-heading"><strong>Ghoti</strong><span id="agent-activity-badge" class="message-badge">THINKING</span></div>
+                <p id="agent-activity-text">Ghoti is thinking<span class="typing-dots" aria-hidden="true"><span>.</span><span>.</span><span>.</span></span></p>
+                <ol id="agent-progress-steps" class="agent-progress-steps" aria-label="Request progress">
+                  <li data-progress="planning">Planning</li>
+                  <li data-progress="tool">Running tool</li>
+                  <li data-progress="evidence">Writing evidence</li>
+                  <li data-progress="done">Done</li>
+                </ol>
+              </div>
+            </div>
+          </article>
+          <div id="agent-confirmation" class="agent-confirmation confirmation-card" hidden>
+            <div class="confirmation-title"><span class="confirmation-icon" aria-hidden="true">!</span><div><h3>Confirm desktop control</h3><p>Review this one local action before anything touches the mouse or keyboard.</p></div></div>
+            <p id="chat-confirm-warning" class="confirmation-warning">This will control your mouse/keyboard once.</p>
+            <dl class="confirmation-details">
+              <div><dt>Action</dt><dd id="agent-confirm-action">not reported</dd></div>
+              <div><dt>Target</dt><dd id="agent-confirm-target">not reported</dd></div>
+              <div><dt>Plan ID</dt><dd><code id="chat-confirm-plan-id"><span id="agent-confirm-plan-id">not reported</span></code></dd></div>
+              <div><dt>Current window</dt><dd id="agent-confirm-window">not reported</dd></div>
+              <div><dt>Safety notes</dt><dd id="agent-confirm-safety">One action, explicit approval, evidence logged.</dd></div>
+            </dl>
+            <div class="button-row">
+              <button id="agent-confirm" class="button primary" type="button">Confirm once</button>
+              <button id="agent-cancel" class="button secondary" type="button">Cancel</button>
+            </div>
+            <p class="confirmation-stop-hint"><strong>Ctrl+8 = Emergency Stop</strong></p>
+          </div>
+        </div>
+        <p id="agent-reply" class="sr-only">Ready for a safe local request.</p>
+
+        <div class="intent-examples assistant-examples" aria-label="Example Ghoti requests">
+          <button type="button" class="intent-example" data-intent="what day is today">what day is today</button>
+          <button type="button" class="intent-example" data-intent="what can you do">what can you do</button>
+          <button type="button" class="intent-example" data-intent="open VS Code">open VS Code</button>
+          <button type="button" class="intent-example supervised-intent" data-intent="observe screen">observe screen</button>
+          <button type="button" class="intent-example supervised-intent" data-intent="computer use demo">computer use demo</button>
+          <button type="button" class="intent-example" data-intent="create a project">create a project</button>
+          <button type="button" class="intent-example" data-intent="launch a swarm">launch a swarm</button>
+          <button type="button" class="intent-example" data-intent="make a clip from owned video">make a clip from owned video</button>
+          <button type="button" class="intent-example supervised-intent" data-intent="click at 500 400">click at 500 400</button>
+        </div>
+
+        <details id="assistant-tool-drawer" class="assistant-tool-drawer">
+          <summary>Tools <span>13 local, supervised, and sandbox lanes</span></summary>
+          <div class="tool-chip-grid">
+            <button class="tool-chip" type="button" data-tool="desktop" data-tool-intent="what desktop actions are ready"><span>Desktop</span><strong id="tool-status-desktop">READY</strong></button>
+            <button class="tool-chip" type="button" data-tool="computer-use" data-tool-intent="observe screen"><span>Computer Use</span><strong id="tool-status-computer-use">SUPERVISED</strong></button>
+            <button class="tool-chip" type="button" data-tool="browser" data-tool-intent="what browser actions are ready"><span>Browser</span><strong id="tool-status-browser">SUPERVISED</strong></button>
+            <button class="tool-chip" type="button" data-tool="clips" data-tool-intent="make a clip from owned video"><span>Clips</span><strong id="tool-status-clips">READY</strong></button>
+            <button class="tool-chip" type="button" data-tool="projects" data-tool-intent="create a project"><span>Projects</span><strong id="tool-status-projects">LOCAL</strong></button>
+            <button class="tool-chip" type="button" data-tool="swarms" data-tool-intent="launch a swarm"><span>Swarms</span><strong id="tool-status-swarms">TASK PACKETS</strong></button>
+            <button class="tool-chip" type="button" data-tool="memory" data-tool-intent="search memory"><span>Memory</span><strong id="tool-status-memory">LOCAL</strong></button>
+            <button class="tool-chip" type="button" data-tool="github" data-tool-intent="github status"><span>GitHub</span><strong id="tool-status-github">NEEDS_IVAN</strong></button>
+            <button class="tool-chip" type="button" data-tool="obsidian" data-tool-intent="update Obsidian"><span>Obsidian</span><strong id="tool-status-obsidian">NEEDS_IVAN</strong></button>
+            <button class="tool-chip" type="button" data-tool="paperclip" data-tool-intent="paperclip status"><span>Paperclip</span><strong id="tool-status-paperclip">SANDBOX</strong></button>
+            <button class="tool-chip" type="button" data-tool="ruflo" data-tool-intent="ruflo status"><span>Ruflo</span><strong id="tool-status-ruflo">SANDBOX</strong></button>
+            <button class="tool-chip" type="button" data-tool="youtube" data-tool-intent="YouTube connector status"><span>YouTube</span><strong id="tool-status-youtube">MANUAL</strong></button>
+            <button class="tool-chip" type="button" data-tool="tiktok" data-tool-intent="TikTok connector status"><span>TikTok</span><strong id="tool-status-tiktok">MANUAL</strong></button>
+          </div>
+        </details>
+
+        <details id="home-tool-diagnostics" class="home-tool-diagnostics">
+          <summary>Local tools and diagnostic details</summary>
+          <section class="available-tools-panel" aria-labelledby="available-tools-heading">
+          <article id="release-readiness-card" class="release-readiness-card">
+            <div class="tool-card-heading"><div><span class="tool-kicker">RELEASE CHECK</span><h3>System Ready</h3></div><span id="release-system-state" class="tool-status needs-ivan">CHECKING</span></div>
+            <div class="release-readiness-grid">
+              <div><span>Tests last known</span><strong id="release-tests">333/333 PASS</strong></div>
+              <div><span>App/cache version</span><strong id="release-version">2026.08.01.4</strong></div>
+              <div><span>Dashboard URL</span><strong id="release-dashboard-url">http://127.0.0.1:8765</strong></div>
+              <div><span>Agent endpoint</span><strong id="release-agent-api">CHECKING</strong></div>
+              <div><span>Desktop control</span><strong id="release-supervised">CHECKING</strong></div>
+              <div><span>Live external actions</span><strong class="blocked-text">BLOCKED</strong></div>
+            </div>
+            <div class="release-actions"><p>Local assistant and one-action confirmation are the release scope. Accounts, posting, payments, and external sites stay blocked.</p><button class="button secondary update-app" type="button">Update App</button></div>
+          </article>
+          <div class="compact-heading"><div><h3 id="available-tools-heading">Diagnostics and integration status</h3><p>Release checks and detailed backend status stay collapsed away from the conversation.</p></div><span id="agent-model" class="model-pill">local fallback</span></div>
+          </section>
+
+          <div class="tool-detail-grid">
+          <article id="obsidian-tool-card" class="integration-tool-card">
+            <div class="tool-card-heading"><div><span class="tool-kicker">MEMORY</span><h3>Obsidian</h3></div><span id="obsidian-tool-state" class="tool-status needs-ivan">NEEDS_IVAN</span></div>
+            <dl class="tool-facts"><div><dt>Vault</dt><dd id="obsidian-tool-vault">Waiting for backend status</dd></div><div><dt>Live status note</dt><dd id="obsidian-tool-note">Not reported</dd></div><div><dt>Last updated</dt><dd id="obsidian-tool-updated">Not reported</dd></div><div><dt>Pending folder</dt><dd><code id="obsidian-tool-pending">obsidian_sync/pending/</code></dd></div></dl>
+            <p id="obsidian-tool-warning" class="tool-warning">The dedicated Obsidian status command is not advertised by this backend build. No update is claimed.</p>
+            <div class="button-row"><button id="obsidian-tool-update" class="button secondary" type="button" disabled>Update Obsidian</button><button id="obsidian-tool-open" class="button secondary" type="button" disabled>Open status note</button></div>
+            <p id="obsidian-pending-help" class="manual-path-note">No fixed backend command exists to open the pending folder. Copy <code>obsidian_sync/pending/</code> manually if Windows blocks vault writes.</p>
+            <details class="tool-output-details"><summary>Show details</summary><pre id="obsidian-tool-output" class="output compact">No Obsidian command run.</pre></details>
+          </article>
+          <article id="github-tool-card" class="integration-tool-card">
+            <div class="tool-card-heading"><div><span class="tool-kicker">SOURCE</span><h3>GitHub</h3></div><span id="github-tool-state" class="tool-status needs-ivan">NEEDS_IVAN</span></div>
+            <dl class="tool-facts"><div><dt>Branch</dt><dd id="github-tool-branch">Not reported</dd></div><div><dt>Worktree</dt><dd id="github-tool-clean">Not reported</dd></div><div><dt>Latest commit</dt><dd id="github-tool-commit">Not reported</dd></div><div><dt>Remote present</dt><dd id="github-tool-remote">Not checked</dd></div><div><dt>Push enabled</dt><dd id="github-tool-push-state">NO</dd></div><div><dt>Reason</dt><dd id="github-tool-reason">Backend status not loaded.</dd></div></dl>
+            <p id="github-tool-warning" class="tool-warning">GitHub status commands are not advertised by this backend build. Push stays disabled.</p>
+            <div class="button-row"><button id="github-tool-check" class="button secondary" type="button" disabled>Check GitHub status</button><button id="github-tool-push" class="button primary" type="button" disabled>Push current branch</button></div>
+            <div id="github-setup-help" class="setup-command-list" hidden>
+              <strong>Add GitHub remote first.</strong>
+              <div class="cmd-copy"><code id="github-remote-template">git remote add origin &lt;YOUR_REPO_URL&gt;</code><button id="github-remote-copy" class="button tiny copy" type="button" data-copy="git remote add origin &lt;YOUR_REPO_URL&gt;">Copy</button></div>
+              <div class="cmd-copy"><code id="github-push-template">git push -u origin &lt;CURRENT_BRANCH&gt;</code><button id="github-push-copy" class="button tiny copy" type="button" data-copy="git push -u origin &lt;CURRENT_BRANCH&gt;">Copy</button></div>
+              <small>Templates only. Ghoti does not create remotes, store credentials, or force-push.</small>
+            </div>
+            <details class="tool-output-details"><summary>Show details</summary><pre id="github-tool-output" class="output compact">No GitHub command run.</pre></details>
+          </article>
+          </div>
+        </details>
+
+        <details id="agent-details" class="agent-details">
+          <summary>Show details</summary>
+          <div class="agent-detail-content">
+            <div class="agent-result-grid"><div><h3>Plan</h3><ol id="agent-plan"><li>Waiting for a request.</li></ol></div><div><h3>Result</h3><ul id="agent-executed"><li>No action this session.</li></ul></div></div>
+            <p class="agent-evidence"><strong>Evidence:</strong> <code id="agent-evidence-path">none yet</code></p>
+            <div class="agent-safety-summary"><h3>Safety</h3><div id="agent-safety-flags" class="rows"><div class="row"><span>Status</span><strong>Waiting for the Agent API.</strong></div></div></div>
+            <pre id="operator-command-output" class="output compact">Agent API not called yet.</pre>
+          </div>
+        </details>
+
+        <div class="composer-dock">
+          <p id="agent-state-copy" class="agent-state-copy">Idle. Local agent status is being checked.</p>
+          <p class="composer-emergency-hint"><strong>Ctrl+8 = Emergency Stop</strong><span>Stops pending plans and any feature-detected computer-use session.</span></p>
+          <div class="model-routing-controls" aria-label="Conversation model routing">
+            <label for="agent-model-provider">Provider
+              <select id="agent-model-provider">
+                <option value="ollama" selected>Local Ollama</option>
+                <option value="openai-compatible">OpenAI-compatible</option>
+                <option value="fallback">Fallback</option>
+              </select>
+            </label>
+            <label for="agent-model-choice">Model
+              <select id="agent-model-choice">
+                <option value="gemma3:4b" selected>gemma3:4b</option>
+                <option value="llama3.1:8b">llama3.1:8b</option>
+              </select>
+            </label>
+            <span id="agent-provider-status" class="provider-status" data-status="checking">Checking local model...</span>
+          </div>
+          <form id="operator-command-form" class="agent-command-form">
+            <label class="sr-only" for="operator-command-input">Ask Ghoti or tell it what to do</label>
+            <textarea id="operator-command-input" rows="1" maxlength="600" autocomplete="off" placeholder="Ask Ghoti or tell it what to do..."></textarea>
+            <button id="agent-voice-input" class="agent-icon-button" type="button" title="Speak to Ghoti" aria-label="Speak to Ghoti">Mic</button>
+            <button id="agent-read-output" class="agent-icon-button" type="button" title="Read Ghoti's latest reply aloud" aria-label="Read latest reply">Read</button>
+            <button id="agent-send" class="button primary" type="submit">Send</button>
+            <button id="agent-stop" class="button danger-button" type="button">STOP</button>
+          </form>
+          <p id="voice-ui-status" class="voice-status">Voice is browser-dependent. Audio stays in the browser and is never uploaded.</p>
+          <p class="operator-boundary">Local conversation and supervised tools share one safety-gated assistant. Cloud providers remain off until configured outside the app.</p>
+        </div>
+      </div>
+
+      <details class="home-operations">
+        <summary>Daily operation details</summary>
+        <div class="split home-focus-grid">
+          <div class="section-band next-action-band"><h2>Next Action</h2><div id="next-action" class="next-action"></div></div>
+          <div class="section-band"><div class="section-heading"><div><h2>Today</h2><p>Short supervised quests. Nothing runs by itself.</p></div></div><div id="daily-quests" class="quest-grid compact-quests"></div></div>
+        </div>
+        <div class="section-band"><div class="section-heading"><div><h2>App launcher</h2><p>Fixed local surfaces only.</p></div><button class="button secondary open-view" type="button" data-open-view="actions">All actions</button></div><div id="desktop-launcher-cards" class="quick-launch-grid" aria-live="polite"></div></div>
+        <div class="section-band"><div class="section-heading"><div><h2>System health</h2><p>Supervised local readiness.</p></div><button id="refresh-desktop-status" class="button secondary" type="button">Refresh operator</button></div><div class="metric-grid operator-summary compact-metrics"><article class="metric"><span>Local readiness</span><strong id="readiness-percent">--</strong><small id="readiness-scope">supervised checks</small></article><article class="metric"><span>Tests</span><strong id="tests-summary">--</strong><small>latest local suite</small></article><article class="metric"><span>FULL_AUTO_LOCAL</span><strong id="full-auto-summary">--</strong><small>allowlisted tasks only</small></article><article class="metric danger"><span>Live post</span><strong id="live-post-summary">BLOCKED</strong><small>manual export only</small></article></div><div id="sims-cards" class="sims-grid sims-grid-five" aria-live="polite"></div></div>
+        <div class="section-band icon-fix-mini"><h2>App support</h2><div class="button-row"><button class="button secondary update-app" type="button">Update App</button><button id="home-agent-icon-status" class="button secondary" type="button">Fish asset status</button><button id="home-agent-icon-help" class="button secondary" type="button">Fix icon help</button></div><pre id="home-icon-output" class="output compact">Fish asset status not checked yet.</pre></div>
+      </details>
+    </section>
+
+    <section class="view os-view" data-panel="projects">
+      <div class="os-page-header">
+        <div><span class="os-eyebrow">LOCAL WORKSPACE</span><h2>Projects</h2><p>Turn a goal into missions, bounded tasks, evidence, and supervised worker handoffs.</p></div>
+        <div class="button-row"><span id="os-projects-state" class="status-pill warn">STATUS PENDING</span><button id="os-create-project" class="button primary agent-intent" type="button" data-intent="create a project">Create project</button></div>
+      </div>
+      <div class="os-command-bar">
+        <button class="button secondary os-command" type="button" data-os-command="ghoti_os_project_status" data-os-output="os-project-details">Refresh projects</button>
+        <button class="button secondary agent-intent" type="button" data-intent="what is the latest mission">Ask about latest mission</button>
+        <span>Project creation is proposed through Ghoti first. No unattended process is launched.</span>
+      </div>
+      <div class="os-dashboard-grid">
+        <article class="os-panel os-panel-wide"><div class="os-panel-heading"><h3>Project board</h3><span id="os-project-count" class="status-pill">0 PROJECTS</span></div><div id="os-project-list" class="os-card-list"><p class="empty-state">The project status command has not reported any projects.</p></div></article>
+        <article class="os-panel"><h3>Latest mission</h3><div id="os-latest-mission" class="rows"><div class="row"><span>Status</span><strong>Not reported</strong></div></div></article>
+        <article class="os-panel"><h3>Tasks</h3><div id="os-project-tasks" class="check-list"><p class="empty-state">No project tasks reported.</p></div></article>
+        <article class="os-panel os-panel-wide"><h3>Evidence and artifacts</h3><div id="os-project-evidence" class="artifact-list"><p class="empty-state">No project evidence reported.</p></div></article>
+      </div>
+      <section id="os-swarms-panel" class="os-panel swarm-console">
+        <div class="os-panel-heading"><div><span class="os-eyebrow">TASK ORCHESTRATION</span><h3>Swarms</h3><p>Worker roles and handoff modes are visible plans, not uncontrolled live agents.</p></div><div class="button-row"><span id="os-swarm-state" class="status-pill warn">SUPERVISED</span><button class="button primary agent-intent" type="button" data-intent="launch a swarm">Prepare swarm</button></div></div>
+        <div class="swarm-layout">
+          <div><h4>Worker roles</h4><div class="role-chip-list"><span>planner</span><span>researcher</span><span>coder</span><span>reviewer</span><span>clipper</span><span>poster-prep</span><span>memory-curator</span><span>safety-checker</span></div></div>
+          <div><h4>Modes</h4><div class="mode-list"><span>LOCAL_OLLAMA</span><span>CLAUDE_HANDOFF</span><span>CODEX_HANDOFF</span><span>PAPERCLIP_SANDBOX</span><span>RUFLO_SANDBOX</span><span>MANUAL</span></div></div>
+        </div>
+        <div id="os-swarm-status" class="rows"><div class="row"><span>Live swarm launch</span><strong class="bad">BLOCKED</strong></div></div>
+        <details class="tool-output-details"><summary>Show backend details</summary><pre id="os-project-details" class="output compact">Project and swarm status commands are not loaded yet.</pre></details>
+      </section>
+    </section>
+
+    <section class="view os-view" data-panel="memory">
+      <div class="os-page-header">
+        <div><span class="os-eyebrow">SHARED LOCAL CONTEXT</span><h2>Memory</h2><p>Search recent local memory, mission events, and the honest Obsidian mirror state.</p></div>
+        <span id="os-memory-state" class="status-pill warn">LOCAL ONLY</span>
+      </div>
+      <form id="os-memory-search-form" class="memory-search">
+        <label class="sr-only" for="os-memory-query">Search local Ghoti memory</label>
+        <input id="os-memory-query" type="search" maxlength="120" autocomplete="off" placeholder="Search local memory and mission events...">
+        <button class="button primary" type="submit">Search</button>
+        <button class="button secondary os-command" type="button" data-os-command="ghoti_os_memory_status" data-os-output="os-memory-details">Refresh memory</button>
+      </form>
+      <div class="memory-boundary">Repo-local summaries only. Do not store passwords, API keys, cookies, private client data, or account credentials.</div>
+      <div class="os-dashboard-grid">
+        <article class="os-panel os-panel-wide"><div class="os-panel-heading"><h3>Recent memories</h3><span id="os-memory-result-count" class="status-pill">0 ITEMS</span></div><div id="os-memory-results" class="os-card-list"><p class="empty-state">No local memory records reported.</p></div></article>
+        <article class="os-panel"><h3>Mission events</h3><div id="os-mission-events" class="timeline-list"><p class="empty-state">No mission events reported.</p></div></article>
+        <article class="os-panel"><h3>Obsidian mirror</h3><div id="os-memory-obsidian" class="rows"><div class="row"><span>Pending mirror</span><strong>obsidian_sync/pending/</strong></div><div class="row"><span>Secrets stored</span><strong class="good">NO</strong></div></div></article>
+      </div>
+      <details class="tool-output-details os-details"><summary>Show backend details</summary><pre id="os-memory-details" class="output compact">Memory status command is not loaded yet.</pre></details>
+    </section>
+
+    <section class="view" data-panel="actions">
+      <div class="section-band desktop-operator-hero">
+        <div class="section-heading"><div><h2>Action Center</h2><p>Open allowlisted local apps/folders or run bounded local actions through fixed Agent API IDs.</p></div><div class="button-row"><span class="status-pill">ALLOWLISTED</span><button class="button secondary open-view" type="button" data-open-view="computer">Full Computer Use status</button></div></div>
+        <div class="desktop-action-grid">
+          <button class="desktop-action command agent-action" data-command="agent_open_dashboard" data-output="desktop-output"><strong>Open Dashboard</strong><span>Local browser</span></button>
+          <button class="desktop-action command agent-action" data-command="agent_open_obsidian" data-output="desktop-output"><strong>Open Obsidian</strong><span>Vault or folder fallback</span></button>
+          <button class="desktop-action command agent-action" data-command="agent_open_vscode" data-output="desktop-output"><strong>Open VS Code</strong><span>This repo only</span></button>
+          <button class="desktop-action command agent-action" data-command="agent_open_repo" data-output="desktop-output"><strong>Open Repo</strong><span>File Explorer</span></button>
+          <button class="desktop-action command agent-action" data-command="agent_open_clipper_input" data-output="desktop-output"><strong>Add Footage</strong><span>Owned media only</span></button>
+          <button class="desktop-action command agent-action" data-command="agent_open_clips" data-output="desktop-output"><strong>Show Clips</strong><span>Local rendered clips</span></button>
+          <button class="desktop-action command agent-action" data-command="agent_run_status" data-output="desktop-output"><strong>Run Status</strong><span>Read-only</span></button>
+          <button class="desktop-action command agent-action" data-command="agent_run_local_demo" data-output="desktop-output"><strong>Run Local Demo</strong><span>Bounded local workflow</span></button>
+          <button class="desktop-action danger command agent-action" data-command="agent_stop" data-output="desktop-output"><strong>Stop Agent</strong><span>Emergency stop</span></button>
+        </div>
+      </div>
+      <div class="split">
+        <div class="section-band"><h2>Operator status</h2><div id="desktop-operator-status" class="rows"></div></div>
+        <div class="section-band"><h2>Available fixed surfaces</h2><div id="desktop-operator-summary" class="rows"></div></div>
+      </div>
+      <pre id="desktop-output" class="output tall">No desktop action run in this session.</pre>
+      <div class="blocked-strip">No shell text, account action, login, payment, posting, upload, scraping, or external-site control is exposed.</div>
+    </section>
+
+    <section class="view" data-panel="advanced">
+      <div class="section-band advanced-hub">
+        <div class="section-heading"><div><h2>Advanced</h2><p>The full technical console is preserved here. Opening a page does not activate its runtime.</p></div><span class="status-pill warn">SUPERVISED</span></div>
+        <div class="advanced-grid">
+          <button class="advanced-card open-view" type="button" data-open-view="command"><strong>Command Center</strong><span>Activation profiles and local demos</span></button>
+          <button class="advanced-card open-view" type="button" data-open-view="paperclip"><strong>Paperclip</strong><span>Status and plan-only sandbox</span></button>
+          <button class="advanced-card open-view" type="button" data-open-view="ruflo"><strong>Ruflo</strong><span>Simulated swarm profiles</span></button>
+          <button class="advanced-card open-view" type="button" data-open-view="system-map"><strong>System Map</strong><span>21 subsystem records</span></button>
+          <button class="advanced-card open-view" type="button" data-open-view="tools"><strong>Tool Map</strong><span>Implemented and blocked tools</span></button>
+          <button class="advanced-card open-view" type="button" data-open-view="routing"><strong>Model Routing</strong><span>Sol, Terra, Luna, and Ollama lanes</span></button>
+          <button class="advanced-card open-view" type="button" data-open-view="safety"><strong>Safety</strong><span>Pairing, PWA, and hard gates</span></button>
+          <button class="advanced-card open-view" type="button" data-open-view="sites"><strong>Sites</strong><span>Connector readiness only</span></button>
+          <button class="advanced-card open-view" type="button" data-open-view="routines"><strong>Routines</strong><span>Daily and weekly manual rhythm</span></button>
+          <button class="advanced-card open-view" type="button" data-open-view="automation"><strong>Automation</strong><span>Evidence and local fixtures</span></button>
+          <button class="advanced-card open-view" type="button" data-open-view="obsidian"><strong>Obsidian</strong><span>Local operator memory</span></button>
+          <button class="advanced-card open-view" type="button" data-open-view="ai"><strong>Local AI</strong><span>Ollama status and helper lane</span></button>
+          <button class="advanced-card open-view" type="button" data-open-view="proofs"><strong>Proof Videos</strong><span>Local proof assets</span></button>
+          <button class="advanced-card open-view" type="button" data-open-view="queue"><strong>Post Queue</strong><span>Manual packages; live posting blocked</span></button>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" data-panel="command">
+      <div class="section-band" id="integrated-runtime" hidden>
+        <h2>Deployed local runtime</h2>
+        <p id="runtime-health">Checking the owned backend...</p>
+        <h3>Computer operator · local only</h3>
+        <p id="runtime-computer">No verified computer task yet.</p>
+        <p>Creditless operations only. Summaries require human review. Computer control is local-only through explicitly approved, feature-flagged CLI requests; this page exposes no desktop-control endpoint.</p>
+        <form id="runtime-task-form">
+          <label for="runtime-operation">Safe operation</label>
+          <select id="runtime-operation"><option value="capability_lookup">Find coding capabilities</option><option value="coding_brief">Build verified coding capability plan (3 local roles)</option><option value="summarize_text">Summarize local text</option></select>
+          <label for="runtime-text">Task input (no secrets)</label>
+          <textarea id="runtime-text" maxlength="4000" required>coding tests context engineering</textarea>
+          <button class="button primary" type="submit">Start local task</button>
+        </form>
+        <pre id="runtime-task-result" class="output">No task submitted in this browser.</pre>
+        <h3>Recorded jobs and routes</h3><div id="runtime-jobs" class="rows"></div>
+        <p id="runtime-memory"></p>
+        <p id="runtime-learning"></p>
+        <h3>Observed native capabilities</h3>
+        <p id="runtime-observations" role="status"></p>
+        <div id="runtime-capabilities" class="rows"></div>
+        <h3>Native capability receipts</h3>
+        <div id="runtime-receipts" class="rows"></div>
+      </div>
+      <div class="section-band command-center-hero">
+        <div class="section-heading">
+          <div><h2>Ghoti Command Center</h2><p>The whole operating system through five explicit activation profiles. Nothing silently graduates to live control.</p></div>
+          <span class="status-pill warn">SUPERVISED</span>
+        </div>
+        <div id="activation-profile-cards" class="activation-grid" aria-live="polite"></div>
+        <div class="button-row">
+          <button class="button primary command" data-command="orchestration_status" data-output="command-center-output">Refresh orchestration status</button>
+          <button class="button secondary command" data-command="orchestration_profile_status" data-output="command-center-output">Profile counts</button>
+          <button class="button secondary command" data-command="orchestration_scan_modules" data-output="command-center-output">Scan modules</button>
+          <button class="button secondary command" data-command="orchestration_local_demo" data-output="command-center-output">Local demo</button>
+          <button class="button secondary command" data-command="orchestration_sandbox_demo" data-output="command-center-output">Sandbox demo</button>
+          <button class="button secondary command" data-command="run_everything_local" data-output="command-center-output">Run local pipeline</button>
+          <button class="button secondary command" data-command="real_cu_local_fixture" data-output="command-center-output">Run local CU fixture</button>
+        </div>
+      </div>
+      <div class="split">
+        <div class="section-band"><h2>Runnable now</h2><div id="command-center-runnable" class="rows"></div></div>
+        <div class="section-band"><h2>Needs Ivan</h2><div id="command-center-needs" class="rows"></div></div>
+      </div>
+      <div class="section-band"><h2>Orchestration module scan</h2><div id="orchestration-modules" class="card-grid"></div></div>
+      <div class="section-band"><h2>Orchestration guard state</h2><div id="orchestration-status" class="rows"></div><pre id="command-center-output" class="output">Open this page or run one of the fixed orchestration commands.</pre></div>
+    </section>
+
+    <section class="view" data-panel="paperclip">
+      <div class="section-band">
+        <div class="section-heading"><div><h2>Paperclip</h2><p>Future supervised company and task coordination. This page currently exposes status, prerequisites, and a plan-only sandbox demo.</p></div><span class="status-pill warn">SANDBOX READY</span></div>
+        <div class="button-row">
+          <button class="button secondary command" data-command="paperclip_status" data-output="paperclip-output">Status</button>
+          <button class="button secondary command" data-command="paperclip_setup_check" data-output="paperclip-output">Setup check</button>
+          <button class="button primary command" data-command="paperclip_sandbox_demo" data-output="paperclip-output">Sandbox demo</button>
+        </div>
+      </div>
+      <div class="split">
+        <div class="section-band"><h2>Integration status</h2><div id="paperclip-status" class="rows"></div></div>
+        <div class="section-band"><h2>How it fits Ghoti</h2><p>Paperclip may later provide a human-supervised company/task board. Ghoti remains the policy boundary, app backend, evidence layer, and final approval surface.</p><div class="blocked-strip">No Paperclip package, process, company, account, or agent is launched here.</div></div>
+      </div>
+      <pre id="paperclip-output" class="output tall">No Paperclip status command run in this session.</pre>
+    </section>
+
+    <section class="view" data-panel="ruflo">
+      <div class="section-band">
+        <div class="section-heading"><div><h2>Ruflo</h2><p>Future supervised swarm coordination behind Ghoti policy gates. Profiles are simulations, not running agents.</p></div><span class="status-pill warn">SANDBOX READY</span></div>
+        <div class="button-row">
+          <button class="button secondary command" data-command="ruflo_status" data-output="ruflo-output">Status</button>
+          <button class="button secondary command" data-command="ruflo_setup_check" data-output="ruflo-output">Setup check</button>
+          <button class="button primary command" data-command="ruflo_sandbox_demo" data-output="ruflo-output">Sandbox demo</button>
+        </div>
+      </div>
+      <div class="split">
+        <div class="section-band"><h2>Integration status</h2><div id="ruflo-status" class="rows"></div></div>
+        <div class="section-band"><h2>Swarm profiles</h2><div id="ruflo-profiles" class="rows"></div></div>
+      </div>
+      <div class="blocked-strip">No Ruflo install, hooks, MCP, process, swarm, Claude/Codex/Hermes launch, or auto-submit.</div>
+      <pre id="ruflo-output" class="output tall">No Ruflo status command run in this session.</pre>
+    </section>
+
+    <section class="view" data-panel="system-map">
+      <div class="section-band">
+        <div class="section-heading"><div><h2>Ghoti System Map</h2><p>Read from <code>integration_registry/GHOTI_SYSTEM_MAP.json</code>. Filters change the view only; they never activate a subsystem.</p></div><span id="system-map-count" class="status-pill">0 SYSTEMS</span></div>
+        <div class="button-row system-map-filters" role="group" aria-label="System map filters">
+          <button class="button tiny primary system-filter" type="button" data-filter="ALL">ALL</button>
+          <button class="button tiny secondary system-filter" type="button" data-filter="LOCAL_READY">LOCAL_READY</button>
+          <button class="button tiny secondary system-filter" type="button" data-filter="SANDBOX_READY">SANDBOX_READY</button>
+          <button class="button tiny secondary system-filter" type="button" data-filter="LIVE_APPROVED">LIVE_APPROVED</button>
+          <button class="button tiny secondary system-filter" type="button" data-filter="NEEDS_IVAN">NEEDS_IVAN</button>
+          <button class="button tiny secondary system-filter" type="button" data-filter="BLOCKED">BLOCKED</button>
+        </div>
+        <div id="system-map-summary" class="rows compact-rows"></div>
+      </div>
+      <div id="system-map-cards" class="system-map-groups" aria-live="polite"></div>
+    </section>
+
+    <section class="view" data-panel="evolve">
+      <div class="section-band">
+        <div class="section-heading"><div><h2>Self-Evolve</h2><p>Ghoti proposes improvements; Claude or Codex implements and verifies them after human review.</p></div><span class="status-pill warn">PROPOSAL ONLY</span></div>
+        <div class="blocked-strip evolve-warning">Self-Evolve cannot edit code, install tools, launch agents, or change safety gates.</div>
+        <ol class="evolve-flow" aria-label="Supervised improvement workflow">
+          <li><strong>1. Ask Ghoti</strong><span>Describe the improvement in Chat.</span></li>
+          <li><strong>2. Create proposal</strong><span>Choose or queue a bounded proposal.</span></li>
+          <li><strong>3. Export prompt</strong><span>Prepare a reviewable handoff.</span></li>
+          <li><strong>4. Implement</strong><span>Claude or Codex changes code later.</span></li>
+        </ol>
+        <div id="evolve-proposals" class="proposal-grid"></div>
+      </div>
+      <div class="split evolve-split">
+        <div class="section-band"><h2>Proposal queue</h2><p>Session-only; refresh clears it.</p><div id="evolve-queue" class="rows"></div></div>
+        <div class="section-band"><div class="section-heading"><div><h2>Claude / Codex handoff</h2><p>Generate a review prompt from the selected proposals.</p></div><button id="export-evolve-prompt" class="button primary" type="button">Prepare prompt</button></div><pre id="evolve-prompt" class="output">Queue one or more proposals first.</pre></div>
+      </div>
+      <div class="section-band">
+        <div class="section-heading">
+          <div><h2>Saved backend proposal queue</h2><p>Fixed app_backend commands only. The one write action queues a dashboard proposal and never edits code.</p></div>
+          <div class="button-row">
+            <button id="refresh-evolve-backend" class="button secondary" type="button">Refresh saved queue</button>
+            <button id="propose-dashboard-backend" class="button primary" type="button">Queue dashboard proposal</button>
+          </div>
+        </div>
+        <div id="evolve-backend-status" class="rows"></div>
+        <div id="evolve-backend-list" class="rows"></div>
+        <pre id="evolve-backend-output" class="output">Saved queue not read in this session.</pre>
+      </div>
+    </section>
+
+    <section class="view" data-panel="clipper">
+      <div class="os-page-header"><div><span class="os-eyebrow">OWNED MEDIA WORKFLOW</span><h2>Clips</h2><p>Plan, render, package, and schedule owned or permitted local media without posting it.</p></div><div class="button-row"><span id="os-content-state" class="status-pill warn">MANUAL PUBLISH</span><button class="button primary agent-intent" type="button" data-intent="make a clip from owned video">Ask Ghoti to plan</button></div></div>
+      <div class="os-command-bar">
+        <button class="button secondary command" data-command="clipper_status">Refresh clipper</button>
+        <button class="button secondary os-command" type="button" data-os-command="ghoti_os_content_status" data-os-output="clipper-output">Content OS status</button>
+        <button class="button primary command" data-command="clipper_render_latest">Render latest job</button>
+        <span>Rendering is local. Upload, account access, and posting require a separate LIVE_APPROVED connector.</span>
+      </div>
+      <div class="os-dashboard-grid">
+        <article class="os-panel"><h3>Owned source</h3><div id="clipper-status" class="rows"></div><p class="operator-note compact-note">Drop owned, self-recorded, licensed, public-domain, or permitted MP4 footage into <code>clipper/input/</code>.</p></article>
+        <article class="os-panel"><h3>Content plan</h3><div id="os-content-plan" class="check-list"><p class="empty-state">Ask Ghoti to make a clip plan from owned video.</p></div></article>
+        <article class="os-panel"><h3>Manual upload package</h3><div id="os-content-package" class="rows"><div class="row"><span>Latest path</span><strong>clipper/output/latest_package.json</strong></div><div class="row"><span>Auto-upload</span><strong class="bad">BLOCKED</strong></div></div></article>
+        <article class="os-panel"><h3>Schedule plan</h3><div id="os-content-schedule" class="rows"><div class="row"><span>Mode</span><strong>LOCAL PLAN</strong></div><div class="row"><span>Publishing</span><strong>MANUAL</strong></div></div></article>
+        <article class="os-panel os-panel-wide"><h3>Connector truth</h3><div class="connector-truth-grid"><div><strong>YouTube</strong><span id="os-youtube-state">MANUAL PACKAGE / LIVE-GATED</span></div><div><strong>TikTok</strong><span id="os-tiktok-state">MANUAL PACKAGE / LIVE-GATED</span></div><div><strong>LIVE_APPROVED</strong><span id="os-content-live-state" class="bad">NO</span></div></div></article>
+      </div>
+      <details class="tool-output-details os-details"><summary>Show backend details</summary><pre id="clipper-output" class="output compact">No clipper or content status command run.</pre></details>
+    </section>
+
+    <section class="view" data-panel="queue">
+      <div class="section-band"><div class="section-heading"><div><h2>Manual packages</h2><p>Exports stop before account access or upload.</p></div>
+        <div class="button-row"><button class="button secondary command" data-command="post_queue_status">Refresh queue</button>
+        <button class="button primary command" data-command="post_export_manual">Export manual package</button></div></div>
+        <div id="manual-packages" class="package-list"></div></div>
+      <div class="blocked-strip">Live posting is BLOCKED. No posting adapter exists.</div>
+      <pre id="queue-output" class="output">No export requested.</pre>
+    </section>
+
+    <section class="view" data-panel="automation">
+      <div class="section-band"><div class="section-heading"><div><h2>Automation proofs</h2><p>Safe plan and denied-plan evidence.</p></div>
+        <div class="button-row"><button class="button primary command" data-command="auto_fixture_safe">Run safe fixture</button>
+        <button class="button secondary command" data-command="auto_fixture_blocked">Prove blocked fixture</button></div></div>
+        <div id="automation-status" class="rows"></div></div>
+      <div class="split">
+        <div class="section-band viewer"><h2>Recent evidence files</h2><p>Project-contained JSON evidence only.</p><div id="evidence-files" class="rows"></div><pre id="evidence-log" class="output tall"></pre></div>
+        <div class="section-band viewer"><h2>Recent JSONL run logs</h2><p>Fixed local log paths; sensitive file names and fields are excluded.</p><div id="log-files" class="rows"></div><pre id="run-log" class="output tall"></pre></div>
+      </div>
+    </section>
+
+    <section class="view" data-panel="computer">
+      <div class="section-band cockpit-hero"><div class="section-heading"><div><h2>Full Computer Use cockpit</h2><p>Honest activation profiles for the local agent and the separately confirmed desktop-input lane.</p></div><span class="status-pill warn">SUPERVISED LOCAL</span></div>
+        <div id="full-cu-cards" class="cockpit-grid" aria-live="polite"></div>
+        <div class="split full-cu-truth-grid">
+          <div><h3>READY NOW</h3><div id="full-cu-works-now" class="rows"></div></div>
+          <div><h3>NOT CONFIGURED</h3><div id="full-cu-not-configured" class="rows"></div></div>
+        </div>
+        <div class="button-row"><button class="button primary command" data-command="real_cu_status">Refresh computer-use status</button>
+        <button class="button secondary command" data-command="real_cu_local_fixture">Run local fixture</button>
+        <button class="button secondary command" data-command="real_cu_blocked_action_test">Prove blocked actions</button>
+        <button class="button secondary command" data-command="real_cu_scan_repos">Scan local repos</button>
+        <button class="button secondary command" data-command="ghoti_full_status">Full Ghoti status</button>
+        <button class="button secondary command" data-command="blocked_live_test">Test all live gates</button>
+        <button id="full-cu-backend-check" class="button secondary" type="button">Check optional full-CU backend</button></div></div>
+      <div class="split">
+        <div class="section-band"><h2>Current safety state</h2><div id="real-cu-status" class="rows"></div></div>
+        <div class="section-band"><h2>Inputs required before any future connector</h2><div id="full-cu-inputs" class="rows"></div></div>
+      </div>
+      <div class="section-band">
+        <div class="section-heading"><div><h2>Start setup wizard</h2><p>Select a future target to understand its requirements. Every lane stays BLOCKED until a separate audited connector milestone.</p></div><button id="connector-setup-check" class="button secondary" type="button">Check connector setup backend</button></div>
+        <div id="connector-setup-cards" class="connector-wizard-grid"></div>
+        <pre id="connector-setup-output" class="output">The optional connector_setup_status command is being checked.</pre>
+      </div>
+      <div class="section-band"><h2>Evidence and logs</h2><div id="full-cu-evidence" class="rows"></div></div>
+      <div class="blocked-strip">External sites, accounts, login, upload, spending, and posting remain NOT CONFIGURED or BLOCKED. One-shot local click/type/hotkey/mouse actions require a separate confirmation.</div>
+      <pre id="computer-output" class="output tall">No adapter action run.</pre>
+    </section>
+
+    <section class="view" data-panel="proofs">
+      <div class="section-band"><h2>Proof videos</h2><p>Local original videos; no network or auto-post.</p>
+        <div id="proof-list" class="proof-grid"></div></div>
+    </section>
+
+    <section class="view" data-panel="ai">
+      <div class="section-band"><div class="section-heading"><div><h2>Local AI / Ollama</h2><p>Local caption, hook, metadata, checklist, and title helpers.</p></div>
+        <button class="button secondary command" data-command="local_ai_status">Check local AI</button></div>
+        <div id="local-ai-status" class="rows"></div></div>
+      <pre id="ai-output" class="output">No helper task run.</pre>
+    </section>
+
+    <section class="view" data-panel="routing">
+      <div class="section-band"><h2>Model Routing</h2><p>Assignment policy for Ghoti work; local models handle cheap bounded helper tasks.</p>
+        <div id="model-routing-full" class="routing-list"></div></div>
+    </section>
+
+    <section class="view" data-panel="safety">
+      <div class="section-band"><h2>Safety and settings</h2><div id="mobile-status" class="rows"></div><div id="safety-status" class="safety-list"></div></div>
+      <div class="section-band">
+        <div class="section-heading"><div><h2>App install and updates</h2><p>Use the same paired PWA on Windows or iPhone without persisting the pairing value. App version: <strong id="app-version">2026.08.01.4</strong></p></div><button class="button primary update-app" type="button">Update App</button></div>
+        <div id="app-update-message" class="operator-note" hidden>If Windows/iPhone installed icon is still old, uninstall and reinstall the Ghoti PWA.</div>
+        <div class="install-grid">
+          <article><h3>Windows app</h3><p>Start loopback mode, open the dashboard, then use the browser's Install app action.</p><div class="cmd-copy"><code>python dashboard_app\server.py</code><button class="button tiny copy" data-copy="python dashboard_app\server.py">Copy</button></div></article>
+          <article><h3>iPhone over LAN</h3><p>Set a temporary 12+ character pairing value, run LAN mode, open the PC LAN address in Safari, then Add to Home Screen.</p><div class="cmd-copy"><code>python dashboard_app\server.py --lan</code><button class="button tiny copy" data-copy="python dashboard_app\server.py --lan">Copy</button></div></article>
+          <article><h3>Refresh after an update</h3><p>Restart the owned dashboard process and refresh. After a logo/icon change, uninstall and reinstall the PWA if the old icon remains cached.</p><div class="cmd-copy"><code>powershell -ExecutionPolicy Bypass -File dashboard_app\stop_dashboard.ps1</code><button class="button tiny copy" data-copy="powershell -ExecutionPolicy Bypass -File dashboard_app\stop_dashboard.ps1">Copy</button></div></article>
+        </div>
+        <div class="icon-fix-guide">
+          <h3>Fix app icon</h3>
+          <ol>
+            <li>Unpin the old Ghoti shortcut or icon from the taskbar or Start menu.</li>
+            <li>Open <code>edge://apps</code> and <strong>Uninstall Ghoti</strong> manually.</li>
+            <li>Reopen <code>http://127.0.0.1:8765</code>.</li>
+            <li>Click <strong>Install app</strong> again.</li>
+          </ol>
+          <p>The website and manifest use the real local fish asset. Windows or iPhone may retain an installed icon until the PWA is reinstalled.</p>
+          <div class="button-row">
+            <button id="app-update-status-check" class="button tiny secondary" type="button">Check fish asset</button>
+            <button id="pwa-icon-help-check" class="button tiny secondary" type="button">Fix Icon help</button>
+          </div>
+          <pre id="app-support-output" class="output compact">Optional app support commands have not been checked.</pre>
+        </div>
+      </div>
+    </section>
+    <section class="view" data-panel="sites">
+      <div class="section-band"><div class="section-heading"><div><h2>Sites &amp; Connectors</h2><p>From the local site registry. Live actions are blocked by default; content lanes make manual packages, ecommerce/ads lanes make mock packages.</p></div></div>
+        <div id="site-cards" class="card-grid"></div></div>
+      <div class="blocked-strip">No live upload, publish, ad spend, store write, or account login is enabled. Credentials come from environment variables only.</div>
+    </section>
+
+    <section class="view" data-panel="routines">
+      <div class="os-page-header"><div><span class="os-eyebrow">RUN ONCE, REVIEW, REPEAT</span><h2>Routines</h2><p>Daily operating rhythm with bounded local actions and visible human checkpoints.</p></div><span id="os-routine-state" class="status-pill warn">RUN ONCE</span></div>
+      <div class="os-command-bar"><button class="button secondary os-command" type="button" data-os-command="ghoti_os_routine_status" data-os-output="os-routine-details">Refresh routines</button><span>No routine starts itself from this page.</span></div>
+      <div id="routine-cards" class="routine-os-grid"></div>
+      <div class="os-dashboard-grid">
+        <article class="os-panel os-panel-wide"><h3>Run-once actions</h3><div class="button-row routine-actions"><button class="button secondary agent-intent" type="button" data-intent="run status">Daily operator check</button><button class="button secondary agent-intent" type="button" data-intent="make a clip from owned video">Clipping sprint</button><button class="button secondary agent-intent" type="button" data-intent="update Obsidian">Obsidian memory sync</button><button class="button secondary agent-intent" type="button" data-intent="github status">GitHub status</button><button class="button secondary agent-intent" type="button" data-intent="connector status">Connector review</button><button class="button secondary agent-intent" type="button" data-intent="project swarm status">Project swarm check</button></div></article>
+        <article class="os-panel"><h3>Windows Task Scheduler</h3><div id="os-routine-scheduler" class="rows"><div class="row"><span>Commands</span><strong>Not advertised</strong></div></div><p class="empty-state">Copy commands appear only when the fixed routine backend reports them.</p></article>
+        <article class="os-panel"><h3>Safety</h3><div class="rows"><div class="row"><span>Autostart</span><strong class="bad">OFF</strong></div><div class="row"><span>Account actions</span><strong class="bad">BLOCKED</strong></div><div class="row"><span>Review</span><strong class="good">REQUIRED</strong></div></div></article>
+      </div>
+      <div class="operator-note"><strong>ChatGPT Scheduled Tasks are reminders only.</strong> Coordination is not execution; local work remains explicit and supervised.</div>
+      <details class="tool-output-details os-details"><summary>Show backend details</summary><pre id="os-routine-details" class="output compact">Routine status command is not loaded yet.</pre></details>
+    </section>
+
+    <section class="view" data-panel="obsidian">
+      <div class="section-band"><div class="section-heading"><div><h2>Obsidian vault</h2><p>Local vault only — no cloud sync, no plugins, no network.</p></div></div>
+        <div id="obsidian-info" class="rows"></div>
+        <div class="operator-note">Obsidian is synced by scripts/docs, not updated on every chat yet. The dashboard does not claim a live write endpoint.</div>
+        <div class="cmd-copy"><code id="obsidian-path"></code><button class="button tiny copy" id="obsidian-copy">Copy vault path</button></div>
+        <div class="button-row"><button id="request-obsidian-live-update" class="button secondary" type="button">Create Self-Evolve request: live Obsidian update command</button></div>
+      </div>
+    </section>
+
+    <section class="view" data-panel="tools">
+      <div class="os-page-header"><div><span class="os-eyebrow">CAPABILITY MAP</span><h2>Tools</h2><p>One honest status surface for local computer use, memory, orchestration, and future connectors.</p></div><span id="os-tools-state" class="status-pill warn">LOCAL + SANDBOX</span></div>
+      <div class="os-command-bar"><button class="button secondary os-command" type="button" data-os-command="ghoti_os_connector_status" data-os-output="os-tools-details">Refresh connectors</button><button class="button secondary os-command" type="button" data-os-command="ghoti_os_live_approval_status" data-os-output="os-tools-details">Check live approval</button><span>Blocked tools remain visible and cannot be activated by the frontend.</span></div>
+      <div id="os-tool-cards" class="os-tool-grid" aria-live="polite"></div>
+      <div class="full-use-truth">
+        <article><span class="os-eyebrow">NO-CREDIT LOCAL NOW</span><h3>Ready under local policy</h3><div id="os-local-now" class="check-list"></div></article>
+        <article><span class="os-eyebrow">NEEDS LIVE_APPROVED</span><h3>Still gated</h3><div id="os-needs-live" class="check-list"></div></article>
+      </div>
+      <details class="tool-output-details os-details"><summary>Show backend details</summary><pre id="os-tools-details" class="output compact">Connector and live-approval status commands are not loaded yet.</pre></details>
+      <details class="legacy-tool-map"><summary>Legacy technical tool inventory</summary><div id="tool-cards" class="card-grid"></div></details>
+    </section>
+  </main>
+
+  <dialog id="pairing-dialog" class="pairing-dialog">
+    <form id="pairing-form" method="dialog">
+      <h2>Pair this device</h2>
+      <p>Enter the one-time pairing value shown by the Windows LAN launcher. It stays in browser memory only.</p>
+      <label for="pairing-input">Pairing value</label>
+      <input id="pairing-input" type="password" autocomplete="off" required minlength="12">
+      <p id="pairing-error" class="bad" aria-live="polite"></p>
+      <button class="button primary" type="submit">Pair</button>
+    </form>
+  </dialog>
+  </div>
+</body>
+</html>

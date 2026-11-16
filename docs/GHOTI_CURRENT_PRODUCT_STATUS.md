@@ -1,107 +1,87 @@
 # Ghoti Current Product Status
 
-## Publication and installation snapshot — 2026-11-16
+## Reviewed source integration snapshot — 2026-11-16
 
-Source publication, independent acceptance, main integration and installed-host
-adoption are separate gates. This snapshot supersedes the historical MVP claims
-below; neither a draft PR nor a successful patch apply is deployment approval.
+Source acceptance, canonical integration and installed-host adoption are separate.
+The existing PR receipts record actual merge commits; a draft or apply check is
+not permission to deploy, start a service or mutate a real account.
 
 | Component | Source commit | Remote branch/PR | Review | Main integration | Installed version |
 | --- | --- | --- | --- | --- | --- |
-| NOVA static UI and retained regressions | `9ad5a3938d4762e28a8e684b2637d8eae2b6fb7f` (parent `e108378`) | [PR #24](https://github.com/IvanFuentesB/Super-AI-Agent/pull/24), `IvanCX/nova-ui-publication`, port `043aee997bd9f621885be26351a9081775d0ecaf` | DRAFT / CHANGES_REQUESTED; safe source publication, product not accepted | Not merged | Installed NOVA pointer names `9613e877bcc57475c8e168bd6778523a31d83ff9`; no live-process acceptance performed |
-| Optional native coding harness | `890b48c2380f5d43b3c89a7ecec3381ca6b2116d` | [PR #25](https://github.com/IvanFuentesB/Super-AI-Agent/pull/25), `IvanCX/native-harness-publication`, port `7c2e2a56cbbe3f8455f9e71d26f54e842876e38e` | Independently APPROVED for optional source integration; 70 offline tests PASS | Merged at `782b247cd22561cba26bbc248088fbff84d0e483`; all 14 blobs verified | Published component not host-adopted; live adapter remains disabled |
-| Paperclip Windows repair/declaration patch recipe | `f2b01139d79c71e4596c0e0aaab105e194b18c19` / `e04e2ae1a0d47cdedf5380b5a0d94f280a82d5d1` | [PR #26](https://github.com/IvanFuentesB/Super-AI-Agent/pull/26), `IvanCX/paperclip-worker-patches` | DRAFT; retained repair/declaration approvals; four earlier prerequisites NOT independently approved | Not merged; eight patches reproduce the exact approved final tree | Owner-confirmed installed declaration/preflight at `e04e2ae`; no new service start or runtime acceptance here |
-| Corrected Paperclip launcher source port | `13857ef7dbcf7be9d5a93b2da5bf90bf9d3edd25`, with ONE recorded interpreter-path transformation | [PR #27](https://github.com/IvanFuentesB/Super-AI-Agent/pull/27), `IvanCX/paperclip-launcher-source`, port `cc862486d5a4d47b78de0023cbc75f1332acbc24` | Independently safe for DRAFT publication; 5 focused checks PASS; original approval does not automatically cover this port | Not merged; exact host/helper dependencies remain required | Original corrected launcher owner-confirmed installed; published transformed port NOT adopted |
-| Narrow Paperclip configuration operation | Eight dirty source files at `e04e2ae` base | Unpublished; frozen owner commit requested | Existing control 2/2 PASS; same 12 candidate cases: 8 PASS, 4 FAIL; test-only snapshot, no approval | Not integrated | Not established; no production save attempted |
-| Runtime Paperclip status contract | Frozen three-file overlay delivered in archive `8bf3fd4891383a737b6aabcfde52e75d0541a2fc6f24dbca654c6c5976bb5382`, `e108378` base | Unpublished: private company binding and absent runtime dependencies require an owner-prepared privacy-safe candidate | Independent 14/14 synthetic tests PASS; not live-state acceptance or publication clearance | Not integrated | Not installed by this run |
-| Checkpoint/approval correction | Seven dirty source files at `e2d1c3992f0160414eb48c125b70057aec80aa39` base | Unpublished; immutable owner candidate and scoped review required | Independent acceptance remains gated; historical raw-byte requirements unchanged | Not integrated | No migration, restart or publication authorized by this source review |
-| Remaining personal toolchain delivery | `ed090282671fb9ba7fafda264c5d5a9cfb942be4` base, 131 source changes at inspection | Unpublished pending frozen first-party source slice; harness separated above | No approval of dirty working tree or upstream/vendor history | Not integrated | Existing host setup unchanged |
+| NOVA browser UI correction | 6541093494d223e6c8f587116b1ba70af8cb63f6, parent 9ad5a39 | [PR #24](https://github.com/IvanFuentesB/Super-AI-Agent/pull/24), IvanCX/nova-ui-publication | APPROVED technical source/synthetic browser; 70 independent checks PASS | Accepted source included through this PR24 integration; merge identity is in its receipt | Source integration does not adopt UI; last installed pointer 9613e877bcc57475c8e168bd6778523a31d83ff9 |
+| Optional native harness | 890b48c2380f5d43b3c89a7ecec3381ca6b2116d, port 7c2e2a56 | [PR #25](https://github.com/IvanFuentesB/Super-AI-Agent/pull/25), IvanCX/native-harness-publication | APPROVED optional source; 70 offline checks PASS | Merged at 782b247cd22561cba26bbc248088fbff84d0e483 | Live adapter not adopted/enabled |
+| Worker repair/declaration recipe | f2b01139d79c71e4596c0e0aaab105e194b18c19 / e04e2ae1a0d47cdedf5380b5a0d94f280a82d5d1 | [PR #26](https://github.com/IvanFuentesB/Super-AI-Agent/pull/26), head 1caa4a6199d62bbec3f23d54ee3c1744b0e78ef3 | Prerequisites 1,2,4 APPROVED; prerequisite 3 CHANGES_REQUESTED (C-P3-1) | DRAFT; not merged | Prior owner-confirmed declaration/preflight is unchanged; no new worker acceptance |
+| Corrected launcher source port | 13857ef7dbcf7be9d5a93b2da5bf90bf9d3edd25 plus one recorded interpreter-expression change | [PR #27](https://github.com/IvanFuentesB/Super-AI-Agent/pull/27), head cc862486d5a4d47b78de0023cbc75f1332acbc24 | Source-only draft contract accepted; runnable contract blocked on exact helpers/runtime | DRAFT; not a portable installer | Original corrected launcher retained; port not adopted |
+| Narrow configuration save | d2d7647eca88575870e079e359948520ce50290b, parent WIP accb52e | [PR #31](https://github.com/IvanFuentesB/Super-AI-Agent/pull/31), IvanCX/paperclip-narrow-save | APPROVED exact required-base source; independent control 2/2, routes 12/12, UI 13/13 | DRAFT pending PR26 prerequisite-3 correction; no dependency bypass | No built bundle/live save/adoption performed |
+| Runtime Paperclip status overlay | Frozen three-file archive 8bf3fd4891383a737b6aabcfde52e75d0541a2fc6f24dbca654c6c5976bb5382 | Unpublished: private tenant binding and missing runtime modules | 14 independent synthetic checks PASS; not live-state acceptance | Not integrated | Not installed here |
+| Checkpoint correction | Original owner; no new immutable accepted candidate delivered | Unpublished; existing native gate retained | Old fixture run had 6 setup errors and zero product assertions; no new grant/preflight | Not integrated | No migration, restart or canonical baseline publication |
+| Remaining personal/legacy delivery | Dirty owner source snapshots, including ed090282 base | Unpublished without scoped frozen source; no owner working files staged | No acceptance of broad dirty trees/vendor history | Not integrated | Existing host setup unchanged |
 
-### Executed checks and known defects
+### Actual review results and remaining gates
 
-- UI: 103 Node tests and 6 markup tests passed. Retained independent regression
-  suite: 1 PASS / 3 FAIL. Pending Stop and the running snapshot after failed Stop
-  can lose unresolved visibility; top-level free text can claim verification
-  without structured SUCCESS. Same-value Paperclip attribute mutation also remains.
-  The earlier `e108378` scoped review does not approve its successor.
-- Harness: 70 tests ran once in a separate clean current-main worktree; all
-  frozen hashes stayed unchanged. Default adapter is disabled; missing native
-  receipt returns PENDING. This publication does not prove custom-role selection
-  or execute an inference provider. Nested `.codex` roles do not replace root or
-  global model, sandbox, approval, trust, MCP or hook settings. OpenJarvis source
-  pin is `e97088f199cf86ea5f78de921772357d1f0d2cec`; no upstream tree is vendored.
-- Paperclip packaging: all eight raw patches applied in an isolated clone from
-  public upstream `d0bdbe11a9624435b6dca3968389bd59c6a559a2`. Each intermediate
-  tree matched; final tree is `89e3964b370d6cd1474be03c04a3c3328521947f`.
-  The public v0.3.1 tag is a different pin. This is apply/provenance evidence,
-  not another lifecycle test, prerequisite security approval or installation.
-- Configuration route: the baseline import cycle was resolved by inlining only
-  `drizzle-orm` in the disposable runner. Three candidate cases return HTTP 500;
-  the fourth reads old extraArgs after a simulated post-write error. Direct
-  secret-service import versus the fixture's barrel mock is a suspected fixture
-  gap, not a proven production defect. Assertions/mocks were not weakened, and
-  the eight owner files remained unchanged.
-- Frozen status overlay: an initial missing-psutil loader error executed zero
-  cases. Selecting an existing compatible environment then ran all 14 unchanged
-  tests once: 14 PASS, all three source hashes unchanged. No dependencies were
-  installed and no live processes or service observations were queried.
-- Launcher port: one absolute user-specific interpreter literal is replaced by
-  Path.home() plus the same relative tool location. Two tests remain exact source
-  blobs; source/published hashes and the transformation are recorded. Five
-  focused offline checks passed for the one-expression delta, current-host
-  environment equivalence, safe inheritance and override refusals. No unchanged
-  original launcher review or installed-artifact test was repeated. The original
-  unsanitized local publication candidate was NOT pushed; a new clean branch
-  avoids making its history public. Global Git settings were not changed.
-- Earlier current-main baseline separately passed 50 focused tests and four
-  dashboard checks. Counts above describe different scopes and are not combined.
-  UI, harness, worker-patch and sanitized-launcher public-repository audits each reported 150 checks, 142 PASS,
-  0 failed and 8 warnings; they are bounded scans, not comprehensive clearance
-  of unpublished local history.
+- UI R1/R2/R3 are closed for exact 6541093: Stop uncertainty persists, free text
+  cannot override typed verification and identical Paperclip polling is stable.
+  The independent 70 checks and targeted browser evidence are separate from the
+  public port's 120 Node/six markup PASS. The original four assertions are retained;
+  an owner duplicate is omitted without losing coverage. Prior 9ad product RED
+  remains tied to its original bytes, not the corrected successor.
+- Paperclip d2d7647 corrected fixture wiring at the directly imported secret
+  service. All twelve original cases and 47 expectations remain, with three
+  added persistence assertions. Real PATCH/GET/authz/origin guard/error handling
+  stay active. Each independent control/candidate/UI suite ran once with no
+  import errors, hook timeouts or assertion failures. Earlier 8-pass/4-fail raw
+  snapshot evidence and raw-versus-LF differences remain historical, not relabelled.
+- Narrow extraArgs changes preserve untouched fields in a sequential stale-read
+  fixture. Same-field edits remain last-writer-wins; no CAS/multi-writer guarantee
+  was added. Key removal/type change keeps whole-replacement and its stale-copy
+  limits. No production secret-provider, DB or live configuration-save proof.
+- PR26 prerequisite review ran selected existing assertions with 52 distinct
+  passing results across runs; initial JSX-runner failures and corrected rerun
+  remain separate. A NEW inert diagnostic reproduces C-P3-1: a pending async
+  openBrowser callback prevents login settling after caller abort until released.
+  Owner correction and cancellation/expiry regression acceptance are required.
+  Applying all eight patches to the exact expected tree does not clear this RED.
+- PR27 retains three omitted exact native helper pins and Paperclip e04/declaration
+  artifact/host requirements. Its five focused publication-path checks and draft
+  contract review do not make it an executable standalone runtime. Never replace
+  installed corrected 13857ef with the superseded archive launcher.
+- Checkpoint's older native reviewer turn is interrupted/not loaded; its old
+  terminal is unavailable, and the newer owner receipt says gate06 expired.
+  No current native permission result was established. Preserve the request and
+  six assertions: only actual permission plus same-context Git preflight can
+  enable execution. No replacement request, unrestricted run or ACL change here.
 
-### Publication and adoption boundaries
+### Publication, bytes and adoption
 
-The UI publication contains only 32 explicit files on clean main ancestry; its
-99-commit historical branch and 855-path net history were not pushed. Harness
-publication contains 14 explicit files. The Paperclip package contains 20
-patch/license/recipe files, not a vendor installation or foreign Git history.
-The separate launcher draft contains five explicit source/test/metadata files.
-Raw remote readback found CRLF-to-LF normalization in fifteen text artifacts:
-the UI regression fixture/README, harness README, patch-package metadata/docs/
-series/license and launcher manifest serialization. All thirteen original
-harness source/test/config blobs and all eight raw patches were byte-identical
-to the inputs; all fourteen main harness blobs match its published port.
-Original raw-input records are retained separately from published Git-blob
-hashes. The patch-package license pin is corrected to its published upstream
-LF blob, retaining the original checkout hash. No source assertion or patch
-payload was changed to make readback pass. Review this explicit transformation
-record rather than assuming working-tree byte equality from Git content alone.
-Private receipts, user data, memory databases, transcripts, dependency trees,
-credentials and owner-live dirty changes remain excluded.
+Only scoped first-party source, tests and reproducible upstream patches are
+published. The original 99-commit UI history/855-path delta and vendor histories
+were not pushed. This correction ports five raw Git blobs and retains the public
+four-case regression file; public README/status metadata are separate changes.
+The operation uses one full-index patch and pinned exact eight-file manifest,
+not a whole vendor installation or a private runner/log upload.
 
-[PR #21](https://github.com/IvanFuentesB/Super-AI-Agent/pull/21) and
-[PR #22](https://github.com/IvanFuentesB/Super-AI-Agent/pull/22) were not blindly
-merged. [PR #23](https://github.com/IvanFuentesB/Super-AI-Agent/pull/23) remains a
-stacked draft on #21; old tool/version claims are not current host acceptance.
-No required CI checks or branch rules were reported at merge inspection; normal
-PR merge with an expected-head guard was used after independent harness review.
-No protection or permission setting was bypassed or changed.
+Earlier remote readback found fifteen explicit CRLF-to-LF text conversions;
+independent byte review and a license-pin follow-up resolved their provenance.
+All thirteen original harness source/test/config blobs and eight worker patches
+stayed byte-exact. Original raw-input records are distinct from published Git
+hashes. These publication rules do not substitute normalization for checkpoint
+historical raw-byte evidence. Current ports check staged Git blobs against their
+declared raw hashes before committing.
 
-The discovery map covers ten named active roots, not every historical worktree.
-Claude owns the UI/configuration corrections. Hermes owns checkpoint changes,
-installed runtime adoption and the running Paperclip service. Next: provide
-corrected immutable UI/configuration/checkpoint candidates, correct the four configuration-fixture failures and
-retain the UI regressions. Adopt accepted components only through the existing
-review/host procedure; source publication does not authorize a restart, live
-actions, cloud calls, hook/MCP enabling or deployment.
+Scoped repository audits report 150 checks: 142 PASS, zero failed, eight warnings.
+They are bounded scans, not blanket clearance of local history or dependencies.
+Old PR21/22 remain unmerged and PR23 remains a stacked draft on PR21; no old
+tool/version claim establishes the current host. Main integration uses normal
+expected-head PR controls, never protection or permission bypass.
 
-Hermes delivered the frozen NOVA packet (`8bf3fd4891383a737b6aabcfde52e75d0541a2fc6f24dbca654c6c5976bb5382`)
-and the required corrected-launcher supplement
-(`3f4ce6ca6d642bb95725aaf6135c8e345e1a922d5476f4d56a9ea8a2ac70a9cb`).
-Both archive hashes and CRC checks matched. The obsolete launcher and rollback
-instructions remain excluded. Owner-reported health/static-byte matches coexist
-with blank-content screenshots; rendered/authenticated UI and a successful
-Paperclip task/run/result/cancellation have not been established by that delivery.
+The scoped map covers ten named roots, not every historical worktree. No secrets,
+private memory, transcripts, live databases, user-account data, dependencies,
+model weights or owner live changes are published. Installed static/health checks
+do not establish authenticated/rendered UI acceptance. The owner reports the
+existing window minimized; no renderer defect or installed UI fix is inferred.
+Claude owns UI/configuration implementation; Hermes owns checkpoint source,
+host adoption and the running service. No global setting, MCP/hook enablement,
+provider/account action, installation, service restart or deployment occurred.
 
 ---
 
