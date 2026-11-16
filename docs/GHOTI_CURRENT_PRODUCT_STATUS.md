@@ -1,5 +1,95 @@
 # Ghoti Current Product Status
 
+## Reviewed source integration snapshot — 2026-11-16
+
+Source acceptance, canonical integration and installed-host adoption are separate.
+The existing PR receipts record actual merge commits; a draft or apply check is
+not permission to deploy, start a service or mutate a real account.
+
+| Component | Source commit | Remote branch/PR | Review | Main integration | Installed version |
+| --- | --- | --- | --- | --- | --- |
+| NOVA browser UI correction | 6541093494d223e6c8f587116b1ba70af8cb63f6, parent 9ad5a39 | [PR #24](https://github.com/IvanFuentesB/Super-AI-Agent/pull/24), IvanCX/nova-ui-publication | APPROVED technical source/synthetic browser; 70 independent checks PASS | Accepted source included through this PR24 integration; merge identity is in its receipt | Source integration does not adopt UI; last installed pointer 9613e877bcc57475c8e168bd6778523a31d83ff9 |
+| Optional native harness | 890b48c2380f5d43b3c89a7ecec3381ca6b2116d, port 7c2e2a56 | [PR #25](https://github.com/IvanFuentesB/Super-AI-Agent/pull/25), IvanCX/native-harness-publication | APPROVED optional source; 70 offline checks PASS | Merged at 782b247cd22561cba26bbc248088fbff84d0e483 | Live adapter not adopted/enabled |
+| Worker repair/declaration recipe | f2b01139d79c71e4596c0e0aaab105e194b18c19 / e04e2ae1a0d47cdedf5380b5a0d94f280a82d5d1 | [PR #26](https://github.com/IvanFuentesB/Super-AI-Agent/pull/26), head 1caa4a6199d62bbec3f23d54ee3c1744b0e78ef3 | Prerequisites 1,2,4 APPROVED; prerequisite 3 CHANGES_REQUESTED (C-P3-1) | DRAFT; not merged | Prior owner-confirmed declaration/preflight is unchanged; no new worker acceptance |
+| Corrected launcher source port | 13857ef7dbcf7be9d5a93b2da5bf90bf9d3edd25 plus one recorded interpreter-expression change | [PR #27](https://github.com/IvanFuentesB/Super-AI-Agent/pull/27), head cc862486d5a4d47b78de0023cbc75f1332acbc24 | Source-only draft contract accepted; runnable contract blocked on exact helpers/runtime | DRAFT; not a portable installer | Original corrected launcher retained; port not adopted |
+| Narrow configuration save | d2d7647eca88575870e079e359948520ce50290b, parent WIP accb52e | [PR #31](https://github.com/IvanFuentesB/Super-AI-Agent/pull/31), IvanCX/paperclip-narrow-save | APPROVED exact required-base source; independent control 2/2, routes 12/12, UI 13/13 | DRAFT pending PR26 prerequisite-3 correction; no dependency bypass | No built bundle/live save/adoption performed |
+| Runtime Paperclip status overlay | Frozen three-file archive 8bf3fd4891383a737b6aabcfde52e75d0541a2fc6f24dbca654c6c5976bb5382 | Unpublished: private tenant binding and missing runtime modules | 14 independent synthetic checks PASS; not live-state acceptance | Not integrated | Not installed here |
+| Checkpoint correction | Original owner; no new immutable accepted candidate delivered | Unpublished; existing native gate retained | Old fixture run had 6 setup errors and zero product assertions; no new grant/preflight | Not integrated | No migration, restart or canonical baseline publication |
+| Remaining personal/legacy delivery | Dirty owner source snapshots, including ed090282 base | Unpublished without scoped frozen source; no owner working files staged | No acceptance of broad dirty trees/vendor history | Not integrated | Existing host setup unchanged |
+
+### Actual review results and remaining gates
+
+- UI R1/R2/R3 are closed for exact 6541093: Stop uncertainty persists, free text
+  cannot override typed verification and identical Paperclip polling is stable.
+  The independent 70 checks and targeted browser evidence are separate from the
+  public port's 120 Node/six markup PASS. The original four assertions are retained;
+  an owner duplicate is omitted without losing coverage. Prior 9ad product RED
+  remains tied to its original bytes, not the corrected successor.
+- Paperclip d2d7647 corrected fixture wiring at the directly imported secret
+  service. All twelve original cases and 47 expectations remain, with three
+  added persistence assertions. Real PATCH/GET/authz/origin guard/error handling
+  stay active. Each independent control/candidate/UI suite ran once with no
+  import errors, hook timeouts or assertion failures. Earlier 8-pass/4-fail raw
+  snapshot evidence and raw-versus-LF differences remain historical, not relabelled.
+- Narrow extraArgs changes preserve untouched fields in a sequential stale-read
+  fixture. Same-field edits remain last-writer-wins; no CAS/multi-writer guarantee
+  was added. Key removal/type change keeps whole-replacement and its stale-copy
+  limits. No production secret-provider, DB or live configuration-save proof.
+- PR26 prerequisite review ran selected existing assertions with 52 distinct
+  passing results across runs; initial JSX-runner failures and corrected rerun
+  remain separate. A NEW inert diagnostic reproduces C-P3-1: a pending async
+  openBrowser callback prevents login settling after caller abort until released.
+  Owner correction and cancellation/expiry regression acceptance are required.
+  Applying all eight patches to the exact expected tree does not clear this RED.
+- PR27 retains three omitted exact native helper pins and Paperclip e04/declaration
+  artifact/host requirements. Its five focused publication-path checks and draft
+  contract review do not make it an executable standalone runtime. Never replace
+  installed corrected 13857ef with the superseded archive launcher.
+- Checkpoint's older native reviewer turn is interrupted/not loaded; its old
+  terminal is unavailable, and the newer owner receipt says gate06 expired.
+  No current native permission result was established. Preserve the request and
+  six assertions: only actual permission plus same-context Git preflight can
+  enable execution. No replacement request, unrestricted run or ACL change here.
+
+### Publication, bytes and adoption
+
+Only scoped first-party source, tests and reproducible upstream patches are
+published. The original 99-commit UI history/855-path delta and vendor histories
+were not pushed. This correction ports five raw Git blobs and retains the public
+four-case regression file; public README/status metadata are separate changes.
+The operation uses one full-index patch and pinned exact eight-file manifest,
+not a whole vendor installation or a private runner/log upload.
+
+Earlier remote readback found fifteen explicit CRLF-to-LF text conversions;
+independent byte review and a license-pin follow-up resolved their provenance.
+All thirteen original harness source/test/config blobs and eight worker patches
+stayed byte-exact. Original raw-input records are distinct from published Git
+hashes. These publication rules do not substitute normalization for checkpoint
+historical raw-byte evidence. Current ports check staged Git blobs against their
+declared raw hashes before committing.
+
+Scoped repository audits report 150 checks: 142 PASS, zero failed, eight warnings.
+They are bounded scans, not blanket clearance of local history or dependencies.
+Old PR21/22 remain unmerged and PR23 remains a stacked draft on PR21; no old
+tool/version claim establishes the current host. Main integration uses normal
+expected-head PR controls, never protection or permission bypass.
+
+The scoped map covers ten named roots, not every historical worktree. No secrets,
+private memory, transcripts, live databases, user-account data, dependencies,
+model weights or owner live changes are published. Installed static/health checks
+do not establish authenticated/rendered UI acceptance. The owner reports the
+existing window minimized; no renderer defect or installed UI fix is inferred.
+Claude owns UI/configuration implementation; Hermes owns checkpoint source,
+host adoption and the running service. No global setting, MCP/hook enablement,
+provider/account action, installation, service restart or deployment occurred.
+
+---
+
+## Historical Agent OS MVP baseline (retained)
+
+The following material predates the publication snapshot above and documents
+that earlier branch's capabilities and limits.
+
 **Status:** Working local MVP (supervised, deny-by-default)
 **Base:** PR #17 (Agent OS MVP) and PR #18 (approved execution substrate) are
 merged. This feature branch clean-ports the sandboxed runner onto that base.
