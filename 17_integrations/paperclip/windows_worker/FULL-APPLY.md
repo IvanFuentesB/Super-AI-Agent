@@ -1,43 +1,10 @@
-# Eight-patch public draft recipe
+# Nine-patch pinned source recipe
 
-Status: DRAFT ONLY. The four prerequisites are NOT independently approved.
-Their static content-safety clearance permits draft source-patch publication.
-It grants no functional approval, merge, installation or service authorization.
-The original four repair patches and their prior approval scope remain unchanged.
+Original public base: d0bdbe11a9624435b6dca3968389bd59c6a559a2, tree4f8f24f139dfb1d8aee62020a25e9935c3a0b8a0.
+Do not substitute the distinct v0.3.1 tag. Existing eight patches reproduce e04; appended patch corrects C-P3-1.
+Original worker/declaration and historical failed evidence remain unchanged.
 
-## Public prerequisite and exact identity
-
-Public upstream origin: https://github.com/paperclipai/paperclip.git
-Pinned starting commit: d0bdbe11a9624435b6dca3968389bd59c6a559a2
-Starting tree: 4f8f24f139dfb1d8aee62020a25e9935c3a0b8a0
-Main must independently verify this exact commit is available from GitHub before
-claiming the draft is publicly reproducible. Packaging used retained local objects
-at a shallow boundary; no upstream clone/fetch or installation was performed.
-
-Remote v0.3.1 advertises 63c62e3ada077bac45292f3d2779bd48a8831cda.
-It is a different identity; neither the tag nor package version identifies this
-recipe's base. No assertion about tag ancestry is made.
-
-Apply four prerequisites in prerequisites/series, then four original repairs in
-series. full-series lists all eight relative paths. full-manifest.json pins every
-patch SHA256, parent/commit, intermediate tree and status.
-
-Prerequisite commits, in order:
-1. 5c8b9e4114c657e9c7268e4cc82e63e2b5238a99 — company query cache arrays.
-2. f8e301c1b8e94c0c80fba47c47c664a04148bf36 — HTTP/bootstrap log privacy.
-3. fc03825cd15629b6c0c8dcab9937997e3923f4f7 — bounded CLI pairing/redaction.
-4. 5e55510dbeb869bacfcd843f975632dc739519af — bounded first-engineer UI.
-All four: NOT independently approved by this preparation.
-
-Original repair interval, unchanged:
-5e55510dbeb869bacfcd843f975632dc739519af..e04e2ae1a0d47cdedf5380b5a0d94f280a82d5d1.
-It includes Windows process containment, cancellation, resolution/orphan recovery,
-tests and e04's declaration fix. Main still performs independent safety review.
-
-## Apply instructions — not executed here
-
-Use a clean disposable checkout already at the exact upstream pin. Set $patchDir
-to this prepared folder. No recipe command below downloads or installs anything.
+Inspect all patch hashes and use an already provisioned disposable checkout. No command below installs, starts a service or authorizes a live login.
 
     $m = Get-Content (Join-Path $patchDir 'full-manifest.json') -Raw | ConvertFrom-Json
     $current = git --no-optional-locks rev-parse HEAD
@@ -61,23 +28,8 @@ to this prepared folder. No recipe command below downloads or installs anything.
     $finalTree = git --no-optional-locks write-tree
     if ($LASTEXITCODE -or $finalTree -ne $m.head_tree) { throw 'Wrong result tree' }
 
-Expected final tree: 89e3964b370d6cd1474be03c04a3c3328521947f.
-It matches source head e04e2ae1a0d47cdedf5380b5a0d94f280a82d5d1.
-Raw diffs reproduce tracked trees, not commit authors, timestamps or commit IDs.
-Main alone owns draft PR creation, integration decisions and eventual commits.
+Expected final source tree: df78771e6c9631a8d7edf6e9d0992570a6f3b432 (original owner b32d26e53cb77b7d28f7f95bd95bfe35117eaa5f).
+The accepted narrow-save patch then produces combined tree 47f0df456dace03cb9918435f5f4424969b0e3a9.
+Original e04 tree89e3964b370d6cd1474be03c04a3c3328521947f and narrow-only tree239405e35499f698020db4e575ef6b74ebcf2457 remain distinct historical identities.
 
-Build/test instructions and pinned tooling are in README.md. They remain
-instructions only: no apply, product tests, builds, service or installation was
-performed here. Safety review of prerequisite implementation remains a separate
-gap even if the eight-patch tree reproduction succeeds.
-
-## Content safety and scope
-
-Full individual predecessor diffs were scanned before artifacts were written:
-private absolute user paths, key-shaped credentials and authenticated URLs had
-zero matches. Two account-field occurrences belong to documented synthetic test
-markers; one unchanged authorization context uses a runtime challenge token.
-No private values were emitted. Those classifications are recorded in
-prerequisites/manifest.json. Pattern scanning is not comprehensive secret detection.
-No private repository paths, account logs/receipts, bundles or vendor history are
-part of these patch payloads. Source tests and privacy-handling code are included.
+Raw patches reproduce tracked trees, not original authors, dates or commit IDs. Independent correction tests and combined checks/build are described in README; host installation is separate.

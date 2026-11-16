@@ -1,93 +1,14 @@
-# Paperclip Windows repair patch preparation
+# Paperclip reviewed Windows repair and bounded pairing recipe
 
-Four raw Git diffs in series order include the actual Windows Job Python helper,
-TypeScript control boundary, heartbeat cancellation/orphan handling, source tests,
-and e04's service declaration fix. Main must independently safety-check before porting.
+Origin: https://github.com/paperclipai/paperclip.git. MIT notice retained.
+This first-party patch recipe includes no vendor repository history, installed dependencies, credentials or runtime data.
 
-Origin: https://github.com/paperclipai/paperclip.git
-License: MIT; upstream license text copied from the clean source checkout into LICENSE.upstream. Its exact payload hash is pinned; checkout EOL may differ from Git blob bytes.
+Full-series has nine patches: four prerequisites, the four unchanged Windows worker/declaration repairs, and the C-P3-1 browser-await correction. See full-manifest.json and FULL-APPLY.md for every preimage/postimage tree/hash. The subset series/manifest.json retains the original four-repair provenance on5e55510 to e04 and is not the full public-upstream recipe.
 
-## Exact identity and prerequisite gap
+Prerequisites1,2,4 are source-approved. The original prerequisite3 await was RED; append the correction, never treat original e04 as fixed. Exact accepted correction b32d26e53cb77b7d28f7f95bd95bfe35117eaa5f replaces an unbounded asynchronous opener await with operation cancellation/expiry, observes late resolve/reject and detaches its listener. It does not reverse an external opener that has no cancellation interface. No permissions or request bounds are relaxed.
 
-Required local fork base: 5e55510dbeb869bacfcd843f975632dc739519af
-Base tree: 97d0270efa7fc15b153022753fbbe67acc010ea6
-Result commit: e04e2ae1a0d47cdedf5380b5a0d94f280a82d5d1
-Result tree: 89e3964b370d6cd1474be03c04a3c3328521947f
-Result parent: f2b01139d79c71e4596c0e0aaab105e194b18c19
+Independent correction checks passed in separate selections: lifecycle14, pending-browser9, owner regressions13, privacy2; unchanged original reproducer copy now settles before callback release. Original failed receipt is retained.
 
-The retained repo is shallow at upstream pin d0bdbe11a9624435b6dca3968389bd59c6a559a2.
-Four earlier fork commits after that pin contain query-cache, onboarding privacy,
-CLI-pairing and first-engineer UI changes. Manifest lists their exact identities;
-their complete approval is not established here. Their separate prerequisites/ series is now contentsafety-cleared for draft packaging only, NOT independently approved.
-The original four-repair series still requires this fork base. FULL-APPLY.md documents all eight patches from exact retained public upstream pin d0bdbe11, subject to main verifying GitHub availability.
-No complete approved series from public upstream is claimed; prerequisite implementation review remains open.
+Full public-upstream recipe reproduced treedf78771e6c9631a8d7edf6e9d0992570a6f3b432. With accepted narrow-save d2d7647, combined tree47f0df456dace03cb9918435f5f4424969b0e3a9 passed the independent affected cancellation/route/form checks recorded in the linked operation manifest. Full service/declaration dependency-closure build passed. Existing Node22.16, Vitest3.2.4 and installed pnpm10.33.0 were reused; source still declares pnpm9.15.4. A fixture-only userconfig disabled automatic manager provisioning and forced offline mode/Git Bash; no global config/install/download. The initial offline automatic-manager-resolution failure remains historical.
 
-Remote v0.3.1 advertises 63c62e3ada077bac45292f3d2779bd48a8831cda.
-Neither that tag nor package.json version 0.3.1 describes the required fork base.
-The original included lifecycle plan's version shorthand must not override these
-commit identities. Do not apply directly to v0.3.1 or d0bdbe11. Public reachability
-of exact d0bdbe11 was not rechecked; no clone/fetch/install was performed.
-
-## Apply after independent safety review
-
-Instructions only, not run here. Set $patchDir to this prepared folder. Work from
-an already provisioned clean disposable checkout at the exact required fork base:
-
-    if ((git --no-optional-locks rev-parse HEAD) -ne '5e55510dbeb869bacfcd843f975632dc739519af') { throw 'Wrong base' }
-    if ((git --no-optional-locks rev-parse 'HEAD^{tree}') -ne '97d0270efa7fc15b153022753fbbe67acc010ea6') { throw 'Wrong base tree' }
-    if (git --no-optional-locks status --porcelain) { throw 'Dirty checkout' }
-    $m = Get-Content (Join-Path $patchDir 'manifest.json') -Raw | ConvertFrom-Json
-    foreach ($p in $m.patches) {
-        $f = Join-Path $patchDir $p.file
-        if ((Get-FileHash $f).Hash.ToLower() -ne $p.sha256) { throw 'Hash mismatch' }
-        git --no-optional-locks apply --check --index $f
-        if ($LASTEXITCODE) { throw 'Patch does not apply' }
-        git --no-optional-locks apply --index $f
-        if ($LASTEXITCODE) { throw 'Apply failed' }
-        if ((git --no-optional-locks write-tree) -ne $p.tree) { throw 'Wrong intermediate tree' }
-    }
-
-This recreates exact tracked trees, not original commit metadata/IDs. Main alone
-owns integration commits. No source checkout or index was changed during packaging.
-
-## Build and source tests
-
-Instructions only. Use already provisioned disposable Windows, Node >=20, pinned
-pnpm 9.15.4 and existing frozen-lockfile dependencies. No installation is included.
-Set PAPERCLIP_WINDOWS_PYTHON to an approved absolute Python interpreter path.
-Windows-specific worker tests require that variable and real Windows Job support;
-inspect skips rather than interpreting skipped Windows cases as successful proof.
-
-    pnpm run build
-    pnpm run typecheck
-    pnpm exec vitest run packages/adapter-utils/src/windows-worker.test.ts packages/adapter-utils/src/windows-worker-protocol.test.ts packages/adapter-utils/src/windows-worker-startup.test.ts packages/adapter-utils/src/windows-worker-heartbeat.test.ts packages/adapter-utils/src/service-declarations.test.ts packages/adapters/codex-local/src/server/codex-args.test.ts
-
-Commands derive from source package scripts and included test paths; not executed.
-Inspect existing workspace preflight scripts before running. Tests create synthetic
-workers and temporary evidence; no live account or production service is required.
-
-## Static inspection and byte reproduction
-
-All complete patch texts scanned for private absolute user paths, credential-shaped
-keys, authenticated URLs and account value assignments: zero matches. Process
-boundary, heartbeat, declaration and test source was statically read. This is not
-an independent security approval. Complete selected interval git diff --check passed.
-No generated logs/receipts, bundles, dependencies or author email metadata included.
-
-Each manifest patch pins parent, commit, trees, SHA256, byte size and changed paths.
-Regenerate raw LF bytes with git --no-optional-locks diff and these options:
---no-ext-diff --no-textconv --no-color --no-renames --no-indent-heuristic
---diff-algorithm=myers --full-index --binary --src-prefix=a/ --dst-prefix=b/
---unified=3 --output=<patch-file> <parent> <commit>
-Do not reserialize through text pipelines.
-
-## Published raw bytes
-
-Final remote readback identified Git CRLF-to-LF conversion in documentation,
-series and JSON serialization, and in LICENSE.upstream. No raw .patch bytes
-changed; all eight patch hashes and reproduced trees remain exact. The public
-license pin in manifest.json now names the published LF Git blob, which matches
-the upstream LICENSE blob. Its original packager checkout hash is retained
-separately for provenance. Verify raw objects with `git show`, since a Windows
-working checkout may translate line endings. Metadata publication is not proof
-of a byte-identical local checkout. No global Git setting was changed.
+Source and combined synthetic acceptance are distinct from installed/native worker, authenticated board or real save acceptance. Preserve original corrected launcher13857ef and existing company/DB state. PR27 remains a source-only snapshot with omitted helper/runtime dependencies, not a portable installer. Hermes alone owns separately authorized build adoption, service lease/restart and rollback. No host action occurred.

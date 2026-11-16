@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "publication": "PUBLIC_DRAFT_RECIPE_ONLY",
+  "publication": "SOURCE_ACCEPTED_REPRODUCIBLE_REPAIR_SEQUENCE",
   "origin_url": "https://github.com/paperclipai/paperclip.git",
   "base": "d0bdbe11a9624435b6dca3968389bd59c6a559a2",
   "base_tree": "4f8f24f139dfb1d8aee62020a25e9935c3a0b8a0",
-  "head": "e04e2ae1a0d47cdedf5380b5a0d94f280a82d5d1",
-  "head_tree": "89e3964b370d6cd1474be03c04a3c3328521947f",
+  "head": "b32d26e53cb77b7d28f7f95bd95bfe35117eaa5f",
+  "head_tree": "df78771e6c9631a8d7edf6e9d0992570a6f3b432",
   "v031_tag_object": "63c62e3ada077bac45292f3d2779bd48a8831cda",
-  "upstream_availability": "Main must verify GitHub availability of exact d0bdbe11 pin before publishing a public reproducibility claim",
-  "approval": "Prerequisite patches 1-4 NOT independently approved. Prior repair 4 approval scope unchanged. Contentsafety clearance permits draft artifact publication only; no merge/install/adoption.",
+  "upstream_availability": "Exact d0bdbe11 public pin verified; distinct v0.3.1 tag remains unsuitable.",
+  "approval": "Existing worker/declaration acceptance retained. Prerequisites1,2,4 source-approved; original prerequisite3 requires the appended independently accepted C-P3-1 correction. Combined route/form/service build acceptance recorded separately; no host adoption.",
   "patches": [
     {
       "parent_tree": "4f8f24f139dfb1d8aee62020a25e9935c3a0b8a0",
@@ -18,7 +18,7 @@
       "bytes": 6654,
       "tree": "4f1235b55c3fac56815b7e4c2dbd0e91ed0e3bd2",
       "file": "prerequisites/0001-company-query-cache-arrays.patch",
-      "status": "NOT_INDEPENDENTLY_APPROVED"
+      "status": "SOURCE_APPROVED_IN_FINAL_CORRECTED_SEQUENCE"
     },
     {
       "parent_tree": "4f1235b55c3fac56815b7e4c2dbd0e91ed0e3bd2",
@@ -28,7 +28,7 @@
       "bytes": 14084,
       "tree": "203d99c00c0afb186ce7ad36abe065f3ffed03a6",
       "file": "prerequisites/0002-http-and-bootstrap-log-privacy.patch",
-      "status": "NOT_INDEPENDENTLY_APPROVED"
+      "status": "SOURCE_APPROVED_IN_FINAL_CORRECTED_SEQUENCE"
     },
     {
       "parent_tree": "203d99c00c0afb186ce7ad36abe065f3ffed03a6",
@@ -38,7 +38,7 @@
       "bytes": 29221,
       "tree": "73cb99bbc495088aabb0ecb579974734fa0a1087",
       "file": "prerequisites/0003-bounded-cli-pairing-and-redaction.patch",
-      "status": "NOT_INDEPENDENTLY_APPROVED"
+      "status": "ORIGINAL_C_P3_1_RED_REQUIRES_APPENDED_CORRECTION"
     },
     {
       "parent_tree": "73cb99bbc495088aabb0ecb579974734fa0a1087",
@@ -48,7 +48,7 @@
       "bytes": 34233,
       "tree": "97d0270efa7fc15b153022753fbbe67acc010ea6",
       "file": "prerequisites/0004-bounded-first-engineer-ui.patch",
-      "status": "NOT_INDEPENDENTLY_APPROVED"
+      "status": "SOURCE_APPROVED_IN_FINAL_CORRECTED_SEQUENCE"
     },
     {
       "parent_tree": "97d0270efa7fc15b153022753fbbe67acc010ea6",
@@ -89,7 +89,45 @@
       "tree": "89e3964b370d6cd1474be03c04a3c3328521947f",
       "file": "0004-nameable-service-declarations.patch",
       "status": "PREVIOUS_APPROVAL_SCOPE_UNCHANGED"
+    },
+    {
+      "parent": "e04e2ae1a0d47cdedf5380b5a0d94f280a82d5d1",
+      "source_parent": "49ccf22dda1c2cff90a7c4c92b7610022d27bee2",
+      "commit": "b32d26e53cb77b7d28f7f95bd95bfe35117eaa5f",
+      "parent_tree": "89e3964b370d6cd1474be03c04a3c3328521947f",
+      "tree": "df78771e6c9631a8d7edf6e9d0992570a6f3b432",
+      "file": "0005-bounded-browser-opening-cancellation.patch",
+      "bytes": 9474,
+      "sha256": "d736873448c30a63c8f35c347c2cb6bfc12a988a83f500884bcd1a71add26d6c",
+      "status": "INDEPENDENTLY_APPROVED_C_P3_1_CORRECTION",
+      "paths": [
+        "cli/src/client/board-auth.ts",
+        "cli/src/__tests__/board-auth-browser-cancellation.test.ts"
+      ]
     }
   ],
-  "source_apply_tests_builds_install_service_executed": false
+  "source_apply_tests_builds_install_service_executed": false,
+  "historical_e04_head": {
+    "commit": "e04e2ae1a0d47cdedf5380b5a0d94f280a82d5d1",
+    "tree": "89e3964b370d6cd1474be03c04a3c3328521947f"
+  },
+  "independent_correction": {
+    "candidate": "b32d26e53cb77b7d28f7f95bd95bfe35117eaa5f",
+    "parent": "49ccf22dda1c2cff90a7c4c92b7610022d27bee2",
+    "checks": {
+      "retained_lifecycle": 14,
+      "independent_pending_browser": 9,
+      "owner_regressions": 13,
+      "browser_privacy": 2
+    },
+    "original_reproducer": "Unchanged copy settles before callback release; original RED retained.",
+    "external_opener_cancellation_guaranteed": false
+  },
+  "combined_compatibility": {
+    "narrow_save_source": "d2d7647eca88575870e079e359948520ce50290b",
+    "tree": "47f0df456dace03cb9918435f5f4424969b0e3a9",
+    "full_service_declaration_build": "PASS installed Node22.16/pnpm10.33.0, owned config disables automatic manager installation; original declared9.15.4 unchanged.",
+    "independent_combined_review_sha256": "b7a61f5971dfb3fe3e1ee490fe51dd00f45d8403672d54d934523816df4d2cb0",
+    "first_offline_manager_resolution_failure_retained": true
+  }
 }
