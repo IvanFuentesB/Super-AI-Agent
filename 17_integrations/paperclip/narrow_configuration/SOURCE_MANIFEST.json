@@ -1,0 +1,128 @@
+{
+  "schema": "paperclip_narrow_save_source/1",
+  "status": "SOURCE_AND_COMBINED_COMPATIBILITY_ACCEPTED",
+  "origin": "https://github.com/paperclipai/paperclip",
+  "required_base": "e04e2ae1a0d47cdedf5380b5a0d94f280a82d5d1",
+  "source_commit": "d2d7647eca88575870e079e359948520ce50290b",
+  "source_parent": "accb52eaaabcf1e749d07aa2f0b18de55aef305d",
+  "result_tree": "239405e35499f698020db4e575ef6b74ebcf2457",
+  "patch": {
+    "path": "0001-narrow-configuration-save.patch",
+    "sha256": "9a0040b4ebd87403084dcacd320885bf2b293079de1259c60b0c64f6c02920b6"
+  },
+  "source_files": [
+    {
+      "path": "server/src/__tests__/agent-config-narrow-save-routes.test.ts",
+      "sha256": "f592dc5189b19ba6afeacce31947cef546f0577b22a04c27274dcae4d547b1fd",
+      "bytes": 16396,
+      "git_blob": "cea252b8bc7523142993949a43518b52998a661e"
+    },
+    {
+      "path": "ui/src/components/AgentConfigForm.edit.test.tsx",
+      "sha256": "9f5b6c9f7ffdddce4a6f765f4607b3a33f022eb0c6ada530469b21ea0db823a8",
+      "bytes": 4527,
+      "git_blob": "9c6e4db04fe1c5a5fc61e02145c841cb9989f283"
+    },
+    {
+      "path": "ui/src/components/AgentConfigForm.tsx",
+      "sha256": "8a1a4d0bf874b50583f7ec9e108a247e951b30d5e60862eefce6321e1fcd831f",
+      "bytes": 62307,
+      "git_blob": "4bc8ffa73fbb6024290da58d94934b1a86aa406d"
+    },
+    {
+      "path": "ui/src/lib/agent-config-patch.test.ts",
+      "sha256": "69775ad035c8385a0950e5e49c2cadd6b82196edc34e628f3151fa232f4b9bb1",
+      "bytes": 4277,
+      "git_blob": "f8f5b3f9c1e37c9f38e6c30e3a7cdc402fe8d7b4"
+    },
+    {
+      "path": "ui/src/lib/agent-config-patch.ts",
+      "sha256": "be5ef9b23f9c57c0997b33af06f5b23d26d23a376351be650c19c96cb6563719",
+      "bytes": 3614,
+      "git_blob": "93a8ad3b8094cf1b662f9edb51944c20a15137c1"
+    },
+    {
+      "path": "ui/src/lib/arg-list.test.ts",
+      "sha256": "aaeb683a146283e3ee110a2738c6d458934a02d94f2774c7728ff52d8eeaae9d",
+      "bytes": 1677,
+      "git_blob": "bd9b7cc75f9ab07a7739dadd2058cf0daff68568"
+    },
+    {
+      "path": "ui/src/lib/arg-list.ts",
+      "sha256": "42de8f8b8e19bed8f9d9343b845d6cd7daa3d130de441b7013dbd9edaac91040",
+      "bytes": 1744,
+      "git_blob": "8d2bf1ea1cdb32d06acef6153ccd842f8f7c4c8b"
+    },
+    {
+      "path": "ui/src/pages/AgentDetail.tsx",
+      "sha256": "d12b7ec6405b1fa1b330f1ede38ec0b0eb12e50c2f90c41734385aa3a6af9784",
+      "bytes": 169515,
+      "git_blob": "1e31c0cec9bf9e78f94c36b6a1526ac3cf162afd"
+    }
+  ],
+  "license": {
+    "spdx": "MIT",
+    "file": "LICENSE.upstream",
+    "sha256": "7f8a27f0979bded50e240caa8c8c29f3088ddf87032cb83e5a9732bff91d18b4"
+  },
+  "independent_review": {
+    "verdict": "APPROVED on required exact base; not merge/adoption approval",
+    "counts": {
+      "control": {
+        "passed": 2,
+        "failed": 0,
+        "setup_errors": 0,
+        "hook_timeouts": 0,
+        "invocations": 1
+      },
+      "same12_candidate": {
+        "passed": 12,
+        "failed": 0,
+        "setup_errors": 0,
+        "hook_timeouts": 0,
+        "invocations": 1
+      },
+      "UI": {
+        "passed": 13,
+        "failed": 0,
+        "setup_errors": 0,
+        "hook_timeouts": 0,
+        "invocations": 1
+      }
+    },
+    "node": "22.16.0",
+    "vitest": "3.2.4",
+    "assertions": "All 12 original cases and 47 original expectations retained; 3 persistence assertions added.",
+    "review_sha256": "7ebbc49031222031592edf7f51975596769c19345258b39b8d560807b923a9ea"
+  },
+  "apply_check": {
+    "result_tree": "239405e35499f698020db4e575ef6b74ebcf2457",
+    "scope": "exact source reproduction only"
+  },
+  "dependency": {
+    "pr": 26,
+    "status": "ACCEPTED_CORRECTED_RECIPE_REQUIRED",
+    "correction": "b32d26e53cb77b7d28f7f95bd95bfe35117eaa5f",
+    "reason": "C-P3-1 independently corrected; apply and verify the complete accepted recipe before this unchanged narrow-save delta."
+  },
+  "historical_wip": {
+    "commit": "accb52eaaabcf1e749d07aa2f0b18de55aef305d",
+    "results": "Earlier raw snapshot control2PASS/candidate8PASS4FAIL, not final acceptance."
+  },
+  "limitations": [
+    "Same-field last-writer-wins; no CAS or simultaneous-writer transaction proof.",
+    "Key removal/type change retains whole-config replacement and its stale-copy limitations.",
+    "No production secret-provider, DB, installed bundle, authenticated browser or live-save acceptance."
+  ],
+  "installed_or_live_actions": false,
+  "original_patch_base": "e04e2ae1a0d47cdedf5380b5a0d94f280a82d5d1",
+  "integration_required_repair_commit": "b32d26e53cb77b7d28f7f95bd95bfe35117eaa5f",
+  "combined_acceptance": {
+    "repair_tree": "df78771e6c9631a8d7edf6e9d0992570a6f3b432",
+    "result_tree": "47f0df456dace03cb9918435f5f4424969b0e3a9",
+    "full_service_declaration_build": "PASS",
+    "independent_review_sha256": "b7a61f5971dfb3fe3e1ee490fe51dd00f45d8403672d54d934523816df4d2cb0",
+    "original_narrow_result_tree_preserved": "239405e35499f698020db4e575ef6b74ebcf2457",
+    "installed_or_live_acceptance": false
+  }
+}

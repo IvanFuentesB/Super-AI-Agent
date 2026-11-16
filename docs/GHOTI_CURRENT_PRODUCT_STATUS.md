@@ -1,6 +1,6 @@
 # Ghoti Current Product Status
 
-## Reviewed source integration snapshot — 2026-11-16
+## Reviewed source integration snapshot â€” 2026-11-16
 
 Source acceptance, canonical integration and installed-host adoption are separate.
 The existing PR receipts record actual merge commits; a draft or apply check is
@@ -10,11 +10,14 @@ not permission to deploy, start a service or mutate a real account.
 | --- | --- | --- | --- | --- | --- |
 | NOVA browser UI correction | 6541093494d223e6c8f587116b1ba70af8cb63f6, parent 9ad5a39 | [PR #24](https://github.com/IvanFuentesB/Super-AI-Agent/pull/24), IvanCX/nova-ui-publication | APPROVED technical source/synthetic browser; 70 independent checks PASS | Accepted source included through this PR24 integration; merge identity is in its receipt | Source integration does not adopt UI; last installed pointer 9613e877bcc57475c8e168bd6778523a31d83ff9 |
 | Optional native harness | 890b48c2380f5d43b3c89a7ecec3381ca6b2116d, port 7c2e2a56 | [PR #25](https://github.com/IvanFuentesB/Super-AI-Agent/pull/25), IvanCX/native-harness-publication | APPROVED optional source; 70 offline checks PASS | Merged at 782b247cd22561cba26bbc248088fbff84d0e483 | Live adapter not adopted/enabled |
-| Worker repair/declaration recipe | f2b01139d79c71e4596c0e0aaab105e194b18c19 / e04e2ae1a0d47cdedf5380b5a0d94f280a82d5d1 | [PR #26](https://github.com/IvanFuentesB/Super-AI-Agent/pull/26), head 1caa4a6199d62bbec3f23d54ee3c1744b0e78ef3 | Prerequisites 1,2,4 APPROVED; prerequisite 3 CHANGES_REQUESTED (C-P3-1) | DRAFT; not merged | Prior owner-confirmed declaration/preflight is unchanged; no new worker acceptance |
+| Worker repair/declaration recipe | Original f2b01139/e04e2ae plus accepted correction b32d26e53cb77b7d28f7f95bd95bfe35117eaa5f | [PR #26](https://github.com/IvanFuentesB/Super-AI-Agent/pull/26), public head c5e531bd8dffcab44817f6fcf1c66786fa9ef592 | C-P3-1 CLOSED for exact source; 38 standalone and 63 separately counted combined checks PASS; service/declaration build PASS | Merged at c751edd6a7dd6d49cd6a3b8b40572fe7e2e7ce1a | No new installation or native worker acceptance |
 | Corrected launcher source port | 13857ef7dbcf7be9d5a93b2da5bf90bf9d3edd25 plus one recorded interpreter-expression change | [PR #27](https://github.com/IvanFuentesB/Super-AI-Agent/pull/27), head cc862486d5a4d47b78de0023cbc75f1332acbc24 | Source-only draft contract accepted; runnable contract blocked on exact helpers/runtime | DRAFT; not a portable installer | Original corrected launcher retained; port not adopted |
-| Narrow configuration save | d2d7647eca88575870e079e359948520ce50290b, parent WIP accb52e | [PR #31](https://github.com/IvanFuentesB/Super-AI-Agent/pull/31), IvanCX/paperclip-narrow-save | APPROVED exact required-base source; independent control 2/2, routes 12/12, UI 13/13 | DRAFT pending PR26 prerequisite-3 correction; no dependency bypass | No built bundle/live save/adoption performed |
+| Narrow configuration save | d2d7647eca88575870e079e359948520ce50290b, combined tree 47f0df456dace03cb9918435f5f4424969b0e3a9 with b32 correction | [PR #31](https://github.com/IvanFuentesB/Super-AI-Agent/pull/31), IvanCX/paperclip-narrow-save | APPROVED affected combined compatibility and service/declaration build; original e04/d2 provenance retained | Accepted source included through this PR31 integration; merge identity is in its receipt | No production UI bundle, live save or host adoption performed |
 | Runtime Paperclip status overlay | Frozen three-file archive 8bf3fd4891383a737b6aabcfde52e75d0541a2fc6f24dbca654c6c5976bb5382 | Unpublished: private tenant binding and missing runtime modules | 14 independent synthetic checks PASS; not live-state acceptance | Not integrated | Not installed here |
 | Checkpoint correction | Original owner; no new immutable accepted candidate delivered | Unpublished; existing native gate retained | Old fixture run had 6 setup errors and zero product assertions; no new grant/preflight | Not integrated | No migration, restart or canonical baseline publication |
+| Publication checkpoints | 52d575697b1588938738d202173ce02ffdc6caa6 | [PR #30](https://github.com/IvanFuentesB/Super-AI-Agent/pull/30) | Independent 13 static/docs checks PASS | Merged at 9f2d2a4530e48baa8ba794c880960d8593ff9908 | Instructions only; no monitoring service or global setting |
+| Runtime-path source recovery | Original a49eb2a4a76f7cf20f4dcd12cde9e2394c984535, new port 3ed48c15704879957fed62aa8a57a7fb461a3f4d | [PR #32](https://github.com/IvanFuentesB/Super-AI-Agent/pull/32) | APPROVED_DRAFT_PUBLICATION; 42 focused checks independently PASS | DRAFT; no full backend/dispatch integration | No adoption; caller roots remain trusted, not enforced confinement |
+| Original-history preservation | Six original commits on five archival refs; three original author dates | [Issue #29](https://github.com/IvanFuentesB/Super-AI-Agent/issues/29) | Exact parents/trees/authors/dates and remote readback verified | Archival refs only; content already represented by main/PR21, no duplicate merge | No contribution-calendar qualification claimed; 237 screened histories remain withheld |
 | Remaining personal/legacy delivery | Dirty owner source snapshots, including ed090282 base | Unpublished without scoped frozen source; no owner working files staged | No acceptance of broad dirty trees/vendor history | Not integrated | Existing host setup unchanged |
 
 ### Actual review results and remaining gates
@@ -35,12 +38,17 @@ not permission to deploy, start a service or mutate a real account.
   fixture. Same-field edits remain last-writer-wins; no CAS/multi-writer guarantee
   was added. Key removal/type change keeps whole-replacement and its stale-copy
   limits. No production secret-provider, DB or live configuration-save proof.
-- PR26 prerequisite review ran selected existing assertions with 52 distinct
-  passing results across runs; initial JSX-runner failures and corrected rerun
-  remain separate. A NEW inert diagnostic reproduces C-P3-1: a pending async
-  openBrowser callback prevents login settling after caller abort until released.
-  Owner correction and cancellation/expiry regression acceptance are required.
-  Applying all eight patches to the exact expected tree does not clear this RED.
+- PR26 original pending-browser diagnostic remains RED historical evidence. The
+  original owner corrected C-P3-1 at b32d26e; independent standalone cancellation,
+  lifecycle and privacy selections passed 38 cases plus the unchanged repro copy.
+  The full nine-patch repair sequence and unchanged narrow-save patch reproduce
+  combined tree47f0df4: 63 affected cancellation/control/route/form checks PASS.
+  One zero-case collection failure is retained separately; a fixture-only
+  tsconfig correction preceded execution. No product assertions were weakened.
+  Full 12-project service/declaration closure build PASS (199 server declarations).
+  An initial offline manager-resolution failure is retained; installed pnpm10.33
+  was reused with task-owned config, while source still declares9.15.4. No
+  install/global change or full CLI/UI bundle acceptance is implied.
 - PR27 retains three omitted exact native helper pins and Paperclip e04/declaration
   artifact/host requirements. Its five focused publication-path checks and draft
   contract review do not make it an executable standalone runtime. Never replace
@@ -52,6 +60,18 @@ not permission to deploy, start a service or mutate a real account.
   enable execution. No replacement request, unrestricted run or ACL change here.
 
 ### Publication, bytes and adoption
+
+The new UI release package for accepted6541093 independently passed narrow
+mapping checks: eight file hashes, bundle/patch exact tree, 1662 historical
+and 1667 candidate manifest entries, 13 changed rows and 19 static blobs
+equal public e0f551b/a892aa1. Git LF, CRLF package/archive and installed bytes
+are recorded separately. It remains a private host package, not a public
+standalone backend or installed acceptance. Hermes owns adoption/rollback.
+
+The required UI N6 run remains 1072 tests, two FAIL, one ERROR, 23 skipped.
+Its three unchanged failures each passed once on baseline and candidate;
+C independently released the scoped merge hold. No wholly-green full rerun
+is claimed, and the original failed log remains retained.
 
 Only scoped first-party source, tests and reproducible upstream patches are
 published. The original 99-commit UI history/855-path delta and vendor histories
