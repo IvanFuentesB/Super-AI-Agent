@@ -1,63 +1,63 @@
 # NOVA Command Center browser implementation
 
-This draft publishes the actual browser assets and local tests. It does not publish
-the unrelated historical development branch, an installed runtime, or live memory.
+This component publishes browser assets and local tests, not an installed
+runtime, private memory or an unrelated historical branch. It integrates the
+accepted correction through existing PR #24, IvanCX/nova-ui-publication.
 
-## Provenance and review
+## Source identity and independent review
 
-- Clean publication base: `9e6a5987f617da443f0f802cb82d3a4a291117a3`.
-- Original UI parent: `e108378c6aea726a4160b70e1549f5f06ab70e52` (scoped independent source/GET-preview PASS).
-- Published source snapshot: `9ad5a3938d4762e28a8e684b2637d8eae2b6fb7f` (independent CHANGES_REQUESTED).
-- Static assets and existing tests are exact Git blobs from that snapshot.
-- The retained independent regression file changes only its project import path.
+- Original scoped UI source: e108378c6aea726a4160b70e1549f5f06ab70e52.
+- Earlier successor: 9ad5a3938d4762e28a8e684b2637d8eae2b6fb7f; its original
+  CHANGES_REQUESTED verdict and failing evidence remain historical facts.
+- Corrected successor: 6541093494d223e6c8f587116b1ba70af8cb63f6, parent 9ad5a39.
+- Five selected correction files are exact raw Git blobs from 6541093. The
+  owner's duplicate four-case regression file is omitted: the existing public
+  test_review_state_regressions.js keeps the same assertions without duplication.
+- Independent technical/source and targeted synthetic browser verdict: APPROVED
+  for this correction and five-file port. No installed/native acceptance implied.
 
-Implemented: seven-view navigation, local chat and bounded Computer UI clients,
-status/approval/verification presentation, keyboard focus, responsive layout,
-runtime observation views and unavailable/stale fallbacks. These clients require
-the separately reviewed local runtime contract. Current main does not yet contain
-those runtime producers; this component must not be presented as a complete
-installed app or as a backend deployment.
+Stop intent becomes unresolved before transport and remains bound to task and
+generation through failed requests and running/stopping/terminal polls. Only
+same-task stopped plus cancellation_confirmed:true clears it. Succeeded wording
+uses structured verification SUCCESS; other prose is labelled Reported. Identical
+Paperclip state no longer rewrites its attribute, including the failure path.
 
-## Known defects: do not merge or deploy this draft
+## Executed checks
 
-1. A pending Stop and a running poll after a failed Stop can lose unresolved
-   cancellation visibility in navigation/progress. A running poll is not an acknowledgment.
-2. A top-level free-text reason can override the structured unverified-success
-   warning and claim verified completion without SUCCESS evidence.
-3. Identical Paperclip refresh writes the same state attribute (minor DOM churn).
+Independent reviewer: 68 affected/retained Node checks plus two additional
+negative cases, all PASS. Isolated browser checks passed pending/failed Stop,
+structured verification, identical polling/focus, stale HTTP503 and Chat/Computer
+at 320/1280 without overflow or page/console errors. Only frozen assets and
+synthetic responses were used; real account/runtime requests were blocked.
 
-The independent review executed 99 affected existing tests successfully and four
-additional regressions with one PASS and three expected RED failures. The owner
-separately reported 103 Node/6 markup passes and 14 failing old-snapshot reproductions;
-those are not additional independent passes. The publication rerun is recorded in
-the PR; do not infer a green result from test collection or a completed process.
+The main-based public port separately passed 120 Node tests, six markup tests
+and changed-JS syntax checks. These scopes are not added together. Original
+retained assertions remain unchanged. The one owner expectation that displayed
+Running after failed Stop was strengthened to Stop unconfirmed, matching the
+reported defect rather than weakening the contract.
 
-## Local checks (no provider, installation or account action)
-
-From `01_projects/ghoti_os_app`:
+From this directory, with already-installed Node/Python:
 
 ```sh
-node --test tests/test_computer_client.js tests/test_computer_render.js tests/test_daily_chat.js tests/test_daily_journeys.js tests/test_daily_shell.js tests/test_local_session.js tests/test_runtime_observations.js tests/test_runtime_service_worker.js tests/test_state_honesty.js
+node --test tests/test_computer_client.js tests/test_computer_render.js tests/test_state_honesty.js tests/test_review_state_regressions.js tests/test_paperclip_state_churn.js tests/test_daily_journeys.js tests/test_daily_shell.js tests/test_daily_chat.js tests/test_local_session.js tests/test_runtime_observations.js tests/test_runtime_service_worker.js
 python -B -m unittest discover -s tests -p test_daily_markup.py
-node --test tests/test_review_state_regressions.js
 ```
 
-The last command deliberately retains the unresolved product assertions; at this
-snapshot it fails three of four cases. Do not weaken them to make this draft green.
-The optional browser-form test requires an already-installed Playwright module
-(`GHOTI_BROWSER_TEST_MODULE`) and Edge; no dependency or model is downloaded by
-these commands. Browser fixtures are not installed/native execution evidence.
+Optional browser-form checks require an existing Playwright module and Edge;
+no model, package or browser is downloaded by these commands.
 
-## Safety and installation boundary
+## Runtime and adoption boundary
 
-No backend/serverless routes, provider credentials, connectors, hooks, MCPs,
-computer-use executor, runtime data or service startup are enabled by publication.
-The UI defines local API requests but cannot supply their authentication/authority.
-Do not expose a local command API publicly or deploy this as a public action UI.
-The current runtime's optional Paperclip status contract remains a separate adoption
-step; missing status is unknown, not a stopped or zero-approval board.
+These clients require separately adopted local authentication, authority and
+runtime producers. Main does not yet supply the complete ghoti_os_app server or
+the private Paperclip observation producer. Missing API/status must remain
+unavailable/unknown, never proof of stopped or zero approvals. Actual installed
+producer source was inspected; synthetic positive states are not live evidence.
 
-Project artwork provenance is in `dashboard_app/static/assets/GHOTI_FISH_ASSET_ORIGIN.md`.
-The original source commits are provenance identifiers, not promises that their
-unrelated histories are published or approved. No change to the installed release
-is authorized by this draft.
+No computer-use executor, backend/serverless route, provider credential,
+connector, hook, MCP, service startup or host adoption is enabled here. Do not
+expose local command APIs publicly or deploy this as a public action interface.
+The original source commits are provenance, not published historical Git ancestry.
+Installed release 9613e877 is unchanged by this source integration; Hermes owns
+adoption and any authenticated/native acceptance. Existing artwork provenance
+remains in dashboard_app/static/assets/GHOTI_FISH_ASSET_ORIGIN.md.

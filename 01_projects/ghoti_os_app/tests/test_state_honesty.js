@@ -78,8 +78,8 @@ test("2 after a failed Stop, a poll still reporting running says Stop was not ac
     await f.client.refresh();
     assert.match(f.client.reason, /Stop was not acknowledged/, `poll ${i + 1}`);
     assert.match(f.client.reason, /still reported as running/, `poll ${i + 1}`);
-    assert.equal(statusTone(f.client), "attention", `poll ${i + 1}`);
-    assert.equal(navState(f.client).text, "Running", `poll ${i + 1}`);
+    assert.equal(statusTone(f.client), "unconfirmed", `poll ${i + 1}`);
+    assert.deepEqual(navState(f.client), {text: "Stop unconfirmed", tone: "unconfirmed"}, `poll ${i + 1}`);
   }
   f.replies.push(mkTask("stopped", {cancellation_confirmed: true}));
   assert.equal(await f.client.stop(), true);
@@ -332,4 +332,114 @@ test("8 forced-colors mode draws a real outline when the composer textarea has k
   const rule = /\.daily-composer:has\(textarea:focus-visible\)\s*\{([^}]*)\}/.exec(block);
   assert.ok(rule, "composer focus rule inside the forced-colors block");
   assert.match(rule[1], /\boutline\s*:/);
+});
+
+// ---------------------------------------------------------------- R1/R2 repair: Stop intent bound to its task, structured verification only
+const unresolvedNav = {text: "Stop unconfirmed", tone: "unconfirmed"};
+function assertUnresolved(client, label) {
+  assert.deepEqual(navState(client), unresolvedNav, `${label} nav`);
+  assert.equal(statusTone(client), "unconfirmed", `${label} tone`);
+  assert.match(progressText(client), /not confirmed/, `${label} progress`);
+}
+test("R1 a pending Stop is unresolved in every view before the transport resolves", async () => {
+  const f = accepted("running");
+  let answer;
+  f.client.local.request = () => new Promise(resolve => { answer = resolve; });
+  const stopping = f.client.stop();
+  assertUnresolved(f.client, "pending");
+  assert.match(f.client.reason, /not yet acknowledged/);
+  // A running poll arriving while Stop is still in flight does not settle it, nor claim it was missed.
+  f.client.accept(mkTask("running"));
+  assertUnresolved(f.client, "poll while pending");
+  assert.match(f.client.reason, /not yet acknowledged/);
+  answer(mkTask("stopping"));
+  await stopping;
+  assertUnresolved(f.client, "stopping reply");
+  assert.match(f.client.reason, /Stop requested/);
+  f.client.accept(mkTask("stopped", {cancellation_confirmed: true}));
+  assert.deepEqual(navState(f.client), {text: "", tone: ""});
+});
+test("R1 a failed Stop followed by running and stopping polls stays unresolved in every view", async () => {
+  const f = accepted("running");
+  f.down = true;
+  await f.client.stop();
+  f.down = false;
+  for (const next of [mkTask("running"), mkTask("stopping"), mkTask("running")]) {
+    f.replies.push(next);
+    await f.client.refresh();
+    assertUnresolved(f.client, next.state);
+  }
+});
+test("R1 a snapshot that omits or falsifies cancellation_confirmed never clears Stop", async () => {
+  for (const extra of [{}, {cancellation_confirmed: undefined}, {cancellation_confirmed: null}, {cancellation_confirmed: false}, {cancellation_confirmed: "true"}]) {
+    const f = accepted("running");
+    f.down = true;
+    await f.client.stop();
+    f.client.accept(mkTask("stopped", extra));
+    assertUnresolved(f.client, JSON.stringify(extra));
+    f.client.accept(mkTask("running", extra));
+    assertUnresolved(f.client, `running ${JSON.stringify(extra)}`);
+  }
+});
+test("R1 only stopped with cancellation_confirmed true clears the Stop warning", async () => {
+  const f = accepted("running");
+  f.down = true;
+  await f.client.stop();
+  f.client.accept(mkTask("stopped", {cancellation_confirmed: true}));
+  assert.deepEqual(navState(f.client), {text: "", tone: ""});
+  assert.equal(statusTone(f.client), "");
+  assert.match(f.client.reason, /^Stopped/);
+  // A later unrelated snapshot of the same task is not resurrected into a warning.
+  f.client.accept(mkTask("running"));
+  assert.deepEqual(navState(f.client), {text: "Running", tone: "running"});
+});
+test("R1 navigation and rendering cannot clear Stop; a different task does not inherit it", async () => {
+  const f = accepted("running");
+  f.down = true;
+  await f.client.stop();
+  f.client.onChange(f.client);
+  assertUnresolved(f.client, "after change notification");
+  // An unrelated new task is accepted deliberately (start path): it must read as an ordinary running task.
+  const other = mkTask("running", {task_id: "other-task", generation: "other-generation"});
+  f.client.accept(other, {replace: true});
+  assert.deepEqual(navState(f.client), {text: "Running", tone: "running"});
+  assert.equal(statusTone(f.client), "running");
+  assert.doesNotMatch(f.client.reason, /Stop/);
+  assert.doesNotMatch(progressText(f.client), /Stop/);
+  // A stale, out-of-order snapshot of the old task is rejected, so it neither resurrects nor clears anything on the new task.
+  assert.throws(() => f.client.accept(mkTask("stopped", {cancellation_confirmed: true})), /identity/);
+  assert.deepEqual(navState(f.client), {text: "Running", tone: "running"});
+  // The warning stays bound to the old task: it is still unresolved if that task is shown again unconfirmed.
+  f.client.accept(mkTask("running"), {replace: true});
+  assertUnresolved(f.client, "old task shown again");
+});
+test("R1 a snapshot for another task cannot clear the Stop warning of the current task", async () => {
+  const f = accepted("running");
+  f.down = true;
+  await f.client.stop();
+  const other = mkTask("stopped", {task_id: "other-task", generation: "other-generation", cancellation_confirmed: true});
+  f.client.accept(other, {replace: true});
+  f.client.accept(mkTask("running"), {replace: true});
+  assertUnresolved(f.client, "after other-task confirmation");
+});
+test("R2 free-text reasons never produce verified wording without SUCCESS verification", () => {
+  for (const verification of [undefined, null, "UNVERIFIED", "VERIFIED", "FAILED"]) {
+    for (const extra of [{reason: "Finished and verified by readback."}, {result: {reason: "Finished and verified by readback."}},
+      {reason: "Verified.", result: {reason: "verified by readback"}}]) {
+      const {client} = accepted("succeeded", {verification, ...extra});
+      const label = JSON.stringify({verification, ...extra});
+      assert.ok(client.reason.startsWith("Finished, but the result was not verified."), `${label}: ${client.reason}`);
+      assert.match(client.reason, /Reported: /, label);
+      assert.doesNotMatch(client.reason.split(" Reported: ")[0], /verified by readback/, label);
+      assert.equal(statusTone(client), "attention", label);
+      assert.match(progressText(client), /not verified/, label);
+      assert.deepEqual(navState(client), {text: "Not verified", tone: "attention"}, label);
+    }
+  }
+});
+test("R2 verified wording comes only from verification SUCCESS", () => {
+  const {client} = accepted("succeeded", {verification: "SUCCESS", reason: "anything"});
+  assert.equal(client.reason, "Finished and verified by readback.");
+  assert.equal(statusTone(client), "success");
+  assert.deepEqual(navState(client), {text: "", tone: ""});
 });

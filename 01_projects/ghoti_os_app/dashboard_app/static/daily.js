@@ -335,11 +335,15 @@
   let lastPaperclip = null;
   const paperclipSummary = report => `${report.status === "STOPPED" ? "stopped" : "running"} · ${
     report.pending_approvals ? `${report.pending_approvals} approval${report.pending_approvals === 1 ? "" : "s"} waiting` : "no approvals waiting"}`;
+  // An unchanged refresh must not rewrite the attribute (no mutation churn).
+  function paperclipState(state) {
+    if ($("daily-paperclip").dataset.state !== state) $("daily-paperclip").dataset.state = state;
+  }
   function renderPaperclip(report, {failed = false} = {}) {
     if (failed) {
       text("daily-paperclip", `Couldn’t reach the runtime, so the Paperclip board’s current status is unknown.${
         lastPaperclip ? ` Last reported at ${lastPaperclip.at}: ${paperclipSummary(lastPaperclip.report)}. That may be out of date.` : ""} Open the board to check.`);
-      $("daily-paperclip").dataset.state = "unavailable";
+      paperclipState("unavailable");
       return;
     }
     const known = report?.schema === "ghoti_paperclip_status/1" && ["RUNNING", "STOPPED"].includes(report.status) &&
@@ -349,7 +353,7 @@
     text("daily-paperclip", !known ? "This page can’t verify the Paperclip board. The runtime doesn’t report its status yet; open the board to check." :
       report.status === "STOPPED" ? `The Paperclip board is stopped${waiting ? ` · ${waiting} approval${waiting === 1 ? "" : "s"} waiting for you on the board` : ""}. It starts on request.` :
         waiting ? `The Paperclip board is running · ${waiting} approval${waiting === 1 ? "" : "s"} waiting for you on the board.` : "The Paperclip board is running · no approvals waiting.");
-    $("daily-paperclip").dataset.state = !known ? "unconfirmed" : report.status === "STOPPED" ? "attention" : waiting ? "permission" : "connected";
+    paperclipState(!known ? "unconfirmed" : report.status === "STOPPED" ? "attention" : waiting ? "permission" : "connected");
   }
   $("daily-memory-search").addEventListener("input", renderMemory);
   async function request(url, options = {}) {

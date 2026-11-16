@@ -178,3 +178,18 @@ test("navState flags approval, running, lost connection and stays empty when idl
  assert.deepEqual(nav("succeeded",{verification:"SUCCESS"}),{text:"",tone:""});
  for(const state of [null,"expired","stopped"])assert.deepEqual(nav(state),{text:"",tone:""},String(state));
 });
+test("Stop is visible in the status line, navigation and progress while pending and after a failure",async()=>{
+ const f=fixture();f.client.accept(f.task("running"));let resolve;
+ f.local.request=()=>new Promise(r=>{resolve=r;});
+ const pending=f.client.stop();
+ assert.equal(statusTone(f.client),"unconfirmed");assert.deepEqual(navState(f.client),{text:"Stop unconfirmed",tone:"unconfirmed"});assert.match(progressText(f.client),/not confirmed/);
+ resolve({...f.task("running"),state:"stopping",cancellation_confirmed:false});await pending;
+ assert.equal(statusTone(f.client),"unconfirmed");assert.equal(f.client.task.state,"stopping");
+ f.client.accept({...f.task("stopped"),cancellation_confirmed:true});
+ assert.equal(statusTone(f.client),"");assert.deepEqual(navState(f.client),{text:"",tone:""});
+});
+test("a free-text reason never reads as verified without verification SUCCESS",()=>{
+ const f=fixture();f.client.accept({...f.task("succeeded"),verification:"UNVERIFIED",reason:"Finished and verified by readback.",result:{reason:"verified"}});
+ assert.match(f.client.reason,/^Finished, but the result was not verified\. Reported: /);
+ assert.equal(statusTone(f.client),"attention");assert.deepEqual(navState(f.client),{text:"Not verified",tone:"attention"});
+});

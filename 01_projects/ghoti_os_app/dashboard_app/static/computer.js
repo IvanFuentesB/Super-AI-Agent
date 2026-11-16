@@ -25,8 +25,12 @@
  }
  // One reading of a task's state for the status line, progress line, steps and navigation badge.
  const verified=task=>task?.state==="succeeded"&&task.verification==="SUCCESS";
- // A Stop is unresolved until the executor acknowledges it; a failed Stop request leaves the task possibly acting.
- const stopUnresolved=client=>Boolean(client.stopUnconfirmed||(client.task?.state==="stopped"&&client.task.cancellation_confirmed!==true));
+ // A Stop is unresolved from the moment it is pressed until the executor reports stopped with cancellation_confirmed:true.
+ // The intent is bound to the task it was raised for; a delivered request, a failed request and a running poll all leave it standing.
+ const sameTask=(intent,task)=>Boolean(intent&&task&&intent.task_id===task.task_id&&intent.generation===task.generation);
+ const stopUnresolved=client=>Boolean(sameTask(client.stopIntent,client.task)||(client.task?.state==="stopped"&&client.task.cancellation_confirmed!==true));
+ // Free text from the executor is never evidence; it is shown only as labelled reported detail.
+ const reported=task=>{const text=task.reason||task.result?.reason;return typeof text==="string"&&text?` Reported: ${text}`:"";};
  function stateText(task){
   return {
    created:"Proposal created. Requesting the approval prompt…",
@@ -42,17 +46,19 @@
  }
  class ComputerClient {
   constructor({local,onChange=()=>{},makeId=()=>crypto.randomUUID(),clock=()=>performance.now()/1000}={}) {
-   Object.assign(this,{local,onChange,makeId,clock,task:null,health:null,connected:false,busy:false,polling:false,stopUnconfirmed:false,stopMissed:false,epoch:0,received:0,safetyStopSent:false,inputError:"",reason:"Checking local control…"});
+   Object.assign(this,{local,onChange,makeId,clock,task:null,health:null,connected:false,busy:false,polling:false,stopIntent:null,epoch:0,received:0,safetyStopSent:false,inputError:"",reason:"Checking local control…"});
   }
   changed(){this.onChange(this);}
   clearInputError(){this.inputError="";this.changed();}
   accept(task,{replace=false}={}){
    if(task?.schema!=="ghoti_computer_task/1"||!validId(task.task_id)||!validId(task.generation)||!states.has(task.state)||!task.scope||!task.observation)throw Error("Unrecognized computer state; controls locked");
    if(this.task&&!replace&&(task.task_id!==this.task.task_id||task.generation!==this.task.generation||JSON.stringify(task.scope)!==JSON.stringify(this.task.scope)))throw Error("Task identity or approved scope changed");
-   // A Stop whose request failed is settled only by what the executor reports next: stopping/stopped, or still active.
-   this.stopMissed=active(task)&&task.state!=="stopping"&&(this.stopMissed||this.stopUnconfirmed);
-   this.task=task;this.connected=true;this.stopUnconfirmed=false;this.received=this.clock();
-   this.reason=this.stopMissed?`Stop was not acknowledged and the task is still reported as ${task.state==="running"?"running":"active"}. Press Stop control again if you still want it stopped.`:task.reason||(task.state==="awaiting_permission"?"Review the exact scope, then approve or reject.":task.state==="expired"?"Approval expired. Nothing was executed; create a new task deliberately.":task.state==="stopping"?"Stop requested. Waiting for the executor to become quiescent.":task.state==="stopped"?(task.cancellation_confirmed===true?"Stopped: queued input revoked and executor settled. Earlier completed actions remain.":"Stop is not confirmed. The task may still be acting."):task.state==="uncertain"?"Outcome uncertain. No automatic replay; inspect the partial result.":(task.state==="succeeded"&&!verified(task)?`Finished, but the result was not verified.${task.result?.reason?` Reported: ${task.result.reason}`:""}`:task.result?.reason)||stateText(task));
+   // Only stopped with cancellation_confirmed:true for the same task settles a Stop; omitted fields, other tasks and running polls do not.
+   if(sameTask(this.stopIntent,task)&&task.state==="stopped"&&task.cancellation_confirmed===true)this.stopIntent=null;
+   this.task=task;this.connected=true;this.received=this.clock();
+   const intent=sameTask(this.stopIntent,task)?this.stopIntent:null;
+   if(intent&&active(task)&&task.state!=="stopping")this.reason=intent.pending?"Stop requested; not yet acknowledged.":`Stop was not acknowledged and the task is still reported as ${task.state==="running"?"running":"active"}. Press Stop control again if you still want it stopped.`;
+   else this.reason=(intent&&!active(task)&&task.state!=="stopped"?"Stop was never confirmed. ":"")+(task.state==="succeeded"?(verified(task)?stateText(task):`${stateText(task).replace(" Review the details.","")}${reported(task)}`):task.reason||(task.state==="awaiting_permission"?"Review the exact scope, then approve or reject.":task.state==="expired"?"Approval expired. Nothing was executed; create a new task deliberately.":task.state==="stopping"?"Stop requested. Waiting for the executor to become quiescent.":task.state==="stopped"?(task.cancellation_confirmed===true?"Stopped: queued input revoked and executor settled. Earlier completed actions remain.":"Stop is not confirmed. The task may still be acting."):task.state==="uncertain"?"Outcome uncertain. No automatic replay; inspect the partial result.":task.result?.reason||stateText(task)));
    this.changed();
   }
   async post(taskId,action,body){return this.local.request(`/api/runtime/computer/tasks/${taskId}/${action}`,{method:"POST",body});}
@@ -81,10 +87,12 @@
   }
   async stop({keepalive=false}={}){
    if(!this.local.authenticated||!this.task||!active(this.task))return false;
-   const task=this.task,epoch=++this.epoch;this.busy=false;this.stopMissed=false;this.reason="Stop requested; not yet acknowledged.";this.changed();
+   const task=this.task,epoch=++this.epoch,intent={task_id:task.task_id,generation:task.generation,pending:true};
+   this.busy=false;this.stopIntent=intent;this.reason="Stop requested; not yet acknowledged.";this.changed();
    try{const response=await this.local.request(`/api/runtime/computer/tasks/${task.task_id}/cancel`,{method:"POST",body:{request_id:this.makeId()},keepalive});
     if(epoch!==this.epoch)return false;this.accept(response);return response.cancellation_confirmed===true;
-   }catch(error){if(epoch===this.epoch){this.connected=false;this.stopUnconfirmed=true;this.task.observation.live=false;this.reason=`${error.message}. Stop is not confirmed; the task may still be acting. Nothing will be replayed.`;this.changed();}return false;}
+   }catch(error){if(epoch===this.epoch){this.connected=false;this.task.observation.live=false;this.reason=`${error.message}. Stop is not confirmed; the task may still be acting. Nothing will be replayed.`;this.changed();}return false;}
+   finally{intent.pending=false;}
   }
   async disconnected(reason){
    this.epoch+=1;this.busy=false;
@@ -118,7 +126,6 @@
   if(!client.connected)return "attention";
   if(task?.state==="failed")return "failed";
   if(["expired","uncertain"].includes(task?.state))return "attention";
-  if(client.stopMissed)return "attention";
   if(task?.state==="awaiting_permission")return "permission";
   if(active(task))return "running";
   // Only a readback-verified finish reads as success; idle is its own neutral state.
@@ -145,8 +152,8 @@
  function progressText(client){
   const task=client.task;
   if(!task)return "No task yet. Describe one above; nothing runs before you approve it.";
-  if(client.stopUnconfirmed)return "Stop was requested but not confirmed. The task may still be acting. Connection lost; this may be out of date.";
   const text=stateText(task);
+  if(stopUnresolved(client)&&task.state!=="stopped")return `Stop was requested but not confirmed. The task may still be acting.${client.connected?"":" Connection lost; this may be out of date."}`;
   return client.connected?text:`${text} Connection lost; this may be out of date.`;
  }
  function navState(client){
