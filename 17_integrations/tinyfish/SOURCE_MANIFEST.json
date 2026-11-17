@@ -1,0 +1,108 @@
+{
+  "schema": "tinyfish_source_port/1",
+  "source_commit": "6f6177d1ae38e50b9195cdf03aed18467e841985",
+  "source_tree": "afb487116a6c9982f54f79106e1eb30c1297ccb0",
+  "original_base": "6541093494d223e6c8f587116b1ba70af8cb63f6",
+  "patch_sha256": "c71942e91ea48bbb968c93a5d25e4d6f493dc09ab19f1c8f44df54b83d48c02c",
+  "files": {
+    "01_projects/ghoti_os_app/dashboard_app/static/daily.js": {
+      "sha256": "4875d7a4581e848c9191a6f66f7cc25609794e99132b74c4049909328c9c1c86",
+      "git_blob": "e7c7931368e1136171925031aa7bf56b35d6f0a2",
+      "bytes": 38102
+    },
+    "01_projects/ghoti_os_app/tests/test_tinyfish_adapter.py": {
+      "sha256": "570c41c337645fa8309a2bdf711fd8727ed97c98e8b7be4040f335e2ad4c98a8",
+      "git_blob": "c558c7b997f707a7d6373374c8ba5f6a404b49b4",
+      "bytes": 39775
+    },
+    "01_projects/ghoti_os_app/tests/test_tinyfish_ui.js": {
+      "sha256": "8c9bcbaa792e5d223241e0e9408363ccba83ff443b2385b7d6e2ee5973059d60",
+      "git_blob": "7847f728b9efb6488bf127289bebeb7d92e519ea",
+      "bytes": 15639
+    },
+    "03_scripts/ghoti_runtime/TINYFISH.md": {
+      "sha256": "9a0670f831281e0c95ee30ec5ab783ad6ede2d87d75176714cae486cb70b00fd",
+      "git_blob": "3cccb403cd741011f951b73186bb1f57e702d194",
+      "bytes": 7958
+    },
+    "03_scripts/ghoti_runtime/doctor.py": {
+      "sha256": "bdb5e2294a543fb958a30d3176f9918ecf07152329efaca22a691b933216f9e5",
+      "git_blob": "06f7b94a46ab9d6bd7dcda069b55b81d125e02ee",
+      "bytes": 3929
+    },
+    "03_scripts/ghoti_runtime/local_service.py": {
+      "sha256": "67bf68de4dd8f2603b116f3d021d280713f35ab07d00629f86fff801631fa76f",
+      "git_blob": "e9335b4090639585a229f05fa98ab743f06d2c88",
+      "bytes": 21960
+    },
+    "03_scripts/ghoti_runtime/run_store.py": {
+      "sha256": "9420262937f3a140456f5bb1c99474279aa53be32cb18463f58c61e6ec2a497a",
+      "git_blob": "1f5e8dfb5a5f2cef1b9ef25d758c50dcc72defb3",
+      "bytes": 6141
+    },
+    "03_scripts/ghoti_runtime/tinyfish.py": {
+      "sha256": "0b460538f50a851ad18ebf5bbf7b9d8a50a0c93cf652144c86a15fd65dc6d511",
+      "git_blob": "148e62913ab69565acba059713d1cc8de2bc8ee3",
+      "bytes": 39545
+    },
+    "14_context/model_router/capability_extensions.json": {
+      "sha256": "5b0e4c5de3291b0ac37fcdae88bd18c03f382f52c8f4f5784c4a331692895c5a",
+      "git_blob": "d26ac000172cac6d415ce7fed80b21712964bcd5",
+      "bytes": 3134
+    },
+    "23_configs/tinyfish.example.json": {
+      "sha256": "85c0a3ca69d1f58369788de11eb3997df83da00ace160f1f5380bf624a8bb63d",
+      "git_blob": "26c29710a24bbc7bffb0c8cbbac95335a72a2694",
+      "bytes": 713
+    }
+  },
+  "status": "DRAFT_CHANGES_REQUESTED_NOT_ACTIVATED",
+  "owner_results": {
+    "adapter": 46,
+    "ui": 14,
+    "independent": false
+  },
+  "publication_scope": "Exact first-party diff only; original private ancestry and full runtime dependencies excluded",
+  "installed": false,
+  "provider_called": false,
+  "credentials_published": false,
+  "limits": [
+    "Read-only prompt is not enforced browser confinement",
+    "External metered approval mapping needs independent review",
+    "Not a portable installer or authorization for a live run"
+  ],
+  "patch_byte_preservation": {
+    "attribute": "source.patch -text",
+    "reason": "Exact full-index owner diff; no silent newline transformations or private history"
+  },
+  "independent_review": {
+    "verdict": "CHANGES_REQUESTED",
+    "existing_adapter_passed": 46,
+    "existing_ui_passed": 14,
+    "new_regression": {
+      "executed": 1,
+      "red": 1,
+      "setup_errors": 0
+    },
+    "executed_defect": "100 unrelated records hide unresolved provider submission from duplicate/concurrency/daily checks; second mocked POST allowed",
+    "static_findings": [
+      "External metered grant not resolved against trusted approval authority",
+      "Incomplete persistence redaction",
+      "Result-route exemption too broad and malformed non-object shape not handled"
+    ],
+    "live_provider_calls": 0,
+    "installed_acceptance": false
+  },
+  "independent_regression_port": {
+    "path": "independent_tests/uncertain_submission_regression.py",
+    "original_sha256": "6ed9ed558cf9be65adf5981cf64688e8703b0467ea96906bb1abb3e423cded82",
+    "published_sha256": "b37408a41acb2d861a82ec137263a4ae822624ce3dc92059cfcaac2397453c40",
+    "transformations": [
+      "Caller supplies source and fresh disjoint evidence paths",
+      "Create owned home/temp",
+      "Empty PATH because child execution is forbidden"
+    ],
+    "assertions_unchanged": true,
+    "portable_execution": "Not rerun; original executed RED retained; body and assertions compared separately"
+  }
+}

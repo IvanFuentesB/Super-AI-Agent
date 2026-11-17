@@ -1,0 +1,2 @@
+# Keep original full-index patch bytes.
+source.patch -text
