@@ -1,0 +1,44 @@
+{
+  "schema": "ghoti_safe_source_recovery/1",
+  "issue": 29,
+  "status": "SOURCE_PORT_REQUIRES_REVIEW",
+  "source_commit": "a49eb2a4a76f7cf20f4dcd12cde9e2394c984535",
+  "source_tree": "79fe0115c5b003ef3158b92c13123291ff1e05f9",
+  "source_parents": [
+    "fc25e115974c9c3afb99609be10445cbe72b700a"
+  ],
+  "original_author_name": "IvanFuentesB",
+  "original_author_date": "2026-08-19T13:24:04-06:00",
+  "original_committer_date": "2026-08-19T13:24:04-06:00",
+  "port_base": "9f2d2a4530e48baa8ba794c880960d8593ff9908",
+  "files": [
+    {
+      "path": "03_scripts/ghoti_runtime/paths.py",
+      "original_git_blob": "c6a611a8c97ab495dba2098b3ab89a28b87d47d1",
+      "raw_sha256": "705ee046e585bb6388dfa7a4a85bfe767b37435f5303622f84086d9f05afa290",
+      "bytes": 12524,
+      "transformation": "none"
+    },
+    {
+      "path": "03_scripts/ghoti_runtime/README.md",
+      "original_git_blob": "874ddc7df54195684a80e2fd4c430ec06310fa90",
+      "raw_sha256": "ee4815c2acaf4174efb5a5711346825e0c88c30cd27ac3bc9704a4890f6aa395",
+      "bytes": 3914,
+      "transformation": "none"
+    },
+    {
+      "path": "01_projects/runtime_mvp/tests/test_ghoti_v1_runtime_paths.py",
+      "original_git_blob": "38a04454dc30adf908faffe003d939f99018171c",
+      "raw_sha256": "ff6d37f9fac4d2a28bd17fb498b1d4f0d2a0372b7a6de24a43c1d35b27144cfa",
+      "bytes": 28349,
+      "transformation": "none"
+    }
+  ],
+  "original_history_published": false,
+  "reason": "Original newly reachable ancestry contains private-path/state and credential-shaped material; retain it privately. Only three reviewed source/test/doc Git blobs are ported.",
+  "limits": [
+    "No dispatch/server wiring or whole-backend recovery is claimed.",
+    "Raw source blobs are unchanged; no original author date is assigned to the new port.",
+    "No hooks/MCPs/providers/accounts/service or installed release changed."
+  ]
+}
