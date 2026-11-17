@@ -17,6 +17,7 @@ not permission to deploy, start a service or mutate a real account.
 | Overlay launcher pin | Owner1e788e6ea92fbd37a1309a338654bb4120c8a73d; original raw677ceb55 to LF eb39b400; targete8ad1fd/treebdab2ce | Source-only follow-up in draft PR27; original published snapshot preserved | APPROVED pin source;11 independent gate cases PASS | DRAFT; no runtime/transaction integration approval | NOT installed; actual deployment operation and rehearsal pending | Real Git/preflight gate with inert build markers; not real package staging, service start, rollback or replay proof |
 | Overlay deployment transaction | Corrected76c8c81d5a896d4955984c44e5b6fbe897fddc28; priorbcff/712/356 findings preserved | Corrected safe source in existing DRAFT PR27 lane; private payload/receipts excluded | CHANGES_REQUESTED:11 parent acceptance checks PASS;2 independent focused ownership probes RED; fixture records separate | NOT merged; no transaction-use/adoption approval | NOT installed | Original rollback failure class fixed; real-build apply/preflight/recovery works, but unowned missing output and internal Git ref junction remain unsafe |
 | Optional deny-only native SDK host | 77e9006fcc125fafc49b550b309718807a37904d | Review source on IvanCX/native-harness-publication under17_integrations/native_harness/host_sdk | APPROVED only partial deny-only scope;10 independent tests PASS | DRAFT source; not live host integration | Not adopted; no browser attachment | Real constructor/native metadata/shutdown; direct Python callback test is not native callback delivery |
+| TinyFish provider adapter | 6f6177d1ae38e50b9195cdf03aed18467e841985 | Source-only patch portf91403ff on IvanCX/tinyfish-provider-source | CHANGES_REQUESTED:46 adapter+14 UI PASS;1 independent accounting regression RED | DRAFT; not enabled | Not adopted; no credentials or provider calls | Synthetic transport/real RunStore only; incomplete authority and persistence controls remain |
 | Runtime Paperclip status overlay | Frozen three-file archive 8bf3fd4891383a737b6aabcfde52e75d0541a2fc6f24dbca654c6c5976bb5382 | Unpublished: private tenant binding and missing runtime modules | 14 independent synthetic checks PASS; not live-state acceptance | Not integrated | Not installed here | Existing scoped source evidence retained; no new execution in this update |
 | Checkpoint correction | Original owner; no new immutable accepted candidate delivered | Unpublished; existing native gate retained | Old fixture run had 6 setup errors and zero product assertions; no new grant/preflight | Not integrated | No migration, restart or canonical baseline publication | Zero new behavioral execution; original six setup errors and native permission gate retained |
 | Publication checkpoints | 52d575697b1588938738d202173ce02ffdc6caa6 | [PR #30](https://github.com/IvanFuentesB/Super-AI-Agent/pull/30) | Independent 13 static/docs checks PASS | Merged at 9f2d2a4530e48baa8ba794c880960d8593ff9908 | Instructions only; no monitoring service or global setting | 13 independent static/docs checks; policy is instructions, not a monitoring service |
@@ -57,9 +58,16 @@ Human-controlled callback delivery, trusted target/profile/origin binding,
 revocation/stale handles on a real disposable profile and private-profile use
 remain unproved and unauthorized. No permission is manufactured by this review.
 
-TinyFish has an ownership notice but no immutable delivered candidate in this
-review intake. Personal-assistant planner prototypes are not a frozen handoff.
-No synthetic account-write acceptance or real provider/account action is claimed.
+At the initial SDK intake TinyFish had only an ownership notice. Its later
+immutable6f6177d handoff was independently reviewed:46 adapter and14 synthetic UI
+tests PASS, one new regression RED.100 unrelated jobs hide an unresolved provider
+submission from duplicate/concurrency/daily checks and permit a second mocked
+start. Static grant-binding, persistence-redaction and result-route findings also
+require correction. Verdict:CHANGES_REQUESTED; no activation or provider call.
+Exact source-only review portf91403ff2cae8539545597ba8a8ddfd585b7310f is on
+IvanCX/tinyfish-provider-source; original ancestry/payloads remain excluded.
+Personal-assistant planner prototypes are not a frozen handoff. No synthetic
+assistant account-write acceptance or real provider/account action is claimed.
 Required owner evidence includes durable run IDs, uncertain outcome reconciliation,
 remote cancel semantics/budgets, untrusted output handling and credential isolation;
 planner dedupe/done state, selected calendar/colour, DST/fixed commitments, stale
