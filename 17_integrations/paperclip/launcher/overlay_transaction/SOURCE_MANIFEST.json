@@ -1,54 +1,168 @@
 {
-  "schema": "paperclip_overlay_transaction_source/1",
-  "helper_commit": "bcff4f0fc2dfc3c63fcc6642802652b45e350185",
-  "driver_commit": "712d6e0d6e54c77823e9eae7c4c409f40b5f7ffa",
-  "driver_tree": "45c37293045a65da010c27bc68d749f4b29b4b4c",
-  "files": {
-    "paperclip_overlay.py": {
-      "sha256": "b700f0c5601bb531e38161a4d8ff3775185f3b1498a150521aeec93b0a3d5bad",
-      "git_blob": "72f3055c833aa57322f6f40c9f186c2c7ddd9794",
-      "bytes": 12426
-    },
-    "rehearse.py": {
-      "sha256": "1f57f7b5a666a835ef740521f1b39ffa46a8fc259c1d23358c2bc92be7bd3093",
-      "git_blob": "ebc13828fddfec815d5e2f1e9cb5480bdb384656",
-      "bytes": 9459
-    },
-    "stage_baseline.py": {
-      "sha256": "a512df48acfd9914b8b95f22d2688f1f79e2ca05f7740ed727a7a8fb58921a37",
-      "git_blob": "b99a41e567520e0cb7bb3af574a5182f73259767",
-      "bytes": 5339
-    },
-    "launcher_preflight.py": {
-      "sha256": "110cc78a8e4f84a80f038739224b108af9f611862191ff10e91e798ee23a8680",
-      "git_blob": "cd5fef98dfc0e654004ffddc6adc30aecd6aea5e",
-      "bytes": 3181
-    },
-    "run_preflights.py": {
-      "sha256": "f7e43df070f8ade91248b83a296af8f998048114188e025e20abfec06aceb8b8",
-      "git_blob": "a9f48e29d49fd81290ece9307a65e77d9237831c",
-      "bytes": 1315
-    }
-  },
+  "schema": "paperclip_overlay_transaction_source/2",
+  "snapshot_commit": "76c8c81d5a896d4955984c44e5b6fbe897fddc28",
+  "snapshot_tree": "b82342676de9218f63fe9a34f7a8a026adc135dc",
   "status": "DRAFT_CHANGES_REQUESTED_NOT_ADOPTION_APPROVED",
-  "working_tree_changes_excluded": [],
   "supported_baseline": "e04e2ae1a0d47cdedf5380b5a0d94f280a82d5d1",
   "overlay": "e8ad1fd98142e6a4f53172f143381a4fa4100dd7",
   "overlay_tree": "bdab2ce706f3e682781ad0e93da935155b937867",
   "approved_package_index_sha256": "20e991d6a0ee3d4aa1f959540b912b2430c5ec840a963ccf7106f7fc4efa7d63",
-  "installed_or_live_acceptance": false,
-  "excluded": [
-    "Private source histories",
-    "Built payloads and source maps",
-    "Owner rehearsal and run data",
-    "Credentials/configuration/databases",
-    "Uncommitted preflight wrapper"
-  ],
-  "snapshot_commit": "35658340a27419f3825cbb436baeaa8b6f702974",
-  "snapshot_tree": "a1f69c517b1662fc5bea45ce893b45b46c26842a",
+  "files": {
+    "TRANSACTION.md": {
+      "sha256": "8f8cccf02f5e886f342a04dc014803b8e261dd758d0382e54b0c282f731ec5d1",
+      "bytes": 7780,
+      "git_blob": "68d7d9a5b675b45873d9dd6661bbad3d0748b3e9"
+    },
+    "launcher_preflight.py": {
+      "sha256": "110cc78a8e4f84a80f038739224b108af9f611862191ff10e91e798ee23a8680",
+      "bytes": 3181,
+      "git_blob": "cd5fef98dfc0e654004ffddc6adc30aecd6aea5e"
+    },
+    "paperclip_overlay.py": {
+      "sha256": "5199e7c8f9769ee95c57da83bae39b454f23c07327f5bf150e2aeb62562c578b",
+      "bytes": 35088,
+      "git_blob": "afdeb3e67647dc6448a39a2d8625689dc892d3f0"
+    },
+    "rehearse.py": {
+      "sha256": "555cebcfeb42b2a3734e51a6b2545b809e7bf51a6bca2ba771a45ea0ad14fca0",
+      "bytes": 18126,
+      "git_blob": "99695ac8908267a9e9405895d4f1386b0986c4fe"
+    },
+    "run_preflights.py": {
+      "sha256": "f7e43df070f8ade91248b83a296af8f998048114188e025e20abfec06aceb8b8",
+      "bytes": 1315,
+      "git_blob": "a9f48e29d49fd81290ece9307a65e77d9237831c"
+    },
+    "stage_baseline.py": {
+      "sha256": "14d1d4b7cd1aa51884fd670cfeb1507ab1f6c328c81134c43086839a4a5a8403",
+      "bytes": 5552,
+      "git_blob": "73a90424f9a973e089007a64891144b594a75252"
+    },
+    "tests/fixture.py": {
+      "sha256": "511ec42939e1df80c1d09f55bb339924fd00b83dc32055c3e023348d644b1a90",
+      "bytes": 8060,
+      "git_blob": "21b8f9750a431dc969c33a3be6f1320249c10dbe"
+    },
+    "tests/run_with_spec.py": {
+      "sha256": "7627128d432d5309bea66d94e5dbb02e3043387b80dc945b4d492cbf3aae7acf",
+      "bytes": 606,
+      "git_blob": "cebf31b98017708e7d6262198775a0ec9f72f98e"
+    },
+    "tests/test_driver_gate.py": {
+      "sha256": "23ec8213f94ed498d7c9091ce43b3aa5fc2b3f3222e13adebc2f9409b936a821",
+      "bytes": 3579,
+      "git_blob": "3ff43074c6f5d8d7a246104517bd5b24eb0c7048"
+    },
+    "tests/test_transaction.py": {
+      "sha256": "869a7c2c48236fcae4aae834dcbfc1a83f01651cbf2922f9329a0d04208062f5",
+      "bytes": 18389,
+      "git_blob": "782ee3bc2839e9783fe5372561ec6deb9482360c"
+    }
+  },
+  "prior_snapshot_preserved_in_public_history": {
+    "schema": "paperclip_overlay_transaction_source/1",
+    "helper_commit": "bcff4f0fc2dfc3c63fcc6642802652b45e350185",
+    "driver_commit": "712d6e0d6e54c77823e9eae7c4c409f40b5f7ffa",
+    "driver_tree": "45c37293045a65da010c27bc68d749f4b29b4b4c",
+    "files": {
+      "paperclip_overlay.py": {
+        "sha256": "b700f0c5601bb531e38161a4d8ff3775185f3b1498a150521aeec93b0a3d5bad",
+        "git_blob": "72f3055c833aa57322f6f40c9f186c2c7ddd9794",
+        "bytes": 12426
+      },
+      "rehearse.py": {
+        "sha256": "1f57f7b5a666a835ef740521f1b39ffa46a8fc259c1d23358c2bc92be7bd3093",
+        "git_blob": "ebc13828fddfec815d5e2f1e9cb5480bdb384656",
+        "bytes": 9459
+      },
+      "stage_baseline.py": {
+        "sha256": "a512df48acfd9914b8b95f22d2688f1f79e2ca05f7740ed727a7a8fb58921a37",
+        "git_blob": "b99a41e567520e0cb7bb3af574a5182f73259767",
+        "bytes": 5339
+      },
+      "launcher_preflight.py": {
+        "sha256": "110cc78a8e4f84a80f038739224b108af9f611862191ff10e91e798ee23a8680",
+        "git_blob": "cd5fef98dfc0e654004ffddc6adc30aecd6aea5e",
+        "bytes": 3181
+      },
+      "run_preflights.py": {
+        "sha256": "f7e43df070f8ade91248b83a296af8f998048114188e025e20abfec06aceb8b8",
+        "git_blob": "a9f48e29d49fd81290ece9307a65e77d9237831c",
+        "bytes": 1315
+      }
+    },
+    "status": "DRAFT_CHANGES_REQUESTED_NOT_ADOPTION_APPROVED",
+    "working_tree_changes_excluded": [],
+    "supported_baseline": "e04e2ae1a0d47cdedf5380b5a0d94f280a82d5d1",
+    "overlay": "e8ad1fd98142e6a4f53172f143381a4fa4100dd7",
+    "overlay_tree": "bdab2ce706f3e682781ad0e93da935155b937867",
+    "approved_package_index_sha256": "20e991d6a0ee3d4aa1f959540b912b2430c5ec840a963ccf7106f7fc4efa7d63",
+    "installed_or_live_acceptance": false,
+    "excluded": [
+      "Private source histories",
+      "Built payloads and source maps",
+      "Owner rehearsal and run data",
+      "Credentials/configuration/databases",
+      "Uncommitted preflight wrapper"
+    ],
+    "snapshot_commit": "35658340a27419f3825cbb436baeaa8b6f702974",
+    "snapshot_tree": "a1f69c517b1662fc5bea45ce893b45b46c26842a",
+    "independent_static_review": {
+      "verdict": "CHANGES_REQUESTED",
+      "findings": "Rollback drift/recovery, physical path ownership, Git authority/journal/ref ownership and missing target lock; driver expectation accounting.",
+      "execution": "Static review only; actual independent execution reported separately."
+    }
+  },
   "independent_static_review": {
     "verdict": "CHANGES_REQUESTED",
-    "findings": "Rollback drift/recovery, physical path ownership, Git authority/journal/ref ownership and missing target lock; driver expectation accounting.",
-    "execution": "Static review only; actual independent execution reported separately."
+    "findings": [
+      "Missing-component rollback provenance",
+      "Physical ownership of internal Git and absent restore paths"
+    ],
+    "execution": "Counterexamples recorded separately from static review and owner totals."
+  },
+  "owner_evidence": {
+    "regression_tests": 33,
+    "driver_gate_tests": 8,
+    "real_package_rehearsal": 18,
+    "independent": false
+  },
+  "installed_or_live_acceptance": false,
+  "excluded": [
+    "Private Git ancestry and bundles",
+    "Built payloads",
+    "Owner and reviewer runtime receipts",
+    "Private configuration and account/profile data"
+  ],
+  "independent_regression_port": {
+    "path": "independent_tests/transaction_boundary_probes.py",
+    "origin": "independent F1/F2 probe retained with exact assertions",
+    "original_sha256": "1a696414d64116bec08b7e51d1b1da65c390cfb55585c000e5e013f2432e8538",
+    "published_sha256": "9a1c22b77f77444e93c8e98db1edf04b94e35d7e5dac74a03d0b513fefc8b534",
+    "transformations": [
+      "Caller supplies two disjoint task-owned fixture/evidence directories",
+      "Source resolves to adjacent exact published source directory",
+      "Preserve inherited PATH rather than host literal"
+    ],
+    "actual_original_execution": {
+      "passed": 0,
+      "red": 2,
+      "setup_errors": 0
+    },
+    "portable_port_execution": {
+      "executed": 2,
+      "passed": 0,
+      "red": 2,
+      "setup_errors": 0,
+      "exit": 1,
+      "interpretation": "Same expected ownership assertions fail; no product acceptance granted"
+    }
+  },
+  "raw_source_preservation": {
+    "attribute_file": ".gitattributes",
+    "rule": "source/** -text",
+    "reason": "Preserve exact original committed bytes of the reviewed source snapshot, including CRLF Python and Markdown blobs",
+    "global_git_config_changed": false,
+    "product_source_transformed": false
   }
 }

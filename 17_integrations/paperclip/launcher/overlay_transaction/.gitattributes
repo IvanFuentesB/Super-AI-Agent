@@ -1,0 +1,2 @@
+# Preserve exact original Git bytes for this reviewed source snapshot.
+source/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

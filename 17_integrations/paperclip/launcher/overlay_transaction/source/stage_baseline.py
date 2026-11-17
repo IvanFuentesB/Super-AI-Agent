@@ -73,6 +73,8 @@ def main(intake, root):
             _winapi.CreateJunction(str(intake / rel / "node_modules"), str(target / rel / "node_modules"))
             junctions.append((rel / "node_modules").as_posix())
         dirnames[:] = [d for d in dirnames if d not in ("node_modules", "dist")]
+    # Rehearsal-only marker: the helper honours its test hooks only on a target carrying it.
+    (target / ".git" / "paperclip-overlay-test-staging").write_text("disposable rehearsal staging\n", encoding="utf-8")
     # Sentinels for unrelated, untracked state that the overlay must not touch.
     for rel in (".cache/sentinel.txt", "server/node-compile-cache/sentinel.txt", "UNTRACKED_SENTINEL.txt"):
         (target / rel).parent.mkdir(parents=True, exist_ok=True)
