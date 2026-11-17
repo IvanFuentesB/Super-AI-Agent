@@ -1,0 +1,48 @@
+{
+  "schema": "native_host_sdk_source/1",
+  "source_commit": "77e9006fcc125fafc49b550b309718807a37904d",
+  "source_tree": "ecc2bf9009d53af7150a4055b7168da310048af9",
+  "source_parent": "ed090282671fb9ba7fafda264c5d5a9cfb942be4",
+  "files": {
+    "cua_observation.py": {
+      "original_path": "03_scripts/ghoti_runtime/cua_observation.py",
+      "sha256": "ffd67624b775b5de8cdf856de86f872c839818f533bcf8485610cca0994414df",
+      "bytes": 5356
+    },
+    "test_cua_observation.py": {
+      "original_path": "03_scripts/ghoti_runtime/test_cua_observation.py",
+      "sha256": "7859e13ebb677b9a03d3be3ff45469b317a28116caee158c966475ffe6e82d43",
+      "bytes": 5067
+    },
+    "cua-sdk-requirements.txt": {
+      "original_path": "03_scripts/ghoti_runtime/cua-sdk-requirements.txt",
+      "sha256": "ee7c7e95162ba39dbe8c18bbb0f53546c5912dd6db01656a83cd57b73e8cc378",
+      "bytes": 203
+    },
+    "CUA_HOST_CONNECTION.md": {
+      "original_path": "03_scripts/ghoti_runtime/CUA_HOST_CONNECTION.md",
+      "sha256": "b80d4bf877c07dd202136f99afa0fcf99474bd1e739b15e4d2ecae7c8d94a8b4",
+      "bytes": 4680
+    }
+  },
+  "transformation": "None; exact source blobs, relative import companions preserved",
+  "review_verdict": "APPROVED_PARTIAL_DENY_ONLY_NOT_ADOPTION_READY",
+  "independent_tests": {
+    "passed": 10,
+    "failed": 0,
+    "native_callback_delivery_proved": false
+  },
+  "installed": false,
+  "browser_attached": false,
+  "private_history_imported": false,
+  "pending": [
+    "Human decision integration",
+    "Native callback successor",
+    "Trusted binding checks and live authorization"
+  ],
+  "excluded": [
+    "Untracked owner prototypes",
+    "Runtime receipts and wheel/DLL",
+    "Private profiles and configuration"
+  ]
+}
