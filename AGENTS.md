@@ -14,6 +14,26 @@ This file is loaded automatically, so it stays concise.
 - One agent owns one task on one branch in one worktree. Do not edit another lane's
   worktree, and do not edit the dirty primary worktree except read-only.
 
+## Goal-to-proof loop
+
+- Begin with the user-visible outcome, minimal scope and concrete proof. Use
+  just-in-time planning for nontrivial changes; small fixes need no extra ritual.
+- Read relevant current source, accepted PRs, installed state and retained failures
+  before rebuilding or repeating tests. A report is not a runtime result.
+- Keep one implementation owner per file set. Delegate independent exploration,
+  tests and design critique only with disjoint ownership and clear outputs.
+- Iterate: reproduce -> change -> affected build/tests -> actual app or UI check
+  where supported. Keep original failing assertions; separate environment failures,
+  synthetic proof and authenticated installed behavior.
+- Require independent review of a frozen candidate. Let automated checks handle
+  mechanical issues; retain human judgment on security, intent and visual quality.
+- Publish safe source and verify the remote PR; separately verify deployment and
+  the actual user journey. A passing test or a merged PR is not installation.
+- Convert repeated real failures into focused regression tests or reviewed skills;
+  retire obsolete procedures when they add friction without protecting outcomes.
+- Track accepted user journeys, cycle time, regressions and source-to-installed
+  latency rather than using lines of code, agent count or test totals alone.
+
 ## Branch & worktree
 
 - Work on a feature branch in a repo-contained worktree under `.claude/worktrees/`.
