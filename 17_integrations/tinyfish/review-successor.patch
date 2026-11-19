@@ -1,0 +1,611 @@
+diff --git a/01_projects/ghoti_os_app/tests/test_tinyfish_adapter.py b/01_projects/ghoti_os_app/tests/test_tinyfish_adapter.py
+index c558c7b997f707a7d6373374c8ba5f6a404b49b4..bee71b6eb5c9aa6e8066682c47328381f1546a85 100644
+--- a/01_projects/ghoti_os_app/tests/test_tinyfish_adapter.py
++++ b/01_projects/ghoti_os_app/tests/test_tinyfish_adapter.py
+@@ -751,5 +751,277 @@ class SecurityFollowUps(Base):
+         self.assertEqual(record["provider"]["schema"], "ghoti_provider_run/1")
+ 
+ 
++class ReviewFollowUps(Base):
++    """Regressions for the review follow-ups: durable provider index, approval-queue authority,
++    persistence-boundary redaction and the result route's provider-record contract."""
++
++    QUEUE_ID = "req-tinyfish-test01"
++    FINGERPRINT = "fp-synthetic-0001"
++    GRANT_ID = "grant-tinyfish-test01"
++    GRANT_EXPIRES = "2099-01-01T00:00:00Z"
++
++    # -- helpers
++    def add_unrelated_jobs(self, count=120):
++        from ghoti_runtime.contracts import Task
++        for i in range(count):
++            created = f"2999-01-01T00:{i // 60:02}:{i % 60:02}+00:00"  # later than every TinyFish record
++            self.store.save_task(Task(task_id=f"task-unrelated-{i:03}", title="Unrelated", intent="local",
++                                      created_at=created, created_by="test:local"))
++
++    def assert_outside_recent_window(self, task_id):
++        self.assertNotIn(task_id, [r["task"]["task_id"] for r in self.store.recent(100)],
++                         "precondition: the TinyFish record must be outside the jobs list's recent window")
++
++    def token(self, rid=None):
++        rid = rid or self.QUEUE_ID
++        import hashlib
++        return hashlib.sha256(f"explicit-local-approval:{rid}:{self.FINGERPRINT}".encode()).hexdigest()
++
++    def queue_record(self, rid=None):
++        rid = rid or self.QUEUE_ID
++        token = self.token(rid)
++        scope = tinyfish.scope_sha256(tinyfish.load_config(self.store, self.clock))
++        return {"request": {"request_id": rid, "approval_state": "approved", "approval_token_hash": token,
++                            "grant_id": self.GRANT_ID, "payload": {"provider_scope_sha256": scope},
++                            "capability_grant": {"schema": "ghoti_capability_grant/1", "grant_id": self.GRANT_ID,
++                                                 "revoked": False, "approval": {"approved": True, "token_hash": token},
++                                                 "expires_at": self.GRANT_EXPIRES,
++                                                 "capabilities": [tinyfish.GRANT_CAPABILITY],
++                                                 "targets": [tinyfish.GRANT_TARGET]}},
++                "guard_decision": {"allow": True, "request_fingerprint": self.FINGERPRINT}}
++
++    def queue_env(self, mutate=None, rid=None, write=True, extra_state=None):
++        """Fresh env whose adapter verifies a synthetic approval queue under the test root."""
++        rid = rid or self.QUEUE_ID
++        self.env(Fake(start=[resp(200, {"run_id": "run_q"})]), approval_request_id=rid)
++        qroot = self.store.root / "approval_queue"
++        if write:
++            record = self.queue_record(rid)
++            if mutate:
++                mutate(record)
++            (qroot / "approved").mkdir(parents=True, exist_ok=True)
++            (qroot / "approved" / f"{rid}.json").write_text(json.dumps(record), encoding="utf-8")
++        if extra_state:
++            (qroot / extra_state).mkdir(parents=True, exist_ok=True)
++            (qroot / extra_state / f"{rid}.json").write_text("{}", encoding="utf-8")
++        self.tf = tinyfish.TinyFish(self.store, transport=self.fake, api_key=KEY, clock=self.clock,
++                                    sleep=self.clock.sleep, authority=tinyfish.QueueAuthority(qroot))
++        return self.tf
++
++    def assert_no_secret_on_disk(self, secret):
++        files = list(self.all_store_bytes())
++        self.assertTrue(files)
++        for path, data in files:
++            self.assertNotIn(secret.encode(), data, f"{secret!r} persisted in {path}")
++        return [p for p, _ in files]
++
++    # -- a..d: durable provider index
++    def test_unconfirmed_run_still_refuses_duplicate_and_busy_after_120_unrelated_jobs(self):
++        self.env(Fake(start=[tinyfish.TransportError("Timeout")]))
++        task = self.tf.start(URL, QUESTION)["task_id"]
++        self.add_unrelated_jobs()
++        self.assert_outside_recent_window(task)
++        again = self.tf.start(URL, QUESTION)
++        self.assertEqual(again["status"], "DUPLICATE_REFUSED")
++        self.assertEqual(again["task_id"], task)
++        self.assertEqual(len(self.fake.posts), 1)
++        self.assertEqual(self.tf.start(URL, "A different question")["status"], "BUSY")
++        self.assertEqual(len(self.fake.posts), 1)
++
++    def test_daily_limit_counts_runs_outside_the_recent_window(self):
++        self.env(Fake(start=[resp(200, {"run_id": "run_1"}), resp(200, {"run_id": "run_2"})]),
++                 max_runs_per_day=1, max_concurrent_runs=2)
++        task = self.tf.start(URL, QUESTION)["task_id"]
++        self.fake.queues["get"] = [completed()]
++        self.assertEqual(self.tf.poll(task)["status"], "COMPLETED")
++        self.add_unrelated_jobs()
++        self.assert_outside_recent_window(task)
++        self.assertEqual(self.tf.start(URL, "A different question")["status"], "DAILY_LIMIT")
++        self.assertEqual(len(self.fake.posts), 1)
++
++    def test_pre_index_uncertain_run_blocks_duplicate_after_upgrade(self):
++        self.env(Fake(start=[tinyfish.TransportError("Timeout")]))
++        task = self.tf.start(URL, QUESTION)["task_id"]
++        self.store.path(f"{tinyfish.INDEX_DIR}/{task}.json").unlink()
++        record = self.store.path(f"ghoti_runtime_runs/{task}.json")
++        original = record.read_bytes()
++        self.add_unrelated_jobs()
++        self.assert_outside_recent_window(task)
++        self.tf = tinyfish.TinyFish(self.store, transport=self.fake, api_key=KEY, clock=self.clock)
++
++        again = self.tf.start(URL, QUESTION)
++        self.assertEqual(again["status"], "DUPLICATE_REFUSED")
++        self.assertEqual(again["task_id"], task)
++        self.assertEqual(len(self.fake.posts), 1)
++        self.assertEqual(record.read_bytes(), original)
++
++    def test_legacy_and_indexed_runs_share_one_daily_limit(self):
++        self.env(Fake(start=[resp(200, {"run_id": "run_1"}), resp(200, {"run_id": "run_2"})]),
++                 max_runs_per_day=2, max_concurrent_runs=2)
++        legacy = self.tf.start(URL, QUESTION)["task_id"]
++        self.store.path(f"{tinyfish.INDEX_DIR}/{legacy}.json").unlink()
++        second = self.tf.start(URL, "A different question")
++        self.assertEqual(second["status"], "ACCEPTED")
++        self.assertEqual(self.tf.start(URL, "A third question")["status"], "BUSY")
++        self.fake.queues["get"] = [completed("run_1")]
++        self.assertEqual(self.tf.poll(legacy)["status"], "COMPLETED")
++        self.assertEqual(self.tf.start(URL, "A third question")["status"], "DAILY_LIMIT")
++        self.assertEqual(len(self.fake.posts), 2)
++
++    def test_resume_finds_an_active_run_outside_the_recent_window(self):
++        task = self.started()
++        self.add_unrelated_jobs()
++        self.assert_outside_recent_window(task)
++        self.fake.queues["get"] = [completed()]
++        out = self.tf.resume()
++        self.assertEqual([o["status"] for o in out], ["COMPLETED"])
++        self.assertEqual(len(self.fake.of("get")), 1)
++        self.assertEqual(self.record(task)["provider"]["state"], "completed")
++
++    def test_indexed_run_without_a_readable_record_blocks_new_starts(self):
++        for label in ("missing", "unreadable"):
++            with self.subTest(label):
++                task = self.started()
++                self.fake.queues["get"] = [completed()]
++                self.tf.poll(task)  # terminal: without the strict index check a new start would be accepted
++                self.assertTrue(self.store.path(f"{tinyfish.INDEX_DIR}/{task}.json").is_file())
++                path = self.store.path(f"ghoti_runtime_runs/{task}.json")
++                if label == "missing":
++                    path.unlink()
++                else:
++                    path.write_bytes(b"{not json")
++                self.fake.queues["start"] = [resp(200, {"run_id": "run_2"})]
++                with self.assertRaises(RuntimeError):
++                    self.tf.start(URL, "Another question")
++                self.assertEqual(len(self.fake.posts), 1, "nothing sent while an indexed outcome is unknown")
++
++    # -- e, f: approval-queue authority
++    def test_queue_authority_missing_record_is_not_configured(self):
++        self.queue_env(write=False)
++        self.assertEqual(self.tf.readiness()["state"], "not_configured")
++        self.assertEqual(self.tf.start(URL, QUESTION)["status"], "NOT_CONFIGURED")
++        self.assertEqual(self.fake.posts, [])
++
++    def test_queue_authority_valid_grant_is_ready_and_recorded(self):
++        self.queue_env()
++        self.assertEqual(self.tf.readiness()["state"], "ready")
++        out = self.tf.start(URL, QUESTION)
++        self.assertEqual(out["status"], "ACCEPTED")
++        self.assertEqual(len(self.fake.posts), 1)
++        self.assertEqual(self.record(out["task_id"])["provider"]["queue_grant"],
++                         {"request_id": self.QUEUE_ID, "grant_id": self.GRANT_ID, "expires_at": self.GRANT_EXPIRES})
++
++    def test_queue_authority_refuses_each_defect(self):
++        def setp(*keys, value):
++            def mutate(record):
++                target = record
++                for k in keys[:-1]:
++                    target = target[k]
++                target[keys[-1]] = value
++            return mutate
++        cases = {
++            "wrong scope digest": dict(mutate=setp("request", "payload", "provider_scope_sha256", value="0" * 64)),
++            "missing capability": dict(mutate=setp("request", "capability_grant", "capabilities", value=["other.cap"])),
++            "revoked": dict(mutate=setp("request", "capability_grant", "revoked", value=True)),
++            "expired grant": dict(mutate=setp("request", "capability_grant", "expires_at", value="1970-01-02T00:00:00Z")),
++            "tampered token": dict(mutate=setp("request", "approval_token_hash", value="0" * 64)),
++            "rejected present": dict(extra_state="rejected"),
++            "non-req id": dict(rid="approval-tinyfish-test"),
++        }
++        for label, kwargs in cases.items():
++            with self.subTest(label):
++                self.queue_env(**kwargs)
++                self.assertEqual(self.tf.readiness()["state"], "not_configured")
++                self.assertEqual(self.tf.start(URL, QUESTION)["status"], "NOT_CONFIGURED")
++                self.assertEqual(self.fake.posts, [])
++
++    def test_real_transport_defaults_to_the_queue_authority(self):
++        self.env()
++        real = tinyfish.TinyFish(self.store, api_key=KEY)  # constructs HttpTransport; sends nothing
++        self.assertIsInstance(real.authority, tinyfish.QueueAuthority)
++        self.assertIsInstance(real.transport, tinyfish.HttpTransport)
++        self.assertIsNone(self.tf.authority, "an injected fake transport without an authority skips the queue check")
++
++    # -- g: persistence-boundary redaction
++    def test_key_echoed_by_provider_never_reaches_any_persisted_file(self):
++        self.env(Fake(start=[resp(400, {"error": {"message": f"bad key {KEY}"}})]))
++        self.assertEqual(self.tf.start(URL, QUESTION)["status"], "REJECTED")
++        files = self.assert_no_secret_on_disk(KEY)
++        self.assertTrue(any(tinyfish.INDEX_DIR.split("/")[0] in p.parts for p in files))
++
++        leaky = {"summary": f"Summary mentioning {KEY}", "items": [
++            {"name": f"Feature {KEY}", "detail": f"Uses key {KEY}", "source_url": "https://docs.tinyfish.ai/a"}]}
++        task = self.started()
++        self.fake.queues["get"] = [completed(result=leaky)]
++        self.assertEqual(self.tf.poll(task)["status"], "COMPLETED")
++        self.assertTrue(self.output_path(task).exists())
++        files = self.assert_no_secret_on_disk(KEY)
++        self.assertIn(self.output_path(task), files)
++        self.assertIn(self.store.path(f"{tinyfish.INDEX_DIR}/{task}.json"), files)
++        self.assertIn("***", self.store.read(f"ghoti_runtime_runs/{task}.output.json")["text"])
++
++    def test_key_shaped_question_text_is_not_persisted(self):
++        for question in ("List features with api_key=SECRETVALUE123", "List features; header X-API-Key SECRETVALUE123"):
++            with self.subTest(question=question):
++                self.env(Fake(start=[resp(200, {"run_id": "run_1"})]))
++                try:
++                    self.tf.start(URL, question)
++                except ValueError:
++                    pass  # refused before anything is recorded is also acceptable
++                for path, data in self.all_store_bytes():
++                    self.assertNotIn(b"SECRETVALUE123", data, f"key-shaped text persisted in {path}")
++        # the second form passes input validation, so the redaction itself is exercised
++        self.assertEqual(len(self.fake.posts), 1)
++
++    # -- h: result route contract
++    def test_check_provider_result_accepts_a_real_run_and_refuses_each_defect(self):
++        task = self.started("run_route")
++        self.fake.queues["get"] = [completed("run_route")]
++        self.tf.poll(task)
++        record = self.record(task)
++        payload = self.store.read(f"ghoti_runtime_runs/{task}.output.json")
++        import hashlib
++        sha = hashlib.sha256
++        self.assertEqual(tinyfish.check_provider_result(task, record, payload)["schema"], "ghoti_web_research_result/1")
++
++        def with_text(text):
++            def fn(rec, pay):
++                pay["text"] = text
++                pay["sha256"] = sha(text.encode()).hexdigest()
++            return fn
++
++        def with_result(**changes):
++            def fn(rec, pay):
++                result = json.loads(pay["text"])
++                result.update(changes)
++                with_text(json.dumps(result))(rec, pay)
++            return fn
++
++        cases = {
++            "text is a list": with_text("[1]"),
++            "text is null": with_text("null"),
++            "text is a string": with_text('"s"'),
++            "wrong provider name": (lambda r, p: r["provider"].__setitem__("provider", "other")),
++            "provider state not completed": (lambda r, p: r["provider"].__setitem__("state", "running")),
++            "task operation changed": (lambda r, p: r["task"].__setitem__("operation", "other_op")),
++            "run_id mismatch in result": with_result(run_id="run_other"),
++            "sha256 mismatch": (lambda r, p: p.__setitem__("sha256", "0" * 64)),
++            "payload task_id mismatch": (lambda r, p: p.__setitem__("task_id", "task-other")),
++            "output_paths mismatch": (lambda r, p: r["task"]["result"].__setitem__(
++                "output_paths", ["ghoti_runtime_runs/task-other.output.json"])),
++            "text over 8000 chars": with_result(pad="x" * 8100),
++        }
++        for label, fn in cases.items():
++            with self.subTest(label):
++                rec, pay = copy.deepcopy(record), copy.deepcopy(payload)
++                fn(rec, pay)
++                with self.assertRaises(ValueError):
++                    tinyfish.check_provider_result(task, rec, pay)
++        for label, bad_payload in (("list", [payload]), ("string", "x"), ("none", None)):
++            with self.subTest(f"payload not a dict: {label}"):
++                with self.assertRaises(ValueError):
++                    tinyfish.check_provider_result(task, copy.deepcopy(record), bad_payload)
++
++
+ if __name__ == "__main__":
+     unittest.main()
+diff --git a/03_scripts/ghoti_runtime/TINYFISH.md b/03_scripts/ghoti_runtime/TINYFISH.md
+index 3cccb403cd741011f951b73186bb1f57e702d194..db0c7c32c10fbc29721618f00356d18613eba9a7 100644
+--- a/03_scripts/ghoti_runtime/TINYFISH.md
++++ b/03_scripts/ghoti_runtime/TINYFISH.md
+@@ -23,7 +23,8 @@ Documented facts that shape the adapter:
+ - **No idempotency key.** Duplicate protection is local: the submission intent is recorded before the request; an identical request is refused while one is active; and an uncertain submission (no response, 5xx, malformed 200) is **never resubmitted**. If you find the run on the TinyFish dashboard, attach it with `adopt`.
+ 
+ ## Controls Ghoti enforces
+-- **Disabled by default.** The adapter needs both `TINYFISH_API_KEY` in the runtime process environment and an owner approval record (below). Otherwise each attempt is recorded as `not_configured` and nothing is sent.
++- **Disabled by default.** The adapter needs `TINYFISH_API_KEY` in the runtime process environment, an owner approval record (below) and an approved approval-queue grant for that record. Otherwise each attempt is recorded as `not_configured` and nothing is sent.
++- **Trusted grant (approval queue):** the approval record's `approval_request_id` must name a request in the existing approval queue (`14_context/agent_os/approval_queue`). That request must be in `approved` (never `rejected`, `failed` or `executed`), with the queue's own approval token, an unrevoked and unexpired `ghoti_capability_grant/1` whose capabilities include `provider.tinyfish.web_research` and whose targets include `provider:tinyfish`, and `payload.provider_scope_sha256` equal to the digest of the approved hosts and limits. A hand-edited JSON record alone authorises nothing. **Today's queue issues only local grants (repo-local targets, budget 0), so no such grant exists and live TinyFish runs stay disabled until a host owner adds a reviewed issuer for external, metered grants.** The queue files are local files: this binds the run to the existing approval flow and its audit trail; it is not a cryptographic signature.
+ - **Targets:** https only, default port, no credentials. No query string or fragment, and no encoded or backslash host. The hostname must be on the owner's `approved_hosts` list. IP literals, numeric hosts, `localhost` and private-use suffixes are refused. The normalized URL is what is sent.
+ - **Task text:** it may not name other sites, domains or addresses. It is quoted as data first, and the rules follow it, including "stay on <host>; do not follow links or redirects to other hosts". Redirects or links on an approved host can still move the provider's agent; that cannot be enforced locally. Result items citing other hosts are flagged.
+ - **Approval scope:** the approval record must carry an `expires_at` in the future. It caps runs per day (`max_runs_per_day`, default 5) and concurrency. Only the `lite` browser profile is accepted; `stealth`, which exists for bot-detection evasion, is refused. The record's digest is pinned into each run record.
+@@ -32,6 +33,8 @@ Documented facts that shape the adapter:
+ - **Key handling:** the key is read only from the environment and sent only in the request header. It is redacted from every stored event and error. The transport ignores environment proxies and refuses redirects, so the key never follows a 3xx to another host.
+ - **Bounded records:** provider-controlled values are stored with size limits, so a run record cannot grow beyond the store limit and disappear from the jobs list.
+ - **Locking:** every record change happens under one provider lock, including the start request. A record left `submitting` by a dead process becomes `submission_unconfirmed` and is never resubmitted.
++- **Durable run index:** every TinyFish run gets a pointer `ghoti_provider_runs/tinyfish/<task>.json`, written before its run record and never pruned. Duplicate, concurrency, daily-limit, adopt and resume checks read this index, not the jobs list's 100 most recent records, so any number of unrelated jobs cannot hide an unresolved submission. An indexed run whose record cannot be read is an unknown outcome: no new run is started until the owner repairs it.
++- **Redaction at the persistence boundary:** every string saved in a run record (the whole provider block, the task text, blocker and history notes) and in the result file is redacted for the key and key-shaped values before it is written. This can also mask harmless text such as `api_key=...` in a question or URL path.
+ - **Untrusted content:** results are stored as data. The UI renders them as plain text: no HTML, no links.
+ 
+ ## Configure (host owner)
+@@ -56,7 +59,7 @@ States shown: `not_configured`, `submitting`, `submission_unconfirmed`, `rejecte
+ 
+ `checked: true` on a TinyFish task means schema-valid only. The result is untrusted page content and is not written to Ghoti memory.
+ 
+-The result view goes through the existing `/api/runtime/result/<task>` route. A provider result carries URLs, which Ghoti's local-text filter refuses, so for a record with a `ghoti_provider_run/1` block the route checks instead that the text is at most 8000 characters, parses as `ghoti_web_research_result/1` and is bound to its task id.
++The result view goes through the existing `/api/runtime/result/<task>` route. A provider result carries URLs, which Ghoti's local-text filter refuses, so for a record with a `ghoti_provider_run/1` block the route checks instead (`tinyfish.check_provider_result`) that the provider is `tinyfish`, the run is `completed` and the task `succeeded` with operation `tinyfish_web_research`, the output path, task id, run id and SHA-256 all match the record, and the text is at most 8000 characters and parses as a `ghoti_web_research_result/1` object. Anything else, malformed or non-object JSON included, is not found.
+ 
+ ## Rollback
+ - **Disable:** set `enabled: false` in the approval record, or delete the record and remove the environment variable. Existing run records stay readable.
+diff --git a/03_scripts/ghoti_runtime/local_service.py b/03_scripts/ghoti_runtime/local_service.py
+index e9335b4090639585a229f05fa98ab743f06d2c88..493fff8b2356b5711262642a5bec88b8903ea888 100644
+--- a/03_scripts/ghoti_runtime/local_service.py
++++ b/03_scripts/ghoti_runtime/local_service.py
+@@ -313,14 +313,12 @@ class RuntimeHandler(dashboard.GhotiHandler):
+                 provider = record.get("provider") if isinstance(record.get("provider"), dict) else None
+                 if provider and provider.get("schema") == "ghoti_provider_run/1":
+                     # Provider results carry URLs and untrusted page text, which the local-text filter would
+-                    # refuse; they are bounded JSON of a fixed schema instead, rendered as plain text by the UI.
+-                    if (not isinstance(payload.get("text"), str) or len(payload["text"]) > 8000
+-                            or json.loads(payload["text"]).get("schema") != "ghoti_web_research_result/1"
+-                            or payload.get("task_id") != task_id):
+-                        raise ValueError("invalid provider result")
++                    # refuse; only the supported provider's completed, task- and run-bound result qualifies.
++                    from ghoti_runtime.tinyfish import check_provider_result
++                    check_provider_result(task_id, record, payload)
+                 else:
+                     safe_text(payload["text"], 8000)
+-            except (OSError, ValueError, KeyError, TypeError):
++            except (OSError, ValueError, KeyError, TypeError, AttributeError):
+                 return self.send_json({"outcome": "NOT_FOUND"}, 404)
+             return self.send_json(payload)
+         if path.startswith("/api/"):
+diff --git a/03_scripts/ghoti_runtime/tinyfish.py b/03_scripts/ghoti_runtime/tinyfish.py
+index 148e62913ab69565acba059713d1cc8de2bc8ee3..757574b65ce935ee12485ec3796f6d8936a2801b 100644
+--- a/03_scripts/ghoti_runtime/tinyfish.py
++++ b/03_scripts/ghoti_runtime/tinyfish.py
+@@ -61,6 +61,16 @@ ACTIVE = {"submitting", "submission_unconfirmed", "pending", "running", "cancel_
+ PRIVATE_SUFFIXES = (".local", ".localhost", ".internal", ".intranet", ".lan", ".home", ".corp", ".test",
+                     ".invalid", ".example", ".arpa", ".localdomain", ".private", ".onion")
+ RESULT_LIMIT = 8000
++# Durable provider index: one pointer per run, written before the run record and never pruned, so duplicate,
++# concurrency, daily-limit and recovery checks never depend on the jobs list's recent-records window.
++INDEX_DIR = "ghoti_provider_runs/tinyfish"
++# The existing approval queue is the issuer of record. Its grants today are local-only (targets
++# repo-local-text-artifacts, budget 0), so none of them can authorise this metered external call: a live run
++# needs a grant that names this capability and target and binds the exact approved scope.
++QUEUE_ROOT = Path(__file__).resolve().parents[2] / "14_context" / "agent_os" / "approval_queue"
++GRANT_CAPABILITY = "provider.tinyfish.web_research"
++GRANT_TARGET = "provider:tinyfish"
++QUEUE_ID = re.compile(r"req-[a-z0-9][a-z0-9-]{7,63}")
+ 
+ 
+ def _goal(question: str, host: str) -> str:
+@@ -184,6 +194,58 @@ def load_config(store: RunStore, clock=time.time) -> dict:
+     return cfg
+ 
+ 
++def scope_sha256(cfg: dict) -> str:
++    """Digest of what the owner approved; a queue grant must carry exactly this to authorise it."""
++    scope = {k: cfg[k] for k in ("max_duration_seconds", "local_deadline_seconds", "max_concurrent_runs",
++                                 "max_runs_per_day", "max_steps", "browser_profile")}
++    scope["approved_hosts"] = sorted(cfg["approved_hosts"])
++    return hashlib.sha256(json.dumps(scope, sort_keys=True).encode()).hexdigest()
++
++
++class QueueAuthority:
++    """Verifies that the approval record is backed by an approved, unexpired, unrevoked approval-queue grant
++    for this provider and this exact scope. Absent or mismatched means not configured; nothing is sent."""
++
++    def __init__(self, root: Path = QUEUE_ROOT):
++        self.root = Path(root)
++
++    def verify(self, cfg: dict, now: float) -> dict:
++        rid = str(cfg["approval_request_id"])
++        if not QUEUE_ID.fullmatch(rid):
++            raise NotConfigured("approval_request_id must name an approval-queue request (req-...)")
++        for state in ("rejected", "failed", "executed"):
++            if (self.root / state / f"{rid}.json").exists():
++                raise NotConfigured(f"approval-queue request {rid} is {state}")
++        try:
++            record = json.loads((self.root / "approved" / f"{rid}.json").read_text(encoding="utf-8"))
++        except (OSError, ValueError):
++            raise NotConfigured(f"no approved approval-queue request {rid}") from None
++        try:
++            req, guard = record["request"], record["guard_decision"]
++            grant, approval = req["capability_grant"], req["capability_grant"]["approval"]
++            token = hashlib.sha256(
++                f"explicit-local-approval:{rid}:{guard['request_fingerprint']}".encode()).hexdigest()
++            expires = datetime.fromisoformat(str(grant["expires_at"]).replace("Z", "+00:00"))
++            problems = [name for name, ok in (
++                ("request id", req["request_id"] == rid),
++                ("approval state", req["approval_state"] == "approved"),
++                ("guard decision", guard.get("allow") is True),
++                ("approval token", req["approval_token_hash"] == token),
++                ("grant schema", grant["schema"] == "ghoti_capability_grant/1" and grant["grant_id"] == req["grant_id"]),
++                ("grant revoked", grant["revoked"] is False),
++                ("grant approval", approval["approved"] is True and approval["token_hash"] == token),
++                ("grant expiry", expires.tzinfo is not None and expires.timestamp() > now),
++                ("provider capability", GRANT_CAPABILITY in grant["capabilities"]),
++                ("provider target", GRANT_TARGET in grant["targets"]),
++                ("approved scope", (req.get("payload") or {}).get("provider_scope_sha256") == scope_sha256(cfg)),
++            ) if not ok]
++        except (KeyError, TypeError, AttributeError, ValueError) as err:
++            raise NotConfigured(f"approval-queue request {rid} is malformed ({type(err).__name__})") from None
++        if problems:
++            raise NotConfigured(f"approval-queue request {rid} does not grant this TinyFish scope: {', '.join(problems)}")
++        return {"request_id": rid, "grant_id": grant["grant_id"], "expires_at": grant["expires_at"]}
++
++
+ def public_hostname(host) -> str:
+     if not isinstance(host, str) or len(host) > 253 or not re.fullmatch(
+             r"[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+", host):
+@@ -247,16 +309,24 @@ class TinyFish:
+     """All provider I/O goes through `transport.request`; every state change is persisted under the lock."""
+ 
+     def __init__(self, store: RunStore, transport=None, *, api_key: str | None = None, clock=time.time,
+-                 sleep=time.sleep):
++                 sleep=time.sleep, authority=None):
+         self.store, self.clock, self.sleep = store, clock, sleep
+         self.api_key = api_key if api_key is not None else os.environ.get(ENV_KEY)
+         self.redact = Redactor(self.api_key)
++        # The real HTTP transport always requires the approval-queue grant. An injected transport (tests, no
++        # network) uses only the authority it is given.
++        self.authority = authority if authority is not None or transport is not None else QueueAuthority()
+         self.transport = transport if transport is not None or not self.api_key else HttpTransport(self.api_key)
+ 
++    def _config(self) -> dict:
++        cfg = load_config(self.store, self.clock)
++        cfg["queue_grant"] = self.authority.verify(cfg, self.clock()) if self.authority is not None else None
++        return cfg
++
+     # -- readiness
+     def readiness(self) -> dict:
+         try:
+-            cfg = load_config(self.store, self.clock)
++            cfg = self._config()
+         except NotConfigured as err:
+             return {"provider": "tinyfish", "state": "not_configured", "reason": str(err),
+                     "credential_present": bool(self.api_key)}
+@@ -312,6 +382,18 @@ class TinyFish:
+             self._save(task, meta, "submitting process ended; outcome unknown; not resubmitted")
+         return task, meta
+ 
++    def _scrub(self, value):
++        """Redact the key and key-shaped values from every string that reaches the persistence boundary.
++        Containers are scrubbed in place: callers keep references to meta["provider"] across saves."""
++        if isinstance(value, str):
++            return self.redact(value, 2 * len(value) + 16)
++        if isinstance(value, dict):
++            for k, v in value.items():
++                value[k] = self._scrub(v)
++        elif isinstance(value, list):
++            value[:] = [self._scrub(v) for v in value]
++        return value
++
+     def _save(self, task: Task, meta: dict, event: str | None = None):
+         p = meta["provider"]
+         if p["state"] not in STATES:
+@@ -320,20 +402,50 @@ class TinyFish:
+             p.setdefault("events", []).append({"at": _now(), "event": self.redact(event, 300)})
+             p["events"] = p["events"][-40:]
+         p["updated_at"] = _now()
++        pointer = f"{INDEX_DIR}/{task.task_id}.json"
++        if not self.store.path(pointer).is_file():  # the index entry exists before the record it points to
++            self.store.path(INDEX_DIR).mkdir(parents=True, exist_ok=True)
++            self.store.write(pointer, {"schema": "ghoti_provider_index/1", "provider": "tinyfish", "task_id": task.task_id})
++        self._scrub(meta)
++        task.intent, task.blocker = self._scrub(task.intent), self._scrub(task.blocker)
++        self._scrub(task.history)
+         self.store.save_task(task, **meta)
+ 
+-    def _provider_records(self):
++    def _provider_records(self, strict=False):
++        """Count pre-index records as well as indexed attempts whose record may be missing."""
+         out = []
+-        for record in self.store.recent(100):
+-            p = record.get("provider")
+-            if isinstance(p, dict) and p.get("schema") == PROVIDER_SCHEMA and p.get("provider") == "tinyfish":
+-                out.append(record)
++        directory = self.store.path(INDEX_DIR)
++        indexed = {path.stem for path in directory.glob("*.json")}
++        runs = self.store.path("ghoti_runtime_runs")
++        # Pre-upgrade records may have no pointer. Read the durable records without a recency limit
++        # and keep pointers in the union so a crash between the two writes still blocks new starts.
++        task_ids = indexed | {path.stem for path in runs.glob("task-*.json")
++                              if not path.name.endswith(".output.json")}
++        for task_id in sorted(task_ids):
++            try:
++                check_id(task_id, what="task id")
++                record = self.store.read(f"ghoti_runtime_runs/{task_id}.json")
++                task, p = record["task"], record.get("provider")
++                if not isinstance(task, dict) or task.get("task_id") != task_id:
++                    raise ValueError("invalid task record")
++                tinyfish = isinstance(p, dict) and p.get("provider") == "tinyfish"
++                if not (tinyfish or task.get("created_by") == CREATED_BY or task_id in indexed):
++                    continue
++                if not (tinyfish and p.get("schema") == PROVIDER_SCHEMA and p.get("state") in STATES
++                        and task.get("created_by") == CREATED_BY):
++                    raise ValueError("not this TinyFish run")
++            except (OSError, ValueError, KeyError, TypeError, AttributeError):
++                if strict:
++                    raise RuntimeError("a durable run record cannot be accounted for; its outcome may be unknown, "
++                                       "so no new TinyFish run is started") from None
++                continue
++            out.append(record)
+         return out
+ 
+     # -- start
+     def start(self, url: str, question: str) -> dict:
+         try:
+-            cfg = load_config(self.store, self.clock)
++            cfg = self._config()
+             if not self.api_key or self.transport is None:
+                 raise NotConfigured(f"{ENV_KEY} is not set for the Ghoti runtime process")
+         except NotConfigured as err:
+@@ -345,11 +457,11 @@ class TinyFish:
+         host = urlsplit(url).hostname
+         goal = _goal(question, host)
+         intent_key = hashlib.sha256(f"{url}\n{goal}".encode()).hexdigest()
+-        records = self._provider_records()
++        records = self._provider_records(strict=True)
+         for record in records:  # a dead submitter's record becomes submission_unconfirmed here
+             if record["provider"].get("state") == "submitting":
+                 self._load(record["task"]["task_id"])
+-        records = self._provider_records()
++        records = self._provider_records(strict=True)
+         active = [r for r in records if r["provider"].get("state") in ACTIVE]
+         for record in active:
+             if record["provider"].get("intent_key") == intent_key:
+@@ -380,7 +492,7 @@ class TinyFish:
+                 "provider": {"schema": PROVIDER_SCHEMA, "provider": "tinyfish", "state": "submitting",
+                              "intent_key": intent_key, "source_url": url, "run_id": None, "remote_status": None,
+                              "submitted_at": _now(), "approval_request_id": cfg["approval_request_id"],
+-                             "approval_config_sha256": cfg["config_sha256"],
++                             "approval_config_sha256": cfg["config_sha256"], "queue_grant": cfg["queue_grant"],
+                              "local_deadline_epoch": self.clock() + cfg["local_deadline_seconds"],
+                              "request": {"url": url, "browser_profile": "lite", "agent_config": body["agent_config"],
+                                          "task_text": question},
+@@ -510,6 +622,7 @@ class TinyFish:
+         payload = {"schema": RESULT_SCHEMA, "provider": "tinyfish", "run_id": p["run_id"], "source_url": p["source_url"],
+                    "observed_at": p["observed_at"], "finished_at": p.get("remote_finished_at"), "untrusted_content": True,
+                    "summary": result["summary"], "items": list(result["items"]), "truncated_items": 0}
++        self._scrub(payload)  # the provider may echo the key into page text; the output file is persisted too
+         while True:  # drop items until the whole JSON fits; never cut JSON mid-string
+             payload["sources"] = sorted({i["source_url"] for i in payload["items"]} | {p["source_url"]})
+             text = json.dumps(payload, ensure_ascii=False)
+@@ -615,7 +728,7 @@ class TinyFish:
+             p = meta["provider"]
+             if p["state"] != "submission_unconfirmed" or p.get("run_id"):
+                 raise ValueError("only an unconfirmed submission without a run id can adopt one")
+-            for record in self._provider_records():
++            for record in self._provider_records(strict=True):
+                 if record["provider"].get("run_id") == run_id:
+                     raise ValueError(f"run id already attached to {record['task']['task_id']}")
+             p["run_id"], p["state"], p["adopted"] = run_id, "pending", True
+@@ -645,6 +758,30 @@ class TinyFish:
+         return outcome
+ 
+ 
++def check_provider_result(task_id: str, record: dict, payload: dict) -> dict:
++    """The result route's contract for a provider record: the supported provider's completed run, its output
++    bound to this task, run id and digest, and a bounded object of the result schema. Raises ValueError."""
++    task, p = record.get("task"), record.get("provider")
++    if not isinstance(task, dict) or not isinstance(p, dict) or not isinstance(payload, dict):
++        raise ValueError("invalid provider record")
++    text = payload.get("text")
++    if not isinstance(text, str) or len(text) > RESULT_LIMIT:
++        raise ValueError("invalid provider result")
++    result = json.loads(text)
++    output = f"ghoti_runtime_runs/{task_id}.output.json"
++    if (p.get("schema") != PROVIDER_SCHEMA or p.get("provider") != "tinyfish" or p.get("state") != "completed"
++            or task.get("task_id") != task_id or task.get("operation") != "tinyfish_web_research"
++            or task.get("state") != TaskState.SUCCEEDED.value
++            or not isinstance(task.get("result"), dict) or task["result"].get("output_paths") != [output]
++            or not isinstance(result, dict) or result.get("schema") != RESULT_SCHEMA
++            or result.get("provider") != "tinyfish"
++            or not isinstance(p.get("run_id"), str) or not RUN_ID.fullmatch(p["run_id"])
++            or result.get("run_id") != p["run_id"] or payload.get("task_id") != task_id
++            or payload.get("sha256") != hashlib.sha256(text.encode()).hexdigest()):
++        raise ValueError("invalid provider result")
++    return result
++
++
+ def _json(body: bytes):
+     try:
+         return json.loads(body.decode("utf-8"))
+diff --git a/23_configs/tinyfish.example.json b/23_configs/tinyfish.example.json
+index 26c29710a24bbc7bffb0c8cbbac95335a72a2694..f08a1a9e7df1480dd3e409eb6ae557d8ec23d25c 100644
+--- a/23_configs/tinyfish.example.json
++++ b/23_configs/tinyfish.example.json
+@@ -1,7 +1,7 @@
+ {
+   "schema": "ghoti_tinyfish_approval/1",
+   "enabled": false,
+-  "approval_request_id": "approval-tinyfish-example",
++  "approval_request_id": "req-from-the-approval-queue",
+   "approved_by": "host owner name",
+   "approved_at": "YYYY-MM-DDTHH:MM:SSZ",
+   "expires_at": "YYYY-MM-DDTHH:MM:SSZ",
+@@ -15,5 +15,5 @@
+   "max_runs_per_day": 5,
+   "max_steps": null,
+   "browser_profile": "lite",
+-  "note": "Copy to <runtime root>/ghoti_provider_config/tinyfish.json; set enabled true and a future expires_at only after approving each host. Never put the API key here; it comes from the TINYFISH_API_KEY environment variable."
++  "note": "Copy to <runtime root>/ghoti_provider_config/tinyfish.json; set enabled true and a future expires_at only after approving each host. approval_request_id must name an approved approval-queue request whose grant covers provider:tinyfish and this exact scope (see TINYFISH.md); today the queue issues no such grant. Never put the API key here; it comes from the TINYFISH_API_KEY environment variable."
+ }
