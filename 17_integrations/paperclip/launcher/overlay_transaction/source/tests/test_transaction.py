@@ -6,11 +6,13 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from fixture import Fixture, clean_env, git, sha  # noqa: E402
+from fixture import Fixture, clean_env, git, h as overlay, sha  # noqa: E402
 
 APPLY_POINTS = ["apply:begun", "apply:owned", "apply:staged", "apply:fetched", "apply:source:src/a.txt",
                 "apply:source:src/new.txt", "apply:output-parked:ui/dist", "apply:output-installed:ui/dist",
@@ -373,6 +375,96 @@ class ContractCheckFollowUps(Base):
         self.assertEqual(code, 75)
         self.assertEqual(self.f.run("recover", x)[1]["status"], "ROLLED_BACK")
         self.assertBaseline()
+
+
+class OwnedMovesOnly(Base):
+    """Regressions for the independent PR27 probes of 76c8c81: F1 (a missing output or source is restorable
+    only with this transaction's own move evidence) and F2 (no link/reparse point inside .git)."""
+
+    _no_write = ContractCheckFollowUps._no_write
+
+    def _paused_rollback(self, name):
+        x = self.apply_ok(name)
+        code, _, _ = self.f.run("rollback", x, env=clean_env(PAPERCLIP_OVERLAY_TEST_STOP_AT="rollback:begun"))
+        self.assertEqual(code, 75)
+        return x
+
+    def test_unowned_missing_output_after_rollback_intent_is_refused(self):
+        x = self._paused_rollback("f1-out")
+        moved = self.f.root / "owner-moved-ui"
+        (self.f.target / "ui/dist").rename(moved)
+        manifest = sorted(p.relative_to(moved).as_posix() for p in moved.rglob("*"))
+        out = self._no_write("recover", x, 2)
+        self.assertIn("ui/dist missing without this transaction's output move", out["reason"])
+        self.assertEqual(sorted(p.relative_to(moved).as_posix() for p in moved.rglob("*")), manifest)
+        self.assertFalse((self.f.target / "ui/dist").exists())
+
+    def test_unowned_missing_source_after_rollback_intent_is_refused(self):
+        x = self._paused_rollback("f1-src")
+        (self.f.target / "src/a.txt").rename(self.f.root / "owner-moved-a.txt")
+        out = self._no_write("recover", x, 2)
+        self.assertIn("src/a.txt missing without this transaction's rollback move", out["reason"])
+
+    def test_unparked_output_missing_mid_apply_swap_is_refused(self):
+        x = self.f.txn("f1-apply")
+        code, _, _ = self.f.run("apply", x, env=clean_env(PAPERCLIP_OVERLAY_TEST_STOP_AT="apply:output-installed:ui/dist"))
+        self.assertEqual(code, 75)
+        (self.f.target / "cli/dist").rename(self.f.root / "owner-moved-cli")  # never parked by the helper
+        self._no_write("recover", x, 2)
+
+    def test_owned_moves_still_recover(self):
+        # Interrupted between moving new out to rb-out and moving parked back in: the owned case.
+        x = self.apply_ok("f1-owned")
+        code, _, _ = self.f.run("rollback", x, env=clean_env(PAPERCLIP_OVERLAY_TEST_STOP_AT="rollback:output-out:ui/dist"))
+        self.assertEqual(code, 75)
+        self.assertFalse((self.f.target / "ui/dist").exists())
+        self.assertEqual(self.f.run("recover", x)[1]["status"], "ROLLED_BACK")
+        self.assertBaseline()
+
+    def test_ref_namespace_junction_is_refused_before_any_write(self):
+        import _winapi
+        external = self.f.root / "outside-refspace"
+        external.mkdir()
+        _winapi.CreateJunction(str(external), str(self.f.target / ".git/refs/paperclip-overlay"))
+        before = self.f.snapshot()
+        x = self.f.txn("f2")
+        code, out, _ = self.f.run("apply", x, env=clean_env(PAPERCLIP_OVERLAY_TEST_STOP_AT="apply:fetched"))
+        self.assertEqual(code, 2, out)
+        self.assertIn("inside Git metadata", out["reason"])
+        self.assertFalse(x.exists())
+        self.assertEqual(list(external.iterdir()), [])
+        self.assertEqual(self.f.snapshot(), before)
+
+    def test_git_metadata_junction_blocks_rollback_before_any_write(self):
+        import _winapi
+        x = self.apply_ok("f2-rb")
+        external = self.f.root / "outside-logs"
+        external.mkdir()
+        _winapi.CreateJunction(str(external), str(self.f.target / ".git/logs/paperclip-alias"))
+        self._no_write("rollback", x, 2)
+        self.assertEqual(list(external.iterdir()), [])
+
+
+class PhysicalOwnership(unittest.TestCase):
+    def test_metadata_validation_refuses_multiply_linked_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            metadata = root / "metadata"
+            metadata.mkdir()
+            original = root / "fixture.txt"
+            original.write_bytes(b"owned fixture")
+            os.link(original, metadata / "linked")
+            with self.assertRaisesRegex(overlay.Rejected, "non-owned file inside Git metadata"):
+                overlay.check_git_metadata(metadata)
+            self.assertEqual(original.read_bytes(), b"owned fixture")
+
+    def test_absent_output_still_requires_path_validation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            absent = Path(directory) / "parent" / "output"
+            self.assertIsNone(overlay.scan_tree(absent))
+            with patch.object(overlay, "plain", side_effect=overlay.Rejected("unowned ancestor")):
+                with self.assertRaisesRegex(overlay.Rejected, "unowned ancestor"):
+                    overlay.scan_tree(absent)
 
 
 if __name__ == "__main__":

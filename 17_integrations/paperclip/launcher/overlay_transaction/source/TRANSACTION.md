@@ -25,8 +25,8 @@ once, and it is not transaction state. Every precondition below is checked befor
 a failure discovered after a write is exit 1, and `recover` resumes from it.
 
 A transient is accepted only in the phases that can produce it:
-- **Missing output:** accepted during the output swap (phase `apply-sources-switched`) or any `rollback-*` phase.
-- **Missing pre-existing source:** accepted only in a `rollback-*` phase.
+- **Missing output:** accepted only with this transaction's own move evidence: during the apply swap (history has `apply-sources-switched` but not `apply-outputs-switched`) with the exact new tree still in `X/new/<o>`, or in a `rollback-*` phase with the exact new tree in `X/rb-out/<o>`. In both cases the exact old tree must be in `X/parked/<o>`. A missing output without that evidence is unowned and refused.
+- **Missing pre-existing source:** accepted only in a `rollback-*` phase with the exact new bytes in `X/rb-src/<path>` (and the exact old bytes in `X/src-old/<path>`).
 - **Absent owner marker:** accepted only at `apply-begun`, or in a `rollback-*` phase after `X/owner-released.json` names this transaction.
 - **Journal says `apply-complete`:** the target must be exactly this transaction's applied state, original branch still at BASE included.
 
@@ -67,6 +67,8 @@ Rollback step order (each step skips itself when already done):
 Nothing is deleted. Displaced bytes stay in X as evidence.
 
 ## Git execution
+- **Metadata fence:** the helper checks the whole `.git` tree without following links before it starts Git. It refuses reparse points, nonregular entries and files with multiple hard links.
+- **Recovery paths:** the helper checks existing ancestors of restore destinations and transaction evidence paths, including when the final entry is absent.
 - **Inherited environment:** any inherited `GIT_*` variable other than `GIT_PAGER` is refused first, before any other check, as the launcher does.
 - **Executable:** `git.exe` is taken from absolute PATH entries only, never the current directory, and must lie outside T, P and X. It must have no link or reparse components. Hardlinks are allowed for this read-only use, as in the reviewed helper.
 - **Environment and fixed configuration:** the environment is an allowlist, as in the reviewed helper's `clean_env`/`git_env`, plus:

@@ -1,0 +1,34 @@
+{
+  "schema": "paperclip_transaction_review_successor/1",
+  "public_parent": "2dd74b98c6eb01853315314245554ec241b5390a",
+  "source_commit": "01f4a6a502aae0dc40a230c9c751bfb58bae4ab4",
+  "source_tree": "2baad8134df4cda61e592f6c384318d4f12e4024",
+  "supersedes": "76c8c81d5a896d4955984c44e5b6fbe897fddc28",
+  "files": {
+    "TRANSACTION.md": {
+      "sha256": "abd9e1f0c610dd98b880ec901f25ef873ccadbc9b7652be5ab39e5c800613af1",
+      "bytes": 8521,
+      "git_blob": "36c1ab231dfd4c3f89bee0615ca49547508eeeaa"
+    },
+    "paperclip_overlay.py": {
+      "sha256": "1cd08775011663039bfd790812c332271bf7e19b9500afbca1e752988c7b6e4a",
+      "bytes": 37211,
+      "git_blob": "498a4cd2a8c26b01f7475d1f02dc002ec731217f"
+    },
+    "tests/test_transaction.py": {
+      "sha256": "7f7e5c01ed23d2f1606d2907629e9fe875ec164fe3fcace039dbc1022477729f",
+      "bytes": 23048,
+      "git_blob": "714e69fd8a50864efc19e3cac3e3ea0959e6498c"
+    }
+  },
+  "status": "SOURCE_DRAFT_PENDING_REVIEW",
+  "fixture_evidence": {
+    "retained_original_cases_passed": 2,
+    "focused_fence_cases_passed": 2,
+    "prior_owner_staged_passed": 18,
+    "live_accepted": false
+  },
+  "installed": false,
+  "public_release_approved": false,
+  "historical_records": "The original red reviews and manifest remain in the prior commit. No installation grant."
+}

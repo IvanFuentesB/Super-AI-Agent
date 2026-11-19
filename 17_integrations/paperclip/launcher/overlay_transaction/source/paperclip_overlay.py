@@ -94,7 +94,7 @@ def checkpoint(name):
 
 
 # ---------------------------------------------------------------- paths
-def plain(path, *, must_exist=True, allow_hardlinks=False):
+def plain(path, *, must_exist=True, allow_hardlinks=False, missing_parents=False):
     """Absolute lexical path with no link/reparse component and (for files) a single link."""
     path = Path(os.path.abspath(path))
     if str(path).startswith(("\\\\", "//")):
@@ -103,7 +103,7 @@ def plain(path, *, must_exist=True, allow_hardlinks=False):
         try:
             st = item.lstat()
         except FileNotFoundError:
-            if must_exist or item != path:
+            if must_exist or (item != path and not missing_parents):
                 raise Rejected(f"path does not exist: {item}")
             continue
         if stat.S_ISLNK(st.st_mode) or getattr(st, "st_file_attributes", 0) & 0x400:
@@ -141,10 +141,11 @@ def check_roots(target, package, txn=None):
 
 def scan_tree(root):
     """Exact manifest of a directory; refuses links/reparse points and hardlinked files inside it."""
-    root = Path(root)
+    root = plain(root, must_exist=False, missing_parents=True)
     if not root.exists():
         return None
-    plain(root)
+    if not root.is_dir():
+        raise Rejected(f"expected an owned directory: {root}")
     out = {}
     for dirpath, dirnames, filenames in os.walk(root):
         for name in dirnames + filenames:
@@ -248,11 +249,28 @@ class Git:
         return r.stdout.decode().strip() if r.returncode == 0 else None
 
 
+def check_git_metadata(dotgit):
+    """No link or reparse point anywhere inside .git: Git would follow one and write refs, objects or the
+    index outside the target (an internal junction at refs/paperclip-overlay, for example)."""
+    pending = [plain(dotgit)]
+    while pending:
+        with os.scandir(pending.pop()) as entries:
+            for entry in entries:
+                st = entry.stat(follow_symlinks=False)
+                if stat.S_ISLNK(st.st_mode) or getattr(st, "st_file_attributes", 0) & 0x400:
+                    raise Rejected(f"link/reparse point inside Git metadata refused: {entry.path}")
+                if stat.S_ISDIR(st.st_mode):
+                    pending.append(entry.path)
+                # Windows DirEntry.stat may omit the link count. lstat fills it in.
+                elif not stat.S_ISREG(st.st_mode) or (st.st_nlink or os.lstat(entry.path).st_nlink) != 1:
+                    raise Rejected(f"non-owned file inside Git metadata: {entry.path}")
+
+
 def check_repo(git, target, sources):
     dotgit = target / ".git"
     if not dotgit.is_dir():
         raise Rejected("target .git must be a real directory (no gitlink/worktree redirection)")
-    plain(dotgit)
+    check_git_metadata(dotgit)
     top = git.value("rev-parse", "--show-toplevel")
     if not top or os.path.normcase(os.path.abspath(top)) != os.path.normcase(str(target)):
         raise Rejected("Git resolved a different worktree")
@@ -337,8 +355,8 @@ def classify(git, target, spec, emitted, sources, txn_id=None, branch_ref=None):
                   "new" if git.ok("diff-index", "--cached", "--quiet", spec.target, "--") else "foreign")
     s["sources"] = {}
     for path, (old, new) in sources.items():
-        p = target / path
-        raw = sha_file(plain(p)) if p.exists() else "absent"
+        p = plain(target / path, must_exist=False)
+        raw = sha_file(p) if p.exists() else "absent"
         s["sources"][path] = "old" if raw == old else "new" if raw == new else "missing" if raw == "absent" else "foreign"
     s["outputs"] = {}
     for o in spec.outputs:
@@ -572,32 +590,43 @@ def _restorable(s, X, journal, spec, emitted, sources):
         extra = [p for p in s["tracked_changes"] if p not in sources]
         if extra:
             problems.append(f"tracked changes outside the overlay: {extra[:5]}")
+    # A missing source or output is restorable only when this transaction's own move explains it: the
+    # displaced afterimage sits, exact, in this transaction's evidence slot. Anything else is unowned.
+    history = journal["history"]
     for path, state in s["sources"].items():
-        old = sources[path][0]
+        old, new = sources[path]
+        displaced = plain(X / "rb-src" / path, must_exist=False, missing_parents=True)
         if state == "foreign":
             problems.append(f"source changed after the transaction: {path}")
             continue
-        if state == "missing" and old != "absent" and not in_rollback:
-            problems.append(f"source deleted outside a rollback: {path}")
+        if state == "missing" and old != "absent" and not (in_rollback and sha_file_or(displaced) == new):
+            problems.append(f"source {path} missing without this transaction's rollback move (rb-src)")
         if state in ("new", "missing") and old != "absent" and sha_file_or(X / "src-old" / path) != old:
             problems.append(f"no exact backup to restore {path}")
-        if state == "new" and (X / "rb-src" / path).exists():
+        if state == "new" and displaced.exists():
             problems.append(f"rollback evidence slot already used: rb-src/{path}")
     for o, state in s["outputs"].items():
+        displaced = plain(X / "rb-out" / o, must_exist=False, missing_parents=True)
         if state == "foreign":
             problems.append(f"{o} changed after the transaction")
             continue
-        if state == "missing" and not (in_rollback or phase == "apply-sources-switched"):
-            problems.append(f"{o} missing outside an output swap")
+        if state == "missing":
+            # apply parked the old tree but had not installed new/<o> yet; or rollback moved new to rb-out/<o>
+            apply_move = ("apply-sources-switched" in history and "apply-outputs-switched" not in history
+                          and scan_tree(X / "new" / o) == emitted[o]["new"])
+            rollback_move = in_rollback and scan_tree(displaced) == emitted[o]["new"]
+            if not (apply_move or rollback_move):
+                problems.append(f"{o} missing without this transaction's output move (new or rb-out)")
         if state in ("new", "missing") and scan_tree(X / "parked" / o) != emitted[o]["old"]:
             problems.append(f"no exact parked {o} to restore")
-        if state == "new" and (X / "rb-out" / o).exists():
+        if state == "new" and displaced.exists():
             problems.append(f"rollback evidence slot already used: rb-out/{o}")
     return problems
 
 
 def sha_file_or(path):
-    return sha_file(plain(path)) if Path(path).is_file() else None
+    path = plain(path, must_exist=False, missing_parents=True)
+    return sha_file(path) if path.is_file() else None
 
 
 def rollback(target, package, txn, spec=ACCEPTED, *, from_recover=False):

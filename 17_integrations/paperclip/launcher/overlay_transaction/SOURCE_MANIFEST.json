@@ -1,17 +1,17 @@
 {
   "schema": "paperclip_overlay_transaction_source/2",
-  "snapshot_commit": "76c8c81d5a896d4955984c44e5b6fbe897fddc28",
-  "snapshot_tree": "b82342676de9218f63fe9a34f7a8a026adc135dc",
-  "status": "DRAFT_CHANGES_REQUESTED_NOT_ADOPTION_APPROVED",
+  "snapshot_commit": "01f4a6a502aae0dc40a230c9c751bfb58bae4ab4",
+  "snapshot_tree": "2baad8134df4cda61e592f6c384318d4f12e4024",
+  "status": "SOURCE_DRAFT_PENDING_REVIEW",
   "supported_baseline": "e04e2ae1a0d47cdedf5380b5a0d94f280a82d5d1",
   "overlay": "e8ad1fd98142e6a4f53172f143381a4fa4100dd7",
   "overlay_tree": "bdab2ce706f3e682781ad0e93da935155b937867",
   "approved_package_index_sha256": "20e991d6a0ee3d4aa1f959540b912b2430c5ec840a963ccf7106f7fc4efa7d63",
   "files": {
     "TRANSACTION.md": {
-      "sha256": "8f8cccf02f5e886f342a04dc014803b8e261dd758d0382e54b0c282f731ec5d1",
-      "bytes": 7780,
-      "git_blob": "68d7d9a5b675b45873d9dd6661bbad3d0748b3e9"
+      "sha256": "abd9e1f0c610dd98b880ec901f25ef873ccadbc9b7652be5ab39e5c800613af1",
+      "bytes": 8521,
+      "git_blob": "36c1ab231dfd4c3f89bee0615ca49547508eeeaa"
     },
     "launcher_preflight.py": {
       "sha256": "110cc78a8e4f84a80f038739224b108af9f611862191ff10e91e798ee23a8680",
@@ -19,9 +19,9 @@
       "git_blob": "cd5fef98dfc0e654004ffddc6adc30aecd6aea5e"
     },
     "paperclip_overlay.py": {
-      "sha256": "5199e7c8f9769ee95c57da83bae39b454f23c07327f5bf150e2aeb62562c578b",
-      "bytes": 35088,
-      "git_blob": "afdeb3e67647dc6448a39a2d8625689dc892d3f0"
+      "sha256": "1cd08775011663039bfd790812c332271bf7e19b9500afbca1e752988c7b6e4a",
+      "bytes": 37211,
+      "git_blob": "498a4cd2a8c26b01f7475d1f02dc002ec731217f"
     },
     "rehearse.py": {
       "sha256": "555cebcfeb42b2a3734e51a6b2545b809e7bf51a6bca2ba771a45ea0ad14fca0",
@@ -54,9 +54,9 @@
       "git_blob": "3ff43074c6f5d8d7a246104517bd5b24eb0c7048"
     },
     "tests/test_transaction.py": {
-      "sha256": "869a7c2c48236fcae4aae834dcbfc1a83f01651cbf2922f9329a0d04208062f5",
-      "bytes": 18389,
-      "git_blob": "782ee3bc2839e9783fe5372561ec6deb9482360c"
+      "sha256": "7f7e5c01ed23d2f1606d2907629e9fe875ec164fe3fcace039dbc1022477729f",
+      "bytes": 23048,
+      "git_blob": "714e69fd8a50864efc19e3cac3e3ea0959e6498c"
     }
   },
   "prior_snapshot_preserved_in_public_history": {
@@ -164,5 +164,6 @@
     "reason": "Preserve exact original committed bytes of the reviewed source snapshot, including CRLF Python and Markdown blobs",
     "global_git_config_changed": false,
     "product_source_transformed": false
-  }
+  },
+  "prior_reviewed_snapshot": "76c8c81d5a896d4955984c44e5b6fbe897fddc28"
 }
