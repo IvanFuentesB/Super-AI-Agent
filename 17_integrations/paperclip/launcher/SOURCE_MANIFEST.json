@@ -1,0 +1,45 @@
+{
+  "schema": "paperclip_launcher_source/1",
+  "source_commit": "13857ef7dbcf7be9d5a93b2da5bf90bf9d3edd25",
+  "source_base": "dcfa5dd97e0f03bc6dfa0fe0c695aef9c1f12330",
+  "source_archive_sha256": "3f4ce6ca6d642bb95725aaf6135c8e345e1a922d5476f4d56a9ea8a2ac70a9cb",
+  "status": "DRAFT_ONE_PATH_TRANSFORMATION_NOT_INSTALLED",
+  "transformation": "Only PAPERCLIP_WINDOWS_PYTHON derives its existing relative tool path from Path.home() instead of a private absolute user literal; original approval does not automatically cover this port.",
+  "source_files": [
+    {
+      "path": "03_scripts/ghoti_coding/paperclip_host.py",
+      "bytes": 27865,
+      "sha256": "677ceb55e017cccab0753bad537bad3c9c6bb8f38241419af9e467353fa48744"
+    },
+    {
+      "path": "03_scripts/ghoti_coding/proof/test_paperclip_host.py",
+      "bytes": 20900,
+      "sha256": "5686a6e568e6e4f619d6c6457ffef50d65ab06e922fb0518984bd3420487a806"
+    },
+    {
+      "path": "03_scripts/ghoti_coding/proof/test_paperclip_installation_artifacts.py",
+      "bytes": 7060,
+      "sha256": "a1e9473409d822cad00a1ded325b2d493300ccea63ed402edcafeca5a98cb201"
+    }
+  ],
+  "published_files": {
+    "17_integrations/paperclip/launcher/source/03_scripts/ghoti_coding/paperclip_host.py": {
+      "sha256": "143ff39f73b046050e0413aa8b0bcf7493f08f21f03a9c62001bfd3b0295c9b0",
+      "source_sha256": "677ceb55e017cccab0753bad537bad3c9c6bb8f38241419af9e467353fa48744",
+      "source_path": "03_scripts/ghoti_coding/paperclip_host.py",
+      "exact_source_blob": false
+    },
+    "17_integrations/paperclip/launcher/source/03_scripts/ghoti_coding/proof/test_paperclip_host.py": {
+      "sha256": "5686a6e568e6e4f619d6c6457ffef50d65ab06e922fb0518984bd3420487a806",
+      "source_sha256": "5686a6e568e6e4f619d6c6457ffef50d65ab06e922fb0518984bd3420487a806",
+      "source_path": "03_scripts/ghoti_coding/proof/test_paperclip_host.py",
+      "exact_source_blob": true
+    },
+    "17_integrations/paperclip/launcher/source/03_scripts/ghoti_coding/proof/test_paperclip_installation_artifacts.py": {
+      "sha256": "a1e9473409d822cad00a1ded325b2d493300ccea63ed402edcafeca5a98cb201",
+      "source_sha256": "a1e9473409d822cad00a1ded325b2d493300ccea63ed402edcafeca5a98cb201",
+      "source_path": "03_scripts/ghoti_coding/proof/test_paperclip_installation_artifacts.py",
+      "exact_source_blob": true
+    }
+  }
+}

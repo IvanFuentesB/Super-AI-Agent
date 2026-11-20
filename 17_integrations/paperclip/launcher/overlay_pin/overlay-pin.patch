@@ -1,0 +1,147 @@
+diff --git a/03_scripts/ghoti_coding/paperclip_host.py b/03_scripts/ghoti_coding/paperclip_host.py
+index 08bc2aaae7e110129e4e975f38a6948b1c7a9995..1219652dcc3f930c6dcfe1e638a0ed40fe1c3eea 100644
+--- a/03_scripts/ghoti_coding/paperclip_host.py
++++ b/03_scripts/ghoti_coding/paperclip_host.py
+@@ -27,7 +27,7 @@ NATIVE = ROOT.parent / 'ghoti_operator_integration/.worktrees/t_4d9627ef'
+ SOURCE = Path.home() / 'Documents/AI_Managed_Only/21_repos/third_party/evals/paperclip'
+ NODE = Path.home() / 'AppData/Local/hermes/node/node.exe'
+ STATE = NATIVE / 'tmp/paperclip-full-app-state'
+-SOURCE_REVISION = "e04e2ae1a0d47cdedf5380b5a0d94f280a82d5d1"
++SOURCE_REVISION = "e8ad1fd98142e6a4f53172f143381a4fa4100dd7"
+ # Reviewed deployment bytes are not necessarily Git's LF blob representation.
+ # Bind BOTH identities; never normalize installed bytes to make them pass.
+ DEPLOYED_SOURCE_FILES = {
+diff --git a/03_scripts/ghoti_coding/proof/test_paperclip_overlay_pin.py b/03_scripts/ghoti_coding/proof/test_paperclip_overlay_pin.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..661dd1633599c3a9a53b08067a0449f051bfb439
+--- /dev/null
++++ b/03_scripts/ghoti_coding/proof/test_paperclip_overlay_pin.py
+@@ -0,0 +1,128 @@
++"""Launcher gate only: isolated Git/source fixtures, no service/build/account.
++Required build paths contain inert presence markers, NOT distributable evidence.
++Claude owns the full package-staging rehearsal.
++"""
++import importlib.util
++import os
++from pathlib import Path
++import subprocess
++import tempfile
++import unittest
++from unittest import mock
++
++SPEC = importlib.util.spec_from_file_location('overlay_host', Path(__file__).parents[1] / 'paperclip_host.py')
++host = importlib.util.module_from_spec(SPEC)
++SPEC.loader.exec_module(host)
++OVERLAY = 'e8ad1fd98142e6a4f53172f143381a4fa4100dd7'
++OLD = 'e04e2ae1a0d47cdedf5380b5a0d94f280a82d5d1'
++G = Path.home() / 'AppData/Local/Ghoti'
++OWNER = G / 'engineering/paperclip-combined-47f0df4'
++INSTALLED = host.SOURCE
++NATIVE = G / 'engineering/ghoti_operator_integration/.worktrees/t_4d9627ef'
++PINS = {
++    'server/src/adapters/utils.ts': ('44e3614b027e8d4844f6036a5254ab1a73651b17', '46e22ffde9f24ab90d094a0ffdba2c352b547dba1f40ef45cc68d9b9f279bf1c', 3801),
++    'packages/adapter-utils/src/service-declarations.test.ts': ('1304a570ff8ae5f3921551a998ac191b483cfad2', '844395e3bc274c725c0d9eb5f32f20f9fae31dbcf2b84e0f8ec2a9064cbcc0e1', 4757),
++}
++
++class OverlayPinTests(unittest.TestCase):
++    @classmethod
++    def setUpClass(cls):
++        cls.temp = tempfile.TemporaryDirectory(prefix='launcher-pin-gate-')
++        cls.root = Path(cls.temp.name)
++        cls.source = cls.root / 'source'
++        cls.git('clone', '--shared', '--no-checkout', str(OWNER), str(cls.source), cwd=cls.root)
++        cls.git('-c', 'core.autocrlf=false', 'checkout', '--detach', OVERLAY)
++        cls.raw = {rel: (INSTALLED / rel).read_bytes() for rel in PINS}
++        for rel in ('cli/node_modules/tsx/dist/cli.mjs', 'packages/shared/dist/index.js',
++                    'packages/plugins/sdk/dist/index.js', 'server/dist/index.js',
++                    'ui/dist/index.html', 'cli/dist/index.js'):
++            p = cls.source / rel
++            p.parent.mkdir(parents=True, exist_ok=True)
++            p.write_bytes(b'INERT PRESENCE FIXTURE - NEVER EXECUTE\n')
++
++    @classmethod
++    def tearDownClass(cls):
++        cls.temp.cleanup()
++
++    @classmethod
++    def git(cls, *args, cwd=None):
++        return subprocess.run(['git', '--no-optional-locks', '-c', 'core.longpaths=true', '-C', str(cwd or cls.source), *args],
++                              capture_output=True, check=True, timeout=45)
++
++    def setUp(self):
++        for rel, raw in self.raw.items():
++            (self.source / rel).write_bytes(raw)
++        self.bind = mock.patch.multiple(host, SOURCE=self.source, STATE=self.root / 'absent-state', NATIVE=NATIVE)
++        self.bind.start()
++        self.addCleanup(self.bind.stop)
++
++    def test_revision_is_exact_accepted_overlay(self):
++        self.assertEqual(host.SOURCE_REVISION, OVERLAY)
++
++    def test_two_exception_pins_are_unchanged(self):
++        self.assertEqual(host.DEPLOYED_SOURCE_FILES, PINS)
++
++    def test_actual_gate_accepts_overlay_without_creating_state(self):
++        self.assertEqual(host.installation_check(), OVERLAY)
++        self.assertFalse((self.root / 'absent-state').exists())
++
++    def test_old_pin_rejects_overlay(self):
++        with mock.patch.object(host, 'SOURCE_REVISION', OLD), self.assertRaises(ValueError):
++            host.installation_check()
++
++    def test_read_only_idempotence(self):
++        paths = [self.source / rel for rel in PINS]
++        before = [(p.read_bytes(), p.stat().st_mtime_ns) for p in paths]
++        self.assertEqual(host.installation_check(), OVERLAY)
++        self.assertEqual(host.installation_check(), OVERLAY)
++        self.assertEqual(before, [(p.read_bytes(), p.stat().st_mtime_ns) for p in paths])
++
++    def test_newline_drift_is_rejected_not_normalized(self):
++        for rel, raw in self.raw.items():
++            with self.subTest(path=rel):
++                p = self.source / rel
++                p.write_bytes(raw.replace(b'\r\n', b'\n') if b'\r\n' in raw else raw.replace(b'\n', b'\r\n'))
++                with self.assertRaises(PermissionError): host.installation_check()
++                p.write_bytes(raw)
++
++    def test_same_size_raw_drift_is_rejected(self):
++        for rel, raw in self.raw.items():
++            with self.subTest(path=rel):
++                p = self.source / rel
++                p.write_bytes(b'!' + raw[1:])
++                with self.assertRaises(PermissionError): host.installation_check()
++                p.write_bytes(raw)
++
++    def test_wrong_blob_binding_is_rejected(self):
++        altered = dict(PINS)
++        rel = next(iter(altered))
++        _, digest, size = altered[rel]
++        altered[rel] = ('0' * 40, digest, size)
++        with mock.patch.object(host, 'DEPLOYED_SOURCE_FILES', altered), self.assertRaises(PermissionError):
++            host.installation_check()
++
++    def test_unrelated_source_drift_is_rejected(self):
++        target = self.source / 'package.json'
++        original = target.read_bytes()
++        try:
++            target.write_bytes(original + b'\n')
++            with self.assertRaises(PermissionError): host.installation_check()
++        finally:
++            target.write_bytes(original)
++
++    def test_inherited_override_rejected_before_helpers(self):
++        with mock.patch.dict(os.environ, {'GIT_CONFIG_COUNT': '0'}), mock.patch.object(host, 'load_helpers') as helpers:
++            with self.assertRaises(PermissionError): host.installation_check()
++            helpers.assert_not_called()
++
++    def test_missing_serving_root_is_rejected(self):
++        p = self.source / 'ui/dist/index.html'
++        data = p.read_bytes()
++        try:
++            p.unlink()
++            with self.assertRaises(FileNotFoundError): host.installation_check()
++        finally:
++            p.write_bytes(data)
++
++if __name__ == '__main__':
++    unittest.main(verbosity=2)

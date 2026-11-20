@@ -1,0 +1,40 @@
+{
+  "schema": "paperclip_overlay_launcher_pin_source/1",
+  "owner_source_commit": "1e788e6ea92fbd37a1309a338654bb4120c8a73d",
+  "owner_source_parent": "13857ef7dbcf7be9d5a93b2da5bf90bf9d3edd25",
+  "owner_source_tree": "09b24da19c641f7a58e89d5be62efb6e54161623",
+  "intended_overlay_source": "e8ad1fd98142e6a4f53172f143381a4fa4100dd7",
+  "intended_overlay_tree": "bdab2ce706f3e682781ad0e93da935155b937867",
+  "approved_overlay_package_index_sha256": "20e991d6a0ee3d4aa1f959540b912b2430c5ec840a963ccf7106f7fc4efa7d63",
+  "required_original_launcher_raw_sha256": "677ceb55e017cccab0753bad537bad3c9c6bb8f38241419af9e467353fa48744",
+  "result_original_launcher_raw_sha256": "eb39b400f2a35a640072b7e98046c671930422b3095a74d2ac606e560cd91fff",
+  "patch_sha256": "a0418210a5ee3f3e5c4dbed9b6bb7ad63b285a9ef85d81fb56e402a9d90d07ad",
+  "source_files": {
+    "03_scripts/ghoti_coding/paperclip_host.py": {
+      "git_blob": "1219652dcc3f930c6dcfe1e638a0ed40fe1c3eea",
+      "sha256": "eb39b400f2a35a640072b7e98046c671930422b3095a74d2ac606e560cd91fff"
+    },
+    "03_scripts/ghoti_coding/proof/test_paperclip_overlay_pin.py": {
+      "git_blob": "661dd1633599c3a9a53b08067a0449f051bfb439",
+      "sha256": "a2edcbda0cbeca42fc69f313fdd5e606149ff7ad664db30f46c42221f1f9a96b"
+    }
+  },
+  "production_delta": "SOURCE_REVISION literal only; every other launcher byte unchanged.",
+  "independent_review": {
+    "verdict": "APPROVED for exact pin source only",
+    "review_sha256": "3b6026c785d3c5920e012bfd9acc3580754b33a3316dac81c6305b6bec9eafad",
+    "independently_executed_gate_cases": 11,
+    "passed": 11,
+    "product_failures": 0,
+    "runner_setup_failures_with_zero_cases": 4,
+    "fixture": "Real installation_check and pinned helpers; real Git with inert build-presence markers. Source/assertions and raw pins unchanged.",
+    "staging_rollback_installed_acceptance": false
+  },
+  "publication": "Source patch and provenance only; no private Git ancestry, payloads, configuration, state or installed writes.",
+  "limits": [
+    "Existing published launcher remains its original separately transformed source snapshot.",
+    "This pin delta requires trusted raw677 preimage; it is not an installer or arbitrary-current-byte approval.",
+    "Inert build presence markers in gate tests do not prove real package staging, emitted artifact validity, service start or rollback.",
+    "Real deployment operation and staging/rollback acceptance remain separate owner inputs."
+  ]
+}
