@@ -1,0 +1,56 @@
+{
+  "schema": "assistant_offline_source_port/1",
+  "source_commit": "6c75f11b7e581154cdc94b9908fddb47d835b50f",
+  "source_tree": "b18f0c22d73ff59488b66b6482b6ca83f2a7528a",
+  "public_parent": "e21c459a36d6e68c1a6f4be121f055a61b161136",
+  "scope": "planner, synthetic approval workflow, read-only calendar provider and their offline tests",
+  "files": {
+    "nova_planner.py": {
+      "source_path": "03_scripts/ghoti_runtime/nova_planner.py",
+      "sha256": "4605cb85ee9856eca4630deb0319e471a132c7497c22b2a3516b44a2c8d30734",
+      "git_blob": "9a5d8713999788eda38166e56a609d03de780a5e",
+      "bytes": 5031
+    },
+    "test_nova_planner.py": {
+      "source_path": "03_scripts/ghoti_runtime/test_nova_planner.py",
+      "sha256": "e4176c6fe981517e7283d821a8f1f0cd88a7b43b7b8a2230617581408f38ce85",
+      "git_blob": "25485141622c1c7906e95f870d762247947c4249",
+      "bytes": 2994
+    },
+    "nova_workflow.py": {
+      "source_path": "03_scripts/ghoti_runtime/nova_workflow.py",
+      "sha256": "6d20e9fd637f61eb43f020514f812796b096fedbe5484f925b7e80cb0de17d03",
+      "git_blob": "d1d944c96bb1f80dc6d1f37cc8e04211727e32ab",
+      "bytes": 6265
+    },
+    "test_nova_workflow.py": {
+      "source_path": "03_scripts/ghoti_runtime/test_nova_workflow.py",
+      "sha256": "2db94c7a03127fa09f8b3248c24f2629e601fb5f483c7942e569a6fa767ea0a4",
+      "git_blob": "3e3727ee807e31fa0ff07d57a1538e831fdcfb4b",
+      "bytes": 5130
+    },
+    "nova_google_readonly.py": {
+      "source_path": "03_scripts/ghoti_runtime/nova_google_readonly.py",
+      "sha256": "7b5f31a0eb9cf36d64cf3ba1e093fb901dcaf2436b7da7af86b0ea60018577ba",
+      "git_blob": "9465133710855eda155433200e20a5490255b48a",
+      "bytes": 4305
+    },
+    "test_nova_google_readonly.py": {
+      "source_path": "03_scripts/ghoti_runtime/test_nova_google_readonly.py",
+      "sha256": "5586c2c0611c29a1e7604788b52caf3f060fc445d3511eb4b5fcb31a96ef71cc",
+      "git_blob": "88b0aba575203350a0b4937f0950d4d09c539096",
+      "bytes": 3554
+    }
+  },
+  "excluded": [
+    "private ancestry",
+    "runtime data",
+    "account settings",
+    "host consent and capture",
+    "speech",
+    "live provider activation"
+  ],
+  "status": "LOCAL_SOURCE_PORT_PENDING_REVIEW",
+  "installed": false,
+  "live_accepted": false
+}

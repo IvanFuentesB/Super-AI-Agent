@@ -1,0 +1,1 @@
+cua-driver @ https://github.com/trycua/cua/releases/download/cua-driver-rs-v0.34.0/cua_driver-0.34.0-py3-none-win_amd64.whl --hash=sha256:ecb2272eb3ac70399498934f7fc7166a4c6618ce5edcfe93563df30dbd23f66a

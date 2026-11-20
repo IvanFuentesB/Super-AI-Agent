@@ -1,6 +1,6 @@
 # Ghoti Current Product Status
 
-## Source, publication, installation and exercise snapshot - 2026-11-16
+## Source, publication, installation and exercise snapshot - 2026-11-17
 
 Source acceptance, canonical integration and installed-host adoption are separate.
 The existing PR receipts record actual merge commits; a draft or apply check is
@@ -15,7 +15,9 @@ not permission to deploy, start a service or mutate a real account.
 | Narrow configuration save | d2d7647eca88575870e079e359948520ce50290b, combined tree 47f0df456dace03cb9918435f5f4424969b0e3a9 with b32 correction | [PR #31](https://github.com/IvanFuentesB/Super-AI-Agent/pull/31), IvanCX/paperclip-narrow-save | APPROVED affected combined compatibility and service/declaration build; original e04/d2 provenance retained | Accepted source included through this PR31 integration; merge identity is in its receipt | No production UI bundle, live save or host adoption performed | Real-handler/form fixture checks within combined63; no production UI/CLI distribution or installed save acceptance |
 | Redacted-refusal source and private distributable | e8ad1fd98142e6a4f53172f143381a4fa4100dd7, result tree bdab2ce706f3e682781ad0e93da935155b937867 | Source-only port00ab7dc through PR34; private built payload excluded | Source18/18 separately PASS; artifact14/14 separately PASS; target-bound overlay APPROVED | Source merged at636e626724e5e75a4570ca7e8468cb360c813e28; no public binary distribution | NOT installed; separate launcher and target-staging gates remain | Nine emitted-auth and five built-UI synthetic scenarios; no full CLI bootstrap, service restart or authenticated live save |
 | Overlay launcher pin | Owner1e788e6ea92fbd37a1309a338654bb4120c8a73d; original raw677ceb55 to LF eb39b400; targete8ad1fd/treebdab2ce | Source-only follow-up in draft PR27; original published snapshot preserved | APPROVED pin source;11 independent gate cases PASS | DRAFT; no runtime/transaction integration approval | NOT installed; actual deployment operation and rehearsal pending | Real Git/preflight gate with inert build markers; not real package staging, service start, rollback or replay proof |
-| Overlay deployment transaction | Helperbcff4f0fc2dfc3c63fcc6642802652b45e350185; driver712d6e0d6e54c77823e9eae7c4c409f40b5f7ffa; harness3565834 | Source-only DRAFT PR27 head55e550c; private payload/receipts excluded | CHANGES_REQUESTED; six independently executed scenarios:5 PASS,1 FAIL; static safety findings retained | NOT merged; no transaction-use/adoption approval | NOT installed; owner correction and independent reacceptance required | Real-output apply/preflight, rejection, replay/collision, rollback and apply-interruption recovery pass; interrupted rollback falsely reports recovery complete with one UI file |
+| Overlay deployment transaction | Corrected76c8c81d5a896d4955984c44e5b6fbe897fddc28; priorbcff/712/356 findings preserved | Corrected safe source in existing DRAFT PR27 lane; private payload/receipts excluded | CHANGES_REQUESTED:11 parent acceptance checks PASS;2 independent focused ownership probes RED; fixture records separate | NOT merged; no transaction-use/adoption approval | NOT installed | Original rollback failure class fixed; real-build apply/preflight/recovery works, but unowned missing output and internal Git ref junction remain unsafe |
+| Optional deny-only native SDK host | 77e9006fcc125fafc49b550b309718807a37904d | Review source on IvanCX/native-harness-publication under17_integrations/native_harness/host_sdk | APPROVED only partial deny-only scope;10 independent tests PASS | DRAFT source; not live host integration | Not adopted; no browser attachment | Real constructor/native metadata/shutdown; direct Python callback test is not native callback delivery |
+| TinyFish provider adapter | 6f6177d1ae38e50b9195cdf03aed18467e841985 | Source-only patch portf91403ff on IvanCX/tinyfish-provider-source | CHANGES_REQUESTED:46 adapter+14 UI PASS;1 independent accounting regression RED | DRAFT; not enabled | Not adopted; no credentials or provider calls | Synthetic transport/real RunStore only; incomplete authority and persistence controls remain |
 | Runtime Paperclip status overlay | Frozen three-file archive 8bf3fd4891383a737b6aabcfde52e75d0541a2fc6f24dbca654c6c5976bb5382 | Unpublished: private tenant binding and missing runtime modules | 14 independent synthetic checks PASS; not live-state acceptance | Not integrated | Not installed here | Existing scoped source evidence retained; no new execution in this update |
 | Checkpoint correction | Original owner; no new immutable accepted candidate delivered | Unpublished; existing native gate retained | Old fixture run had 6 setup errors and zero product assertions; no new grant/preflight | Not integrated | No migration, restart or canonical baseline publication | Zero new behavioral execution; original six setup errors and native permission gate retained |
 | Publication checkpoints | 52d575697b1588938738d202173ce02ffdc6caa6 | [PR #30](https://github.com/IvanFuentesB/Super-AI-Agent/pull/30) | Independent 13 static/docs checks PASS | Merged at 9f2d2a4530e48baa8ba794c880960d8593ff9908 | Instructions only; no monitoring service or global setting | 13 independent static/docs checks; policy is instructions, not a monitoring service |
@@ -23,6 +25,58 @@ not permission to deploy, start a service or mutate a real account.
 | Original-history preservation | Six original commits on five archival refs; three original author dates | [Issue #29](https://github.com/IvanFuentesB/Super-AI-Agent/issues/29) | Exact parents/trees/authors/dates and remote readback verified | Archival refs only; content already represented by main/PR21, no duplicate merge | No contribution-calendar qualification claimed; 237 screened histories remain withheld | Six original Git objects preserved/read back; no archive merge or contribution-calendar qualification claimed |
 | Remaining personal/legacy delivery | Dirty owner source snapshots, including ed090282 base | Unpublished without scoped frozen source; no owner working files staged | No acceptance of broad dirty trees/vendor history | Not integrated | Existing host setup unchanged | Existing scoped source evidence retained; no new execution in this update |
 
+
+### Corrected transaction and SDK review — 2026-11-17
+
+The unchanged UI, overlay and launcher approvals remain intact. No installed-host
+write, service start or new UI adoption occurred in this review. The earlier
+transaction5 PASS/1 FAIL result remains historical evidence for the rejected
+source; it is not relabelled as the successor result.
+
+Corrected helper76c8c81 (raw5199e7c8) was independently inspected and exercised.
+The parent recorded13 PASS records:11 acceptance checks and two fixture/cleanup
+records. Genuine1e788e6 launcher preflight used the actual reviewed built outputs;
+the retained destructive-copy reproducer no longer reaches that removed boundary.
+Old partial-copy damage returns INCONSISTENT without mutation. A new real owned
+process kill during rollback recovers the exact baseline in a fresh process;
+repeat recovery is a verified noop. No power-loss guarantee is claimed. A Windows
+venv-launcher PID fixture error is retained separately, not a product assertion.
+
+Two additional independent real-Git synthetic probes are RED with valid fixture
+preflights: an output removed after rollback intent without displaced-new evidence
+is incorrectly restored, and an internal Git ref junction permits a write outside
+the target. Later moved content and sentinel bytes survive; the invariant failures
+are unowned-gap repair and escaped ref-write ownership. The two RED assertions
+remain unchanged in the published independent probe. Owner33/8/18 totals are
+owner evidence, not independent counts. Verdict:CHANGES_REQUESTED; no adoption.
+
+SDK77e9006 is real partial implementation, not merely an interface assessment.
+Ten tests independently pass for deny-only local policy, actual SDK/native
+construction/metadata and shutdown. The public dependency pin and exact four
+source blobs exclude all untracked callback/planner prototypes and runtime data.
+Human-controlled callback delivery, trusted target/profile/origin binding,
+revocation/stale handles on a real disposable profile and private-profile use
+remain unproved and unauthorized. No permission is manufactured by this review.
+
+At the initial SDK intake TinyFish had only an ownership notice. Its later
+immutable6f6177d handoff was independently reviewed:46 adapter and14 synthetic UI
+tests PASS, one new regression RED.100 unrelated jobs hide an unresolved provider
+submission from duplicate/concurrency/daily checks and permit a second mocked
+start. Static grant-binding, persistence-redaction and result-route findings also
+require correction. Verdict:CHANGES_REQUESTED; no activation or provider call.
+Exact source-only review portf91403ff2cae8539545597ba8a8ddfd585b7310f is on
+IvanCX/tinyfish-provider-source; original ancestry/payloads remain excluded.
+Personal-assistant planner prototypes are not a frozen handoff. No synthetic
+assistant account-write acceptance or real provider/account action is claimed.
+Required owner evidence includes durable run IDs, uncertain outcome reconciliation,
+remote cancel semantics/budgets, untrusted output handling and credential isolation;
+planner dedupe/done state, selected calendar/colour, DST/fixed commitments, stale
+snapshot revalidation and fresh-session recall must pass synthetic fixtures first.
+An app connector visible in another client does not establish Hermes authentication.
+
+Model/cost research remains a local proposal only. No model, provider, allowance,
+subscription, credit benefit or active routing setting was changed. Private usage
+records, account data, memory and receipts are not part of this source publication.
 
 ### Executed UI-only adoption and verified rollback
 
