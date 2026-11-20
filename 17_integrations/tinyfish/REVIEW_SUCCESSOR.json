@@ -1,0 +1,47 @@
+{
+  "schema": "ghoti_source_review_successor/1",
+  "pr": 39,
+  "public_parent": "f91403ff2cae8539545597ba8a8ddfd585b7310f",
+  "source_commit": "83edcb21610ac588a8cdf59c4a8d7b1cac447f53",
+  "source_tree": "69aed2d00f9271185cb670571bebb3930c3b6a46",
+  "original_base": "6f6177d1ae38e50b9195cdf03aed18467e841985",
+  "patch_sha256": "e548d89fb86a8b7a2cfa274284fdd064c15f7931eb600da28fcdd00c5f187c7d",
+  "files": {
+    "01_projects/ghoti_os_app/tests/test_tinyfish_adapter.py": {
+      "sha256": "d1343d1d7a14c1cb092949601be1abe6c9398a0e4c24886afda02ae3701a7226",
+      "bytes": 54763,
+      "git_blob": "bee71b6eb5c9aa6e8066682c47328381f1546a85"
+    },
+    "03_scripts/ghoti_runtime/TINYFISH.md": {
+      "sha256": "8b15cf6bcca88a6d7de0ed9ce1bcf53a9f4ae989196ad151a609736f35304cb1",
+      "bytes": 9999,
+      "git_blob": "db0c7c32c10fbc29721618f00356d18613eba9a7"
+    },
+    "03_scripts/ghoti_runtime/local_service.py": {
+      "sha256": "c990a922636d11da2472df1c79aa79e9aac8fa5ed84a8570fda3bffd2b02e4ae",
+      "bytes": 21780,
+      "git_blob": "493fff8b2356b5711262642a5bec88b8903ea888"
+    },
+    "03_scripts/ghoti_runtime/tinyfish.py": {
+      "sha256": "f8f5a2eb44f637ed635ad33a688d6a38a411b8606aa4996b58fdbbc1362a1de5",
+      "bytes": 48500,
+      "git_blob": "757574b65ce935ee12485ec3796f6d8936a2801b"
+    },
+    "23_configs/tinyfish.example.json": {
+      "sha256": "5b265dd4b66d48dbdafb413b12068056361ba8e96bd70f8e3ae5433c44c5b103",
+      "bytes": 895,
+      "git_blob": "f08a1a9e7df1480dd3e409eb6ae557d8ec23d25c"
+    }
+  },
+  "status": "PENDING_EXACT_CANDIDATE_REVIEW",
+  "summary": "Apply to the original 6f6177d snapshot; 83edcb2 directly follows c23e303. Historical source.patch stays intact.",
+  "fixture_evidence": {
+    "adapter_tests": 59,
+    "original_red_predecessor": true,
+    "original_regression_passed": true,
+    "live_calls": 0,
+    "paid_grant_issuer_present": false
+  },
+  "installed": false,
+  "public_release_approved": false
+}
