@@ -1,0 +1,59 @@
+{
+  "schema": "paperclip_source_followup/1",
+  "source_commit": "e8ad1fd98142e6a4f53172f143381a4fa4100dd7",
+  "source_parent": "b2625465d66eb97abc506ce43d1c1769336c1b29",
+  "accepted_combined_base_tree": "47f0df456dace03cb9918435f5f4424969b0e3a9",
+  "result_tree": "bdab2ce706f3e682781ad0e93da935155b937867",
+  "equivalent_narrow_lineage_commit": "596d24629cf7e9be0cda61fd1352343b3d643871",
+  "patch_file": "redacted-refusal-followup.patch",
+  "patch_sha256": "e9a503152e58db62669d486baabcdb0c9f92f55b05760b3947a2859c74ce5343",
+  "files": {
+    "ui/src/lib/agent-config-patch.ts": {
+      "before_blob": "93a8ad3b8094cf1b662f9edb51944c20a15137c1",
+      "after_blob": "63c28e3125851a4f91d84ea6b1ac48f4ff1e0c9d",
+      "before_sha256": "be5ef9b23f9c57c0997b33af06f5b23d26d23a376351be650c19c96cb6563719",
+      "after_sha256": "41d0f24372c2ae46ef19424212845bec6f35b8a15d9367d933b3c05e9d96cd87"
+    },
+    "ui/src/lib/agent-config-patch.test.ts": {
+      "before_blob": "f8f5b3f9c1e37c9f38e6c30e3a7cdc402fe8d7b4",
+      "after_blob": "1f283fd42a1e9cfc2cce914b7ea762b306a335cd",
+      "before_sha256": "69775ad035c8385a0950e5e49c2cadd6b82196edc34e628f3151fa232f4b9bb1",
+      "after_sha256": "caf94ecb94298c31702d6a58eee6364046e6b4c0914f18a890bf77553404f1b0"
+    }
+  },
+  "publication_kind": "sanitized source delta; original private history not imported",
+  "independent_review": "PENDING",
+  "installed": false,
+  "live_actions": false,
+  "limits": [
+    "No distribution binaries, source maps, private build receipts or host configuration are included.",
+    "Existing source approvals remain separately bound to their original trees.",
+    "A package or launcher update requires its own exact-artifact review and host authorization."
+  ],
+  "source_files": {
+    "ui/src/lib/agent-config-patch.test.ts": {
+      "git_blob": "1f283fd42a1e9cfc2cce914b7ea762b306a335cd",
+      "sha256": "caf94ecb94298c31702d6a58eee6364046e6b4c0914f18a890bf77553404f1b0"
+    },
+    "ui/src/lib/agent-config-patch.ts": {
+      "git_blob": "63c28e3125851a4f91d84ea6b1ac48f4ff1e0c9d",
+      "sha256": "41d0f24372c2ae46ef19424212845bec6f35b8a15d9367d933b3c05e9d96cd87"
+    }
+  },
+  "independent_source_review": {
+    "verdict": "APPROVED for exact two-file source delta only",
+    "report_sha256": "18a9763bf2b1fae68f78d978128b712f87b4c0c58efc4edb50693525ead07de3",
+    "existing_tests_passed": 7,
+    "independent_tests_passed": 11,
+    "failed": 0,
+    "scope": "Real mutation/query/client helpers with synthetic fetch; not rendered bundle, installed DB, live save or host adoption.",
+    "runtime": {
+      "node": "22.23.4",
+      "vitest": "3.2.4",
+      "typescript": "5.9.3"
+    }
+  },
+  "publication_mode": "Sanitized source patch only; private upstream history, built payload, evidence and machine paths excluded.",
+  "installed_or_live_actions": false,
+  "distribution_and_launcher_approval": "Separate gates; not conferred by this source review."
+}

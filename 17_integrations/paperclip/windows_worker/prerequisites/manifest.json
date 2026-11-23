@@ -1,0 +1,184 @@
+{
+  "schema_version": 1,
+  "status": "NOT_INDEPENDENTLY_APPROVED",
+  "publication_scope": "Contentsafety-cleared source diff artifacts for a public DRAFT recipe only; no behavioral approval, merge, installation or service authorization",
+  "origin_url": "https://github.com/paperclipai/paperclip.git",
+  "upstream_pin": "d0bdbe11a9624435b6dca3968389bd59c6a559a2",
+  "upstream_tree": "4f8f24f139dfb1d8aee62020a25e9935c3a0b8a0",
+  "fork_base": "5e55510dbeb869bacfcd843f975632dc739519af",
+  "fork_base_tree": "97d0270efa7fc15b153022753fbbe67acc010ea6",
+  "availability": "Main must independently verify exact upstream pin is publicly obtainable; local retained repository is shallow at this pin",
+  "license": "MIT, see ../LICENSE.upstream and ../manifest.json",
+  "patches": [
+    {
+      "paths": [
+        "ui/src/context/CompanyContext.test.tsx",
+        "ui/src/context/CompanyContext.tsx"
+      ],
+      "parent_tree": "4f8f24f139dfb1d8aee62020a25e9935c3a0b8a0",
+      "bytes": 6654,
+      "status": "NOT_INDEPENDENTLY_APPROVED",
+      "tree": "4f1235b55c3fac56815b7e4c2dbd0e91ed0e3bd2",
+      "commit": "5c8b9e4114c657e9c7268e4cc82e63e2b5238a99",
+      "subject": "fix(ui): keep shared company query cache as arrays",
+      "sha256": "8045588d097f9fb323aa14c8cc7d9aac5b370835ff41ef76e2b070e978519bb8",
+      "file": "0001-company-query-cache-arrays.patch",
+      "parent": "d0bdbe11a9624435b6dca3968389bd59c6a559a2"
+    },
+    {
+      "paths": [
+        "cli/src/commands/auth-bootstrap-ceo-privacy.test.ts",
+        "cli/src/commands/auth-bootstrap-ceo.ts",
+        "cli/src/commands/run-bootstrap-privacy.test.ts",
+        "cli/src/commands/run.ts",
+        "server/src/__tests__/http-log-privacy.test.ts",
+        "server/src/middleware/logger.ts"
+      ],
+      "parent_tree": "4f1235b55c3fac56815b7e4c2dbd0e91ed0e3bd2",
+      "bytes": 14084,
+      "status": "NOT_INDEPENDENTLY_APPROVED",
+      "tree": "203d99c00c0afb186ce7ad36abe065f3ffed03a6",
+      "commit": "f8e301c1b8e94c0c80fba47c47c664a04148bf36",
+      "subject": "fix: protect HTTP and bootstrap logs during authenticated onboarding",
+      "sha256": "150ffa63eea2470986da8d8e45ed0711dcde0c2eb57cf553e1b3d11b42cc7093",
+      "file": "0002-http-and-bootstrap-log-privacy.patch",
+      "parent": "5c8b9e4114c657e9c7268e4cc82e63e2b5238a99"
+    },
+    {
+      "paths": [
+        "cli/src/__tests__/board-auth-lifecycle.test.ts",
+        "cli/src/client/board-auth.ts",
+        "server/src/__tests__/cli-auth-browser-privacy.test.ts",
+        "server/src/__tests__/http-log-privacy.test.ts",
+        "server/src/middleware/logger.ts",
+        "ui/src/api/client.ts"
+      ],
+      "parent_tree": "203d99c00c0afb186ce7ad36abe065f3ffed03a6",
+      "bytes": 29221,
+      "status": "NOT_INDEPENDENTLY_APPROVED",
+      "tree": "73cb99bbc495088aabb0ecb579974734fa0a1087",
+      "commit": "fc03825cd15629b6c0c8dcab9937997e3923f4f7",
+      "subject": "fix: preserve bounded CLI pairing and redact lifecycle failures",
+      "sha256": "0f651c6927a378be093db40cbc9b45a9640a0130fb6d12fb1f55efe8cf8ec85b",
+      "file": "0003-bounded-cli-pairing-and-redaction.patch",
+      "parent": "f8e301c1b8e94c0c80fba47c47c664a04148bf36"
+    },
+    {
+      "paths": [
+        "packages/adapter-utils/src/types.ts",
+        "packages/adapters/codex-local/src/ui/build-config.ts",
+        "server/src/__tests__/agent-permissions-routes.test.ts",
+        "ui/src/components/AgentConfigForm.create.test.tsx",
+        "ui/src/components/AgentConfigForm.tsx",
+        "ui/src/components/agent-config-primitives.tsx",
+        "ui/src/lib/new-agent-hire-payload.ts",
+        "ui/src/lib/new-agent-runtime-config.ts",
+        "ui/src/lib/submit-new-agent-hire.test.ts",
+        "ui/src/lib/submit-new-agent-hire.ts",
+        "ui/src/pages/NewAgent.test.tsx",
+        "ui/src/pages/NewAgent.tsx"
+      ],
+      "parent_tree": "73cb99bbc495088aabb0ecb579974734fa0a1087",
+      "bytes": 34233,
+      "status": "NOT_INDEPENDENTLY_APPROVED",
+      "tree": "97d0270efa7fc15b153022753fbbe67acc010ea6",
+      "commit": "5e55510dbeb869bacfcd843f975632dc739519af",
+      "subject": "fix: allow bounded first-engineer hires in the normal UI",
+      "sha256": "1a4e4a0675f029c006a9001cce97bdeebcb3ba47686e467288cfaa75b4f45781",
+      "file": "0004-bounded-first-engineer-ui.patch",
+      "parent": "fc03825cd15629b6c0c8dcab9937997e3923f4f7"
+    }
+  ],
+  "content_safety": {
+    "method": "Full individual diffs inspected in memory before artifacts; known credential/path/auth-URL patterns zero; three account-field matches statically traced. Source inspection output redacted literals.",
+    "prewrite_scans": [
+      {
+        "pattern": "private_absolute_paths",
+        "matches": 0,
+        "commit": "5c8b9e4114c657e9c7268e4cc82e63e2b5238a99"
+      },
+      {
+        "pattern": "key_shapes",
+        "matches": 0,
+        "commit": "5c8b9e4114c657e9c7268e4cc82e63e2b5238a99"
+      },
+      {
+        "pattern": "authenticated_urls",
+        "matches": 0,
+        "commit": "5c8b9e4114c657e9c7268e4cc82e63e2b5238a99"
+      },
+      {
+        "pattern": "private_absolute_paths",
+        "matches": 0,
+        "commit": "f8e301c1b8e94c0c80fba47c47c664a04148bf36"
+      },
+      {
+        "pattern": "key_shapes",
+        "matches": 0,
+        "commit": "f8e301c1b8e94c0c80fba47c47c664a04148bf36"
+      },
+      {
+        "pattern": "authenticated_urls",
+        "matches": 0,
+        "commit": "f8e301c1b8e94c0c80fba47c47c664a04148bf36"
+      },
+      {
+        "pattern": "private_absolute_paths",
+        "matches": 0,
+        "commit": "fc03825cd15629b6c0c8dcab9937997e3923f4f7"
+      },
+      {
+        "pattern": "key_shapes",
+        "matches": 0,
+        "commit": "fc03825cd15629b6c0c8dcab9937997e3923f4f7"
+      },
+      {
+        "pattern": "authenticated_urls",
+        "matches": 0,
+        "commit": "fc03825cd15629b6c0c8dcab9937997e3923f4f7"
+      },
+      {
+        "pattern": "private_absolute_paths",
+        "matches": 0,
+        "commit": "5e55510dbeb869bacfcd843f975632dc739519af"
+      },
+      {
+        "pattern": "key_shapes",
+        "matches": 0,
+        "commit": "5e55510dbeb869bacfcd843f975632dc739519af"
+      },
+      {
+        "pattern": "authenticated_urls",
+        "matches": 0,
+        "commit": "5e55510dbeb869bacfcd843f975632dc739519af"
+      }
+    ],
+    "account_value_matches": [
+      {
+        "classification": "Inert markers array fixture explicitly documented as synthetic in source",
+        "field": "password",
+        "path": "server/src/__tests__/http-log-privacy.test.ts",
+        "commit": "f8e301c1b8e94c0c80fba47c47c664a04148bf36"
+      },
+      {
+        "classification": "Inert markers array fixture explicitly documented as synthetic in source",
+        "field": "Cookie",
+        "path": "server/src/__tests__/http-log-privacy.test.ts",
+        "commit": "f8e301c1b8e94c0c80fba47c47c664a04148bf36"
+      },
+      {
+        "classification": "Runtime challenge.boardApiToken interpolation; no embedded credential",
+        "field": "authorization",
+        "path": "cli/src/client/board-auth.ts",
+        "commit": "fc03825cd15629b6c0c8dcab9937997e3923f4f7"
+      }
+    ],
+    "limitations": "No claim of comprehensive secret detection, functional safety approval or tested applicability",
+    "disposition": "CLEAR_FOR_DRAFT_PACKAGING_ONLY"
+  },
+  "earlier_approved_four": {
+    "unchanged": true,
+    "approval_not_extended_to_these_prerequisites": true
+  },
+  "executed_tests_builds_apply_install_service": false
+}

@@ -1,0 +1,230 @@
+diff --git a/doc/plans/2026-11-11-windows-worker-lifecycle.md b/doc/plans/2026-11-11-windows-worker-lifecycle.md
+index f3d956026056cf97a3d25bf610359e9a658753a2..5a77a063a26cb62b7607d2f7c949b390cace4a4d 100644
+--- a/doc/plans/2026-11-11-windows-worker-lifecycle.md
++++ b/doc/plans/2026-11-11-windows-worker-lifecycle.md
+@@ -41,7 +41,11 @@ Retries of a run share the original deadline; cancelled/expired attempts cannot
+ be relaunched under that run ID. Deadline zero retains existing unlimited-run
+ semantics, while root-exit cleanup is always bounded.
+ Startup acknowledgement has a separate 30-second bound even with deadline zero.
++Command resolution itself settles on cancellation or the earlier of the original
++deadline and the 30-second startup limit; a late target is cleaned without spawn.
+ The helper uses a monotonic deadline after receiving the owner's remaining budget.
++After a Windows owner is lost across a service restart, orphan reconciliation
++records cleanup uncertainty without probing/killing a saved PID or retrying work.
+ 
+ ## Adoption owned by Hermes
+ 
+diff --git a/packages/adapter-utils/src/server-utils.ts b/packages/adapter-utils/src/server-utils.ts
+index 0bce8658b392d8af3f5bc13b790fc4df500c919a..bd9b31de60a2ce64b55ca96d35a9bbd00e332499 100644
+--- a/packages/adapter-utils/src/server-utils.ts
++++ b/packages/adapter-utils/src/server-utils.ts
+@@ -1484,13 +1484,16 @@ export async function runChildProcess(
+   let cancelledBeforeSpawn = false;
+   let pendingClosed = false;
+   let adoptedOwner: RunningProcess | undefined;
++  let stopResolution: (() => void) | undefined;
++  const resolutionCancelled = new Error("worker cancelled during target resolution");
++  const resolutionExpired = new Error("worker target resolution deadline exceeded");
+   const pending: RunningProcess = {
+     child: new ChildProcess(), graceSec: opts.graceSec, processGroupId: null,
+     stop: async () => {
+       if (pendingClosed) return;
+       cancelledBeforeSpawn = true;
+       if (adoptedOwner) await adoptedOwner.stop?.();
+-      else cancelWindowsRunBeforeSpawn(runId);
++      else { cancelWindowsRunBeforeSpawn(runId); stopResolution?.(); }
+     },
+   };
+   if (process.platform === "win32") {
+@@ -1519,10 +1522,41 @@ export async function runChildProcess(
+     }
+ 
+     const mergedEnv = ensurePathInEnv(rawMerged);
+-    void resolveSpawnTarget(command, args, opts.cwd, mergedEnv, {
++    const resolving = resolveSpawnTarget(command, args, opts.cwd, mergedEnv, {
+       remoteExecution: opts.remoteExecution ?? null,
+       remoteEnv: opts.remoteExecution ? opts.env : null,
+-    })
++    });
++    const boundedTarget = process.platform !== "win32" ? resolving : new Promise<SpawnTarget>((ready, failed) => {
++      let finished = false;
++      const until = Math.min(deadline ?? Infinity, performance.now() + 30000);
++      const finishStopped = (error: Error) => {
++        if (finished) return;
++        finished = true;
++        cancelledBeforeSpawn = true;
++        cancelWindowsRunBeforeSpawn(runId);
++        clearTimeout(timer);
++        failed(error);
++      };
++      const timer = setTimeout(() => finishStopped(resolutionExpired), Math.max(0, until - performance.now()));
++      stopResolution = () => finishStopped(resolutionCancelled);
++      const cleanupUnused = (target: SpawnTarget) => {
++        void Promise.resolve().then(() => target.cleanup?.())
++          .catch((err) => onLogError(err, runId, "failed to clean unused spawn target"));
++      };
++      void resolving.then((target) => {
++        if (finished) { cleanupUnused(target); return; }
++        if (performance.now() >= until) { finishStopped(resolutionExpired); cleanupUnused(target); return; }
++        finished = true;
++        clearTimeout(timer);
++        ready(target);
++      }, (error) => {
++        if (finished) return;
++        finished = true;
++        clearTimeout(timer);
++        failed(error);
++      });
++    });
++    void boundedTarget
+       .then((target) => {
+         if (process.platform === "win32") {
+           if (runningProcesses.get(runId) === pending) runningProcesses.delete(runId);
+@@ -1703,7 +1737,14 @@ export async function runChildProcess(
+           });
+         });
+       })
+-      .catch(reject);
++      .catch((error) => {
++        if (error === resolutionCancelled || error === resolutionExpired) {
++          const cancelled = error === resolutionCancelled;
++          resolve({ exitCode: cancelled ? null : 1, signal: cancelled ? "SIGTERM" : null,
++            timedOut: !cancelled, stdout: "", stderr: cancelled ? "" : "Worker target resolution deadline exceeded",
++            pid: null, startedAt: null, cleanupVerified: true, executionStatus: cancelled ? "cancelled" : "failed" });
++        } else reject(error);
++      });
+   }).finally(() => {
+     if (runningProcesses.get(runId) === pending) runningProcesses.delete(runId);
+     pendingClosed = true;
+diff --git a/packages/adapter-utils/src/windows-worker-heartbeat.test.ts b/packages/adapter-utils/src/windows-worker-heartbeat.test.ts
+index 185945ee1c0e4978bae86cd7b55c2ff11b7f04b8..2adb8d38fcc756530be042de76871aa090929854 100644
+--- a/packages/adapter-utils/src/windows-worker-heartbeat.test.ts
++++ b/packages/adapter-utils/src/windows-worker-heartbeat.test.ts
+@@ -58,4 +58,24 @@ describe("Windows heartbeat ownership policy", () => {
+     await execute("new");
+     expect(claim).not.toHaveBeenCalled();
+   });
++  it("quarantines orphaned Windows records without PID probes or automatic retries", async () => {
++    const run = { id: "lost", agentId: "agent", processPid: 1234, processGroupId: null, updatedAt: new Date(), resultJson: {} };
++    const rows = [{ run, adapterType: "codex_local", adapterConfig: {} }];
++    const chain: any = { from: () => chain, innerJoin: () => chain, where: async () => rows };
++    const setStatus = vi.fn(async (_id, _status, details) => ({ ...run, ...details }));
++    const probe = vi.fn(() => { throw new Error("saved PID must not be used"); });
++    const retry = vi.fn();
++    const reap = load("reapOrphanedRuns", {
++      db: { select: () => chain }, heartbeatRuns: {}, agents: {}, eq: () => null,
++      runningProcesses: new Map(), activeRunExecutions: new Set(), process: { platform: "win32" },
++      isTrackedLocalChildProcessAdapter: () => true, isProcessAlive: probe,
++      setRunStatus: setStatus, setWakeupStatus: async () => {}, parseObject: (value: unknown) => value,
++      appendRunEvent: async () => {}, nextRunEventSeq: async () => 1, finalizeAgentStatus: async () => {},
++      enqueueProcessLossRetry: retry, logger: { warn: () => {} },
++    });
++    expect((await reap()).reaped).toBe(1);
++    expect(setStatus.mock.calls[0][2]).toMatchObject({ errorCode: "worker_cleanup_uncertain", resultJson: { cleanupVerified: false } });
++    expect(probe).not.toHaveBeenCalled();
++    expect(retry).not.toHaveBeenCalled();
++  });
+ });
+diff --git a/packages/adapter-utils/src/windows-worker-startup.test.ts b/packages/adapter-utils/src/windows-worker-startup.test.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..8193d593a870f8e16acd1b66fd95aa9e233d99a7
+--- /dev/null
++++ b/packages/adapter-utils/src/windows-worker-startup.test.ts
+@@ -0,0 +1,69 @@
++import { ChildProcess } from "node:child_process";
++import { readFileSync } from "node:fs";
++import vm from "node:vm";
++import ts from "typescript";
++import { afterEach, describe, expect, it, vi } from "vitest";
++
++// Run the real boundary function with only the resolver/native spawn seams mocked.
++const text = readFileSync(new URL("./server-utils.ts", import.meta.url), "utf8");
++const ast = ts.createSourceFile("server-utils.ts", text, ts.ScriptTarget.Latest, true);
++const node = ast.statements.find((statement): statement is ts.FunctionDeclaration =>
++  ts.isFunctionDeclaration(statement) && statement.name?.text === "runChildProcess")!;
++const code = ts.transpileModule(node.getText(ast).replace("export ", ""), {
++  compilerOptions: { target: ts.ScriptTarget.ES2022 },
++}).outputText;
++
++function fixture() {
++  let release!: (value: unknown) => void;
++  const resolver = new Promise((resolve) => { release = resolve; });
++  const registry = new Map();
++  const native = vi.fn(() => { throw new Error("late native launch"); });
++  const fence = vi.fn();
++  const run = vm.runInNewContext(`${code};runChildProcess`, {
++    ChildProcess, process: { platform: "win32", env: {} }, console,
++    performance: { now: () => Date.now() }, setTimeout, clearTimeout,
++    runningProcesses: registry, sanitizeInheritedPaperclipEnv: () => ({}),
++    ensurePathInEnv: (env: unknown) => env, resolveSpawnTarget: () => resolver,
++    runWindowsWorker: native, cancelWindowsRunBeforeSpawn: fence,
++  });
++  return { run, registry, native, fence, release };
++}
++const opts = (timeoutSec: number) => ({ cwd: ".", env: {}, timeoutSec, graceSec: 1, onLog: async () => {} });
++afterEach(() => vi.useRealTimers());
++
++describe("Windows resolution settlement", () => {
++  it("settles a stalled resolver at the original deadline and disposes a late target", async () => {
++    vi.useFakeTimers();
++    const f = fixture();
++    const result = f.run("deadline", "worker", [], opts(1));
++    await vi.advanceTimersByTimeAsync(1001);
++    expect(await result).toMatchObject({ timedOut: true, cleanupVerified: true, pid: null, executionStatus: "failed" });
++    const cleanup = vi.fn(async () => {});
++    f.release({ command: "worker", args: [], cleanup });
++    await vi.runAllTimersAsync();
++    expect(cleanup).toHaveBeenCalledOnce();
++    expect(f.native).not.toHaveBeenCalled();
++    expect(f.fence).toHaveBeenCalledWith("deadline");
++    expect(f.registry.size).toBe(0);
++  });
++  it("settles cancellation without waiting for resolution and fences late launch", async () => {
++    const f = fixture();
++    const result = f.run("cancel", "worker", [], opts(5));
++    await f.registry.get("cancel").stop();
++    expect(await result).toMatchObject({ executionStatus: "cancelled", cleanupVerified: true, pid: null });
++    const cleanup = vi.fn(async () => {});
++    f.release({ command: "worker", args: [], cleanup });
++    await new Promise((resolve) => setImmediate(resolve));
++    expect(cleanup).toHaveBeenCalledOnce();
++    expect(f.native).not.toHaveBeenCalled();
++  });
++  it("bounds resolution startup even when execution timeout is disabled", async () => {
++    vi.useFakeTimers();
++    const f = fixture();
++    const result = f.run("unlimited", "worker", [], opts(0));
++    await vi.advanceTimersByTimeAsync(30001);
++    expect(await result).toMatchObject({ executionStatus: "failed", cleanupVerified: true, pid: null });
++    expect(f.native).not.toHaveBeenCalled();
++    expect(f.registry.size).toBe(0);
++  });
++});
+diff --git a/server/src/services/heartbeat.ts b/server/src/services/heartbeat.ts
+index f22ab2b6d8e78317dd62c35faa18916bf663fc24..733ab13cce8b1df397f6e570635722e44af12dac 100644
+--- a/server/src/services/heartbeat.ts
++++ b/server/src/services/heartbeat.ts
+@@ -4377,6 +4377,23 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {})
+       }
+ 
+       const tracksLocalChild = isTrackedLocalChildProcessAdapter(adapterType);
++      if (process.platform === "win32" && (tracksLocalChild || run.processPid || run.processGroupId)) {
++        // After owner loss a saved PID cannot prove either identity or an empty Job.
++        const message = "Windows worker owner lost; cleanup unverified. No saved-PID termination or automatic retry.";
++        const uncertain = await setRunStatus(run.id, "failed", {
++          error: message, errorCode: "worker_cleanup_uncertain", finishedAt: now,
++          resultJson: { ...parseObject(run.resultJson), executionStatus: "uncertain", cleanupVerified: false },
++        });
++        await setWakeupStatus(run.wakeupRequestId, "failed", { finishedAt: now, error: message });
++        if (uncertain) {
++          await appendRunEvent(uncertain, await nextRunEventSeq(uncertain.id), {
++            eventType: "lifecycle", stream: "system", level: "error", message,
++          });
++        }
++        await finalizeAgentStatus(run.agentId, "failed");
++        reaped.push(run.id);
++        continue;
++      }
+       const processPidAlive = tracksLocalChild && run.processPid && isProcessAlive(run.processPid);
+       const processGroupAlive = tracksLocalChild && run.processGroupId && isProcessGroupAlive(run.processGroupId);
+       if (processPidAlive) {
