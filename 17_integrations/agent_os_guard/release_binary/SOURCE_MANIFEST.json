@@ -48,5 +48,32 @@
       "postimage_git_blob": "19194e9db92f3db5cca0fda2d10f140a28f130d1"
     }
   ],
-  "excluded_executable_sha256": "62bb800fc752cf4a5e1d92fc3859e8d23939feb486ea0f7201317a8c2b4d75a2"
+  "excluded_executable_sha256": "62bb800fc752cf4a5e1d92fc3859e8d23939feb486ea0f7201317a8c2b4d75a2",
+  "state_followup": {
+    "parent": "d162d1f6126cf62965741966eec0fdfbd6ddf4a6",
+    "source": "1857a604bd8a0d177dc87c2c53fc5a3fba53e268",
+    "sha256": "a58244335ab50f37533449ffee479c2bdbef5d30a29226c55077fefac7a4b895",
+    "files": [
+      {
+        "path": "01_projects/runtime_mvp/tests/test_agent_os_state_root.py",
+        "postimage_git_blob": "fd9df3db1de5cee36c947467185e4c2cfc1eed68"
+      },
+      {
+        "path": "03_scripts/agent_os/approval_queue.py",
+        "postimage_git_blob": "0ee553f0ed806300de295c2ee5a2ce561ef05e7b"
+      },
+      {
+        "path": "03_scripts/agent_os/local_worker.py",
+        "postimage_git_blob": "8c0ef94f7eb64e49724aa8ae56267ad71566b239"
+      },
+      {
+        "path": "03_scripts/agent_os/local_worker_trial.py",
+        "postimage_git_blob": "b276090bede3fd479ec5f4295e07872813b67008"
+      },
+      {
+        "path": "03_scripts/agent_os/state_root.py",
+        "postimage_git_blob": "f4443fc5723a2fdb39d26a8a04bd12fbf7646891"
+      }
+    ]
+  }
 }

@@ -1,0 +1,210 @@
+diff --git a/01_projects/runtime_mvp/tests/test_agent_os_state_root.py b/01_projects/runtime_mvp/tests/test_agent_os_state_root.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..fd9df3db1de5cee36c947467185e4c2cfc1eed68
+--- /dev/null
++++ b/01_projects/runtime_mvp/tests/test_agent_os_state_root.py
+@@ -0,0 +1,49 @@
++"""Agent OS mutable state: the repository in a checkout, Ghoti's runtime root in an installed release."""
++import importlib.util
++import os
++from pathlib import Path
++import tempfile
++import unittest
++from unittest.mock import patch
++
++REPO_ROOT = Path(__file__).resolve().parents[3]
++spec = importlib.util.spec_from_file_location("state_root_under_test", REPO_ROOT / "03_scripts/agent_os/state_root.py")
++sr = importlib.util.module_from_spec(spec)
++spec.loader.exec_module(sr)
++
++
++class StateRoot(unittest.TestCase):
++    def release(self, tmp):
++        release = Path(tmp) / "Ghoti" / "releases" / ("a" * 40)
++        (release / "03_scripts").mkdir(parents=True)
++        (release / "release.json").write_text("{}", encoding="utf-8")
++        return release
++
++    def test_a_checkout_keeps_its_state_in_the_repository(self):
++        with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ, {"GHOTI_RUNTIME_ROOT": tmp}):
++            self.assertEqual(sr.state_root(REPO_ROOT), REPO_ROOT.resolve())
++
++    def test_a_release_uses_the_runtime_root_the_entry_sets(self):
++        with tempfile.TemporaryDirectory() as tmp:
++            release = self.release(tmp)
++            runtime = Path(tmp) / "elsewhere" / "runtime"
++            with patch.dict(os.environ, {"GHOTI_RUNTIME_ROOT": str(runtime)}):
++                self.assertEqual(sr.state_root(release), runtime.resolve())
++
++    def test_a_release_without_the_variable_uses_its_installation_runtime(self):
++        with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ, {}, clear=False):
++            os.environ.pop("GHOTI_RUNTIME_ROOT", None)
++            release = self.release(tmp)
++            self.assertEqual(sr.state_root(release), (Path(tmp) / "Ghoti" / "runtime").resolve())
++
++    def test_state_inside_the_release_is_refused(self):
++        with tempfile.TemporaryDirectory() as tmp:
++            release = self.release(tmp)
++            for inside in (release, release / "14_context"):
++                with self.subTest(inside), patch.dict(os.environ, {"GHOTI_RUNTIME_ROOT": str(inside)}):
++                    with self.assertRaises(ValueError):
++                        sr.state_root(release)
++
++
++if __name__ == "__main__":
++    unittest.main()
+diff --git a/03_scripts/agent_os/approval_queue.py b/03_scripts/agent_os/approval_queue.py
+index b9f7047ee1ed8ecc13f67742c92f59fdcefca0fc..0ee553f0ed806300de295c2ee5a2ce561ef05e7b 100644
+--- a/03_scripts/agent_os/approval_queue.py
++++ b/03_scripts/agent_os/approval_queue.py
+@@ -12,10 +12,13 @@ from pathlib import Path
+ from approved_executor import ALLOWED_ACTIONS, execute_approved_request
+ import data_only_writer
+ import guard_binary
++import state_root
+ 
+ 
+ SOURCE_REPO_ROOT = Path(__file__).resolve().parents[2]
+-DEFAULT_QUEUE_ROOT = SOURCE_REPO_ROOT / "14_context" / "agent_os" / "approval_queue"
++# Mutable queue state: the repository in a checkout, Ghoti's runtime root in an installed release.
++STATE_ROOT = state_root.state_root()
++DEFAULT_QUEUE_ROOT = STATE_ROOT / "14_context" / "agent_os" / "approval_queue"
+ STATES = ("pending", "approved", "rejected", "executed", "failed")
+ ACTION_BY_WORKFLOW = {
+     "coding-task": "write_workflow_plan",
+@@ -263,7 +266,7 @@ class ApprovalQueue:
+     def __init__(
+         self,
+         *,
+-        repo_root: Path = SOURCE_REPO_ROOT,
++        repo_root: Path = STATE_ROOT,
+         queue_root: Path = DEFAULT_QUEUE_ROOT,
+         guard_binary: Path | None = None,
+     ):
+diff --git a/03_scripts/agent_os/local_worker.py b/03_scripts/agent_os/local_worker.py
+index 7cbc35bfe7f76e890ffc2d8c0c673bb8dc9b7e1f..8c0ef94f7eb64e49724aa8ae56267ad71566b239 100644
+--- a/03_scripts/agent_os/local_worker.py
++++ b/03_scripts/agent_os/local_worker.py
+@@ -18,9 +18,13 @@ from pathlib import Path
+ 
+ import workflow_templates
+ import data_only_writer
++import state_root
+ 
+ REPO_ROOT = Path(__file__).resolve().parents[2]
+-AGENT_OS_DIR = REPO_ROOT / "14_context" / "agent_os"
++# Writes go to the state root (the repository in a checkout, Ghoti's runtime root in an installed
++# release); reads of released content stay on REPO_ROOT.
++STATE_ROOT = state_root.state_root()
++AGENT_OS_DIR = STATE_ROOT / "14_context" / "agent_os"
+ HANDOFFS_DIR = AGENT_OS_DIR / "handoffs"
+ WORKFLOWS_DIR = AGENT_OS_DIR / "workflows"
+ RUNS_DIR = AGENT_OS_DIR / "runs"
+@@ -54,10 +58,12 @@ def _now() -> str:
+ 
+ 
+ def _rel(path: Path) -> str:
+-    try:
+-        return path.resolve().relative_to(REPO_ROOT).as_posix()
+-    except ValueError:
+-        return path.as_posix()
++    for root in (STATE_ROOT, REPO_ROOT):
++        try:
++            return path.resolve().relative_to(root).as_posix()
++        except ValueError:
++            continue
++    return path.as_posix()
+ 
+ 
+ def _ascii(text: str) -> str:
+@@ -72,9 +78,9 @@ def _approved_extra_roots() -> list[Path]:
+         return []
+     roots: list[Path] = []
+     for entry in data.get("allow_output_dirs", []):
+-        candidate = (REPO_ROOT / str(entry)).resolve()
++        candidate = (STATE_ROOT / str(entry)).resolve()
+         try:
+-            candidate.relative_to(REPO_ROOT)
++            candidate.relative_to(STATE_ROOT)
+         except ValueError:
+             continue  # outside the repo is never approvable here
+         roots.append(candidate)
+diff --git a/03_scripts/agent_os/local_worker_trial.py b/03_scripts/agent_os/local_worker_trial.py
+index 1175c1ef4a0d0e0acf31080ecd79a9a68b572240..b276090bede3fd479ec5f4295e07872813b67008 100644
+--- a/03_scripts/agent_os/local_worker_trial.py
++++ b/03_scripts/agent_os/local_worker_trial.py
+@@ -14,7 +14,6 @@ from typing import Any
+ 
+ 
+ REPO_ROOT = Path(__file__).resolve().parents[2]
+-DEFAULT_OUTPUT_ROOT = REPO_ROOT / "14_context" / "agent_os"
+ TEST_OUTPUT_ROOT = Path(tempfile.gettempdir()) / "ghoti_agent_os_tests"
+ WORKFLOWS = {
+     "automation-plan": "Draft a local automation checklist without executing commands.",
+@@ -104,9 +103,9 @@ def _safe_write_text(path: Path, content: str) -> None:
+             raise OSError(f"safe data-only write failed for {path.name}: {result.stderr.strip()}")
+ 
+ 
+-def _guard_binary_module() -> Any:
+-    script = Path(__file__).resolve().with_name("guard_binary.py")
+-    spec = importlib.util.spec_from_file_location("ghoti_agent_os_guard_binary", script)
++def _sibling_module(name: str) -> Any:
++    script = Path(__file__).resolve().with_name(f"{name}.py")
++    spec = importlib.util.spec_from_file_location(f"ghoti_agent_os_{name}", script)
+     if spec is None or spec.loader is None:
+         raise RuntimeError(f"could not load {script.name}")
+     module = importlib.util.module_from_spec(spec)
+@@ -114,8 +113,12 @@ def _guard_binary_module() -> Any:
+     return module
+ 
+ 
++# Workflow outputs: the repository in a checkout, Ghoti's runtime root in an installed release.
++DEFAULT_OUTPUT_ROOT = _sibling_module("state_root").state_root() / "14_context" / "agent_os"
++
++
+ def _invoke_guard(request: dict[str, Any]) -> dict[str, Any]:
+-    guard_binary = _guard_binary_module()
++    guard_binary = _sibling_module("guard_binary")
+     with tempfile.TemporaryDirectory(prefix="ghoti_agent_os_guard_") as temp_dir:
+         request_path = Path(temp_dir) / "request.json"
+         request_path.write_text(json.dumps(request), encoding="utf-8")
+diff --git a/03_scripts/agent_os/state_root.py b/03_scripts/agent_os/state_root.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..f4443fc5723a2fdb39d26a8a04bd12fbf7646891
+--- /dev/null
++++ b/03_scripts/agent_os/state_root.py
+@@ -0,0 +1,34 @@
++"""Where Agent OS mutable state (approval queue, workflow artifacts, run records, evidence, handoffs) lives.
++
++Development checkout: the repository itself, unchanged.
++
++Installed release (a ``release.json`` beside ``03_scripts``): the release is immutable and every file is
++hash-checked, so mutable state goes to Ghoti's runtime root instead: ``GHOTI_RUNTIME_ROOT`` as
++``current/ghoti.py`` and the supervisor set it, else ``<install>/runtime`` derived the same way from
++``<install>/releases/<commit>``. The state root mirrors the repository layout (as ``ghoti_runtime.paths``
++does for generated state), so every repo-relative path, path restriction and guard decision is unchanged.
++Reads of released content (templates, memory pointers, the guard) stay on the release.
++"""
++
++from __future__ import annotations
++
++import os
++from pathlib import Path
++
++RELEASE_ROOT = Path(__file__).resolve().parents[2]
++RUNTIME_ROOT_ENV_VAR = "GHOTI_RUNTIME_ROOT"
++
++
++def installed(root: Path = RELEASE_ROOT) -> bool:
++    return (Path(root) / "release.json").is_file()
++
++
++def state_root(root: Path = RELEASE_ROOT) -> Path:
++    root = Path(root).resolve()
++    if not installed(root):
++        return root
++    raw = os.environ.get(RUNTIME_ROOT_ENV_VAR, "").strip()
++    base = (Path(raw) if raw else root.parents[1] / "runtime").resolve()
++    if base == root or base.is_relative_to(root):
++        raise ValueError("Agent OS state must live outside the immutable release")
++    return base
