@@ -65,6 +65,13 @@ This file is loaded automatically, so it stays concise.
   tools in the commit message. Keep the configured human operator identity. Never
   change git config.
 
+## Language choice
+
+- Prefer Rust (workspace `rust/`) for suitable new core or native components: policy
+  guards, parsers of untrusted input, runtime or process cores. Keep Python for SDK
+  integration and orchestration, calling the compiled Rust binary rather than
+  mirroring its logic.
+
 ## Subprocess / shell
 
 - Argument-list subprocess only - never a shell string, never an interpolated
