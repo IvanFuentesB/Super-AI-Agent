@@ -1,1 +1,1 @@
-*.patch -text -diff
+*.patch -text diff whitespace=-blank-at-eol,-blank-at-eof
