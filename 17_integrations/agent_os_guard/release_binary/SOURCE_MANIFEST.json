@@ -1,0 +1,52 @@
+{
+  "base": "2205ba44457d981cc92127e0c9bc3fc11131fda3",
+  "source": "d162d1f6126cf62965741966eec0fdfbd6ddf4a6",
+  "patch_sha256": "4d903fe5a592be411216c66f2f7ab75587e6e4cbccb83cad181dc954fe46180c",
+  "files": [
+    {
+      "path": "01_projects/runtime_mvp/tests/test_agent_os_approval_substrate.py",
+      "postimage_git_blob": "e211032ab124a2a95ab1140ba4626dee4a600c69"
+    },
+    {
+      "path": "01_projects/runtime_mvp/tests/test_agent_os_guard_release_binary.py",
+      "postimage_git_blob": "a4caf6ca20a6a1d2d0e96540ad2fc6621aa2bc57"
+    },
+    {
+      "path": "01_projects/runtime_mvp/tests/test_ghoti_v1_supervised_swarm_runtime.py",
+      "postimage_git_blob": "7689fa756fc3bbe0616d98839d6787886e958047"
+    },
+    {
+      "path": "03_scripts/agent_os/approval_queue.py",
+      "postimage_git_blob": "b9f7047ee1ed8ecc13f67742c92f59fdcefca0fc"
+    },
+    {
+      "path": "03_scripts/agent_os/bin/.gitattributes",
+      "postimage_git_blob": "7e162ab0bac60b9081febd86c07132e3db52c6f4"
+    },
+    {
+      "path": "03_scripts/agent_os/bin/agent_os_guard.provenance.json",
+      "postimage_git_blob": "dfcd0c5d5c2dcddde03eca09f0142849f805bd7b"
+    },
+    {
+      "path": "03_scripts/agent_os/guard_binary.py",
+      "postimage_git_blob": "9407448ffcbe9838d1d1d31771a491c576df6154"
+    },
+    {
+      "path": "03_scripts/agent_os/local_worker_trial.py",
+      "postimage_git_blob": "1175c1ef4a0d0e0acf31080ecd79a9a68b572240"
+    },
+    {
+      "path": "03_scripts/agent_os/supervised_swarm_runtime.py",
+      "postimage_git_blob": "4af6af3bb756a974a20692f55c03f106f3ec4715"
+    },
+    {
+      "path": "03_scripts/ghoti_runtime/deployment.py",
+      "postimage_git_blob": "e6023423744a80edf3751edf1f96cef331394565"
+    },
+    {
+      "path": "rust/agent_os_guard/src/main.rs",
+      "postimage_git_blob": "19194e9db92f3db5cca0fda2d10f140a28f130d1"
+    }
+  ],
+  "excluded_executable_sha256": "62bb800fc752cf4a5e1d92fc3859e8d23939feb486ea0f7201317a8c2b4d75a2"
+}
