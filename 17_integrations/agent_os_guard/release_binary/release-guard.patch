@@ -1,0 +1,849 @@
+diff --git a/01_projects/runtime_mvp/tests/test_agent_os_approval_substrate.py b/01_projects/runtime_mvp/tests/test_agent_os_approval_substrate.py
+index 22cb7d2d1ca8bf3dcd311c59cc328659d2f0ce29..e211032ab124a2a95ab1140ba4626dee4a600c69 100644
+--- a/01_projects/runtime_mvp/tests/test_agent_os_approval_substrate.py
++++ b/01_projects/runtime_mvp/tests/test_agent_os_approval_substrate.py
+@@ -265,6 +265,84 @@ class TestApprovalQueueContracts(RustGuardMixin, unittest.TestCase):
+         self.assertEqual(denied["approval_state"], "denied")
+         self.assertEqual(queue.status()["counts"]["pending"], 0)
+ 
++    def _queue(self, binary=None):
++        from approval_queue import ApprovalQueue
++
++        return ApprovalQueue(
++            repo_root=self.repo_root,
++            queue_root=self.queue_root,
++            guard_binary=binary or self.binary,
++        )
++
++    def test_queue_decision_comes_from_the_compiled_rust_guard(self):
++        from approval_queue import build_action_request
++
++        self.assertTrue(self.binary.is_file(), self.binary)
++        request = build_action_request(
++            workflow_id="coding-task",
++            action_id="write_workflow_plan",
++            artifact_path="14_context/agent_os/workflows/normal.md",
++            content="# Normal size\n",
++            created_at="2026-06-13T12:00:00Z",
++        )
++        decision = self._queue().validate(request)
++        self.assertTrue(decision["allow"], decision)
++        self.assertEqual(decision["guard_version"], "agent_os_guard/0.6.0")
++
++    def test_oversized_request_is_refused_by_the_rust_guard_and_never_queued(self):
++        from approval_queue import build_action_request
++
++        request = build_action_request(
++            workflow_id="coding-task",
++            action_id="write_workflow_plan",
++            artifact_path="14_context/agent_os/workflows/oversized.md",
++            content="x" * (256 * 1024 + 1),
++            created_at="2026-06-13T12:00:00Z",
++        )
++        denied = self._queue().propose(request)
++        self.assertFalse(denied["ok"])
++        self.assertEqual(denied["approval_state"], "denied")
++        self.assertEqual(denied["guard_decision"]["reason"], "rust_guard_invocation_failed")
++        self.assertIn("request is oversized", denied["guard_decision"]["error"])
++        self.assertIn("262144-byte limit", denied["guard_decision"]["error"])
++        self.assertEqual(self._queue().status()["counts"]["pending"], 0)
++
++    def test_oversized_ownership_input_is_refused_by_the_rust_guard(self):
++        input_path = Path(self.temp.name) / "ownership.json"
++        input_path.write_text(
++            json.dumps({"owned_files": ["a" * (1024 * 1024)], "locked_paths": []}),
++            encoding="utf-8",
++        )
++        result = subprocess.run(
++            [str(self.binary), "ownership-check", "--input", str(input_path)],
++            capture_output=True,
++            text=True,
++            timeout=30,
++            check=False,
++        )
++        self.assertEqual(result.returncode, 2)
++        self.assertEqual(result.stdout, "")
++        self.assertIn("ownership input is oversized", result.stderr)
++        self.assertIn("1048576-byte limit", result.stderr)
++
++    def test_guard_launch_failure_is_a_structured_denial(self):
++        from approval_queue import build_action_request
++
++        not_a_binary = Path(self.temp.name) / "agent_os_guard_not_a_binary.exe"
++        not_a_binary.write_text("not an executable", encoding="utf-8")
++        request = build_action_request(
++            workflow_id="coding-task",
++            action_id="write_workflow_plan",
++            artifact_path="14_context/agent_os/workflows/launch.md",
++            content="# Launch failure\n",
++            created_at="2026-06-13T12:00:00Z",
++        )
++        denied = self._queue(not_a_binary).propose(request)
++        self.assertFalse(denied["ok"])
++        self.assertEqual(denied["guard_decision"]["reason"], "rust_guard_invocation_failed")
++        self.assertIn("OSError", denied["guard_decision"]["error"])
++
++
+ 
+ class TestApprovedExecutionHygiene(unittest.TestCase):
+     def test_contract_docs_and_executor_exist(self):
+diff --git a/01_projects/runtime_mvp/tests/test_agent_os_guard_release_binary.py b/01_projects/runtime_mvp/tests/test_agent_os_guard_release_binary.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..a4caf6ca20a6a1d2d0e96540ad2fc6621aa2bc57
+--- /dev/null
++++ b/01_projects/runtime_mvp/tests/test_agent_os_guard_release_binary.py
+@@ -0,0 +1,127 @@
++"""The packaged Agent OS guard: release allowlist, installed-route resolution and structured refusals.
++Local fixtures only; no clones, installs, Cargo or network."""
++import hashlib
++import importlib.util
++import json
++import os
++from pathlib import Path
++import sys
++import tempfile
++import unittest
++from unittest.mock import patch
++
++REPO_ROOT = Path(__file__).resolve().parents[3]
++sys.path.insert(0, str(REPO_ROOT / "03_scripts"))
++from ghoti_runtime import deployment as dep  # noqa: E402
++
++spec = importlib.util.spec_from_file_location("guard_binary_under_test", REPO_ROOT / "03_scripts/agent_os/guard_binary.py")
++gb = importlib.util.module_from_spec(spec)
++spec.loader.exec_module(gb)
++
++
++def sha(data):
++    return hashlib.sha256(data).hexdigest()
++
++
++class ReleaseAllowlist(unittest.TestCase):
++    def test_only_the_reviewed_guard_executable_enters_a_release(self):
++        self.assertTrue(dep._included(gb.PACKAGED))
++        self.assertTrue(dep._included(gb.PROVENANCE))
++        for other in ("03_scripts/agent_os/bin/other.exe", "03_scripts/agent_os/agent_os_guard.exe",
++                      "03_scripts/ghoti.exe", "rust/target/release/agent_os_guard.exe"):
++            with self.subTest(other):
++                self.assertFalse(dep._included(other))
++
++
++class PackagedBinary(unittest.TestCase):
++    """The committed executable is the pinned one and is the 0.6.0 guard."""
++
++    def test_committed_executable_matches_its_pin_and_runs(self):
++        binary = REPO_ROOT / gb.PACKAGED
++        record = json.loads((REPO_ROOT / gb.PROVENANCE).read_text(encoding="utf-8"))
++        self.assertEqual(sha(binary.read_bytes()), record["sha256"])
++        self.assertEqual(binary.stat().st_size, record["bytes"])
++        decision = gb.invoke(["--check"], executable=binary)
++        self.assertEqual(decision.get("guard_version"), record["guard_version"])
++        self.assertIs(decision.get("allow"), True)
++
++
++class InstalledRoute(unittest.TestCase):
++    """A release layout: release.json beside 03_scripts. Only the packaged, pinned, manifest-bound bytes run."""
++
++    def layout(self, root, binary=b"MZ guard bytes", manifest_digest=None, pin=None, packaged=True):
++        files = {"03_scripts/ghoti.py": sha(b"# entry")}
++        (root / "03_scripts").mkdir(parents=True)
++        (root / "03_scripts/ghoti.py").write_bytes(b"# entry")
++        if packaged:
++            path = root / gb.PACKAGED
++            path.parent.mkdir(parents=True)
++            path.write_bytes(binary)
++            files[gb.PACKAGED] = manifest_digest or sha(binary)
++            provenance = json.dumps({"sha256": pin or sha(binary)}).encode()
++            (root / gb.PROVENANCE).write_bytes(provenance)
++            files[gb.PROVENANCE] = sha(provenance)
++        (root / "release.json").write_text(json.dumps({"commit": "a" * 40, "files": files}), encoding="utf-8")
++
++    def resolve(self, **kw):
++        with tempfile.TemporaryDirectory() as tmp:
++            root = Path(tmp)
++            self.layout(root, **kw)
++            return gb.resolve(root), root
++
++    def test_the_bound_packaged_executable_is_the_only_route(self):
++        target, root = self.resolve()
++        self.assertEqual(target["route"], "release")
++        self.assertEqual(target["argv"], [str(root / gb.PACKAGED)])
++
++    def test_development_overrides_are_ignored_in_a_release(self):
++        with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ, {"GHOTI_AGENT_OS_GUARD_BINARY": sys.executable}), \
++                patch.object(gb.shutil, "which", return_value=sys.executable):
++            root = Path(tmp)
++            self.layout(root, packaged=False)
++            (root / "rust/target/release").mkdir(parents=True)
++            (root / "rust/target/release/agent_os_guard.exe").write_bytes(b"dev build")
++            (root / "rust/Cargo.toml").write_text("[workspace]\n")
++            self.assertEqual(gb.resolve(root)["reason"], "rust_guard_unavailable")
++
++    def test_bytes_that_differ_from_the_manifest_or_the_pin_are_refused(self):
++        for kw in ({"manifest_digest": "0" * 64}, {"pin": "0" * 64}):
++            with self.subTest(kw):
++                target, _ = self.resolve(**kw)
++                self.assertEqual(target["reason"], "rust_guard_binary_invalid")
++                self.assertFalse(target["allow"])
++
++    def test_a_release_without_the_guard_is_unavailable(self):
++        target, _ = self.resolve(packaged=False)
++        self.assertEqual(target, gb.refusal("rust_guard_unavailable", "this release does not package agent_os_guard.exe"))
++
++
++class Refusals(unittest.TestCase):
++    """invoke() never raises: every failure is a structured denial."""
++
++    def run_with(self, code, timeout=30):
++        return gb.invoke(["-c", code], executable=Path(sys.executable), timeout=timeout)
++
++    def test_non_zero_exit_timeout_and_non_json_output_are_denials(self):
++        cases = {"exit": ("import sys; sys.stderr.write('boom'); sys.exit(3)", "boom"),
++                 "not json": ("print('hello')", "not a JSON object"),
++                 "json list": ("print('[1]')", "not a JSON object"),
++                 "timeout": ("import time; time.sleep(10)", "TimeoutExpired")}
++        for name, (code, expect) in cases.items():
++            with self.subTest(name):
++                result = self.run_with(code, timeout=2 if name == "timeout" else 30)
++                self.assertEqual(result["reason"], "rust_guard_invocation_failed")
++                self.assertIn(expect, result["error"])
++                self.assertFalse(result["allow"])
++
++    def test_an_executable_that_cannot_launch_is_a_denial(self):
++        with tempfile.TemporaryDirectory() as tmp:
++            fake = Path(tmp) / "agent_os_guard.exe"
++            fake.write_text("not an executable", encoding="utf-8")
++            result = gb.invoke(["--check"], executable=fake)
++        self.assertEqual(result["reason"], "rust_guard_invocation_failed")
++        self.assertIn("OSError", result["error"])
++
++
++if __name__ == "__main__":
++    unittest.main()
+diff --git a/01_projects/runtime_mvp/tests/test_ghoti_v1_supervised_swarm_runtime.py b/01_projects/runtime_mvp/tests/test_ghoti_v1_supervised_swarm_runtime.py
+index f3814a05b086b21a9b7fb428993e3d45793ee8f7..7689fa756fc3bbe0616d98839d6787886e958047 100644
+--- a/01_projects/runtime_mvp/tests/test_ghoti_v1_supervised_swarm_runtime.py
++++ b/01_projects/runtime_mvp/tests/test_ghoti_v1_supervised_swarm_runtime.py
+@@ -186,7 +186,7 @@ class TestGhotiV1SupervisedSwarmRuntime(unittest.TestCase):
+     def test_rust_ownership_checker_is_authoritative(self):
+         result = self.swarm._rust_ownership_check(self.plan, REPO_ROOT)
+         self.assertTrue(result["ok"], result)
+-        self.assertEqual(result["guard_version"], "agent_os_guard/0.5.0")
++        self.assertEqual(result["guard_version"], "agent_os_guard/0.6.0")
+         self.assertEqual(len(result["decisions"]), 5)
+         self.assertTrue(all(item["allow"] for item in result["decisions"]))
+ 
+@@ -203,10 +203,15 @@ class TestGhotiV1SupervisedSwarmRuntime(unittest.TestCase):
+ 
+     def test_runtime_has_only_fixed_rust_guard_process_surface(self):
+         source = SCRIPT.read_text(encoding="utf-8")
+-        self.assertEqual(source.count("subprocess.run("), 1)
++        # The runtime runs no process itself; its one process surface is guard_binary.py, which runs only
++        # the resolved agent_os_guard executable.
++        guard = (SCRIPT.parent / "guard_binary.py").read_text(encoding="utf-8")
++        self.assertEqual(source.count("subprocess.run("), 0)
++        self.assertEqual(guard.count("subprocess.run("), 1)
+         self.assertIn('"agent_os_guard"', source)
+-        for forbidden in ("shell=True", "os.system(", "Popen(", "Invoke-Expression", "docker run"):
+-            self.assertNotIn(forbidden, source)
++        for text in (source, guard):
++            for forbidden in ("shell=True", "os.system(", "Popen(", "Invoke-Expression", "docker run"):
++                self.assertNotIn(forbidden, text)
+         for flag in ("agent_processes_spawned", "model_calls_made", "live_execution"):
+             self.assertIn(f'"{flag}": False', source)
+ 
+diff --git a/03_scripts/agent_os/approval_queue.py b/03_scripts/agent_os/approval_queue.py
+index 7901fab723ecfd9a83d490e065abe9b793f8354d..b9f7047ee1ed8ecc13f67742c92f59fdcefca0fc 100644
+--- a/03_scripts/agent_os/approval_queue.py
++++ b/03_scripts/agent_os/approval_queue.py
+@@ -4,20 +4,17 @@ from __future__ import annotations
+ 
+ import hashlib
+ import json
+-import os
+ import re
+-import shutil
+-import subprocess
+ import tempfile
+ from datetime import datetime, timedelta, timezone
+ from pathlib import Path
+ 
+ from approved_executor import ALLOWED_ACTIONS, execute_approved_request
+ import data_only_writer
++import guard_binary
+ 
+ 
+ SOURCE_REPO_ROOT = Path(__file__).resolve().parents[2]
+-RUST_MANIFEST = SOURCE_REPO_ROOT / "rust" / "Cargo.toml"
+ DEFAULT_QUEUE_ROOT = SOURCE_REPO_ROOT / "14_context" / "agent_os" / "approval_queue"
+ STATES = ("pending", "approved", "rejected", "executed", "failed")
+ ACTION_BY_WORKFLOW = {
+@@ -307,92 +304,14 @@ class ApprovalQueue:
+                     return state, record
+         raise FileNotFoundError(request_id)
+ 
+-    def _guard_command(self, request_path: Path) -> list[str] | None:
+-        if self.guard_binary and self.guard_binary.is_file():
+-            return [
+-                str(self.guard_binary),
+-                "validate",
+-                "--request",
+-                str(request_path),
+-                "--repo-root",
+-                str(self.repo_root),
+-                "--json",
+-            ]
+-        configured = os.environ.get("GHOTI_AGENT_OS_GUARD_BINARY")
+-        candidates = [
+-            Path(configured) if configured else None,
+-            SOURCE_REPO_ROOT / "rust" / "target" / "release" / "agent_os_guard.exe",
+-            SOURCE_REPO_ROOT / "rust" / "target" / "release" / "agent_os_guard",
+-            SOURCE_REPO_ROOT / "rust" / "target" / "debug" / "agent_os_guard.exe",
+-            SOURCE_REPO_ROOT / "rust" / "target" / "debug" / "agent_os_guard",
+-        ]
+-        binary = next((candidate for candidate in candidates if candidate and candidate.is_file()), None)
+-        if binary:
+-            return [
+-                str(binary),
+-                "validate",
+-                "--request",
+-                str(request_path),
+-                "--repo-root",
+-                str(self.repo_root),
+-                "--json",
+-            ]
+-        cargo = shutil.which("cargo")
+-        if not cargo:
+-            return None
+-        return [
+-            cargo,
+-            "run",
+-            "--quiet",
+-            "--manifest-path",
+-            str(RUST_MANIFEST),
+-            "--bin",
+-            "agent_os_guard",
+-            "--",
+-            "validate",
+-            "--request",
+-            str(request_path),
+-            "--repo-root",
+-            str(self.repo_root),
+-            "--json",
+-        ]
+-
+     def validate(self, request: dict) -> dict:
+         with tempfile.TemporaryDirectory(prefix="ghoti_approval_guard_") as temp_dir:
+             request_path = Path(temp_dir) / "request.json"
+             request_path.write_text(json.dumps(request), encoding="utf-8")
+-            command = self._guard_command(request_path)
+-            if command is None:
+-                return {
+-                    "allow": False,
+-                    "decision": "denied",
+-                    "reason": "rust_guard_unavailable",
+-                    "reasons": ["rust_guard_unavailable"],
+-                }
+-            env = os.environ.copy()
+-            env.setdefault(
+-                "CARGO_TARGET_DIR",
+-                str(Path(tempfile.gettempdir()) / "ghoti_agent_os_approval_guard"),
+-            )
+-            result = subprocess.run(
+-                command,
+-                cwd=SOURCE_REPO_ROOT,
+-                env=env,
+-                capture_output=True,
+-                text=True,
+-                timeout=180,
+-                shell=False,
+-                check=False,
++            return guard_binary.invoke(
++                ["validate", "--request", str(request_path), "--repo-root", str(self.repo_root), "--json"],
++                executable=self.guard_binary,
+             )
+-        if result.returncode != 0:
+-            return {
+-                "allow": False,
+-                "decision": "denied",
+-                "reason": "rust_guard_invocation_failed",
+-                "reasons": ["rust_guard_invocation_failed"],
+-                "error": result.stderr.strip(),
+-            }
+-        return json.loads(result.stdout)
+ 
+     def propose(self, request: dict) -> dict:
+         request = json.loads(json.dumps(request))
+diff --git a/03_scripts/agent_os/bin/.gitattributes b/03_scripts/agent_os/bin/.gitattributes
+new file mode 100644
+index 0000000000000000000000000000000000000000..7e162ab0bac60b9081febd86c07132e3db52c6f4
+--- /dev/null
++++ b/03_scripts/agent_os/bin/.gitattributes
+@@ -0,0 +1 @@
++agent_os_guard.exe binary
+diff --git a/03_scripts/agent_os/bin/agent_os_guard.provenance.json b/03_scripts/agent_os/bin/agent_os_guard.provenance.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..dfcd0c5d5c2dcddde03eca09f0142849f805bd7b
+--- /dev/null
++++ b/03_scripts/agent_os/bin/agent_os_guard.provenance.json
+@@ -0,0 +1,22 @@
++{
++  "schema": "ghoti_prebuilt_binary/1",
++  "name": "agent_os_guard.exe",
++  "guard_version": "agent_os_guard/0.6.0",
++  "sha256": "62bb800fc752cf4a5e1d92fc3859e8d23939feb486ea0f7201317a8c2b4d75a2",
++  "bytes": 470016,
++  "source": {
++    "commit": "b363afa956de48ff6dab432d06d4b3a8e9c3fb3b",
++    "rust_tree": "6ed16c506967700847159b96a3187903507c125e",
++    "main_rs_blob": "19194e9db92f3db5cca0fda2d10f140a28f130d1",
++    "cargo_lock_blob": "9835152e9ab268097cd381d9318f8a9adaa45abf"
++  },
++  "toolchain": {
++    "rustc": "rustc 1.95.0 (59807616e 2026-04-14), commit 59807616e1fa2540724bfbac14d7976d7e4a3860, LLVM 22.1.2",
++    "cargo": "cargo 1.95.0 (f2d3ce0bd 2026-03-21)",
++    "target": "x86_64-pc-windows-msvc",
++    "linker": "MSVC link.exe 14.42.34433 (Visual Studio 2022 Build Tools)"
++  },
++  "build": "git archive b363afa956de48ff6dab432d06d4b3a8e9c3fb3b rust | tar -x; cd rust; RUSTFLAGS='-C link-arg=/Brepro' cargo build --offline --locked --release --bin agent_os_guard",
++  "reproducible": "two independent builds of that archive in separate directories produced these identical bytes; /Brepro replaces the link timestamp and PDB GUID with content hashes",
++  "binding": "an installed release runs this file only when its bytes equal this sha256 and its release.json entry (03_scripts/agent_os/guard_binary.py)"
++}
+diff --git a/03_scripts/agent_os/guard_binary.py b/03_scripts/agent_os/guard_binary.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..9407448ffcbe9838d1d1d31771a491c576df6154
+--- /dev/null
++++ b/03_scripts/agent_os/guard_binary.py
+@@ -0,0 +1,110 @@
++"""Which agent_os_guard executable runs, and how any failure becomes a structured refusal.
++
++Installed release (a ``release.json`` beside ``03_scripts``): only the packaged executable
++``03_scripts/agent_os/bin/agent_os_guard.exe``, and only when its bytes equal both its entry in the
++release manifest and the reviewed pin in ``agent_os_guard.provenance.json``. No environment
++override, development ``rust/target`` directory or Cargo is consulted, so the installed route does
++not depend on a development checkout or a Rust toolchain.
++
++Development checkout (no ``release.json``): the existing order, unchanged:
++``GHOTI_AGENT_OS_GUARD_BINARY``, ``rust/target/{release,debug}``, then ``cargo run``.
++
++Refusals (``allow: False``, ``decision: "denied"``):
++  rust_guard_unavailable        no executable for this route
++  rust_guard_binary_invalid     the packaged bytes differ from the release manifest or the pin
++  rust_guard_invocation_failed  cannot launch, timed out, non-zero exit, or output that is not a JSON object
++"""
++
++from __future__ import annotations
++
++import hashlib
++import json
++import os
++import shutil
++import subprocess
++import tempfile
++from pathlib import Path
++
++REPO_ROOT = Path(__file__).resolve().parents[2]
++PACKAGED = "03_scripts/agent_os/bin/agent_os_guard.exe"
++PROVENANCE = "03_scripts/agent_os/bin/agent_os_guard.provenance.json"
++_MAX_RECORD_BYTES = 2_000_000
++
++
++def _sha256(path: Path) -> str:
++    return hashlib.sha256(path.read_bytes()).hexdigest()
++
++
++def _record(path: Path) -> dict:
++    if not path.is_file() or path.stat().st_size > _MAX_RECORD_BYTES:
++        return {}
++    value = json.loads(path.read_text(encoding="utf-8"))
++    return value if isinstance(value, dict) else {}
++
++
++def refusal(reason: str, error: str | None = None) -> dict:
++    result = {"allow": False, "decision": "denied", "reason": reason, "reasons": [reason]}
++    if error:
++        result["error"] = error[-500:]
++    return result
++
++
++def resolve(root: Path = REPO_ROOT) -> dict:
++    """``{"argv": [...], "route": ..., "sha256": ...}`` for the executable to run, or a refusal."""
++    root = Path(root)
++    if (root / "release.json").is_file():
++        try:
++            files = _record(root / "release.json").get("files", {})
++            digest = files.get(PACKAGED) if isinstance(files, dict) else None
++            binary = root / PACKAGED
++            if not digest or not binary.is_file():
++                return refusal("rust_guard_unavailable", "this release does not package agent_os_guard.exe")
++            pin = _record(root / PROVENANCE).get("sha256")
++            actual = _sha256(binary)
++        except (OSError, ValueError) as error:
++            return refusal("rust_guard_binary_invalid", f"{type(error).__name__}: {error}")
++        if actual != digest or actual != pin:
++            return refusal("rust_guard_binary_invalid",
++                           f"packaged guard {actual} differs from the release manifest or the reviewed pin")
++        return {"argv": [str(binary)], "route": "release", "sha256": actual}
++    configured = os.environ.get("GHOTI_AGENT_OS_GUARD_BINARY")
++    candidates = [
++        Path(configured) if configured else None,
++        root / "rust" / "target" / "release" / "agent_os_guard.exe",
++        root / "rust" / "target" / "release" / "agent_os_guard",
++        root / "rust" / "target" / "debug" / "agent_os_guard.exe",
++        root / "rust" / "target" / "debug" / "agent_os_guard",
++    ]
++    binary = next((candidate for candidate in candidates if candidate and candidate.is_file()), None)
++    if binary:
++        return {"argv": [str(binary)], "route": "development-binary", "sha256": None}
++    cargo = shutil.which("cargo")
++    if cargo and (root / "rust" / "Cargo.toml").is_file():
++        return {"argv": [cargo, "run", "--quiet", "--manifest-path", str(root / "rust" / "Cargo.toml"),
++                         "--bin", "agent_os_guard", "--"], "route": "development-cargo", "sha256": None}
++    return refusal("rust_guard_unavailable", "no agent_os_guard binary and no Cargo workspace")
++
++
++def invoke(args: list[str], *, root: Path = REPO_ROOT, timeout: int = 180, executable: Path | None = None) -> dict:
++    """Run the guard with ``args``; its JSON decision, or a structured refusal. Never raises for a
++    guard that is missing, invalid, unlaunchable, slow or failing. ``executable`` (an explicit
++    binary that exists, as tests pass it) replaces resolution."""
++    target = {"argv": [str(executable)]} if executable is not None and Path(executable).is_file() else resolve(root)
++    if "argv" not in target:
++        return target
++    env = os.environ.copy()
++    env.setdefault("CARGO_TARGET_DIR", str(Path(tempfile.gettempdir()) / "ghoti_agent_os_guard_target"))
++    try:
++        result = subprocess.run(target["argv"] + [str(a) for a in args], cwd=root, env=env, capture_output=True,
++                                text=True, timeout=timeout, shell=False, check=False)
++    except (OSError, subprocess.SubprocessError) as error:
++        return refusal("rust_guard_invocation_failed", f"{type(error).__name__}: {error}")
++    if result.returncode != 0:
++        return refusal("rust_guard_invocation_failed", result.stderr.strip() or f"exit {result.returncode}")
++    try:
++        decision = json.loads(result.stdout)
++    except ValueError:
++        decision = None
++    if not isinstance(decision, dict):
++        return refusal("rust_guard_invocation_failed", "guard output is not a JSON object")
++    return decision
+diff --git a/03_scripts/agent_os/local_worker_trial.py b/03_scripts/agent_os/local_worker_trial.py
+index f2a36e958529dca28c857366e6bf56148c1a4c40..1175c1ef4a0d0e0acf31080ecd79a9a68b572240 100644
+--- a/03_scripts/agent_os/local_worker_trial.py
++++ b/03_scripts/agent_os/local_worker_trial.py
+@@ -5,9 +5,8 @@ from __future__ import annotations
+ 
+ import argparse
+ import base64
++import importlib.util
+ import json
+-import os
+-import shutil
+ import subprocess
+ import tempfile
+ from pathlib import Path
+@@ -15,7 +14,6 @@ from typing import Any
+ 
+ 
+ REPO_ROOT = Path(__file__).resolve().parents[2]
+-RUST_MANIFEST = REPO_ROOT / "rust" / "Cargo.toml"
+ DEFAULT_OUTPUT_ROOT = REPO_ROOT / "14_context" / "agent_os"
+ TEST_OUTPUT_ROOT = Path(tempfile.gettempdir()) / "ghoti_agent_os_tests"
+ WORKFLOWS = {
+@@ -106,53 +104,25 @@ def _safe_write_text(path: Path, content: str) -> None:
+             raise OSError(f"safe data-only write failed for {path.name}: {result.stderr.strip()}")
+ 
+ 
++def _guard_binary_module() -> Any:
++    script = Path(__file__).resolve().with_name("guard_binary.py")
++    spec = importlib.util.spec_from_file_location("ghoti_agent_os_guard_binary", script)
++    if spec is None or spec.loader is None:
++        raise RuntimeError(f"could not load {script.name}")
++    module = importlib.util.module_from_spec(spec)
++    spec.loader.exec_module(module)
++    return module
++
++
+ def _invoke_guard(request: dict[str, Any]) -> dict[str, Any]:
+-    cargo = shutil.which("cargo")
+-    if not cargo:
+-        return {
+-            "allow": False,
+-            "decision": "denied",
+-            "reason": "cargo_unavailable",
+-            "reasons": ["cargo_unavailable"],
+-        }
++    guard_binary = _guard_binary_module()
+     with tempfile.TemporaryDirectory(prefix="ghoti_agent_os_guard_") as temp_dir:
+         request_path = Path(temp_dir) / "request.json"
+         request_path.write_text(json.dumps(request), encoding="utf-8")
+-        env = os.environ.copy()
+-        env.setdefault(
+-            "CARGO_TARGET_DIR",
+-            str(Path(tempfile.gettempdir()) / "ghoti_agent_os_guard_target"),
+-        )
+-        result = subprocess.run(
+-            [
+-                cargo,
+-                "run",
+-                "--quiet",
+-                "--manifest-path",
+-                str(RUST_MANIFEST),
+-                "--bin",
+-                "agent_os_guard",
+-                "--",
+-                "--request",
+-                str(request_path),
+-                "--json",
+-            ],
+-            cwd=REPO_ROOT,
+-            env=env,
+-            check=False,
+-            capture_output=True,
+-            text=True,
++        return guard_binary.invoke(
++            ["validate", "--request", str(request_path), "--repo-root", str(REPO_ROOT), "--json"],
+             timeout=120,
+         )
+-    if result.returncode != 0:
+-        return {
+-            "allow": False,
+-            "decision": "denied",
+-            "reason": "guard_invocation_failed",
+-            "reasons": ["guard_invocation_failed"],
+-            "stderr": result.stderr.strip(),
+-        }
+-    return json.loads(result.stdout)
+ 
+ 
+ def _plan_markdown(workflow: str, mode: str) -> str:
+diff --git a/03_scripts/agent_os/supervised_swarm_runtime.py b/03_scripts/agent_os/supervised_swarm_runtime.py
+index 35344028fa90d57f0d7c7767709db4ad577d2002..4af6af3bb756a974a20692f55c03f106f3ec4715 100644
+--- a/03_scripts/agent_os/supervised_swarm_runtime.py
++++ b/03_scripts/agent_os/supervised_swarm_runtime.py
+@@ -15,7 +15,6 @@ import importlib.util
+ import json
+ import os
+ import re
+-import shutil
+ import subprocess
+ import tempfile
+ from datetime import datetime, timedelta, timezone
+@@ -25,10 +24,11 @@ from typing import Any, Iterator
+ 
+ REPO_ROOT = Path(__file__).resolve().parents[2]
+ DEFAULT_STATE_ROOT = REPO_ROOT / "14_context" / "agent_os" / "swarm_runtime"
+-RUST_MANIFEST = REPO_ROOT / "rust" / "Cargo.toml"
+ # The resolver is the single source of truth for which installed local model may run a
+ # role. It is loaded from this script's own repository, never from a caller-supplied root.
+ MODEL_RESOLVER_SCRIPT = REPO_ROOT / "03_scripts" / "model_router" / "model_resolver.py"
++# The one process surface: the Rust agent_os_guard, resolved and run by guard_binary.py from this repository.
++GUARD_BINARY_SCRIPT = REPO_ROOT / "03_scripts" / "agent_os" / "guard_binary.py"
+ PLAN_SCHEMA = "ghoti_supervised_swarm_plan/1"
+ RUN_SCHEMA = "ghoti_supervised_swarm_run/1"
+ ROUTE_SCHEMA = "ghoti_supervised_swarm_model_routes/1"
+@@ -190,6 +190,15 @@ def _resolver_module() -> Any:
+     return module
+ 
+ 
++def _guard_binary_module() -> Any:
++    spec = importlib.util.spec_from_file_location("ghoti_agent_os_guard_binary_swarm", GUARD_BINARY_SCRIPT)
++    if spec is None or spec.loader is None:
++        raise RuntimeError(f"could not load {GUARD_BINARY_SCRIPT.name}")
++    module = importlib.util.module_from_spec(spec)
++    spec.loader.exec_module(module)
++    return module
++
++
+ def resolve_role_routes(
+     *,
+     installed: Any = None,
+@@ -441,9 +450,7 @@ def validate_plan(plan: Any, *, routes: dict | None = None) -> dict:
+ 
+ 
+ def _rust_ownership_check(plan: dict, repo_root: Path = REPO_ROOT) -> dict:
+-    cargo = shutil.which("cargo")
+-    if not cargo or not (repo_root / "rust" / "Cargo.toml").is_file():
+-        return {"ok": False, "error": "rust_agent_os_guard_unavailable"}
++    guard_binary = _guard_binary_module()
+     decisions = []
+     previous: list[str] = []
+     with tempfile.TemporaryDirectory(prefix="ghoti_swarm_ownership_") as temp:
+@@ -451,41 +458,17 @@ def _rust_ownership_check(plan: dict, repo_root: Path = REPO_ROOT) -> dict:
+         for task in plan["tasks"]:
+             payload = {"owned_files": task["owned_files"], "locked_paths": previous}
+             input_path.write_text(json.dumps(payload), encoding="utf-8")
+-            command = [
+-                cargo,
+-                "run",
+-                "--quiet",
+-                "--manifest-path",
+-                str(repo_root / "rust" / "Cargo.toml"),
+-                "-p",
+-                "agent_os_guard",
+-                "--",
+-                "ownership-check",
+-                "--input",
+-                str(input_path),
+-                "--repo-root",
+-                str(repo_root),
+-                "--json",
+-            ]
+-            environment = os.environ.copy()
+-            environment["CARGO_TARGET_DIR"] = str(
+-                Path(tempfile.gettempdir()) / "ghoti_v1_rust_target"
+-            )
+-            completed = subprocess.run(
+-                command,
+-                cwd=repo_root,
+-                env=environment,
+-                capture_output=True,
+-                text=True,
++            decision = guard_binary.invoke(
++                ["ownership-check", "--input", str(input_path), "--repo-root", str(repo_root), "--json"],
++                root=repo_root,
+                 timeout=90,
+-                check=False,
+             )
+-            if completed.returncode != 0:
+-                return {"ok": False, "error": "rust_guard_failed", "stderr": completed.stderr[-500:]}
+-            try:
+-                decision = json.loads(completed.stdout)
+-            except json.JSONDecodeError:
+-                return {"ok": False, "error": "rust_guard_invalid_json"}
++            reason = decision.get("reason") if decision.get("decision") == "denied" and "schema" not in decision else None
++            if reason == "rust_guard_unavailable":
++                return {"ok": False, "error": "rust_agent_os_guard_unavailable"}
++            if reason in ("rust_guard_binary_invalid", "rust_guard_invocation_failed"):
++                return {"ok": False, "error": "rust_guard_binary_invalid" if reason == "rust_guard_binary_invalid"
++                        else "rust_guard_failed", "stderr": decision.get("error", "")}
+             decisions.append({"task_id": task["task_id"], **decision})
+             if not decision.get("allow"):
+                 return {"ok": False, "error": "rust_ownership_denied", "decisions": decisions}
+diff --git a/03_scripts/ghoti_runtime/deployment.py b/03_scripts/ghoti_runtime/deployment.py
+index 1c68cdfef638936165e24b1f1f0728b9510ac05a..e6023423744a80edf3751edf1f96cef331394565 100644
+--- a/03_scripts/ghoti_runtime/deployment.py
++++ b/03_scripts/ghoti_runtime/deployment.py
+@@ -17,8 +17,9 @@ EXCLUDED = {".git", ".obsidian", "external_sources", "third_party", "node_module
+             "evidence", "screenshots", "logs", "runtime", "runtime_data", "cache", "generated", "outbox"}
+ EXTENSIONS = {".py", ".json", ".md", ".html", ".js", ".css", ".png", ".ico", ".svg",
+               ".webmanifest", ".txt", ".toml", ".ps1"}
+-# Permit the reviewed plugin manifest, not arbitrary YAML configuration.
+-EXACT_FILES = {"03_scripts/hermes_plugins/ghoti-bridge/plugin.yaml"}
++# Permit the reviewed plugin manifest, not arbitrary YAML configuration, and the one reviewed prebuilt
++# Windows executable: the Agent OS guard, pinned by its provenance record and bound by release.json.
++EXACT_FILES = {"03_scripts/hermes_plugins/ghoti-bridge/plugin.yaml", "03_scripts/agent_os/bin/agent_os_guard.exe"}
+ 
+ 
+ def install_root(root=None):
+diff --git a/rust/agent_os_guard/src/main.rs b/rust/agent_os_guard/src/main.rs
+index 338da88767676ebd8c71bda43806be549f2821e6..19194e9db92f3db5cca0fda2d10f140a28f130d1 100644
+--- a/rust/agent_os_guard/src/main.rs
++++ b/rust/agent_os_guard/src/main.rs
+@@ -3,10 +3,16 @@ use serde_json::Value;
+ use std::collections::BTreeSet;
+ use std::env;
+ use std::fs;
++use std::io::Read;
+ use std::path::Path;
+ use std::process::ExitCode;
+ 
+-const GUARD_VERSION: &str = "agent_os_guard/0.5.0";
++const GUARD_VERSION: &str = "agent_os_guard/0.6.0";
++/// Largest `--request` document the guard reads (256 KiB). A real action request is a few KiB; a larger file is
++/// refused before it is parsed, so a corrupt or hostile file cannot make the guard allocate without bound.
++const MAX_REQUEST_BYTES: u64 = 256 * 1024;
++/// Largest `ownership-check --input` document the guard reads (1 MiB): one task's owned files and locked paths.
++const MAX_OWNERSHIP_INPUT_BYTES: u64 = 1024 * 1024;
+ const MODES: [&str; 3] = ["simulation", "suggestion", "approved_local"];
+ const EXECUTION_TIERS: [&str; 4] = [
+     "local_safe",
+@@ -801,10 +807,25 @@ fn argument_value(args: &[String], flag: &str) -> Result<String, String> {
+         .ok_or_else(|| format!("{flag} requires a value"))
+ }
+ 
++/// Reads at most `limit` bytes of UTF-8 text. The read itself is bounded (`limit + 1` bytes at most), so a file
++/// that is larger, still growing, or not a regular file is refused as oversized without being read whole.
++fn read_bounded(path: &Path, limit: u64, what: &str) -> Result<String, String> {
++    let file = fs::File::open(path).map_err(|error| format!("could not read {what}: {error}"))?;
++    let mut bytes = Vec::new();
++    file.take(limit + 1)
++        .read_to_end(&mut bytes)
++        .map_err(|error| format!("could not read {what}: {error}"))?;
++    if bytes.len() as u64 > limit {
++        return Err(format!(
++            "{what} is oversized: it exceeds the {limit}-byte limit; refused without parsing"
++        ));
++    }
++    String::from_utf8(bytes).map_err(|_| format!("{what} is not valid UTF-8"))
++}
++
+ fn read_request(args: &[String]) -> Result<ActionRequest, String> {
+     let request_path = argument_value(args, "--request")?;
+-    let text = fs::read_to_string(Path::new(&request_path))
+-        .map_err(|error| format!("could not read request: {error}"))?;
++    let text = read_bounded(Path::new(&request_path), MAX_REQUEST_BYTES, "request")?;
+     serde_json::from_str(&text).map_err(|error| format!("invalid request JSON: {error}"))
+ }
+ 
+@@ -832,8 +853,11 @@ fn run() -> Result<(), String> {
+         Some("ownership-check") => {
+             validate_repo_root(&args)?;
+             let input_path = argument_value(&args, "--input")?;
+-            let text = fs::read_to_string(Path::new(&input_path))
+-                .map_err(|error| format!("could not read ownership input: {error}"))?;
++            let text = read_bounded(
++                Path::new(&input_path),
++                MAX_OWNERSHIP_INPUT_BYTES,
++                "ownership input",
++            )?;
+             let input: OwnershipInput = serde_json::from_str(&text)
+                 .map_err(|error| format!("invalid ownership input JSON: {error}"))?;
+             print_json(&ownership_check(&input))
+@@ -863,6 +887,48 @@ fn main() -> ExitCode {
+ mod tests {
+     use super::*;
+ 
++    fn temp_file(name: &str, bytes: &[u8]) -> std::path::PathBuf {
++        let path = env::temp_dir().join(format!("agent_os_guard_{}_{name}", std::process::id()));
++        fs::write(&path, bytes).expect("write temp file");
++        path
++    }
++
++    #[test]
++    fn bounded_read_accepts_exactly_the_limit_and_refuses_one_byte_more() {
++        let at = temp_file("at_limit", &vec![b'a'; 64]);
++        let over = temp_file("over_limit", &vec![b'a'; 65]);
++        assert_eq!(read_bounded(&at, 64, "request").unwrap().len(), 64);
++        let error = read_bounded(&over, 64, "request").unwrap_err();
++        assert!(
++            error.contains("oversized") && error.contains("64-byte limit"),
++            "{error}"
++        );
++        let _ = fs::remove_file(at);
++        let _ = fs::remove_file(over);
++    }
++
++    #[test]
++    fn bounded_read_refuses_missing_and_non_utf8_input() {
++        let missing = env::temp_dir().join("agent_os_guard_no_such_input.json");
++        assert!(
++            read_bounded(&missing, 64, "request")
++                .unwrap_err()
++                .starts_with("could not read request")
++        );
++        let binary = temp_file("non_utf8", &[0xff, 0xfe, 0x00]);
++        assert_eq!(
++            read_bounded(&binary, 64, "request").unwrap_err(),
++            "request is not valid UTF-8"
++        );
++        let _ = fs::remove_file(binary);
++    }
++
++    #[test]
++    fn documented_limits_are_the_enforced_limits() {
++        assert_eq!(MAX_REQUEST_BYTES, 262_144);
++        assert_eq!(MAX_OWNERSHIP_INPUT_BYTES, 1_048_576);
++    }
++
+     fn legacy_request() -> ActionRequest {
+         ActionRequest {
+             schema_version: Some("1.0".to_string()),
